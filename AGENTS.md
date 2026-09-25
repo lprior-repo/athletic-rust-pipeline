@@ -75,21 +75,11 @@ contract changes; Main applies them.
 
 ## Coding standards (binding)
 
-- **§55** all four gates pass; **§56** `#![forbid(unsafe_code)]` and `#![deny(unused_must_use)]`
-  workspace-wide, quality ratchet never increases, no suppression-based victory.
-- **§38** files ≤ 300 lines, production functions ≤ 60 logical lines (hot paths ≤ 25); decompose
-  long orchestrations into named stages.
-- **§37** no unwrap/expect/panic reachable from input, no ignored `Result`, no silent fallback, no
-  unchecked boundary conversion, no unbounded loop, queue, or spawn.
-- **§39** `thiserror` inside production crates; `anyhow` only at CLI/application composition edges.
-- **§44** structured `tracing` only — no `println!`/`eprintln!` in production paths.
-- **§9** exactly one retry owner: Restate retries (3 attempts max), transport performs one attempt.
-  Retry exhaustion becomes evidence; a source failure is never `NO_MATCH`.
-- **§10** admission is per remote origin, measured on physical requests — never multiplied by
-  spawning more workflows.
-- **§43** do not flatten async outcomes; **§42** supervised shutdown with drain accounting.
-- **§61-§62** cache only immutable successes; quarantine poisoned objects and keep going.
-- **Rust only**: no Python, and no shell scripts as pipeline steps.
+All coding standards are in `ARCHITECTURE.md` — the binding document.
+This section names the relevant §-numbers for quick lookup: §37 (no unwrap/expect/panic),
+§38 (size budgets), §39 (thiserror), §42 (supervised shutdown), §43 (async outcomes),
+§44 (tracing), §55 (gates), §56 (forbid/deny), §61-§62 (cache policy).
+Rust only: no Python, no shell scripts as pipeline steps.
 
 ## Source policy
 
@@ -102,7 +92,7 @@ infer GPA (§36). A §69 stop condition for one source is persisted and the cens
 
 - **Adapter**: `cargo xtask new-source <name>`, then captured fixtures under
   `crates/census-crawl/tests/fixtures/<name>/` — flat captured bytes, the scaffolded `README.md`
-  contract, and an optional `SOURCE.md` provenance note — offline test via
+  contract, and an optional provenance note beside them — offline test via
   `cargo xtask source-test <name>`. Answer the §13 report questions in
   `research/sources/<name>/SOURCE_REPORT.md`.
 - **Workflow**: identity per §8 (`jurisdiction:{state}:{season}:{revision}` and friends). Never mint a

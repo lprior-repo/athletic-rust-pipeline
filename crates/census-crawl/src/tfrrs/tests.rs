@@ -236,7 +236,7 @@ fn the_published_vocabulary_reads_the_hosts_tokens() {
     );
     assert_eq!(YearToken::parse("8").and_then(YearToken::grade), None);
     assert_eq!(YearToken::parse("wk"), None);
-    assert_eq!(clock_seconds("1:26.56"), Some(CentiSeconds(8656)));
+    assert_eq!(clock_seconds("1:26.56"), Some(CentiSeconds::new(8656)));
     let date = published_date("Mar 28, 2026").expect("published date");
     assert_eq!(date.iso, "2026-03-28");
     assert_eq!(date.month, 3);

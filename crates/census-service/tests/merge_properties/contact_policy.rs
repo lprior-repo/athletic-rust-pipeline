@@ -37,19 +37,18 @@ proptest! {
         second in mailbox(),
     ) {
         let mut merged = coach_with_email(first.clone());
-        merged.merge(coach_with_email(second));
-        prop_assert_eq!(&merged.professional_email, &Some(first.clone()));
-
-        merged.publish();
-        let expected = published_email(&first);
-        let expected_fields = match expected {
-            Some((address, MailboxKind::Professional)) => (Some(address), None),
-            Some((address, MailboxKind::Personal)) => (None, Some(address)),
-            None => (None, None),
-        };
+        merged.merge(coach_with_email(second.clone()));
+        // A merge leaves the row in published form: the first writer's raw address, trimmed and
+        // routed by kind, with the second's filling only the kind the first left empty.
+        let want = merged_slots(&published_slots(&first), &published_slots(&second));
         prop_assert_eq!(
             (&merged.professional_email, &merged.personal_email),
-            (&expected_fields.0, &expected_fields.1)
+            (&want.0, &want.1)
         );
+
+        // Publishing a row the merge already published changes nothing.
+        let once = merged.clone();
+        merged.publish();
+        prop_assert_eq!(merged, once);
     }
 }

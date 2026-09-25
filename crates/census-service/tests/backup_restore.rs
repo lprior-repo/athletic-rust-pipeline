@@ -240,11 +240,14 @@ fn add_athlete(
             event: event.id.clone(),
             meet: meet_id.clone(),
             date: MEET_DATE.to_string(),
-            mark: Mark::TimeSeconds(CentiSeconds::from_seconds_f64(
-                130.0
-                    + f64::from(u32::try_from(index + slot).expect("small"))
-                    + f64::from(u32::try_from(attempt).expect("small")),
-            )),
+            mark: Mark::TimeSeconds(
+                CentiSeconds::try_from_seconds_f64(
+                    130.0
+                        + f64::from(u32::try_from(index + slot).expect("small"))
+                        + f64::from(u32::try_from(attempt).expect("small")),
+                )
+                .expect("fixture is in range"),
+            ),
             wind_mps: None,
             place: Some(u16::try_from(attempt + 1).expect("two attempts fit u16")),
             heat: None,

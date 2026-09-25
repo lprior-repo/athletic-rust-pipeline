@@ -15,12 +15,14 @@ use census_domain::UsJurisdiction;
 use rust_xlsxwriter::Workbook;
 use std::path::Path;
 
-/// The five sheets this module owns, in published order.
-const SHEETS: [&str; 5] = [
+/// The seven sheets this module owns, in published order.
+const SHEETS: [&str; 7] = [
+    "Schools",
     "Meets",
     "Sources",
     "Coverage",
-    "Data Quality",
+    "Conflicts",
+    "Review",
     "Run Metrics",
 ];
 
@@ -39,7 +41,24 @@ fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> std::path::PathBuf 
     .unwrap();
     let path = dir.join("meta.xlsx");
     let mut book = Workbook::new();
-    write_meta_sheets(&mut book, &path, store, &core, &all_sources, &bests, scope).unwrap();
+    write_meta_sheets(
+        &mut book,
+        &path,
+        RunFacts {
+            store,
+            core: &core,
+            all_sources: &all_sources,
+            bests: &bests,
+            scope,
+            perf_population: PerformanceSheetPopulation {
+                cohort_year: Some(2027),
+                scope,
+                cohort_athletes: 1,
+                total_rows: 1,
+            },
+        },
+    )
+    .unwrap();
     book.save(&path).unwrap();
     path
 }
@@ -77,10 +96,12 @@ fn an_empty_store_still_writes_every_sheet_with_its_header() {
     }
 
     let expectations = [
+        ("Schools", "School ID"),
         ("Meets", "Meet ID"),
         ("Sources", "Source"),
         ("Coverage", "Jurisdiction"),
-        ("Data Quality", "Queue"),
+        ("Conflicts", "Family"),
+        ("Review", "Family"),
         ("Run Metrics", "Run metric"),
     ];
     for (name, header_text) in expectations {
@@ -94,9 +115,11 @@ fn an_empty_store_still_writes_every_sheet_with_its_header() {
     }
 
     // An empty store is an empty census, not a failure: the row-level sheets carry their header
-    // and nothing else, and Data Quality has no retained rows.
+    // and nothing else, and neither queue has a retained row.
+    assert_eq!(sheet(&path, "Schools").len(), 1);
     assert_eq!(sheet(&path, "Meets").len(), 1);
-    assert_eq!(sheet(&path, "Data Quality").len(), 1);
+    assert_eq!(sheet(&path, "Conflicts").len(), 1);
+    assert_eq!(sheet(&path, "Review").len(), 1);
 
     // The declarations are not data: the registry and the jurisdiction list are present even when
     // the store holds nothing.
@@ -258,59 +281,75 @@ fn the_sheets_render_the_rows_the_store_retains() {
         "{sources:?}"
     );
 
-    let quality = sheet(&path, "Data Quality");
-    assert_eq!(quality.first().map(Vec::len), Some(8), "{quality:?}");
+    let schools = sheet(&path, "Schools");
+    assert_eq!(schools.first().map(Vec::len), Some(12), "{schools:?}");
+    assert!(carries(&schools, 0, twin_id.as_str()), "{schools:?}");
+    assert!(carries(&schools, 1, "Abbotsford"), "{schools:?}");
+    assert!(carries(&schools, 2, "WI"), "{schools:?}");
+    assert!(carries(&schools, 2, "??"), "{schools:?}");
+
+    let conflicts = sheet(&path, "Conflicts");
+    assert_eq!(conflicts.first().map(Vec::len), Some(5), "{conflicts:?}");
     assert!(
-        quality.iter().skip(1).all(|row| row.len() == 8),
-        "{quality:?}"
+        conflicts.iter().skip(1).all(|row| row.len() == 5),
+        "{conflicts:?}"
     );
-    assert!(carries(&quality, 1, "School identity"), "{quality:?}");
-    assert!(carries(&quality, 3, twin_id.as_str()), "{quality:?}");
+    assert!(carries(&conflicts, 0, "School identity"), "{conflicts:?}");
+    assert!(carries(&conflicts, 2, twin_id.as_str()), "{conflicts:?}");
+    assert!(carries(&conflicts, 1, "WI"), "{conflicts:?}");
     assert!(
-        carries(&quality, 1, "Class-of-2027 cohort evidence"),
-        "{quality:?}"
-    );
-    assert!(carries(&quality, 3, conflicted_id.as_str()), "{quality:?}");
-    assert!(
-        carries(&quality, 1, "Recruiting contact conflict"),
-        "{quality:?}"
+        carries(&conflicts, 0, "Class-of-2027 cohort evidence"),
+        "{conflicts:?}"
     );
     assert!(
-        quality.iter().any(|row| {
-            row.first().is_some_and(|queue| queue == "Verdict")
+        carries(&conflicts, 2, conflicted_id.as_str()),
+        "{conflicts:?}"
+    );
+    assert!(
+        carries(&conflicts, 0, "Recruiting contact conflict"),
+        "{conflicts:?}"
+    );
+    assert!(carries(&conflicts, 2, school_id.as_str()), "{conflicts:?}");
+    assert!(
+        conflicts.iter().any(|row| row
+            .get(4)
+            .is_some_and(|detail| detail.contains("no evidenced order picks one"))),
+        "the conflict row says the rows cannot be separated: {conflicts:?}"
+    );
+
+    let review = sheet(&path, "Review");
+    assert_eq!(review.first().map(Vec::len), Some(7), "{review:?}");
+    assert!(
+        review.iter().skip(1).all(|row| row.len() == 7),
+        "{review:?}"
+    );
+    assert!(
+        review.iter().any(|row| {
+            row.first()
+                .is_some_and(|family| family == "Athlete identity")
+                && row.get(2).is_some_and(|id| id == conflicted_id.as_str())
                 && row
-                    .get(1)
-                    .is_some_and(|family| family == "Athlete identity")
-                && row.get(3).is_some_and(|id| id == conflicted_id.as_str())
-                && row
-                    .get(5)
+                    .get(4)
                     .is_some_and(|answer| answer == "identity=same_person")
-                && row.get(6).is_some_and(|confidence| confidence == "91")
+                && row.get(5).is_some_and(|confidence| confidence == "91")
                 && row
-                    .get(7)
+                    .get(6)
                     .is_some_and(|detail| detail == "matching school and cohort")
         }),
-        "the model verdict is rendered in the audit columns: {quality:?}"
+        "the model verdict is rendered in the review row's audit columns: {review:?}"
     );
-    assert!(carries(&quality, 3, school_id.as_str()), "{quality:?}");
+    assert!(carries(&review, 0, "Meet venue unresolved"), "{review:?}");
+    assert!(carries(&review, 2, unresolved_id.as_str()), "{review:?}");
     assert!(
-        quality.iter().any(|row| row
-            .get(7)
-            .is_some_and(|detail| detail.contains("no evidenced order picks one"))),
-        "the conflict row says the rows cannot be separated: {quality:?}"
+        carries(&review, 0, "School jurisdiction unresolved"),
+        "{review:?}"
     );
-    assert!(carries(&quality, 1, "Meet venue unresolved"), "{quality:?}");
-    assert!(carries(&quality, 3, unresolved_id.as_str()), "{quality:?}");
+    assert!(carries(&review, 2, orphan_id.as_str()), "{review:?}");
     assert!(
-        carries(&quality, 1, "School jurisdiction unresolved"),
-        "{quality:?}"
+        carries(&review, 0, "Class-of-2027 cohort unverified"),
+        "{review:?}"
     );
-    assert!(carries(&quality, 3, orphan_id.as_str()), "{quality:?}");
-    assert!(
-        carries(&quality, 1, "Class-of-2027 cohort unverified"),
-        "{quality:?}"
-    );
-    assert!(carries(&quality, 3, unverified_id.as_str()), "{quality:?}");
+    assert!(carries(&review, 2, unverified_id.as_str()), "{review:?}");
     // Every row-level tally the run-metrics sheet reconciles must agree with the core census.
     let metrics = sheet(&path, "Run Metrics");
     assert!(carries(&metrics, 0, "Reconciled counter"), "{metrics:?}");

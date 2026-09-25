@@ -16,7 +16,7 @@ use super::join::{Lookups, Parents};
 use super::rows::{sheet_order, PerformanceRow};
 use crate::report::{io_error, retain_core_row, ReportError, ReportResult, Scope};
 use census_store::{Store, Table};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -37,9 +37,9 @@ pub(super) struct PerformanceRows {
 }
 
 impl PerformanceRows {
-    /// Build the rows for `store` under `scope`.
-    pub(super) fn build(store: &Store, scope: Scope) -> ReportResult<Self> {
-        Self::with_ranges(store, scope, RANGE_ROWS, MAX_RANGES)
+    /// Build the rows for `store` under `scope`, restricted to the cohort.
+    pub(super) fn build(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
+        Self::with_ranges(store, scope, grad_year, RANGE_ROWS, MAX_RANGES)
     }
 
     /// The same, with the range sizing a caller chooses — so a test can prove the range seams without
@@ -47,12 +47,14 @@ impl PerformanceRows {
     pub(super) fn with_ranges(
         store: &Store,
         scope: Scope,
+        grad_year: Option<i16>,
         range_rows: u64,
         max_ranges: usize,
     ) -> ReportResult<Self> {
-        let parents = Parents::read(store, scope)?;
+        let parents = Parents::read(store, scope, grad_year)?;
         let lookups = parents.lookups();
         let (names, ranks) = bucket_universe(&lookups);
+        let cohort = parents.cohort_set();
         let ranges = ranges_for(held_rows(store)?, range_rows, max_ranges, names.len());
         let dir = spill_dir()?;
         let mut writers = open_ranges(&dir, ranges)?;
@@ -62,7 +64,7 @@ impl PerformanceRows {
             ranks: &ranks,
             names: names.len(),
         };
-        spill(store, scope, &lookups, &mut files)?;
+        spill(store, scope, &lookups, cohort, &mut files)?;
         flush_ranges(&dir, &mut writers)?;
         Ok(Self {
             dir,
@@ -149,24 +151,31 @@ fn spill(
     store: &Store,
     scope: Scope,
     lookups: &Lookups<'_>,
+    cohort: HashSet<&str>,
     files: &mut RangeFiles<'_>,
 ) -> ReportResult<()> {
     let mut failure: Option<ReportError> = None;
-    store.for_each_merged(Table::Performances, |mut performance| {
-        if failure.is_some() {
-            // The pass is over as far as this caller is concerned; the refusal is returned below, and
-            // reading further rows would only spend time on an answer nobody wants.
-            return Ok(());
-        }
-        if scope == Scope::Core && !retain_core_row(&mut performance) {
-            return Ok(());
-        }
-        let row = lookups.row(&performance);
-        if let Err(error) = files.write(&row) {
-            failure = Some(error);
-        }
-        Ok(())
-    })?;
+    store.for_each_merged(
+        Table::Performances,
+        |mut performance: census_domain::model::CanonicalPerformance| {
+            if failure.is_some() {
+                // The pass is over as far as this caller is concerned; the refusal is returned below, and
+                // reading further rows would only spend time on an answer nobody wants.
+                return Ok(());
+            }
+            if scope == Scope::Core && !retain_core_row(&mut performance) {
+                return Ok(());
+            }
+            if !cohort.contains(performance.athlete.as_str()) {
+                return Ok(());
+            }
+            let row = lookups.row(&performance);
+            if let Err(error) = files.write(&row) {
+                failure = Some(error);
+            }
+            Ok(())
+        },
+    )?;
     match failure {
         Some(error) => Err(error),
         None => Ok(()),

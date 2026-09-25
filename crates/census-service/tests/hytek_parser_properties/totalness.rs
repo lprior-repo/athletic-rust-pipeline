@@ -29,7 +29,7 @@ proptest! {
     fn an_accepted_time_is_finite_and_non_negative(token in shaped_token()) {
         if let Some(seconds) = parse_time(&token) {
             prop_assert!(
-                seconds.0 >= 0,
+                seconds.value() >= 0,
                 "{token:?} was accepted as {seconds}"
             );
         }

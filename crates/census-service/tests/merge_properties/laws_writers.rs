@@ -198,13 +198,27 @@ proptest! {
         second.professional_email = Some(other_address.clone());
         second.phone = Some("608-555-0199".to_string());
 
+        // Each side's address reaches the field its own domain names, and the first writer of a
+        // field keeps it: the later side can only fill the field the earlier one left empty.
+        let address_slots = published_slots(&address);
+        let other_slots = published_slots(&other_address);
+        let want = merged_slots(&address_slots, &other_slots);
+        let reversed_want = merged_slots(&other_slots, &address_slots);
+
         let mut merged = first.clone();
         merged.merge(second.clone());
-        prop_assert_eq!(&merged.professional_email, &Some(address));
+        prop_assert_eq!(
+            (&merged.professional_email, &merged.personal_email),
+            (&want.0, &want.1)
+        );
+        prop_assert_eq!(merged.phone.as_deref(), Some("608-555-0100"));
 
         let mut reversed = second;
         reversed.merge(first);
-        prop_assert_eq!(&reversed.professional_email, &Some(other_address));
+        prop_assert_eq!(
+            (&reversed.professional_email, &reversed.personal_email),
+            (&reversed_want.0, &reversed_want.1)
+        );
         prop_assert_eq!(reversed.phone.as_deref(), Some("608-555-0199"));
     }
 }

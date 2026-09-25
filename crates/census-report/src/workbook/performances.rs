@@ -43,7 +43,8 @@ const DATA_ROWS_PER_SHEET: usize = EXCEL_ROWS_PER_SHEET - HEADER_ROWS - PARTITIO
 
 /// The §52 columns in the objective's order, each with the width it is written at. The header row and
 /// the column widths both come from here, so the two can never disagree.
-const COLUMNS: [(&str, u16); 19] = [
+const COLUMNS: [(&str, u16); 20] = [
+    ("Canonical Result ID", 22),
     ("Athlete ID", 14),
     ("Athlete", 24),
     ("School", 28),
@@ -65,15 +66,42 @@ const COLUMNS: [(&str, u16); 19] = [
     ("Source URL", 44),
 ];
 
-/// Write the §52 `Performances_00N` sheets: every performance `store` holds under `scope`.
+/// The population declaration for the performance sheets.
+///
+/// Carries the cohort scope, athlete count, performance row count, and the rule that earlier-season
+/// and out-of-state performances for cohort athletes are included by design — so the row count
+/// reconciles with the seal.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct PerformanceSheetPopulation {
+    /// The graduating class the sheet covers, or `None` for "all cohorts".
+    pub(super) cohort_year: Option<i16>,
+    /// Evidence scope: `core` or `all_sources`.
+    pub(super) scope: Scope,
+    /// Cohort athletes the sheet draws from.
+    pub(super) cohort_athletes: usize,
+    /// Total performance rows written across all partitions.
+    pub(super) total_rows: usize,
+}
+
+/// Write the §52 `Performances_00N` sheets and return a population declaration.
+///
+/// `grad_year` restricts the sheet to the cohort: only performances whose athlete falls within
+/// the graduating-class filter appear, while every captured season for those athletes stays intact.
 pub(super) fn write_performance_sheets(
     book: &mut Workbook,
     path: &Path,
     store: &Store,
     scope: Scope,
-) -> ReportResult<()> {
-    let rows = PerformanceRows::build(store, scope)?;
-    write_partitions(book, path, rows, DATA_ROWS_PER_SHEET)
+    grad_year: Option<i16>,
+) -> ReportResult<PerformanceSheetPopulation> {
+    let rows = PerformanceRows::build(store, scope, grad_year)?;
+    let row_count = write_partitions_with_count(book, path, rows, DATA_ROWS_PER_SHEET)?;
+    Ok(PerformanceSheetPopulation {
+        cohort_year: grad_year,
+        scope,
+        cohort_athletes: 0, // Filled in by caller from recruiting dataset
+        total_rows: row_count,
+    })
 }
 
 /// Write `rows` into `book`, `per_sheet` data rows to a sheet, one row at a time: no sheet's cells and
@@ -81,12 +109,26 @@ pub(super) fn write_performance_sheets(
 ///
 /// `per_sheet` is a parameter rather than the constant alone so the split is provable at test scale,
 /// and so a budget that holds nothing is reachable and rejected instead of silently dropping rows.
+///
+/// Only the partition tests call this counted-eliding form; production goes through
+/// [`write_partitions_with_count`] and declares the population it wrote.
+#[cfg(test)]
 fn write_partitions(
     book: &mut Workbook,
     path: &Path,
     rows: impl IntoIterator<Item = ReportResult<PerformanceRow>>,
     per_sheet: usize,
 ) -> ReportResult<()> {
+    write_partitions_with_count(book, path, rows, per_sheet).map(|_| ())
+}
+
+/// Same as [`write_partitions`], but returns the total row count for population declaration.
+fn write_partitions_with_count(
+    book: &mut Workbook,
+    path: &Path,
+    rows: impl IntoIterator<Item = ReportResult<PerformanceRow>>,
+    per_sheet: usize,
+) -> ReportResult<usize> {
     let widths: Vec<u16> = COLUMNS.iter().map(|(_, width)| *width).collect();
     let header_row = header();
     let last_column = COLUMNS.len().saturating_sub(1);
@@ -98,6 +140,7 @@ fn write_partitions(
         return Err(no_budget(first.as_ref()));
     }
     let mut sheets = 0_usize;
+    let mut total_rows = 0_usize;
     // One row of lookahead, so a full last sheet is not followed by an empty one.
     let mut next = rows.next().transpose()?;
     while next.is_some() {
@@ -115,6 +158,7 @@ fn write_partitions(
             sheet.finish(filled.saturating_add(HEADER_ROWS), last_column)?;
             filled
         };
+        total_rows = total_rows.saturating_add(filled);
         sheets = sheets.saturating_add(1);
         if filled < per_sheet {
             break;
@@ -127,7 +171,7 @@ fn write_partitions(
         sheet.write_row(0, &header_row)?;
         sheet.finish(HEADER_ROWS, last_column)?;
     }
-    Ok(())
+    Ok(total_rows)
 }
 
 /// The header row every partition repeats, in [`COLUMNS`] order.

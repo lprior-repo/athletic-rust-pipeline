@@ -16,7 +16,9 @@ use crate::census::{RetainedFindings, SealCounts, SealedCensus};
 pub struct SealRequest {
     /// Graduation year of the cohort being certified.
     pub grad_year: i16,
-    /// Certify the all-sources scope instead of the core scope.
+    /// Certify every approved source's evidence. The default is `false`, which certifies the narrow
+    /// core scope — the conservative reading for a caller that omits the field. The CLI sets this from
+    /// its own `--core` flag, whose default run measures every approved source.
     #[serde(default)]
     pub all_sources: bool,
     /// The workbook to certify, by path on the service's store. Defaults to the newest `out/*.xlsx`.

@@ -12,9 +12,9 @@ use census_domain::model::Mark;
 pub fn mark_text(mark: &Mark) -> String {
     match mark {
         Mark::TimeSeconds(cs) => format_time(*cs),
-        Mark::DistanceMetres(cm) => format_distance_metres(cm.0),
+        Mark::DistanceMetres(cm) => format_distance_metres(cm.value()),
         Mark::FieldImperial { feet_mark, .. } => feet_mark.clone(),
-        Mark::Points(cp) => format_points_scored(cp.0),
+        Mark::Points(cp) => format_points_scored(cp.value()),
         Mark::Raw(text) => text.clone(),
     }
 }
@@ -38,7 +38,7 @@ pub fn format_points_scored(cp: i32) -> String {
 /// `360000` becomes `1:00:00.00`.  Integer-only — no floating-point conversion — to agree
 /// with the tree's independent renderer used in the property tests.
 pub fn format_time(cs: CentiSeconds) -> String {
-    let total_cs = cs.0.abs();
+    let total_cs = cs.value().abs();
     let total_seconds = total_cs / 100;
     let sub_seconds = total_cs % 100;
     let hours = total_seconds / 3600;

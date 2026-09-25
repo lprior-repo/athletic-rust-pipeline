@@ -3,10 +3,11 @@
 What is measured today, where every number comes from, what the hot paths actually do, and what is
 still unmeasured. A performance claim may only cite the sources in §1; anything else is a proposal.
 
-There is **no throughput baseline in this repository yet**. `tools/quality-baseline.json` records
-debt counts, not timings, and `docs/HARDENING-PROGRAM.md` §2.5 states that the earlier 559–627k obs/s
-figures live outside the repo, so they are not reproducible and not a gate. The two bench harnesses
-in §2 exist and are runnable, but nothing enforces a threshold on them.
+There is **no throughput baseline recorded in this repository yet**. `tools/quality-baseline.json`
+records debt counts, not timings, and `docs/HARDENING-PROGRAM.md` §2.5 states that the earlier
+559–627k obs/s figures live outside the repo, so they are not reproducible or a gate. The two bench
+harnesses in §2 exist and are runnable; the opt-in threshold lane is wired, but currently reports
+`SKIP` until `tools/perf-baseline.json` is recorded.
 
 ## 1. Measured baselines
 
@@ -61,11 +62,13 @@ those stops being zero.
 
 The program's Phase 7 target — criterion benches under `benches/`, committed baselines, CI failing on
 a >10% regression, allocation budgets, and an fjall tuning experiment with numbers — is still open.
-The harnesses in §2 are the first half of that work: measurement exists, gating does not.
+The harnesses in §2 now have a 5% threshold lane for the pre-release pass; its baseline is not
+recorded yet.
 
 ## 2. Bench harness
 
-Two kinds of harness exist, both runnable; neither is gated by a threshold.
+Two kinds of harness exist, both runnable; the threshold lane described in §5.1 gates their
+throughput only when its baseline has been recorded.
 
 **Committed criterion targets** (`harness = false`, registered in the manifests). This is the
 measurement the rest of the repository cites:
@@ -447,9 +450,35 @@ tools/gate.sh --update-baseline [--allow-increase]
 
 Lanes: `fmt`, `check --all-targets`, `doc`, tests (nextest when installed), strict clippy, production
 scan, domain purity, type-integrity report, debt ratchet, deny, audit/machete/geiger (skipped when the tool is
-absent), and bench presence. Exact invocations live in `tools/gate.sh`; it is the only supported way
-to refresh `tools/quality-baseline.json`, because `cargo xtask ratchet` and `cargo xtask quality-baseline` only compare —
-they never measure.
+absent), bench presence, and the opt-in performance threshold lane (`--full`). Exact invocations live in
+`tools/gate.sh`; it is the only supported way to refresh `tools/quality-baseline.json`, because `cargo xtask
+ratchet` and `cargo xtask quality-baseline` only compare — they never measure.
+The performance lane is deliberately not part of the default four gates: its Criterion run takes
+minutes and is hardware-sensitive.
+
+### 5.1 Performance threshold lane
+
+The opt-in `perf` lane measures throughput for every Criterion group in the `core` and `pipeline`
+benchmark targets. `cargo xtask perf check` reruns those targets and compares each group's throughput
+with `tools/perf-baseline.json`; wall time and peak RSS are recorded with the measurements, but the
+gate threshold is throughput.
+
+Record a baseline on a quiet machine:
+
+```bash
+cargo xtask perf record
+```
+
+The pre-release gate enables the lane with `tools/gate.sh --full`. With a baseline present, the lane
+runs `cargo xtask perf check --reason 'pre-release gate (--full)'` and uses the default 5% tolerance
+(equivalent to `--tolerance 0.05`). A throughput regression beyond that tolerance fails the lane.
+CPU, core-count and rustc differences are warnings so the comparison remains usable across commits;
+a benchmark group missing from the baseline is a failure.
+
+No baseline is recorded yet, so the default gate reports `SKIP` for this lane and names the exact
+`cargo xtask perf record` command needed to enable it. A release pass treats that missing baseline
+as a failure rather than claiming the performance lane ran.
+
 
 One naming gotcha when reading either file: the clippy TSV keys crates by cargo target name
 (`census_service`, underscores) while `cargo xtask scan` keys them by directory (`census-service`,

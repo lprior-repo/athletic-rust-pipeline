@@ -73,6 +73,7 @@ const DB_DIR: &str = "fjall";
 const ENTITIES: &str = "entities";
 const JOURNAL: &str = "journal";
 const META: &str = "meta";
+const RECEIPTS: &str = "receipts";
 
 mod backup;
 mod batch;
@@ -82,6 +83,7 @@ mod error;
 mod keys;
 mod legacy;
 pub mod read;
+mod receipt;
 mod rows;
 mod sequences;
 mod table;
@@ -90,6 +92,7 @@ mod write_batch;
 
 pub use backup::{BackupReport, IntegrityReport, IntegrityTable, RestoreReport};
 pub use error::{StoreError, StoreResult};
+pub use receipt::{Application, Pruned, Receipt, MAX_DIGEST_BYTES, MAX_OPERATION_BYTES};
 pub use rows::TableWalk;
 pub use table::{
     Entity, StorageMode, Table, MAX_ID_BYTES, MAX_JOURNAL_KEY_BYTES, MAX_JOURNAL_VALUE_BYTES,
@@ -132,6 +135,9 @@ pub struct Store {
     entities: Keyspace,
     journal: Keyspace,
     meta: Keyspace,
+    /// One row per applied operation, keyed by the caller's operation id: the receipt an append and
+    /// its acknowledgement can be reconciled against. See [`crate::Receipt`].
+    receipts: Keyspace,
     /// Next observation sequence per table; seeded from each table's durable mark at open.
     sequences: sequences::Counters,
     /// Orders the batches that advance a table's mark, so the mark no batch can be overtaken by one
@@ -142,36 +148,9 @@ pub struct Store {
 impl Store {
     pub fn open(root: impl AsRef<Path>) -> StoreResult<Self> {
         let root = root.as_ref().to_path_buf();
-        for sub in ["http", "out"] {
-            let dir = root.join(sub);
-            std::fs::create_dir_all(&dir).map_err(|source| StoreError::Io {
-                path: dir.clone(),
-                source,
-            })?;
-        }
-        let db = Database::builder(root.join(DB_DIR))
-            .cache_size(CACHE_BYTES)
-            .open()
-            .map_err(|source| StoreError::Open { source })?;
-        // `entities` keeps its bloom filters: acquisition asks it about source identities that
-        // usually are not there yet, and a miss must not fall through the last level.
-        let entities = db
-            .keyspace(ENTITIES, KeyspaceCreateOptions::default)
-            .map_err(|source| StoreError::Open { source })?;
-        let journal = db
-            .keyspace(JOURNAL, || {
-                KeyspaceCreateOptions::default().expect_point_read_hits(true)
-            })
-            .map_err(|source| StoreError::Open { source })?;
-        let meta = db
-            .keyspace(META, || {
-                KeyspaceCreateOptions::default().expect_point_read_hits(true)
-            })
-            .map_err(|source| StoreError::Open { source })?;
-        let sequences = sequences::Counters::seeded(&db, &entities, &meta)?;
+        ensure_dirs(&root)?;
+        let (db, entities, journal, meta, receipts, sequences) = open_keyspaces(&root)?;
 
-        // Reclaim what a dead writer left behind. The lock above is exclusive, so any temporary
-        // still on disk belongs to a process that is no longer running.
         read::sweep_stale_temporaries(&root)?;
 
         let store = Self {
@@ -180,6 +159,7 @@ impl Store {
             entities,
             journal,
             meta,
+            receipts,
             sequences,
             appends: Mutex::new(()),
         };
@@ -197,7 +177,61 @@ impl Store {
         store.seed_row_marks()?;
         Ok(store)
     }
+}
+/// Create the HTTP cache and output directories.
+fn ensure_dirs(root: &Path) -> StoreResult<()> {
+    for sub in ["http", "out"] {
+        let dir = root.join(sub);
+        std::fs::create_dir_all(&dir).map_err(|source| StoreError::Io {
+            path: dir.clone(),
+            source,
+        })?;
+    }
+    Ok(())
+}
 
+/// Open the database and all keyspaces, seed the counters.
+fn open_keyspaces(
+    root: &Path,
+) -> StoreResult<(
+    Database,
+    Keyspace,
+    Keyspace,
+    Keyspace,
+    Keyspace,
+    sequences::Counters,
+)> {
+    let db = Database::builder(root.join(DB_DIR))
+        .cache_size(CACHE_BYTES)
+        .open()
+        .map_err(|source| StoreError::Open { source })?;
+    // `entities` keeps its bloom filters: acquisition asks it about source identities that
+    // usually are not there yet, and a miss must not fall through the last level.
+    let entities = db
+        .keyspace(ENTITIES, KeyspaceCreateOptions::default)
+        .map_err(|source| StoreError::Open { source })?;
+    let journal = db
+        .keyspace(JOURNAL, || {
+            KeyspaceCreateOptions::default().expect_point_read_hits(true)
+        })
+        .map_err(|source| StoreError::Open { source })?;
+    let meta = db
+        .keyspace(META, || {
+            KeyspaceCreateOptions::default().expect_point_read_hits(true)
+        })
+        .map_err(|source| StoreError::Open { source })?;
+    // A receipt is read for one operation id at a time, on the write path itself, so its
+    // keyspace keeps the same point-read hint `meta` wants.
+    let receipts = db
+        .keyspace(RECEIPTS, || {
+            KeyspaceCreateOptions::default().expect_point_read_hits(true)
+        })
+        .map_err(|source| StoreError::Open { source })?;
+    let sequences = sequences::Counters::seeded(&db, &entities, &meta)?;
+    Ok((db, entities, journal, meta, receipts, sequences))
+}
+
+impl Store {
     pub fn root(&self) -> &Path {
         &self.root
     }
@@ -233,6 +267,10 @@ mod legacy_tests;
 mod loom_tests;
 #[cfg(test)]
 mod marks_tests;
+#[cfg(test)]
+mod receipt_tests;
+#[cfg(test)]
+mod replace_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(kani)]

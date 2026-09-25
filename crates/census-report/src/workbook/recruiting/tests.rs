@@ -8,6 +8,7 @@
 
 use super::*;
 use crate::bests;
+use crate::workbook::Options;
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     normalize_name, AthleteId, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
@@ -237,7 +238,7 @@ fn fixture() -> Fixture {
             &sprint,
             &EventKind::Track400m,
             "2026-06-06",
-            Mark::TimeSeconds(CentiSeconds(4980)),
+            Mark::TimeSeconds(CentiSeconds::new(4980)),
             "wiaa_results",
             "https://wiaa.test/results/state",
         ),
@@ -246,7 +247,7 @@ fn fixture() -> Fixture {
             &sprint,
             &EventKind::Track400m,
             "2026-06-06",
-            Mark::TimeSeconds(CentiSeconds(4971)),
+            Mark::TimeSeconds(CentiSeconds::new(4971)),
             "pttiming_live",
             "https://pttiming.test/live/state",
         ),
@@ -255,7 +256,7 @@ fn fixture() -> Fixture {
             &sprint_invite,
             &EventKind::Track400m,
             "2026-05-01",
-            Mark::TimeSeconds(CentiSeconds(4855)),
+            Mark::TimeSeconds(CentiSeconds::new(4855)),
             "wiaa_results",
             "https://wiaa.test/results/invite",
         ),
@@ -264,7 +265,7 @@ fn fixture() -> Fixture {
             &jump,
             &EventKind::LongJump,
             "2026-05-01",
-            Mark::DistanceMetres(CentiMetres(642)),
+            Mark::DistanceMetres(CentiMetres::new(642)),
             "wiaa_results",
             "https://wiaa.test/results/invite",
         ),
@@ -273,7 +274,7 @@ fn fixture() -> Fixture {
             &relay,
             &EventKind::Relay4x400,
             "2026-06-06",
-            Mark::TimeSeconds(CentiSeconds(300)),
+            Mark::TimeSeconds(CentiSeconds::new(300)),
             "wiaa_results",
             "https://wiaa.test/results/state",
         ),
@@ -421,49 +422,78 @@ fn the_athletes_sheet_publishes_the_objective_columns_and_the_stored_facts() {
     assert_eq!(text(&range, row, 2), "Boys");
     assert_eq!(text(&range, row, 3), "2027");
     assert_eq!(text(&range, row, 4), "11", "the newest observed grade");
-    assert_eq!(text(&range, row, 5), "WI");
-    assert_eq!(text(&range, row, 6), "Abbotsford");
-    assert_eq!(text(&range, row, 7), "Abbotsford", "the school row's city");
-    assert_eq!(text(&range, row, 8), "yes", "XC");
-    assert_eq!(text(&range, row, 9), "", "no indoor participation stored");
-    assert_eq!(text(&range, row, 10), "yes", "Outdoor");
-    assert_eq!(text(&range, row, 13), "48.55", "400m PR");
-    assert_eq!(text(&range, row, 23), "6.42", "long-jump PR");
-    assert_eq!(text(&range, row, 11), "", "unrecorded 100m PR is blank");
-    assert_eq!(text(&range, row, 30), "5", "performance count");
-    assert_eq!(text(&range, row, 31), "2", "meet count");
-    assert_eq!(text(&range, row, 32), "Dana Voss", "head TF coach");
-    assert_eq!(text(&range, row, 33), "dvoss@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, row, 34), "Kim Ruiz", "head XC coach");
-    assert_eq!(text(&range, row, 35), "kruiz@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, row, 36), "Lee Adams", "athletic director");
-    assert_eq!(text(&range, row, 37), "ladams@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, row, 6), "WI");
+    assert_eq!(text(&range, row, 7), "Abbotsford");
+    assert_eq!(text(&range, row, 9), "Abbotsford", "the school row's city");
     assert_eq!(
-        text(&range, row, 38),
+        text(&range, row, 10),
+        "yes",
+        "TF (has outdoor track evidence)"
+    );
+    assert_eq!(text(&range, row, 11), "yes", "XC");
+    assert_eq!(text(&range, row, 12), "", "no indoor participation stored");
+    assert_eq!(text(&range, row, 13), "yes", "Outdoor");
+    // PR reduction keeps only 2 events for Julian (400m and Long Jump per fixture)
+    assert_eq!(
+        text(&range, row, 14),
+        "400m; Long Jump",
+        "event list in canonical order"
+    );
+    assert_eq!(
+        text(&range, row, 15),
+        "400m 48.55; Long Jump 6.42 m",
+        "headline PR summary"
+    );
+    assert_eq!(text(&range, row, 16), "", "unrecorded 100m PR is blank");
+    assert_eq!(text(&range, row, 17), "", "unrecorded 200m PR is blank");
+    assert_eq!(text(&range, row, 18), "48.55", "400m PR");
+    assert_eq!(text(&range, row, 28), "6.42", "long-jump PR");
+    assert_eq!(text(&range, row, 35), "5", "performance count");
+    assert_eq!(text(&range, row, 36), "2", "meet count");
+    assert_eq!(text(&range, row, 37), "Dana Voss", "head TF coach");
+    assert_eq!(text(&range, row, 38), "dvoss@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, row, 39), "Kim Ruiz", "head XC coach");
+    assert_eq!(text(&range, row, 40), "kruiz@abbotsford.k12.wi.us");
+    assert_eq!(
+        text(&range, row, 41),
+        "dvoss@abbotsford.k12.wi.us",
+        "head TF coach professional email"
+    );
+    assert_eq!(text(&range, row, 42), "Lee Adams", "athletic director");
+    assert_eq!(text(&range, row, 43), "ladams@abbotsford.k12.wi.us");
+    assert_eq!(
+        text(&range, row, 44),
+        "https://abbotsford.test/athletics",
+        "school athletics URL"
+    );
+    assert_eq!(text(&range, row, 45), "", "Public Recruiting GPA is blank");
+    assert_eq!(text(&range, row, 46), "", "GPA Source is blank");
+    assert_eq!(
+        text(&range, row, 47),
         "dvoss@abbotsford.k12.wi.us; kruiz@abbotsford.k12.wi.us; ladams@abbotsford.k12.wi.us; pnolan@abbotsford.k12.wi.us"
     );
-    assert_eq!(text(&range, row, 39), "Dana Voss");
-    assert_eq!(text(&range, row, 40), "Head TF Coach");
-    assert_eq!(text(&range, row, 41), "dvoss@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, row, 42), "professional_coach_email");
+    assert_eq!(text(&range, row, 48), "Dana Voss");
+    assert_eq!(text(&range, row, 49), "Head TF Coach");
+    assert_eq!(text(&range, row, 50), "dvoss@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, row, 51), "professional_coach_email");
     assert_eq!(
-        text(&range, row, 43),
+        text(&range, row, 52),
         "",
         "a core-scope workbook drops the Athletic.net identity"
     );
     assert_eq!(
-        text(&range, row, 44),
+        text(&range, row, 53),
         "https://wi.milesplit.com/athletes/999"
     );
-    assert_eq!(text(&range, row, 45), "https://example.test/julian");
-    assert_eq!(text(&range, row, 46), "1");
-    assert_eq!(text(&range, row, 47), "85", "agreeing grade evidence");
-    assert_eq!(text(&range, row, 48), "pr");
-    assert_eq!(text(&range, row, 49), "", "no conflict");
+    assert_eq!(text(&range, row, 54), "https://example.test/julian");
+    assert_eq!(text(&range, row, 55), "1");
+    assert_eq!(text(&range, row, 56), "high", "agreeing grade evidence");
+    assert_eq!(text(&range, row, 57), "pr");
+    assert_eq!(text(&range, row, 58), "", "no conflict");
     assert_eq!(
-        text(&range, row, 50),
-        "",
-        "confidence at HIGH needs no review"
+        text(&range, row, 59),
+        "verified",
+        "HIGH confidence with no conflict needs no review"
     );
 }
 
@@ -476,15 +506,15 @@ fn the_url_columns_follow_the_evidence_scope() {
     let range = sheet(&mut book, "Athletes");
     let row = row_of(&range, fixture.julian.as_str());
     assert_eq!(
-        text(&range, row, 43),
+        text(&range, row, 52),
         "https://www.athletic.net/athlete/123"
     );
     assert_eq!(
-        text(&range, row, 44),
+        text(&range, row, 53),
         "https://wi.milesplit.com/athletes/999"
     );
-    assert_eq!(text(&range, row, 45), "https://example.test/julian");
-    assert_eq!(text(&range, row, 46), "2", "source namespaces");
+    assert_eq!(text(&range, row, 54), "https://example.test/julian");
+    assert_eq!(text(&range, row, 55), "2", "source namespaces");
 }
 
 #[test]
@@ -497,20 +527,34 @@ fn an_athlete_without_a_performance_is_published_as_identity_only() {
         .expect("the second cohort athlete");
     assert_eq!(text(&range, row, 0), fixture.nadia.as_str());
     assert_eq!(text(&range, row, 2), "Girls");
-    assert_eq!(text(&range, row, 30), "0", "no stored performance");
-    for column in 11..30 {
+    assert_eq!(text(&range, row, 10), "", "TF is blank (no track evidence)");
+    assert_eq!(text(&range, row, 35), "0", "no stored performance");
+    for column in 15..35 {
         assert_eq!(text(&range, row, column), "", "no PR is blank");
     }
-    assert_eq!(text(&range, row, 48), "identity-only");
+    assert_eq!(text(&range, row, 14), "", "event list is blank");
+    assert_eq!(text(&range, row, 15), "", "headline PR summary is blank");
+    assert_eq!(text(&range, row, 41), "", "no coach emails");
+    // Nadia's school has an athletics website in the fixture
     assert_eq!(
-        text(&range, row, 50),
-        "yes",
+        text(&range, row, 44),
+        "https://ada-borup.test/athletics",
+        "school athletics URL"
+    );
+    assert_eq!(text(&range, row, 57), "identity-only");
+    assert_eq!(
+        text(&range, row, 59),
+        "review",
         "no grade observation agrees with the cohort, so the row asks for review"
     );
-    assert_eq!(text(&range, row, 38), "", "no coach emails");
-    assert_eq!(text(&range, row, 39), "", "nothing is named");
     assert_eq!(
-        text(&range, row, 42),
+        text(&range, row, 47),
+        "",
+        "all emails is blank (no contacts)"
+    );
+    assert_eq!(text(&range, row, 48), "", "preferred contact is blank");
+    assert_eq!(
+        text(&range, row, 51),
         "contact_source_not_attempted",
         "no coach row for the school means no contact source reached it"
     );
@@ -640,7 +684,7 @@ fn a_personal_coach_email_is_published_on_both_contact_surfaces() {
     let athletes = sheet(&mut book, "Athletes");
     let athlete_row = row_of(&athletes, fixture.julian.as_str());
     assert_eq!(
-        text(&athletes, athlete_row, 38),
+        text(&athletes, athlete_row, 47),
         "dvoss@abbotsford.k12.wi.us; kruiz@abbotsford.k12.wi.us; ladams@abbotsford.k12.wi.us; morgan@gmail.com; pnolan@abbotsford.k12.wi.us"
     );
 
@@ -690,6 +734,24 @@ fn coach_row(
 ) -> CanonicalCoach {
     let mut coach = CanonicalCoach::new(school, name, sport, side, role);
     coach.professional_email = email.map(str::to_string);
+    coach.evidence = vec![Evidence::parsed(
+        SourceRef::new("coach_contacts_csv", None),
+        observed,
+    )];
+    coach
+}
+/// A coach row built with only a consumer mailbox: personal, not professional.
+fn personal_coach_row(
+    school: &SchoolId,
+    name: &str,
+    sport: Option<Sport>,
+    side: Gender,
+    role: CoachRole,
+    address: &str,
+    observed: &str,
+) -> CanonicalCoach {
+    let mut coach = CanonicalCoach::new(school, name, sport, side, role);
+    coach.personal_email = Some(address.to_string());
     coach.evidence = vec![Evidence::parsed(
         SourceRef::new("coach_contacts_csv", None),
         observed,
@@ -1221,5 +1283,125 @@ fn a_conflicting_slot_does_not_deny_another_slots_athlete() {
         contact_cells(&cross_country),
         ["", "", "", "contact_conflict"],
         "the athlete whose own bucket disagrees gets the conflict state"
+    );
+}
+
+/// A coach or director whose only address is a consumer mailbox must not be published as
+/// professional; the state must name the address type and the cell must carry the address.
+#[test]
+fn a_personal_only_coach_email_is_not_published_as_professional() {
+    let school = school_id(UsJurisdiction::Wisconsin, "Personal High");
+    let coach = personal_coach_row(
+        &school,
+        "Morgan Personal",
+        Some(Sport::OutdoorTrack),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+        "morgan@gmail.com",
+        "2026-09-20",
+    );
+    let athlete = athlete_of(&school, &[Sport::OutdoorTrack], Gender::Boys);
+    let contacts = school_contacts(&[coach], &school);
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&contacts), &athlete)),
+        [
+            "Morgan Personal",
+            "Head TF Coach",
+            "morgan@gmail.com",
+            "personal_coach_email"
+        ],
+        "a head coach with only a consumer mailbox gets personal_coach_email, not professional"
+    );
+}
+
+/// A personal-only athletic director must not be published as professional either.
+#[test]
+fn a_personal_only_director_email_is_not_published_as_professional() {
+    let school = school_id(UsJurisdiction::Minnesota, "Personal AD High");
+    let director = personal_coach_row(
+        &school,
+        "Lee Adams",
+        None,
+        Gender::Mixed,
+        CoachRole::AthleticDirector,
+        "ladams@outlook.com",
+        "2026-09-20",
+    );
+    let athlete = athlete_of(&school, &[Sport::OutdoorTrack], Gender::Boys);
+    let contacts = school_contacts(&[director], &school);
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&contacts), &athlete)),
+        [
+            "Lee Adams",
+            "Athletic Director",
+            "ladams@outlook.com",
+            "personal_ad_email"
+        ],
+        "an athletic director with only a consumer mailbox gets personal_ad_email, not professional"
+    );
+}
+
+/// When a head coach has both professional and personal, the professional wins;
+/// when only personal exists, the personal state is used.
+#[test]
+fn professional_email_falls_back_to_personal_state_not_to_professional() {
+    let school = school_id(UsJurisdiction::Illinois, "Mixed Mail High");
+    let coach_personal = personal_coach_row(
+        &school,
+        "Dana Voss",
+        Some(Sport::OutdoorTrack),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+        "dvoss@gmail.com",
+        "2026-09-20",
+    );
+    let director_prof = coach_row(
+        &school,
+        "Lee Adams",
+        None,
+        Gender::Mixed,
+        CoachRole::AthleticDirector,
+        Some("ladams@school.test"),
+        "2026-09-20",
+    );
+    let athlete = athlete_of(&school, &[Sport::OutdoorTrack], Gender::Boys);
+
+    let only_personal = school_contacts(std::slice::from_ref(&coach_personal), &school);
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&only_personal), &athlete)),
+        [
+            "Dana Voss",
+            "Head TF Coach",
+            "dvoss@gmail.com",
+            "personal_coach_email"
+        ],
+        "personal-only coach beats director by precedence"
+    );
+
+    let mixed = school_contacts(&[coach_personal, director_prof], &school);
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&mixed), &athlete)),
+        [
+            "Dana Voss",
+            "Head TF Coach",
+            "dvoss@gmail.com",
+            "personal_coach_email"
+        ],
+        "personal-only coach still wins over a professional director"
+    );
+}
+/// The default Options scope must be the national scope (`AllSources`), not the reduced `Core`.
+#[test]
+fn options_default_scope_is_not_core() {
+    let opts = Options::default();
+    assert_ne!(
+        opts.scope.as_str(),
+        "core",
+        "default Options scope must not be Core"
+    );
+    assert_eq!(
+        opts.scope.as_str(),
+        "all_sources",
+        "default Options scope must be AllSources"
     );
 }

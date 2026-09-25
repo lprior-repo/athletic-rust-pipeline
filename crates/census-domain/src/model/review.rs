@@ -12,8 +12,8 @@
 //! * A verdict carries a kind and a rationale but no authority; the merge applies it, and
 //!   `InsufficientEvidence` leaves the case visible rather than resolving it by default.
 
-use serde::{Deserialize, Serialize};
 use super::AthleteCandidateId;
+use serde::{Deserialize, Serialize};
 
 /// One fact the lane is shown about a case.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

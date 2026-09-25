@@ -21,6 +21,7 @@ reqwest = { version = "=0.13.4", default-features = false, features = ["json", "
 # A model's reply is untrusted input: it is read field by field out of a JSON value and validated
 # against the family's rule, never deserialized straight into the row it proposes to produce.
 serde_json = "1"
+sha2 = "0.10"
 thiserror = "2"
 tracing = "0.1"
 

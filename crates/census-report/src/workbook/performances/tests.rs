@@ -35,21 +35,21 @@ fn fixtures() -> Vec<Fixture> {
             athlete: "Ada",
             date: "2026-05-01",
             kind: EventKind::Track400m,
-            mark: Mark::TimeSeconds(CentiSeconds(4855)),
+            mark: Mark::TimeSeconds(CentiSeconds::new(4855)),
         },
         Fixture {
             school: "Abbotsford",
             athlete: "Ada",
             date: "2026-05-08",
             kind: EventKind::Track400m,
-            mark: Mark::TimeSeconds(CentiSeconds(4810)),
+            mark: Mark::TimeSeconds(CentiSeconds::new(4810)),
         },
         Fixture {
             school: "Abbotsford",
             athlete: "Bo",
             date: "2026-05-08",
             kind: EventKind::LongJump,
-            mark: Mark::DistanceMetres(CentiMetres(642)),
+            mark: Mark::DistanceMetres(CentiMetres::new(642)),
         },
         Fixture {
             school: "Colby",
@@ -63,7 +63,7 @@ fn fixtures() -> Vec<Fixture> {
             athlete: "Dee",
             date: "2026-05-08",
             kind: EventKind::Track1600m,
-            mark: Mark::TimeSeconds(CentiSeconds(28123)),
+            mark: Mark::TimeSeconds(CentiSeconds::new(28123)),
         },
     ]
 }
@@ -178,7 +178,7 @@ fn write_sheets(rows: &[PerformanceRow], per_sheet: usize, path: &Path) {
 /// streams (`PerformanceRows`), so this exists to let a test assert the join column by column, and to
 /// compare what the spill hands over against what the whole table holds.
 fn performance_rows(store: &Store, scope: Scope) -> ReportResult<Vec<PerformanceRow>> {
-    let parents = super::join::Parents::read(store, scope)?;
+    let parents = super::join::Parents::read(store, scope, None)?;
     let lookups = parents.lookups();
     let mut rows: Vec<PerformanceRow> = Vec::new();
     store.for_each_merged(Table::Performances, |mut performance| {
@@ -206,6 +206,7 @@ fn the_columns_are_the_objectives_order_and_the_budget_keeps_the_margin() {
     assert_eq!(
         labels,
         [
+            "Canonical Result ID",
             "Athlete ID",
             "Athlete",
             "School",
@@ -316,10 +317,10 @@ fn two_partitions_repeat_the_header_and_split_the_sorted_rows() {
         for row in 1..written {
             seen.push(format!(
                 "{}|{}|{}|{}",
+                text(&range, row, 3),
+                text(&range, row, 7),
                 text(&range, row, 2),
-                text(&range, row, 6),
-                text(&range, row, 1),
-                text(&range, row, 10)
+                text(&range, row, 11)
             ));
         }
     }
@@ -374,17 +375,19 @@ fn the_spilled_rows_match_the_collected_rows_across_range_seams() {
 
     // Two rows a range: five rows over three ranges, so a range seam falls between the two schools
     // and a sheet boundary falls inside a range.
-    let streamed: Vec<PerformanceRow> = PerformanceRows::with_ranges(&store, Scope::Core, 2, 64)
-        .unwrap()
-        .collect::<ReportResult<Vec<_>>>()
-        .unwrap();
+    let streamed: Vec<PerformanceRow> =
+        PerformanceRows::with_ranges(&store, Scope::Core, None, 2, 64)
+            .unwrap()
+            .collect::<ReportResult<Vec<_>>>()
+            .unwrap();
     assert_eq!(streamed, collected, "the spill preserves the sheet order");
 
     // One range holds the whole table: same rows, so the range seams are not what orders them.
-    let single: Vec<PerformanceRow> = PerformanceRows::with_ranges(&store, Scope::Core, 1_000, 64)
-        .unwrap()
-        .collect::<ReportResult<Vec<_>>>()
-        .unwrap();
+    let single: Vec<PerformanceRow> =
+        PerformanceRows::with_ranges(&store, Scope::Core, None, 1_000, 64)
+            .unwrap()
+            .collect::<ReportResult<Vec<_>>>()
+            .unwrap();
     assert_eq!(single, collected, "one range reproduces the same order");
 
     // The streamed rows partition exactly as the collected ones do.
@@ -393,7 +396,7 @@ fn the_spilled_rows_match_the_collected_rows_across_range_seams() {
     write_partitions(
         &mut book,
         &streamed_path,
-        PerformanceRows::with_ranges(&store, Scope::Core, 2, 64).unwrap(),
+        PerformanceRows::with_ranges(&store, Scope::Core, None, 2, 64).unwrap(),
         2,
     )
     .unwrap();
@@ -406,7 +409,7 @@ fn the_spilled_rows_match_the_collected_rows_across_range_seams() {
     let range = streamed_book.worksheet_range("Performances_003").unwrap();
     assert_eq!(range.height(), 2, "the last sheet holds the last row");
     assert_eq!(
-        text(&range, 1, 2),
+        text(&range, 1, 3),
         "Colby",
         "the streamed sheets carry the same rows in the same order"
     );
@@ -480,7 +483,7 @@ fn a_performance_the_store_cannot_join_is_still_written() {
         event: CanonicalEvent::new(&meet, EventKind::Track800m, Gender::Boys, None, None).id,
         meet: meet.clone(),
         date: "2026-04-30".to_string(),
-        mark: Mark::TimeSeconds(CentiSeconds(12050)),
+        mark: Mark::TimeSeconds(CentiSeconds::new(12050)),
         wind_mps: None,
         place: None,
         heat: None,
@@ -512,7 +515,7 @@ fn a_performance_the_store_cannot_join_is_still_written() {
     assert_eq!(book.sheet_names(), vec!["Performances_001".to_string()]);
     let range = book.worksheet_range("Performances_001").unwrap();
     assert_eq!(range.height(), 2);
-    assert_eq!(text(&range, 1, 0), athlete.as_str());
+    assert_eq!(text(&range, 1, 1), athlete.as_str());
 }
 
 #[test]
@@ -522,7 +525,7 @@ fn the_frozen_entry_point_writes_the_partitioned_sheets() {
     let path = dir.path().join("book.xlsx");
 
     let mut book = Workbook::new();
-    write_performance_sheets(&mut book, &path, &store, Scope::Core).unwrap();
+    write_performance_sheets(&mut book, &path, &store, Scope::Core, None).unwrap();
     book.save(&path).unwrap();
 
     // Five rows under the real 1,000,000-row budget are one sheet, and it carries the header the

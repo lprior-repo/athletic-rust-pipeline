@@ -59,14 +59,17 @@ pub fn parse_time(token: &str) -> Option<CentiSeconds> {
     match parts.as_slice() {
         [seconds] => {
             let value: f64 = seconds.parse().ok()?;
-            (value.is_finite() && value >= 0.0).then_some(CentiSeconds::from_seconds_f64(value))
+            (value.is_finite() && value >= 0.0)
+                .then_some(CentiSeconds::try_from_seconds_f64(value))
+                .flatten()
         }
         [minutes, seconds] => {
             let minutes: f64 = minutes.parse().ok()?;
             let seconds: f64 = seconds.parse().ok()?;
             let total = minutes * 60.0 + seconds;
             (minutes >= 0.0 && (0.0..60.0).contains(&seconds) && total.is_finite())
-                .then_some(CentiSeconds::from_seconds_f64(total))
+                .then_some(CentiSeconds::try_from_seconds_f64(total))
+                .flatten()
         }
         [hours, minutes, seconds] => {
             let hours: f64 = hours.parse().ok()?;
@@ -77,7 +80,8 @@ pub fn parse_time(token: &str) -> Option<CentiSeconds> {
                 && (0.0..60.0).contains(&minutes)
                 && (0.0..60.0).contains(&seconds)
                 && total.is_finite())
-            .then_some(CentiSeconds::from_seconds_f64(total))
+            .then_some(CentiSeconds::try_from_seconds_f64(total))
+            .flatten()
         }
         _ => None,
     }
@@ -99,7 +103,7 @@ pub fn parse_field_mark(token: &str) -> Option<Mark> {
         }
         return Some(Mark::FieldImperial {
             feet_mark: token.to_string(),
-            metres: CentiMetres::from_metres_f64(metres),
+            metres: CentiMetres::try_from_metres_f64(metres)?,
         });
     }
     if let Some((feet, rest)) = token.split_once('\'') {
@@ -116,12 +120,14 @@ pub fn parse_field_mark(token: &str) -> Option<Mark> {
         }
         return Some(Mark::FieldImperial {
             feet_mark: token.to_string(),
-            metres: CentiMetres::from_metres_f64(metres),
+            metres: CentiMetres::try_from_metres_f64(metres)?,
         });
     }
     let metres: f64 = token.parse().ok()?;
     (metres.is_finite() && metres > 0.0)
-        .then_some(Mark::DistanceMetres(CentiMetres::from_metres_f64(metres)))
+        .then_some(CentiMetres::try_from_metres_f64(metres))
+        .flatten()
+        .map(Mark::DistanceMetres)
 }
 
 /// Mark plus the wind, heat and points published beside it.

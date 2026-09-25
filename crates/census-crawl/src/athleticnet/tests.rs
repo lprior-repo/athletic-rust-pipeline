@@ -76,15 +76,15 @@ fn a_registry_is_refused_rather_than_guessed_between_states() {
 #[test]
 fn marks_are_read_in_the_form_athleticnet_publishes() {
     let time = parse_mark(&EventKind::Track800m, "1:17.80a").expect("an auto-timed time");
-    assert_eq!(time, (Mark::TimeSeconds(CentiSeconds(7780)), true));
+    assert_eq!(time, (Mark::TimeSeconds(CentiSeconds::new(7780)), true));
     assert_eq!(
         parse_mark(&EventKind::Track3200m, "9:41.23"),
-        Some((Mark::TimeSeconds(CentiSeconds(58123)), false)),
+        Some((Mark::TimeSeconds(CentiSeconds::new(58123)), false)),
         "a bare mark is hand-timed"
     );
     assert_eq!(
         parse_mark(&EventKind::Track100m, "11.32q"),
-        Some((Mark::TimeSeconds(CentiSeconds(1132)), false)),
+        Some((Mark::TimeSeconds(CentiSeconds::new(1132)), false)),
         "a qualifier suffix is not part of the mark"
     );
     assert_eq!(
@@ -92,19 +92,19 @@ fn marks_are_read_in_the_form_athleticnet_publishes() {
         Some((
             Mark::FieldImperial {
                 feet_mark: "5-04.25".to_string(),
-                metres: CentiMetres(163),
+                metres: CentiMetres::new(163),
             },
             false
         ))
     );
     assert_eq!(
         parse_mark(&EventKind::ShotPut, "12.34m"),
-        Some((Mark::DistanceMetres(CentiMetres(1234)), false)),
+        Some((Mark::DistanceMetres(CentiMetres::new(1234)), false)),
         "a metric field mark is metres, not a time"
     );
     assert_eq!(
         parse_mark(&EventKind::Decathlon, "3,456"),
-        Some((Mark::Points(CentiPoints(345600)), false))
+        Some((Mark::Points(CentiPoints::new(345600)), false))
     );
 }
 

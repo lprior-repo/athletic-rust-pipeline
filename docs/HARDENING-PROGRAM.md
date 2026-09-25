@@ -17,19 +17,9 @@ Skills in force for this program: `holzman-rust` (Power of Ten + PLUS performanc
 
 ## 1. What the workspace is
 
-Nine crates, one workspace:
-
-| Crate | Role | Production lines | Files |
-|---|---|---|---|
-| `athleticnet-browser` | Chromium transport: CDP session management, bounded tab pool, challenge state, request/response identity | — | — |
-| `census-domain` | Pure canonical model: newtypes, error taxonomy, identity policy, mark arithmetic | — | — |
-| `census-store` | Fjall-backed observation store: twelve tables, merge, snapshot, index write paths | — | — |
-| `census-crawl` | Source adapters: athleticnet, hytek, milesplit, ohsaa, mshsl, ihsa, tfrrs, athleticlive, plain_names, ks, wiaa, wiaa_results, ciac, mpa, riil | — | — |
-| `census-service` | Restate services, CLI, workbook/report/bests/projection, browser session transport | — | — |
-| `census-report` | Report surfaces | — | — |
-| `census-review` | Review surfaces | — | — |
-| `census-reconcile` | Reconciliation surfaces | — | — |
-| `xtask` | Developer tooling: gates, scan, contract, seams, integrity, census reporting, g1 audit | — | — |
+The nine workspace crates — `athleticnet-browser`, `census-domain`, `census-store`, `census-crawl`,
+`census-reconcile`, `census-review`, `census-report`, `census-service`, `xtask` — are mapped in
+`docs/architecture.md` §1.
 
 (historical: the root `athletic-rust-pipeline` package that used to sit at the workspace root was deleted 2026-09-23 once the census path owned its work — it previously carried the Athletic.net acquisition engine: HTTP + chromiumoxide browser runtime, rankings/search workers, XLSX matching/verification, CLI workflows.)
 

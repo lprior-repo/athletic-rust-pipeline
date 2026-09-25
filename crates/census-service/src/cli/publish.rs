@@ -168,9 +168,9 @@ pub(super) struct WorkbookArgs {
     /// Cap the per-athlete best-mark sheet at N rows.
     #[arg(long)]
     limit: Option<usize>,
-    /// Reduce the best-results sheet over every source rather than the core scope alone.
+    /// Reduce the best-results sheet over the core scope instead of every approved source.
     #[arg(long)]
-    all_sources: bool,
+    core: bool,
     /// Ingress origin of the local Restate server. The local census deployment when omitted.
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
@@ -185,7 +185,7 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
                 grad_year: Some(grad_year),
                 out: args.out.clone(),
                 limit: args.limit,
-                scope: scope_of(args.all_sources),
+                scope: scope_of(args.core),
             };
             let store = Store::open(root)?;
             let path = workbook::build(&store, &options).context("building the census workbook")?;
@@ -196,7 +196,7 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
             let request = WorkbookRequest {
                 grad_year: Some(grad_year),
                 limit: args.limit,
-                scope: Some(scope_of(args.all_sources).as_str().to_string()),
+                scope: Some(scope_of(args.core).as_str().to_string()),
                 out: args
                     .out
                     .as_ref()

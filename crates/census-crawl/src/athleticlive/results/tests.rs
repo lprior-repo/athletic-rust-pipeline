@@ -173,7 +173,7 @@ fn event_document_rows_carry_the_published_shapes() {
     assert_eq!(xc.rows[0].mark.as_deref(), Some("18:20.7"));
     assert_eq!(
         xc.rows[0].canonical_mark(&EventKind::CrossCountry),
-        Some(Mark::TimeSeconds(CentiSeconds(110070)))
+        Some(Mark::TimeSeconds(CentiSeconds::new(110070)))
     );
     assert_eq!(xc.rows[0].splits.len(), 3, "the cross-country split list");
 
@@ -196,7 +196,7 @@ fn event_document_rows_carry_the_published_shapes() {
         hj.rows[0].canonical_mark(&EventKind::HighJump),
         Some(Mark::FieldImperial {
             feet_mark: "5-02.00".to_string(),
-            metres: CentiMetres(157),
+            metres: CentiMetres::new(157),
         })
     );
     // `NH` publishes `im: 0`: the athlete competed, and there is no mark to mint.
@@ -228,7 +228,7 @@ fn both_mark_channels_agree_on_every_captured_row() {
             panic!("row {:?} mints no time mark", row.place());
         };
         assert!(
-            (minted.0 - seconds.0).abs() < 1,
+            (minted.value() - seconds.value()).abs() < 1,
             "{published} parsed {seconds} but the integer channel minted {minted}"
         );
         time_rows += 1;
@@ -249,7 +249,12 @@ fn both_mark_channels_agree_on_every_captured_row() {
             .and_then(|value| value.as_f64())
             .expect("im publishes");
         assert!(
-            (metres.0 - CentiMetres::from_metres_f64(micros / 1_000_000.0).0).abs() < 1,
+            (metres.value()
+                - CentiMetres::try_from_metres_f64(micros / 1_000_000.0)
+                    .expect("in range")
+                    .value())
+            .abs()
+                < 1,
             "{} published {metres} m against {micros} µm",
             row.mark.as_deref().unwrap_or_default()
         );
@@ -304,7 +309,7 @@ async fn collect_maps_a_captured_state_final_into_the_canonical_tables() {
         .iter()
         .find(|row| row.place == Some(1))
         .expect("one row is placed first");
-    assert_eq!(winner.mark, Mark::TimeSeconds(CentiSeconds(110070)));
+    assert_eq!(winner.mark, Mark::TimeSeconds(CentiSeconds::new(110070)));
     assert!(
         winner.source_key.starts_with("athleticlive:2150205:"),
         "the performance key is the event's: {}",
@@ -655,7 +660,7 @@ async fn a_standings_capture_folds_into_the_event_that_published_its_run_key() {
         .expect("the standings row is the one the payload placed 26th");
     assert_eq!(
         miriam.mark,
-        Mark::TimeSeconds(CentiSeconds(122570)),
+        Mark::TimeSeconds(CentiSeconds::new(122570)),
         "for times the reader takes the raw channel, `20:25.700`"
     );
     assert_eq!(

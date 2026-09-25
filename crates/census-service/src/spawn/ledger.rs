@@ -64,11 +64,20 @@ impl Ledger {
 
     /// Record what a drain's deadline found still in flight.
     ///
-    /// `remaining` and `timed_out` carry the same number: how many units the deadline reached,
-    /// which is what the abort that follows is about to reclaim.
+    /// `timed_out` carries the count at the deadline — what the abort that follows is about to
+    /// reclaim. `remaining` is set to the same value here but may be updated after reaping
+    /// with [`Ledger::set_remaining`]; only then does it reflect what the abort could not reclaim.
     pub(super) fn note_deadline(&mut self, remaining: u64) {
         self.report.remaining = remaining;
         bump(&mut self.report.timed_out, remaining);
+    }
+
+    /// Update `remaining` after the reaping phase.
+    ///
+    /// Called after `try_join_next` has drained everything that completed in response to the abort;
+    /// `timed_out` stays as set by [`Ledger::note_deadline`].
+    pub(super) fn set_remaining(&mut self, remaining: u64) {
+        self.report.remaining = remaining;
     }
 
     /// The counters as they stand.

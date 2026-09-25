@@ -70,9 +70,13 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
         store.append(Table::Events, &event).unwrap();
         for mark in marks {
             let value = if matches!(kind, EventKind::Track400m) {
-                Mark::TimeSeconds(CentiSeconds::from_seconds_f64(*mark))
+                Mark::TimeSeconds(
+                    CentiSeconds::try_from_seconds_f64(*mark).expect("fixture is in range"),
+                )
             } else {
-                Mark::DistanceMetres(CentiMetres::from_metres_f64(*mark))
+                Mark::DistanceMetres(
+                    CentiMetres::try_from_metres_f64(*mark).expect("fixture is in range"),
+                )
             };
             let source_key = format!("test:{kind:?}:{mark}");
             let performance = CanonicalPerformance {
@@ -106,10 +110,10 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
     let mut book: Xlsx<_> = open_workbook(&path).unwrap();
     let names = book.sheet_names().to_vec();
 
-    // The objective's sheets come first, in its own order (§50 Athletes, §51 PRs, §52 Performances_001,
-    // §53 Coaches, §54 Schools/Meets/Sources/Coverage/Conflicts/Review/Run Metrics), then every legacy
-    // census sheet the objective does not supersede, ending with the renamed `Meets summary`.
-    let objective = [
+    // The published list, in the order it is written; the module documentation of
+    // `census_report::workbook` is the authority. The legacy census views are superseded because
+    // their numbers are published by `Coverage`, `Sources`, `Run Metrics` and `PRs`.
+    let published = [
         "Athletes",
         "PRs",
         "Performances_001",
@@ -122,22 +126,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
         "Review",
         "Run Metrics",
     ];
-    let legacy = [
-        "Goal & method",
-        "Summary",
-        "By state - core",
-        "By state - all sources",
-        "Athletic.net marginal",
-        "Best results",
-        "Meets summary",
-        "Evidence mix",
-        "Method notes",
-    ];
-    let expected: Vec<String> = objective
-        .iter()
-        .chain(legacy.iter())
-        .map(|name| (*name).to_string())
-        .collect();
+    let expected: Vec<String> = published.iter().map(|name| (*name).to_string()).collect();
     assert_eq!(names, expected, "the published sheet list, in order");
     assert_eq!(
         names.len(),
@@ -171,12 +160,14 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
     assert_eq!(jump.best_mark, "6.42 m");
     assert!(jump.place.is_none());
 
-    let range = book.worksheet_range("Best results").unwrap();
+    // The best-mark reduction reaches the workbook on the `PRs` sheet, one row per athlete/event;
+    // the text sidecars carry the same reduction.
+    let range = book.worksheet_range("PRs").unwrap();
     assert_eq!(
         range.get_value((0, 0)).map(|v| v.to_string()),
-        Some("Athlete".to_string())
+        Some("Athlete ID".to_string())
     );
-    let header: Vec<String> = (0..16)
+    let header: Vec<String> = (0..19)
         .map(|col| {
             range
                 .get_value((0, col))
@@ -184,6 +175,6 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
                 .unwrap_or_default()
         })
         .collect();
-    assert!(header.contains(&"Best mark".to_string()));
-    assert!(header.contains(&"Profile URL".to_string()));
+    assert!(header.contains(&"Calculated PR".to_string()));
+    assert!(header.contains(&"Result URL".to_string()));
 }

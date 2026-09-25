@@ -6,12 +6,43 @@ use restate_sdk::prelude::*;
 
 use crate::spawn::Spawner;
 use census_store::clock::Clock;
-use census_store::Store;
-use census_store::Table;
+use census_store::{Application, Store, Table};
 
-use super::jobs::append_observations;
+use super::jobs::apply_observations;
 use super::wire::ingest::{IngestReply, IngestRequest, IngestState, WindowRequest};
 use super::{blocking, job_error, resolve_table, JobError, KEY_STATE};
+
+/// The digest one request's payload hashes to: the target table's name and every row, canonically.
+///
+/// The digest is the payload half of a receipt; the operation id the caller sends is the identity
+/// half. They are deliberately not derived from one another: an id derived from the payload cannot
+/// notice that the payload changed under it, which is the case a re-used operation id has to fail
+/// on rather than append.
+pub(super) fn payload_digest(table: Table, rows: &[Value]) -> Result<String, HandlerError> {
+    let mut hasher = Sha256::new();
+    hasher.update(table.file().as_bytes());
+    for row in rows {
+        hasher.update(
+            serde_json::to_vec(row).map_err(|source| JobError::Terminal {
+                message: format!("serializing observation row for the payload digest: {source}"),
+            })?,
+        );
+    }
+    Ok(hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect())
+}
+
+/// One posted operation, as the handler hands it to the store: what to write, under which name, and
+/// the digest of the payload that name covers.
+struct Posted {
+    table: Table,
+    rows: Vec<Value>,
+    operation: String,
+    digest: String,
+}
 
 /// `Ingest`: durable per-endpoint cursor and window bookkeeping, plus the append itself.
 #[derive(Clone)]
@@ -91,114 +122,99 @@ impl Ingest {
         let table = resolve_table(&request.table)?;
         let store = Arc::clone(&self.store);
         let region = Arc::clone(&self.region);
+        let operation = request.operation_id;
         let rows = request.rows;
         // The date is journaled, not read: `ctx.set` below compares the serialized payload on
         // replay, so a wall-clock read that has moved on to the next day would fail the invocation
         // with a journal mismatch instead of replaying it.
         let today = super::journaled_today(&ctx, &self.clock).await?;
         let mut state = self.load_object(&ctx).await?;
-        // Idempotency: derive a receipt from table + rows, then check store-side before appending.
-        if let Some(receipt) = self.check_idempotency(table, &state, &rows, &today)? {
-            let appended = self.do_append(&ctx, store, region, table, rows).await?;
-            Ingest::update_ingest_state(
-                &mut state,
-                appended,
-                receipt,
-                request.cursor.clone(),
-                today,
+        let digest = payload_digest(table, &rows)?;
+        // Whether this request is new work or a replay of work the store already holds is the
+        // store's answer: its receipt commits with the rows, so an invocation that never heard its
+        // own acknowledgement finds the receipt standing and appends nothing. The same operation id
+        // offered with a different payload is refused there, terminally.
+        let application = self
+            .apply(
                 &ctx,
-            );
-            return Ok(Json(IngestReply {
-                endpoint: state.endpoint,
-                appended,
-                total_observations: state.total_observations,
-                cursor: state.cursor,
-                last_appended_at: state.last_appended_at,
-            }));
-        }
-
-        // Receipt was None — operation already seen; return current state as no-op.
+                store,
+                region,
+                Posted {
+                    table,
+                    rows,
+                    operation: operation.clone(),
+                    digest,
+                },
+            )
+            .await?;
+        let appended = application.appended();
+        Ingest::update_ingest_state(
+            &mut state,
+            appended,
+            operation,
+            request.cursor.clone(),
+            today,
+            &ctx,
+        );
         Ok(Json(IngestReply {
             endpoint: state.endpoint,
-            appended: 0,
+            appended,
             total_observations: state.total_observations,
             cursor: state.cursor,
             last_appended_at: state.last_appended_at,
         }))
     }
 
-    /// Derive an idempotency receipt from table + rows. Returns `Some(receipt)` when the
-    /// operation is new and can be appended, or `None` when it's already been seen.
-    fn check_idempotency(
-        &self,
-        table: Table,
-        state: &IngestState,
-        rows: &[Value],
-        today: &str,
-    ) -> Result<Option<String>, HandlerError> {
-        let mut hasher = Sha256::new();
-        hasher.update(table.file().as_bytes());
-        for row in rows {
-            hasher.update(
-                serde_json::to_vec(row).map_err(|source| JobError::Terminal {
-                    message: format!("serializing observation row for idempotency hash: {source}"),
-                })?,
-            );
-        }
-        let payload_digest: String = hasher
-            .finalize()
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect();
-        let receipt = format!(
-            "{endpoint}:{today}:{table}:{payload_digest}",
-            endpoint = state.endpoint,
-            table = table.file()
-        );
-        if state.seen_operations.contains(&receipt) {
-            tracing::debug!(
-                endpoint = state.endpoint.as_str(),
-                "idempotent replay of recorded content; no-op"
-            );
-            return Ok(None);
-        }
-        Ok(Some(receipt))
-    }
-
-    /// Append rows to the store and return the count. State update is done by [`Self::update_ingest_state`].
-    async fn do_append(
+    /// Apply one operation to the store: its rows and its receipt, in one commit.
+    ///
+    /// The step's value is journaled as the [`Application`] the store answered, so a replay that
+    /// never re-executes the closure reads back which of the two it was — while a replay that *does*
+    /// re-execute it, because the first attempt died before the journal recorded it, is answered by
+    /// the store's own receipt.
+    async fn apply(
         &self,
         ctx: &ObjectContext<'_>,
         store: Arc<Store>,
         region: Arc<Spawner>,
-        table: Table,
-        rows: Vec<Value>,
-    ) -> Result<u64, HandlerError> {
-        ctx.run(move || async move {
-            blocking(region, move || append_observations(&store, table, &rows))
-                .await
-                .and_then(|count| {
-                    u64::try_from(count).map_err(|_| JobError::Terminal {
-                        message: format!("appended row count {count} does not fit u64"),
-                    })
+        posted: Posted,
+    ) -> Result<Application, HandlerError> {
+        let Posted {
+            table,
+            rows,
+            operation,
+            digest,
+        } = posted;
+        let Json(application) = ctx
+            .run(move || async move {
+                blocking(region, move || {
+                    apply_observations(&store, table, &rows, &operation, &digest)
                 })
+                .await
+                .map(Json)
                 .map_err(job_error)
-        })
-        .await
-        .map_err(HandlerError::from)
+            })
+            .await?;
+        Ok(application)
     }
 
-    /// Update ingest state: counters, cursor, receipt, timestamp. Must follow do_append.
+    /// Update ingest state: counters, cursor, the operation just applied, timestamp. Must follow
+    /// [`Self::apply`].
+    ///
+    /// The operation list is this object's own view for an operator reading `state`; the store's
+    /// receipt is what decides a repeat, so a replay that appended nothing still names the operation
+    /// it replayed rather than adding a second copy of it.
     fn update_ingest_state(
         state: &mut IngestState,
         appended: u64,
-        receipt: String,
+        operation: String,
         cursor: Option<String>,
         today: String,
         ctx: &ObjectContext<'_>,
     ) {
         state.total_observations = state.total_observations.saturating_add(appended);
-        state.seen_operations.push(receipt);
+        if !state.seen_operations.contains(&operation) {
+            state.seen_operations.push(operation);
+        }
         if cursor.is_some() {
             state.cursor = cursor;
         }

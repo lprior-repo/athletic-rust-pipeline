@@ -18,13 +18,12 @@ use anyhow::{bail, Result};
 use clap::Args;
 use restate_sdk::prelude::Json;
 
-use census_report::report::Scope;
 use census_service::census::seal::{self, SealOutcome};
 use census_service::census::{RetainedFindings, SealCounts, SealedCensus};
 use census_service::restate_services::{CensusIngressClient, SealReply, SealRequest};
 use census_store::Store;
 
-use super::{Cli, Route};
+use super::{scope_of, Cli, Route};
 use census_service::ingress;
 
 /// `census-service seal`
@@ -37,9 +36,9 @@ pub(super) struct SealArgs {
     /// Graduation year of the cohort being certified.
     #[arg(long, default_value_t = 2027)]
     grad_year: i16,
-    /// Certify the all-sources scope instead of the core scope.
+    /// Certify the core scope instead of every approved source.
     #[arg(long)]
-    all_sources: bool,
+    core: bool,
     /// The workbook to certify. Defaults to the newest `out/*.xlsx`.
     #[arg(long)]
     workbook: Option<PathBuf>,
@@ -90,7 +89,7 @@ pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
 fn store_request(args: &SealArgs) -> seal::SealRequest {
     seal::SealRequest {
         grad_year: args.grad_year,
-        scope: scope_of(args.all_sources),
+        scope: scope_of(args.core),
         workbook: args.workbook.clone(),
         write: args.write,
         journal: None,
@@ -102,7 +101,7 @@ fn store_request(args: &SealArgs) -> seal::SealRequest {
 fn wire_request(args: &SealArgs) -> SealRequest {
     SealRequest {
         grad_year: args.grad_year,
-        all_sources: args.all_sources,
+        all_sources: !args.core,
         workbook: args
             .workbook
             .as_ref()
@@ -111,15 +110,6 @@ fn wire_request(args: &SealArgs) -> SealRequest {
         season: args.season,
         revision: args.revision,
         source_objects: args.source_objects.clone(),
-    }
-}
-
-/// The scope a `--all-sources` flag selects.
-fn scope_of(all_sources: bool) -> Scope {
-    if all_sources {
-        Scope::AllSources
-    } else {
-        Scope::Core
     }
 }
 

@@ -1,6 +1,6 @@
 # Operations runbook
 
-Three processes, and only one of them writes the canonical store. `census-service` is the batch CLI
+Three processes: `census-service` is the batch CLI
 (acquisition, into the staging store); `census-serve` is the same adapters, store and reports exposed
 as a Restate endpoint; `restate-server` is the node that holds the journal, the ingress and the admin
 API. A crash of the endpoint resumes at the last recorded step because the journal lives in the node,
@@ -56,9 +56,7 @@ repair path — `index` re-deriving the table from the same rows *is* what keeps
 current season's result pages. No step re-reads the full historical corpus: every fetch is
 content-hash cached, per-host paced (2 rps) and robots-checked. `deploy/systemd/census-service-collect.service`
 `.timer` runs this chain weekly, appending `"$bin" --store "$out" fjall-stats` after `workbook`, against the
-staging store at `/var/lib/census-service-staging`: the canonical store is written
-only by an endpoint deployment, so a collector run can neither race the national run for the Fjall
-writer lock nor write past the journal. Routing acquisition through the `Ingest` service is the
+staging store at `/var/lib/census-service-staging`; the staging store is separate from the canonical store. Routing acquisition through the `Ingest` service is the
 replacement for the staging hop, and the service drives it: the meet-index stage of a jurisdiction run
 runs each planned source's walk with a recording and posts what it recorded through that source's
 `Ingest` object, keyed `<slug>_<state>` and filed under the ISO week it was read (§3.1.1 of
@@ -209,7 +207,10 @@ Name every key that query answers, or item 2 stays `unmeasured` instead of zero.
 terminal once it has accepted an observation **or** declared a window complete: the second is the
 object's own record that its walk finished — `complete_window` runs only after every batch the walk
 produced landed, so no window closes over rows that were not appended — and a resumed walk closes one
-while posting nothing, because its rows were already durable from an earlier pass. A walk that
+while posting nothing, because its rows were already durable from an earlier pass — and a replayed
+batch now appends nothing either way: the store records the operation id it applied in the same commit
+as the rows (FJALL_SCHEMA.md §2, *Receipts*), so a walk whose acknowledgement was lost cannot append
+the same page twice. A walk that
 finished is not work still owed, so a fully acquired source never reads as `owed`. What does read
 `owed` is an object with neither an observation nor a window: a walk that never finished, which the
 seal refuses over by name — the honest reading, and the one that keeps the pressure on the finding

@@ -1,4 +1,5 @@
-# Durability harness — fifteen failure-injection scenarios
+
+# Durability harness — sixteen failure-injection scenarios
 
 Run with `tools/durability/run.sh`.  Each scenario is a self-contained script under
 `tools/durability/scenario-NN-*.sh` (where NN is zero-padded).  The runner executes every
@@ -23,8 +24,9 @@ to each scenario script.  Scenario scripts **must not** edit Rust sources, `Carg
 under `crates/`.  They may create and destroy directories under `$SCRATCH_STORE`.
 ## Setup: obtaining the pinned Restate server
 
-The census lanes are qualified against Restate 1.7.10.  To run scenarios that depend on a
-live Restate node (scenarios 01–08, 12, 15, 16):
+The census lanes are qualified against Restate 1.7.10.  Scenarios 09 and 10 (disk-full testing)
+do not require a running Restate node.  All other scenarios that check Restate connectivity
+(01, 03, 06, 15) skip gracefully when it is unavailable.
 
 1. **Download** the pinned build from the Restate releases page, checking it against the published
    digest. The asset for x86-64 Linux is the musl tarball, and the binary sits one directory deep:
@@ -85,54 +87,25 @@ exists, the scenario is SKIPPED with the precise missing seam named.
 
 ## Scenario table
 
-| # | Name | What it breaks | Pass observable |
+| # | Script | Status | Notes |
 |---|---|---|---|
-| 1 | endpoint-kill-before | SIGKILL endpoint before any HTTP request to Restate | The CLI command exits non-zero with a connection-refused error; re-run with a fresh invocation produces an identical result. Fjall effect count stays exactly 0 (no partial writes). |
-| 2 | endpoint-kill-during | SIGKILL endpoint while a Restate `ctx.run` is executing | Re-invocation under the same key attaches to the existing invocation; the `NationalReport` shared handler returns the same `NationalReport` with the same `jurisdiction_summaries` count. Fjall effect count stays 1. |
-| 3 | endpoint-kill-after-response | SIGKILL after the HTTP response body is fully written but before the TCP FIN | No duplicate effect: Fjall effect count stays 1; the report JSON is byte-identical to a clean run. |
-| 4 | endpoint-kill-after-fjall-commit | SIGKILL immediately after `fdatasync` but before Restate step acknowledges | No duplicate evidence: `census-service report --print` shows exactly one set of athlete observations; no doubled `observations` in `fjall-stats`. |
-| 5 | endpoint-kill-before-step-complete | SIGKILL at the last `ctx.run` await, before the step returns | Re-invocation replays from the journal; identical final artifacts (same `NationalReport` JSON, same `fjall-stats` observation counts). |
-| 6 | restate-kill-during-fanout | SIGKILL Restate node mid-`NationalCensus/run` fanout across jurisdictions | After restart, every child `JurisdictionCensus` invocation resumes its last stage (not recreated from scratch); the run completes with `jurisdictions done` equal to the original request. |
-| 7 | reboot-with-full-census | Reboot the host (simulated by killing Restate + endpoint simultaneously) during a 20-source `NationalCensus` with AI reviews, cooldown timers, and delayed retries | After full recovery (Restate restart + endpoint restart), the `NationalReport` shared handler returns a report with the same `jurisdiction_summaries` count; Fjall effect count matches the pre-crash count. |
-| 8 | rolling-upgrade-v1-v2 | Start v1, launch a long `JurisdictionCensus`, then start v2 alongside v1 | The old invocation continues on v1 (same `JurisdictionReport` result); new invocations use v2; after draining v1, the final result is identical to a clean v2 run. |
-| 9 | http-error-taxonomy | Inject 429+Retry-After, 403, 404, 500, timeout, connection reset, invalid HTML, corrupted JSON, oversized bodies via a local proxy | Each injected error produces the exact terminal error taxonomy the crawl lane defines (e.g., `CrawlError::RateLimited` for 429, `CrawlError::Forbidden` for 403, etc.); no retry exhaust leaks into the report. |
-| 10 | no-duplicate-evidence | Kill endpoint after Fjall commit but before Restate acknowledgment | Post-recovery: `census-service report --print` shows exactly one set of observations; `fjall-stats` reports the same counts as the pre-crash run. No duplicate athlete rows. |
-| 11 | domain-dedup | Submit the same logical operation twice via two different ingress requests | The domain operation id deduplicates the second submission: the `NationalReport` is identical to a single invocation, even after Restate's 180-day idempotency retention expires (verified via a mock timestamp). |
-| 12 | global-budget-across-versions | Run two immutable endpoint versions simultaneously; each submits against the same source | Both versions enforce one global remote-origin budget: the total number of concurrent source fetches across both versions never exceeds `--max-concurrent`; no source is throttled by one version's load affecting the other. |
-| 13 | disk-full-fjall | Force disk-full on the Fjall volume via a tmpfs mount (~50 MB); write until `ENOSPC`, verified via `trap` cleanup | The Fjall write fails with a storage error (not a silent completion); the pipeline state remains `Discovering` or `Acquiring` with no phantom `Complete` phase. Restate journal is intact. |
-| 14 | disk-full-restate | Force disk-full on the Restate volume via a tmpfs mount (~50 MB); write until `ENOSPC`, verified via `trap` cleanup | The Restate worker fails to persist the bifrost journal; no invocation silently completes; the admin API reports paused invocations (not terminal failures). |
-| 15 | parent-exit-on-http-kill | Kill the endpoint HTTP server task without terminating the parent supervisor process (requires `ATHLETIC_FAULT_HTTP_EXIT` env var seam) | The parent process (the census-serve binary) exits with a nonzero status; systemd's `Restart=on-failure` picks it up. Verified by checking the process tree: the supervisor PID is gone after the HTTP task dies. |
-| 16 | cross-midnight-replay | Start a long workflow; advance the system clock forward by 24 hours; let the workflow complete | All journaled timestamps in the Fjall `journal` keyspace are byte-identical to what they would have been without the clock advance; the `NationalReport` is semantically identical. |
-| 17 | ai-review-failures | Inject AI timeouts, malformed JSON responses, hallucinated case ids, conflicting verdicts, and a proposed match across a deterministic contradiction | Each failure mode produces the exact terminal error the review lane defines; the seal refuses with the appropriate `RetainedFindings` item named; no hallucinated case id leaks into the canonical entities. |
-| 18 | seal-refuses-incomplete | Leave one jurisdiction incomplete, one source object unresolved, and one cohort decision unresolved | The seal command exits non-zero with `SealError::ItemUnmet` naming `JurisdictionSweepsTerminal`, `SourceObjectsTerminal`, and `CohortDecisionsTerminal` respectively (one at a time). Each refusal names the exact unmet item and its detail count. |
-| 19 | full-backup-restore | Back up both Restate state and Fjall store; destroy both working directories; restore from backups; resume an unfinished workflow | After resume, the `NationalReport` shared handler returns a report identical to the pre-backup run (same `jurisdiction_summaries`, same `failures` count). The Fjall store's `fjall-stats` match the backup manifest. |
-| 20 | golden-census-determinism | Run a full small-state golden census from a fresh store twice; compare all artifacts | The two runs produce byte-identical canonical JSON reports, the workbook has identical semantic content (sheet names, row counts, seal digest), identical work receipts, and identical seal digest prefix (`census-seal-v4` or later). |
+| 1 | `scenario-01-endpoint-kill.sh` | Partial | Sub 1 tests CLI connection-refused when endpoint is down; sub 2-5 SKIPPED (seam verified by `restate_kill_restart.rs`) |
+| 2 | `scenario-02-restate-kill-during-fanout.sh` | SKIPPED | No Restate kill/restore seam at CLI level; verified by `restate_kill_restart.rs` |
+| 3 | `scenario-03-reboot-with-full-census.sh` | SKIPPED | Requires active NationalCensus workflow; uses scratch base-dir only |
+| 4 | `scenario-04-rolling-upgrade.sh` | SKIPPED | No dual-version endpoint registration seam |
+| 5 | `scenario-05-http-error-taxonomy.sh` | SKIPPED | No HTTP error-injection proxy seam in chromiumoxide browser transport |
+| 6 | `scenario-06-no-duplicate-evidence.sh` | SKIPPED | Requires active Restate invocations to query admin API |
+| 7 | `scenario-07-domain-dedup.sh` | SKIPPED | Dedup is a Restate-level property, not observable via CLI |
+| 8 | `scenario-08-global-budget.sh` | SKIPPED | `--max-concurrent` is per-process; two versions cannot coexist |
+| 9 | `scenario-09-disk-full-fjall.sh` | Executable | tmpfs mount (~50 MB) in scratch directory; exercises Fjall write path |
+| 10 | `scenario-10-disk-full-restate.sh` | Executable | tmpfs mount (~50 MB) in scratch directory; exercises Restate bifrost journal |
+| 11 | `scenario-11-parent-exit.sh` | SKIPPED | Requires `ATHLETIC_FAULT_HTTP_EXIT` env var seam (not implemented) |
+| 12 | `scenario-12-cross-midnight.sh` | SKIPPED | No clock-manipulation seam in census-service |
+| 13 | `scenario-13-ai-review-failures.sh` | SKIPPED | No AI review fault-injection seam |
+| 14 | `scenario-14-seal-refuses.sh` | Partial | Tests seal refusal on empty store; durable-run items SKIPPED without active Restate run |
+| 15 | `scenario-15-full-backup-restore.sh` | SKIPPED | No pre-backup reference NationalReport; uses scratch base-dir only; covered by `backup_restore.rs` |
+| 16 | `scenario-16-golden-census-determinism.sh` | SKIPPED | Empty stores produce tautological seal output; covered by `backup_restore.rs` |
 
-### Mapping: scenarios to scripts
-
-The fifteen scenario numbers in the task description map to the scripts below.  Some task
-scenarios (e.g. scenario 1 with five sub-variants) are collapsed into a single script with
-multiple fault points.  Where a seam does not exist, the script prints `SKIPPED` with the
-specific missing seam named.
-
-| Task scenario | Script | Notes |
-|---|---|---|
-| 1 (five kill points) | `scenario-01-endpoint-kill.sh` | Five sub-scenarios: before, during, after-response, after-fjall-commit, before-step-complete |
-| 2 | `scenario-02-restate-kill-during-fanout.sh` | Requires Restate kill/restore seam |
-| 3 | `scenario-03-reboot-with-full-census.sh` | Simulated reboot via simultaneous SIGKILL |
-| 4 | `scenario-04-rolling-upgrade.sh` | Requires dual-version endpoint seam |
-| 5 | `scenario-05-http-error-taxonomy.sh` | Requires HTTP error-injection proxy |
-| 6 | `scenario-06-no-duplicate-evidence.sh` | Kill after Fjall commit, before Restate ack |
-| 7 | `scenario-07-domain-dedup.sh` | Requires domain id dedup verification |
-| 8 | `scenario-08-global-budget.sh` | Requires two concurrent endpoint versions |
-| 9 | `scenario-09-disk-full-fjall.sh` | Uses tmpfs mount (~50 MB) to force ENOSPC on Fjall volume |
-| 10 | `scenario-10-disk-full-restate.sh` | Uses tmpfs mount (~50 MB) to force ENOSPC on Restate volume |
-| 11 | `scenario-11-parent-exit.sh` | Requires `ATHLETIC_FAULT_HTTP_EXIT` env var seam (not yet implemented) |
-| 12 | `scenario-12-cross-midnight.sh` | Requires clock manipulation |
-| 13 | `scenario-13-ai-review-failures.sh` | Requires AI review injection |
-| 14 | `scenario-14-seal-refuses.sh` | Requires incomplete-state seal verification |
-| 15 | `scenario-15-full-backup-restore.sh` | Requires full backup/restore of both stores |
-| — | `scenario-16-golden-census-determinism.sh` | Two fresh runs, identical artifacts |
 
 ## Design principles
 
@@ -147,6 +120,8 @@ specific missing seam named.
 5. **No Rust edits.**  Scripts may create directories, kill processes, inject errors via
    environment variables or configuration, but must not modify `crates/`, `Cargo.toml`, or
    any `.rs` file.
+6. **Scratch-only.**  All file operations use `$SCRATCH_STORE` or `mktemp -d`. No production
+   directories (`/var/lib`, `/etc/census-service`, etc.) are ever read, written, or deleted.
 
 ## Running
 
@@ -170,5 +145,5 @@ tools/durability/run.sh scenario-01-endpoint-kill
 | Exit code | Meaning |
 |---|---|
 | 0 | All scenarios PASS |
-| 1 | One or more scenarios FAIL |
+| 1 | One or more scenarios FAIL or SKIPPED (unverified seams) |
 | 2 | Invalid arguments or missing required tool |

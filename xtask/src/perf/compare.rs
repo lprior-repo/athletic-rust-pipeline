@@ -52,6 +52,11 @@ pub fn check_throughput(
     current_data: &BTreeMap<String, GroupMeasurement>,
     tolerance: f64,
 ) -> Result<()> {
+    // A current run that produced no groups means nothing was measured; refuse the gate.
+    if current_data.is_empty() {
+        bail!("perf check: current run produced no groups; cannot compare against baseline");
+    }
+
     let mut max_delta: f64 = 0.0;
     let mut failures = Vec::new();
 
@@ -65,22 +70,53 @@ pub fn check_throughput(
         }
     }
 
+    // Every baseline group must appear in the current run; a missing group means the comparison
+    // has blind spots and must refuse rather than silently pass.
+    for baseline_group in baseline.groups.keys() {
+        if !current_data.contains_key(baseline_group) {
+            failures.push(format!(
+                "{baseline_group}: present in baseline but absent from current run"
+            ));
+        }
+    }
+
     if !failures.is_empty() {
-        println!(
-            "\nperf check: {} group(s) regressed past tolerance",
-            failures.len()
-        );
+        println!("\nperf check: {} issue(s) detected", failures.len());
         for f in &failures {
             println!("  {f}");
         }
         bail!(
-            "perf check: regression detected (max delta {:.2}%)",
+            "perf check: regression or missing data detected (max delta {:.2}%)",
             max_delta * 100.0
         );
     }
 
     println!("\nperf check: no regression detected");
     Ok(())
+}
+
+/// Compute the throughput delta between baseline and current values.
+/// Returns `Err(failure_msg)` if either value is non-finite, `Ok(None)` if
+/// either value is `None` (throughput not declared), and `Ok(Some((delta, old, new)))`
+/// when both values are present and finite.
+fn compute_delta(
+    group: &str,
+    baseline: Option<f64>,
+    current: Option<f64>,
+) -> Result<Option<(f64, f64, f64)>, String> {
+    let (Some(old), Some(new)) = (baseline, current) else {
+        return Ok(None);
+    };
+    if !old.is_finite() {
+        return Err(format!(
+            "{group}: baseline throughput is non-finite ({old})"
+        ));
+    }
+    if !new.is_finite() {
+        return Err(format!("{group}: current throughput is non-finite ({new})"));
+    }
+    let d = (old - new) / old;
+    Ok(Some((d, old, new)))
 }
 
 /// Check a single group's throughput against the baseline.
@@ -102,29 +138,30 @@ fn check_group<'a>(
             )),
         };
     };
-
-    let delta = match (baseline.throughput, current.throughput) {
-        (Some(old), Some(new)) => {
-            let d = (old - new) / old;
+    // Check throughput delta; handles absent values (skip) and non-finite values (fail).
+    let mut failure: Option<String> = None;
+    let delta = match compute_delta(group, baseline.throughput, current.throughput) {
+        Ok(Some((d, old, new))) => {
+            println!("  throughput: {:.2}%", d * 100.0);
+            if d > tolerance {
+                failure = Some(format!(
+                    "{group}: throughput regressed by {:.2}% ({:.0} vs {:.0} elem/s)",
+                    d * 100.0,
+                    new,
+                    old,
+                ));
+            }
             Some((d, old, new))
         }
-        _ => None,
-    };
-
-    let mut failure: Option<String> = None;
-    if let Some((d, old, new)) = delta {
-        println!("  throughput: {:.2}%", d * 100.0);
-        if d > tolerance {
-            failure = Some(format!(
-                "{group}: throughput regressed by {:.2}% ({:.0} vs {:.0} elem/s)",
-                d * 100.0,
-                new,
-                old,
-            ));
+        Ok(None) => {
+            println!("  throughput: not declared in benchmark target (skip)");
+            None
         }
-    } else {
-        println!("  throughput: not declared in benchmark target (skip)");
-    }
+        Err(e) => {
+            failure = Some(e);
+            None
+        }
+    };
     println!("  wall_time: {:.3}s", current.wall_time_seconds);
 
     GroupCheckResult {

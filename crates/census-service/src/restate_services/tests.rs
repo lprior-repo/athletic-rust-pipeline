@@ -14,6 +14,7 @@ use census_report::report::ReportError;
 use census_store::StoreError;
 
 use super::*;
+use crate::restate_services::ingest::payload_digest;
 use crate::restate_services::plan::classify_access;
 use crate::restate_services::results_arms::ResultsStageOutcome;
 use census_report::report::Scope;
@@ -52,18 +53,111 @@ fn cohort_label_names_the_reduction() {
     assert_eq!(cohort_label(None), "all");
 }
 
+/// Physical rows and receipts a store holds: counted from the keys the keyspaces carry, not from a
+/// row ledger a writer maintains for itself.
+fn physical(store: &Store, table: Table) -> (u64, u64) {
+    (
+        store.walk_table(table).unwrap().rows,
+        store.receipt_count().unwrap(),
+    )
+}
+
+#[test]
+fn three_attempts_at_one_operation_append_it_once_and_leave_one_receipt() {
+    // The window §15 names: the append commits, the writer dies before it hears its own
+    // acknowledgement, and the same unit of work is offered again — by the retry policy, and again
+    // after a restart. Three attempts, one page: the second and third must find the store's receipt
+    // and append nothing, and the physical counts after all three must be the counts after the
+    // first.
+    let dir = tempfile::tempdir().unwrap();
+    let operation = "wiaa_results_wi:inv-1:2026-W39:performances:0:0";
+    let rows = vec![
+        serde_json::json!({"id": "perf:wi:1", "mark": "10.94"}),
+        serde_json::json!({"id": "perf:wi:2", "mark": "11.02"}),
+    ];
+    let digest = payload_digest(Table::Performances, &rows).unwrap();
+
+    let store = Store::open(dir.path()).unwrap();
+    let first = apply_observations(&store, Table::Performances, &rows, operation, &digest).unwrap();
+    assert_eq!(
+        first.appended(),
+        rows.len() as u64,
+        "the first attempt appends the page: {first:?}"
+    );
+    let after_first = physical(&store, Table::Performances);
+    assert_eq!(after_first, (2, 1), "two rows, one receipt");
+    // No flush, no close: the commit is the durability boundary, so what a crash leaves is this.
+    drop(store);
+
+    let store = Store::open(dir.path()).unwrap();
+    for attempt in 2..=3 {
+        let again = apply_observations(&store, Table::Performances, &rows, operation, &digest)
+            .unwrap()
+            .appended();
+        assert_eq!(again, 0, "attempt {attempt} appended nothing");
+        assert_eq!(
+            physical(&store, Table::Performances),
+            after_first,
+            "attempt {attempt} left the store exactly as attempt 1 did"
+        );
+    }
+
+    let receipt = store.receipt(operation).unwrap().unwrap();
+    assert_eq!(
+        receipt.appended, 2,
+        "the receipt describes the one application"
+    );
+    assert_eq!(receipt.digest, digest);
+}
+
+#[test]
+fn a_second_operation_with_different_rows_is_not_mistaken_for_a_replay() {
+    // The other half of the contract: an id the store has not seen is new work, even beside a page
+    // whose rows overlap the first operation's. Only the operation id decides, and the digest is
+    // checked under it.
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+    let rows = vec![serde_json::json!({"id": "perf:wi:1", "mark": "10.94"})];
+    let digest = payload_digest(Table::Performances, &rows).unwrap();
+
+    let first = apply_observations(&store, Table::Performances, &rows, "op-1", &digest).unwrap();
+    assert_eq!(first.appended(), 1);
+    let second = apply_observations(&store, Table::Performances, &rows, "op-2", &digest).unwrap();
+    assert_eq!(
+        second.appended(),
+        1,
+        "a different operation appends its own page, overlapping rows and all"
+    );
+    assert_eq!(physical(&store, Table::Performances), (2, 2));
+}
+
 #[test]
 fn rows_without_an_id_are_rejected_by_the_store_and_nothing_is_written() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     let rows = vec![serde_json::json!({"name": "no id here"})];
-    assert!(append_observations(&store, Table::Schools, &rows).is_err());
+    assert!(apply_observations(&store, Table::Schools, &rows, "op-1", "digest-1").is_err());
     assert_eq!(store.stats().unwrap().observations, 0);
+    assert_eq!(
+        store.receipt_count().unwrap(),
+        0,
+        "a rejected page leaves no receipt behind"
+    );
 
     let good = vec![serde_json::json!({"id": "school:wi:test", "name": "Test"})];
     assert_eq!(
-        append_observations(&store, Table::Schools, &good).unwrap(),
+        apply_observations(&store, Table::Schools, &good, "op-2", "digest-2")
+            .unwrap()
+            .appended(),
         1
+    );
+    assert_eq!(store.stats().unwrap().observations, 1);
+    assert_eq!(
+        apply_observations(&store, Table::Schools, &good, "op-2", "digest-2")
+            .unwrap()
+            .appended(),
+        0,
+        "the same operation twice appends its page once"
     );
     assert_eq!(store.stats().unwrap().observations, 1);
 }
@@ -75,11 +169,16 @@ fn oversized_batches_are_refused_without_touching_the_store() {
     let rows = vec![serde_json::json!({"id": "x"}); MAX_ROWS_PER_REQUEST + 1];
     // The ceiling is an admission bound, not a hiccup: it must reach Restate as a terminal outcome,
     // or the invocation would replay a batch that can never fit.
-    let refused = append_observations(&store, Table::Schools, &rows)
+    let refused = apply_observations(&store, Table::Schools, &rows, "op-1", "digest-1")
         .map_err(JobError::from)
         .expect_err("a batch over the ceiling is refused");
     assert!(matches!(refused, JobError::Terminal { .. }));
     assert_eq!(store.stats().unwrap().observations, 0);
+    assert_eq!(
+        store.receipt_count().unwrap(),
+        0,
+        "the refusal happens before the commit, so no receipt is written"
+    );
 }
 
 #[test]

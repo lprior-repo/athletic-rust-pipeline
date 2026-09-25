@@ -28,9 +28,29 @@ proptest! {
         let mut coach = base;
         coach.professional_email = Some(address);
         coach.phone = Some("608-555-0100".to_string());
+        // A stored row carries a source's raw value until `publish` derives the contact fields, so
+        // the strong law is stated over a published row: merging it with itself changes nothing.
+        coach.publish();
         let mut merged = coach.clone();
         merged.merge(coach.clone());
         prop_assert_eq!(merged, coach);
+    }
+
+    #[test]
+    fn absorbing_one_raw_observation_twice_is_absorbing_it_once(
+        base in coach(),
+        address in mailbox(),
+    ) {
+        let mut coach = base;
+        coach.professional_email = Some(address);
+        coach.phone = Some("608-555-0100".to_string());
+        let raw = coach;
+
+        let mut once = raw.clone();
+        once.merge(raw.clone());
+        let mut twice = once.clone();
+        twice.merge(raw);
+        prop_assert_eq!(twice, once);
     }
 
     #[test]

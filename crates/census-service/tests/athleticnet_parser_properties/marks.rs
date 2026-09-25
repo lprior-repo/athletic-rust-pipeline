@@ -36,7 +36,7 @@ proptest! {
         let (mark, auto) = parse_mark(&RUN, &text)
             .unwrap_or_else(|| panic!("{text} (from {centis}) was refused"));
         prop_assert!(!auto, "a bare mark is not marked automatic: {text}");
-        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::from_seconds_f64(expected)));
+        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(expected).expect("fixture is in range")));
     }
 
     /// The same token, published with the automatic-timing suffix, is the same mark.
@@ -46,7 +46,7 @@ proptest! {
         let (mark, auto) = parse_mark(&RUN, &format!("{text}a"))
             .unwrap_or_else(|| panic!("{text}a was refused"));
         prop_assert!(auto, "the `a` suffix is the automatic flag: {text}a");
-        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::from_seconds_f64(expected)));
+        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(expected).expect("fixture is in range")));
     }
 }
 
@@ -63,7 +63,9 @@ fn the_notation_table_holds_and_defers_to_one_time_parser() {
         let (mark, _) = parse_mark(&RUN, text).unwrap_or_else(|| panic!("{text} was refused"));
         assert_eq!(
             mark,
-            Mark::TimeSeconds(CentiSeconds::from_seconds_f64(expected)),
+            Mark::TimeSeconds(
+                CentiSeconds::try_from_seconds_f64(expected).expect("fixture is in range")
+            ),
             "{text}"
         );
     }
@@ -83,7 +85,9 @@ fn a_qualifier_is_stripped_rather_than_read_as_part_of_the_mark() {
         let (mark, got_auto) = parse_mark(&RUN, text).unwrap_or_else(|| panic!("{text} refused"));
         assert_eq!(
             mark,
-            Mark::TimeSeconds(CentiSeconds::from_seconds_f64(12.34)),
+            Mark::TimeSeconds(
+                CentiSeconds::try_from_seconds_f64(12.34).expect("fixture is in range")
+            ),
             "{text}"
         );
         assert_eq!(got_auto, auto, "{text}");

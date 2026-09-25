@@ -24,7 +24,7 @@ use census_domain::model::{
 };
 use census_domain::JurisdictionBucket;
 use census_store::{Store, Table};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// The parent tables a row joins, read under `scope` and the run scope, exactly as the report applies
 /// both. Held owned so a [`Lookups`] can borrow all four at once.
@@ -36,7 +36,7 @@ pub(super) struct Parents {
 }
 
 impl Parents {
-    pub(super) fn read(store: &Store, scope: Scope) -> ReportResult<Self> {
+    pub(super) fn read(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
         let mut athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
         let mut meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
         let mut events: Vec<CanonicalEvent> = store.scan(Table::Events)?;
@@ -55,6 +55,11 @@ impl Parents {
         school_state.extend(school_state_index(&outside_schools));
         athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
         meets.retain(|m| in_run_scope(JurisdictionBucket::from(m.state)));
+        // Cohort filter: keep only athletes matching the graduating class, the same predicate the
+        // recruiting Dataset uses — one source of truth for cohort membership.
+        if let Some(year) = grad_year {
+            athletes.retain(|a| a.grad_year.get() == year);
+        }
         Ok(Self {
             athletes,
             schools,
@@ -65,6 +70,12 @@ impl Parents {
 
     pub(super) fn lookups(&self) -> Lookups<'_> {
         Lookups::of(&self.athletes, &self.schools, &self.meets, &self.events)
+    }
+
+    /// The athlete IDs retained by the cohort filter — owned HashSet the spill uses to gate
+    /// performances, so every eligible athlete's captured history stays while outsiders are dropped.
+    pub(super) fn cohort_set(&self) -> HashSet<&str> {
+        self.athletes.iter().map(|a| a.id.as_str()).collect()
     }
 }
 
@@ -238,11 +249,8 @@ fn observed(performance: &CanonicalPerformance) -> Option<&Evidence> {
     })
 }
 
-/// The comparable number on the mark's own scale. A [`Mark::Raw`] value has no scale yet, so it stays
-/// blank instead of being invented.
-/// The comparable number on the mark's own scale, converted back to f64 for the wire form.
+/// Convert a mark to its canonical f64 representation: seconds, metres, or points.
+/// Field marks (millimetres) are divided by 1000; time/distance/points (centi-units) by 100.
 fn normalized_mark(mark: &Mark) -> Option<f64> {
-    Measure::of(mark)
-        .and_then(|measure| measure.value(mark))
-        .map(|v| f64::from(v) / 100.0)
+    Measure::of(mark)?.normalized_mark(mark)
 }

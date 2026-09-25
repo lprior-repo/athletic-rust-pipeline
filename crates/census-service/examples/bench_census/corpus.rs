@@ -197,7 +197,10 @@ fn performance_of(
     rng: &mut Lcg,
 ) -> Result<CanonicalPerformance> {
     let id = CanonicalPerformance::mint(&athlete.id, meet_id, kind, MEET_DATE, &source_key);
-    let mark = Mark::TimeSeconds(CentiSeconds::from_seconds_f64(base_seconds(kind, rng)));
+    let mark = Mark::TimeSeconds(
+        CentiSeconds::try_from_seconds_f64(base_seconds(kind, rng))
+            .ok_or_else(|| anyhow::anyhow!("fixture mark is out of range"))?,
+    );
     let place = place_of(rng.next())?;
     Ok(CanonicalPerformance {
         id,

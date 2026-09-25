@@ -11,9 +11,7 @@
 //! instead of being timed.
 
 use anyhow::{ensure, Result};
-use census_domain::model::{
-    published_email, CanonicalCoach, CanonicalSchool, MailboxKind,
-};
+use census_domain::model::{published_email, CanonicalCoach, CanonicalSchool, MailboxKind};
 
 use super::{ALIASES_PER_SCHOOL, FIRST_CITY, FIRST_ENROLLMENT, LONG_SUFFIX};
 
@@ -51,57 +49,51 @@ pub(super) fn school_row(row: &CanonicalSchool) -> Result<()> {
     ensure!(provenance, "{} lost its provenance unions", row.id);
     Ok(())
 }
-/// The claims one folded coach row has to hold: the phone union survived, exactly one mailbox
-/// survived, and its domain kind agrees with the field that carries it.
-fn coach_row(row: &CanonicalCoach) -> Result<MailboxKind> {
+/// The claims one folded coach row has to hold: the phone union survived, at least one mailbox
+/// survived, and every present mailbox is published under the field for its domain kind.
+fn coach_row(row: &CanonicalCoach) -> Result<(bool, bool)> {
     ensure!(
         row.phone.is_some(),
         "{} lost the union of a phone number",
         row.id
     );
+    let mut professional = false;
+    let mut personal = false;
+    for (address, kind) in [
+        (row.professional_email.as_deref(), MailboxKind::Professional),
+        (row.personal_email.as_deref(), MailboxKind::Personal),
+    ] {
+        let Some(address) = address else { continue };
+        let actual = published_email(address)
+            .map(|(_, kind)| kind)
+            .ok_or_else(|| anyhow::anyhow!("{} lost a valid mailbox: {address}", row.id))?;
+        ensure!(
+            actual == kind,
+            "{} filed {address} under the wrong mailbox field",
+            row.id
+        );
+        match kind {
+            MailboxKind::Professional => professional = true,
+            MailboxKind::Personal => personal = true,
+        }
+    }
     ensure!(
-        row.professional_email.is_some() ^ row.personal_email.is_some(),
-        "{} lost or duplicated its seeded mailbox",
+        professional || personal,
+        "{} lost its seeded mailbox",
         row.id
     );
-    let (email, expected_kind) = match (
-        row.professional_email.as_deref(),
-        row.personal_email.as_deref(),
-    ) {
-        (Some(email), None) => (email, MailboxKind::Professional),
-        (None, Some(email)) => (email, MailboxKind::Personal),
-        _ => {
-            return Err(anyhow::anyhow!(
-                "{} lost or duplicated its seeded mailbox",
-                row.id
-            ));
-        }
-    };
-    let actual_kind = match published_email(email) {
-        Some((_, kind)) => kind,
-        None => {
-            return Err(anyhow::anyhow!(
-                "{} lost a valid mailbox: {email}",
-                row.id
-            ));
-        }
-    };
-    ensure!(
-        actual_kind == expected_kind,
-        "{} placed {email} in the wrong mailbox field",
-        row.id
-    );
-    Ok(actual_kind)
+    Ok((professional, personal))
 }
 
-/// Count folded coach rows by the domain kind of their published mailbox.
+/// Count the professional and personal mailbox fields the folded rows carry.
 pub(super) fn coach_tally(coaches: &[CanonicalCoach]) -> Result<(usize, usize)> {
     coaches
         .iter()
         .try_fold((0_usize, 0_usize), |(professional, personal), row| {
-            match coach_row(row)? {
-                MailboxKind::Professional => Ok((professional.saturating_add(1), personal)),
-                MailboxKind::Personal => Ok((professional, personal.saturating_add(1))),
-            }
+            let (has_professional, has_personal) = coach_row(row)?;
+            Ok((
+                professional.saturating_add(usize::from(has_professional)),
+                personal.saturating_add(usize::from(has_personal)),
+            ))
         })
 }

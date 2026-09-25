@@ -53,7 +53,7 @@ pub fn is_consumer_domain(domain: &str) -> bool {
 pub fn published_email(address: &str) -> Option<(String, MailboxKind)> {
     let address = address.trim();
     let (local, domain) = address.split_once('@')?;
-    if local.is_empty() || domain.is_empty() {
+    if local.is_empty() || domain.is_empty() || local.contains('@') || domain.contains('@') {
         return None;
     }
     let kind = if is_consumer_domain(domain) {

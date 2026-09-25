@@ -29,6 +29,8 @@ pub enum Refusal {
     AlreadyResolved,
     /// The verdict does not name a case the packet asks about, so it decides nothing.
     UnnamedCase,
+    /// A `same_person` proposal contradicts deterministic packet evidence.
+    HardContradiction(crate::athlete_verdict::HardContradiction),
 }
 
 /// What validating one proposal produced.
@@ -36,8 +38,8 @@ pub enum Refusal {
 pub enum Adjudication {
     /// A decision, and the value that may be recorded for it.
     Decided(Admitted),
-    /// The answer was not a decision: the lane declined, so there is no value to record and the case
-    /// is not closed by this verdict.
+    /// The answer was not a decision: the lane declined, so there is no value to record. An athlete
+    /// case is retained as terminal for this evidence snapshot, and new evidence mints a new case.
     Undecided,
     /// The proposal was refused, and why. The case stays for an operator, and the answer is kept as
     /// the model gave it rather than dropped.

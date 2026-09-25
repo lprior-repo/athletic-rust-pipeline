@@ -96,36 +96,7 @@ per table.
 
 ### 3.1 Tables
 
-`Table` (`crates/census-store/src/table.rs`) is the store's naming for the sixteen collections; the names ride in
-keys and sidecar file names.
-
-| Table | Meaning | Written by |
-|---|---|---|
-| `schools`, `teams`, `coaches`, `athletes`, `meets`, `events`, `performances` | the canonical entities | adapters, appended (`append`/`append_many`) |
-| `source_identities` | the §31 join from a provider's own id to a canonical row | `index`, replaced |
-| `conflicts` | conflicts the merge retained: two rows one stored key says are the same subject | `index`, replaced |
-| `review_cases` | findings the review lane owns, keyed so a repeated finding reuses its case | `index`, replaced; `review` closes the decided ones |
-| `coverage` | coverage measurements per jurisdiction and per source namespace | `index`, replaced |
-| `snapshots` | one row per finished pass over the store | `index`, replaced |
-| `source_access` | access conditions a source imposed: one row per blocked `(kind, host)` | the sweep's access pass, replaced |
-| `identity_verdicts` | adjudications the review lane recorded, one row per case | `review`, replaced |
-| `source_meets` | meets a source enumerated, before their results were read | the `meets` command, appended |
-
-Two write disciplines, not one:
-
-* **Canonical entities are append-only.** An observation is never overwritten — appending the same
-  entity twice writes two rows, and readers merge through `Entity::merge` (`Store::consolidate`,
-  `crates/census-store/src/read/`). A transfer does not rewrite a prior school attribution.
-* **The derived tables are not evidence.** Their rows are a function of the store as it stands, so
-  they are written through `replace_many`/`replace`: one row per key, overwritten in place, so a
-  re-derivation cannot grow them.
-
-`Entity::publish` is the collection contract applied to the merged value, so the rule holds for the
-report, the workbook, the snapshot and the Restate handlers at once. A coach's published address is
-classified by its domain — a consumer mailbox lands in `personal_email`, an organisation mailbox in
-`professional_email` — and nothing is dropped for its domain: only a malformed address is refused, and
-the first address of a kind wins. No address a source published is withheld, so a published counter is
-the count the sources actually published.
+`Table` (`crates/census-store/src/table.rs`) names the sixteen collections; the full table list, key shapes and write discipline is in `FJALL_SCHEMA.md` §2. Canonical entities are append-only and merged at read time; derived tables are replaced. `Entity::publish` applies the collection contract to the merged value.
 
 ### 3.2 Durability
 
@@ -156,7 +127,9 @@ those counters, LSM bytes on disk, and the recursive store size.
 (`crates/census-service/src/cli/seal.rs`). It assembles its evidence from what the store, the
 classifier and the exported workbook already hold — nothing is passed in as a claim.
 
-Scope is the core scope unless `--all-sources` is given; the cohort defaults to `--grad-year 2027`.
+The scope is every approved source unless `--core` is given, which restricts the run to the
+Athletic.net-free scope — the independence diagnostic, never the default product; the cohort
+defaults to `--grad-year 2027`.
 
 ### 4.1 What it certifies
 

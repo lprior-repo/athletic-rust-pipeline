@@ -204,6 +204,7 @@
       "gender": "boys",
       "id": "coa_3a05b6e5917bc10a",
       "name": "Sean Giesen",
+      "personal_email": "giesen21@hotmail.com",
       "role": "assistant_coach",
       "school": "sch_64d7d657fe666f82",
       "source_identities": [
@@ -274,6 +275,7 @@
       "gender": "boys",
       "id": "coa_7386affa4296223e",
       "name": "Michael Smith",
+      "personal_email": "mike95asmith@gmail.com",
       "role": "assistant_coach",
       "school": "sch_64d7d657fe666f82",
       "source_identities": [
@@ -406,7 +408,7 @@
       "role": "assistant_coach"
     },
     {
-      "accepted_email": null,
+      "accepted_email": "giesen21@hotmail.com",
       "email": "giesen21@hotmail.com",
       "level": "Assistant Coach",
       "name": "Sean Giesen",
@@ -422,7 +424,7 @@
       "role": "assistant_coach"
     },
     {
-      "accepted_email": null,
+      "accepted_email": "mike95asmith@gmail.com",
       "email": "mike95asmith@gmail.com",
       "level": "Assistant Coach",
       "name": "Michael Smith",

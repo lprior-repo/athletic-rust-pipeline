@@ -27,10 +27,12 @@ cargo run --release -p census-service -- <command>
                   coverage and a snapshot of the pass
   report          Compute the measured census from the store
   bests           Reduce to one best mark per athlete and event   [--grad-year 2027] [--limit N] [--all]
-  workbook        Build the census workbook (.xlsx) and sidecars [--out PATH] [--grad-year 2027] [--limit N]
+  workbook        Build the census workbook (.xlsx) and sidecars [--out PATH] [--grad-year 2027]
+                  [--limit N] [--core]
+  seal            Certify the census, or refuse and name the §70 item that blocked it [--core]
   run             Gather a registry (optional), consolidate, derive the indexes, publish both
                   census scopes, reduce bests and write the workbook in one command
-                  [--input PATH] [--states WI,MN] [--limit N] [--grad-year 2027] [--all-sources]
+                  [--input PATH] [--states WI,MN] [--limit N] [--grad-year 2027] [--core]
                   [--refresh] [--observed-on YYYY-MM-DD] [--out PATH]
   fjall-stats     Print per-table observation counts and the database footprint
   import-legacy   Run the one-time pre-Fjall JSONL import, then print the store stats
@@ -42,7 +44,8 @@ Global: --store <dir> (default var/census-service), --delay-ms <n>, --user-agent
 ```
 
 A full cycle is `collect` → `provider <name>` per adapter → `consolidate` → `report` / `bests` /
-`workbook` (`report --core` for the Athletic.net-free scope). Every adapter is resumable: a unit of
+`workbook`. Every source is the default; `--core` restricts a command to the Athletic.net-free
+scope, which is the independence diagnostic rather than the recruiter product. Every adapter is resumable: a unit of
 work is journaled with its parser version, and a re-run skips what an unchanged parser already
 produced. Each provider takes `--seasons`, `--limit` and `--refresh`.
 

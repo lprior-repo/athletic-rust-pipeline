@@ -12,8 +12,8 @@
 # what it is. See `xtask/src/baseline.rs`.
 #
 #   tools/gate.sh                  run every lane, compare debt against the baseline
-#   tools/gate.sh --full           add the slow lane (mutation testing) that a pre-release pass
-#                                  needs but a per-commit one cannot afford
+#   tools/gate.sh --full           add the slow lanes (performance threshold and mutation testing) that
+#                                  a pre-release pass needs but a per-commit one cannot afford
 #   tools/gate.sh --release        the pre-release pass: every lane runs, `--full`'s heavy lanes
 #                                  included, and a missing tool is a FAILURE instead of a SKIP
 #   tools/gate.sh --update-baseline   rewrite the baseline from current measurements
@@ -28,7 +28,7 @@
 #
 # Lanes: fmt, check, doc, tests, strict clippy (source targets), production scan + size budgets,
 #        domain integrity, debt ratchet, deny, audit, vet, machete, geiger, feature powerset, bench
-#        presence; --full adds mutants.
+#        presence; --full adds the performance threshold and mutants lanes.
 #
 # The toolchain is the pinned nightly from rust-toolchain.toml, and the check and clippy lanes pass
 # `-Zallow-features=portable_simd,try_blocks`: the nightly feature allowlist is part of the source
@@ -148,6 +148,23 @@ lane_geiger() {
 # optional features are declared per crate, so a combination that only breaks under one of them
 # would otherwise reach review.
 lane_hack() { cargo hack check --workspace --feature-powerset; }
+# Throughput regression testing is minutes long and hardware-sensitive, so it is opt-in (`--full`)
+# and belongs to the pre-release pass, not to every edit. A missing baseline is an actionable
+# condition: dev passes explain how to record it and continue, while release passes fail closed.
+lane_perf() {
+  local record_command='cargo xtask perf record'
+  if [ ! -f tools/perf-baseline.json ]; then
+    if [ "$RELEASE" = 1 ]; then
+      printf 'FAIL: no performance baseline at tools/perf-baseline.json; run %s on a quiet machine\n' \
+        "$record_command"
+      return 1
+    fi
+    printf 'SKIP: no performance baseline at tools/perf-baseline.json; run %s on a quiet machine\n' \
+      "$record_command"
+    return 0
+  fi
+  cargo xtask perf check --reason 'pre-release gate (--full)'
+}
 # Mutation testing: the slowest lane by far and the only one that measures whether the tests can
 # fail. It is opt-in (`--full`) and belongs to the pre-release pass, not to every edit.
 lane_mutants() { cargo mutants --workspace --in-place; }
@@ -314,6 +331,7 @@ main() {
   run_tool_lane cargo-hack "feature powerset" lane_hack
   run_lane "bench presence" lane_bench_presence
   if [ "$FULL" = 1 ]; then
+    run_lane perf lane_perf
     run_tool_lane cargo-mutants mutants lane_mutants
   fi
   summary

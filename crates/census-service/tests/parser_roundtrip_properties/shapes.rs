@@ -16,7 +16,7 @@ fn known_identities_and_marks_survive_the_seam() {
     assert_eq!(winner.school, "West De Pere");
     assert_eq!(
         winner.mark,
-        Mark::TimeSeconds(CentiSeconds::from_seconds_f64(10.56))
+        Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(10.56).expect("fixture is in range"))
     );
     assert_eq!(winner.wind_mps, Some(0.4));
 
@@ -49,7 +49,9 @@ fn known_identities_and_marks_survive_the_seam() {
     assert_eq!(finisher.school, "Whitewater");
     assert_eq!(
         finisher.mark,
-        Mark::TimeSeconds(CentiSeconds::from_seconds_f64(1033.69))
+        Mark::TimeSeconds(
+            CentiSeconds::try_from_seconds_f64(1033.69).expect("fixture is in range")
+        )
     );
 }
 

@@ -33,51 +33,81 @@ use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use super::cells::{write_sheet, Cell};
+use super::performances::PerformanceSheetPopulation;
 
 mod coverage;
 mod inventory;
 mod metrics;
 pub mod queues;
+mod schools;
 mod sources;
 
 use coverage::{coverage_sheet, COVERAGE_WIDTHS};
 use inventory::{meets_sheet, MEET_WIDTHS};
 use metrics::{metrics_sheet, METRIC_WIDTHS};
-use queues::{conflict_families, data_quality_sheet, review_families, DATA_QUALITY_WIDTHS};
+use queues::{
+    conflict_families, conflicts_sheet, review_families, review_sheet, CONFLICT_WIDTHS,
+    REVIEW_WIDTHS,
+};
 
 /// The retained queue rows, as the store's `conflicts` and `review_cases` tables hold them.
 pub use queues::retained_records;
+use schools::{schools_sheet, SCHOOL_WIDTHS};
 use sources::{sources_sheet, SOURCE_WIDTHS};
 
 /// One sheet of the workbook: the sheet name, its rows, its column widths and whether the header
 /// carries an autofilter.
 type Sheet = (&'static str, Vec<Vec<Cell>>, &'static [u16], bool);
 
+/// The published facts every §54 sheet's counters read, gathered once per run so the sheet builders
+/// take one run instead of a loose tail of parts.
+pub(super) struct RunFacts<'a> {
+    pub(super) store: &'a Store,
+    pub(super) core: &'a Census,
+    pub(super) all_sources: &'a Census,
+    pub(super) bests: &'a [BestResult],
+    pub(super) scope: Scope,
+    pub(super) perf_population: PerformanceSheetPopulation,
+}
+
 /// Write §54's remaining sheets into `book`, in the frozen order.
 pub(super) fn write_meta_sheets(
     book: &mut Workbook,
     path: &Path,
-    store: &Store,
-    core: &Census,
-    all_sources: &Census,
-    bests: &[BestResult],
-    scope: Scope,
+    facts: RunFacts<'_>,
 ) -> ReportResult<()> {
-    let rows = StoreRows::read(store, scope)?;
+    let rows = StoreRows::read(facts.store, facts.scope)?;
     let names = school_name_index(&rows.schools);
     let conflicts = conflict_families(&rows, &names);
     let review = review_families(&rows, &names);
-    let metrics = metrics_sheet(store, core, all_sources, bests, &rows, &conflicts, scope)?;
-    let sheets: [Sheet; 5] = [
-        ("Meets", meets_sheet(&rows.meets), &MEET_WIDTHS, true),
-        ("Sources", sources_sheet(all_sources)?, &SOURCE_WIDTHS, true),
-        ("Coverage", coverage_sheet(store)?, &COVERAGE_WIDTHS, true),
+    let metrics = metrics_sheet(&facts, &rows, &conflicts)?;
+    let sheets: [Sheet; 7] = [
         (
-            "Data Quality",
-            data_quality_sheet(&conflicts, &review, &rows),
-            &DATA_QUALITY_WIDTHS,
+            "Schools",
+            schools_sheet(&rows.schools)?,
+            &SCHOOL_WIDTHS,
             true,
         ),
+        ("Meets", meets_sheet(&rows.meets), &MEET_WIDTHS, true),
+        (
+            "Sources",
+            sources_sheet(facts.all_sources)?,
+            &SOURCE_WIDTHS,
+            true,
+        ),
+        (
+            "Coverage",
+            coverage_sheet(facts.store)?,
+            &COVERAGE_WIDTHS,
+            true,
+        ),
+        (
+            "Conflicts",
+            conflicts_sheet(&conflicts, &rows),
+            &CONFLICT_WIDTHS,
+            true,
+        ),
+        ("Review", review_sheet(&review, &rows), &REVIEW_WIDTHS, true),
         ("Run Metrics", metrics, &METRIC_WIDTHS, false),
     ];
     for (name, cells, widths, autofilter) in sheets {
@@ -97,7 +127,7 @@ struct StoreRows {
 impl StoreRows {
     /// Read the entity tables scoped to the run's jurisdictions (`CENSUS_SCOPE` + unplaced) so
     /// the reconciliation block matches the run's published scope. Verdicts are an extra read from
-    /// their durable table, preserving store order for the Data Quality queue.
+    /// their durable table, preserving store order for the review sheet's verdict rows.
     fn read(store: &Store, scope: Scope) -> ReportResult<Self> {
         let mut schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
         // The placement index carries the excluded school rows too, so an athlete or coach whose

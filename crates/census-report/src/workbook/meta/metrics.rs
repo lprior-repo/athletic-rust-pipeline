@@ -9,263 +9,80 @@
 //! raised: the store is append-only and a collection process may write between the census and this
 //! scan, which is exactly the drift a reader has to see.
 
-use crate::bests::BestResult;
-use crate::report::{io_error, Census, ReportResult, Scope};
-use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalMeet, GradYear, SourceNamespace,
-};
-use census_store::Store;
-
+use crate::report::{ReportResult, Scope};
 use crate::workbook::cells::{row, Cell};
 
-use super::queues::SCHOOL_IDENTITY;
-use super::{Family, StoreRows};
+mod census;
+mod counters;
+mod reconcile;
+mod store;
+
+use super::{PerformanceSheetPopulation, RunFacts};
 
 /// Widths for the metric blocks.
 pub(super) const METRIC_WIDTHS: [u16; 4] = [40, 18, 18, 12];
 
+/// The performance sheet's population declaration.
+///
+/// States the cohort, scope, athlete count, row count, and the rule that earlier-season and
+/// out-of-state performances for cohort athletes are included by design.
+pub(super) fn perf_population_block(
+    pop: &PerformanceSheetPopulation,
+) -> ReportResult<Vec<Vec<Cell>>> {
+    let cohort = pop
+        .cohort_year
+        .map(|y| format!("class of {y}"))
+        .unwrap_or_else(|| "all cohorts".to_string());
+    let scope_str = match pop.scope {
+        crate::report::Scope::Core => "core",
+        crate::report::Scope::AllSources => "all sources",
+    };
+    let mut cells = vec![row!("Performance sheet population")];
+    cells.push(row!("Cohort", Cell::text(cohort)));
+    cells.push(row!("Scope", Cell::text(scope_str)));
+    cells.push(row!("Cohort athletes", Cell::number(pop.cohort_athletes)?));
+    cells.push(row!("Performance rows", Cell::number(pop.total_rows)?));
+    cells.push(row!(
+        "Design note",
+        "Earlier-season and out-of-state performances for cohort athletes are included on purpose;          the row count reconciles with the seal because it counts the cohort, not the calendar year."
+    ));
+    Ok(cells)
+}
+
 /// The run's counters, in blocks: run identity, store counters, HTTP cache, both census scopes, and
 /// the reconciliation of the row-level sheets against the census.
 pub(super) fn metrics_sheet(
-    store: &Store,
-    core: &Census,
-    all_sources: &Census,
-    bests: &[BestResult],
-    rows: &StoreRows,
-    conflicts: &[Family],
-    scope: Scope,
+    facts: &RunFacts<'_>,
+    rows: &super::StoreRows,
+    conflicts: &[super::Family],
 ) -> ReportResult<Vec<Vec<Cell>>> {
     let mut cells = vec![row!("Run metric", "Value")];
     cells.push(row!(
         "Workbook generated on",
-        Cell::text(core.generated_on.clone())
+        Cell::text(facts.core.generated_on.clone())
     ));
-    cells.push(row!("Store", Cell::text(core.store_dir.clone())));
+    cells.push(row!("Store", Cell::text(facts.core.store_dir.clone())));
     cells.push(row!("Census scopes published", "core + all sources"));
-    cells.push(row!("Best-mark rows reduced", Cell::number(bests.len())?));
+    cells.push(row!(
+        "Best-mark rows reduced",
+        Cell::number(facts.bests.len())?
+    ));
     cells.push(row!("Cohort behind the counters", "class of 2027"));
     cells.push(row!());
-    cells.extend(store_counters(store)?);
+    cells.extend(perf_population_block(&facts.perf_population)?);
     cells.push(row!());
-    cells.extend(cache_block(store)?);
+    cells.extend(store::store_counters(facts.store)?);
     cells.push(row!());
-    cells.extend(scope_counters(core, all_sources)?);
+    cells.extend(store::cache_block(facts.store)?);
     cells.push(row!());
-    cells.extend(method_notes(core));
+    cells.extend(census::scope_counters(facts.core, facts.all_sources)?);
     cells.push(row!());
-    let census = match scope {
-        Scope::Core => core,
-        Scope::AllSources => all_sources,
+    cells.extend(census::method_notes(facts.core));
+    cells.push(row!());
+    let census = match facts.scope {
+        Scope::Core => facts.core,
+        Scope::AllSources => facts.all_sources,
     };
-    cells.extend(reconciliation(rows, conflicts, census)?);
+    cells.extend(reconcile::reconciliation(rows, conflicts, census)?);
     Ok(cells)
-}
-
-/// The store's append counters: one row per table, then the totals the LSM tree reports.
-fn store_counters(store: &Store) -> ReportResult<Vec<Vec<Cell>>> {
-    let stats = store.stats()?;
-    let mut cells = vec![row!("Store table", "Observations")];
-    for (table, count) in &stats.tables {
-        cells.push(row!(Cell::text(table.clone()), count_cell(*count)));
-    }
-    cells.push(row!("Total observations", count_cell(stats.observations)));
-    cells.push(row!(
-        "Store bytes on disk",
-        Cell::text(stats.bytes_on_disk.to_string())
-    ));
-    Ok(cells)
-}
-
-/// What the HTTP cache holds: one entry per response already fetched, so a resumed run reports the
-/// whole cache rather than only what this process fetched.
-fn cache_block(store: &Store) -> ReportResult<Vec<Vec<Cell>>> {
-    let dir = store.http_cache_dir();
-    let entries = std::fs::read_dir(&dir).map_err(|source| io_error(&dir, source))?;
-    let mut responses = 0_u64;
-    let mut bytes = 0_u64;
-    for entry in entries {
-        let entry = entry.map_err(|source| io_error(&dir, source))?;
-        let name = entry.file_name();
-        let Some(name) = name.to_str() else {
-            continue;
-        };
-        if name.ends_with(".meta.json") {
-            responses = responses.saturating_add(1);
-        } else if name.ends_with(".body") {
-            let size = entry
-                .metadata()
-                .map_err(|source| io_error(&dir, source))?
-                .len();
-            bytes = bytes.saturating_add(size);
-        }
-    }
-    Ok(vec![
-        row!("HTTP cache", "Value"),
-        row!("Cached responses", count_cell(responses)),
-        row!("Cached bytes", Cell::text(bytes.to_string())),
-    ])
-}
-
-/// One census counter: the label a block prints and the counted field behind it.
-type ScopeCounter = (&'static str, fn(&Census) -> usize);
-
-/// The counted fields of both census scopes, in published order.
-const SCOPE_COUNTERS: [ScopeCounter; 7] = [
-    ("Schools", |census| census.totals.schools),
-    ("Athletes", |census| census.totals.athletes),
-    ("Coaches", |census| census.totals.coaches),
-    ("Coaches with a published email", |census| {
-        census.totals.coaches_with_email
-    }),
-    // The seal's reader matches this label exactly (case-insensitively) and takes the first
-    // numeric cell after it, so the core scope's count is the one it reads: keep the label
-    // identical to `seal::workbook::COHORT_LABEL`.
-    ("Class of 2027", |census| census.totals.class_of_2027),
-    ("Meets", |census| census.meets.total),
-    ("Meets naming an Athletic.net id", |census| {
-        census.meets.with_athletic_net_id
-    }),
-];
-
-/// Both census scopes' headline counters, side by side.
-fn scope_counters(core: &Census, all_sources: &Census) -> ReportResult<Vec<Vec<Cell>>> {
-    let mut cells = vec![row!("Core", "Count", "All sources", "Count")];
-    for (label, read) in SCOPE_COUNTERS {
-        cells.push(row!(
-            Cell::text(label),
-            Cell::number(read(core))?,
-            Cell::text(label),
-            Cell::number(read(all_sources))?,
-        ));
-    }
-    Ok(cells)
-}
-fn method_notes(census: &Census) -> Vec<Vec<Cell>> {
-    let mut cells = vec![row!("Method note", "Value")];
-    cells.extend(
-        census
-            .notes
-            .iter()
-            .filter(|note| note.starts_with("core performance publication"))
-            .map(|note| row!("Core performance publication", Cell::text(note.clone()))),
-    );
-    cells
-}
-
-/// The reconciliation block: each row-level tally beside the census counter it must equal.
-fn reconciliation(
-    rows: &StoreRows,
-    conflicts: &[Family],
-    census: &Census,
-) -> ReportResult<Vec<Vec<Cell>>> {
-    let mut cells = vec![row!("Reconciled counter", "Sheet rows", "Census", "Status")];
-    let sheet_counts = [
-        ("Schools", rows.schools.len(), census.totals.schools),
-        ("Meets", rows.meets.len(), census.meets.total),
-        ("Athletes", rows.athletes.len(), census.totals.athletes),
-        ("Coaches", rows.coaches.len(), census.totals.coaches),
-        (
-            "Coaches with a published email",
-            count_coaches_with_email(&rows.coaches),
-            census.totals.coaches_with_email,
-        ),
-        (
-            "Class-of-2027 athletes",
-            count_co2027(&rows.athletes),
-            census.totals.class_of_2027,
-        ),
-        (
-            "Class-of-2027 athletes with grade evidence",
-            count_grade_evidence(&rows.athletes),
-            census.totals.class_of_2027_with_grad_year_evidence,
-        ),
-        (
-            "Meets naming an Athletic.net id",
-            count_athletic_net_meets(&rows.meets),
-            census.meets.with_athletic_net_id,
-        ),
-        (
-            "Schools sharing a normalized name",
-            findings_of(conflicts, SCHOOL_IDENTITY),
-            census.duplicate_school_names,
-        ),
-    ];
-    for (label, sheet, census) in sheet_counts {
-        cells.push(reconciled(label, sheet, census)?);
-    }
-    Ok(cells)
-}
-
-/// One reconciliation row: the sheet's tally beside the census counter it must equal.
-fn reconciled(label: &str, sheet: usize, census: usize) -> ReportResult<Vec<Cell>> {
-    let status = if sheet == census {
-        "reconciled"
-    } else {
-        "DIFFERS"
-    };
-    Ok(row!(
-        Cell::text(label),
-        Cell::number(sheet)?,
-        Cell::number(census)?,
-        Cell::text(status)
-    ))
-}
-
-/// How many findings one family of the queue holds.
-fn findings_of(families: &[Family], label: &str) -> usize {
-    families
-        .iter()
-        .find(|family| family.label == label)
-        .map_or(0, |family| family.findings)
-}
-
-/// Coaches carrying a published address.
-fn count_coaches_with_email(coaches: &[CanonicalCoach]) -> usize {
-    coaches
-        .iter()
-        .filter(|coach| coach.has_published_email())
-        .count()
-}
-
-/// The store's class-of-2027 athlete rows.
-fn count_co2027(athletes: &[CanonicalAthlete]) -> usize {
-    athletes
-        .iter()
-        .filter(|athlete| athlete.grad_year == GradYear::CO2027)
-        .count()
-}
-
-/// Class-of-2027 athletes carrying at least one grade observation.
-fn count_grade_evidence(athletes: &[CanonicalAthlete]) -> usize {
-    athletes
-        .iter()
-        .filter(|athlete| {
-            athlete.grad_year == GradYear::CO2027 && !athlete.observed_grades.is_empty()
-        })
-        .count()
-}
-
-/// Meets whose source identities include a legacy Athletic.net meet id, the predicate the census's
-/// own `with_athletic_net_id` counter uses.
-fn count_athletic_net_meets(meets: &[CanonicalMeet]) -> usize {
-    meets
-        .iter()
-        .filter(|meet| {
-            meet.source_identities.iter().any(|identity| {
-                matches!(
-                    identity.namespace,
-                    SourceNamespace::LegacyAthleticNet { .. }
-                )
-            })
-        })
-        .count()
-}
-
-/// A counter as the number an Excel cell holds: exact through `u32`, and printed as text above it,
-/// where a cell could no longer hold the value exactly.
-fn count_cell(value: u64) -> Cell {
-    match u32::try_from(value) {
-        Ok(value) => Cell::Number(f64::from(value)),
-        Err(_) => Cell::text(value.to_string()),
-    }
 }

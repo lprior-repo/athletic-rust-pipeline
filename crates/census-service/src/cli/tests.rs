@@ -153,7 +153,9 @@ fn make_perf(
         event: event.id.clone(),
         meet: event.meet.clone(),
         date: "2027-04-15".to_string(),
-        mark: Mark::TimeSeconds(CentiSeconds::from_seconds_f64(time_seconds as f64)),
+        mark: Mark::TimeSeconds(
+            CentiSeconds::try_from_seconds_f64(time_seconds as f64).expect("fixture is in range"),
+        ),
         wind_mps: None,
         place: None,
         heat: None,

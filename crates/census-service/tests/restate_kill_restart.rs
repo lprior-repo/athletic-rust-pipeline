@@ -47,9 +47,11 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::{Revision, WorkflowIdentity};
 use census_store::{Store, Table};
+use std::collections::HashSet;
 use std::net::{SocketAddr, TcpListener};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
 /// The pinned server build, or anything the operator points at.
@@ -103,17 +105,34 @@ fn server_binary() -> Option<PathBuf> {
     })
 }
 
-/// Bind an ephemeral port, read it back, and drop the listener so a child can bind it. The handoff
-/// window is the usual ephemeral-port TOCTOU: losing the race shows up as a child that never
-/// becomes ready, never as a silent pass.
+/// The ephemeral ports this process has already handed out.
+///
+/// The kernel re-offers a just-released ephemeral port to the next `bind(":0")`, so picks made one
+/// after another can return the same number twice. That is how a node config ends up binding
+/// `[admin]` and `[ingress]` to one port: the second server dies with `Address in use`, and the
+/// test then fails waiting for an API that was never going to answer. The ledger makes every pick
+/// in this process distinct. What is left is the handoff window to other processes, where losing
+/// the race shows up as a child that never becomes ready - never as a silent pass.
+static HANDED_OUT: LazyLock<Mutex<HashSet<u16>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
+
+/// Bind an ephemeral port, read it back, and drop the listener so a child can bind it - a port
+/// this process has not handed out before.
 fn free_port() -> u16 {
-    let listener = TcpListener::bind("127.0.0.1:0").expect("bind an ephemeral port");
-    let port = listener
-        .local_addr()
-        .expect("read the bound address")
-        .port();
-    drop(listener);
-    port
+    loop {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind an ephemeral port");
+        let port = listener
+            .local_addr()
+            .expect("read the bound address")
+            .port();
+        drop(listener);
+        let first_time = HANDED_OUT
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(port);
+        if first_time {
+            return port;
+        }
+    }
 }
 
 /// A child process that is killed when the test ends, however it ends.
@@ -540,9 +559,12 @@ fn add_athlete(
             event: event_id.clone(),
             meet: meet_id.clone(),
             date: MEET_DATE.to_string(),
-            mark: Mark::TimeSeconds(CentiSeconds::from_seconds_f64(
-                11.5 + f64::from(u32::try_from(attempt).unwrap()) / 10.0,
-            )),
+            mark: Mark::TimeSeconds(
+                CentiSeconds::try_from_seconds_f64(
+                    11.5 + f64::from(u32::try_from(attempt).unwrap()) / 10.0,
+                )
+                .expect("fixture is in range"),
+            ),
             wind_mps: None,
             place: Some(u16::try_from(attempt + 1).unwrap()),
             heat: None,

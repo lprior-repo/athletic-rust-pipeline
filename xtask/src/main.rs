@@ -169,9 +169,9 @@ enum Command {
         /// Graduation year used for the cohort sheets (2027 = the class of 2027).
         #[arg(long, default_value_t = 2027)]
         grad_year: i32,
-        /// Reduce the best-results sheet over every source rather than the core scope alone.
+        /// Reduce the best-results sheet over the core scope instead of every approved source.
         #[arg(long)]
-        all_sources: bool,
+        core: bool,
         /// Cap the per-athlete best-mark sheet at N rows.
         #[arg(long, value_name = "N")]
         limit: Option<usize>,
@@ -243,9 +243,9 @@ fn run() -> Result<()> {
             target,
             out,
             grad_year,
-            all_sources,
+            core,
             limit,
-        } => census::export(target, out.as_deref(), grad_year, all_sources, limit),
+        } => census::export(target, out.as_deref(), grad_year, core, limit),
         Command::NewSource { name } => scaffold::new_source(&name),
         Command::DumpSheet { workbook, sheets } => dump_sheet::run(&workbook, &sheets),
         Command::Kani { harnesses } => kani::run(&harnesses),

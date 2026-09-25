@@ -187,7 +187,9 @@ fn add_athlete(
             event: event.id.clone(),
             meet: meet_id.clone(),
             date: MEET_DATE.to_string(),
-            mark: Mark::TimeSeconds(CentiSeconds::from_seconds_f64(seconds)),
+            mark: Mark::TimeSeconds(
+                CentiSeconds::try_from_seconds_f64(seconds).expect("fixture is in range"),
+            ),
             wind_mps: None,
             place: Some(u16::try_from(attempt + 1).unwrap()),
             heat: None,

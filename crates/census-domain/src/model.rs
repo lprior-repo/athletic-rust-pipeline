@@ -19,22 +19,20 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::marker::PhantomData;
 
-mod cluster;
 mod collision;
 mod natural_key;
 mod records;
 mod review;
-pub use cluster::AthleteClusterMember;
 pub use collision::{id_collision, CANONICAL_ID_COLLISION_FAMILY};
 pub use natural_key::NaturalKey;
 
 pub use records::{
-    AccessBlockKind, CanonicalMerge, CollectionSnapshot, CoverageRow, CoverageScope,
-    RetainedConflict, ReviewCase, ReviewState, SourceAccessCondition, SourceAthleteObservation,
-    SourceEntityKind, SourceMeetRef, SourceObjectIdentity, SourceObservation,
-    SourceSchoolObservation, ATHLETE_IDENTITY_FAMILY, COHORT_DECISION_FAMILIES,
+    AccessBlockKind, CanonicalMerge, CaseEvidence, CollectionSnapshot, CoverageRow, CoverageScope,
+    EvidenceFact, RetainedConflict, ReviewCase, ReviewState, SourceAccessCondition,
+    SourceAthleteObservation, SourceEntityKind, SourceMeetRef, SourceObjectIdentity,
+    SourceObservation, SourceSchoolObservation, ATHLETE_IDENTITY_FAMILY, COHORT_DECISION_FAMILIES,
     COHORT_EVIDENCE_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY,
-    CONTACT_CONFLICT_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
+    CONTACT_CONFLICT_FAMILY, MEMBER_SET_LABEL, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
     UNRESOLVED_VENUE_FAMILY,
 };
 pub use review::{

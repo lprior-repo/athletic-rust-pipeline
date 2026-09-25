@@ -48,7 +48,7 @@ fn performance(source_key: &str, identity: Option<SourceIdentity>) -> CanonicalP
         event: CanonicalEvent::new(&meet, EventKind::Track100m, Gender::Boys, None, None).id,
         meet,
         date: "2026-05-01".to_string(),
-        mark: Mark::TimeSeconds(CentiSeconds(1094)),
+        mark: Mark::TimeSeconds(CentiSeconds::new(1094)),
         wind_mps: None,
         place: None,
         heat: None,

@@ -12,13 +12,21 @@
 //!
 //! Output: PASS / FAIL / TIMEOUT per harness, exit nonzero on FAIL (TIMEOUT counts as FAIL).
 
+mod harness_list;
+
+use std::collections::HashMap;
 use std::time::Instant;
 
 use anyhow::{bail, Result};
 
 use crate::cmd::Cmd;
 
-/// Names of the mandatory harnesses that `cargo kani` must verify.
+pub use harness_list::{HarnessInfo, KNOWN_HARNESS};
+
+/// Names of the mandatory harnesses that `cargo kani` must verify (§21.1).
+///
+/// These are the contract's required kernel names. A name here that does not exist
+/// in `KNOWN_HARNESS` is a hard failure reported before any harness runs.
 fn mandatory_harnesses() -> &'static [&'static str] {
     &[
         "check_fixed_point_bounds",
@@ -33,31 +41,52 @@ fn mandatory_harnesses() -> &'static [&'static str] {
 }
 
 /// Resolve which harnesses to run: all mandatory ones, or validate user-provided names.
-fn resolve_targets(user_harnesses: &[String]) -> Vec<&'static str> {
-    let all = mandatory_harnesses();
-    if user_harnesses.is_empty() {
-        return all.to_vec();
-    }
+///
+/// Fails hard if any required harness is missing from the known set — this is a pre-execution
+/// check so we never silently run zero harnesses and report success.
+fn resolve_targets(user_harnesses: &[String]) -> Result<Vec<&HarnessInfo>> {
+    let required = mandatory_harnesses();
 
-    let mut found = Vec::new();
-    for name in user_harnesses {
-        if let Some(&h) = all.iter().find(|&&h| h == name.as_str()) {
-            found.push(h);
-        } else {
-            eprintln!(
-                "unknown harness: {name} (expected one of: {})",
-                all.join(", ")
-            );
-            for h in all {
-                eprintln!("  {h}");
+    // Build a quick lookup from name -> HarnessInfo.
+    let by_name: HashMap<&str, &HarnessInfo> = KNOWN_HARNESS.iter().map(|h| (h.name, h)).collect();
+
+    let targets = if user_harnesses.is_empty() {
+        // All mandatory: validate none are missing from the known set.
+        let mut missing = Vec::new();
+        let mut targets = Vec::with_capacity(required.len());
+        for &name in required {
+            match by_name.get(name) {
+                Some(&info) => targets.push(info),
+                None => missing.push(name),
             }
-            std::process::exit(1);
         }
-    }
-    if found.is_empty() {
-        std::process::exit(1);
-    }
-    found
+        if !missing.is_empty() {
+            missing.sort();
+            bail!("missing required harness(es): {}", missing.join(", "));
+        }
+        targets
+    } else {
+        let mut found = Vec::new();
+        for name in user_harnesses {
+            match by_name.get(name.as_str()) {
+                Some(&info) => found.push(info),
+                None => bail!(
+                    "unknown harness: {name} (expected one of: {})",
+                    KNOWN_HARNESS
+                        .iter()
+                        .map(|h| h.name)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+            }
+        }
+        if found.is_empty() {
+            bail!("no valid harnesses selected by user");
+        }
+        found
+    };
+
+    Ok(targets)
 }
 
 /// Run `cargo kani` and parse its output.
@@ -66,7 +95,7 @@ fn resolve_targets(user_harnesses: &[String]) -> Vec<&'static str> {
 /// results. Each harness either passes (all checks verified), fails (assertion violated), or
 /// times out (CBMC search exhausted).
 pub fn run(harnesses: &[String]) -> Result<()> {
-    let targets = resolve_targets(harnesses);
+    let targets = resolve_targets(harnesses)?;
 
     println!("cargo kani: {} harness(es)", targets.len());
 
@@ -74,8 +103,8 @@ pub fn run(harnesses: &[String]) -> Result<()> {
     let mut failed = 0u32;
     let mut timed_out = 0u32;
 
-    for harness in &targets {
-        print!("  {harness}... ");
+    for &harness in &targets {
+        print!("  {}... ", harness.name);
         let start = Instant::now();
         let result = run_harness(harness);
         let elapsed = start.elapsed();
@@ -95,6 +124,10 @@ pub fn run(harnesses: &[String]) -> Result<()> {
             }
             Err(KaniError::Missing) => {
                 println!("MISSING (harness not found in crate)");
+                failed = failed.saturating_add(1);
+            }
+            Err(KaniError::BuildFail) => {
+                println!("BUILD FAIL ({:.1}s)", elapsed.as_secs_f64());
                 failed = failed.saturating_add(1);
             }
         }
@@ -117,39 +150,119 @@ pub fn run(harnesses: &[String]) -> Result<()> {
 
 #[derive(Debug)]
 enum KaniError {
+    /// A verification check failed (assertion violated).
     Fail,
+    /// CBMC search exhausted (timeout).
     Timeout,
+    /// The harness was not found (should be caught by resolve_targets, but kept for safety).
     Missing,
+    /// The command itself failed (non-zero exit, build error).
+    BuildFail,
 }
 
-/// Run one harness via `cargo kani --harness <name>` and parse its output.
+/// Classification of a single harness output tail.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Outcome {
+    /// All verification checks passed.
+    Pass,
+    /// One or more checks failed.
+    Fail,
+    /// CBMC timed out.
+    Timeout,
+    /// Harness was not found.
+    Missing,
+    /// Build or command error (non-zero exit).
+    BuildFail,
+}
+
+/// Classify a combined stdout+stderr output tail from `cargo kani --harness <name>`.
 ///
-/// `cargo kani` prints verification results to stderr. A passing harness ends with
-/// "Verification Time: ..." and "All checks were verified". A failing harness prints
-/// "Fails: X" where X > 0. A timeout prints "Timed out".
-fn run_harness(name: &str) -> std::result::Result<(), KaniError> {
-    let output = Cmd::new("cargo")
+/// cargo-kani 0.67.0 writes its verdict to stderr. A passing harness ends with
+/// `VERIFICATION:- SUCCESSFUL` and `Complete - N successfully verified harnesses`.
+/// A failing harness prints `VERIFICATION:- FAILED`. A timeout prints `Timed out`.
+///
+/// Check order matters: verdict indicators (`VERIFICATION:- SUCCESSFUL/FAILED`) are checked
+/// before error heuristics (`CBMC failed`) because real Kani output includes both — the
+/// verdict is the ground truth.
+pub fn classify_kani_output(stdout: &str, stderr: &str) -> Outcome {
+    let combined = format!("{stdout}{stderr}");
+
+    // Timeout.
+    if combined.contains("Timed out") {
+        return Outcome::Timeout;
+    }
+
+    // Success: the real Kani 0.67.0 format.
+    if combined.contains("VERIFICATION:- SUCCESSFUL")
+        && combined.contains("successfully verified harnesses")
+    {
+        if let Some((_, tail)) = combined.split_once("Complete - ") {
+            let mut words = tail.split_whitespace();
+            if let Some(count_str) = words.next() {
+                if let Ok(count) = count_str.parse::<u32>() {
+                    if count > 0 {
+                        return Outcome::Pass;
+                    }
+                }
+            }
+        }
+    }
+
+    // Failure: checked before error heuristics so "CBMC failed" + "VERIFICATION:- FAILED"
+    // is classified as Fail rather than BuildFail.
+    if combined.contains("VERIFICATION:- FAILED") {
+        return Outcome::Fail;
+    }
+
+    // Legacy "All checks were verified" from older Kani versions.
+    if combined.contains("All checks were verified") {
+        return Outcome::Pass;
+    }
+
+    // A harness the crate does not contain: distinct from a build failure, because it says the
+    // coverage table and the crate have drifted apart rather than that a proof did not compile.
+    if combined.contains("Error: no harness found")
+        || combined.contains("could not find harness")
+        || combined.contains("no harness")
+    {
+        return Outcome::Missing;
+    }
+
+    // Build failure: non-zero exit or explicit error text.
+    if combined.contains("CBMC failed") || combined.contains("Error: ") {
+        return Outcome::BuildFail;
+    }
+
+    // Unknown output — treat as build fail to be safe.
+    Outcome::BuildFail
+}
+
+/// Run one harness via `cargo kani --manifest-path <path> --harness <name>`.
+///
+/// Package-qualified invocation (the way docs/VERIFICATION-EVIDENCE.md:55-63 documents it)
+/// so the runner knows exactly which package's harness to compile.
+///
+/// Kani writes its results to stderr, so we capture both streams.
+fn run_harness(harness: &HarnessInfo) -> std::result::Result<(), KaniError> {
+    let (stdout, stderr) = Cmd::new("cargo")
         .arg("kani")
+        .arg("--manifest-path")
+        .arg(harness.manifest_path)
         .arg("--harness")
-        .arg(name)
+        .arg(harness.name)
         .arg("-j")
         .arg("1")
-        .output()
-        .map_err(|_| KaniError::Fail)?;
+        .capture()
+        .map_err(|_| KaniError::BuildFail)?;
 
-    if output.contains("All checks were verified") {
-        Ok(())
-    } else if output.contains("Timed out") {
-        Err(KaniError::Timeout)
-    } else if output.contains("Fails:") && !output.contains("0") {
-        Err(KaniError::Fail)
-    } else if output.contains("Error: no harness found")
-        || output.contains("no harness")
-        || output.contains("could not find harness")
-    {
-        Err(KaniError::Missing)
-    } else {
-        // If CBMC compiled but didn't produce expected output, treat as failure
-        Err(KaniError::Fail)
+    match classify_kani_output(&stdout, &stderr) {
+        Outcome::Pass => Ok(()),
+        Outcome::Timeout => Err(KaniError::Timeout),
+        Outcome::Fail => Err(KaniError::Fail),
+        Outcome::Missing => Err(KaniError::Missing),
+        Outcome::BuildFail => Err(KaniError::BuildFail),
     }
 }
+
+#[cfg(test)]
+mod kani_tests;

@@ -16,8 +16,7 @@ pub(super) fn build_coach_index(coaches: &[Value]) -> HashMap<&str, HashMap<Stri
         let entry = coach_index.entry(sch).or_default();
         if let Some(prior) = entry.get(&key) {
             let has_email = coach_email_value(c).is_some_and(|value| !value.is_empty());
-            let prior_has_email =
-                coach_email_value(prior).is_some_and(|value| !value.is_empty());
+            let prior_has_email = coach_email_value(prior).is_some_and(|value| !value.is_empty());
             if has_email && !prior_has_email {
                 entry.insert(key, c);
             }

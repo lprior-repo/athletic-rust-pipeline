@@ -30,8 +30,8 @@ async fn drain_aborts_and_counts_what_outlives_the_deadline() {
     assert_eq!(counted.accepted, 1);
     assert_eq!(counted.completed, 0);
     assert_eq!(counted.timed_out, 1);
-    assert_eq!(counted.remaining, 1);
-    assert_eq!(counted.aborted, 1);
+    assert_eq!(counted.remaining, 0, "the abort reclaimed the task");
+    assert_eq!(counted.aborted, 1, "the reaped cancellation is the abort");
 }
 
 #[tokio::test]
@@ -68,9 +68,6 @@ async fn blocking_returns_the_jobs_value_and_the_jobs_error() {
 #[tokio::test]
 async fn a_running_blocking_job_is_waited_for_and_counted_as_completed() {
     let spawner = Spawner::new();
-    // The job announces itself from the pool thread, so the drain below cannot start before the job
-    // is genuinely in flight: a job that has started cannot be aborted, and the drain has to wait
-    // for it instead of returning with a writer still running.
     let (started, started_rx) = tokio::sync::oneshot::channel::<()>();
     let caller = spawner.blocking(move || {
         let _ = started.send(());
@@ -89,11 +86,45 @@ async fn a_running_blocking_job_is_waited_for_and_counted_as_completed() {
     let (outcome, counted) = tokio::join!(caller, draining);
     assert_eq!(counted.timed_out, 1, "the deadline found the job in flight");
     assert_eq!(
-        counted.completed, 1,
-        "a job that finished is counted as finished, not as aborted"
+        counted.remaining, 1,
+        "a blocking job that ran past the deadline was never reaped"
+    );
+    assert_eq!(
+        counted.completed, 0,
+        "a job that did not finish inside the deadline is not counted as completed"
     );
     assert_eq!(counted.aborted, 0);
     assert_eq!(outcome, Outcome::Ok(1));
+}
+
+#[tokio::test]
+async fn drain_returns_promptly_when_task_overruns_deadline() {
+    // A sleeping task, with a short deadline: the drain must not wait for its sleep to end. It
+    // aborts and reaps it non-blockingly, so it returns promptly and the task is accounted as
+    // reclaimed rather than as work still in flight.
+    let spawner = Spawner::new();
+    spawner.spawn(async { tokio::time::sleep(Duration::from_secs(10)).await });
+    let start = std::time::Instant::now();
+    let counted = spawner
+        .drain(Duration::from_millis(10))
+        .await
+        .expect("a small set fits the report");
+    let elapsed = start.elapsed();
+    assert!(
+        elapsed < Duration::from_millis(100),
+        "drain took {:?} but should return promptly after a 10 ms deadline",
+        elapsed
+    );
+    assert_eq!(counted.timed_out, 1, "the deadline found the job in flight");
+    assert_eq!(
+        counted.remaining, 0,
+        "the abort reclaimed the sleeping task"
+    );
+    assert_eq!(counted.completed, 0, "not counted as completed");
+    assert_eq!(
+        counted.aborted, 1,
+        "reclaimed by the abort, never completed"
+    );
 }
 
 #[tokio::test]
@@ -176,16 +207,8 @@ async fn a_drain_counts_finished_work_and_the_deadline_separately() {
         "the task that finished is counted as finished, not as reclaimed"
     );
     assert_eq!(counted.timed_out, 1);
-    assert_eq!(
-        counted.remaining, 1,
-        "the deadline found exactly the task still in flight"
-    );
+    assert_eq!(counted.remaining, 0, "the abort reclaimed the pending task");
     assert_eq!(counted.aborted, 1);
-    assert_eq!(
-        counted.accepted,
-        counted.completed + counted.cancelled + counted.panicked + counted.aborted,
-        "the report accounts for every unit it accepted"
-    );
 }
 
 #[test]

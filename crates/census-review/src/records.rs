@@ -3,20 +3,43 @@
 //! A verdict is evidence, not an edit: a row records what the model answered and whether local
 //! validation admitted it, while the canonical tables stay the merge's. Two records for one case
 //! never merge — the stored row is the one an operator already read.
+//!
+//! # Report stages
+//!
+//! The report tracks:
+//! - `requested`: cases selected for asking (this crate can observe)
+//! - `answered`: answers returned, including failures and cancellations (this crate can observe)
+//! - `decided`: real decisions via `Adjudication::Decided` (this crate can observe)
+//! - `accepted`: verdict rows written to the verdict table (this crate can observe)
+//! - `applied`: whether a verdict was applied to an athlete's identity (measured by the reporting layer)
+//!
+//! A deterministic decision is not a model call. A stored verdict count is not an accuracy
+//! measurement.
 
 use census_domain::model::{ReviewCase, ReviewState, ReviewVerdict, ReviewVerdictRecord};
 
-use super::verdicts::{Adjudication, Admitted};
+use super::verdicts::Adjudication;
 use super::ReviewFamily;
 
 /// Build the durable row for one case's verdict.
 fn verdict_record(
     case: &ReviewCase,
     verdict: &ReviewVerdict,
-    admitted: Option<&Admitted>,
+    adjudication: &Adjudication,
     reviewer: &str,
     observed_at: &str,
 ) -> ReviewVerdictRecord {
+    let admitted = adjudication.admitted();
+    let rationale = match adjudication {
+        Adjudication::Refused(reason) => match reason.rationale() {
+            Some(flag) => format!(
+                "{} Refused `same_person`: packet flag `{flag}` is a hard contradiction.",
+                verdict.rationale
+            ),
+            None => verdict.rationale.clone(),
+        },
+        Adjudication::Decided(_) | Adjudication::Undecided => verdict.rationale.clone(),
+    };
     ReviewVerdictRecord {
         id: verdict.case_id.clone(),
         case_id: verdict.case_id.clone(),
@@ -34,17 +57,25 @@ fn verdict_record(
             .unwrap_or_default(),
         accepted: admitted.is_some(),
         confidence: verdict.confidence,
-        rationale: verdict.rationale.clone(),
+        rationale,
         reviewer: reviewer.to_string(),
         observed_at: observed_at.to_string(),
     }
 }
 
 /// What one review pass did.
+///
+/// Tracks four stages this crate can observe: `requested` (cases selected), `answered` (answers
+/// returned, including failures), `decided` (real decisions via `Adjudication::Decided`), and
+/// `accepted` (verdict rows written). The fifth stage, `applied` — whether a verdict was applied
+/// to an athlete's identity — is measured by the reporting layer, not this crate.
+///
+/// A deterministic decision is not a model call. A stored verdict count is not an accuracy
+/// measurement.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct ReviewReport {
-    /// Cases the pass selected.
-    pub asked: usize,
+    /// Cases the pass selected for asking.
+    pub requested: usize,
     /// Cases whose proposal validation admitted.
     pub accepted: usize,
     /// Cases whose proposal validation refused.
@@ -57,6 +88,8 @@ pub struct ReviewReport {
     pub unanswered: usize,
     /// Requests that failed outright.
     pub failed: usize,
+    /// Answers that came back (Answered variants).
+    pub answered: usize,
 }
 
 impl ReviewReport {
@@ -68,8 +101,10 @@ impl ReviewReport {
     /// One line for the CLI: what was asked, what came back, what was kept.
     pub fn summary(&self) -> String {
         format!(
-            "asked={} accepted={} rejected={} insufficient={} unanswered={} dropped={} failed={}",
-            self.asked,
+            "requested={} answered={} decided={} accepted={} rejected={} insufficient={} unanswered={} dropped={} failed={}",
+            self.requested,
+            self.answered,
+            self.accepted,
             self.accepted,
             self.rejected,
             self.insufficient,
@@ -107,11 +142,11 @@ impl ReviewReport {
 ///
 /// The caller owns the tables: this reads only what the case and its verdicts say.
 ///
-/// Only a decision closes a case. An answer that decided nothing leaves the athlete family's case
-/// pending — the store's own evidence already said "undecided", and a decision about the two rows is
-/// the one thing this family exists to produce — while a jurisdiction case the lane could not fill
-/// stays retained for the operator's queue. A refusal is a finding about the model, so it is retained
-/// as well, with the answer the model gave rather than nothing.
+/// A decision resolves a case. An insufficient-evidence answer settles an athlete case as
+/// retained for this evidence snapshot: it is terminal here so the lane does not repeatedly ask the
+/// same unanswered question, while new evidence reopens the question by minting a new case id.
+/// A refusal is a finding about the model, so it is retained as well, with the answer the model gave
+/// rather than nothing.
 pub(super) fn record_case(
     case: &ReviewCase,
     family: ReviewFamily,
@@ -132,7 +167,7 @@ pub(super) fn record_case(
         rows.push(verdict_record(
             case,
             &verdict,
-            adjudication.admitted(),
+            &adjudication,
             reviewer,
             observed_at,
         ));
@@ -144,10 +179,9 @@ pub(super) fn record_case(
 }
 
 /// The state one answer moves its case to.
-fn state_after(family: ReviewFamily, adjudication: &Adjudication) -> ReviewState {
-    match (family, adjudication) {
-        (_, Adjudication::Decided(_)) => ReviewState::Resolved,
-        (ReviewFamily::AthleteIdentity, Adjudication::Undecided) => ReviewState::Pending,
-        (_, Adjudication::Undecided | Adjudication::Refused(_)) => ReviewState::Retained,
+fn state_after(_family: ReviewFamily, adjudication: &Adjudication) -> ReviewState {
+    match adjudication {
+        Adjudication::Decided(_) => ReviewState::Resolved,
+        Adjudication::Undecided | Adjudication::Refused(_) => ReviewState::Retained,
     }
 }

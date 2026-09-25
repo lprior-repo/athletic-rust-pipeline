@@ -215,7 +215,7 @@ fn verify(schools: &[CanonicalSchool], coaches: &[CanonicalCoach]) -> Result<()>
     let half = COACHES / 2;
     let (professional, personal) = checks::coach_tally(coaches)?;
     ensure!(
-        professional == half && personal == half,
+        professional == half && personal == COACHES,
         "professional {professional}, personal {personal}; every seeded address must survive"
     );
     Ok(())

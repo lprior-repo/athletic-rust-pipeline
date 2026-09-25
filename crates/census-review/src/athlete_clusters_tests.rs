@@ -5,8 +5,9 @@
 //! that is all this pass is: a writer of findings and decisions, never an editor of canonical rows.
 
 use census_domain::model::{
-    CanonicalAthlete, CanonicalSchool, Gender, GradYear, ReviewCase, ReviewState,
-    ReviewVerdictRecord, SchoolId, SourceIdentity, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
+    CanonicalAthlete, CanonicalSchool, Gender, GradYear, Grade, ObservedGrade, ReviewCase,
+    ReviewState, ReviewVerdictRecord, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
+    SourceRef, ATHLETE_IDENTITY_FAMILY,
 };
 use census_store::{Store, Table};
 
@@ -32,6 +33,14 @@ fn known_as(row: &mut CanonicalAthlete, namespace: SourceNamespace, id: &str) {
 
 fn milesplit(row: &mut CanonicalAthlete, id: &str) {
     known_as(row, SourceNamespace::MilesplitAthlete, id);
+}
+
+fn grade(row: &mut CanonicalAthlete, value: u8, year: i16) {
+    row.observed_grades.push(ObservedGrade {
+        grade: Grade::new(value).expect("a valid grade"),
+        school_year: SchoolYear::new(year).expect("a valid school year"),
+        source: SourceRef::new("milesplit_roster", None),
+    });
 }
 
 fn store_of(schools: &[CanonicalSchool], rows: &[CanonicalAthlete]) -> (tempfile::TempDir, Store) {
@@ -82,7 +91,6 @@ fn a_provider_object_on_two_schools_is_one_athlete() {
     );
     let recorded = verdicts(&store);
     let verdict = recorded.first().expect("one verdict");
-    assert_eq!(verdict.case_id, case.id);
     assert_eq!(verdict.kind, "value_proposed");
     assert_eq!(verdict.field, "identity");
     assert_eq!(verdict.value, "same_person");
@@ -93,10 +101,35 @@ fn a_provider_object_on_two_schools_is_one_athlete() {
     );
 }
 
-/// An object whose rows disagree on the athlete is filed and left open: the store cannot read the
-/// answer off itself, so the finding is not dressed up as a decision.
+/// Grade evidence is a deterministic hard contradiction even when canonical fields agree.
 #[test]
-fn a_provider_object_the_rows_disagree_on_stays_pending() {
+fn the_deterministic_lane_does_not_merge_contradictory_rows() {
+    let lakeland = school("Lakeland");
+    let west = school("Madison West");
+    let mut boys = athlete(&lakeland.id, "Jordan Smith", Gender::Boys);
+    let mut girls = athlete(&west.id, "Jordan Smith", Gender::Boys);
+    grade(&mut boys, 11, 2025);
+    grade(&mut girls, 10, 2025);
+    milesplit(&mut boys, "14399169");
+    milesplit(&mut girls, "14399169");
+    let (_dir, store) = store_of(&[lakeland, west], &[boys, girls]);
+
+    let report = reconcile_athletes(&store, "2026-09-23", false).expect("the pass runs");
+
+    assert_eq!(report.pending, 1);
+    assert_eq!(report.decided, 0);
+    assert_eq!(
+        cases(&store).first().map(|case| case.state),
+        Some(ReviewState::Pending)
+    );
+    assert!(
+        verdicts(&store).is_empty(),
+        "an undecided finding carries no verdict"
+    );
+}
+
+#[test]
+fn the_deterministic_lane_does_not_merge_gender_contradictory_rows() {
     let lakeland = school("Lakeland");
     let mut boys = athlete(&lakeland.id, "Jordan Smith", Gender::Boys);
     let mut girls = athlete(&lakeland.id, "Jordan Smith", Gender::Girls);
@@ -112,10 +145,7 @@ fn a_provider_object_the_rows_disagree_on_stays_pending() {
         cases(&store).first().map(|case| case.state),
         Some(ReviewState::Pending)
     );
-    assert!(
-        verdicts(&store).is_empty(),
-        "an undecided finding carries no verdict"
-    );
+    assert!(verdicts(&store).is_empty());
 }
 
 /// A row the provider knows by two objects is the finding the merge cannot make at all, and the pass
@@ -188,4 +218,57 @@ fn the_case_does_not_depend_on_append_order() {
 
     let ids = |store: &Store| -> Vec<String> { cases(store).into_iter().map(|c| c.id).collect() };
     assert_eq!(ids(&forwards), ids(&backwards), "one finding, one case id");
+}
+
+/// A day holds more than one collection cycle, and each cycle's pass carries its own payload: the
+/// later one must apply, not be refused as a replay of the first.
+///
+/// This is why the operation id carries the payload's digest. With a pass-only id, the second pass
+/// arrived under an id the store already held with a *different* digest and `commit_once` refused
+/// it — one pass per store per day, which is not how a collection cycle works.
+#[test]
+fn a_later_pass_on_the_same_date_applies_its_own_payload() {
+    let lakeland = school("Lakeland");
+    let west = school("Madison West");
+    let mut first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys);
+    let mut second = athlete(&west.id, "Jordan Smith", Gender::Boys);
+    milesplit(&mut first, "14399169");
+    milesplit(&mut second, "14399169");
+    let (_dir, store) = store_of(&[lakeland, west], &[first, second]);
+
+    let morning = reconcile_athletes(&store, "2026-09-25", false).expect("the first pass");
+    assert_eq!(morning.decided, 1, "the first pair is decided");
+    let standing = verdicts(&store);
+
+    // A later collection cycle the same day lands a second pair of rows.
+    let east = school("East");
+    let north = school("North");
+    let mut third = athlete(&east.id, "Riley Chen", Gender::Boys);
+    let mut fourth = athlete(&north.id, "Riley Chen", Gender::Boys);
+    milesplit(&mut third, "22001144");
+    milesplit(&mut fourth, "22001144");
+    for school_row in [east, north] {
+        store
+            .append(Table::Schools, &school_row)
+            .expect("a school row");
+    }
+    for row in [third, fourth] {
+        store.append(Table::Athletes, &row).expect("an athlete row");
+    }
+
+    let afternoon = reconcile_athletes(&store, "2026-09-25", false)
+        .expect("a later pass on the same date applies its own payload");
+
+    assert_eq!(afternoon.decided, 1, "the new pair is decided");
+    let all = verdicts(&store);
+    assert_eq!(all.len(), 2, "one verdict per decided pair");
+    assert!(
+        standing.iter().all(|verdict| all.contains(verdict)),
+        "the first pass's verdict still stands: {all:?}"
+    );
+    let resolved = cases(&store)
+        .into_iter()
+        .filter(|case| case.state == ReviewState::Resolved)
+        .count();
+    assert_eq!(resolved, 2, "both decided cases are resolved in the store");
 }

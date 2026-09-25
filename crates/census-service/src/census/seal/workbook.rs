@@ -1,9 +1,7 @@
 //! Reading the exported workbook back: what the seal can honestly check about the bytes it certifies.
 //!
-//! Sheet *contents* beyond the two meta sheets are deliberately not materialised — a census workbook
-//! holds a million rows per sheet, and reading them to count cells would cost more than the
-//! verification is worth. What costs nothing to prove is proved here: the file opens, it is the file
-//! whose bytes were hashed, and the numbers its meta sheets publish agree with the store.
+//! Every count the seal verifies is read from the store — not handed through by a caller that
+//! could lie — and every mismatch is a named discrepancy rather than a silent pass.
 
 use std::fs::File;
 use std::io::Read;
@@ -11,11 +9,17 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 use calamine::{open_workbook_auto, DataType, Reader};
+use census_report::report::{self, Scope};
+use census_store::Store;
 use sha2::{Digest, Sha256};
 
 use crate::census::WorkbookCheck;
 
 use super::count;
+
+mod checks;
+mod reconcile;
+mod result;
 
 /// The three sheet names the seal requires. They are what the workbook's meta block publishes; a
 /// rename shows up here as a refusal rather than as a seal over an unverified export.
@@ -26,71 +30,61 @@ pub const RUN_METRICS_SHEET: &str = "Run Metrics";
 /// The run-metrics label whose value must equal the store's cohort count.
 pub const COHORT_LABEL: &str = "class of 2027";
 
-/// What the seal can honestly check about an exported workbook: its bytes, its sheet names, the
-/// jurisdictions its coverage sheet carries, and the cohort its run-metrics sheet names.
+/// Verify an exported workbook against the store's own counts.
 ///
-/// Sheet *contents* beyond the two meta sheets are deliberately not materialised: a census workbook
-/// holds a million rows per sheet, and reading them to count cells would cost more than the
-/// verification is worth. What it costs nothing to prove — that the file is the one the store's
-/// report describes — is proved here, and a mismatch is a named discrepancy rather than a refusal
-/// with no reason.
+/// The seal never trusts a caller's tally. It reads the census and coverage report from the store
+/// to get the expected athlete count and jurisdiction count, then checks the workbook's actual rows
+/// against those expectations. Every mismatch is a named discrepancy.
 pub fn inspect_workbook(
     path: &Path,
-    class_of_2027: u64,
-    jurisdictions: u64,
+    store: &Store,
+    grad_year: i16,
+    scope: Scope,
 ) -> Result<WorkbookCheck> {
     let digest = file_digest(path)?;
     let mut book =
         open_workbook_auto(path).with_context(|| format!("opening {}", path.display()))?;
-    let names = book.sheet_names().to_vec();
+    let sheet_names = book.sheet_names();
+    let names: Vec<&str> = sheet_names.iter().map(|name| name.as_str()).collect();
     let mut discrepancies = Vec::new();
-
-    for required in [ATHLETES_SHEET, COVERAGE_SHEET, RUN_METRICS_SHEET] {
-        if !names.iter().any(|name| name == required) {
-            discrepancies.push(format!("the workbook has no {required} sheet"));
-        }
-    }
-
-    let coverage_rows = match sheet_rows(&mut book, COVERAGE_SHEET)? {
-        Some(rows) => rows.len().saturating_sub(1),
-        None => 0,
-    };
-    if count(coverage_rows) < jurisdictions {
-        discrepancies.push(format!(
-            "{COVERAGE_SHEET} carries {coverage_rows} jurisdiction rows, the classifier produced {jurisdictions}"
-        ));
-    }
-
-    let run_metrics = sheet_rows(&mut book, RUN_METRICS_SHEET)?.unwrap_or_default();
-    let mapped_athletes = labelled_count(&run_metrics, COHORT_LABEL).unwrap_or(0);
-    if mapped_athletes == 0 {
-        discrepancies.push(format!(
-            "{RUN_METRICS_SHEET} does not name the cohort: no {COHORT_LABEL} row"
-        ));
-    } else if mapped_athletes != class_of_2027 {
-        discrepancies.push(format!(
-            "{RUN_METRICS_SHEET} cohort {mapped_athletes} != store {class_of_2027}"
-        ));
-    }
-
-    let counts_reconciled = mapped_athletes > 0 && mapped_athletes == class_of_2027;
-    let coverage_reconciled = count(coverage_rows) >= jurisdictions;
+    discrepancies.extend(checks::check_required_sheets(
+        &names,
+        &[ATHLETES_SHEET, COVERAGE_SHEET, RUN_METRICS_SHEET],
+    ));
+    let census = report::build_census(store, scope)
+        .with_context(|| "reading the census from the store for workbook reconciliation")?;
+    let expected_athletes = count(census.totals.class_of_2027);
+    let coverage = report::coverage_report(store, Some(grad_year)).with_context(|| {
+        "reading the coverage report from the store for workbook reconciliation"
+    })?;
+    let expected_jurisdictions = count(coverage.jurisdictions.len());
+    let cov = reconcile::reconcile_coverage(&mut book, &mut discrepancies, expected_jurisdictions)?;
+    let athletes_data_rows =
+        reconcile::reconcile_athletes(&mut book, &mut discrepancies, expected_athletes)?;
+    let reconciled =
+        reconcile::reconcile_run_metrics(&mut book, &mut discrepancies, expected_athletes)?;
+    let run_metrics = reconciled.rows;
+    let mapped_athletes = reconciled.mapped_athletes;
+    let counts_reconciled =
+        athletes_data_rows == expected_athletes && mapped_athletes == expected_athletes;
+    let expected_juris_usize = usize::try_from(expected_jurisdictions).unwrap_or(usize::MAX);
+    let coverage_reconciled = cov.unique_count == expected_juris_usize && !cov.has_duplicates;
     let metrics_reconciled = !run_metrics.is_empty() && mapped_athletes > 0;
     let export_verified = discrepancies.is_empty();
-
-    Ok(WorkbookCheck {
-        sheets: count(names.len()),
-        // See this function's doc: the big sheets are not materialised to count their cells, so the
-        // row count is what the two meta sheets published — the rows this command actually read.
-        rows: count(coverage_rows.saturating_add(run_metrics.len().saturating_sub(1))),
-        digests: vec![digest],
+    Ok(result::build_check(result::CheckAssembly {
+        names: &names,
+        coverage_unique_count: cov.unique_count,
+        run_metrics: &run_metrics,
+        digest,
         mapped_athletes,
-        counts_reconciled,
-        coverage_reconciled,
-        metrics_reconciled,
-        export_verified,
+        decisions: result::CheckDecisions {
+            counts_reconciled,
+            coverage_reconciled,
+            metrics_reconciled,
+            export_verified,
+        },
         discrepancies,
-    })
+    }))
 }
 
 /// Every non-empty row of one sheet, each row as text cells.

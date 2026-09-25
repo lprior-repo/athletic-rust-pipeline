@@ -12,21 +12,34 @@ use census_crawl::net::Fetcher;
 use census_crawl::{AdapterContext, AdapterReport, CrawlError, RecordedJournal, Recording};
 use census_report::report::{self, ReportError, ReportResult, Scope};
 use census_report::{bests, workbook};
-use census_store::{Store, StoreError, StoreResult, Table};
+use census_store::{Application, Store, StoreError, StoreResult, Table};
 
 use super::wire::ingest::SweepReport;
 use super::wire::{BestsReply, ConsolidatedTable, ReportReply, WorkbookReply};
 use super::{cohort_label, job_error, JobError, MAX_ROWS_PER_REQUEST};
 
-/// Append observations for one table. Every row must carry its canonical `id`; that is what the
-/// store keys the observation by.
+/// Apply one operation to a table: its rows and the receipt that records them, in one commit.
+///
+/// Every row must carry its canonical `id`; that is what the store keys the observation by.
 ///
 /// The per-request ceiling is enforced here, where the row count is known. It is a *request*
 /// failure, and the store's taxonomy has no admission-bound variant, so it rides
 /// [`StoreError::Invariant`] — the slot for a bound the caller cannot satisfy by retrying.
 /// [`JobError`](super::JobError)'s conversion classifies that variant as terminal, so a replay does
 /// not re-offer a batch the ceiling already refused.
-pub fn append_observations(store: &Store, table: Table, rows: &[Value]) -> StoreResult<usize> {
+///
+/// Whether these rows are new work or a replay of work the store already holds is the store's
+/// answer, not this function's: `operation` names the unit of work and `digest` its payload, and a
+/// repeat of the pair writes nothing and reports [`Application::Repeated`]. The receipt lands in the
+/// same commit as the rows, so a writer that dies between the two cannot leave rows that no receipt
+/// covers.
+pub fn apply_observations(
+    store: &Store,
+    table: Table,
+    rows: &[Value],
+    operation: &str,
+    digest: &str,
+) -> StoreResult<Application> {
     if rows.len() > MAX_ROWS_PER_REQUEST {
         return Err(StoreError::Invariant {
             detail: format!(
@@ -35,8 +48,9 @@ pub fn append_observations(store: &Store, table: Table, rows: &[Value]) -> Store
             ),
         });
     }
-    store.append_many(table, rows)?;
-    Ok(rows.len())
+    let mut batch = store.write_batch();
+    batch.append_many(table, rows)?;
+    batch.commit_once(operation, digest)
 }
 
 pub(super) fn consolidate_tables(

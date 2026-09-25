@@ -40,7 +40,7 @@ named in the message; there is no stack trace.
 | `census-status <--store <dir>\|--ingress [<origin>]>` | `Census/status` on the running deployment, or the binary's `report --core` offline |
 | `coverage <--store <dir>\|--ingress [<origin>]>` | `Report/run` on the running deployment, or the binary's `report` (no flag = every source) offline |
 | `bench [-- <filter>]` | `cargo bench -p census-service [<filter>]` |
-| `export <--store <dir>\|--ingress [<origin>]> [--out <file>] [--grad-year <year>] [--all-sources] [--limit <n>]` | `Workbook/run` on the running deployment, or the binary's `workbook` offline |
+| `export <--store <dir>\|--ingress [<origin>]> [--out <file>] [--grad-year <year>] [--core] [--limit <n>]` | `Workbook/run` on the running deployment, or the binary's `workbook` offline |
 | `new-source <name>` | writes the adapter scaffold described below |
 
 ### `gate`
@@ -181,7 +181,7 @@ substring match over criterion benchmark ids, not a target name. The `--` separa
 a bare `cargo xtask bench parser` is a clap error, and the wrapper prints the exact command it runs
 so a surprising filter is visible.
 
-### `export [--out <file>] [--grad-year <year>] [--all-sources] [--limit <n>]`
+### `export [--out <file>] [--grad-year <year>] [--core] [--limit <n>]`
 
 ```bash
 cargo xtask export --ingress --out out/census.xlsx --limit 5000
@@ -189,7 +189,7 @@ cargo xtask export --store var/census-service --out out/census.xlsx --limit 5000
 ```
 
 Builds the census workbook from evidence the store already holds — no gathering, no network.
-`--grad-year` (default 2027), `--all-sources` and `--limit` are forwarded to `census-service workbook`
+`--grad-year` (default 2027), `--core` and `--limit` are forwarded to `census-service workbook`
 offline and carried in the `Workbook/run` request through the ingress, and both modes print the
 path they wrote and the cohort's graduation year. It is the short stable name for the artifact the
 recruiting projection consumes; offline the child's exit status is this command's exit status, and

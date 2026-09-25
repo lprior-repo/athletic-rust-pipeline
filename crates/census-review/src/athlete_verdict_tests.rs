@@ -10,7 +10,7 @@ use crate::packets::{case_fact, fact};
 use crate::verdicts::{validate, Adjudication, Admitted, Refusal};
 use crate::ReviewFamily;
 
-use super::{read, AthleteVerdict};
+use super::{read, AthleteVerdict, HardContradiction};
 
 /// The retained case: one canonical athlete, and the ids the store kept it apart from.
 fn case() -> ReviewCase {
@@ -28,6 +28,11 @@ fn packet() -> ReviewPacket {
     ReviewPacket::new(case.subject_id.clone(), case.subject.clone())
         .with_case(case_fact(&case))
         .with_evidence(fact("answer_field", "identity"))
+}
+
+fn packet_with_flag(flag: &str) -> ReviewPacket {
+    let value = format!("{flag}: deterministic contradiction");
+    packet().with_evidence(fact("flag", &value))
 }
 
 /// A proposal carrying one answer, as a model would return it.
@@ -108,6 +113,62 @@ fn the_two_decisions_validate_and_the_decline_closes_nothing() {
     assert!(AthleteVerdict::SamePerson.decides());
     assert!(AthleteVerdict::DifferentPerson.decides());
     assert!(!AthleteVerdict::InsufficientEvidence.decides());
+}
+
+#[test]
+fn same_person_is_rejected_when_gender_differs() {
+    assert_eq!(
+        validate(
+            ReviewFamily::AthleteIdentity,
+            &proposal("same_person"),
+            &packet_with_flag("gender_differs"),
+        ),
+        Adjudication::Refused(Refusal::HardContradiction(HardContradiction::GenderDiffers))
+    );
+}
+
+#[test]
+fn same_person_is_rejected_when_grade_evidence_differs() {
+    assert_eq!(
+        validate(
+            ReviewFamily::AthleteIdentity,
+            &proposal("same_person"),
+            &packet_with_flag("grad_year_evidence_differs"),
+        ),
+        Adjudication::Refused(Refusal::HardContradiction(
+            HardContradiction::GradYearEvidenceDiffers
+        ))
+    );
+}
+
+#[test]
+fn same_person_is_accepted_when_no_hard_contradiction_exists() {
+    assert_eq!(
+        validate(
+            ReviewFamily::AthleteIdentity,
+            &proposal("same_person"),
+            &packet_with_flag("distinct_provider_objects"),
+        ),
+        Adjudication::Decided(Admitted {
+            field: "identity".to_string(),
+            value: "same_person".to_string(),
+        })
+    );
+}
+
+#[test]
+fn different_person_is_accepted_despite_hard_contradiction() {
+    assert_eq!(
+        validate(
+            ReviewFamily::AthleteIdentity,
+            &proposal("different_person"),
+            &packet_with_flag("gender_differs"),
+        ),
+        Adjudication::Decided(Admitted {
+            field: "identity".to_string(),
+            value: "different_person".to_string(),
+        })
+    );
 }
 
 #[test]

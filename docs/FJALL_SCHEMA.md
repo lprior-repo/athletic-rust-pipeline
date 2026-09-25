@@ -7,16 +7,29 @@ Design-side companion: [`FJALL_SCHEMA.md`](../FJALL_SCHEMA.md) — the full sche
 
 ## 1. Keyspaces and tables
 
-Three Fjall keyspaces are created on open (`crates/census-store/src/lib.rs:159-173`):
+Four Fjall keyspaces are created on open (`crates/census-store/src/lib.rs`):
 
 | Keyspace | Purpose | Tables (logical) |
 |---|---|---|
 | `entities` | All canonical entities | schools, teams, coaches, athletes, meets, events, performances, source_identities, conflicts, review_cases, coverage, snapshots, source_access, identity_verdicts, source_meets (15) |
 | `journal` | Per-phase append logs | phases keyed by phase name |
 | `meta` | Markers (import state, sequence metadata) | import markers, sequence tracking |
+| `receipts` | One row per applied operation: the record that makes a replayed append a no-op | keyed by the caller's `operation_id` |
 
-All three are created with `KeyspaceCreateOptions::default` — KV separation, custom compaction,
-and bloom filters are **not configured**.
+`entities` and `journal` are created with `KeyspaceCreateOptions::default` — KV separation, custom
+compaction, and bloom filters are **not configured**; `journal`, `meta` and `receipts` set
+`expect_point_read_hits(true)`, because each is read by exact key on a hot path (a resume check, a
+mark, a receipt).
+
+**2026-09-25 — the receipts keyspace.** §15 of the delivery goal requires the ingest path's external
+effect to be idempotent across the two durability domains: a worker that commits the append and dies
+before recording the step replays the step. Previously that replay appended the same page twice. Now
+the rows, the table's accounting and a receipt bound to `(operation_id, payload digest)` commit
+together (`StoreBatch::commit_once`), so the replay finds the receipt and writes nothing. A re-used
+operation id with a *different* digest is an invariant violation, not an upsert. Receipts are removed
+only once no invocation Restate still retains could replay them — `Sweep` prunes those older than 90
+days (`REPLAY_RETENTION_DAYS`, the `journal_retention` the ingest objects declare) and reports the
+count plus any row it could not date. See the root `FJALL_SCHEMA.md` §2 for the row shape.
 
 **2026-09-22 — the meet census table.** `source_meets` holds one row per meet a source enumerated
 before its results were read (`census_domain::model::SourceMeetRef`, keyed `{source}:{meet_id}`),

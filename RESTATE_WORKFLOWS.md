@@ -87,7 +87,7 @@ everything invoked only by a sibling handler is `ingress_private`.
 | `Report` | workflow | `run` | Renders one scope's recruiting report. Key = `report:<scope>:<date>` |
 | `Bests` | workflow | `run` | Ranks the best marks in one scope and cohort. Key = `bests:<scope>:<grad year or all>:<limit or all>:<date>` — a different cohort or limit is a different answer, not a resubmission |
 | `Workbook` | workflow | `run` | Writes the recruiting workbook. Key = `workbook:<grad year or all>:<scope>:<date>` |
-| `Ingest` | object | `record`, `state`, `complete_window` | Key = endpoint string; the whole state is one value under `"state"` (§3.1); `state` is a shared (read-only) handler |
+| `Ingest` | object | `record`, `state`, `complete_window` | Key = endpoint string; the whole state is one value under `"state"` (§3.1); `record` requires the caller's `operation_id` and applies it once through the store's receipt (§3.1.1); `state` is a shared (read-only) handler |
 | `Sweep` | workflow | `run`, `interrupt` | `run` chains windows; `interrupt` is a shared handler that resolves `STOP_SIGNAL` on the target invocation |
 | `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/census-reconcile/src/identity.rs`); one state's stages — team index, roster walk, meet census — recorded in durable state as each completes; its source plan (the applicable sources this machine may sweep and the ones it refuses by name) is recorded first, before any stage runs, and kept across re-invocations |
 | `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<scope>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction`, folds the reports into one `NationalReport` (failed states land as `failures` rows instead of failing the run), and merges the table snapshots once through the `Consolidate` workflow before it assembles the report |
@@ -206,7 +206,7 @@ All of an endpoint's durable state is written as a single value under one key:
 ```text
 object = endpoint string
 state  = "state"                                   # KEY_STATE (restate_services/mod.rs)
-value  = IngestState { endpoint, total_observations, cursor, last_appended_at, windows }
+value  = IngestState { endpoint, total_observations, cursor, last_appended_at, windows, seen_operations }
 ```
 
 The code's stated reason: the endpoint's "whole durable state, written as one value so a partially
@@ -215,9 +215,42 @@ updated endpoint (cursor advanced but totals not, or the reverse) cannot exist"
 
 | Handler | Writes | Notes |
 |---|---|---|
-| `record` | one `ctx.set(KEY_STATE, ...)` | Appends observations, then advances `cursor`, `total_observations`, `last_appended_at`; converts the accepted count to `u64` with `try_from` (a non-fitting host is terminal, not clamped) |
+| `record` | one `ctx.set(KEY_STATE, ...)` | Applies the posted operation to the store — its rows and its receipt in **one** Fjall commit (§15, below) — then advances `cursor`, `total_observations`, `last_appended_at` and names the operation in `seen_operations` |
 | `state` | nothing | Shared (read-only) handler: returns the same value without writing |
 | `complete_window` | one `ctx.set(KEY_STATE, ...)`, only on change | Rejects an empty label terminally; pushes the label only if absent, then sorts — window bookkeeping is a set, so a duplicate declaration is a no-op |
+
+#### 3.1.1 Idempotency: the store's receipt, not the object's state
+
+`record` requires `operation_id`: the caller's stable name for one unit of work. The same unit posted
+again — after a retry, or after being re-read from a cache — repeats the id, and the store answers
+from its own receipt rather than appending again:
+
+```text
+record(IngestRequest { table, rows, operation_id })
+  digest = sha256(table || rows)                                  # ingest.rs::payload_digest
+  store  = Fjall: rows + table accounting + receipt{operation, digest, at, appended}   # ONE commit
+           receipt already present with this digest  -> write nothing, report appended = 0
+           receipt present with a different digest   -> terminal invariant violation
+```
+
+Three properties follow, and they are the ones §15 of the delivery goal asks for [R07]:
+
+* **The external effect is idempotent across the two durability domains.** The receipt commits with
+  the rows, so a worker that dies between the append and the acknowledgement leaves no rows without a
+  receipt: the replay that follows finds it and appends nothing. This is what the older
+  `seen_operations`-then-append ordering could not close.
+* **A re-used operation id is an error, not an upsert.** Identity is the caller's id and payload
+  compatibility is the digest; the digest is deliberately *not* the identity, because an id derived
+  from the payload cannot notice that the payload changed under it.
+* **The state write is bookkeeping, not the mechanism.** `seen_operations` is this object's own view
+  for an operator reading `state`; a replay appends nothing because the store says so, whether or not
+  the object's state ever learned about the first attempt.
+
+Receipts are removed only once no invocation Restate still retains could replay the operation:
+`Sweep` prunes those older than `REPLAY_RETENTION_DAYS` (90, the `journal_retention` the ingest
+objects declare) and reports both the count removed and any row it could not date
+(`SweepReport::pruned_receipts`, `undated_receipts`) rather than deleting a receipt whose window it
+cannot prove closed.
 
 `appended` is produced inside `ctx.run`, so a replay of an acknowledged step reuses the journaled
 count instead of re-appending.
@@ -237,10 +270,10 @@ instead of the store (`census_crawl::recording`), and what it recorded is posted
 
 Two consequences are worth naming. The endpoint is a *source* coordinate rather than a run
 coordinate — `wiaa_results_wi` outlives each run and the window says when it was read, which is what
-makes one endpoint's counters comparable across runs. And the route can append a batch twice if the
-append commits and its acknowledgement is lost, exactly as §7.5 records for `record` itself: the
-unit is re-read from cache and re-posted, and the journal entry is what the run writes once the rows
-are durable.
+makes one endpoint's counters comparable across runs. And the route's re-post — the unit re-read from
+cache after a lost acknowledgement — now appends nothing: each post carries an operation id derived
+from the invocation, the endpoint, the window and the unit's position, so the store recognizes the
+rows it already holds and the journal entry is written once (§3.1.1).
 
 The stages that still write their own store — the state's own results index, the team-index and the
 roster stages — keep doing so: their walks are unchanged, and routing them is the same seam applied
@@ -406,14 +439,17 @@ Definition attributes (omitted option = not declared, so the SDK/server default 
 | `SourceCache` | `lazy_state`; no `inactivity_timeout`; both retentions `"30 days"`; retry declared without `initial_interval` (`max_attempts = 3, on_max_attempts = "pause"`) |
 | `BrowserSession` | `inactivity_timeout = "26h"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 3 / pause` (a human may be clearing a challenge) |
 | `LocalReviewer` | `inactivity_timeout = "10m"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 3 / pause` |
-| `Census`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` | `invocation_retry_policy` with `max_attempts = 3` (one retry owner, §9), otherwise SDK/server defaults |
+| `Census`, `JurisdictionCensus`, `NationalCensus` | `invocation_retry_policy` with `max_attempts = 3` (one retry owner, §9), otherwise SDK/server defaults |
+| `Ingest` | `journal_retention = "90 days"`, `idempotency_retention = "30 days"`, retry `500ms / 1m / 3 attempts / pause` — the 90 days is the window a replay can reach back over, and so the window a store receipt must outlive (§3.1.1) |
+| `Sweep` | `journal_retention = "90 days"`, `workflow_completion_retention = "180 days"`, `idempotency_retention = "30 days"`, retry `max_attempts = 3` |
 
 Handler-internal bounds:
 
 | Where | Value |
 |---|---|
 | Long-wait loops | Browser readiness: `MAX_OBSERVATIONS` = 17 280 polls at `POLL_INTERVAL` = 5 s, hard deadline `READINESS_DEADLINE_MS` = 24 h. Sweep: `windows` default 1, `window_seconds` default 1, `MAX_SWEEP_WINDOWS` = 366, `MAX_SWEEP_ENDPOINTS` = 256 |
-| `Ingest::record` | `MAX_ROWS_PER_REQUEST` = 50 000 |
+| `Ingest::record` | `MAX_ROWS_PER_REQUEST` = 50 000; `operation_id` ≤ `MAX_OPERATION_BYTES` = 512 and payload digest ≤ `MAX_DIGEST_BYTES` = 256, both refused before the batch holds anything (an empty id or digest is refused too: an empty digest matches every payload) |
+| Receipt retention | `REPLAY_RETENTION_DAYS` = 90: `Sweep` prunes store receipts older than the ingest objects' own journal retention and reports the count |
 | Row fan-out | request `concurrency` ≤ 256, bounded again by `row_concurrency`; `MAX_CANDIDATES` = 4 096; `MAX_PROFILE_BYTES_PER_ROW` = 8 MiB |
 | Run size / paging / attempts | `MAX_RUN_ROWS` = 2 097 152, `RESULT_PAGE_ROWS` = 64; up to 64 attempts per source operation (`dispatch.rs`) |
 | Client-side waits | `export` polls for up to 86 400 s and does not cancel the invocation on timeout; ingress/admin clients use a 300 s timeout with response bodies capped (65 536 bytes on admin reads) |
@@ -542,12 +578,20 @@ keeps a 26 h inactivity window because a challenge can legitimately be waiting o
 
 No handler implements an exactly-once effect: nothing carries a write-idempotency token into the
 browser, the HTTP fetches, the local model or the workbook writer, and no transaction spans Restate
-state and the artifact store. What exists is at-least-once delivery plus §7.2. Two consequences:
+state and the artifact store. What exists is at-least-once delivery plus §7.2, and — for the store's
+own appends — an application receipt written in the same commit as the rows it names (§3.1.1). One
+consequence remains:
 
-1. `Ingest::record` can append the same rows twice if the append commits and the acknowledgement is
-   lost; those rows merge at the next `consolidate`, and `total_observations` counts both.
-2. `ExportWorker` can leave a staged bundle that no commit receipt refers to; the code marks that as
+1. `ExportWorker` can leave a staged bundle that no commit receipt refers to; the code marks that as
    an orphan rather than pretending it cannot happen.
+
+What the receipt changes is the first consequence this section used to carry: an `Ingest::record`
+whose append commits and whose acknowledgement is lost no longer appends its rows twice. The replay
+finds the receipt beside the rows, writes nothing, and reports `appended = 0`; `total_observations`
+therefore counts each operation once. The limit of that guarantee is worth stating precisely, because
+it is narrower than exactly-once: it holds for *the store*, keyed by the caller's operation id, and it
+says nothing about the browser, the fetch cache or the workbook. A caller that reuses an operation id
+for genuinely different work is refused rather than silently deduplicated.
 
 ## 8. Failure modes
 
@@ -555,7 +599,7 @@ state and the artifact store. What exists is at-least-once delivery plus §7.2. 
 |---|---|
 | Endpoint not deployed / admin unreachable | Ingress calls fail client-side; `transport::ingress_error` prints Restate's message when a response body exists, otherwise the transport error. No CLI retry loop exists for submission (only `export` polls an already-submitted invocation). |
 | Endpoint process dies mid-invocation | The handler task dies with it; the server retries per policy — `1s` initial, 4 attempts, then **paused** for an operator. Journaled `ctx.run` values replay instead of recomputing. |
-| Task cancelled mid-flight (drain deadline, operator stop) | Work that committed its `ctx.run` result may not have written its state yet: for `Ingest`, rows can be appended while `cursor`/`total_observations` stay at the previous value, so a producer that resends the batch double-appends (§7.5). For `RunCoordinator`, `progress:<run>` may lag the sealed pages, and `snapshot` refuses to export while a claimed page is missing. |
+| Task cancelled mid-flight (drain deadline, operator stop) | Work that committed its `ctx.run` result may not have written its state yet: for `Ingest`, rows can be appended while `cursor`/`total_observations` stay at the previous value — the rows and their receipt are durable, so the producer that resends the batch appends nothing and the counters catch up on that replay (§3.1.1). For `RunCoordinator`, `progress:<run>` may lag the sealed pages, and `snapshot` refuses to export while a claimed page is missing. |
 | Browser challenged / human required / cooling down | `await_ready` never reports `Ready` on a stale observation: it writes `status`, arms `challenge-started-ms`, issues at most one recovery (`recovery-issued`), and ends the wait with `HumanRequired` or a 408 after the deadline. `SourceGateway` returns `BrowserUnavailable` for rankings instead of waiting; `rankings_resume` fails 409 until a recover reports `Ready`. |
 | Local model blocked / unusable source row | `LocalReviewer::review` records `blocked` and returns `ReviewOutcome::Failed` with `request: None` on later calls instead of burning retries against a model that is down; `RowWorker::process` publishes a terminal `ReviewRequired` report for a row it cannot use (missing row, validation issue, empty query plan) instead of retrying |
 | Panic or cancel inside `blocking` | `JobError::Terminal` with `format!("job panicked: {join}")` / `format!("job cancelled: {join}")`; only an ordinary `Err` becomes `Transient`. `job_error` is deliberately a function, not a `From` impl, so a terminal failure cannot take the SDK's blanket `From<E: StdError>` path and become retryable. |

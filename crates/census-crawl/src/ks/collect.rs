@@ -84,7 +84,10 @@ enum KsRead {
     /// The record carried no canonical school; nothing was appended and nothing journaled.
     Unreadable,
     /// The record was appended and journaled as done; `None` means it published no AD coach.
-    Read(Option<CanonicalCoach>),
+    ///
+    /// Boxed: a `CanonicalCoach` is 224 bytes, so an unboxed payload would make every value of
+    /// this enum - including the `Unreadable` ones the walk drops - carry that size.
+    Read(Box<Option<CanonicalCoach>>),
 }
 
 /// What one directory pass counted; the email count is recorded on the report as each record is
@@ -129,12 +132,14 @@ fn collect_records(
 
         match collect_record(record, ctx, url, &options.observed_on, &journal_key)? {
             KsRead::Unreadable => continue,
-            KsRead::Read(None) => tally.skipped_no_ad = tally.skipped_no_ad.saturating_add(1),
-            KsRead::Read(Some(coach)) => {
-                if coach.professional_email.is_some() || coach.personal_email.is_some() {
-                    report.with_email = report.with_email.saturating_add(1);
+            KsRead::Read(coach) => match coach.as_ref() {
+                Some(coach) => {
+                    if coach.professional_email.is_some() || coach.personal_email.is_some() {
+                        report.with_email = report.with_email.saturating_add(1);
+                    }
                 }
-            }
+                None => tally.skipped_no_ad = tally.skipped_no_ad.saturating_add(1),
+            },
         }
         tally.processed = tally.processed.saturating_add(1);
     }
@@ -180,5 +185,5 @@ fn collect_record(
         }),
     )?;
     batch.commit()?;
-    Ok(KsRead::Read(coach))
+    Ok(KsRead::Read(Box::new(coach)))
 }

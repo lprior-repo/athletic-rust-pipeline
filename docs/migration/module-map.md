@@ -291,7 +291,9 @@ the workbook and best results are rendered by `cli/publish.rs:7`, which imports
 | `meta` key | `<name>` → small JSON/scalar | `store/mod.rs:14`; legacy-import marker written by `store/legacy.rs` |
 | entity id ceiling | 512 bytes (`MAX_ID_BYTES`) | `store/table.rs:19`; enforced in `store/keys.rs:66-89` |
 | rows per table ceiling | 20,000,000 (`MAX_ROWS_PER_TABLE`) | `store/table.rs:15` |
-| cache budget | 256 MiB unified LSM cache | `store/mod.rs:116` (`CACHE_BYTES`) |
+| cache budget | 1 GiB unified LSM cache (`CACHE_BYTES: u64 = 1024*1024*1024`, `crates/census-store/src/lib.rs:70`) | `store/mod.rs:116` (`CACHE_BYTES`) |
+
+`Table` has **16** variants (`Table::ALL: [Table; 16]`, `crates/census-store/src/table.rs:128`).
 | write API | `append_many`, `append`, `replace_many`, `replace` | `store/write.rs:25,57,72,92` |
 | read API | `scan<T: Entity>`, `consolidate_table`, snapshot | `store/read/mod.rs:51,108`, `store/read/snapshot.rs:131` |
 | raw HTTP bodies (not in Fjall) | `<cache>/{key}.body` + `<cache>/{key}.meta.json`, key = `sha256_prefix16(method \x1f url \x1f extra)`; meta carries status/sha256/fetched_at/last_modified/content_type | `net/cache.rs:28-40`, `net/types.rs:130` |

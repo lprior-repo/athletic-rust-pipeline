@@ -1,79 +1,37 @@
 #!/usr/bin/env bash
-# cold-copy backup drill: copy a store, open the copy, compare fjall-stats +
-# consolidate/report counts. Emits PASS/FAIL with raw output.
-#
-# Failure modes documented in docs/OPERATIONS.md §Backups:
-#   * Lock held — Fjall returns a lock error; stop the source unit first.
-#   * Cache absent — a store copy without the cache costs re-fetching only.
-#   * Marker present — legacy import marker on a re-import causes duplicate
-#     observations until the marker is cleared; see OPERATIONS.md §Restore.
-#
-# Usage: tools/ops-backup-drill.sh <store-dir>
 set -euo pipefail
 
 STORE="${1:?Usage: tools/ops-backup-drill.sh <store-dir>}"
-DRILL_DIR="$(mktemp -d)"
-BINARY="${BINARY:-target/debug/census-service}"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BINARY="${BINARY:-$REPO_ROOT/target/debug/census-service}"
+command -v jq >/dev/null
+[[ -d "$STORE/fjall" ]] || { echo 'FAIL: source has no Fjall database' >&2; exit 1; }
+DRILL_DIR="$(mktemp -d "${TMPDIR:-/tmp}/athletic-backup-drill.XXXXXXXX")"
+trap 'rm -rf -- "$DRILL_DIR"' EXIT
 
-fail() { echo ""; echo "FAIL: $*"; cleanup; exit 1; }
-pass() { echo ""; echo "PASS: $*"; cleanup; exit 0; }
+"$BINARY" --store "$STORE" store-backup --to "$DRILL_DIR/backup"
+jq -e '.version == 1 and (.files | length > 0) and (.tables | type == "object")' \
+    "$DRILL_DIR/backup/backup.json" >/dev/null
 
-cleanup() { rm -rf "$DRILL_DIR"; }
-trap cleanup EXIT
+"$BINARY" --store "$DRILL_DIR/restored" store-integrity | tee "$DRILL_DIR/integrity"
+grep -qx $'ok\ttrue' "$DRILL_DIR/integrity"
+"$BINARY" --store "$DRILL_DIR/restored" fjall-stats > "$DRILL_DIR/stats"
+jq -Rn '[inputs | split("\t") | select(length == 2) |
+    select(.[0] != "store" and .[0] != "observations" and
+           .[0] != "bytes_on_disk" and .[0] != "store_bytes") |
+    {key: .[0], value: (.[1] | tonumber)}] | from_entries' \
+    < "$DRILL_DIR/stats" > "$DRILL_DIR/counts.json"
+jq -e --slurpfile actual "$DRILL_DIR/counts.json" '.tables == $actual[0]' \
+    "$DRILL_DIR/backup/backup.json" >/dev/null
 
-# --- Step 1: copy the store ---
-echo "--- step 1: cold copy ---"
-cp -a "$STORE" "$DRILL_DIR/source"
-cp -a "$STORE" "$DRILL_DIR/copy"
-echo "  source: $DRILL_DIR/source"
-echo "  copy:   $DRILL_DIR/copy"
-echo ""
-
-# --- Step 2: fjall-stats on both ---
-echo "--- step 2: fjall-stats comparison ---"
-FJALL_SRC="$($BINARY --store "$DRILL_DIR/source" fjall-stats 2>&1)" || fail "fjall-stats on source failed"
-FJALL_CPY="$($BINARY --store "$DRILL_DIR/copy" fjall-stats 2>&1)" || fail "fjall-stats on copy failed"
-echo "source:"
-echo "$FJALL_SRC"
-echo ""
-echo "copy:"
-echo "$FJALL_CPY"
-echo ""
-
-# Compare observation counts
-# Anchor the key: `source_observations` also ends in `observations`, and matching both made
-# `SRC_OBS` a two-line value, which turned every count comparison below into a vacuous pass.
-SRC_OBS=$(echo "$FJALL_SRC" | awk -F'\t' '$1 == "observations" {print $2}')
-CPY_OBS=$(echo "$FJALL_CPY" | awk -F'\t' '$1 == "observations" {print $2}')
-if [ "$SRC_OBS" != "$CPY_OBS" ]; then
-    fail "observation count mismatch: source=$SRC_OBS copy=$CPY_OBS"
-fi
-echo "  observations match: $SRC_OBS"
-
-# --- Step 3: consolidate on the copy ---
-echo "--- step 3: consolidate on copy ---"
-CONSOLIDATE="$($BINARY --store "$DRILL_DIR/copy" consolidate 2>&1)" || fail "consolidate on copy failed"
-echo "  $CONSOLIDATE"
-echo ""
-
-# --- Step 4: compare report output (if source has data) ---
-echo "--- step 4: report comparison (if data present) ---"
-if [ "$SRC_OBS" -gt 0 ]; then
-    REPORT_SRC="$($BINARY --store "$DRILL_DIR/source" report --print 2>&1)" || fail "report on source failed"
-    REPORT_CPY="$($BINARY --store "$DRILL_DIR/copy" report --print 2>&1)" || fail "report on copy failed"
-    SRC_ROWS=$(echo "$REPORT_SRC" | grep -c '^[A-Za-z]' 2>/dev/null || true)
-    CPY_ROWS=$(echo "$REPORT_CPY" | grep -c '^[A-Za-z]' 2>/dev/null || true)
-    echo "  source report rows: $SRC_ROWS"
-    echo "  copy   report rows: $CPY_ROWS"
-    echo ""
-    if [ "$SRC_ROWS" != "$CPY_ROWS" ]; then
-        fail "report row count mismatch: source=$SRC_ROWS copy=$CPY_ROWS"
-    fi
-    echo "  report row counts match: $SRC_ROWS"
-    echo ""
-else
-    echo "  no data to compare (0 observations), skipping report diff."
-    echo ""
-fi
-
-pass "backup drill completed successfully"
+"$BINARY" --store "$DRILL_DIR/restored" consolidate
+"$BINARY" --store "$DRILL_DIR/restored" report
+jq -e '.scope == "all_sources" and (.totals | type == "object")' \
+    "$DRILL_DIR/restored/out/report.json" >/dev/null
+jq -S 'del(.store_dir, .generated_on)' "$DRILL_DIR/restored/out/report.json" \
+    > "$DRILL_DIR/census-first.json"
+"$BINARY" --store "$DRILL_DIR/restored" report
+jq -S 'del(.store_dir, .generated_on)' "$DRILL_DIR/restored/out/report.json" \
+    > "$DRILL_DIR/census-reopened.json"
+cmp "$DRILL_DIR/census-first.json" "$DRILL_DIR/census-reopened.json"
+printf 'PASS: verified manifest digests, exact table counts, integrity, consolidation and census across reopen\n'

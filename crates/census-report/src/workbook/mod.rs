@@ -8,10 +8,12 @@
 //! PRs               §51   one row per athlete/event
 //! Performances_00N  §52   every stored mark, partitioned to Excel's cap
 //! Coaches           §53   one row per canonical coach
+//! Schools           §54   one row per canonical school the run's scope retains
 //! Meets             §54   one row per canonical meet
 //! Sources           §54   source declarations and evidence
 //! Coverage          §54   jurisdiction coverage and gaps
-//! Data Quality      §54   conflicts, review rows and model verdicts
+//! Conflicts         §54   the rows the merge kept separate instead of resolving
+//! Review            §54   the retained review rows and durable model verdicts
 //! Run Metrics       §54   run counters and reconciliation
 //! ```
 //!
@@ -56,7 +58,7 @@ impl Default for Options {
             grad_year: Some(2027),
             out: None,
             limit: None,
-            scope: Scope::Core,
+            scope: Scope::AllSources,
         }
     }
 }
@@ -147,16 +149,26 @@ fn write_objective_sheets(
     let recruiting = recruiting::Recruiting::load(store, scope, grad_year)?;
     recruiting.write_athletes(book, path)?;
     recruiting.write_prs(book, path)?;
-    performances::write_performance_sheets(book, path, store, scope)?;
+    let perf_population =
+        performances::write_performance_sheets(book, path, store, scope, grad_year)?;
+    let perf_population = performances::PerformanceSheetPopulation {
+        cohort_year: perf_population.cohort_year,
+        scope: perf_population.scope,
+        cohort_athletes: recruiting.cohort_athletes(),
+        total_rows: perf_population.total_rows,
+    };
     recruiting.write_coaches(book, path)?;
     recruiting.reconcile(store)?;
     meta::write_meta_sheets(
         book,
         path,
-        store,
-        views.core,
-        views.all_sources,
-        views.bests,
-        scope,
+        meta::RunFacts {
+            store,
+            core: views.core,
+            all_sources: views.all_sources,
+            bests: views.bests,
+            scope,
+            perf_population,
+        },
     )
 }

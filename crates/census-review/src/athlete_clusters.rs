@@ -22,6 +22,7 @@ use std::collections::BTreeSet;
 use census_domain::model::{ReviewCase, ReviewState, ReviewVerdictRecord};
 use census_store::{Store, StoreResult, Table};
 
+use crate::athlete_cluster_findings::Alias;
 use crate::athlete_cluster_findings::Observed;
 
 /// The reviewer a rule-written verdict is filed under.
@@ -65,6 +66,27 @@ impl ReconcileReport {
     }
 }
 
+/// File alias cases: each multi-object row that no standing decision already covers.
+fn file_alias_cases(
+    aliases: &[Alias],
+    standing: &BTreeSet<String>,
+    report: &mut ReconcileReport,
+    cases: &mut Vec<ReviewCase>,
+) {
+    for alias in aliases {
+        let Some(case) = alias.case() else {
+            continue;
+        };
+        if standing.contains(&case.id) {
+            report.held = report.held.saturating_add(1);
+            continue;
+        }
+        report.pending = report.pending.saturating_add(1);
+        report.filed = report.filed.saturating_add(1);
+        cases.push(case);
+    }
+}
+
 /// Write the identity findings a store-wide read of provider objects states.
 pub fn reconcile_athletes(
     store: &Store,
@@ -90,7 +112,10 @@ pub fn reconcile_athletes(
             report.held = report.held.saturating_add(1);
             continue;
         }
-        if span.agrees() {
+        if span.hard_contradiction().is_some() {
+            report.pending = report.pending.saturating_add(1);
+            cases.push(case);
+        } else if span.agrees() {
             let mut settled = case;
             settled.state = ReviewState::Resolved;
             report.decided = report.decided.saturating_add(1);
@@ -102,25 +127,17 @@ pub fn reconcile_athletes(
         }
         report.filed = report.filed.saturating_add(1);
     }
-    for alias in &aliases {
-        let Some(case) = alias.case() else {
-            continue;
-        };
-        if standing.contains(&case.id) {
-            report.held = report.held.saturating_add(1);
-            continue;
-        }
-        report.pending = report.pending.saturating_add(1);
-        report.filed = report.filed.saturating_add(1);
-        cases.push(case);
-    }
-    if !dry_run {
-        if !cases.is_empty() {
-            store.replace_many(Table::ReviewCases, &cases)?;
-        }
-        if !verdicts.is_empty() {
-            store.replace_many(Table::IdentityVerdicts, &verdicts)?;
-        }
+    file_alias_cases(&aliases, &standing, &mut report, &mut cases);
+    if !dry_run && (!cases.is_empty() || !verdicts.is_empty()) {
+        let mut batch = store.write_batch();
+        batch.replace_many(Table::ReviewCases, &cases)?;
+        batch.replace_many(Table::IdentityVerdicts, &verdicts)?;
+        let digest = super::compute_digest(&verdicts, &cases);
+        // One rule for both review writes: the id dates the pass *and* carries its payload, so an
+        // identical replay of a derivation is a repeat, while a later same-day derivation that
+        // decides new pairs is a new application instead of a refused one.
+        let operation = format!("reconcile:{observed_at}:{digest}");
+        batch.commit_once(&operation, &digest)?;
     }
     Ok(report)
 }

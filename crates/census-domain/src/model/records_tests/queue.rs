@@ -1,7 +1,9 @@
 //! What the two queues say: a finding keys its row, and evidence that changed mints a new case
 //! instead of borrowing the answer given about the old one.
 
+use super::super::review_record::REVIEW_POLICY_REVISION;
 use super::super::*;
+use crate::model::AthleteCandidateId;
 
 #[test]
 fn conflict_and_case_ids_bind_the_finding_not_the_run() {
@@ -79,31 +81,105 @@ fn new_evidence_mints_a_new_case_and_leaves_the_decided_one_as_history() {
 }
 
 #[test]
-fn evidence_normalization_ignores_order_case_and_whitespace() {
-    let ordered = ReviewCase::pending(
+fn evidence_normalization_ignores_case_and_whitespace() {
+    let written = ReviewCase::pending(
         "Athlete identity",
         "ath_a",
         "Jordan Smith",
-        "ids: ath_a, ath_b",
+        "same school and class as the row, ids: ath_a, ath_b",
     );
-    let reordered = ReviewCase::pending(
+    let respaced = ReviewCase::pending(
         "Athlete identity",
         "ath_a",
-        "jordan smith",
-        "ids:  ATH_B,   ath_a ",
+        "  jordan   smith ",
+        "same school and class as the row, IDS:  ath_a,   ath_b ",
     );
     assert_eq!(
-        ordered.id, reordered.id,
-        "the same facts in another order, case or spacing are the same evidence"
+        written.id, respaced.id,
+        "the same statement cased or spaced another way is the same evidence"
     );
 
     let changed = ReviewCase::pending(
         "Athlete identity",
         "ath_a",
         "Jordan Smith",
-        "ids: ath_a, ath_c",
+        "same school and class as the row, ids: ath_a, ath_c",
     );
-    assert_ne!(ordered.id, changed.id, "one changed fact is new evidence");
+    assert_ne!(written.id, changed.id, "one changed fact is new evidence");
+}
+
+#[test]
+fn an_attribution_swap_is_not_the_same_evidence() {
+    // The same tokens with the opposite meaning: only the association between each side and its value
+    // differs. Folding a statement into a sorted bag of tokens minted one case for both, so a verdict
+    // taken about one package of evidence was read as a verdict about the other.
+    let forward = ReviewCase::pending(
+        "Athlete identity",
+        "ath_a",
+        "Jordan Smith",
+        "side_a grad_year 2027 side_b grad_year 2028",
+    );
+    let swapped = ReviewCase::pending(
+        "Athlete identity",
+        "ath_a",
+        "Jordan Smith",
+        "side_b grad_year 2028 side_a grad_year 2027",
+    );
+    assert_ne!(
+        forward.id, swapped.id,
+        "the same tokens attributed the other way round are different evidence"
+    );
+}
+
+#[test]
+fn a_sign_and_a_unit_are_part_of_the_value() {
+    // Surrounding punctuation is formatting and goes; a sign is the value's own and stays, or a
+    // headwind and a tailwind would read as one measurement.
+    let tailwind = ReviewCase::pending("Athlete identity", "ath_a", "Row", "wind_mps +1.4");
+    let headwind = ReviewCase::pending("Athlete identity", "ath_a", "Row", "wind_mps -1.4");
+    assert_ne!(
+        tailwind.id, headwind.id,
+        "-1.4 m/s is not +1.4 m/s: the sign is not punctuation"
+    );
+
+    let metres = ReviewCase::pending("Athlete identity", "ath_a", "Row", "mark 17.02m");
+    let seconds = ReviewCase::pending("Athlete identity", "ath_a", "Row", "mark 17.02s");
+    assert_ne!(metres.id, seconds.id, "the unit is part of the value");
+}
+
+#[test]
+fn a_findings_membership_is_part_of_its_evidence() {
+    let committee = |suffixes: &[&str]| {
+        ReviewCase::pending_with_evidence(
+            "Athlete identity",
+            "ath_a",
+            "Jordan Smith",
+            "one provider object on several canonical rows",
+            CaseEvidence::of([
+                "Jordan Smith",
+                "one provider object on several canonical rows",
+            ])
+            .with_members(
+                MEMBER_SET_LABEL,
+                suffixes
+                    .iter()
+                    .map(|suffix| AthleteCandidateId::mint("ath", &[*suffix])),
+            ),
+        )
+    };
+
+    let two = committee(&["c1", "c2"]);
+    let three = committee(&["c1", "c2", "c3"]);
+    assert_ne!(
+        two.id, three.id,
+        "a finding resting on three rows is new evidence beside the one that rested on two"
+    );
+
+    let reordered = committee(&["c2", "c1"]);
+    assert_eq!(
+        two.id, reordered.id,
+        "the same members listed in another order are the same group, not a new question"
+    );
 }
 
 /// A family the census's own rules decide is minted decided: the case is not a question anyone is

@@ -30,7 +30,7 @@ use census_domain::model::EventKind;
 use census_store::Store;
 
 pub use events::{is_relay, sport_of};
-pub use measure::{mark_unit, mark_value, Measure};
+pub use measure::{field_mm, mark_unit, mark_value, Measure};
 pub use notation::{format_time, mark_text};
 pub use reduce::build;
 pub use write::write;

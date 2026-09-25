@@ -92,17 +92,13 @@ impl CanonicalCoach {
     /// is ever dropped for its domain.
     pub fn set_published_email(&mut self, address: &str) {
         match published_email(address) {
-            Some((address, MailboxKind::Professional)) => {
-                if self.professional_email.is_none() {
-                    self.professional_email = Some(address);
-                }
+            Some((address, MailboxKind::Professional)) if self.professional_email.is_none() => {
+                self.professional_email = Some(address);
             }
-            Some((address, MailboxKind::Personal)) => {
-                if self.personal_email.is_none() {
-                    self.personal_email = Some(address);
-                }
+            Some((address, MailboxKind::Personal)) if self.personal_email.is_none() => {
+                self.personal_email = Some(address);
             }
-            None => {}
+            _ => {}
         }
     }
 }

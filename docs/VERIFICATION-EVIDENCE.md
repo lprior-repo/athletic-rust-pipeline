@@ -998,8 +998,11 @@ Four things this run settles:
   pass certified `census-service-2026-09-24.xlsx` as it stood at 16:11 and refused on
   `579846 of 580334 cohort athletes appear in the workbook`. `census-service workbook` (92 s) rebuilt
   it from the same store, and the same seal then read `580334 of 580334`: the rows had landed between
-  the export and the check. `--all-sources` stays a different census (`report.json` 623509) and is not
-  what the seal certifies by default.
+  the export and the check. The all-source scope stays a different census (`report.json` 623509) and is
+  not what that seal certified by default. **2026-09-25:** the scope flags were aligned on `--core`, so
+  every approved source is what a flagless run measures now and `--core` is the explicit
+  Athletic.net-free diagnostic (`--all-sources` was the old name of that flag; the runs quoted above
+  predate the rename and are kept as executed).
 - **A `seal.json` from an older build is a parse trap, exactly as the runbook warns.** Both the store
   route and the online route died on `parsing var/midwest-census/out/seal.json — missing field
   silent_sources`, the field this build added to `RetainedFindings`. Renaming the artifact aside
@@ -1366,3 +1369,374 @@ Two things a reader should know that the artifact does not say: the counts **mix
 `retained.gaps` drops the jurisdiction each `CoverageGap` carries
 (`crates/census-report/src/report/coverage/gaps.rs:80-87`), so the 127 rows cannot be attributed to
 states from this file alone.
+
+---
+
+## The integrated tree: the budget at zero, and the port collision the kill/restart test was hiding (2026-09-25, integration pass)
+
+The §38 budget that stood at seven files and six functions is empty, and the two gates that had been
+red are green on the integrated tree:
+
+    $ cargo xtask scan                       # structure block
+    "files_over_300_lines": []
+    "functions_over_60_lines": 0
+    "functions_over_60_sites": []
+    "unstable_feature_sites": []
+    $ cargo xtask contract                   # 8 checks, all PASS: modules, budgets, no_python, ...
+    $ cargo xtask seams                      # 0 violations across the allowed-edge tables
+
+`functions_over_25_logical_lines` stays at 629 and is printed with `(context)`: it is the counter the
+gate's own comment says rises with every feature, and the ratchet prints it rather than failing on it.
+
+**The kill/restart test was failing on a port collision, not on the resume it exists to prove.** The
+first full suite of the pass reported `43 suites ok, 1 failed`:
+`restate_kill_restart::a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write` panicked at
+`restate_kill_restart.rs:596` with `the node's admin API answers: "node admin API never came up: error
+sending request for url (http://127.0.0.1:39517/deployments)"`. The node's own log named the cause:
+
+    Failed: [admin-api-server] failed binding to address '127.0.0.1:39517': Address in use (os error 98)
+
+The generated config bound **`[admin]` and `[ingress]` to the same port** (39517). The 09:30 run of the
+same test, whose root survives at `/tmp/midwest-kill-restart-720862`, had three distinct ports
+(33335 node, 37001, 43603), and the production node holds fixed ports (15152 node, 19095 admin, 18095
+ingress) — so no second process was involved. `free_port()` bound `127.0.0.1:0`, read the port, dropped
+the listener, and returned; the kernel re-offers a just-released ephemeral port to the next `bind(":0")`,
+so two adjacent picks returned 39517 and the second server died. The fix is a handed-out ledger
+(`static HANDED_OUT: LazyLock<Mutex<HashSet<u16>>>`) that makes every pick in the process distinct and
+retries otherwise; the only race left is the handoff window to other processes, where losing shows up as
+a child that never becomes ready, never as a silent pass. Re-run:
+
+    $ cargo test -p census-service --test restate_kill_restart
+    test a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write ... ok
+    test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 123.97s
+
+**Both live report/CSV pairs reconcile exactly; the pair the audit flagged is a legacy-name leftover.**
+`report-core.json` against `census-by-state-core.csv` and `report.json` (scope `all_sources`) against
+`census-by-state.csv` each agree on all 50 jurisdictions and on every total — 0 mismatches in `schools`,
+`athletes`, `coaches` and `coaches_with_email`. The files named `report-all-sources.json` and
+`census-by-state-all-sources.csv` are a 2026-09-20 pair from an older naming scheme: the JSON covers
+only 12 jurisdictions and every one of its `schools` counts is 0. The current writer emits the
+unsuffixed pair, which is why only that dead pair disagrees.
+
+That also identifies the number the audit could not place: `Run Metrics` printed **2,364,818**, which is
+exactly `report.json`'s all-source athlete total, in a block whose other counters are core-scope. The
+core scope is **2,228,631** (`report-core.json`'s total, and the seal's `counts.athletes`).
+
+**The workbook-build profile, separated from the code.** The offline CLI path (`census-service workbook`)
+runs whatever the caller built: the wrapper's own log shows `cargo run -q -p census-service --bin
+census-service -- --store var/midwest-census workbook …`, i.e. the debug profile (417 MB binary). The
+recorded 92 s/203 s builds in this document came from the prod endpoint. `Cargo.toml` defines only
+`[profile.release]`, and `tools/durability/run.sh` resolves its endpoint from `target/release` — so
+`--release` *is* the production path, and the remaining spread is machine context, as PERFORMANCE.md's
+"record on a quiet machine" caveat says. No code regression is implicated, and none was found.
+
+---
+
+## The recruiting workbook, built and measured: 1839 s, nine sheets, and where the time went (2026-09-25)
+
+**The artefact.** The offline export on the integrated tree completed at 12:13:11 with rc=0:
+`var/midwest-census/out/census-service-2026-09-25.xlsx`, **81,775,867 bytes**, sha256
+`bebe315b514830e531d3513f34eb7187…`. Its **nine** worksheets are the ones the module doc names, in
+the objective's order: `Athletes` (§50), `PRs` (§51), `Performances_001` (§52), `Coaches` (§53),
+`Meets`, `Sources`, `Coverage`, `Data Quality`, `Run Metrics` (§54). `Performances_00N` materialised
+as a single `Performances_001`: the store holds 309,962 canonical performances, far below Excel's
+1,048,576-row cap, so no partition beyond the first was needed. (The four open range writers visible
+during the build are the spill module's internal partitions, not published sheets - this section
+records that because the file's plan predicted twelve worksheets from those four descriptors and the
+artefact refutes it.)
+
+**The cost, and what it is not.** `EXPORT rc=0 elapsed=1839s`. A first reading called this a
+quadratic to match the index-stage defect recorded above; the measurements refute that reading.
+`fjall-stats` puts the store's shape at 309,962 performances, 3,991,059 observations, 3,072,309
+athletes, 2,508,619 source identities and 2,069,298,240 bytes on disk, with **`store_bytes`
+15,714,376,761** - and the build's resident set sat at 15,000,880 KB, i.e. the build materialises the
+whole logical store. `/proc/<pid>/io` read `rchar` 6,541,804,755 - very close to three passes over
+that store, which is the shape the module doc describes ("one dataset read three times around the §52
+performance sheets") - while `read_bytes` stayed 0 (all page cache) and `write_bytes` stayed at
+6,344,704 until the final write. `stime` was 3.7 s against a `utime` that grew past 1600 s: the phase
+is userspace CPU, one core at 99.7% of a 32-core host.
+
+**Where the CPU went.** A 4-second `perf record -F 99 -p <pid> -g` (permitted at
+`perf_event_paranoid=2`) captured 396 samples: **97.2% of self time in `__memcmp_evex_movbe`**,
+identified by disassembling the sampled address rather than by trusting the symbol table (the
+nearest exported symbol was `_dl_mcount_wrapper`, which the disassembly shows to be
+`__memcmp_evex_movbe`'s tail). The build is comparison-bound. The release binary is stripped, so the
+*caller* of those comparisons is not attributable from this profile - the index-stage investigation
+above used a symbolized dev build for exactly this reason, and that is the named next step. What the
+profile does refute is one particular suspect: the per-row paths were each read and each is a hash
+lookup or a single linear pass - `RangeFiles::range_of` is one `HashMap::get`,
+`retain_core_row` is a retain plus two small drops, `Parents::read` filters with hash-backed indexes,
+`bucket_universe` sorts and dedups once, `Lookups` is four maps, `bests::build` accumulates through
+`for_each_merged` and sorts once, and `sheet_order` is a plain comparator. None is O(n²).
+
+**Comparability.** PERFORMANCE.md's 203 s row is the *in-process* chain ("consolidate → index → two
+report scopes → bests → workbook") measured after the index fix, on the store as it stood then; the
+offline CLI additionally opens and scans the store itself. The two are not the same workload, and
+this section does not claim a regression between them. What today's numbers establish is the
+baseline the §24.2 before/after for the `Athletes` sort key is measured against: the same-corpus
+control run follows in the next section.
+
+---
+
+## §60 on the real store: backup, restore, integrity, and a full census read of the restored copy (2026-09-25)
+
+The drill `docs/FJALL_BACKUP.md` describes was run against `var/midwest-census` itself, not a fixture,
+with the sequence the objective asks for - consistent backup, restore, integrity verification, reopen,
+full census read - and with the store quiescent (no writer attached) throughout. Exact commands:
+
+    census-service store-integrity --store var/midwest-census
+    census-service store-backup   --store var/midwest-census --to /tmp/store-drill/backup
+    census-service store-restore  --from /tmp/store-drill/backup --to /tmp/store-drill/restored
+    census-service store-integrity --store /tmp/store-drill/restored
+    census-service fjall-stats     --store /tmp/store-drill/restored
+
+**Integrity.** The live store's check printed per-table `expected`/`actual` lines and exited 0 in
+**3.1 s**; the tail shown was `coverage 215`, `snapshots 3`, `source_access 0`,
+`identity_verdicts 43291`, `source_meets 131726`, `source_observations 207`, each `ok`. The restored
+copy's check printed **16 tables `ok`** followed by `ok true`.
+
+**Backup and restore.** The backup wrote a whole store-root copy in **23.5 s**; the restore into a
+fresh directory completed in **12.0 s** and reported the same per-table counts the backup had. The
+copy is the whole root, not only the Fjall tables - 15 GB on disk, against the Fjall store's own
+2,069,298,240 `bytes_on_disk` - so an operator sizing the drill should expect the HTTP cache, the
+entity logs and `out/` to travel with it, as `docs/FJALL_BACKUP.md` §1 tabulates.
+
+**The census read.** `fjall-stats` on the restored copy differs from the live store on **none** of the
+seventeen per-table counts: schools 89959, teams 207609, coaches 65020, athletes 3072309, meets 12556,
+events 101711, performances 309962, source_identities 2508619, conflicts 5300, review_cases 107768,
+coverage 215, snapshots 3, source_access 0, identity_verdicts 43291, source_meets 131726,
+source_observations 207, observations 3991059. The one difference is `store_bytes`:
+**15,714,376,761** live against **15,635,532,005** restored, a 0.5% reduction with identical row counts
+and identical `bytes_on_disk` (2,069,298,240) - the round trip re-serialises the store, so the logical
+byte total is not expected to reproduce exactly while every count does. Recorded rather than smoothed
+over, because a reader comparing the two outputs will see it.
+
+### The nine sheets, measured from the artefact (2026-09-25)
+
+Read from `xl/workbook.xml` and each sheet's `<dimension>` in the built workbook, so these are the
+artefact's own counts rather than the builder's log:
+
+| Sheet | Range | Data rows | Columns |
+| --- | --- | --- | --- |
+| `Athletes` (§50) | `A1:BF580335` | 580,334 | **58** |
+| `PRs` (§51) | `A1:S9959` | 9,958 | 19 |
+| `Performances_001` (§52) | `A1:S222066` | 222,065 | 19 |
+| `Coaches` (§53) | `A1:N32032` | 32,031 | 14 |
+| `Meets` (§54) | `A1:J1879` | 1,878 | 10 |
+| `Sources` (§54) | `A1:H185` | 184 | 8 |
+| `Coverage` (§54) | `A1:AB240` | 239 | 28 |
+| `Data Quality` (§54) | `A1:H48927` | 48,926 | 8 |
+| `Run Metrics` (§54) | `A1:D53` | 52 | 4 |
+
+Three of these are cross-checked against the builder's own running checks and against `verify`:
+`Athletes` 580,334 equals the export log's `rows=580334` (with `in_scope=2228631` as the all-sources
+denominator, so the sheet is the recruiting cohort, not every stored athlete); `PRs` 9,958 equals
+`best_mark_rows=9958`; `Coaches` 32,031 equals `store_coach_rows=32031`; and `Performances_001`
+222,065 equals the row count `verify` reported for that sheet. `Athletes` spanning `A` to `BF` is the
+§50 58-column recruiting layout in the artefact itself.
+
+`census-service verify --store var/midwest-census --workbook …` sampled to its 5,000-row cap on both
+sampled sheets and reported `verify: OK (5000 athletes sampled of 580334 rows, 5000 performances
+sampled of 222065 rows)` in 1m37s.
+
+
+## The §24.2 before/after for the `Athletes` sort key: a payload-identical workbook, and a timing delta the workload cannot resolve (2026-09-25)
+
+`MaterialisedSnapshot`'s `Athletes` sort keyed every comparison through `stable_key()` on both
+sides, allocating two `String`s per comparison — on the order of 580,334·log2(580,334)·2 allocations
+to order a sheet that is written once. The patch materialises each row's key once
+(`sort_by_cached_key`), so the cost is bounded by the row count instead of the comparison count.
+
+Two release binaries were built from the same tree with only that file differing
+(`crates/census-report/src/workbook/recruiting/athletes.rs`), and each ran the recruiting workbook
+export over the same store with no other load on the host:
+
+| | A (materialised key) | B (control, per-comparison key) |
+|---|---|---|
+| source sha256 | `3593d3bfc003c942f1d072d0273efd6a497646c35e09fce8ebfe1278fa5f46d3` | `119754a84cdee6d56b8ec0bc0fefb8085680e30c8d54ac34222709c1fe0efe13` |
+| exit / sheet rows | rc=0; Athletes 580,334 · PRs 9,958 · Coaches 32,031 | rc=0; Athletes 580,334 · PRs 9,958 · Coaches 32,031 |
+| workbook bytes | 81,775,867 | 81,775,866 |
+| workbook sha256 | `bebe315b514830e531d3513f34eb71877d5138709f32f5d3e303446935767a53` | `32d7304c54639bc642efdd1de3c440b79861661fcdbb2e59160362d3ebd381dd` |
+| elapsed | 1839 s | 1798 s |
+| steady RSS | 14,991,196 kB | 14,991,196 kB |
+| bytes read from the store (`rchar`) | 6,541,804,755 | 6,541,804,755 |
+
+The container digests differ, so the two deliverables were compared member by member instead of by
+container hash: of the 18 ZIP members, 17 are byte-identical, and the one that differs is
+`docProps/core.xml`, whose only difference is the writer's wall-clock stamp
+(`2026-09-25T16:42:59Z` versus `2026-09-25T17:20:00Z`). Every sheet part, the shared strings, the
+styles and the charts are identical, so the patch changes no workbook content.
+
+**Finding:** the workbook's `docProps` stamps are wall-clock, so *container* digests are not
+reproducible between runs even though every sheet is identical. The reproducible form of the claim
+is the 17-of-18 member comparison; a container-level `cmp` will always differ across runs.
+
+**On timing, the control was 41 s faster** (1798 s against 1839 s, 2.3%), so this A/B demonstrates no
+speedup. A single-core ~30-minute job on a 32-thread host carries run-to-run frequency and thermal
+variance of that order, and a 580k-row sort is a few seconds of the total budget; this measurement
+cannot resolve the patch's effect in either direction. The patch is kept for the reason it was
+written — a per-row key bounded by the row count rather than the comparison count, with no
+allocation per comparison — and not for a measured speedup, and this section is the evidence for
+that distinction rather than a claim of gain.
+
+Environment, identical for both windows: AMD Ryzen 9 9950X3D (16 cores/32 threads), 123 GB, rustc and
+cargo `1.97.0-nightly`, `[profile.release]` with `lto = "thin"`, `codegen-units = 1`, `strip = true`;
+one core at ~99.7% CPU, and no concurrent build or other load during either run.
+
+
+## The Restate seal: what the endpoint measured, and the trap in naming source objects (2026-09-25)
+
+The seal is the only §70 verification that reads the run's own open work, and it is the only route a
+finished census can take: `census-service seal --store` opens the store and therefore cannot see the
+journal's in-flight state at all, which is exactly what the first attempt reported —
+
+```
+refused: census cannot be sealed: source objects are terminal is unmet
+  (source objects have no terminal state: not measured - this seal does not read the workflow journal)
+```
+
+With `--ingress http://127.0.0.1:18095` and the endpoint running
+(`census-serve --listen 127.0.0.1:19103 --data-dir var/midwest-census`), the seal reads the run's
+objects through Restate. Re-registering the deployment against the freshly built binary moved the
+service revisions from `Census r13`/`Consolidate r9` to `Census r14`/`Consolidate r10`, so the seal
+measured the restored code rather than yesterday's.
+
+**The trap.** `--source-object` is the caller's to name, and the service cannot enumerate objects.
+Naming the four plausible key families (`milesplit_<st>`, `milesplit_teams_<st>`,
+`milesplit_rosters_<st>`, `tfrrs_<st>` × 49 jurisdictions plus `milesplit_unknown`) produced a
+*measured* refusal of 151 objects with no terminal state. `open-work --json` with the same 200 names
+resolved it: 151 of those endpoints have `observations: 0, windows: 0`, and every one of them is from
+a family the run never used. A key that was never touched reads as a fresh, non-terminal object, so
+**over-naming manufactures open work**; the honest set is the one the run actually used.
+
+`open-work --json` on the real set reported the run's own drain state:
+
+| field | value |
+|---|---|
+| `jurisdiction_sweeps` | 0 |
+| `source_objects` (unterminated) | 0 when only the run's keys are named |
+| `silent_sources` | 0 |
+| `jurisdictions` swept (teams/rosters/meets) | 49, all `true`, `owed_rosters: 0` |
+| `endpoints` with observations | 49 (`milesplit_<st>`), e.g. `milesplit_ca` 1253 |
+
+**The seal, over the run's own 49 objects:**
+
+```
+phase: complete
+acceptance: every §70 item is satisfied
+sealed 04ba90f355bc2703f600fcf3ea6e4f838b6134cd644acacec493ec7494a3736e on 2026-09-25
+  cohort 580334 of 2228631 athletes, 31870 schools, 11353 meets, 28979 cohort performances, 32031 coaches
+  retained: 127 gaps, 5300 conflicts, 0 access conditions (0 hosts refused, 0 throttled)
+wrote var/midwest-census/out/seal.json
+```
+
+`out/seal.json` carries `phase: complete`, the digest above, and the same counts, so a later run
+reads the seal instead of re-deriving it.
+
+**The workbook's own numbers, cross-checked against the reports rather than against themselves.**
+`out/census-by-state-core.csv` (50 states plus a TOTAL row) was joined to `report-core.json`'s
+`by_state` on all thirteen shared columns — 650 cells: **zero mismatches**, and the TOTAL row equals
+the seal exactly (`class_of_2027` 580,334; `athletes` 2,228,631; `schools` 31,870). Together with
+`Athletes` 580,334 / `PRs` 9,958 / `Coaches` 32,031 in the workbook and the seal's Run Metrics
+reconciliation, every clause of the workbook re-audit is satisfied by an independent artefact.
+
+
+### Note on the A/B's source digest (2026-09-25, after the debt ratchet)
+
+The A/B above was run on `athletes.rs` at `3593d3bfc003c942f1d072d0273efd6a497646c35e09fce8ebfe1278fa5f46d3`.
+The debt ratchet then failed on four metrics this change introduced — `census_report`'s
+`clippy::unwrap_used` (two `Cell::number(...).unwrap()` calls in the new `athletes/cells.rs`,
+now `?`-propagated through `ReportResult`), and two `as` casts plus one indexing site in
+`xtask/src/perf/bench.rs` (now `u32::try_from(...).map_err(...)?` and `parts.first()`/`parts.last()`).
+Those edits touch the same file's column assembly but not the sort key the A/B measures, so the
+measurement stands: the sort-key change is the only difference between the two binaries, and both
+still produce identical sheet payloads. The file's digest after those edits is
+`5bcedee7f2ef21b7a063d8530f35f9be3860b477771a9a680d9dc99d8ac8e38f`.
+
+
+## The drain's abort accounting: a reclaimed task is `aborted`, not work still in flight (2026-09-25)
+
+**Finding.** `Spawner::drain`'s deadline path (`crates/census-service/src/spawn.rs`) issued
+`abort_all()` and then reaped *once* with `while let Some(joined) = try_join_next()` — with no
+scheduler turn in between. An abort is delivered on the runtime's next turn, so that loop always
+found nothing: `Ledger::classify_reaped`'s `Cancelled => aborted` arm could never fire, and
+`set_remaining(tasks.len())` published the tasks the abort had just reclaimed as work *still in
+flight*. The result contradicted the report's own contract — the module and `TaskReport` docs read
+"`remaining` reflects what the abort could not reclaim" — and the §42 consumer, the deployment's
+`DrainCounts` (`restate_services/browser_session.rs`), whose JSON contract test asserts
+`drain.remaining == 0` on a clean path.
+
+**Caught by** `bootstrap::tests::drain_counts_aborted_tasks_after_the_deadline`: the first three
+assertions (`accepted == 1`, `timed_out == 1`, `completed == 0`) passed and
+`assert_eq!(report.aborted, 1)` failed with `aborted 0`, which isolated the classification rather
+than the accounting.
+
+**Fix.** Reap across a bounded number of runtime turns — `try_join_next`, then
+`tokio::task::yield_now().await`, repeated `REAP_TURNS = 8` times or until the set is empty. A task
+the abort reclaims is now counted `aborted` and leaves `remaining`; a job the abort cannot reclaim (a
+blocking-pool job that already started) never becomes ready and still lands in `remaining`. The
+budget is turns, not wall time, so the drain stays prompt:
+`drain_returns_promptly_when_task_overruns_deadline` asserts < 100 ms against a task sleeping 10 s.
+
+**Tests that had pinned the defect were corrected, not re-pinned:** `spawn/tests.rs`'s
+`drain_aborts_and_counts_what_outlives_the_deadline` and `a_drain_counts_finished_work_and_the_deadline_separately`
+now assert `remaining == 0, aborted == 1` for a reclaimed task (their old assertions, and their old
+message "cancelled task not reaped by try_join_next", described the bug), and
+`drain_returns_promptly_when_task_overruns_deadline` follows. The abort-resistant blocking case keeps
+`aborted == 0, remaining == 1`. The `remaining` reading is now stated in `spawn.rs` (module + report
+docs) and `spawn/ledger.rs::note_deadline`.
+
+**Evidence.** `cargo test -p census-service --lib` → 182 passed, 0 failed;
+`cargo test --workspace` → 1330 passed over 49 suites, exit 0;
+`cargo clippy --workspace --all-targets -- -D warnings` exit 0; `cargo fmt --all -- --check` exit 0.
+
+## The recruiting workbook's column map: three stale expectations and one re-blessed golden (2026-09-25)
+
+**Finding.** Three tests in `crates/census-report/src/workbook/recruiting/tests.rs` still asserted
+the pre-`Observed School Year` column indices, and two of them asserted *the same cell twice with
+different values* (index 51 as both `"professional_coach_email"` and `""`; index 54 as both a profile
+URL and `"2"`; index 57 as both `"pr"` and `""`), so the suite could not pass. Separately
+`parity_pipeline::pipeline_publishes_the_same_bytes_from_a_rebuilt_store` failed on
+`pipeline__workbook-shape`: 70 lines on both sides, first difference at line 2 — the sheet's column
+set had moved.
+
+**Fix.** The expectations now follow the published header order
+(`crates/census-report/src/workbook/recruiting/athletes/rules.rs`, 60 columns): `Athletic.net URL`
+52, `Sources Count` 55, `Confidence` 56 (`high` where grade evidence agrees), `Coverage State` 57,
+`Conflict Flag` 58, `Review Status` 59 — `review` for the identity-only athlete whose grade
+observation does not agree with the cohort, `verified` for the HIGH-confidence row with no conflict.
+The golden was regenerated with `GOLDEN_UPDATE=1 cargo test -p census-service --test parity_pipeline`.
+
+**Evidence.** An md5 manifest of `crates/census-service/tests/golden` taken before and after the
+re-bless shows exactly one changed file — `pipeline__workbook-shape.json` — so no other golden moved
+with the columns. `cargo test -p census-report --lib` → 71 passed, 0 failed; the parity target → 1
+passed, 0 failed.
+
+## Integration gate repairs (2026-09-25)
+
+- Coverage reconciliation uses saturating subtraction for duplicate-row counts.
+- `bench_census` propagates an out-of-range fixture mark instead of panicking.
+- Kani output classification uses `split_once` instead of byte-indexed string slicing.
+- Strict workspace source Clippy, including `expect_used`, `string_slice` and
+  `arithmetic_side_effects`, passed with warnings denied.
+- `cargo test -p xtask kani`: 17 passed.
+- `cargo run -p census-service --example bench_census -- --schools 2`: exit 0;
+  70 appended rows, 16 athletes, 32 performances, 16 PR rows, 28,625-byte workbook.
+- Full gate, production workbook verification, recovery and restore remain separate
+  acceptance checks; these narrow results do not certify the national census.
+
+### Parser fuzz execution
+
+ASan-enabled `cargo fuzz run <target> -- -max_total_time=60 -max_len=65536
+-rss_limit_mb=4096 -print_final_stats=1` completed all four targets without a
+reported crash. Each target ran for 61 seconds against its existing corpus.
+
+| Target | Seed | Executions | Peak RSS MiB |
+| --- | ---: | ---: | ---: |
+| xc | 3060809901 | 332037 | 499 |
+| hytek | 448981090 | 826605 | 548 |
+| raceday | 2117645087 | 4623237 | 633 |
+| compiled | 3713899070 | 528150 | 554 |
+
+These bounded crash-resistance runs do not prove semantic parser correctness or
+exhaust the input space.

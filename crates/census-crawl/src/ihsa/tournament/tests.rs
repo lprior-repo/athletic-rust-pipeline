@@ -191,7 +191,7 @@ fn hj_summary_pins_net_and_live_ids_on_every_finisher() {
     assert_eq!(winner.ihsa_school_id.as_deref(), Some("0611"));
     assert_eq!(
         winner.mark.as_deref().and_then(parse_mark),
-        Some(Mark::DistanceMetres(CentiMetres(202)))
+        Some(Mark::DistanceMetres(CentiMetres::new(202)))
     );
     let athlete = winner.athlete.as_ref().expect("checked above");
     assert_eq!(athlete.athletic_net_id, Some(27_740_691));
@@ -253,7 +253,7 @@ fn relay_summary_pins_four_legs_per_team_with_ids_and_grades() {
     assert_eq!(winner.ihsa_school_id.as_deref(), Some("1835"));
     assert_eq!(
         winner.mark.as_deref().and_then(parse_mark),
-        Some(Mark::TimeSeconds(CentiSeconds(47137))),
+        Some(Mark::TimeSeconds(CentiSeconds::new(47137))),
         "7:51.37 in seconds"
     );
     assert_eq!(
@@ -438,27 +438,27 @@ fn terms_pin_the_newest_completed_school_year() {
 fn mark_forms_seen_in_the_corpus_parse_to_canonical_marks() {
     assert_eq!(
         parse_mark("2.02m"),
-        Some(Mark::DistanceMetres(CentiMetres(202)))
+        Some(Mark::DistanceMetres(CentiMetres::new(202)))
     );
     assert_eq!(
         parse_mark("1.88mq"),
-        Some(Mark::DistanceMetres(CentiMetres(188)))
+        Some(Mark::DistanceMetres(CentiMetres::new(188)))
     );
     assert_eq!(
         parse_mark("7:51.37"),
-        Some(Mark::TimeSeconds(CentiSeconds(47137)))
+        Some(Mark::TimeSeconds(CentiSeconds::new(47137)))
     );
     assert_eq!(
         parse_mark("10.94"),
-        Some(Mark::TimeSeconds(CentiSeconds(1094)))
+        Some(Mark::TimeSeconds(CentiSeconds::new(1094)))
     );
     assert_eq!(
         parse_mark("10.94Q"),
-        Some(Mark::TimeSeconds(CentiSeconds(1094)))
+        Some(Mark::TimeSeconds(CentiSeconds::new(1094)))
     );
     assert_eq!(
         parse_mark("  2.02m "),
-        Some(Mark::DistanceMetres(CentiMetres(202)))
+        Some(Mark::DistanceMetres(CentiMetres::new(202)))
     );
 
     assert_eq!(parse_mark(""), None, "an absent mark is never invented");

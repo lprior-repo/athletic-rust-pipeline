@@ -4,6 +4,9 @@
 #
 # Simulated reboot: kill both Restate and the endpoint simultaneously.
 # Then restore both and verify the NationalReport is recoverable.
+#
+# Prerequisite: an active NationalCensus workflow must be running before the crash.
+# Without it the scenario is SKIPPED.
 
 set -euo pipefail
 
@@ -40,6 +43,15 @@ fi
 STORE="$SCRATCH_STORE"
 rm -rf "$STORE" && mkdir -p "$STORE"
 
+# Check for an active NationalCensus invocation before attempting reboot.
+# Without a running workflow the reboot simulation is meaningless.
+echo "Checking for active NationalCensus invocations..."
+INVOCATIONS=$(curl -sf "http://127.0.0.1:$ADMIN_PORT/v1/invocations" 2>/dev/null || echo "")
+if [ -z "$INVOCATIONS" ] || [ "$INVOCATIONS" = "null" ] || echo "$INVOCATIONS" | grep -q '"results"\|"invocations"' | head -1 | grep -q 'null\|""'; then
+    echo "SKIPPED: no active NationalCensus invocations running; reboot recovery requires a mid-flight workflow to resume from the journal. The Fjall store at $STORE is empty."
+    exit 0
+fi
+
 # Step 1: Note the pre-crash state
 echo "Recording pre-crash state..."
 PRE_CRASH_FJALL=$($BINARY --store "$STORE" fjall-stats 2>&1) || true
@@ -66,16 +78,19 @@ if [ -n "$ENDPOINT_PID" ]; then
 fi
 sleep 2
 
-# Step 3: Restore both processes
+# Step 3: Restore both processes using scratch Restate base-dir
 echo "Restoring processes..."
 
-# Restart Restate
-RESTATE_BASE_DIR="/var/lib/census-service-restate"
+# Use scratch base-dir for Restate, not the production path
+RESTATE_SCRATCH="$SCRATCH_STORE/restate-base"
+rm -rf "$RESTATE_SCRATCH"
+mkdir -p "$RESTATE_SCRATCH"
+
 if [ -f "$REPO_ROOT/deploy/restate.toml" ]; then
-    "$RESTATE_BINARY" --no-logo --config-file "$REPO_ROOT/deploy/restate.toml" &
+    "$RESTATE_BINARY" --no-logo --config-file "$REPO_ROOT/deploy/restate.toml" --base-dir "$RESTATE_SCRATCH" &
     RESTATE_PID=$!
 else
-    "$RESTATE_BINARY" --no-logo &
+    "$RESTATE_BINARY" --no-logo --base-dir "$RESTATE_SCRATCH" &
     RESTATE_PID=$!
 fi
 
@@ -103,7 +118,7 @@ done
 
 # Step 4: Check the NationalReport shared handler
 echo "Checking NationalReport after recovery..."
-REPORT_OUTPUT=$($BINARY --store "$STORE" national-report --revision 3 2>&1) || true
+REPORT_OUTPUT=$($BINARY --store "$STORE" national-report --revision 1 2>&1) || true
 echo "  Report: $(echo "$REPORT_OUTPUT" | head -5)"
 
 # Step 5: Compare Fjall stats

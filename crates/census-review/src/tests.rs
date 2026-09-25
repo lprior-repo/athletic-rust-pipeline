@@ -270,7 +270,8 @@ fn triage_keeps_a_refused_proposal_as_a_verdict_without_a_value() {
 #[test]
 fn the_report_line_names_every_outcome() {
     let report = ReviewReport {
-        asked: 10,
+        requested: 10,
+        answered: 8,
         accepted: 4,
         rejected: 1,
         insufficient: 3,
@@ -281,7 +282,7 @@ fn the_report_line_names_every_outcome() {
     assert_eq!(report.resolved(), 7);
     assert_eq!(
         report.summary(),
-        "asked=10 accepted=4 rejected=1 insufficient=3 unanswered=1 dropped=1 failed=1"
+        "requested=10 answered=8 decided=4 accepted=4 rejected=1 insufficient=3 unanswered=1 dropped=1 failed=1"
     );
 }
 

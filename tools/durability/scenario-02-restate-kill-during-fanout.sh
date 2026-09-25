@@ -64,35 +64,21 @@ else
     exit 0
 fi
 
-# Step 3: Restore the Restate data directory from backup (we use the same directory
-# since Restate stores its journal in base-dir)
-RESTATE_BASE_DIR=""
-# Try to find Restate's base directory from the config
-if [ -f /etc/census-service/restate.toml ]; then
-    RESTATE_BASE_DIR=$(grep 'base-dir' /etc/census-service/restate.toml | awk -F'"' '{print $2}')
-elif [ -f "$REPO_ROOT/deploy/restate.toml" ]; then
-    RESTATE_BASE_DIR=$(grep 'base-dir' "$REPO_ROOT/deploy/restate.toml" | awk -F'"' '{print $2}')
-fi
+# Step 3: Use a scratch Restate base-dir for restart (never touch production paths)
+RESTATE_SCRATCH="$SCRATCH_STORE/restate-base"
+rm -rf "$RESTATE_SCRATCH"
+mkdir -p "$RESTATE_SCRATCH"
+echo "  Restate scratch base-dir: $RESTATE_SCRATCH"
 
-if [ -z "$RESTATE_BASE_DIR" ]; then
-    echo "SKIPPED: cannot determine Restate base-dir from config; no fault-injection point for Restate state restore"
-    exit 0
-fi
-
-echo "  Restate base-dir: $RESTATE_BASE_DIR"
-
-# Step 4: Restart Restate with the same data directory
+# Step 4: Restart Restate with scratch base-dir
 echo "Restarting Restate..."
 if [ -f "$REPO_ROOT/deploy/restate.toml" ]; then
-    cp "$REPO_ROOT/deploy/restate.toml" /etc/census-service/restate.toml 2>/dev/null || true
-    "$RESTATE_BINARY" --no-logo --config-file "$REPO_ROOT/deploy/restate.toml" &
-    RESTATE_RESTART_PID=$!
-    trap "kill $RESTATE_RESTART_PID 2>/dev/null; wait $RESTATE_RESTART_PID 2>/dev/null" EXIT
+    "$RESTATE_BINARY" --no-logo --config-file "$REPO_ROOT/deploy/restate.toml" --base-dir "$RESTATE_SCRATCH" &
 else
-    "$RESTATE_BINARY" --no-logo &
-    RESTATE_RESTART_PID=$!
-    trap "kill $RESTATE_RESTART_PID 2>/dev/null; wait $RESTATE_RESTART_PID 2>/dev/null" EXIT
+    "$RESTATE_BINARY" --no-logo --base-dir "$RESTATE_SCRATCH" &
 fi
+RESTATE_RESTART_PID=$!
+trap "kill $RESTATE_RESTART_PID 2>/dev/null; wait $RESTATE_RESTART_PID 2>/dev/null" EXIT
 
 # Wait for Restate to come up
 echo "Waiting for Restate to become ready..."

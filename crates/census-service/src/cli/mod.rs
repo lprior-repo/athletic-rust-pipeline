@@ -212,12 +212,14 @@ pub(super) fn cohort_label(grad_year: Option<i16>) -> String {
     grad_year.map_or_else(|| "all".to_string(), |year| format!("co{year}"))
 }
 
-/// The scope a `--all-sources` flag selects.
-pub(super) fn scope_of(all_sources: bool) -> report::Scope {
-    if all_sources {
-        report::Scope::AllSources
-    } else {
+/// The scope a `--core` flag selects: the core scope when it is asked for by name, every approved
+/// source otherwise. The expansive scope is the product; the Athletic.net-free view is the
+/// independence diagnostic (`report --core`), so it is never the thing a flagless run selects.
+pub(super) fn scope_of(core: bool) -> report::Scope {
+    if core {
         report::Scope::Core
+    } else {
+        report::Scope::AllSources
     }
 }
 

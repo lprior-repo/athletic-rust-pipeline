@@ -6,7 +6,7 @@
 //! disagree about the graduating class, or a meet whose venue was never placed.
 //! Each family prints one row per retained subject — the same subject ids the store holds — so the
 //! operator acts on rows instead of on a number. The families themselves live in `conflicts` and
-//! `review`; this module holds the labels, the family lists and the one row shape they share.
+//! `review`; this module holds the labels, the family lists and the row shapes their sheets share.
 //!
 //! The families are deliberately narrow: a row appears here because a *stored* field is unresolved,
 //! never because a heuristic disliked it. Cohort-family rows are scoped to the published class of
@@ -34,17 +34,33 @@ mod review;
 use conflicts::{athlete_identity, cohort_evidence, contact_conflicts, school_identity};
 use review::{cohort_unverified, low_confidence, unresolved_schools, unresolved_venues};
 
-/// Widths for the consolidated data-quality sheet.
-pub(super) const DATA_QUALITY_WIDTHS: [u16; 8] = [12, 34, 12, 34, 34, 24, 12, 96];
+/// Widths for the retained-conflict sheet: family, state, subject id, subject, detail.
+pub(super) const CONFLICT_WIDTHS: [u16; 5] = [34, 12, 34, 44, 96];
 
-/// Render retained queues followed by durable model verdicts in one operator sheet.
-pub(super) fn data_quality_sheet(
-    conflicts: &[Family],
-    review: &[Family],
-    rows: &StoreRows,
-) -> Vec<Vec<Cell>> {
+/// Widths for the review sheet: family, state, subject id, subject, answer, confidence, detail.
+pub(super) const REVIEW_WIDTHS: [u16; 7] = [34, 12, 34, 44, 24, 12, 96];
+
+/// Render the retained conflicts: one row per subject the merge kept separate (§54's `Conflicts`).
+pub(super) fn conflicts_sheet(conflicts: &[Family], rows: &StoreRows) -> Vec<Vec<Cell>> {
+    let mut cells = vec![row!("Family", "State", "Subject ID", "Subject", "Detail")];
+    for family in conflicts {
+        for retained in &family.rows {
+            let state = state_for_subject_id(&retained.subject_id, rows);
+            cells.push(row!(
+                Cell::text(family.label),
+                state,
+                Cell::text(&retained.subject_id),
+                Cell::text(&retained.subject),
+                Cell::text(&retained.detail)
+            ));
+        }
+    }
+    cells
+}
+
+/// Render the retained review families and the durable model verdicts (§54's `Review`).
+pub(super) fn review_sheet(review: &[Family], rows: &StoreRows) -> Vec<Vec<Cell>> {
     let mut cells = vec![row!(
-        "Queue",
         "Family",
         "State",
         "Subject ID",
@@ -53,44 +69,51 @@ pub(super) fn data_quality_sheet(
         "Confidence",
         "Detail"
     )];
-    for family in conflicts {
-        for retained in &family.rows {
-            cells.push(queue_quality_row(
-                "Conflict",
-                family.label,
-                retained,
-                Cell::Empty,
-            ));
-        }
-    }
     for family in review {
         for retained in &family.rows {
             let state = state_for_subject(family.label, &retained.subject_id, rows);
-            cells.push(queue_quality_row("Review", family.label, retained, state));
+            cells.push(row!(
+                Cell::text(family.label),
+                state,
+                Cell::text(&retained.subject_id),
+                Cell::text(&retained.subject),
+                Cell::Empty,
+                Cell::Empty,
+                Cell::text(&retained.detail)
+            ));
         }
     }
     cells.extend(
         rows.verdicts
             .iter()
-            .map(|verdict| verdict_quality_row(verdict, rows)),
+            .map(|verdict| verdict_review_row(verdict, rows)),
     );
     cells
 }
 
-fn queue_quality_row(queue: &str, family: &str, retained: &QueueRow, state: Cell) -> Vec<Cell> {
-    row!(
-        Cell::text(queue),
-        Cell::text(family),
-        state,
-        Cell::text(&retained.subject_id),
-        Cell::text(&retained.subject),
-        Cell::Empty,
-        Cell::Empty,
-        Cell::text(&retained.detail)
-    )
+/// The jurisdiction a retained subject sits in: a school's own state, or the school an athlete's row
+/// names. The subject id is a stored id, so this is a lookup and never a guess: a subject the store
+/// cannot place prints no state rather than a wrong one.
+fn state_for_subject_id(subject_id: &str, rows: &StoreRows) -> Cell {
+    rows.schools
+        .iter()
+        .find(|school| school.id.as_str() == subject_id)
+        .and_then(|school| school.state)
+        .or_else(|| {
+            rows.athletes
+                .iter()
+                .find(|athlete| athlete.id.as_str() == subject_id)
+                .and_then(|athlete| {
+                    rows.schools
+                        .iter()
+                        .find(|school| school.id == athlete.school)
+                        .and_then(|school| school.state)
+                })
+        })
+        .map_or(Cell::Empty, |state| Cell::text(state.code()))
 }
 
-fn verdict_quality_row(verdict: &ReviewVerdictRecord, rows: &StoreRows) -> Vec<Cell> {
+fn verdict_review_row(verdict: &ReviewVerdictRecord, rows: &StoreRows) -> Vec<Cell> {
     let family = ReviewFamily::parse(&verdict.family).map_or_else(
         || verdict.family.clone(),
         |family| family.label().to_string(),
@@ -101,7 +124,6 @@ fn verdict_quality_row(verdict: &ReviewVerdictRecord, rows: &StoreRows) -> Vec<C
         _ => String::new(),
     };
     row!(
-        "Verdict",
         Cell::text(family),
         state_for_subject(&verdict.family, &verdict.subject_id, rows),
         Cell::text(&verdict.subject_id),

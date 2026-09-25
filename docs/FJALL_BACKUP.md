@@ -70,35 +70,7 @@ Read out of the pinned dependency (`fjall-3.1.10`), not assumed:
 * **There is no pause point during a backup.** The only quiescence primitives are process-level: the
   handle's lock and `Store::flush()` (= `Database::persist(PersistMode::SyncAll)`,
   `fjall-3.1.10/src/db.rs:350`), which fsyncs but does **not** stop writers.
-* **Cold copy is therefore enforced, not merely conventional.** fjall takes the lock through
-  `LockedFileGuard::try_acquire` on `fjall/lock`
-  (`fjall-3.1.10/src/locked_file.rs:49-80`, `LOCK_FILE = "lock"` at `src/file.rs:11`), which calls
-  `std::fs::File::try_lock` - `flock(2)` on Linux. It retries three times 100 ms apart and then returns
-  `fjall::Error::Locked`, so a second opener fails in about a quarter of a second rather than blocking.
-  Measured with `flock(1)` holding the same file a running unit holds:
-
-  ```console
-  $ flock -n /tmp/census-backup-drill/live/fjall/lock -c 'sleep 3' &
-  $ sleep 0.5
-  $ target/debug/census-service --store /tmp/census-backup-drill/live fjall-stats
-  Error: store open failed: FjallError: Locked
-
-  Caused by:
-      FjallError: Locked
-  $ echo $?
-  1
-  ```
-
-  The same lock covers the legacy import: `Store::import_legacy`
-  (`crates/census-store/src/legacy.rs:76`) runs on a `Store` that is already open, so it holds that
-  store's lock, and only the paths that decided to migrate call it - the offline census run
-  (`crates/census-service/src/cli/cycle.rs:77`), the `import-legacy` verb
-  (`crates/census-service/src/cli/store.rs:29`) and the service bootstrap
-  (`crates/census-service/src/bootstrap/serve.rs:229`). So an import can never race a root another
-  process is serving. Opening alone does not import (`crates/census-store/src/lib.rs:53-56`), so the
-  write risk is a verb: **pointed at a copy that still carries legacy logs, an importing verb writes
-  into that copy** (markers, and the imported rows). On the source root nothing is re-imported,
-  because the markers travel inside `fjall/`'s `meta` keyspace.
+* **Cold copy is the only consistent backup path.** The single-writer rule and lock mechanics are documented in `FJALL_SCHEMA.md` §1; this document focuses on the backup drill itself.
 * **A copy that races a live writer loses the incomplete tail silently.** Recovery truncates a torn
   journal tail instead of failing the open (`fjall-3.1.10/src/journal/reader.rs:56-79`), so a snapshot
   copy of `fjall/` is simply *missing* the rows whose batch frame was still being written when the
@@ -441,6 +413,40 @@ The suite is offline and self-contained: the corpus is synthetic and built in th
 one recorded resume unit of work), each test builds its store inside its own `tempfile::TempDir`, and
 no request leaves the process.
 
+### 4.1 Shell-script drill (production operator path)
+
+`tools/ops-backup-drill.sh <store-dir>` uses the production cold-backup and
+restore APIs. Stop the source writer first; a held database lock fails the drill.
+`BINARY` overrides the default repository debug binary.
+
+The drill:
+
+1. Creates a unique scratch directory under `TMPDIR` (default `/tmp`).
+2. Takes one consistent backup with a manifest of file lengths, SHA-256 digests
+   and exact per-table row counts.
+3. Restores that generation through `store-restore`, which validates every file
+   digest and reconciles the restored row counts before publishing it.
+4. Requires `store-integrity` to report `ok=true`, then compares the complete
+   restored `fjall-stats` table map with the manifest using `jq`.
+5. Consolidates the restored entities and builds the all-sources census.
+6. Reopens the restored database and rebuilds the census. Both JSON documents
+   must match after removing only the store path and generation date.
+
+The script exits nonzero on any failed operation or comparison. It removes only
+its own scratch directory on exit. It never deletes or restores over the source,
+and does not compare mutable database files after reopening them.
+
+For large stores, choose a local-disk scratch directory with room for the backup,
+restored database and consolidated snapshots:
+
+```console
+mkdir -p var/restore-drill-tmp
+TMPDIR="$PWD/var/restore-drill-tmp" tools/ops-backup-drill.sh var/midwest-census
+```
+
+This exercises Fjall restoration, not restoration of Restate's journal or
+machine-level services. A successful empty-store drill is not census evidence.
+
 ## 5. Not covered by this drill
 
 * **A backup of a large live store.** The drill's store never flush()es, so its rows live in the
@@ -452,9 +458,9 @@ no request leaves the process.
   from a cold copy rather than from a held-open handle, for the reason above.
 * **Restoring while a unit is serving.** Not attempted: the lock forbids part of it, and nothing
   coordinates the in-memory view.
-* **A whole-root restore at CLI level.** The shell drill restores `fjall/` only; the case where the
-  pre-Fjall `entities/`/`journal/` logs travel with the restore is covered by
-  `the_restored_store_does_not_re_import_the_legacy_journals_it_carries` (§4), not repeated here.
+* **Legacy re-import in the shell drill.** The shell drill uses the whole-root
+  backup API; the specific legacy-marker invariant is asserted by
+  `the_restored_store_does_not_re_import_the_legacy_journals_it_carries` (§4).
 * **The `http/` response cache** is treated as optional and never verified after a restore.
 * **Cross-machine and cross-filesystem restore** (permission bits, sparse files, encrypted volumes).
 * **A supported hot backup.** Impossible without an API change; see §2.

@@ -76,7 +76,9 @@ pub fn clock_seconds(token: &str) -> Option<CentiSeconds> {
         }
         None => first,
     };
-    (seconds.is_finite() && seconds > 0.0).then_some(CentiSeconds::from_seconds_f64(seconds))
+    (seconds.is_finite() && seconds > 0.0)
+        .then_some(CentiSeconds::try_from_seconds_f64(seconds))
+        .flatten()
 }
 
 /// The metres a published metric mark states (`20.60m`, `2.17M`).

@@ -221,7 +221,9 @@ pub fn parse_mark(kind: &EventKind, published: &str) -> Option<(Mark, bool)> {
         EventKind::Pentathlon | EventKind::Heptathlon | EventKind::Decathlon => {
             let points: f64 = token.replace(',', "").parse().ok()?;
             (points.is_finite() && points >= 0.0)
-                .then_some(Mark::Points(CentiPoints::from_points_f64(points)))?
+                .then_some(CentiPoints::try_from_points_f64(points))
+                .flatten()
+                .map(Mark::Points)?
         }
         kind if kind.is_field() => parse_field_mark(metric_bare(token))?,
         _ => Mark::TimeSeconds(parse_time(token)?),

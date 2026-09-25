@@ -10,9 +10,11 @@
 //!   every namespace either side named, and a refused merge absorbs no identity while its finding
 //!   names both sides' provider objects.
 //! * **First-writer-wins** — an option a row already carries is never replaced (`level`, `city`,
-//!   `professional_email`, `enrollment`, …). Every law is checked in both directions, so it is the
-//!   *first* writer that survives rather than one fixed side. The meet `level` is the documented
-//!   exception: `Unknown` is a hole the other side fills.
+//!   `enrollment`, …). Every law is checked in both directions, so it is the *first* writer that
+//!   survives rather than one fixed side. The meet `level` is the documented exception: `Unknown`
+//!   is a hole the other side fills. A coach's contacts are first-writer-wins *per published field*:
+//!   a merge reads each side's raw address through `publish`, so the first writer of a kind keeps
+//!   that field and the second fills only the kind it left empty.
 //! * **Identity preservation** — merge never rewrites the name a canonical record was minted from
 //!   (`school.name`, `school.normalized_name`, `athlete.canonical_name`); variants land in
 //!   `aliases` / `known_names` instead.
@@ -29,10 +31,10 @@
 #![forbid(unsafe_code)]
 
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalSchool,
-    CanonicalTeam, CoachRole, CompetitionLevel, Confidence, EventKind, Evidence, Gender, GradYear,
-    Grade, ObservedGrade, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef,
-    Sport,
+    published_email, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
+    CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel, Confidence, EventKind, Evidence,
+    Gender, GradYear, Grade, MailboxKind, ObservedGrade, SchoolYear, SourceEventLabel,
+    SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::Entity;
@@ -183,7 +185,28 @@ fn coach() -> impl Strategy<Value = CanonicalCoach> {
         })
 }
 
-/// The same coach, carrying a published address.
+/// The fields a coach row publishes for one source's raw address: the address trimmed, in the field
+/// its own domain kind names, and nothing at all when the source text is not a mailbox.
+fn published_slots(address: &str) -> (Option<String>, Option<String>) {
+    match published_email(address) {
+        Some((address, MailboxKind::Professional)) => (Some(address), None),
+        Some((address, MailboxKind::Personal)) => (None, Some(address)),
+        None => (None, None),
+    }
+}
+
+/// The fields two raw addresses leave behind, the first side winning the field it fills.
+fn merged_slots(
+    first: &(Option<String>, Option<String>),
+    second: &(Option<String>, Option<String>),
+) -> (Option<String>, Option<String>) {
+    (
+        first.0.clone().or_else(|| second.0.clone()),
+        first.1.clone().or_else(|| second.1.clone()),
+    )
+}
+
+/// The same coach, carrying an address exactly as a source published it.
 fn coach_with_email(address: String) -> CanonicalCoach {
     let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
     let mut coach = CanonicalCoach::new(

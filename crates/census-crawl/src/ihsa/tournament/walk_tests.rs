@@ -346,7 +346,7 @@ async fn mapped_ids_are_athleticnet_and_ihsa_identity_rows() {
     let performances = harness.scan::<CanonicalPerformance>(Table::Performances);
     let top = performances
         .iter()
-        .find(|performance| performance.mark == Mark::DistanceMetres(CentiMetres(202)))
+        .find(|performance| performance.mark == Mark::DistanceMetres(CentiMetres::new(202)))
         .expect("the captured 2.02m high jump");
     assert_eq!(top.place, Some(1));
     assert_eq!(top.athlete, winner.id);

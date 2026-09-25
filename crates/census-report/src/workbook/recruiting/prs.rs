@@ -21,7 +21,10 @@ use census_domain::model::{
 use census_domain::JurisdictionBucket;
 use std::collections::{BTreeMap, BTreeSet};
 
+mod notation;
+
 use super::super::cells::{row, Cell};
+use notation::{disagreement, result_url, slot_key};
 
 /// The worksheet name, as objective §51 publishes it.
 pub(super) const TITLE: &str = "PRs";
@@ -109,7 +112,7 @@ pub(super) fn reduce(
         .iter()
         .map(|athlete| (athlete.id.as_str(), athlete))
         .collect();
-    let mut slots: BTreeMap<(String, String), Slot> = BTreeMap::new();
+    let mut slots: BTreeMap<String, Slot> = BTreeMap::new();
     for performance in performances {
         let Some(athlete) = cohort.get(performance.athlete.as_str()).copied() else {
             continue;
@@ -135,7 +138,7 @@ pub(super) fn reduce(
 }
 
 fn fold(
-    slots: &mut BTreeMap<(String, String), Slot>,
+    slots: &mut BTreeMap<String, Slot>,
     performance: &CanonicalPerformance,
     context: &Context<'_>,
 ) {
@@ -145,9 +148,10 @@ fn fold(
     let Some(value) = measure.value(&performance.mark) else {
         return;
     };
-    let key = (
-        context.athlete.id.as_str().to_string(),
-        context.kind.stable_key().into_owned(),
+    let key = format!(
+        "{}:{}",
+        context.athlete.id.as_str(),
+        slot_key(context.kind, context.meet, performance.wind_mps)
     );
     let slot = slots.entry(key).or_default();
     for evidence in &performance.evidence {
@@ -182,7 +186,21 @@ fn row_for(context: &Context<'_>, performance: &CanonicalPerformance) -> PrRow {
         grad_year: context.athlete.grad_year.get(),
         sport: sport_of(context.kind).to_string(),
         event: context.kind.stable_key().into_owned(),
-        season: season_of(context.meet),
+        season: context
+            .meet
+            .map(|m| {
+                match (
+                    m.sports.contains(&Sport::IndoorTrack),
+                    m.sports.contains(&Sport::OutdoorTrack),
+                ) {
+                    (true, true) => "Indoor; Outdoor",
+                    (true, false) => "Indoor",
+                    (false, true) => "Outdoor",
+                    _ => "",
+                }
+            })
+            .unwrap_or_default()
+            .to_string(),
         mark: mark_text(&performance.mark),
         mark_value: mark_value(&performance.mark),
         source_mark: performance.mark.clone(),
@@ -200,32 +218,7 @@ fn row_for(context: &Context<'_>, performance: &CanonicalPerformance) -> PrRow {
     }
 }
 
-fn result_url(performance: &CanonicalPerformance) -> String {
-    performance
-        .evidence
-        .iter()
-        .find_map(|evidence| evidence.source.url.clone())
-        .unwrap_or_default()
-}
-
-fn season_of(meet: Option<&CanonicalMeet>) -> String {
-    let Some(meet) = meet else {
-        return String::new();
-    };
-    let indoor = meet.sports.contains(&Sport::IndoorTrack);
-    let outdoor = meet.sports.contains(&Sport::OutdoorTrack);
-    match (indoor, outdoor) {
-        (true, true) => "Indoor; Outdoor".to_string(),
-        (true, false) => "Indoor".to_string(),
-        (false, true) => "Outdoor".to_string(),
-        (false, false) => String::new(),
-    }
-}
-
-fn into_rows(
-    slots: BTreeMap<(String, String), Slot>,
-    meets: &BTreeMap<String, CanonicalMeet>,
-) -> Vec<PrRow> {
+fn into_rows(slots: BTreeMap<String, Slot>, meets: &BTreeMap<String, CanonicalMeet>) -> Vec<PrRow> {
     let mut rows: Vec<PrRow> = slots
         .into_values()
         .filter_map(|slot| close(slot, meets))
@@ -249,16 +242,6 @@ fn close(slot: Slot, meets: &BTreeMap<String, CanonicalMeet>) -> Option<PrRow> {
         .map(|(meet, marks)| disagreement(meet, marks, meets))
         .collect();
     Some(row)
-}
-
-fn disagreement(
-    meet: &str,
-    marks: &BTreeSet<String>,
-    meets: &BTreeMap<String, CanonicalMeet>,
-) -> String {
-    let name = meets.get(meet).map_or(meet, |row| row.name.as_str());
-    let published: Vec<&str> = marks.iter().map(String::as_str).collect();
-    format!("{name}: {}", published.join(" | "))
 }
 
 pub(super) fn sheet(prs: &[PrRow]) -> ReportResult<Vec<Vec<Cell>>> {

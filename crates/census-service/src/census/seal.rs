@@ -107,11 +107,7 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome> {
             request.grad_year
         );
     };
-    let workbook = inspect_workbook(
-        &path,
-        count(census.totals.class_of_2027),
-        count(coverage.jurisdictions.len()),
-    )?;
+    let workbook = inspect_workbook(&path, store, request.grad_year, request.scope)?;
     let evidence = assemble(
         &coverage, &census, &stats, &cases, &access, request, workbook,
     );

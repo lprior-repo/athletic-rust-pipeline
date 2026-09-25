@@ -16,7 +16,7 @@
     "class_of_2027_with_coach": 14,
     "class_of_2027_with_coach_email": 14,
     "coaches": 20,
-    "coaches_with_email": 18
+    "coaches_with_email": 20
   },
   "by_state": {
     "AL": {
@@ -561,7 +561,7 @@
       "class_of_2027_with_coach": 0,
       "class_of_2027_with_coach_email": 0,
       "coaches": 9,
-      "coaches_with_email": 7
+      "coaches_with_email": 9
     },
     "OK": {
       "state": "OK",

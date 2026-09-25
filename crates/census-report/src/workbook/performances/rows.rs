@@ -50,6 +50,7 @@ impl PerformanceRow {
     /// The row's cells, in [`COLUMNS`](super::COLUMNS) order.
     pub(super) fn cells(&self) -> Vec<Cell> {
         row!(
+            Cell::text(self.id.clone()),
             Cell::text(self.athlete_id.clone()),
             Cell::text(self.athlete.clone()),
             Cell::text(self.school.clone()),

@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 8eb7a1d48d6e88ea612be7ae4cc02b2c18d680f507b91979e75a4b227fc4a098 # shrinks to base = CanonicalCoach { id: Id { value: "coa_bac398da06ff4711", _tag: PhantomData<census_domain::model::identifiers::tag::Coach> }, name: "a", school: Id { value: "sch_cb9d086f63fb65eb", _tag: PhantomData<census_domain::model::identifiers::tag::School> }, sport: None, gender: Boys, role: HeadCoach, professional_email: None, personal_email: None, phone: None, source_identities: [], evidence: [], retained_conflicts: [] }, address = "  a@school.wi.us "

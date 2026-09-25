@@ -31,12 +31,12 @@ rm -rf "$STORE" && mkdir -p "$STORE"
 # Testing dedup after Restate's retention expires (180 days) requires waiting,
 # which is impractical. We can verify the mechanism works by submitting twice.
 
-echo "Submitting first invocation (revision 99-dedup)..."
-OUTPUT1=$($BINARY --store "$STORE" national --revision 99-dedup --states WI --concurrency 1 2>&1) || true
+echo "Submitting first invocation (revision 99)..."
+OUTPUT1=$($BINARY --store "$STORE" national --revision 99 --states WI --concurrency 1 2>&1) || true
 echo "  Output 1: $(echo "$OUTPUT1" | head -3)"
 
-echo "Submitting second invocation (same revision)..."
-OUTPUT2=$($BINARY --store "$STORE" national --revision 99-dedup --states WI --concurrency 1 2>&1) || true
+echo "Submitting second invocation (same revision 99)..."
+OUTPUT2=$($BINARY --store "$STORE" national --revision 99 --states WI --concurrency 1 2>&1) || true
 echo "  Output 2: $(echo "$OUTPUT2" | head -3)"
 
 if echo "$OUTPUT2" | grep -qi "previously\|accepted\|already\|attached\|dedup\|duplicate"; then

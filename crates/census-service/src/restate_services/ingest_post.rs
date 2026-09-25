@@ -16,15 +16,19 @@
 //!   rows that were not appended.
 //!
 //! What the route deliberately does not do is make the two writers atomic: a crash between the
-//! append and the marker re-reads the unit from cache and posts it again, which costs work. The
-//! alternative — marking first — would lose the rows instead, and that is the failure the census
-//! exists to avoid.
+//! append and the marker re-reads the unit from cache and posts it again. The second post costs a
+//! round trip and appends nothing — every post carries an operation id derived from the invocation,
+//! the window and the unit's position, so the store recognizes the rows it already holds — and the
+//! marker is then written once. Marking first instead would lose the rows, which is the failure the
+//! census exists to avoid.
 
 use chrono::Datelike;
 use restate_sdk::prelude::*;
+use serde_json::Value;
 
 use census_crawl::RecordedBatch;
 use census_domain::UsJurisdiction;
+use census_store::Table;
 
 use super::ingest::IngestClient;
 use super::wire::ingest::{IngestRequest, WindowRequest};
@@ -64,13 +68,27 @@ pub(super) async fn post(
     batches: &[RecordedBatch],
 ) -> Result<u64, HandlerError> {
     let object = ctx.object_client::<IngestClient>(endpoint);
+    // The name a re-post of one unit repeats, and a later walk does not: this invocation, the
+    // endpoint and window it serves, the table, and the unit's position in the page the walk
+    // produced. A crash between the append and the marker re-reads the unit from cache and posts it
+    // again under this same name, which is exactly what the store's receipt answers.
+    let run = ctx.invocation_id();
     let mut appended = 0_u64;
-    for batch in batches {
-        for chunk in batch.rows.chunks(MAX_ROWS_PER_REQUEST) {
+    for (batch_index, batch) in batches.iter().enumerate() {
+        let table = batch.table;
+        for (chunk_index, chunk) in units_of(batch).enumerate() {
             let Json(reply) = object
                 .record(Json(IngestRequest {
-                    table: batch.table.file().to_string(),
+                    table: table.file().to_string(),
                     rows: chunk.to_vec(),
+                    operation_id: operation_of(
+                        endpoint,
+                        run,
+                        window,
+                        table,
+                        batch_index,
+                        chunk_index,
+                    ),
                     cursor: None,
                 }))
                 .call()
@@ -85,6 +103,38 @@ pub(super) async fn post(
         .call()
         .await?;
     Ok(appended)
+}
+
+/// The operation id one posted chunk carries.
+///
+/// Every part is fixed for the walk that produced it — the invocation, the endpoint, the window, the
+/// table — or is the unit's own position in the page. A re-post of the same page therefore
+/// reproduces the id exactly, and a later walk (a new invocation) produces different ones.
+fn operation_of(
+    endpoint: &str,
+    run: &str,
+    window: &str,
+    table: Table,
+    batch_index: usize,
+    chunk_index: usize,
+) -> String {
+    format!(
+        "{endpoint}:{run}:{window}:{}:{batch_index}:{chunk_index}",
+        table.file()
+    )
+}
+
+/// The units one batch's page becomes: chunks of the per-request ceiling, and a single empty unit
+/// when the page held nothing.
+///
+/// The empty unit is not an optimisation's edge case: a source that answered a page with no rows has
+/// still answered it, and the receipt its post leaves is what tells the next reader that the page was
+/// posted rather than never reached. Without it, "no rows appended" and "this page was never
+/// acquired" read the same.
+fn units_of(batch: &RecordedBatch) -> impl Iterator<Item = &[Value]> {
+    let chunks = batch.rows.chunks(MAX_ROWS_PER_REQUEST);
+    let empty = batch.rows.get(..0).filter(|_| batch.rows.is_empty());
+    chunks.chain(empty)
 }
 
 #[cfg(test)]

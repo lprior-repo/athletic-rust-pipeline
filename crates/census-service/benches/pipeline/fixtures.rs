@@ -36,9 +36,10 @@ fn performance_for_index(
     let source_key = format!("bench:{index:05}");
     let id = CanonicalPerformance::mint(&athlete, &meet, &kind, MEET_DATE, &source_key);
     let step = u32::try_from(index % 900).context("a mark step does not fit u32")?;
-    let mark = Mark::TimeSeconds(CentiSeconds::from_seconds_f64(
-        120.0 + f64::from(step) / 100.0,
-    ));
+    let mark = Mark::TimeSeconds(
+        CentiSeconds::try_from_seconds_f64(120.0 + f64::from(step) / 100.0)
+            .expect("fixture is in range"),
+    );
     let mut observations = Vec::with_capacity(OBSERVATIONS_PER_PERFORMANCE);
     for observation in 0..OBSERVATIONS_PER_PERFORMANCE {
         let seen = u16::try_from(observation).context("an observation does not fit u16")?;

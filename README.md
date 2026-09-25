@@ -85,15 +85,10 @@ cargo xtask gate
 
 ## Ground rules
 
-- Every source request goes through `census_crawl::net::Fetcher` in `crates/census-crawl/src/net/`:
-  robots.txt enforced, 2 requests/second per host, disk cache before network, bounded retries inside
-  the transport only. No raw client and no bypass — see `AGENTS.md` §4.
-- Production code carries no `unwrap`/`expect`/`panic!`/`unsafe`/`as` casts/indexing; the gate's
-  clippy set and `cargo xtask scan` fail the build on them.
-- Fixtures under `crates/census-crawl/tests/fixtures/**` and `research/**` are
-  verbatim captures; tests run offline against them.
+Engineering standards, gate commands, ownership, source policy and evidence discipline are in
+`ARCHITECTURE.md` (binding) and `AGENTS.md` (checklist).
 - No Python anywhere in this repository; tooling is Rust (`xtask`) plus `tools/gate.sh`.
-- No new dependencies without the integration owner: manifests are integration-owned.
+
 
 ## Status
 

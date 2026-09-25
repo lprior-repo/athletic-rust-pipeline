@@ -20,9 +20,12 @@ pub struct IngestState {
     pub last_appended_at: Option<String>,
     #[serde(default)]
     pub windows: Vec<String>,
-    /// Operation IDs already recorded: hash(table||rows) of every `record` call that reached the store.
-    /// A repeat with the same hash is a no-op — same operation id with different payload digest
-    /// is rejected. The set grows unbounded but is bounded in practice by the 30-day
+    /// Operation ids this object has recorded, in the order they were first applied.
+    ///
+    /// Derived, not authoritative. What makes a repeat a no-op is the store's receipt, written in
+    /// the same commit as the rows; this list is the object's own view of what it has recorded, for
+    /// an operator reading `state`. A repeat names the operation it replayed and adds no second
+    /// copy. The set grows unbounded but is bounded in practice by the 30-day
     /// `idempotency_retention` on this object: Restate purges state older than the retention.
     #[serde(default)]
     pub seen_operations: Vec<String>,
@@ -34,6 +37,14 @@ pub struct IngestRequest {
     pub table: String,
     /// Canonical entity observations; each row must carry its `id`.
     pub rows: Vec<Value>,
+    /// The caller's stable name for this unit of work.
+    ///
+    /// Posting the same unit again — after a lost acknowledgement, or after re-reading it from a
+    /// cache — must repeat the id, because the store's receipt is keyed by it: the second post then
+    /// finds the rows already applied and appends nothing. A *different* unit must carry a
+    /// different id: the same id with a different payload is refused, since the receipt standing
+    /// under it describes other rows.
+    pub operation_id: String,
     /// Cursor the caller claims to have consumed; stored only after the append commits.
     #[serde(default)]
     pub cursor: Option<String>,
@@ -94,4 +105,19 @@ pub struct SweepReport {
     pub today: String,
     /// Where the durable pass wrote this report, when it reached that step.
     pub report_path: Option<String>,
+    /// Store receipts the sweep's retention pass removed.
+    ///
+    /// A receipt is what makes a replayed append a no-op, so it is removed only once no invocation
+    /// Restate still retains could replay the operation it names — see
+    /// [`REPLAY_RETENTION_DAYS`](super::sweep::REPLAY_RETENTION_DAYS). This is the figure that says
+    /// whether the store's receipt growth is being bounded at all.
+    #[serde(default)]
+    pub pruned_receipts: u64,
+    /// Receipts the retention pass kept because it could not read a day off them.
+    ///
+    /// Non-zero means the policy has a blind spot an operator has to look at: a row the store cannot
+    /// date cannot be shown to be outside its replay window, so it is left standing rather than
+    /// removed.
+    #[serde(default)]
+    pub undated_receipts: u64,
 }

@@ -101,12 +101,9 @@ impl Entity for CanonicalCoach {
             record(&mut self.retained_conflicts, conflict);
             return;
         }
-        if self.professional_email.is_none() {
-            self.professional_email = other.professional_email;
-        }
-        if self.personal_email.is_none() {
-            self.personal_email = other.personal_email;
-        }
+        self.publish();
+        route_published_email(self, other.professional_email);
+        route_published_email(self, other.personal_email);
         if self.phone.is_none() {
             self.phone = other.phone;
         }

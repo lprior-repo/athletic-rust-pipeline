@@ -2,22 +2,50 @@
 //! renderers, split out of the sheet module to keep both files inside the budget.
 //!
 //! Each rule is a pure function over stored fields; the sheet module says which column prints which.
-//! `current_grade` reads the newest `ObservedGrade` — evidence (§3), never a re-derivation of the
-//! cohort — and `coverage_state` states which stored performances the athlete supports.
+//! `observed_grade` and `observed_school_year` return the newest `ObservedGrade` — evidence (§3),
+//! never a re-derivation of the cohort — and `coverage_state` states which stored performances
+//! the athlete supports.
+//!
+//! **Rule: current-year grade.** A grade observation is treated as the athlete's current standing
+//! only when the school year matches the current season (`SchoolYear::DEFAULT`). For all other
+//! observations the grade is historical evidence and is printed alongside its school year so a
+//! recruiter can see both the evidence and when it was captured. An athlete whose newest
+//! observation is grade 11 in 2025-26 is NOT relabelled as grade 12.
 
-use census_domain::model::{CanonicalAthlete, SourceNamespace};
+use census_domain::model::{CanonicalAthlete, ObservedGrade, SourceNamespace};
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::super::cells::Cell;
 
-/// The grade of the most recently observed grade entry, newest school year first and then the higher
-/// grade; blank when the cohort came from a source that published no grade.
-pub(super) fn current_grade(athlete: &CanonicalAthlete) -> Cell {
+/// The most recent grade observation for the athlete, newest school year first.
+///
+/// Returns `None` when the athlete carries no grade observations at all.
+/// Observations are sorted by school year descending, then by grade descending.
+fn newest_observation(athlete: &CanonicalAthlete) -> Option<&ObservedGrade> {
     athlete
         .observed_grades
         .iter()
-        .max_by_key(|observation| (observation.school_year.get(), observation.grade.get()))
-        .map(|observation| Cell::text(observation.grade.to_string()))
+        .max_by_key(|o| (o.school_year.get(), o.grade.get()))
+}
+
+/// The latest grade observation the athlete carries — the grade and the school year it was
+/// observed in, so a recruiter can see both the evidence and when it was captured.
+///
+/// For a class-of-2027 athlete with observed grades 9 (2023-24), 10 (2024-25), 11 (2025-26), 12
+/// (2026-27) this returns `(12, "2026-27")`; for an athlete whose last observation was grade 11 in
+/// 2025-26 it returns `(11, "2025-26")` rather than fabricating a "12".
+pub(super) fn observed_grade(athlete: &CanonicalAthlete) -> Cell {
+    newest_observation(athlete)
+        .map(|o| Cell::text(o.grade.to_string()))
+        .unwrap_or(Cell::Empty)
+}
+
+/// The school year in which the newest grade observation was captured, e.g. `"2025-26"`.
+///
+/// Blank when no grade observation exists.
+pub(super) fn observed_school_year(athlete: &CanonicalAthlete) -> Cell {
+    newest_observation(athlete)
+        .map(|o| Cell::text(o.school_year.short()))
         .unwrap_or(Cell::Empty)
 }
 

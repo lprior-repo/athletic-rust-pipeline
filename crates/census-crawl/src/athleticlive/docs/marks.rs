@@ -37,10 +37,10 @@ pub(super) fn canonical_mark(kind: &EventKind, mark_int: &Value) -> Option<Mark>
     if kind.is_field() {
         // micrometres → centimetres (÷10,000); overflow on absurd inputs returns None
         let cm = (micros.checked_add(5_000)? / 10_000).try_into().ok()?;
-        Some(Mark::DistanceMetres(CentiMetres(cm)))
+        Some(Mark::DistanceMetres(CentiMetres::new(cm)))
     } else {
         // milliseconds → centiseconds (÷10); overflow on absurd inputs returns None
         let cs = (micros.checked_add(5)? / 10).try_into().ok()?;
-        Some(Mark::TimeSeconds(CentiSeconds(cs)))
+        Some(Mark::TimeSeconds(CentiSeconds::new(cs)))
     }
 }

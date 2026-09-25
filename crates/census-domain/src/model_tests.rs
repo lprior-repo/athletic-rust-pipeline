@@ -390,16 +390,16 @@ fn athlete_ids_separate_gender_sides_and_ignore_spacing() {
 fn mark_raw_reports_the_published_value_or_its_unit() {
     let imperial = |feet: &str, metres: i32| Mark::FieldImperial {
         feet_mark: feet.into(),
-        metres: CentiMetres(metres),
+        metres: CentiMetres::new(metres),
     };
     let cases: &[(Mark, &str)] = &[
         (Mark::Raw("41-06.5".into()), "41-06.5"),
         (Mark::Raw(String::new()), ""),
         (Mark::Raw(" ".into()), " "),
-        (Mark::TimeSeconds(CentiSeconds(1094)), "time"),
-        (Mark::DistanceMetres(CentiMetres(173)), "distance"),
+        (Mark::TimeSeconds(CentiSeconds::new(1094)), "time"),
+        (Mark::DistanceMetres(CentiMetres::new(173)), "distance"),
         (imperial("5' 4\"", 163), "field"),
-        (Mark::Points(CentiPoints(842100)), "points"),
+        (Mark::Points(CentiPoints::new(842100)), "points"),
     ];
     for (mark, raw) in cases {
         assert_eq!(mark.raw(), *raw);

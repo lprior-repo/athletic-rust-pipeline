@@ -16,7 +16,7 @@
     "class_of_2027_with_coach": 14,
     "class_of_2027_with_coach_email": 14,
     "coaches": 20,
-    "coaches_with_email": 18
+    "coaches_with_email": 20
   },
   "by_state": {
     "AL": {
@@ -561,7 +561,7 @@
       "class_of_2027_with_coach": 0,
       "class_of_2027_with_coach_email": 0,
       "coaches": 9,
-      "coaches_with_email": 7
+      "coaches_with_email": 9
     },
     "OK": {
       "state": "OK",
@@ -872,6 +872,7 @@
   "duplicate_school_names": 0,
   "notes": [
     "scope=core schools=73 athletes=299 coaches=20 from <store>/out",
-    "core scope drops 10 rows whose only evidence is athleticlive_athletes/athleticlive_meets_csv/athleticlive_results/athleticnet"
+    "core scope drops 10 rows whose only evidence is athleticlive_athletes/athleticlive_meets_csv/athleticlive_results/athleticnet",
+    "core performance publication keeps a row only when at least one core-evidence source remains; non-core-only rows are omitted from core counts and sheets"
   ]
 }

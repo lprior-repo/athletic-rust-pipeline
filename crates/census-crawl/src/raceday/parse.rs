@@ -32,6 +32,7 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> CrawlResult<ParsedMeet
             detail: "no events parsed from RaceDay export".to_string(),
         });
     }
+    let rows_skipped = tables.rejected.iter().map(|r| r.len()).sum();
     Ok(ParsedMeet {
         name,
         date: format!("{year:04}"),
@@ -39,12 +40,11 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> CrawlResult<ParsedMeet
         timer: Some("RaceDay Scoring".to_string()),
         events: tables.events,
         rows_parsed: tables.rows_parsed,
-        rows_skipped: tables.rows_skipped,
+        rows_skipped,
     })
 }
 
-/// What one body's tables yielded: the events they became and the two counters the report
-/// publishes.
+/// What one body's tables yielded: the events they became and the counters the report publishes.
 ///
 /// `rows_parsed` counts every row the events carry, and `rows_skipped` counts the data rows of a
 /// name-bearing table the reader declined because the row had no athlete cell or no time to take as
@@ -53,7 +53,7 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> CrawlResult<ParsedMeet
 struct Tables {
     events: Vec<ParsedEvent>,
     rows_parsed: usize,
-    rows_skipped: usize,
+    rejected: Vec<Vec<super::table::RowRejection>>,
 }
 
 /// Read every result table of one body into a cross-country event.
@@ -67,7 +67,7 @@ fn read_tables(
     let mut tables = Tables::default();
     for table in patterns.table.find_iter(body).map(|m| m.as_str()) {
         let labels = table_labels(table, tags, patterns.head, patterns.row, patterns.cell);
-        let (rows, skipped) = table_rows(
+        let (rows, rejections) = table_rows(
             table,
             &labels,
             tags,
@@ -75,7 +75,16 @@ fn read_tables(
             patterns.cell,
             patterns.body,
         );
-        tables.rows_skipped = tables.rows_skipped.saturating_add(skipped);
+        if let Some(first) = rejections.first() {
+            // The reason is what the counter cannot carry: which column the reader wanted and did
+            // not find, or which cell it could not read as a time.
+            tracing::debug!(
+                rows = rejections.len(),
+                reason = first.reason.as_str(),
+                "declined the data rows of a grid"
+            );
+            tables.rejected.push(rejections);
+        }
         if rows.is_empty() {
             continue;
         }

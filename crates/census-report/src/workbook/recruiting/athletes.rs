@@ -1,150 +1,77 @@
 //! The `Athletes` sheet (objective §50): one row per canonical athlete in the run's cohort.
 //!
-//! Published columns, in this order: Athlete ID, Name, Gender, Graduation Year, Current Grade, State,
-//! School, School City, the three sport flags, the nineteen supported PR columns, performance and
-//! meet counts, the school contact ladder, profile URLs, and the audit columns.
-//!
-//! Every cell is a stored field or a documented rule over stored fields:
-//!
-//! * the sport flags come from `CanonicalAthlete::sports`, and each PR column carries the winning
-//!   mark from the same reduction the `PRs` sheet publishes;
-//! * `Current Grade` is the grade of the most recently observed `ObservedGrade`, which is evidence
-//!   (§3), never a re-derivation of the cohort;
-//! * the coach columns come from the school's head coaches and athletic director in the coach table;
-//! * `Coverage State` is `pr` when the athlete has a row on the `PRs` sheet, `performance` when the
-//!   athlete has stored performances but no comparable PR (relay legs and unparsed marks), and
-//!   `identity-only` when the athlete has no scoped performance at all;
-//! * `Conflict Flag` is `yes` when a grade observation implies a different graduating class than the
-//!   athlete's canonical one, or when one source namespace carries two different ids for the athlete —
-//!   the two disagreements the deterministic merge cannot settle on its own;
-//! * `Review Flag` is `yes` when the athlete's identity confidence is below
-//!   `Confidence::HIGH`, i.e. no grade observation agrees with the canonical cohort.
-//!
-//! `row_for` publishes those cells as identity, participation and PR columns, school contacts,
-//! the preferred-contact ladder, profile URLs, and audit columns, in the order listed by `HEADERS`.
-//!
-//! Every published field is stored or a documented rule over stored fields. GPA columns are absent
-//! because `census-domain` has no GPA observation entity and objective §36 forbids inferring one.
-//!
-//! # Who to contact, and how the sheet says it
-//!
-//! `School City` is the city on the athlete's school row (`CanonicalSchool::city`), blank when that row
-//! carries none. The school contact columns carry the named coach/director rows and their own
-//! professional-or-personal addresses, followed by the all-address inventory.
-//!
-//! `Preferred Recruiting Contact`, `Preferred Contact Role`, `Preferred Contact Email` and
-//! `Contact Coverage State` are the athlete-specific answer, and the whole rule lives in [`super::contact`]:
-//! The ladder reads `professional_email` first and explicitly falls back to `personal_email` when the
-//! professional field is absent; the coverage state says a published address was found either way.
-//! 1. the head coach of the athlete's evidence-bearing sport — a track slot (`Head TF Coach`) for an
-//!    athlete with stored indoor or outdoor track evidence, a cross-country slot (`Head XC Coach`)
-//!    for an athlete whose only sport is cross country, and the track slot for an athlete that stores
-//!    no sport; `Preferred Contact Role` names the slot, plus the side of the team when the coach's
-//!    row was published for one side (`Head TF Coach (girls)`);
-//! 2. else the school's other head-coach slot;
-//! 3. else a head coach whose row carries no sport binding;
-//! 4. else the athletic director.
-//!
-//! `Contact Coverage State` is the typed `ContactState` vocabulary and is never blank: a coach's published
-//! address is `professional_coach_email`, the director's is `professional_ad_email`, a named contact
-//! with no published address anywhere is `coach_name_only`, a school whose coach rows name neither a
-//! head coach nor a director is `no_public_contact_found`, and a school with no coach row at all is
-//! `contact_source_not_attempted`. A blank cell therefore never means "we did not look".
-//!
-//! Where a school's rows name more than one head coach of one sport, the athlete's own side of the
-//! team is preferred (the source publishes `Boys` and `Girls` head coaches for one sport), and within
-//! one side the row that published an address wins, newest `Evidence.observed_on` first, then by
-//! coach name and id — so two head coaches with different addresses never leave the cell to chance.
-//! An email cell carries the address its field holds, professional or personal; a blank means no source
-//! published one. The `All Emails (school)` cell carries every coach-row address for that school.
+//! The column rules and metadata live in the `rules` submodule; the `cells` submodule
+//! provides the pure cell helpers. The remaining items here depend on the workbook `Dataset`.
+
+mod cells;
+mod rules;
+
+pub(crate) use rules::{HEADERS, TITLE, WIDTHS};
 
 use super::super::cells::{row, Cell};
-use super::columns::{conflicts, coverage_state, current_grade, flag, published, source_count};
-use super::contact::{self, Named, Preferred, SchoolContacts};
+use super::columns::{
+    conflicts, coverage_state, flag, observed_grade, observed_school_year, published, source_count,
+};
+use super::contact::{self, Preferred, SchoolContacts};
 use super::dataset::Dataset;
 use super::facts::AthleteTally;
-use super::profiles::{profiles_of, Profiles};
+use super::profiles::profiles_of;
 use super::prs::PrRow;
-use crate::bests::mark_value;
 use crate::report::ReportResult;
-use census_domain::model::{CanonicalAthlete, Confidence, Sport};
+use cells::{
+    event_list, gpa_source, headline_pr_summary, participation_flags, participation_metrics,
+    pr_event_cells, profile_cells, public_recruiting_gpa, tf_flag,
+};
+use census_domain::model::{CanonicalAthlete, Confidence};
 
-/// The worksheet name, as objective §50 publishes it.
-pub(super) const TITLE: &str = "Athletes";
+/// A human-readable confidence label: `"high"`, `"medium"`, `"low"`, or `"unknown"` when the
+/// confidence has not been set (the zero-value `Confidence` that carries no measured value).
+fn confidence_label(athlete: &CanonicalAthlete) -> &'static str {
+    match athlete.identity_confidence {
+        Confidence::HIGH => "high",
+        Confidence::MEDIUM => "medium",
+        Confidence::LOW => "low",
+        c if c.get() == 0 => "unknown",
+        _ => "unknown",
+    }
+}
 
-/// The sheet's column headers, in published order.
-pub(super) const HEADERS: [&str; 51] = [
-    "Athlete ID",
-    "Name",
-    "Gender",
-    "Graduation Year",
-    "Current Grade",
-    "State",
-    "School",
-    "School City",
-    "XC",
-    "Indoor",
-    "Outdoor",
-    "100m (s)",
-    "200m (s)",
-    "400m (s)",
-    "800m (s)",
-    "1600m (s)",
-    "3200m (s)",
-    "1 Mile (s)",
-    "5000m (s)",
-    "100m Hurdles (s)",
-    "110m Hurdles (s)",
-    "300m Hurdles (s)",
-    "High Jump (m)",
-    "Long Jump (m)",
-    "Triple Jump (m)",
-    "Pole Vault (m)",
-    "Shot Put (m)",
-    "Discus (m)",
-    "Javelin (m)",
-    "XC (s)",
-    "Performance count",
-    "Meet count",
-    "Head TF Coach",
-    "Head TF Coach Email",
-    "Head XC Coach",
-    "Head XC Coach Email",
-    "Athletic Director",
-    "AD Email",
-    "All Emails (school)",
-    "Preferred Recruiting Contact",
-    "Preferred Contact Role",
-    "Preferred Contact Email",
-    "Contact Coverage State",
-    "Athletic.net URL",
-    "MileSplit URL",
-    "Other profile URLs",
-    "Sources Count",
-    "Identity Confidence",
-    "Coverage State",
-    "Conflict Flag",
-    "Review Flag",
-];
+/// The review status column: `"verified"` when confidence is high and there are no conflicts,
+/// `"review"` when the athlete carries low confidence or has unresolved standing conflicts,
+/// and `"unknown"` when neither condition applies but the state is not fully resolved.
+fn review_status(athlete: &CanonicalAthlete) -> Cell {
+    let has_conflicts = conflicts(athlete);
+    let low_conf = athlete.identity_confidence < Confidence::HIGH;
+    if low_conf || has_conflicts {
+        Cell::text("review")
+    } else {
+        Cell::text("verified")
+    }
+}
 
-/// Column widths, one per header.
-pub(super) const WIDTHS: [u16; 51] = [
-    20, 26, 10, 16, 14, 8, 30, 20, 8, 8, 8, 12, 12, 12, 12, 12, 12, 12, 12, 18, 18, 18, 16, 16, 16,
-    16, 16, 16, 16, 12, 16, 12, 24, 32, 24, 32, 24, 32, 48, 30, 24, 32, 28, 36, 36, 40, 14, 18, 18,
-    14, 14,
-];
 /// The `Athletes` sheet, ordered by state, school, then athlete.
 pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
-    let mut ordered: Vec<&CanonicalAthlete> = dataset.athletes.iter().collect();
-    ordered.sort_by_key(|athlete| {
-        (
-            dataset.school_state(athlete.school.as_str()),
-            dataset.school_name(athlete.school.as_str()),
-            athlete.canonical_name.clone(),
-        )
-    });
+    // The key is materialised once per athlete: `sort_by_key` recomputes it - two school string
+    // clones, a BTreeMap lookup each, and the name clone - on every comparison, and this sheet's
+    // cohort runs to hundreds of thousands of rows.
+    let mut ordered: Vec<(&CanonicalAthlete, (String, String, String))> = dataset
+        .athletes
+        .iter()
+        .map(|athlete| {
+            let school = athlete.school.as_str();
+            (
+                athlete,
+                (
+                    dataset.school_state(school),
+                    dataset.school_name(school),
+                    athlete.canonical_name.clone(),
+                ),
+            )
+        })
+        .collect();
+    ordered.sort_by(|left, right| left.1.cmp(&right.1));
     let mut rows = vec![HEADERS.iter().map(|header| Cell::text(*header)).collect()];
-    for athlete in ordered {
+    for (athlete, _) in ordered {
         rows.push(row_for(dataset, athlete)?);
     }
     Ok(rows)
@@ -161,8 +88,27 @@ fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Ce
     let preferred = contact::preferred(contacts, athlete);
     let director = contacts.and_then(|contacts| contacts.director.as_ref());
     let mut cells = identity_cells(dataset, athlete);
-    cells.extend(participation_cells(athlete, tally, &prs)?);
-    cells.extend(school_cells(contacts, director));
+    cells.extend(tf_flag(athlete));
+    cells.extend(participation_flags(athlete));
+    cells.extend(event_list(athlete, &prs));
+    cells.extend(headline_pr_summary(athlete, &prs));
+    cells.extend(pr_event_cells(&prs));
+    cells.extend(participation_metrics(tally)?);
+    // School contact names and emails in header order
+    cells.push(published(contacts.and_then(|c| c.head_track.clone())));
+    cells.push(published(contacts.and_then(|c| c.head_track_email.clone())));
+    cells.push(published(
+        contacts.and_then(|c| c.head_cross_country.clone()),
+    ));
+    cells.push(published(
+        contacts.and_then(|c| c.head_cross_country_email.clone()),
+    ));
+    cells.extend(coach_professional_email(contacts, &preferred));
+    cells.push(published(director.map(|d| d.name.clone())));
+    cells.push(published(director.and_then(|d| d.email.clone())));
+    cells.extend(school_athletics_url(dataset, school));
+    cells.extend(public_recruiting_gpa());
+    cells.extend(gpa_source());
     cells.extend(contact_cells(contacts, preferred));
     cells.extend(profile_cells(profiles));
     cells.extend(audit_cells(dataset, athlete, tally, &prs)?);
@@ -172,84 +118,55 @@ fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Ce
 /// The identity columns: stored id, name, gender, cohort year and grade, then school placement.
 fn identity_cells(dataset: &Dataset, athlete: &CanonicalAthlete) -> Vec<Cell> {
     let school = athlete.school.as_str();
+    // Use the school's canonical id (if the school row exists), or the athlete's own school id
+    // when the school row is absent — never a blank that reads like a real id.
+    let school_id = dataset
+        .schools
+        .get(school)
+        .map(|s| s.id.as_str())
+        .unwrap_or(school)
+        .to_string();
     row!(
         Cell::text(athlete.id.as_str()),
         Cell::text(athlete.canonical_name.clone()),
         Cell::text(athlete.gender.stable_key().to_string()),
         Cell::Number(f64::from(athlete.grad_year.get())),
-        current_grade(athlete),
+        observed_grade(athlete),
+        observed_school_year(athlete),
         Cell::text(dataset.school_state(school)),
         Cell::text(dataset.school_name(school)),
+        Cell::text(school_id),
         Cell::text(dataset.school_city(school)),
     )
 }
 
-const PR_EVENTS: [&str; 19] = [
-    "Track100m",
-    "Track200m",
-    "Track400m",
-    "Track800m",
-    "Track1600m",
-    "Track3200m",
-    "Track1Mile",
-    "Track5000m",
-    "Track100mHurdles",
-    "Track110mHurdles",
-    "Track300mHurdles",
-    "HighJump",
-    "LongJump",
-    "TripleJump",
-    "PoleVault",
-    "ShotPut",
-    "Discus",
-    "Javelin",
-    "CrossCountry",
-];
-
-/// Sport flags, the supported personal-best columns, and the stored performance and meet counts.
-fn participation_cells(
-    athlete: &CanonicalAthlete,
-    tally: Option<&AthleteTally>,
-    prs: &[&PrRow],
-) -> ReportResult<Vec<Cell>> {
-    let mut cells = row!(
-        flag(athlete.sports.contains(&Sport::CrossCountry)),
-        flag(athlete.sports.contains(&Sport::IndoorTrack)),
-        flag(athlete.sports.contains(&Sport::OutdoorTrack)),
-    );
-    cells.extend(PR_EVENTS.iter().map(|event| {
-        prs.iter()
-            .find(|pr| pr.event == *event)
-            .and_then(|pr| mark_value(&pr.source_mark))
-            .map_or(Cell::Empty, Cell::Number)
-    }));
-    cells.push(Cell::number(tally.map_or(0, |tally| tally.performances))?);
-    cells.push(Cell::number(tally.map_or(0, |tally| tally.meets.len()))?);
-    Ok(cells)
+/// `Coach Professional Email` — the head TF coach's professional email; when absent, the head
+/// XC coach's; when that is absent, the preferred recruiting contact's email if that contact's
+/// role is a coaching role; blank otherwise.
+fn coach_professional_email(contacts: Option<&SchoolContacts>, preferred: &Preferred) -> Vec<Cell> {
+    let tf_email = contacts.and_then(|c| c.head_track_email.clone());
+    let xc_email = contacts.and_then(|c| c.head_cross_country_email.clone());
+    let email = tf_email.or(xc_email).or_else(|| {
+        if preferred.role.starts_with("Head") {
+            Some(preferred.email.clone())
+        } else {
+            None
+        }
+    });
+    vec![published(email)]
 }
 
-/// The three profile-URL columns, in the order [`Profiles`] splits them.
-fn profile_cells(profiles: Profiles) -> Vec<Cell> {
-    row!(
-        published(profiles.athletic_net),
-        published(profiles.milesplit),
-        Cell::text(profiles.other.join("; ")),
-    )
+/// `School Athletics URL` — the stored `athletics_website` for the athlete's school;
+/// blank when the store holds none.
+fn school_athletics_url(dataset: &Dataset, school: &str) -> Vec<Cell> {
+    let url = dataset
+        .schools
+        .get(school)
+        .and_then(|s| s.athletics_website.clone());
+    vec![published(url)]
 }
 
-/// The school-level contact names and their field-specific addresses.
-fn school_cells(contacts: Option<&SchoolContacts>, director: Option<&Named>) -> Vec<Cell> {
-    row!(
-        published(contacts.and_then(|contacts| contacts.head_track.clone())),
-        published(contacts.and_then(|contacts| contacts.head_track_email.clone())),
-        published(contacts.and_then(|contacts| contacts.head_cross_country.clone())),
-        published(contacts.and_then(|contacts| contacts.head_cross_country_email.clone())),
-        published(director.map(|director| director.name.clone())),
-        published(director.and_then(|director| director.email.clone())),
-    )
-}
-
-/// The five audit columns: source count, confidence, coverage, conflict, and review.
+/// The five audit columns: sources count, confidence label, coverage, conflict flag, and review status.
 fn audit_cells(
     _dataset: &Dataset,
     athlete: &CanonicalAthlete,
@@ -258,24 +175,20 @@ fn audit_cells(
 ) -> ReportResult<Vec<Cell>> {
     Ok(row!(
         Cell::number(source_count(athlete))?,
-        Cell::Number(f64::from(athlete.identity_confidence.get())),
+        Cell::text(confidence_label(athlete)),
         Cell::text(coverage_state(
-            tally.is_some_and(|tally| tally.performances > 0),
+            tally.is_some_and(|t| t.performances > 0),
             !prs.is_empty()
         )),
         flag(conflicts(athlete)),
-        flag(athlete.identity_confidence < Confidence::HIGH),
+        review_status(athlete),
     ))
 }
 
 /// The school-wide email inventory, then the preferred recruiting contact ladder.
 fn contact_cells(contacts: Option<&SchoolContacts>, preferred: Preferred) -> Vec<Cell> {
     row!(
-        Cell::text(
-            contacts
-                .map(|contacts| contacts.all_emails.clone())
-                .unwrap_or_default(),
-        ),
+        Cell::text(contacts.map(|c| c.all_emails.clone()).unwrap_or_default(),),
         Cell::text(preferred.name),
         Cell::text(preferred.role),
         Cell::text(preferred.email),

@@ -50,10 +50,13 @@
 //! personal address when no professional address was published. A blank means no source published one.
 
 mod heads;
+mod normalise;
 mod school;
 
-use census_domain::model::{CanonicalAthlete, CanonicalCoach, Gender, Sport};
+use census_domain::model::{CanonicalAthlete, CanonicalCoach, Sport};
+use normalise::{role_label, Named};
 
+pub(super) use normalise::Preferred;
 pub(super) use school::{contacts, SchoolContacts};
 
 /// The `Contact Coverage State` column's vocabulary: what the row looked at, and what it found.
@@ -67,6 +70,10 @@ pub(super) enum ContactState {
     ProfessionalCoachEmail,
     /// No coach of the athlete's sport published one; the athletic director did.
     ProfessionalAdEmail,
+    /// A head coach of the athlete's own sport published only a consumer mailbox.
+    PersonalCoachEmail,
+    /// No coach of the athlete's sport published one; the athletic director published only a consumer mailbox.
+    PersonalAdEmail,
     /// A contact is named, and no public address exists anywhere for the school.
     CoachNameOnly,
     /// The coach table holds rows for the school, and none names a head coach or an athletic
@@ -89,6 +96,8 @@ impl ContactState {
             Self::NoPublicContactFound => "no_public_contact_found",
             Self::ContactSourceNotAttempted => "contact_source_not_attempted",
             Self::ContactConflict => "contact_conflict",
+            Self::PersonalCoachEmail => "personal_coach_email",
+            Self::PersonalAdEmail => "personal_ad_email",
         }
     }
 }
@@ -137,63 +146,6 @@ impl Slot {
             Self::CrossCountry => "Head XC Coach",
             Self::SchoolWide => "Head Coach",
             Self::Director => "Athletic Director",
-        }
-    }
-}
-
-/// One head coach a school's rows resolved to: the name, preferred published address, and side.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct Named {
-    pub(super) name: String,
-    pub(super) email: Option<String>,
-    pub(super) side: Gender,
-}
-
-impl Named {
-    /// A professional address wins; a personal address is the explicit fallback.
-    fn of(coach: &CanonicalCoach) -> Self {
-        Self {
-            name: coach.name.clone(),
-            email: coach
-                .professional_email
-                .clone()
-                .or_else(|| coach.personal_email.clone()),
-            side: coach.gender,
-        }
-    }
-}
-
-/// The preferred contact one athlete's row publishes.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct Preferred {
-    /// `Preferred Recruiting Contact`: the named contact, blank when the school names none.
-    pub(super) name: String,
-    /// `Preferred Contact Role`: the slot the contact came from, blank when nothing is named.
-    pub(super) role: String,
-    /// `Preferred Contact Email`: the published address, blank unless one was published.
-    pub(super) email: String,
-    /// `Contact Coverage State`: never blank.
-    pub(super) state: ContactState,
-}
-
-impl Preferred {
-    /// A contact that was found, with the state its rung publishes.
-    fn named(slot: Slot, contact: &Named, state: ContactState) -> Self {
-        Self {
-            name: contact.name.clone(),
-            role: role_label(slot, contact.side),
-            email: contact.email.clone().unwrap_or_default(),
-            state,
-        }
-    }
-
-    /// No contact: the state alone, every cell blank.
-    fn unnamed(state: ContactState) -> Self {
-        Self {
-            name: String::new(),
-            role: String::new(),
-            email: String::new(),
-            state,
         }
     }
 }
@@ -256,6 +208,9 @@ pub(super) fn preferred(
         if coach.email.is_some() {
             return Preferred::named(*slot, coach, ContactState::ProfessionalCoachEmail);
         }
+        if coach.personal_email.is_some() {
+            return Preferred::named(*slot, coach, ContactState::PersonalCoachEmail);
+        }
         if named.is_none() {
             named = Some((*slot, coach));
         }
@@ -264,21 +219,17 @@ pub(super) fn preferred(
     if let Some(director) = director.filter(|director| director.email.is_some()) {
         return Preferred::named(Slot::Director, director, ContactState::ProfessionalAdEmail);
     }
+    if let Some(director) = director.filter(|director| director.personal_email.is_some()) {
+        return Preferred::named(Slot::Director, director, ContactState::PersonalAdEmail);
+    }
     if let Some((slot, coach)) = named {
+        if coach.personal_email.is_some() {
+            return Preferred::named(slot, coach, ContactState::PersonalCoachEmail);
+        }
         return Preferred::named(slot, coach, ContactState::CoachNameOnly);
     }
     if let Some(director) = director {
         return Preferred::named(Slot::Director, director, ContactState::CoachNameOnly);
     }
     Preferred::unnamed(ContactState::NoPublicContactFound)
-}
-
-/// The role cell: the slot's label, with the side of the team appended when the row was published
-/// for one side rather than for the whole team.
-fn role_label(slot: Slot, side: Gender) -> String {
-    match side {
-        Gender::Boys => format!("{} (boys)", slot.label()),
-        Gender::Girls => format!("{} (girls)", slot.label()),
-        Gender::Mixed | Gender::Unknown => slot.label().to_string(),
-    }
 }

@@ -4,15 +4,45 @@ use std::time::Duration;
 use restate_sdk::prelude::*;
 
 use crate::spawn::Spawner;
-use census_report::report::ReportResult;
 use census_store::clock::Clock;
 use census_store::Store;
+use chrono::{Days, NaiveDate};
 
 use super::ingest::IngestClient;
 use super::jobs::run_once;
 use super::jobs::write_sweep_report;
 use super::wire::ingest::{EndpointObservation, SweepReport, SweepRequest};
 use super::{blocking, job_error, JobError, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS, STOP_SIGNAL};
+
+mod blocking_prune_receipts;
+mod blocking_write_report;
+
+/// How long a store receipt must outlive the operation it names.
+///
+/// While Restate still holds an invocation's journal, that invocation can be replayed — and a replay
+/// has to find the receipt the first application wrote, or it appends the page again. The objects
+/// that write receipts declare a 90-day journal retention, so 90 days is the window; it is
+/// deliberately the *longest* retention any of them declares, not the shortest.
+///
+/// This is the policy half of [`Store::prune_receipts`]. The store holds no opinion on the window;
+/// it removes exactly the receipts a caller tells it are past theirs.
+pub const REPLAY_RETENTION_DAYS: u64 = 90;
+
+/// The oldest day a receipt may hold and still be replayed: `today` less the replay retention.
+///
+/// A day the calendar cannot read is a fault in the deployment's own clock rather than a source
+/// condition, so this fails closed: a boundary derived from a date nobody can read would either
+/// remove receipts that are still live or never remove any at all, and both are silent.
+fn retention_boundary(today: &str) -> Result<String, HandlerError> {
+    let day = NaiveDate::parse_from_str(today, "%Y-%m-%d")
+        .map_err(|_| TerminalError::new(format!("sweep day {today} is not a YYYY-MM-DD day")))?;
+    let boundary = day
+        .checked_sub_days(Days::new(REPLAY_RETENTION_DAYS))
+        .ok_or_else(|| {
+            TerminalError::new("retention boundary underflows the calendar".to_string())
+        })?;
+    Ok(boundary.to_string())
+}
 
 /// One durable window wait, behind a seam: a `WorkflowContext` cannot be built in a unit test, so
 /// the loop takes anything that can wait out a window. `true` = the window elapsed; `false` = the
@@ -89,13 +119,21 @@ impl Sweep {
             ))
             .into());
         }
-        // Journaled: the date names the report file and travels inside the report the handler returns,
-        // so a replay must reproduce it rather than re-read the clock.
         let today = super::journaled_today_workflow(&ctx, &self.clock).await?;
         let (windows_observed, interrupted) =
             Self::wait_windows(&ctx, request.windows, request.window_seconds).await?;
         let (endpoints, stale) = Self::observe_endpoints(&ctx, &request.endpoints).await?;
-
+        let boundary = retention_boundary(&today)?;
+        let pruned = run_once(|| async move {
+            blocking_prune_receipts::blocking_prune_receipts(
+                Arc::clone(&self.region),
+                Arc::clone(&self.store),
+                boundary,
+            )
+            .await
+            .map_err(job_error)
+        })
+        .await?;
         let report = SweepReport {
             windows_observed,
             interrupted,
@@ -103,9 +141,11 @@ impl Sweep {
             stale,
             today: today.clone(),
             report_path: None,
+            pruned_receipts: pruned.removed,
+            undated_receipts: pruned.undated,
         };
         let written = run_once(|| async move {
-            Self::blocking_write_report(
+            blocking_write_report::blocking_write_report(
                 Arc::clone(&self.region),
                 Arc::clone(&self.store),
                 report,
@@ -187,22 +227,6 @@ impl Sweep {
             .signal(STOP_SIGNAL)
             .resolve(STOP_SIGNAL.to_string());
         Ok(Json(true))
-    }
-
-    /// Persist the sweep report through the blocking pool, updating `report_path` on success.
-    async fn blocking_write_report(
-        spawner: Arc<Spawner>,
-        store: Arc<Store>,
-        report: SweepReport,
-        today: String,
-    ) -> Result<Json<SweepReport>, JobError> {
-        blocking(spawner, move || -> ReportResult<Json<SweepReport>> {
-            let path = write_sweep_report(&store, &report, &today)?;
-            let mut report = report;
-            report.report_path = Some(path.display().to_string());
-            Ok(Json(report))
-        })
-        .await
     }
 }
 

@@ -133,7 +133,7 @@ pub use browser_session::{
 };
 pub use census::{Census, CensusClient, CensusIngressClient};
 pub use ingest::{Ingest, IngestClient, IngestIngressClient};
-pub use jobs::append_observations;
+pub use jobs::apply_observations;
 pub use jurisdiction::{
     JurisdictionCensus, JurisdictionCensusClient, JurisdictionCensusIngressClient,
 };

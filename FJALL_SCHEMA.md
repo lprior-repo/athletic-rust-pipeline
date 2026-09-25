@@ -82,7 +82,7 @@ configuration.
 | Close | `Store` dropped at process exit | `flush()`, then `drop(store)` |
 
 `Store::open` performs, in order: create `http`/`out`; open the database with
-`cache_size(CACHE_BYTES)`; open the three keyspaces; seed the per-table sequence counters from the
+`cache_size(CACHE_BYTES)`; open the four keyspaces; seed the per-table sequence counters from the
 highest key present; run the one-time legacy import. There is no explicit `close`; dropping the
 `Store` drops the `Database`, and the only shutdown-time durability action is `flush()`.
 
@@ -99,15 +99,16 @@ per-table `AtomicU64` sequence counters.
 
 ## 2. Keyspaces and tables
 
-Three Fjall keyspaces exist, named by constants in `store/mod.rs`:
+Four Fjall keyspaces exist, named by constants in `crates/census-store/src/lib.rs`:
 
 | Keyspace | Constant | Contents | Key shape |
 | --- | --- | --- | --- |
 | `entities` | `ENTITIES` | every observation row of all sixteen tables | `<table>\0<id>\0<seq:u64 BE>` |
 | `journal` | `JOURNAL` | completed-unit resume entries | `<phase>\0<key>` |
 | `meta` | `META` | import markers only | `imported:<table>`, `imported:resume-journals` |
+| `receipts` | `RECEIPTS` | one row per applied operation — the record that makes a replayed append a no-op | the caller's `operation_id` verbatim |
 
-There is no fourth keyspace and no per-table keyspace. The **tables** are logical partitions
+There is no per-table keyspace. The **tables** are logical partitions
 inside `entities`, selected by the table-name byte prefix. `Table` (`store/table.rs`, `enum Table`)
 is `Schools, Teams, Coaches, Athletes, Meets, Events, Performances, SourceIdentities, Conflicts,
 ReviewCases, Coverage, Snapshots, SourceAccess, IdentityVerdicts, SourceMeets, SourceObservations` (sixteen as of
@@ -115,9 +116,10 @@ ReviewCases, Coverage, Snapshots, SourceAccess, IdentityVerdicts, SourceMeets, S
 (`schools`, `teams`, … `source_meets`), `Table::ALL` the ordered list, and `Table::from_wire` the
 ingest-side parser (unknown names are rejected so a typo cannot create a table nobody scans).
 
-Only `entities`, `journal` and `meta` are Fjall keyspaces; the sixteen names above are tables inside
-`entities`. `ARCHITECTURE.md` §4 describes `census-store` as "Fjall keyspaces, journals, snapshots,
-migration, backup/restore" and leaves the keyspace/table split to this file, which is its authority.
+Only `entities`, `journal`, `meta` and `receipts` are Fjall keyspaces; the sixteen names above are
+tables inside `entities`. `ARCHITECTURE.md` §4 describes `census-store` as "Fjall keyspaces, journals,
+snapshots, migration, backup/restore" and leaves the keyspace/table split to this file, which is its
+authority.
 
 | Table | Entity type | Observation body |
 | --- | --- | --- |
@@ -140,6 +142,42 @@ completed a unit has no row and no file.
 
 The `meta` keyspace holds one `imported:<table>` marker per table plus
 `imported:resume-journals`; nothing else writes to it.
+
+### Receipts (keyspace `receipts`)
+
+```text
+key   = operation_id                       # the caller's stable name for one unit of work
+value = Receipt { operation, digest, at, appended }
+```
+
+The receipt is what makes an external effect idempotent across the two durability domains. An append
+that commits and whose acknowledgement is lost is replayed by whoever owns the retry; written as two
+commits — rows first, receipt second — that replay appends the page again, because the writer that
+should have remembered the first one died before it could. `StoreBatch::commit_once` writes the rows,
+the table's sequence and row marks, the batch's journal entries **and** the receipt in one `SyncData`
+commit, so the store never holds rows a receipt does not cover
+(`crates/census-store/src/receipt.rs`).
+
+* A repeat under the same `operation_id` with the same `digest` writes nothing at all — no row, no
+  counter movement, no journal entry — and returns `Application::Repeated`, carrying the receipt the
+  first application left. `Application::appended()` is zero for that case, so a caller summing replies
+  cannot count one page twice.
+* A repeat under the same id with a *different* digest is a `StoreError::Invariant` (terminal in the
+  service's classification): the same id cannot name two payloads. This is why the digest is not the
+  identity — an id derived from the payload cannot notice that the payload changed under it.
+* The id and digest are bounded before the batch holds anything (`MAX_OPERATION_BYTES` = 512,
+  `MAX_DIGEST_BYTES` = 256), and neither may be empty: an empty digest matches every payload.
+* `at` is a `YYYY-MM-DD` day. `Store::prune_receipts(before)` removes the receipts stamped strictly
+  earlier and reports the rows it could not date as `undated` instead of removing them — a receipt
+  deleted while its invocation could still replay re-opens the window it exists to close. Nothing else
+  deletes a receipt, so `Store::receipt_count` is exact.
+* Receipts live *in* the store, so a store rebuilt from immutable evidence starts with none and no
+  receipt of an earlier generation can be applied to it: there is no cross-generation mixing to guard
+  against. The `Sweep` workflow calls the prune with `REPLAY_RETENTION_DAYS` = 90 — the
+  `journal_retention` the ingest objects declare — and puts both figures in its report
+  (`pruned_receipts`, `undated_receipts`).
+* An operation whose page held no rows still gets a receipt (`appended: 0`), so "no rows appended" and
+  "this page was never posted" stay distinguishable.
 
 ## 3. Key and value encoding
 
@@ -274,6 +312,9 @@ report, workbook, snapshot and Restate handlers alike:
 | `import_observations` | `entities` | one batch per legacy file | `durability(SyncData)` then `commit()` |
 | `import_legacy_resume_journals` | `journal` | one batch for every phase file | `durability(SyncData)` then `commit()` |
 | `import_legacy` markers | `meta` | single `Keyspace::insert` | journal persisted `Buffer`, then `flush()` = `SyncAll` |
+| `StoreBatch::commit` | `entities` + `journal` | one batch per caller page: appends across tables, the marks their reservations move, and the journal entries that name them | `durability(SyncData)` then `commit()` |
+| `StoreBatch::replace_many` + `commit` | `entities` | one batch staging a derived table's whole content (either table mode) | same commit as the rest of the batch |
+| `StoreBatch::commit_once` | `entities` + `journal` + `receipts` | the same batch plus the operation's receipt | `durability(SyncData)` then `commit()` |
 
 `append_many` order of operations: serialize every record; parse and validate its id; `reserve` the
 sequence range (a single `fetch_add` on the table's `AtomicU64`); build the batch with
@@ -285,8 +326,12 @@ gap. Gaps are harmless — nothing reuses them, and reopening reseeds from the h
 and no stored observation can be overwritten by a later append.
 
 Atomicity: fjall documents `commit` as "Commits the batch to the Database atomically"
-(fjall 3.1.10 `src/batch/mod.rs`), which is what makes one adapter page one unit. This store only
-ever touches one keyspace per batch, so no cross-keyspace invariant depends on that guarantee.
+(fjall 3.1.10 `src/batch/mod.rs`), which is what makes one adapter page one unit. A batch now spans
+keyspaces, and cross-keyspace invariants depend on that guarantee in three places: the receipt the
+same commit as the rows it covers (so the store never holds rows no receipt names), a caller's page
+row and its journal entry (§4), and a derivation that closes cases *and* records the verdicts it
+closed (the local-model review pass, `census-review`), which is one batch because two commits would
+let a crash leave a verdict standing against a case that still reads as open.
 Batching is per call, not per observation: `append_many` carries the whole slice, `journal_done`
 carries exactly one row. The largest batches are the pre-Fjall imports (one file each, capped at
 `MAX_ROWS_PER_TABLE`) and Restate ingest (≤ 50,000 rows per request).

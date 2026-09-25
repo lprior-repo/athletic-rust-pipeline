@@ -28,15 +28,15 @@ pub(super) fn workbook(
     store: &Path,
     out: Option<&Path>,
     grad_year: i32,
-    all_sources: bool,
+    core: bool,
     limit: Option<usize>,
 ) -> Result<()> {
     let mut cmd = binary(store).args(["workbook", "--grad-year", &grad_year.to_string()]);
     if let Some(out) = out {
         cmd = cmd.arg("--out").arg(out.display().to_string());
     }
-    if all_sources {
-        cmd = cmd.arg("--all-sources");
+    if core {
+        cmd = cmd.arg("--core");
     }
     if let Some(limit) = limit {
         cmd = cmd.args(["--limit", &limit.to_string()]);

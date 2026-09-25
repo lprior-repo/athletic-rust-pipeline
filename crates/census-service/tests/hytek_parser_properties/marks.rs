@@ -45,7 +45,7 @@ fn a_bare_metre_figure_is_a_distance_mark() {
     let mark = parse_field_mark("14.25").expect("a metric mark parses");
     assert_eq!(
         mark,
-        Mark::DistanceMetres(CentiMetres::from_metres_f64(14.25))
+        Mark::DistanceMetres(CentiMetres::try_from_metres_f64(14.25).expect("fixture is in range"))
     );
     assert!((metres_of(&mark) - 14.25).abs() < 0.015);
 }

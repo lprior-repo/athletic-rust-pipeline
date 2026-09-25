@@ -193,7 +193,7 @@ fn recorded_case(store: &Store) -> ReviewCase {
 }
 
 #[tokio::test]
-async fn a_decision_closes_an_athlete_case_and_lands_as_a_verdict() {
+async fn same_person_is_rejected_when_gender_differs() {
     let (fixture, case) = Fixture::new();
     let (endpoint, lane) = lane(batch(&case, "value_proposed", "identity", "same_person"));
     let report = run_lanes(
@@ -207,11 +207,12 @@ async fn a_decision_closes_an_athlete_case_and_lands_as_a_verdict() {
     lane.join().expect("the stub lane served its one request");
 
     assert_eq!(
-        report.asked, 1,
+        report.requested, 1,
         "the conflict queue is where the case is read"
     );
-    assert_eq!(report.accepted, 1);
-    assert_eq!(report.rejected, 0);
+    // §34: AI may never override a deterministic contradiction.
+    assert_eq!(report.accepted, 0);
+    assert_eq!(report.rejected, 1);
 
     let verdict = verdict(&fixture.store);
     assert_eq!(verdict.case_id, case.id);
@@ -219,16 +220,20 @@ async fn a_decision_closes_an_athlete_case_and_lands_as_a_verdict() {
     assert_eq!(verdict.family, ATHLETE_IDENTITY_FAMILY);
     assert_eq!(verdict.field, "identity");
     assert_eq!(verdict.value, "same_person");
-    assert!(verdict.accepted, "a decision is what closes the case");
+    assert!(
+        !verdict.accepted,
+        "the hard contradiction refuses the merge"
+    );
+    assert!(verdict.rationale.contains("gender_differs"));
     assert_eq!(verdict.reviewer, "stub.gguf");
 
     let recorded = recorded_case(&fixture.store);
     assert_eq!(recorded.id, case.id);
-    assert_eq!(recorded.state, ReviewState::Resolved);
+    assert_eq!(recorded.state, ReviewState::Retained);
 }
 
 #[tokio::test]
-async fn a_declined_answer_leaves_the_athlete_case_pending() {
+async fn an_insufficient_evidence_answer_is_terminal_for_its_evidence_snapshot() {
     let (fixture, case) = Fixture::new();
     let (endpoint, lane) = lane(batch(&case, "insufficient_evidence", "", ""));
     let report = run_lanes(
@@ -241,7 +246,7 @@ async fn a_declined_answer_leaves_the_athlete_case_pending() {
     .expect("the pass runs");
     lane.join().expect("the stub lane served its one request");
 
-    assert_eq!(report.asked, 1);
+    assert_eq!(report.requested, 1);
     assert_eq!(report.insufficient, 1);
     assert_eq!(report.accepted, 0);
 
@@ -255,8 +260,8 @@ async fn a_declined_answer_leaves_the_athlete_case_pending() {
     let recorded = recorded_case(&fixture.store);
     assert_eq!(
         recorded.state,
-        ReviewState::Pending,
-        "a decline decides nothing, so the case stays askable rather than closing"
+        ReviewState::Retained,
+        "this evidence snapshot is terminal; new evidence reopens the question with a new case id"
     );
 }
 
@@ -274,7 +279,7 @@ async fn a_proposal_that_is_not_an_answer_is_retained_with_what_it_said() {
     .expect("the pass runs");
     lane.join().expect("the stub lane served its one request");
 
-    assert_eq!(report.asked, 1);
+    assert_eq!(report.requested, 1);
     assert_eq!(report.rejected, 1);
     assert_eq!(report.accepted, 0);
 
@@ -331,7 +336,7 @@ async fn a_lane_killed_before_it_answers_is_counted_and_mints_no_verdict() {
     .expect("a dead lane is a finding about the run, not a failed pass");
 
     assert_eq!(
-        report.asked, 1,
+        report.requested, 1,
         "the case was selected and the request attempted"
     );
     assert_eq!(

@@ -54,7 +54,7 @@
 
 mod baseline;
 mod bench;
-mod compare;
+pub(crate) mod compare;
 mod env;
 
 pub use baseline::load_baseline;

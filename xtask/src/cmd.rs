@@ -95,6 +95,26 @@ impl Cmd {
         String::from_utf8(output.stdout)
             .with_context(|| format!("`{rendered}` wrote output that is not UTF-8"))
     }
+    /// Run the command and capture both stdout and stderr.
+    ///
+    /// Returns `(stdout, stderr)` regardless of exit status; the caller inspects the status
+    /// or exit code. Unlike [`Cmd::output`], this method does **not** bail on a non-zero exit
+    /// because some tools (cargo-kani, CBMC) print their verdict to stderr even on success, and
+    /// a non-zero exit may carry useful diagnostic text.
+    pub fn capture(self) -> Result<(String, String)> {
+        let rendered = self.render();
+        eprintln!("+ {rendered}");
+        let output = Command::new(&self.program)
+            .args(&self.args)
+            .current_dir(paths::repo_root())
+            .output()
+            .with_context(|| format!("running `{rendered}`"))?;
+        let stdout = String::from_utf8(output.stdout)
+            .with_context(|| format!("`{rendered}` wrote stdout that is not UTF-8"))?;
+        let stderr = String::from_utf8(output.stderr)
+            .with_context(|| format!("`{rendered}` wrote stderr that is not UTF-8"))?;
+        Ok((stdout, stderr))
+    }
 }
 
 /// Quote one argument the way a POSIX shell needs it; arguments that are already plain stay bare.

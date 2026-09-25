@@ -67,16 +67,12 @@ pub(super) fn workbook(
     origin: &str,
     out: Option<&Path>,
     grad_year: i32,
-    all_sources: bool,
+    core: bool,
     limit: Option<usize>,
 ) -> Result<()> {
     let (endpoint, client) = ingress::job_client(origin)?;
     ingress::announce(&endpoint, "Workbook", "run");
-    let scope = if all_sources {
-        Scope::AllSources
-    } else {
-        Scope::Core
-    };
+    let scope = if core { Scope::Core } else { Scope::AllSources };
     let request = WorkbookRequest {
         grad_year: Some(school_year(grad_year)?),
         limit,

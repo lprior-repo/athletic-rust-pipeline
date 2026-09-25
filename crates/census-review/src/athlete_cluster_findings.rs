@@ -8,12 +8,14 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use census_domain::model::{
-    AthleteCandidateId, CanonicalAthlete, CanonicalSchool, Gender, ReviewCase, ReviewVerdictKind,
-    ReviewVerdictRecord, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
+    AthleteCandidateId, CanonicalAthlete, CanonicalSchool, CaseEvidence, Gender, ReviewCase,
+    ReviewVerdictKind, ReviewVerdictRecord, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
+    MEMBER_SET_LABEL,
 };
 use census_store::{Store, StoreResult, Table};
 
 use super::athlete_clusters::RULE_REVIEWER;
+use crate::athlete_verdict::HardContradiction;
 use crate::families::IDENTITY_FIELD;
 
 /// One canonical athlete row, reduced to the facts this pass compares.
@@ -24,6 +26,7 @@ pub(super) struct Row {
     name: String,
     school: String,
     grad_year: i16,
+    grad_evidence: BTreeSet<i16>,
     gender: Gender,
 }
 
@@ -42,6 +45,11 @@ impl Row {
                 .cloned()
                 .unwrap_or_else(|| stored.to_string()),
             grad_year: row.grad_year.get(),
+            grad_evidence: row
+                .observed_grades
+                .iter()
+                .map(|observation| observation.grad_year().get())
+                .collect(),
             gender: row.gender,
         }
     }
@@ -162,29 +170,68 @@ impl Span {
         };
         rows.all(|row| first.agrees_with(row))
     }
+    /// A contradiction that must block a deterministic `same_person` merge.
+    pub(super) fn hard_contradiction(&self) -> Option<HardContradiction> {
+        let first = self.rows.first()?;
+        let grade_differs = self.rows.iter().skip(1).any(|row| {
+            !first.grad_evidence.is_empty()
+                && !row.grad_evidence.is_empty()
+                && first.grad_evidence != row.grad_evidence
+        });
+        if grade_differs {
+            return Some(HardContradiction::GradYearEvidenceDiffers);
+        }
+        let gender_differs = self
+            .rows
+            .iter()
+            .skip(1)
+            .any(|row| first.gender != row.gender);
+        gender_differs.then_some(HardContradiction::GenderDiffers)
+    }
 
     pub(super) fn case(&self) -> Option<ReviewCase> {
         let first = self.rows.first()?;
         let lines: Vec<String> = self.rows.iter().map(Row::line).collect();
+        let reason = match (self.hard_contradiction(), self.agrees()) {
+            (Some(flag), _) => format!(
+                "The packet carries hard contradiction `{}`; the object does not settle that they are one athlete.",
+                flag.slug()
+            ),
+            (None, true) => {
+                "The rows agree on name, class and gender, so the differing school is a transfer rather than a second athlete."
+                    .to_string()
+            }
+            (None, false) => {
+                "The rows disagree on name, class or gender, so the object does not settle that they are one athlete."
+                    .to_string()
+            }
+        };
+        let subject = first.line();
         let detail = format!(
             "{} {} is one provider object on {} canonical rows: {}. {}",
             self.namespace,
             self.object,
             self.rows.len(),
             lines.join("; "),
-            if self.agrees() {
-                "The rows agree on name, class and gender, so the differing school is a transfer rather than a second athlete."
-            } else {
-                "The rows disagree on name, class or gender, so the object does not settle that they are one athlete."
-            }
+            reason
         );
-        let mut case = ReviewCase::pending(
+        // The members are evidence, not decoration: binding them at mint time is what makes a finding
+        // about three rows a different case from the same words about two.
+        let members: Vec<AthleteCandidateId> = self
+            .rows
+            .iter()
+            .map(|row| row.candidate_id.clone())
+            .collect();
+        let evidence = CaseEvidence::of([subject.as_str(), detail.as_str()])
+            .with_members(MEMBER_SET_LABEL, members.iter().cloned());
+        let mut case = ReviewCase::pending_with_evidence(
             ATHLETE_IDENTITY_FAMILY,
             first.id.as_str(),
-            first.line(),
+            subject,
             detail,
+            evidence,
         );
-        case.member_ids = self.rows.iter().map(|row| row.candidate_id.clone()).collect();
+        case.member_ids = members;
         Some(case)
     }
     /// The decision the agreement rule states, as the athlete family's own answer.

@@ -49,7 +49,7 @@ pub(super) fn publish_bests_and_workbook(
     println!(
         "bests\tcohort={cohort} rows={} scope={}\t{}",
         rows.len(),
-        if args.all_sources { "all" } else { "core" },
+        if args.core { "core" } else { "all" },
         jsonl.display()
     );
     println!("\t{}", csv.display());
@@ -96,7 +96,7 @@ pub(super) async fn publish_bests_and_workbook_live(
     } = live::bests(Some(origin), scope, Some(grad_year), args.limit).await?;
     println!(
         "bests\tcohort={cohort} rows={rows} scope={}\t{jsonl}",
-        if args.all_sources { "all" } else { "core" }
+        if args.core { "core" } else { "all" }
     );
     println!("\t{csv}");
 

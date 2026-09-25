@@ -80,6 +80,7 @@ pub(in crate::workbook) use contact::{disagreements, Disagreement};
 
 /// The three recruiting sheets, built once from one read of the store.
 pub(super) struct Recruiting {
+    /// Read only by this module and its tests: every sheet reaches the model through a method.
     dataset: Dataset,
 }
 
@@ -125,6 +126,11 @@ impl Recruiting {
             &coaches::WIDTHS,
             true,
         )
+    }
+
+    /// The cohort athlete count from the dataset.
+    pub(super) fn cohort_athletes(&self) -> usize {
+        self.dataset.audit().cohort_athletes
     }
 
     /// Print what each recruiting sheet published against the store counts behind it.

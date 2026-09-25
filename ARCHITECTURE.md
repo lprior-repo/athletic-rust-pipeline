@@ -83,7 +83,8 @@ systems and school directories are sources. The canonical census exists independ
 ```text
 crates/
     census-domain/     pure types and rules; no tokio, fjall, reqwest, chromiumoxide, restate, xlsx, llama
-    census-store/      Fjall keyspaces, journals, snapshots, migration, backup/restore
+    census-store/      Fjall keyspaces (entities, journal, meta, receipts), snapshots, migration,
+                       backup/restore
     census-crawl/      source adapters, fetchers, per-origin admission, browser supervisor
     census-reconcile/  normalisation, deterministic scoring, conflict detection
     census-review/     local Qwen identity-review lane
@@ -131,14 +132,7 @@ meet:{source}:{source_meet_id}:{revision}     athlete:{source}:{source_athlete_i
 school:{source}:{source_school_id}:{revision} review:{evidence_digest}:{policy_revision}
 ```
 
-**§9 retry model**: one retry owner (Restate), maximum three automatic attempts per failed external
-operation, transport performs one attempt. Never stack Restate × HTTP-helper × adapter retries; the
-scan in `crates/census-service/src/restate_services/retry_policy_tests.rs` reads every ceiling out of
-the tree and fails a value outside the contract. Retry exhaustion is evidence, and each layer names
-its own causes rather than one shared type: `FailureCode`/`Decision` in the deleted root package (`BrowserError` survives in
-`crates/athleticnet-browser`),
-`AccessBlockKind` (`census-domain`) and `FetchError` (`census-crawl`) in the census crates, `Outcome`
-at async boundaries in `census-service`. A source failure is never equivalent to `NO_MATCH`.
+**§9 retry model**: One retry owner (Restate), max three attempts per failed external operation; transport performs one. Never stack retries across layers. See `docs/adr/ADR-002-restate-owns-retries.md` for the full retry policy contract, exhaustion semantics, and `FailureCode`/`AccessBlockKind`/`FetchError` error taxonomy.
 
 ## 6. Admission and browser state (§10, §26-§28)
 
@@ -175,28 +169,7 @@ filter on a field.
 
 ## 8. Identity review (§32-§34)
 
-```text
-candidate discovery → deterministic normalisation → hard contradiction detection
-→ deterministic scoring → high confidence ? match : AI review
-```
-
-Each ambiguous case gets one stable `ReviewCaseId`; identical evidence packages reuse prior reviews;
-both GPU servers process different jobs at once. The model receives a compact structured packet (no
-raw HTML), returns `SamePerson | DifferentPerson | InsufficientEvidence`, and Rust adjudication stays
-authoritative: AI can never create a match across a hard deterministic contradiction, and poor model
-confidence means `REVIEW`.
-
-## 9. Census flow (§46-§48)
-
-A source inventory → B school census → C meet census → D bulk result acquisition → E athlete
-discovery → F cohort verification → G athlete enrichment → H coach enrichment → I cross-source
-reconciliation → J AI ambiguity review → K gap sweep → L final reconciliation → M export.
-
-Gaps (`MissingGraduationEvidence`, `MissingPerformanceHistory`, `MissingCoach`, `MissingSchool`,
-`MissingProfile`, `ConflictingIdentity`, `MissingEventContext`, `MissingPRSupport`) drive a targeted
-second pass — this is one census, not a weekly-update architecture. Completion is not "the HTTP queue
-is empty": the root workflow finishes only when every work item is terminal, and
-`Acquiring → Complete` is not a legal transition.
+Candidate discovery → deterministic normalisation → hard contradiction detection → scoring → AI review for ambiguous cases only. The model returns `SamePerson | DifferentPerson | InsufficientEvidence`; Rust adjudication is authoritative. See `docs/adr/ADR-005-ai-cannot-override-contradictions.md` for the full rule: AI can never create a match across a hard deterministic contradiction, and poor model confidence defaults to `REVIEW`.
 
 ## 10. Engineering standards (§37-§43)
 

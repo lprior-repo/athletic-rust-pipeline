@@ -22,8 +22,40 @@ pub enum AthleteVerdict {
     SamePerson,
     /// Two people: the rows collide on the merge key but are distinct athletes.
     DifferentPerson,
-    /// The evidence does not decide; the case stays where it was rather than being closed.
+    /// The evidence snapshot does not decide; the case is retained as settled until new evidence
+    /// mints a new case id.
     InsufficientEvidence,
+}
+
+/// A packet contradiction that makes a `same_person` merge unsafe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HardContradiction {
+    /// The rows' grade observations imply different graduating classes.
+    GradYearEvidenceDiffers,
+    /// The rows' canonical genders differ.
+    GenderDiffers,
+}
+
+impl HardContradiction {
+    /// The packet flag slug, also recorded in a refused verdict's rationale.
+    pub const fn slug(self) -> &'static str {
+        match self {
+            Self::GradYearEvidenceDiffers => "grad_year_evidence_differs",
+            Self::GenderDiffers => "gender_differs",
+        }
+    }
+}
+
+impl Refusal {
+    /// The audit text for a hard contradiction, when this refusal has one.
+    pub const fn rationale(self) -> Option<&'static str> {
+        match self {
+            Self::HardContradiction(flag) => Some(flag.slug()),
+            Self::WrongField | Self::InvalidValue | Self::AlreadyResolved | Self::UnnamedCase => {
+                None
+            }
+        }
+    }
 }
 
 impl AthleteVerdict {
@@ -59,6 +91,36 @@ impl AthleteVerdict {
     }
 }
 
+/// Read the first hard contradiction the packet computed from its two rows.
+fn hard_contradiction(packet: &ReviewPacket) -> Option<HardContradiction> {
+    packet
+        .evidence
+        .iter()
+        .filter(|fact| fact.field == "flag")
+        .find_map(|fact| {
+            let flag = fact.value.split_once(':')?.0.trim();
+            match flag {
+                "grad_year_evidence_differs" => Some(HardContradiction::GradYearEvidenceDiffers),
+                "gender_differs" => Some(HardContradiction::GenderDiffers),
+                _ => None,
+            }
+        })
+}
+
+/// Refuse a merge when the packet carries a deterministic contradiction.
+fn read_answer(value: &str, packet: &ReviewPacket) -> Result<AthleteVerdict, Refusal> {
+    let Some(answer) = AthleteVerdict::parse(value) else {
+        return Err(Refusal::InvalidValue);
+    };
+    if answer != AthleteVerdict::SamePerson {
+        return Ok(answer);
+    }
+    match hard_contradiction(packet) {
+        Some(flag) => Err(Refusal::HardContradiction(flag)),
+        None => Ok(answer),
+    }
+}
+
 /// Read one answer off the wire as this family's verdict, or say why it is not one.
 ///
 /// Three local rules, and each refusal is returned rather than swallowed, so the caller can keep the
@@ -88,7 +150,7 @@ pub(super) fn read(
                 return Err(Refusal::WrongField);
             }
             let value = verdict.value.as_deref().map(str::trim).unwrap_or_default();
-            AthleteVerdict::parse(value).ok_or(Refusal::InvalidValue)
+            read_answer(value, packet)
         }
     }
 }

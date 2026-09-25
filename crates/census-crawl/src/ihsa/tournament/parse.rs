@@ -92,19 +92,21 @@ pub fn parse_mark(published: &str) -> Option<Mark> {
     }
     if let Some(metric) = stripped.strip_suffix('m') {
         let value = metric.trim().parse::<f64>().ok()?;
-        return Some(Mark::DistanceMetres(CentiMetres::from_metres_f64(value)));
+        return Some(Mark::DistanceMetres(CentiMetres::try_from_metres_f64(
+            value,
+        )?));
     }
     if let Some((minutes, seconds)) = stripped.split_once(':') {
         let minutes = minutes.trim().parse::<f64>().ok()?;
         let seconds = seconds.trim().parse::<f64>().ok()?;
-        return Some(Mark::TimeSeconds(CentiSeconds::from_seconds_f64(
+        return Some(Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(
             minutes.mul_add(60.0, seconds),
-        )));
+        )?));
     }
     stripped
         .parse::<f64>()
         .ok()
-        .map(CentiSeconds::from_seconds_f64)
+        .and_then(CentiSeconds::try_from_seconds_f64)
         .map(Mark::TimeSeconds)
 }
 

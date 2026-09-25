@@ -60,9 +60,10 @@ fn performance(index: usize, version: usize) -> CanonicalPerformance {
         event: CanonicalEvent::new(&meet, EventKind::Track100m, Gender::Boys, None, None).id,
         meet,
         date: "2026-05-01".to_string(),
-        mark: Mark::TimeSeconds(CentiSeconds::from_seconds_f64(
-            10.94 + (version as f64) / 100.0,
-        )),
+        mark: Mark::TimeSeconds(
+            CentiSeconds::try_from_seconds_f64(10.94 + (version as f64) / 100.0)
+                .expect("ten seconds is in range"),
+        ),
         wind_mps: None,
         place: Some((version + 1) as u16),
         heat: None,

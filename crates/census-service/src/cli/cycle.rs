@@ -32,10 +32,10 @@ pub(super) struct RunArgs {
     /// Graduation year the best-mark reduction and the workbook are built for (2027 = class of 2027).
     #[arg(long, default_value_t = 2027)]
     grad_year: u16,
-    /// Reduce best marks over every source rather than the core scope alone. The core scope excludes
-    /// the Athletic.net source by design, so a registry-only store reduces nothing without this.
+    /// Restrict the best-mark reduction to the core scope, which excludes the Athletic.net source by
+    /// design. Every approved source is what a plain run reduces.
     #[arg(long)]
-    all_sources: bool,
+    core: bool,
     /// Ignore cached HTTP bodies and re-fetch.
     #[arg(long)]
     refresh: bool,
@@ -88,7 +88,7 @@ async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
         .clone()
         .unwrap_or_else(census_crawl::net::today_iso);
     let grad_year = school_year(args.grad_year)?;
-    let scope = scope_of(args.all_sources);
+    let scope = scope_of(args.core);
 
     match (&args.input, args.meets.is_empty()) {
         (Some(_), _) | (None, false) => {
@@ -142,7 +142,7 @@ async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
     }
     println!("gather\tathleticnet\tskipped (no --input): publishing what the store holds");
     let grad_year = school_year(args.grad_year)?;
-    let scope = scope_of(args.all_sources);
+    let scope = scope_of(args.core);
     let tables = live::consolidate(Some(origin)).await?;
     println!(
         "consolidate\t{}",

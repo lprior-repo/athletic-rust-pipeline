@@ -94,15 +94,30 @@ pub(super) fn stage_derived<T: Serialize>(
     table: Table,
     records: &[T],
 ) -> StoreResult<Staged> {
-    let mut staged = Staged {
-        named: HashSet::with_capacity(records.len()),
-        added: 0,
-    };
+    let mut encoded = Vec::with_capacity(records.len());
     for record in records {
         let value = serde_json::to_vec(record).map_err(|source| StoreError::Json {
             detail: "serializing derived state".to_string(),
             source,
         })?;
+        encoded.push(value);
+    }
+    stage_derived_encoded(batch, entities, table, encoded)
+}
+
+/// The same staging for records a caller already encoded, so a batch can hold a table's whole content
+/// without re-serializing it at the commit.
+pub(super) fn stage_derived_encoded(
+    batch: &mut OwnedWriteBatch,
+    entities: &Keyspace,
+    table: Table,
+    records: Vec<Vec<u8>>,
+) -> StoreResult<Staged> {
+    let mut staged = Staged {
+        named: HashSet::with_capacity(records.len()),
+        added: 0,
+    };
+    for value in records {
         let id = observation_id(&value)?.to_string();
         let key = observation_key(table, &id, DERIVED_SEQUENCE);
         let held = entities

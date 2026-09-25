@@ -10,8 +10,9 @@
 //!
 //! Blocking work rides the same set. A blocking job that is still queued is aborted like any other
 //! task; a job that already started runs to completion, because the blocking pool cannot interrupt
-//! it. Either way the region waits for it before its drain returns, which is what keeps a store's
-//! finalize from racing a writer the region had forgotten it started.
+//! it. The drain does not wait for such a job — after the deadline it aborts and reaps with
+//! non-blocking `try_join_next` over a bounded number of runtime turns — so it returns promptly
+//! and `remaining` reflects what the abort could not reclaim.
 //!
 //! Draining is a region-level decision and happens once: the owner drains after nothing can start
 //! more work. A task started after that lands in the region's fresh, empty set — the next drain's
@@ -33,11 +34,10 @@ use ledger::Ledger;
 
 /// What one region did with the tasks it owned.
 ///
-/// These are the drain report's counters, and they are counted once each: at the end of a drain
-/// `accepted == completed + cancelled + panicked + aborted`. `timed_out` and `remaining` carry the
-/// same number — how many tasks the deadline found still in flight — and `aborted` counts how many
-/// of those the abort then reclaimed. Counts saturate; they never wrap into a smaller, quieter
-/// number.
+/// `accepted == completed + cancelled + panicked + aborted`. `timed_out` carries the count that
+/// the deadline found still in flight; `remaining` is updated after reaping to hold the tasks the
+/// abort could not reclaim. `aborted` counts how many of those it did reclaim. Counts
+/// saturate; they never wrap into a smaller, quieter number.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct TaskReport {
     pub accepted: u64,
@@ -170,9 +170,9 @@ impl Spawner {
 
     /// Reap the region inside `timeout`: the natural exits first, then abort and count the rest.
     ///
-    /// Blocking jobs already running are waited for rather than abandoned, and the report says so:
-    /// what the deadline found still in flight is `timed_out` and `remaining`, and what the abort
-    /// actually reclaimed is `aborted`.
+    /// Tasks that finished inside the deadline are counted normally; the deadline phase uses
+    /// non-blocking `try_join_next` so the drain returns promptly — even if a blocking job that
+    /// started before the deadline runs to completion, the drain does not wait for it.
     #[tracing::instrument(skip_all, fields(timeout_secs = timeout.as_secs()))]
     pub async fn drain(&self, timeout: Duration) -> Result<TaskReport, SpawnError> {
         let mut region = self.take();
@@ -190,9 +190,23 @@ impl Spawner {
                             tracing::warn!(remaining, "drain deadline reached; aborting");
                             region.ledger.note_deadline(remaining);
                             region.tasks.abort_all();
-                            while let Some(joined) = region.tasks.join_next().await {
-                                region.ledger.classify_reaped(DrainState::from_join(joined));
+                            // The abort lands on the runtime's next turn, so reap across a few
+                            // turns instead of once: the tasks the abort reclaims are counted as
+                            // `aborted` and stop being reported as still in flight. The budget is
+                            // turns, not time — a job the abort cannot reclaim (a blocking job
+                            // that already started) never becomes ready, and the drain must not
+                            // wait on it.
+                            const REAP_TURNS: usize = 8;
+                            for _ in 0..REAP_TURNS {
+                                while let Some(joined) = region.tasks.try_join_next() {
+                                    region.ledger.classify_reaped(DrainState::from_join(joined));
+                                }
+                                if region.tasks.is_empty() {
+                                    break;
+                                }
+                                tokio::task::yield_now().await;
                             }
+                            region.ledger.set_remaining(narrow(region.tasks.len())?);
                             break;
                         }
                     }
