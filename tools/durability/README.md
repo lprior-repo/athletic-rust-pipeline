@@ -26,15 +26,27 @@ under `crates/`.  They may create and destroy directories under `$SCRATCH_STORE`
 The census lanes are qualified against Restate 1.7.10.  To run scenarios that depend on a
 live Restate node (scenarios 01–08, 12, 15, 16):
 
-1. **Download** the pinned build from the Restate releases page:
+1. **Download** the pinned build from the Restate releases page, checking it against the published
+   digest. The asset for x86-64 Linux is the musl tarball, and the binary sits one directory deep:
    ```
-   curl -LO https://github.com/restatedev/restate/releases/download/v1.7.10/restate-server-1.7.10-linux-amd64.tar.gz
-   tar xzf restate-server-1.7.10-linux-amd64.tar.gz
+   base=https://github.com/restatedev/restate/releases/download/v1.7.10
+   artefact=restate-server-x86_64-unknown-linux-musl.tar.xz
+   curl -LO "$base/$artefact" && curl -LO "$base/$artefact.sha256"
+   sha256sum -c "$artefact.sha256"          # 870fdc42…c83355e
+   dir="$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10"
+   mkdir -p "$dir" && tar xJf "$artefact" -C "$dir"
+   mv "$dir/restate-server-x86_64-unknown-linux-musl/restate-server" "$dir/"
+   "$dir/restate-server" --version          # restate-server 1.7.10
    ```
-2. **Place** the binary where the runner can find it, either on PATH or at the path specified
-   by `RESTATE_BINARY`.  The deploy unit expects it at
-   `/opt/athletic-rust-pipeline/vendor/restate-server-1.7.10/restate-server` on the
-   production host; for local testing any location is fine.
+   That directory is not arbitrary:
+   `crates/census-service/tests/restate_kill_restart.rs` looks in `$RESTATE_SERVER_BIN`, then at
+   exactly `$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server`, then on PATH,
+   and fails rather than skipping when it finds none — it exists to prove a real server resumes a run
+   whose endpoint was killed. `.github/workflows/gate.yml` installs it the same way before the gate,
+   out of the same release.
+2. **Place** the binary where the runner looks: the directory above, `RESTATE_BINARY` for these
+   scenarios, or `/opt/athletic-rust-pipeline/vendor/restate-server-1.7.10/restate-server` on the
+   production host.
 3. **Configure** Restate: copy `deploy/restate.toml` to a temporary config file or
    `/etc/census-service/restate.toml` if running as systemd.  The config binds admin to
    port 19095 and ingress to port 18095 on loopback.

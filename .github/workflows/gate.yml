@@ -58,5 +58,30 @@ jobs:
           for tool in cargo-nextest cargo-deny cargo-audit cargo-machete cargo-geiger cargo-vet cargo-hack; do
             cargo install "$tool" --locked || echo "gate tool unavailable: $tool (its lane will SKIP)"
           done
+      - name: Install the pinned Restate 1.7.10 server the kill/restart test proves against
+        run: |
+          # Not best-effort like the lanes above: `crates/census-service/tests/restate_kill_restart.rs`
+          # looks for the binary at `$RESTATE_SERVER_BIN`, then
+          # `$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server`, then PATH, and
+          # refuses to pass when it finds none — the test exists to prove a real server resumes a run
+          # whose endpoint was killed, so a silent skip would turn the proof into a decoration. The
+          # pinned path is the one it probes first among the two that need no environment.
+          set -euo pipefail
+          dir="$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10"
+          base=https://github.com/restatedev/restate/releases/download/v1.7.10
+          artefact=restate-server-x86_64-unknown-linux-musl.tar.xz
+          mkdir -p "$dir"
+          curl -sSL -o "/tmp/$artefact" "$base/$artefact"
+          curl -sSL -o "/tmp/$artefact.sha256" "$base/$artefact.sha256"
+          expected=$(cut -d' ' -f1 "/tmp/$artefact.sha256")
+          actual=$(sha256sum "/tmp/$artefact" | cut -d' ' -f1)
+          test -n "$expected" && test "$expected" = "$actual"
+          tar xJf "/tmp/$artefact" -C "$dir"
+          if [ ! -x "$dir/restate-server" ]; then
+            found=$(find "$dir" -maxdepth 3 -type f -name restate-server | head -1)
+            test -n "$found" && mv "$found" "$dir/restate-server"
+          fi
+          test -x "$dir/restate-server"
+          "$dir/restate-server" --version
       - name: Gate
         run: cargo xtask gate
