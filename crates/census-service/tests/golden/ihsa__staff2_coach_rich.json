@@ -1,947 +1,962 @@
 {
+  "staff": [
+    {
+      "person_id": 129103,
+      "name": "Natalie Nanninga",
+      "default_title": "Vocal Director",
+      "has_email": true,
+      "last_name": "Nanninga",
+      "role_id": "HCA-MUS3",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 136817,
+      "name": "Ms. Amanda Smith",
+      "default_title": "Scholastic Bowl Coach",
+      "has_email": true,
+      "last_name": "Smith",
+      "role_id": "HCA-SCB",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 52247,
+      "name": "Mr. Reid Kelso",
+      "default_title": "IHSA Official Representative",
+      "has_email": true,
+      "last_name": "Kelso",
+      "role_id": "A0-OffRep",
+      "phone": "309-462-2338",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 117164,
+      "name": "William Walters",
+      "default_title": "Superintendent",
+      "has_email": true,
+      "last_name": "Walters",
+      "role_id": "A1-Super",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 125209,
+      "name": "Mrs. Kristi Anderson",
+      "default_title": "Principal",
+      "has_email": true,
+      "last_name": "Anderson",
+      "role_id": "B1-Prin",
+      "phone": "309-462-2338",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 38846,
+      "name": "Mindy Pugh",
+      "default_title": "Principal's Assistant",
+      "has_email": true,
+      "last_name": "Pugh",
+      "role_id": "B2-Prin-Sec",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 52247,
+      "name": "Mr. Reid Kelso",
+      "default_title": "Boys Athletic Director",
+      "has_email": true,
+      "last_name": "Kelso",
+      "role_id": "C1-BoysAD",
+      "phone": "309-462-2338",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 38846,
+      "name": "Mindy Pugh",
+      "default_title": "Boys Athletic Director's Assistant",
+      "has_email": true,
+      "last_name": "Pugh",
+      "role_id": "C2-BoysAD-Sec",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 52247,
+      "name": "Mr. Reid Kelso",
+      "default_title": "Girls Athletic Director",
+      "has_email": true,
+      "last_name": "Kelso",
+      "role_id": "D1-GirlsAD",
+      "phone": "309-462-2338",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 38846,
+      "name": "Mindy Pugh",
+      "default_title": "Girls Athletic Director's Assistant",
+      "has_email": true,
+      "last_name": "Pugh",
+      "role_id": "D2-GirlsAD-Sec",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 146051,
+      "name": "Randy Frakes",
+      "default_title": "Activities Director",
+      "has_email": true,
+      "last_name": "Frakes",
+      "role_id": "E1-ActivDir",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 52247,
+      "name": "Mr. Reid Kelso",
+      "default_title": "Activities Director",
+      "has_email": true,
+      "last_name": "Kelso",
+      "role_id": "E1-ActivDir",
+      "phone": "309-462-2338",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 122234,
+      "name": "Rodney Anderson",
+      "default_title": "Certified Athletic Trainer",
+      "has_email": true,
+      "last_name": "Anderson",
+      "role_id": "G1-Trainer",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 122234,
+      "name": "Rodney Anderson",
+      "default_title": "Boys Baseball Head Coach",
+      "has_email": true,
+      "last_name": "Anderson",
+      "role_id": "HCB-BA",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 70334,
+      "name": "Cory Link",
+      "default_title": "Boys Basketball Head Coach",
+      "has_email": true,
+      "last_name": "Link",
+      "role_id": "HCB-BKB",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 105707,
+      "name": "Mrs. Cierra Snyder",
+      "default_title": "Boys Bowling Head Coach",
+      "has_email": true,
+      "last_name": "Snyder",
+      "role_id": "HCB-BWB",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 40964,
+      "name": "Mr. Barry Mink",
+      "default_title": "Boys Cross Country Head Coach",
+      "has_email": true,
+      "last_name": "Mink",
+      "role_id": "HCB-CCB",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 5494,
+      "name": "Mr. Rick Quinn",
+      "default_title": "Boys Football Head Coach",
+      "has_email": true,
+      "last_name": "Quinn",
+      "role_id": "HCB-FB",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 96017,
+      "name": "Mrs. Gary Cameron",
+      "default_title": "Boys Golf Head Coach",
+      "has_email": true,
+      "last_name": "Cameron",
+      "role_id": "HCB-GOB",
+      "phone": "306-462-2338",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 48639,
+      "name": "Mr. Sean Foster",
+      "default_title": "Boys Soccer Head Coach",
+      "has_email": true,
+      "last_name": "Foster",
+      "role_id": "HCB-SOB",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 96256,
+      "name": "Mr. Justin Rakestraw",
+      "default_title": "Boys Track & Field Head Coach",
+      "has_email": true,
+      "last_name": "Rakestraw",
+      "role_id": "HCB-TRB",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 141437,
+      "name": "Brian Holloway",
+      "default_title": "Boys Wrestling Head Coach",
+      "has_email": true,
+      "last_name": "Holloway",
+      "role_id": "HCB-WR",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 50601,
+      "name": "Mr. Brent Dugan",
+      "default_title": "Girls Basketball Head Coach",
+      "has_email": true,
+      "last_name": "Dugan",
+      "role_id": "HCG-BKG",
+      "phone": "309-457-6229",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 105707,
+      "name": "Mrs. Cierra Snyder",
+      "default_title": "Girls Bowling Head Coach",
+      "has_email": true,
+      "last_name": "Snyder",
+      "role_id": "HCG-BWL",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 40964,
+      "name": "Mr. Barry Mink",
+      "default_title": "Girls Cross Country Head Coach",
+      "has_email": true,
+      "last_name": "Mink",
+      "role_id": "HCG-CCG",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 96017,
+      "name": "Mrs. Gary Cameron",
+      "default_title": "Girls Golf Head Coach",
+      "has_email": true,
+      "last_name": "Cameron",
+      "role_id": "HCG-GOG",
+      "phone": "306-462-2338",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 45356,
+      "name": "Mr. Jay Stephens",
+      "default_title": "Girls Softball Head Coach",
+      "has_email": true,
+      "last_name": "Stephens",
+      "role_id": "HCG-SBG",
+      "phone": "309-252-2341",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 96256,
+      "name": "Mr. Justin Rakestraw",
+      "default_title": "Girls Track & Field Head Coach",
+      "has_email": true,
+      "last_name": "Rakestraw",
+      "role_id": "HCG-TRG",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 132287,
+      "name": "Mrs. Ramona Tinkham",
+      "default_title": "Girls Volleyball Head Coach",
+      "has_email": true,
+      "last_name": "Tinkham",
+      "role_id": "HCG-VBG",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 141437,
+      "name": "Brian Holloway",
+      "default_title": "Girls Wrestling Head Coach",
+      "has_email": true,
+      "last_name": "Holloway",
+      "role_id": "HCG-WRG",
+      "phone": "",
+      "fax": "",
+      "email": null
+    },
+    {
+      "person_id": 142800,
+      "name": "Maisey Link",
+      "default_title": "Sideline Cheer Coach",
+      "has_email": true,
+      "last_name": "Link",
+      "role_id": "HCN-CH",
+      "phone": "",
+      "fax": "",
+      "email": null
+    }
+  ],
   "coaches": [
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_f046251a16b017bd",
       "name": "Amanda Smith",
+      "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
       "role": "unknown",
-      "school": "sch_aae2f1a63267d711",
       "source_identities": [
         {
+          "namespace": {
+            "association_school": {
+              "association": "ihsa"
+            }
+          },
           "id": "136817",
-          "namespace": {
-            "association_school": {
-              "association": "ihsa"
-            }
-          },
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_a28ffe1ce4e20daf",
       "name": "Reid Kelso",
-      "role": "athletic_director",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "athletic_director",
       "source_identities": [
         {
-          "id": "52247",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "52247",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_a28ffe1ce4e20daf",
       "name": "Reid Kelso",
-      "role": "athletic_director",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "athletic_director",
       "source_identities": [
         {
-          "id": "52247",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "52247",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_542d711658c8e27e",
       "name": "Rodney Anderson",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "122234",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "122234",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_efaf200cd7e32be8",
       "name": "Cory Link",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "70334",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "70334",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_3e4c4bc72b6de2c6",
       "name": "Cierra Snyder",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "105707",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "105707",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "boys",
       "id": "coa_22d92f82f872737d",
       "name": "Barry Mink",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "sport": "cross_country",
+      "gender": "boys",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "40964",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "40964",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
         }
       ],
-      "sport": "cross_country"
-    },
-    {
       "evidence": [
         {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
           "source": {
             "id": "ihsa",
             "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
-      ],
-      "gender": "mixed",
+      ]
+    },
+    {
       "id": "coa_9dacef2ad44ee5fd",
       "name": "Rick Quinn",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "5494",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "5494",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_96875725f41b9184",
       "name": "Gary Cameron",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "96017",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "96017",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_954c23dcdd0ac10a",
       "name": "Sean Foster",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "48639",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "48639",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "boys",
       "id": "coa_31429b046ed36234",
       "name": "Justin Rakestraw",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "sport": "outdoor_track",
+      "gender": "boys",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "96256",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "96256",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
         }
       ],
-      "sport": "outdoor_track"
-    },
-    {
       "evidence": [
         {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
           "source": {
             "id": "ihsa",
             "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
-      "id": "coa_8d6f11c316805010",
-      "name": "Brian Holloway",
-      "role": "head_coach",
-      "school": "sch_aae2f1a63267d711",
-      "source_identities": [
-        {
-          "id": "141437",
-          "namespace": {
-            "association_school": {
-              "association": "ihsa"
-            }
           },
-          "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
+      "id": "coa_8d6f11c316805010",
+      "name": "Brian Holloway",
+      "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
+      "source_identities": [
+        {
+          "namespace": {
+            "association_school": {
+              "association": "ihsa"
+            }
+          },
+          "id": "141437",
+          "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
       "evidence": [
         {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
           "source": {
             "id": "ihsa",
             "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
-      ],
-      "gender": "mixed",
+      ]
+    },
+    {
       "id": "coa_f87d33337f12acc3",
       "name": "Brent Dugan",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "50601",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "50601",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_3e4c4bc72b6de2c6",
       "name": "Cierra Snyder",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "105707",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "105707",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "girls",
       "id": "coa_72da398b04e9f09e",
       "name": "Barry Mink",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "sport": "cross_country",
+      "gender": "girls",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "40964",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "40964",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
         }
       ],
-      "sport": "cross_country"
-    },
-    {
       "evidence": [
         {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
           "source": {
             "id": "ihsa",
             "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
-      ],
-      "gender": "mixed",
+      ]
+    },
+    {
       "id": "coa_96875725f41b9184",
       "name": "Gary Cameron",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "96017",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "96017",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_49c4360702a542d7",
       "name": "Jay Stephens",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "45356",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "45356",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "girls",
       "id": "coa_1fd629d230644e3a",
       "name": "Justin Rakestraw",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "sport": "outdoor_track",
+      "gender": "girls",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "96256",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "96256",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
         }
       ],
-      "sport": "outdoor_track"
-    },
-    {
       "evidence": [
         {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
           "source": {
             "id": "ihsa",
             "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
-      ],
-      "gender": "mixed",
+      ]
+    },
+    {
       "id": "coa_599bbba8e3d19954",
       "name": "Ramona Tinkham",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "132287",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "132287",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_8d6f11c316805010",
       "name": "Brian Holloway",
-      "role": "head_coach",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "head_coach",
       "source_identities": [
         {
-          "id": "141437",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "141437",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     },
     {
-      "evidence": [
-        {
-          "method": "parsed",
-          "observed_on": "2026-09-20",
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          }
-        }
-      ],
-      "gender": "mixed",
       "id": "coa_0e19dac35e94e835",
       "name": "Maisey Link",
-      "role": "unknown",
       "school": "sch_aae2f1a63267d711",
+      "gender": "mixed",
+      "role": "unknown",
       "source_identities": [
         {
-          "id": "142800",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
+          "id": "142800",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
         }
       ]
     }
   ],
   "paid_reveal_names": [
+    "Amanda Smith",
     "Reid Kelso",
     "Reid Kelso",
+    "Rodney Anderson",
+    "Cory Link",
+    "Cierra Snyder",
     "Barry Mink",
+    "Rick Quinn",
+    "Gary Cameron",
+    "Sean Foster",
     "Justin Rakestraw",
+    "Brian Holloway",
+    "Brent Dugan",
+    "Cierra Snyder",
     "Barry Mink",
-    "Justin Rakestraw"
-  ],
-  "staff": [
-    {
-      "default_title": "Vocal Director",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Nanninga",
-      "name": "Natalie Nanninga",
-      "person_id": 129103,
-      "phone": "",
-      "role_id": "HCA-MUS3"
-    },
-    {
-      "default_title": "Scholastic Bowl Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Smith",
-      "name": "Ms. Amanda Smith",
-      "person_id": 136817,
-      "phone": "",
-      "role_id": "HCA-SCB"
-    },
-    {
-      "default_title": "IHSA Official Representative",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Kelso",
-      "name": "Mr. Reid Kelso",
-      "person_id": 52247,
-      "phone": "309-462-2338",
-      "role_id": "A0-OffRep"
-    },
-    {
-      "default_title": "Superintendent",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Walters",
-      "name": "William Walters",
-      "person_id": 117164,
-      "phone": "",
-      "role_id": "A1-Super"
-    },
-    {
-      "default_title": "Principal",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Anderson",
-      "name": "Mrs. Kristi Anderson",
-      "person_id": 125209,
-      "phone": "309-462-2338",
-      "role_id": "B1-Prin"
-    },
-    {
-      "default_title": "Principal's Assistant",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Pugh",
-      "name": "Mindy Pugh",
-      "person_id": 38846,
-      "phone": "",
-      "role_id": "B2-Prin-Sec"
-    },
-    {
-      "default_title": "Boys Athletic Director",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Kelso",
-      "name": "Mr. Reid Kelso",
-      "person_id": 52247,
-      "phone": "309-462-2338",
-      "role_id": "C1-BoysAD"
-    },
-    {
-      "default_title": "Boys Athletic Director's Assistant",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Pugh",
-      "name": "Mindy Pugh",
-      "person_id": 38846,
-      "phone": "",
-      "role_id": "C2-BoysAD-Sec"
-    },
-    {
-      "default_title": "Girls Athletic Director",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Kelso",
-      "name": "Mr. Reid Kelso",
-      "person_id": 52247,
-      "phone": "309-462-2338",
-      "role_id": "D1-GirlsAD"
-    },
-    {
-      "default_title": "Girls Athletic Director's Assistant",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Pugh",
-      "name": "Mindy Pugh",
-      "person_id": 38846,
-      "phone": "",
-      "role_id": "D2-GirlsAD-Sec"
-    },
-    {
-      "default_title": "Activities Director",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Frakes",
-      "name": "Randy Frakes",
-      "person_id": 146051,
-      "phone": "",
-      "role_id": "E1-ActivDir"
-    },
-    {
-      "default_title": "Activities Director",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Kelso",
-      "name": "Mr. Reid Kelso",
-      "person_id": 52247,
-      "phone": "309-462-2338",
-      "role_id": "E1-ActivDir"
-    },
-    {
-      "default_title": "Certified Athletic Trainer",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Anderson",
-      "name": "Rodney Anderson",
-      "person_id": 122234,
-      "phone": "",
-      "role_id": "G1-Trainer"
-    },
-    {
-      "default_title": "Boys Baseball Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Anderson",
-      "name": "Rodney Anderson",
-      "person_id": 122234,
-      "phone": "",
-      "role_id": "HCB-BA"
-    },
-    {
-      "default_title": "Boys Basketball Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Link",
-      "name": "Cory Link",
-      "person_id": 70334,
-      "phone": "",
-      "role_id": "HCB-BKB"
-    },
-    {
-      "default_title": "Boys Bowling Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Snyder",
-      "name": "Mrs. Cierra Snyder",
-      "person_id": 105707,
-      "phone": "",
-      "role_id": "HCB-BWB"
-    },
-    {
-      "default_title": "Boys Cross Country Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Mink",
-      "name": "Mr. Barry Mink",
-      "person_id": 40964,
-      "phone": "",
-      "role_id": "HCB-CCB"
-    },
-    {
-      "default_title": "Boys Football Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Quinn",
-      "name": "Mr. Rick Quinn",
-      "person_id": 5494,
-      "phone": "",
-      "role_id": "HCB-FB"
-    },
-    {
-      "default_title": "Boys Golf Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Cameron",
-      "name": "Mrs. Gary Cameron",
-      "person_id": 96017,
-      "phone": "306-462-2338",
-      "role_id": "HCB-GOB"
-    },
-    {
-      "default_title": "Boys Soccer Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Foster",
-      "name": "Mr. Sean Foster",
-      "person_id": 48639,
-      "phone": "",
-      "role_id": "HCB-SOB"
-    },
-    {
-      "default_title": "Boys Track & Field Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Rakestraw",
-      "name": "Mr. Justin Rakestraw",
-      "person_id": 96256,
-      "phone": "",
-      "role_id": "HCB-TRB"
-    },
-    {
-      "default_title": "Boys Wrestling Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Holloway",
-      "name": "Brian Holloway",
-      "person_id": 141437,
-      "phone": "",
-      "role_id": "HCB-WR"
-    },
-    {
-      "default_title": "Girls Basketball Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Dugan",
-      "name": "Mr. Brent Dugan",
-      "person_id": 50601,
-      "phone": "309-457-6229",
-      "role_id": "HCG-BKG"
-    },
-    {
-      "default_title": "Girls Bowling Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Snyder",
-      "name": "Mrs. Cierra Snyder",
-      "person_id": 105707,
-      "phone": "",
-      "role_id": "HCG-BWL"
-    },
-    {
-      "default_title": "Girls Cross Country Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Mink",
-      "name": "Mr. Barry Mink",
-      "person_id": 40964,
-      "phone": "",
-      "role_id": "HCG-CCG"
-    },
-    {
-      "default_title": "Girls Golf Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Cameron",
-      "name": "Mrs. Gary Cameron",
-      "person_id": 96017,
-      "phone": "306-462-2338",
-      "role_id": "HCG-GOG"
-    },
-    {
-      "default_title": "Girls Softball Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Stephens",
-      "name": "Mr. Jay Stephens",
-      "person_id": 45356,
-      "phone": "309-252-2341",
-      "role_id": "HCG-SBG"
-    },
-    {
-      "default_title": "Girls Track & Field Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Rakestraw",
-      "name": "Mr. Justin Rakestraw",
-      "person_id": 96256,
-      "phone": "",
-      "role_id": "HCG-TRG"
-    },
-    {
-      "default_title": "Girls Volleyball Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Tinkham",
-      "name": "Mrs. Ramona Tinkham",
-      "person_id": 132287,
-      "phone": "",
-      "role_id": "HCG-VBG"
-    },
-    {
-      "default_title": "Girls Wrestling Head Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Holloway",
-      "name": "Brian Holloway",
-      "person_id": 141437,
-      "phone": "",
-      "role_id": "HCG-WRG"
-    },
-    {
-      "default_title": "Sideline Cheer Coach",
-      "email": null,
-      "fax": "",
-      "has_email": true,
-      "last_name": "Link",
-      "name": "Maisey Link",
-      "person_id": 142800,
-      "phone": "",
-      "role_id": "HCN-CH"
-    }
+    "Gary Cameron",
+    "Jay Stephens",
+    "Justin Rakestraw",
+    "Ramona Tinkham",
+    "Brian Holloway",
+    "Maisey Link"
   ]
 }
