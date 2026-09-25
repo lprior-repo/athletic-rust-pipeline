@@ -1250,12 +1250,33 @@ What reconciles exactly:
 
 What does not reconcile, in the order a reader would hit it:
 
-- **Conflicts, three ways.** `seal.json` retains **5,300**; the Conflicts sheet publishes **5,440**
-  detail rows; `conflicts.jsonl` (verified 4,548 lines) holds **4,548**. The index pass itself printed
-  `conflicts=5440`, so the sheet agrees with the stored table and the outliers are the jsonl and the
-  seal. The jsonl is a strict subset of the sheet (0 jsonl-only subjects, 727 sheet-only
-  athlete-identity subjects), so the views differ in *selection*, not formatting. The Review sheet has
-  1,364 data rows against the same pass's `reviews=1359`.
+- **Conflicts, four quantities, and only the export ordering is wrong.** `seal.json` retains
+  **5,300**; the Conflicts sheet publishes **5,440** detail rows; `conflicts.jsonl` holds **4,548**;
+  and the sheet's own summary column says **3,214** "Findings". Each is real:
+  - 5,300 is the store's ledger (`rows:conflicts` in the meta keyspace, written inside the same batch
+    as the rows, `census-store/src/read/rows.rs:76-90`). `Table::Conflicts`'s `entity_id()` is
+    `&self.id`, minted as `{family}:{subject_id}` (`census-domain/src/model/records.rs:64`), so the
+    `replace_many` write collapses to one standing row per key: the 5,440 batch rows carry 5,300
+    distinct keys.
+  - 5,440 is the index pass's batch length (`census-reconcile/src/index.rs:123-133`, printed at
+    `index.rs:162`) — `retained.conflicts` plus `pass.collisions` — *before* the store dedups it. 140
+    of those rows sit on 102 keys that already hold a row, all in "Recruiting contact conflict" (one
+    school with a "Head TF Coach (boys)" row and a "Head TF Coach (girls)" row, for instance). The
+    sheet renders that same `retained_records` one line per entry
+    (`census-report/src/workbook/meta/queues.rs:89-98`), so sheet rows equal batch rows exactly.
+  - 4,548 is what `consolidate` counted when it wrote the file — the distinct ids the table held at
+    that instant (`census-store/src/read/mod.rs:78-128` visits once per distinct id). Its mtime is
+    21:22:20 while the index pass flushed the keyspace at 21:23:11-13, and `docs/OPERATIONS.md:181`
+    places `consolidate` *before* `index` in the chain, so the file is always the previous cycle's
+    content. The previous seal agrees: `seal.v5-2026-09-24.bak.json` also carries 4,548, and the
+    pre-pass ledger in the SST reads `rows:conflicts 4548`.
+  - 3,214 is `Family::group`'s count — one finding for N rows, where `Family::push`
+    (`census-report/src/workbook/meta.rs:150-176`) records one finding per row.
+  So the sheet is right and the seal is right; the defect is the **export ordering**. `conflicts.jsonl`
+  — and each derived-table sibling, `review_cases`, `coverage`, `snapshots`, `source_access`,
+  `identity_verdicts` — is written by a `consolidate` that runs before the `index` pass that rewrites
+  its table. Nothing in the workbook depends on those files. The Review sheet's 1,364 rows against the
+  same pass's `reviews=1359` is the same dimensional difference on a second table.
 - **Coverage athletes, 569 short, and the cause is a profile-URL correlation.**
   `coverage.jsonl`'s own text row claims `athletes=623509` while its 50 jurisdiction rows sum to
   **622,940**. `report.json`'s `by_state` agrees with the claim (50 rows summing to 623,509) and both
@@ -1273,9 +1294,17 @@ What does not reconcile, in the order a reader would hit it:
   excluded from `coverage read` and published in no row: schools=284 athletes=2959 coaches=0 meets=0
   performances=0". That set is 2,959 athletes, and its arithmetic closes on the other axis:
   1,751,450 off-cohort + 623,509 cohort + 2,959 outside scope = 2,377,918 = `athletes.jsonl` lines.
-- **Ohio performances, 1,123 unpublished.** `performances.jsonl` holds 223,188 rows, the
-  Performances_001 sheet publishes 222,065; seven of eight jurisdictions are identical and the entire
-  deficit is Ohio (2,108 stored against 985 published).
+- **Ohio performances, 1,123 unpublished, and the cause is one non-core-sourced meet.**
+  `performances.jsonl` holds 223,188 rows, the Performances_001 sheet publishes 222,065; seven of eight
+  jurisdictions are identical and the entire deficit is Ohio (2,108 stored against 985 published). All
+  1,123 are one meet, `meet_0767da7a7a50f50a` "D1 Region 01 Finals" dated 2015-05-29, and every one
+  carries Athletic.net evidence only (`source_key` prefixed `athleticnet:`, source URL
+  `www.athletic.net/api/v1/Meet/GetMeetData`); no OHSAA source is cited on any of them. The meet itself
+  *is* published in the Meets sheet, so the performances alone are withheld, and the published 985 all
+  come from Ohio's other three meets, dated 2026-04/-05. The rule holds exactly across all 50
+  jurisdictions: the sheet's `Source ResultID` set equals the store's rows carrying at least one core
+  evidence source — 145,934 keys on both sides, difference zero in both directions. Nothing in the
+  workbook states the rule, so a reader cannot tell a withheld performance from one never crawled.
 - **Run Metrics "Athletes"** prints 2,364,818 (all sources) in a block whose sheets are core-scope
   (2,228,631) — the one counter in the reconciled block that does not reproduce from its own artifact.
 - **`census-by-state-all-sources.csv`** disagrees with `report-all-sources.json` on 12 `schools`
