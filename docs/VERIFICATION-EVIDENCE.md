@@ -1256,8 +1256,23 @@ What does not reconcile, in the order a reader would hit it:
   seal. The jsonl is a strict subset of the sheet (0 jsonl-only subjects, 727 sheet-only
   athlete-identity subjects), so the views differ in *selection*, not formatting. The Review sheet has
   1,364 data rows against the same pass's `reviews=1359`.
-- **Coverage athletes, 569 short.** `coverage.jsonl`'s own text row claims `athletes=623509` while its
-  50 jurisdiction rows sum to **622,940** — an internal inconsistency inside one artifact.
+- **Coverage athletes, 569 short, and the cause is a profile-URL correlation.**
+  `coverage.jsonl`'s own text row claims `athletes=623509` while its 50 jurisdiction rows sum to
+  **622,940**. `report.json`'s `by_state` agrees with the claim (50 rows summing to 623,509) and both
+  sides carry the same 50 keys, so no row is missing — five jurisdictions differ: **AL 9,590 against
+  9,120 (−470)**, **DC 207 against 126 (−81)**, KY 6,647 against 6,637 (−10), MO 15,175 against
+  15,168 (−7), TN 9,515 against 9,514 (−1). In four of those five the coverage figure equals that
+  jurisdiction's *profile-URL* count exactly (AL 9,120, DC 126, KY 6,637, TN 9,514), and all 50 of
+  `coverage.jsonl`'s `with_profile_url` values match `report.json` to the athlete — so the coverage
+  pass places only profile-bearing athletes into jurisdiction buckets and drops the 562 cohort
+  athletes who have no profile URL. MO is the exception in both directions: it publishes 7 more than
+  it drops, and its own profile count is 47 below its cohort. The sheet's "Grad unresolved" column is
+  0 for all 50 rows, so the dropped athletes are not recorded as unresolved either.
+  This is *not* the run-scope exclusion, which the sheet states separately and correctly in its own
+  note — "stored rows outside the census run scope (the 48 continental states plus DC, ADR-009) are
+  excluded from `coverage read` and published in no row: schools=284 athletes=2959 coaches=0 meets=0
+  performances=0". That set is 2,959 athletes, and its arithmetic closes on the other axis:
+  1,751,450 off-cohort + 623,509 cohort + 2,959 outside scope = 2,377,918 = `athletes.jsonl` lines.
 - **Ohio performances, 1,123 unpublished.** `performances.jsonl` holds 223,188 rows, the
   Performances_001 sheet publishes 222,065; seven of eight jurisdictions are identical and the entire
   deficit is Ohio (2,108 stored against 985 published).

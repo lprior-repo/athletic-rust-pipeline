@@ -7,7 +7,7 @@ Design-side companion: [`FJALL_SCHEMA.md`](../FJALL_SCHEMA.md) — the full sche
 
 ## 1. Keyspaces and tables
 
-Three Fjall keyspaces are created on open (`lib.rs:149-161`):
+Three Fjall keyspaces are created on open (`crates/census-store/src/lib.rs:159-173`):
 
 | Keyspace | Purpose | Tables (logical) |
 |---|---|---|
@@ -139,7 +139,8 @@ The cost of that shape is memory: one ledger file is one WriteBatch before commi
 
 | Knob | Census | Root (acquisition) (historical: root package deleted 2026-09-23) | Fjall default |
 |---|---|---|---|
-| Cache size | 256 MiB (`CACHE_BYTES: u64 = 256 * 1024 * 1024`, `lib.rs:65`) | 32 MiB (`src/store.rs:25`) | 32 MiB (`db_config.rs:90`) |
+| Cache size | 1 GiB (`CACHE_BYTES: u64 = 1024 * 1024 * 1024`, `crates/census-store/src/lib.rs:70`) | 32 MiB (`src/store.rs:25`) | 32 MiB (`db_config.rs:90`) |
+| Filter hint | `expect_point_read_hits(true)` on `journal` and `meta` (`crates/census-store/src/lib.rs:162-173`); `entities` keeps default filters so a miss cannot fall through the last level | not configured (`src/store.rs:25`) | not configured (`db_config.rs:90`) |
 | Journal persist | default (auto) | `manual_journal_persist(true)` (`backend.rs:33-35`) | auto |
 | Worker threads | default | default | `min(cores, 4)` (`db_config.rs:70`) |
 | Journal compression | LZ4 > 4096 bytes | same | LZ4 > 4096 (`db_config.rs:86-88`) |

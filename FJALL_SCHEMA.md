@@ -35,7 +35,7 @@ sorted tables (module doc, `store/mod.rs` header). The store is the system of re
 | Crate / version | `fjall = "=3.1.10"` (exact pin) | `crates/census-service/Cargo.toml` |
 | Store root | `--store` (CLI), `--data-dir` (serve), default `var/census-service` | `cli/`, `bootstrap/options.rs::ServeOptions` |
 | Database directory | `<root>/fjall` (`const DB_DIR`) | `store/mod.rs` |
-| Unified cache | 256 MiB, set explicitly (`const CACHE_BYTES`) | `store/mod.rs`, `Store::open` |
+| Unified cache | 1 GiB, set explicitly (`const CACHE_BYTES`, `crates/census-store/src/lib.rs:70`) | `crates/census-store/src/lib.rs:154`, `Store::open` |
 | Entities table cap | 20,000,000 observations per table (`MAX_ROWS_PER_TABLE`) | `store/mod.rs` |
 | Entity id cap | 512 bytes (`MAX_ID_BYTES`) | `store/mod.rs` |
 | Ingest request cap | 50,000 rows (`MAX_ROWS_PER_REQUEST`) | `restate_services/mod.rs` |
@@ -393,13 +393,13 @@ Build-time knobs in play (repo choice vs fjall default):
 
 | Knob | Value | Origin |
 | --- | --- | --- |
-| Block cache | 256 MiB | repo (`cache_size(CACHE_BYTES)`); fjall default 32 MiB |
+| Block cache | 1 GiB | repo (`cache_size(CACHE_BYTES)`, `crates/census-store/src/lib.rs:155`); fjall default 32 MiB |
 | Write buffer / memtable | fjall default 64 MiB per keyspace | not configured by the repo |
 | Max journal size | fjall default 512 MiB, then rotate | not configured by the repo |
 | Journal compression | LZ4 above a 4096-byte threshold (`lz4` is a default feature) | fjall default; the repo does not change it |
 | Data-block compression | disabled by fjall's own tree config (`CompressionPolicy::disabled()`) | fjall 3.1.10 `src/db.rs`; the repo does not change it |
-| Bloom filters | fjall default `FalsePositiveRate(0.0001)` | fjall; not configured by the repo |
-| Keyspace create options | `KeyspaceCreateOptions::default` for all three keyspaces | repo (`Store::open`); no compaction filter, default compaction strategy |
+| Bloom filters | fjall default `FalsePositiveRate(0.0001)`, with `expect_point_read_hits(true)` hinted on `journal` and `meta` whose point reads are known-hit | fjall; the repo sets only the hint |
+| Keyspace create options | `KeyspaceCreateOptions::default`, plus `expect_point_read_hits(true)` on `journal` and `meta`; `entities` keeps default filters so a miss cannot fall through the last level | repo (`Store::open`, `crates/census-store/src/lib.rs:159-173`); no compaction filter, default compaction strategy |
 
 ## 8. Operational limits and sharp edges
 

@@ -390,7 +390,7 @@ measured.
 | `MAX_MATERIALIZED_ROW_BYTES` / `MAX_RETAINED_HEADER_BYTES` | 8 MiB per row / 1 MiB per workbook | ~~`workbook_ingest/stream.rs`~~ (historical: deleted root crate) |
 | `MAX_ROWS_PER_TABLE` | 20,000,000 observations | `crates/census-store/src/table.rs` |
 | `MAX_ID_BYTES` | 512 bytes | `crates/census-store/src/table.rs` |
-| Census cache | 256 MiB | `Database::builder(..).cache_size(..)` |
+| Census cache | 1 GiB | `Database::builder(..).cache_size(..)` (`crates/census-store/src/lib.rs:70,155`) |
 | `MAX_BATCH_RECORDS` / `MAX_BATCH_BYTES` (root) | 4,096 / 32 MiB | ~~`src/store.rs`~~ (historical), ~~`backend.rs`~~ (historical) |
 | `MAX_ROWS_PER_REQUEST` (Restate ingest) | 50,000 rows per invocation | `crates/census-service/src/restate_services/` |
 | `MAX_HTML_BYTES` / parser memory | 32 MiB / 8 MiB | ~~`src/html_bounds.rs`~~ (historical) |
@@ -476,8 +476,10 @@ hyphens). Both appear in `tools/quality-baseline.json`.
 
 **Top measurement candidates**, in descending order of expected information per unit of work:
 
-1. **Fjall tuning** (program Phase 7): cache size (256 MiB census), compaction and
-   partition settings, and KV separation for large observation payloads — currently all defaults.
+1. **Fjall tuning** (program Phase 7): cache size (1 GiB census, raised from 256 MiB on 2026-09-25
+   after a whole `index` pass was measured reading 20.5 TiB out of the page cache), compaction and
+   partition settings, and KV separation for large observation payloads — the cache and the filter
+   hints are now set; compaction, partitioning and KV separation are still defaults.
 2. **Observation codec** (program §5, owner decision 2): every observation is `serde_json` on write
    and on every scan; `postcard` is the listed alternative. Requires migration plus a dual-read path,
    so it needs a measured budget before it is worth starting.
