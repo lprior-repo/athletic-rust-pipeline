@@ -21,6 +21,8 @@
 //! `athlete_verdict` holds that family's answers, `ask` makes the request, `verdicts` validates what
 //! came back, `records` turns it into durable rows and the report, and [`run`] drives one pass.
 
+#![forbid(unsafe_code)]
+
 mod ask;
 mod athlete_cluster_findings;
 mod athlete_clusters;

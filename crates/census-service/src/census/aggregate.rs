@@ -15,7 +15,7 @@ use census_store::{Entity, Store, StoreError, StoreResult, Table};
 use std::path::Path;
 use tracing::info;
 
-use super::{CollectReport, StateProgress};
+use super::{CollectReport, StateProgress, TransportReport};
 
 /// `usize` -> `u64` for the report counters, saturating where the value cannot fit.
 fn count(value: usize) -> u64 {
@@ -34,10 +34,9 @@ pub(super) fn summarize_states(
         rosters_fetched: 0,
         athletes_total: 0,
         class_of_2027_total: 0,
-        requests: 0,
-        cache_hits: 0,
         errors: 0,
         elapsed_seconds: 0.0,
+        transport: TransportReport::default(),
         access_conditions: Vec::new(),
         blocked_hosts: Vec::new(),
     };

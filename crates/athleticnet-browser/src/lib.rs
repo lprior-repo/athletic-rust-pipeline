@@ -52,6 +52,8 @@
 //! takes an origin and a path - so a second acquirer (the census) can build the same spec, and cite
 //! the same capture, without depending on the pipeline's source types.
 
+#![forbid(unsafe_code)]
+
 use std::time::Duration;
 
 mod actor;

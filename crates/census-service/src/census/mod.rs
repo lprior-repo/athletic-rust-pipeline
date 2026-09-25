@@ -13,6 +13,7 @@
 //! the run report and the merged snapshots. This file holds the options, the progress and report
 //! types, and the journal phase keys the three share.
 
+use census_crawl::net::FetchStats;
 use census_domain::model::SchoolYear;
 use census_domain::model::SourceAccessCondition;
 use census_domain::UsJurisdiction;
@@ -24,6 +25,9 @@ mod scope;
 pub mod seal;
 mod state;
 mod sweep;
+
+#[cfg(test)]
+mod tests;
 
 pub use aggregate::consolidate;
 pub use meets::{
@@ -96,16 +100,103 @@ pub struct CollectReport {
     pub rosters_fetched: usize,
     pub athletes_total: usize,
     pub class_of_2027_total: usize,
-    pub requests: u64,
-    pub cache_hits: u64,
+    /// Walk failures: a state that could not complete, plus the access failures it recorded. This is
+    /// not the transport's error count — that lives in [`TransportReport::errors`] — because a walk
+    /// can fail on a payload it received, and a request can fail for a walk that then succeeded
+    /// elsewhere.
     pub errors: u64,
     pub elapsed_seconds: f64,
+    /// §45's transport account: per-source traffic, latency and the run's efficiency metric.
+    pub transport: TransportReport,
     /// The access conditions the sources imposed on this run, sorted by row id (§69). Empty means
     /// no source refused this client.
     pub access_conditions: Vec<SourceAccessCondition>,
     /// Hosts whose condition still blocks work: a non-empty list is what tells a blocked run from a
     /// complete one.
     pub blocked_hosts: Vec<String>,
+}
+
+/// §45's per-source row: what one source was asked for, and what it answered itself.
+#[derive(Debug, Clone, Serialize)]
+pub struct SourceTraffic {
+    /// The source's host, as the client keyed it.
+    pub host: String,
+    pub requests: u64,
+    /// Requests the source itself answered: cache hits excluded.
+    pub physical_requests: u64,
+    pub cache_hits: u64,
+    pub bytes: u64,
+}
+
+/// §45's transport account for a run: what the sources saw, what it cost, and what it produced.
+///
+/// Read from the fetcher's own counters at the end of a walk, so a report is a reading of the client
+/// that made the requests rather than a second ledger kept beside it. Latencies are histogram
+/// edges: an upper bound at the client's resolution, never a claim about one request's timing.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct TransportReport {
+    pub requests: u64,
+    pub cache_hits: u64,
+    pub physical_requests: u64,
+    pub bytes: u64,
+    /// Mean transport latency in milliseconds; `None` when nothing was measured.
+    pub avg_latency_ms: Option<u64>,
+    pub p50_latency_ms: Option<u64>,
+    pub p95_latency_ms: Option<u64>,
+    pub p99_latency_ms: Option<u64>,
+    pub rate_limited: u64,
+    pub timeouts: u64,
+    pub errors: u64,
+    /// The records this run verified as useful, and their ratio to what the sources physically saw.
+    pub verified_records: u64,
+    pub verified_records_per_physical_request: Option<f64>,
+    /// One row per source, busiest first, the host breaking ties.
+    pub sources: Vec<SourceTraffic>,
+}
+
+impl TransportReport {
+    /// Read a run's §45 account from the client's counters.
+    ///
+    /// `verified_records` is passed in rather than derived here: what a run usefully produced is the
+    /// walk's own count, and this type knows only the traffic that produced it.
+    pub fn from_stats(stats: &FetchStats, verified_records: u64) -> Self {
+        let mut sources: Vec<SourceTraffic> = stats
+            .per_host
+            .iter()
+            .map(|(host, traffic)| SourceTraffic {
+                host: host.clone(),
+                requests: traffic.requests,
+                physical_requests: traffic.physical_requests(),
+                cache_hits: traffic.cache_hits,
+                bytes: traffic.bytes,
+            })
+            .collect();
+        // Busiest first, host as the tie-break: the report is a projection that must render the same
+        // way twice, so equal traffic cannot be left in hash order.
+        sources.sort_by(|left, right| {
+            right
+                .requests
+                .cmp(&left.requests)
+                .then_with(|| left.host.cmp(&right.host))
+        });
+        Self {
+            requests: stats.requests,
+            cache_hits: stats.cache_hits,
+            physical_requests: stats.physical_requests(),
+            bytes: stats.bytes_downloaded,
+            avg_latency_ms: stats.latency_ms_avg(),
+            p50_latency_ms: stats.latency_percentile_ms(50),
+            p95_latency_ms: stats.latency_percentile_ms(95),
+            p99_latency_ms: stats.latency_percentile_ms(99),
+            rate_limited: stats.rate_limited,
+            timeouts: stats.timeouts,
+            errors: stats.errors,
+            verified_records,
+            verified_records_per_physical_request: stats
+                .useful_records_per_physical_request(verified_records),
+            sources,
+        }
+    }
 }
 
 /// Team index phase key: `milesplit_teams_wi`.

@@ -65,3 +65,7 @@ pub(super) fn reject_pending(pending: &mut VecDeque<Pending>, error: BrowserErro
         }
     });
 }
+
+#[cfg(test)]
+#[path = "pool_tests.rs"]
+mod pool_tests;

@@ -135,6 +135,26 @@ One row per area; "tests" is the 2026-09-21 attribute count, not a promise.
 
 | census route, replay and recovery | `crates/census-service/tests/{athleticnet_meet_parity,athleticnet_bio_replay,recovery,restate_kill_restart,backup_restore}.rs` | 19 | The whole-meet pull spends its two requests and stores every storable row of capture 634313 (758 published rows, 72 relay squads, 288 legs, 903 performances), spends the third only when asked, and a second run resumes from the journal and spends nothing; the per-athlete bio route serves both scopes from the seeded cache, absorbs 53 performances for one athlete, and its second run reads nothing and appends nothing; recovery covers store resume, adapter resume and the kill/restart boundary (a resumed run must not replay a durable write); backup/restore round trips a live store's rows and refuses a store still in use |
 
+### §59 kill matrix — every named kill, and the test that drives it
+
+§59 asks for the multi-hour run's failure modes to be tested rather than argued. Each row is one
+leg, the test that drives it, and the property that test asserts.
+
+| §59 leg | Test | Mechanism | What it proves |
+|---|---|---|---|
+| kill source worker | `recovery::sigkill_mid_batch_worker_restart_completes_the_remaining_units` | **SIGKILL** of a live `census-service provider athleticlive` at fractions of its own measured clean runtime | the restarted run completes the units the kill lost, refetches none of them, and leaves the same terminal counters a clean run leaves |
+| kill source worker (claimed unit) | `recovery::ks_directory_walk_claims_units_the_kill_can_lose` | a directory walk whose unit claims are journaled before the work | a unit claimed and then lost is reclaimed by the next pass and never written twice |
+| kill / restart the exporter | `recovery::exporter_restart_republishes_identical_snapshots_and_totals` | the store closed and reopened between two export passes | the second pass republishes byte-identical snapshots and totals |
+| restart the worker across processes | `recovery::cli_worker_restart_across_processes_resumes_and_keeps_counters` | two real `census-service` processes in sequence, plus `fjall-stats` and `consolidate` | the second process resumes at the first unjournaled unit and the counters agree between them |
+| restart Restate | `restate_kill_restart::a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write` | a real `restate-server` (pinned 1.7.10) with `census-serve` registered as its deployment, **SIGKILL** of the endpoint mid-`Consolidate` | the invocation resumes from the journal and no durable write happens twice |
+| kill the browser | `pool::pool_tests::a_dead_browser_leaves_every_queued_request_with_a_terminal_failure` | the actor's handler-death arm rejects its whole queue — what a browser dying looks like from the actor | every waiting caller leaves with `BrowserError::Unavailable` and `Verdict::Terminal`, and with **no response**: a lane that is gone is never a match and never a non-match |
+| kill the model lane | `athlete_tests::a_lane_killed_before_it_answers_is_counted_and_mints_no_verdict` | the lane's port is bound and the listener dropped, then a real pass runs against the closed port | the pass counts one `failed` request, mints no verdict, and leaves the case pending and askable |
+| restart machine-level services | `backup_restore.rs` (7 tests) + `docs/FJALL_BACKUP.md` §4 | stop the unit, cold-copy the whole data directory, restore into a fresh root, verify integrity, reopen, read the census | every per-table count, the merged history of one entity and the read model reproduce exactly; a copy taken while the handle is open keeps every committed batch; a torn byte never invents a row |
+
+The last two legs are driven at the seam rather than by killing a real Chromium or llama.cpp inside
+the test: the browser row exercises the same queue-rejection call the actor makes when its handler
+stops, and the model row uses a genuinely refused connection. Both are the paths the census takes.
+
 ### Provider adapters (all in `crates/census-crawl/src/`)
 
 | Adapter | Tests | Fixture-driven assertions (representative) |

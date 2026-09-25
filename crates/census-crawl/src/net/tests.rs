@@ -201,3 +201,99 @@ fn a_comment_only_robots_body_is_fetched_but_has_no_rules() {
     assert!(rules.was_fetched(), "a comment-only body is still fetched");
     // no directives parsed from comments — parsed rules are empty when no user-agent groups exist
 }
+
+/// §45: the physical count is derived from the other two, so a cached run cannot claim traffic.
+#[test]
+fn a_cache_hit_is_not_a_physical_request() {
+    let stats = FetchStats {
+        requests: 10,
+        cache_hits: 7,
+        ..FetchStats::default()
+    };
+    assert_eq!(stats.physical_requests(), 3);
+    assert_eq!(stats.useful_records_per_physical_request(9), Some(3.0));
+}
+
+/// §45: records per request is absent when no request reached the origin, never infinite.
+#[test]
+fn the_efficiency_ratio_is_absent_without_physical_requests() {
+    let stats = FetchStats::default();
+    assert_eq!(stats.physical_requests(), 0);
+    assert_eq!(stats.useful_records_per_physical_request(4_000), None);
+}
+
+/// §45: a percentile is the edge of the bucket that covers it, and the mean is exact.
+#[test]
+fn latency_percentiles_are_bucket_upper_bounds() {
+    let mut stats = FetchStats::default();
+    for _ in 0..98 {
+        stats.record_latency(12);
+    }
+    stats.record_latency(700);
+    stats.record_latency(30_000);
+
+    assert_eq!(stats.latency_samples(), 100);
+    assert_eq!(stats.latency_ms_max, 30_000);
+    assert_eq!(stats.latency_ms_sum, 31_876);
+    assert_eq!(stats.latency_ms_avg(), Some(318));
+    assert_eq!(stats.latency_percentile_ms(50), Some(20));
+    assert_eq!(stats.latency_percentile_ms(95), Some(20));
+    assert_eq!(stats.latency_percentile_ms(99), Some(900));
+    assert_eq!(stats.latency_percentile_ms(100), Some(30_000));
+}
+
+/// A percentile of no samples is absent rather than zero: nothing was measured.
+#[test]
+fn a_percentile_of_no_samples_is_absent() {
+    let stats = FetchStats::default();
+    assert_eq!(stats.latency_samples(), 0);
+    assert_eq!(stats.latency_ms_avg(), None);
+    assert_eq!(stats.latency_percentile_ms(99), None);
+}
+
+/// §45: a per-source row is the origin, so two pages of one host cannot become two rows — and a URL
+/// the parser refuses is still counted, under its own text rather than dropped.
+#[test]
+fn a_source_row_is_the_origin_not_the_page() {
+    assert_eq!(
+        host_of("https://www.athletic.net/team/1/x?a=b"),
+        "www.athletic.net"
+    );
+    assert_eq!(host_of("http://example.com"), "example.com");
+    assert_eq!(host_of("http://example.com:8080/page"), "example.com");
+    assert_eq!(host_of("not-a-url"), "not-a-url");
+}
+
+/// §45: a challenge is counted apart from failures, and only for the kind a person must clear.
+#[tokio::test]
+async fn a_human_required_condition_is_counted_as_a_challenge() {
+    let (fetcher, _dir) = fetcher_with(Vec::new());
+    fetcher
+        .record_access_condition(
+            "athletic.net",
+            AccessBlockKind::HumanRequired,
+            403,
+            None,
+            "challenge page",
+        )
+        .await;
+    fetcher
+        .record_access_condition(
+            "athletic.net",
+            AccessBlockKind::RateLimited,
+            429,
+            Some(30),
+            "slow down",
+        )
+        .await;
+
+    let stats = fetcher.stats().await;
+    assert_eq!(
+        stats.challenges, 1,
+        "the challenge is counted, the rate limit is not"
+    );
+    assert_eq!(
+        stats.rate_limited, 0,
+        "a 429 is counted where the fetch saw it, not where the condition was recorded"
+    );
+}

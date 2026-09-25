@@ -217,3 +217,25 @@ what is missing keeps the pressure on the finding rather than on the label.
 **Consequences.** Findings — gaps, identified conflicts, exhausted retries — ride inside the seal
 instead of blocking it; unresolved work and an unverified export do block it. Sealing is idempotent,
 and the same census sealed on two days renders the same digest.
+
+---
+
+## ADR-012 — The acquisition plane is `census-crawl`, not a separate crate family
+
+**Decision.** The `acq-domain`/`acq-application`/`acq-infra`/`acq-cli` family is not built.
+Acquisition lives in `census-crawl` (transport, robots-enforcing cache-first fetcher, the provider
+registry, the Restate browser bridge) and `athleticnet-browser` (CDP session, lane pool, challenge
+state, drain). The pure side of the boundary rule is `census-domain`, whose normal dependency tree is
+`serde`, `sha2` and `thiserror` — nothing async, nothing I/O.
+
+**Why.** That family was the shape of the root `athletic-rust-pipeline` package, which carried the
+Athletic.net acquisition engine before the census path owned its work; the package was deleted
+2026-09-23 and the capabilities moved under the census crates. Re-extracting them would put one
+workflow's traffic policy (the `SourceAdmission` budgets in `census-crawl`, the lane pool and drain
+in `athleticnet-browser`) behind a crate boundary no other consumer crosses, and would leave two
+places able to describe a source — the failure the single capability registry exists to prevent.
+
+**Consequences.** The dependency rule is enforced where it binds: `cargo xtask purity` proves the
+`census-domain` tree carries no async or I/O package, and `tools/gate.sh` runs it. A new transport is
+a module inside `census-crawl`, not a crate. If a second product ever genuinely needs the acquisition
+engine, the extraction happens then, under its own record.

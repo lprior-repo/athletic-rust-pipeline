@@ -1016,3 +1016,123 @@ The run's own counts, read from the objects rather than recalled: 49 jurisdictio
 8, each holding its teams, rosters and meets stages; 53 `Ingest` objects; the store holds 3 072 309
 athletes, 2 364 818 of them inside the census scope (AK and HI publish in no row), 12 556 meets, and
 the 580 334 class-of-2027 athletes the core-scope seal certifies.
+
+---
+
+## §45 gets a record: per-source accounting, and the debt it sat behind (2026-09-24)
+
+`ARCHITECTURE.md` §10 states the obligation — "per-source metrics (§45) are recorded and the
+efficiency metric is **verified useful records per physical request**" — and the client was telling
+half of it. `FetchStats` counted `requests` and `cache_hits` for the whole run and carried a
+`per_host: HashMap<String, u64>` that **nothing wrote and nothing read**, so neither a per-source row
+nor the ratio built on one could be printed from the client that made the requests.
+
+What changed, in `crates/census-crawl/src/net` and `crates/census-service/src/census`:
+
+- **`HostTraffic { requests, cache_hits, bytes }`** replaces the `u64` map, and `FetchStats::per_host`
+  is keyed by **host** everywhere. It was not: `record_request_stats` was handed a whole URL and keyed
+  by it, while `count_request` keyed by the plan's host — one origin's traffic sitting under two kinds
+  of key, which is exactly the split §10's per-origin admission rule forbids. `host_of(url)` (parsed
+  by `reqwest::Url`, falling back to the URL's own text so a request is never dropped) is now the one
+  place a URL becomes a key, and `net::tests::a_source_row_is_the_origin_not_the_page` pins the port,
+  path, query and unparseable cases.
+- **Every request is counted once, in one lock.** `cache_and_record` counts a 200/404 body and its
+  bytes, `count_request` counts every status that never reaches it, and the browser lane's
+  `count_capture` counts an accepted capture — which had been adding bytes but *not* the request, so
+  a browser-transported source's 200s were invisible to §45. One physical browser request is now one
+  row, the same as one physical HTTP request.
+- **Latency is a fixed 20-bucket histogram** (`net/latency.rs`): a census fetches for days, and a
+  per-request sample vector would have been the only unbounded structure in the client. The mean is
+  exact; `latency_percentile_ms(50|95|99)` reports the edge of the bucket covering the rank — an
+  upper bound at the histogram's resolution, which the type documents rather than presenting as one
+  request's timing. No samples means `None`, never zero.
+- **`TransportReport::from_stats`** (`census-service/src/census/mod.rs`) is the §45 surface: requests,
+  cache hits, physical requests, bytes, latency mean and percentiles, rate-limited, timeouts, errors,
+  `verified_records_per_physical_request`, and one `SourceTraffic` row per source — busiest first,
+  host breaking ties so two runs render the same table. `CollectReport.requests`/`.cache_hits` were
+  **removed rather than mirrored**: every reader now reads `report.transport` — the CLI's adapter
+  summary is the one that existed — and `verified_records` is the walk's own athlete count passed in,
+  because the report knows the traffic while the walk knows what the traffic produced.
+- `the_transport_report_reads_the_counters_once` pins the projection's edges: the per-source physical
+  counts sum to the run's, ordering is deterministic, an unmeasured percentile stays absent, and the
+  ratio is read as 6/3.
+
+**The ratchet this increment had to clear.** `tools/gate.sh`'s debt lane had three findings against
+the baseline: an `as` cast at `net/types.rs:301`, `net/types.rs` at 346 lines, `net/execute.rs` at
+309. The cast is now a checked conversion through `u32` (no ratio beats an approximate one);
+`types.rs` gave up its histogram (`latency.rs`) and its clock helpers (`time.rs`) and is back inside
+the budget; `execute.rs` gave up `record_transport`, which now sits beside `count_request` in
+`attempt.rs` where the attempt's accounting is one thing. `net/decode.rs` — a 147-line duplicate of
+the live path (`process_response` had no callers; `read_checked_body` existed in both `decode.rs` and
+`execute/body_reader.rs`) kept alive by three `#[allow(dead_code)]` attributes — was deleted rather
+than patched, because the new `HostTraffic` could not compile its copy of the counter anyway.
+
+**Two clippy findings had to go with it.** The strict-clippy tally is the ratchet's other input, and
+its baseline is empty — the tree may carry no diagnostic at all. It flagged
+`clippy::arithmetic_side_effects` twice in the latency histogram: `LATENCY_BUCKET_COUNT - 1` (the
+fallback bucket index) and `latency_ms_sum / samples` (the mean). Both are now operations that cannot
+overflow or divide by nothing — `saturating_sub` and `checked_div` — which is §37's rule read from
+the other side: the histogram runs in the request path, so arithmetic that could panic there is
+exactly what the lint exists to catch, even where a reviewer can see the operands are safe.
+
+    cargo xtask scan
+      files_over_300_lines: []        # the three findings above, gone; baseline floor is also []
+      functions_over_60_lines: 0      # baseline floor is 0
+      forbidden constructs: as_cast 0, unwrap 0, expect 0, panic 0, indexing 0
+    cargo run -q -p xtask -- ratchet tools/quality-baseline.json <clippy.tsv> <scan.json>
+      clippy tally: (no diagnostic)   # the baseline is empty; the tree adds none
+      files over 300 lines: 0 -> 0
+      ratchet: no metric grew
+    cargo test -p census-crawl --lib net::tests
+      test result: ok. 25 passed; 0 failed
+    cargo test -p census-service --lib census::tests
+      test result: ok. 1 passed; 0 failed
+    bash tools/gate.sh
+      gate: PASS (debt ratchet holds; counts above) — 430 s, exit 0
+      lanes: fmt, check, doc, tests (nextest: 1246 run, 1246 passed, 3 skipped, 1 slow),
+             strict clippy (source targets: 0 diagnostics), production scan
+             (files>300=0, fns>60=0), domain type integrity, domain purity, module seams,
+             debt ratchet, deny, audit, vet, machete, geiger, feature powerset, bench presence
+
+The baseline was not refreshed: `tools/quality-baseline.json` still records
+`files_over_300_lines: []` and `functions_over_60_lines: 0`, and the tree returned to those numbers by
+deleting code rather than by absorbing a rise.
+
+**What the sealed run already says.** These counters record from this build forward; the revision-8
+census above was collected before them, so its report carries no `transport` block. Its store does
+carry the per-response evidence the report is built from — every cache entry's `CacheMeta` names the
+URL it answered — which makes the *shape* of that run's sourcing measurable even though its counters
+are not:
+
+    <store>/http, 47 917 *.meta.json files (one per cached response: URL + byte count)
+      entries        bytes  host
+        3 682    5 035 539  api.ihsa.org              # most responses, and tiny ones
+        3 609  425 333 102  www.wiaawi.org
+        2 732  125 147 341  www.mshsl.org
+        2 582  685 058 082  tx.milesplit.com          # most bytes
+        2 205  458 788 960  ca.milesplit.com
+        1 744  299 736 936  ny.milesplit.com
+        1 299  161 725 229  al.milesplit.com
+        1 262  185 729 504  fl.milesplit.com
+      total: 47 917 responses, 7 211 950 588 bytes (6.72 GiB), 264 hosts
+
+Read those as cache entries — responses written — not requests made. The distinction is the reason
+`HostTraffic` exists: `requests - cache_hits` is what a source's operators actually see, and §10's
+admission budget is stated in exactly those terms. Re-deriving the table is a read of the store:
+
+    cd <store>/http
+    find . -name '*.meta.json' -print0 | xargs -0 -n 500 grep -h -o \
+      -e '"url": "[^"]*"' -e '"bytes": [0-9]*' \
+    | awk '/"url"/ { if (match($0, /https?:\/\/[^\/"]+/)) { u = substr($0, RSTART, RLENGTH);
+               sub(/^https?:\/\//, "", u); sub(/:.*$/, "", u) } next }
+           /"bytes"/ { b = 0; if (match($0, /[0-9]+/)) { b = substr($0, RSTART, RLENGTH) + 0 }
+               if (u != "") { n[u]++; s[u] += b; u = "" } }
+           END { for (h in n) printf "%8d %14d %s\n", n[h], s[h], h }' | sort -rn
+
+**Operator consequence.** A run's §45 numbers are `transport` in the report `collect` prints to
+stdout — `census-service collect --store <dir> --states WI --limit-per-state 1 | jq .transport` — and
+in the same object when the collection ran through the ingress and returned it as the workflow
+result. They are not a second ledger, and not `<store>/out/report.json`: that file is the `report`
+verb's read model, which has never carried transport counters. A census sealed before this build has
+no `transport` field at all — absence, not zeros — and the cache inventory above is the honest
+substitute until the next run records its own.

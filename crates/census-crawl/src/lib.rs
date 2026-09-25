@@ -19,6 +19,8 @@
 //! context that calls it, and [`athlete_observations`] holds the athlete half in its own file, which
 //! is what keeps every one of these files inside the repository's source-length budget.
 
+#![forbid(unsafe_code)]
+
 /// Shared concurrency bound for bounded fan-out across adapters.
 ///
 /// This constant is the default maximum number of concurrent async operations

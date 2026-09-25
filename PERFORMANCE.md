@@ -310,13 +310,16 @@ memory is bounded independently of document size.
 
 ## 4. Allocation and safety policy
 
-**Unsafe.** `#![forbid(unsafe_code)]` is on ~~`src/lib.rs:1`, `src/main.rs:1`, `src/store.rs:1`~~ (historical: paths belonged to deleted root crate)
-the census crates on `crates/census-service/src/lib.rs:27`, `crates/census-service/src/main.rs:9`,
-`crates/census-service/src/bin/census-serve.rs:10`, and `crates/census-domain/src/lib.rs:9`. The scan counts
+**Unsafe.** `#![forbid(unsafe_code)]` is on every workspace crate root — the eight census crates
+(`crates/census-domain/src/lib.rs:9`, `crates/census-store/src/lib.rs:58`, `crates/census-crawl/src/lib.rs:22`,
+`crates/census-reconcile/src/lib.rs:19`, `crates/census-review/src/lib.rs:24`, `crates/census-report/src/lib.rs:12`,
+`crates/athleticnet-browser/src/lib.rs:55`, `crates/census-service/src/lib.rs:27`) plus the two binaries
+(`crates/census-service/src/main.rs:9`, `crates/census-service/src/bin/census-serve.rs:10`) and `xtask` —
+and the workspace lint table sets it to `forbid` too, so no crate can narrow it. The scan counts
 0 `unsafe` in every scanned package, and the gate runs `cargo geiger`. There is no unsafe waiver, and none is
 requested (program §6).
 
-**Lints.** Workspace lints (`Cargo.toml:103-115`) forbid `unsafe_code` and deny `unused_must_use`,
+**Lints.** Workspace lints (`Cargo.toml:29-44`) forbid `unsafe_code` and deny `unused_must_use`,
 `dbg_macro`, `todo`, `unimplemented`, `panic_in_result_fn` for every target. The gate's strict lane
 (`tools/gate.sh` `LINT_SET`) adds, for source targets only:
 

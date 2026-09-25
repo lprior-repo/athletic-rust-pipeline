@@ -12,7 +12,6 @@ use thiserror::Error;
 
 use super::MAX_BODY_BYTES;
 
-use census_store::clock::{Clock, SystemClock};
 // ---------------------------------------------------------------------------
 // Error types
 // ---------------------------------------------------------------------------
@@ -171,7 +170,8 @@ impl FetchOutcome {
     }
 }
 
-/// Aggregated fetch statistics.
+use super::latency::LATENCY_BUCKET_COUNT;
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct FetchStats {
     pub requests: u64,
@@ -183,48 +183,92 @@ pub struct FetchStats {
     pub robots_authorized: u64,
     pub bytes_downloaded: u64,
     pub errors: u64,
-    pub per_host: HashMap<String, u64>,
+    /// Refusals that named a rate limit (§45's `429s`): the origin answered, and the answer was
+    /// "slow down". Counted apart from `errors` because a throttled origin is a pace finding, not a
+    /// defect in the transport.
+    pub rate_limited: u64,
+    /// Requests that reached their own deadline (§45's `timeouts`), likewise apart from `errors`.
+    pub timeouts: u64,
+    /// Challenges an origin served that only a person can answer (§45's `challenges`, §28's
+    /// `HumanRequired`). A non-zero count is the reason a lane stopped, so it is never folded into
+    /// the failure total.
+    pub challenges: u64,
+    /// Sum of every measured transport latency in milliseconds, and how many were measured, so the
+    /// average is exact where the percentiles are bucketed.
+    pub latency_ms_sum: u64,
+    pub latency_ms_max: u64,
+    pub latency_buckets: [u64; LATENCY_BUCKET_COUNT],
+    /// What each origin saw from this client (§45's per-provider record).
+    ///
+    /// Keyed by host, never by URL: §10's admission budgets exist per remote origin, so a counter
+    /// keyed by path would split one origin's traffic into as many rows as it has pages.
+    pub per_host: HashMap<String, HostTraffic>,
+}
+
+/// What one origin saw from this client: §45's `requests`, `cache hits` and `bytes` for a provider.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HostTraffic {
+    /// Every fetch that named this host, cached or not — §45's `requests`.
+    pub requests: u64,
+    /// The share of those served from the cache. `requests - cache_hits` is what the origin itself
+    /// saw: §45's `physical requests`, and the denominator of the efficiency metric.
+    pub cache_hits: u64,
+    /// Body bytes attributed to this host.
+    pub bytes: u64,
+}
+
+impl HostTraffic {
+    /// Requests that reached this origin (§45's `physical requests`).
+    pub fn physical_requests(&self) -> u64 {
+        self.requests.saturating_sub(self.cache_hits)
+    }
+}
+
+impl FetchStats {
+    /// Requests that reached the origin: every fetch that was not served from the cache.
+    ///
+    /// This is §45's *physical* request count, and the denominator of the one efficiency metric the
+    /// objective names. It is derived rather than counted so the two halves cannot disagree.
+    pub fn physical_requests(&self) -> u64 {
+        self.requests.saturating_sub(self.cache_hits)
+    }
+
+    /// Requests the origin answered without an error.
+    pub fn successful_requests(&self) -> u64 {
+        self.requests.saturating_sub(self.errors)
+    }
+
+    /// §45's headline efficiency metric: verified useful records per physical request.
+    ///
+    /// `None` where no physical request was made, because the ratio of something to nothing is not
+    /// zero — a cached run must not read as an infinitely efficient one.
+    pub fn useful_records_per_physical_request(&self, records: u64) -> Option<f64> {
+        let physical = self.physical_requests();
+        if physical == 0 {
+            return None;
+        }
+        // Converted through `u32` so the ratio needs no `as` cast: a count past four billion does
+        // not occur in a census run, and reporting no ratio beats reporting an approximate one.
+        let records = u32::try_from(records).ok()?;
+        let physical = u32::try_from(physical).ok()?;
+        Some(f64::from(records) / f64::from(physical))
+    }
 }
 
 // ---------------------------------------------------------------------------
-// Time helpers
+// Request keys
 // ---------------------------------------------------------------------------
 
-/// Wall-clock timestamp for request evidence and cache metadata.
+/// The host a request URL names, so the per-origin counters cannot be keyed by a whole URL.
 ///
-/// Delegates to the [`Clock`] capability so the crate has one source of wall-clock time: the
-/// signatures stay as they are, because their callers — cache writes, decode, the collection
-/// default — carry no clock of their own to inject.
-pub fn now_iso8601() -> String {
-    SystemClock.today_iso8601()
-}
-
-/// Today's date (`YYYY-MM-DD`), the default `observed_on` for a collection.
-pub fn today_iso() -> String {
-    SystemClock.today()
-}
-
-/// The instant a cooldown that starts now stops applying (RFC 3339 UTC, `Z`).
-///
-/// The one place a cooldown instant is computed, kept beside [`now_iso8601`] so the two timestamps a
-/// condition carries are produced the same way. Clamped rather than panicking: a cooldown the clock
-/// cannot represent is expressed as the far future, which is the honest reading of "blocked".
-pub fn cooldown_until_iso8601(seconds: u64) -> String {
-    let seconds = i64::try_from(seconds).unwrap_or(i64::MAX);
-    chrono::Utc::now()
-        .checked_add_signed(chrono::Duration::seconds(seconds))
-        .unwrap_or(chrono::DateTime::<chrono::Utc>::MAX_UTC)
-        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-}
-
-/// One instant read from unix milliseconds (RFC 3339 UTC, `Z`), when it is one this clock can state.
-///
-/// The browser lane's capture carries the instant it was taken as milliseconds, and the evidence
-/// written from it wants the same shape the HTTP path writes: the format is [`now_iso8601`]'s, so a
-/// receipt does not say which transport produced it. `None` for a value that is not an instant —
-/// absence is then the caller's decision, the same way an absent `Retry-After` is.
-pub fn instant_iso8601(millis: u64) -> Option<String> {
-    let millis = i64::try_from(millis).ok()?;
-    chrono::DateTime::from_timestamp_millis(millis)
-        .map(|instant| instant.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+/// `reqwest::Url` does the parsing. A URL it cannot parse — or one with no host, like `data:` —
+/// keeps its own text as the key, which keeps the request counted rather than silently dropped.
+pub(crate) fn host_of(url: &str) -> String {
+    match reqwest::Url::parse(url) {
+        Ok(parsed) => parsed
+            .host_str()
+            .map(str::to_string)
+            .unwrap_or_else(|| url.to_string()),
+        Err(_) => url.to_string(),
+    }
 }

@@ -8,6 +8,7 @@ use crate::net::request::RequestBody;
 use crate::net::{now_iso8601, FetchError, FetchOptions, FetchOutcome, Fetcher};
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Instant;
 use tokio::sync::Mutex;
 use tracing::warn;
 
@@ -119,19 +120,49 @@ impl Fetcher {
         }
     }
 
-    /// Count the request once. Bodies are counted inside `process_response`; every status that
-    /// never reaches it (304, 5xx, 429) is counted here instead.
+    /// Count the request once. A 200 or 404 body is counted when `cache_and_record` writes it;
+    /// every status that never reaches that path (304, 5xx, 429) is counted here instead.
     ///
     /// The browser lane's seat counts through the same call: one request, counted once, whichever
-    /// transport carried it.
+    /// transport carried it. The per-provider row (§45) is keyed by the plan's host, which is why
+    /// this path can key by host directly while `cache_and_record` derives one from its URL.
     pub(super) async fn count_request(&self, host: &str, status: u16) {
         if status == 200 || status == 404 {
             return;
         }
         let mut stats = self.stats.lock().await;
         stats.requests = stats.requests.saturating_add(1);
-        let per_host = stats.per_host.entry(host.to_string()).or_insert(0);
-        *per_host = per_host.saturating_add(1);
+        let entry = stats.per_host.entry(host.to_string()).or_default();
+        entry.requests = entry.requests.saturating_add(1);
+    }
+
+    /// Record one attempt's cost: how long the transport took, and what a refusal was.
+    ///
+    /// Measured from after the host gate, so the number is transport latency and not the wait for a
+    /// slot (§44 keeps `latency` and `queue_wait` apart). The refusal kinds are classified here
+    /// because this is the only place that sees a whole attempt: a 429 and a timeout are the two
+    /// outcomes §45 counts apart from `errors`, and a response served from the cache never reaches
+    /// this point at all — which is what keeps that latency out of the physical-request percentiles.
+    ///
+    /// Lives beside `count_request` rather than in the loop that calls it: both are the attempt's
+    /// accounting, and the two together are what keeps `execute.rs` inside its file budget.
+    pub(super) async fn record_transport(
+        &self,
+        started: Instant,
+        outcome: &Result<FetchOutcome, FetchError>,
+    ) {
+        let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let mut stats = self.stats.lock().await;
+        stats.record_latency(elapsed_ms);
+        match outcome {
+            Err(FetchError::RateLimited { .. } | FetchError::Http { status: 429, .. }) => {
+                stats.rate_limited = stats.rate_limited.saturating_add(1);
+            }
+            Err(FetchError::Timeout { .. }) => {
+                stats.timeouts = stats.timeouts.saturating_add(1);
+            }
+            _ => {}
+        }
     }
 
     /// Conditional GET: publish the cached body with refreshed timestamps.

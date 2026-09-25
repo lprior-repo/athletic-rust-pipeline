@@ -37,16 +37,17 @@ pub mod bridge;
 
 mod cache;
 mod client;
-mod decode;
 mod execute;
+mod latency;
 mod request;
 mod robots;
+mod time;
 mod types;
 
-pub use types::{
-    cooldown_until_iso8601, instant_iso8601, now_iso8601, today_iso, FetchError, FetchOptions,
-    FetchOutcome, FetchStats,
-};
+pub use time::{cooldown_until_iso8601, instant_iso8601, now_iso8601, today_iso};
+pub use types::{FetchError, FetchOptions, FetchOutcome, FetchStats, HostTraffic};
+
+pub(crate) use types::host_of;
 
 use client::HostState;
 use robots::RobotsRules;
@@ -241,6 +242,13 @@ impl Fetcher {
         )
         .with_retry_after(retry_after_seconds)
         .with_cooldown_until(cooldown_until);
+        // §45 counts the challenges a provider served, apart from its failures: a challenge is the
+        // reason a lane stopped rather than a defect in the request. Counted per observation, so a
+        // host that challenges twice reads as two, and the distinct rows live in `source_access`.
+        if matches!(kind, AccessBlockKind::HumanRequired) {
+            let mut stats = self.stats.lock().await;
+            stats.challenges = stats.challenges.saturating_add(1);
+        }
         let mut blocks = self.blocks.lock().await;
         blocks.insert(condition.id.clone(), condition.clone());
         condition

@@ -1,6 +1,6 @@
 //! Evidence building for browser captures: decoding, hashing, caching, and outcome construction.
 //!
-//! This module holds the body of `mint_capture`, `handle_404_capture`, and `count_body` — the part
+//! This module holds the body of `mint_capture`, `handle_404_capture`, and `count_capture` — the part
 //! of the seat that turns a captured response into evidence. The transport classifies; this code
 //! records the classification's consequences: a verified body goes to cache and becomes
 //! [`FetchOutcome`], a status the run must stop on bumps an error counter.
@@ -95,7 +95,7 @@ impl Fetcher {
             content_type: content_type.clone(),
         };
         write_cache(plan.body_path, plan.meta_path, &body, &meta)?;
-        self.count_body(plan, status, bytes).await;
+        self.count_capture(plan, status, bytes).await;
         Ok(FetchOutcome {
             url: plan.url.to_string(),
             method: plan.method.to_string(),
@@ -151,7 +151,7 @@ impl Fetcher {
             content_type: content_type.clone(),
         };
         write_cache(plan.body_path, plan.meta_path, &body, &meta)?;
-        self.count_body(plan, status, bytes).await;
+        self.count_capture(plan, status, bytes).await;
         if plan.options.allow_not_found {
             Ok(FetchOutcome {
                 url: plan.url.to_string(),
@@ -172,21 +172,28 @@ impl Fetcher {
         }
     }
 
-    /// Count the body one accepted capture carried, and flag the status it arrived under.
+    /// Count one accepted capture: the request that carried it, the bytes it carried, and the
+    /// status it arrived under.
     ///
-    /// The accounting is the one `process_response` keeps for an HTTP body: the bytes a source
-    /// served, and an error for a status the run must stop on — a `404` the run allowed is an
-    /// answer, not an error.
-    async fn count_body(&self, plan: &FetchPlan<'_>, status: u16, bytes: usize) {
+    /// The browser lane's mirror of `record_request_stats`, and the reason `count_request` skips a
+    /// `200` or `404`: a body is counted where it is written down, once. One lock covers the whole
+    /// update, and the per-provider row (§45) is keyed by the plan's host, so a browser-transported
+    /// source's traffic lands in the same table an HTTP source's does.
+    async fn count_capture(&self, plan: &FetchPlan<'_>, status: u16, bytes: usize) {
+        let downloaded = u64::try_from(bytes).unwrap_or(u64::MAX);
+        let failed = status >= 400 && !(status == 404 && plan.options.allow_not_found);
         {
             let mut stats = self.stats.lock().await;
-            stats.bytes_downloaded = stats
-                .bytes_downloaded
-                .saturating_add(u64::try_from(bytes).unwrap_or(u64::MAX));
+            stats.requests = stats.requests.saturating_add(1);
+            stats.bytes_downloaded = stats.bytes_downloaded.saturating_add(downloaded);
+            let entry = stats.per_host.entry(plan.host.to_string()).or_default();
+            entry.requests = entry.requests.saturating_add(1);
+            entry.bytes = entry.bytes.saturating_add(downloaded);
+            if failed {
+                stats.errors = stats.errors.saturating_add(1);
+            }
         }
-        if status >= 400 && !(status == 404 && plan.options.allow_not_found) {
-            let mut stats = self.stats.lock().await;
-            stats.errors = stats.errors.saturating_add(1);
+        if failed {
             warn!(status, url = plan.url, "non-success response");
         }
     }

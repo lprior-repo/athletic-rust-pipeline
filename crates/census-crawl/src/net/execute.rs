@@ -7,7 +7,7 @@ use super::{FetchError, FetchOptions, FetchOutcome, Fetcher, MIN_AUTHORIZED_DELA
 use census_domain::model::AccessBlockKind;
 use census_store::clock::{Clock, SystemClock};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use tracing::{debug, warn};
 
@@ -179,10 +179,13 @@ impl Fetcher {
         // Which transport carries the request is the registry's declaration, not the caller's
         // request: a registered host whose table entry says `Browser` is the one place that fact
         // lives, and a host no descriptor claims keeps the HTTP path it has always had.
-        match crate::registry::transport_for_host(&host) {
+        let started = Instant::now();
+        let outcome = match crate::registry::transport_for_host(&host) {
             Some(crate::registry::TransportKind::Browser) => self.fetch_browser(gate, &plan).await,
             _ => self.fetch_once(gate, &plan).await,
-        }
+        };
+        self.record_transport(started, &outcome).await;
+        outcome
     }
 
     /// Serve the request from the cache when a verified body is already on disk.
@@ -203,6 +206,12 @@ impl Fetcher {
         {
             let mut stats = self.stats.lock().await;
             stats.cache_hits = stats.cache_hits.saturating_add(1);
+            // The origin itself saw nothing, but the request still names it: §45's per-provider row
+            // banks this as a cache hit, so `requests - cache_hits` stays the physical traffic that
+            // host actually answered.
+            let entry = stats.per_host.entry(crate::net::host_of(url)).or_default();
+            entry.requests = entry.requests.saturating_add(1);
+            entry.cache_hits = entry.cache_hits.saturating_add(1);
         }
         Ok(Some(FetchOutcome {
             url: url.to_string(),

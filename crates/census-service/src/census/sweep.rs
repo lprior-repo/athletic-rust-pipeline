@@ -30,7 +30,9 @@ mod units;
 use self::units::{roster_unit, RosterRun};
 use super::aggregate::summarize_states;
 use super::scope::{count_co2027, count_cohort, pending_rosters};
-use super::{rosters_phase, teams_phase, CollectOptions, CollectReport, StateProgress};
+use super::{
+    rosters_phase, teams_phase, CollectOptions, CollectReport, StateProgress, TransportReport,
+};
 
 /// Fetch (or read the cached copy of) one jurisdiction's team index.
 #[tracing::instrument(skip(fetcher, store))]
@@ -260,9 +262,12 @@ pub async fn collect_milesplit(
 
     let (mut report, failures) = summarize_states(results);
     let stats = fetcher.stats().await;
-    report.requests = stats.requests;
-    report.cache_hits = stats.cache_hits;
     report.elapsed_seconds = started.elapsed().as_secs_f64();
+    // §45: the efficiency metric's numerator. A run's verified useful records are the athletes it
+    // observed into the census; the traffic that produced them is the client's own count, read here
+    // rather than kept a second time.
+    let verified = u64::try_from(report.athletes_total).unwrap_or(u64::MAX);
+    report.transport = TransportReport::from_stats(&stats, verified);
 
     // §69: what the sources said about this client is recorded before the report goes back, so a
     // block the walk paid for is a row the next run reads instead of re-discovering.

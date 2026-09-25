@@ -2,7 +2,7 @@
 //!
 //! The lane is a transport, not a side channel: a browser-transported host reaches this seat after
 //! the same cache lookup, the same robots gate and the same per-host pacing an HTTP request does, and
-//! the evidence written here has the shape [`crate::net::decode::process_response`] writes for a
+//! the evidence written here has the shape the HTTP lane's `cache_and_record` writes for a
 //! response body. What is deliberately *not* shared is the transport's own status decision: the
 //! pipeline's browser manager already made one inside the crate, so a capture that is not the
 //! source's answer is refused by name here, never minted as evidence.

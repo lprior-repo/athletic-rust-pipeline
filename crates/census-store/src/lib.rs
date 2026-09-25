@@ -55,6 +55,8 @@
 //! paths that have decided to migrate call [`Store::import_legacy`] themselves: the offline census
 //! run, the `import-legacy` verb, and the service bootstrap that owns the store for the live route.
 
+#![forbid(unsafe_code)]
+
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
 use serde::Serialize;
 use std::path::{Path, PathBuf};

@@ -37,8 +37,8 @@ pub(crate) async fn milesplit_report(
         .context("milesplit collection")?;
     let mut summary = AdapterReport::new("milesplit", "athletes");
     summary.rows = u64::try_from(report.athletes_total).unwrap_or(u64::MAX);
-    summary.requests = report.requests;
-    summary.from_cache = report.cache_hits;
+    summary.requests = report.transport.requests;
+    summary.from_cache = report.transport.cache_hits;
     summary.errors = report.errors;
     summary.note(format!("teams_total={}", report.teams_total));
     summary.note(format!("rosters_fetched={}", report.rosters_fetched));

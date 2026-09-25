@@ -148,7 +148,7 @@ budgets audit for the browser session pool.
 
 | Check | census (measured now) | root (historical: deleted 2026-09-23, measured at program start) |
 |---|---|---|
-| `[workspace.lints]` | exists (`Cargo.toml:61-73`: `unsafe_code=forbid`, `unused_must_use=deny`, clippy deny set) | exists |
+| `[workspace.lints]` | exists (`Cargo.toml:29-44`: `unsafe_code=forbid`, `unused_must_use=deny`, clippy deny set) | exists |
 | `deny.toml` | exists (30 lines: advisories, licenses, sources) — **no `[bans]` section**; the "bans incl. async runtimes" in the plan does not exist. The tree scan replaced `wrappers` bans (no package-level ban exists today). | exists |
 | `.github/` CI | **exists** — `.github/workflows/gate.yml` (commit `02e4189`, 2026-09-21 16:01): pinned toolchain from `rust-toolchain.toml`, best-effort installs of the optional gate tools, then `bash tools/gate.sh`; official `actions/checkout` only. | exists |
 

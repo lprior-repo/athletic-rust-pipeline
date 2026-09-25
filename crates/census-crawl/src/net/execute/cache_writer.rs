@@ -5,7 +5,7 @@
 
 use super::body_reader::read_checked_body;
 use crate::net::cache::{write_cache, CacheMeta};
-use crate::net::{now_iso8601, FetchOutcome, FetchStats};
+use crate::net::{host_of, now_iso8601, FetchOutcome, FetchStats};
 use std::path::Path;
 use tokio::sync::Mutex;
 
@@ -35,12 +35,8 @@ pub(super) async fn cache_and_record(
         content_type: None,
     };
     write_cache(body_path, meta_path, &body_vec, &meta)?;
-    record_request_stats(stats, url).await;
-    {
-        let mut stats = stats.lock().await;
-        let downloaded = u64::try_from(body_vec.len()).unwrap_or(u64::MAX);
-        stats.bytes_downloaded = stats.bytes_downloaded.saturating_add(downloaded);
-    }
+    let downloaded = u64::try_from(body_vec.len()).unwrap_or(u64::MAX);
+    record_request_stats(stats, url, downloaded).await;
     Ok(FetchOutcome {
         url: url.to_string(),
         method: method.to_string(),
@@ -54,10 +50,16 @@ pub(super) async fn cache_and_record(
     })
 }
 
-/// Record request counts in the stats.
-pub(super) async fn record_request_stats(stats: &Mutex<FetchStats>, host: &str) {
+/// Record one response against the run and against the origin that served it.
+///
+/// One lock for the whole update, so a reader cannot see a request counted without its bytes. The
+/// key is the URL's host: §45's per-provider table groups by origin, and the caller here has only
+/// the URL to name it — `count_request` passes the plan's host directly.
+pub(super) async fn record_request_stats(stats: &Mutex<FetchStats>, url: &str, bytes: u64) {
     let mut stats = stats.lock().await;
     stats.requests = stats.requests.saturating_add(1);
-    let per_host_entry = stats.per_host.entry(host.to_string()).or_insert(0);
-    *per_host_entry = per_host_entry.saturating_add(1);
+    stats.bytes_downloaded = stats.bytes_downloaded.saturating_add(bytes);
+    let entry = stats.per_host.entry(host_of(url)).or_default();
+    entry.requests = entry.requests.saturating_add(1);
+    entry.bytes = entry.bytes.saturating_add(bytes);
 }
