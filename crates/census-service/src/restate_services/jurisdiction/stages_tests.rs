@@ -69,7 +69,7 @@ async fn the_fetcher_carries_the_lane_the_endpoint_was_given() {
     let client = ingress::client(ingress::DEFAULT_ORIGIN).expect("the deployment's ingress origin");
     let (_dir, census) = object(Some(BrowserLane::over(client)));
 
-    let fetcher = census.fetcher().await.expect("the fetcher builds");
+    let fetcher = census.fetcher(&[]).await.expect("the fetcher builds");
     assert_eq!(BrowserLaneState::of(&fetcher), BrowserLaneState::Configured);
 }
 
@@ -79,6 +79,6 @@ async fn the_fetcher_carries_the_lane_the_endpoint_was_given() {
 async fn without_a_lane_the_fetcher_has_none_and_the_plan_refuses() {
     let (_dir, census) = object(None);
 
-    let fetcher = census.fetcher().await.expect("the fetcher builds");
+    let fetcher = census.fetcher(&[]).await.expect("the fetcher builds");
     assert_eq!(BrowserLaneState::of(&fetcher), BrowserLaneState::Absent);
 }

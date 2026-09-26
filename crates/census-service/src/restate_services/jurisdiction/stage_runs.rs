@@ -40,10 +40,13 @@ impl JurisdictionCensus {
     ) -> Result<StageOutcome, HandlerError> {
         let store = Arc::clone(&self.store);
         let at = super::super::journaled_today(ctx, &self.clock).await?;
+        // Single-attempt run policy (ADR-002): the invocation retry owns every attempt after this
+        // one, so a stage step never retries where the journal cannot see it.
         let Json(outcome) = ctx
             .run(move || {
                 jobs::teams_stage(store, fetcher, jurisdiction, season, refresh, at, sweepable)
             })
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
         Ok(outcome)
     }
@@ -58,8 +61,10 @@ impl JurisdictionCensus {
         jurisdiction: UsJurisdiction,
     ) -> Result<StateProgress, HandlerError> {
         let store = Arc::clone(&self.store);
+        // Single-attempt run policy (ADR-002): see `teams_stage`.
         let Json(progress) = ctx
             .run(move || jobs::rosters_stage(store, fetcher, options, jurisdiction))
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
         Ok(progress)
     }
@@ -81,10 +86,12 @@ impl JurisdictionCensus {
     ) -> Result<ResultsStageOutcome, HandlerError> {
         let store = Arc::clone(&self.store);
         let at = super::super::journaled_today(ctx, &self.clock).await?;
+        // Single-attempt run policy (ADR-002): see `teams_stage`.
         let Json(outcome) = ctx
             .run(move || {
                 jobs::results_stage(store, fetcher, jurisdiction, year, refresh, at, sweepable)
             })
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
         Ok(outcome)
     }
@@ -113,17 +120,23 @@ impl JurisdictionCensus {
         // The window is read before the walk, so a date the calendar cannot read refuses the stage
         // instead of leaving a run that acquired sources without a window to file them under.
         let window = ingest_post::window_of(&at)?;
+        // Single-attempt run policy (ADR-002): see `teams_stage`.
         let Json(outcome) = ctx
             .run(move || {
                 jobs::meets_stage(store, fetcher, jurisdiction, year, refresh, at, sweepable)
             })
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
         for source in &outcome.recorded {
             let endpoint = ingest_post::endpoint_of(&source.slug, jurisdiction);
             let posted = ingest_post::post(ctx, &endpoint, &window, &source.recorded.rows).await?;
             let store = Arc::clone(&self.store);
             let entries = source.recorded.journal.clone();
-            let Json(journaled) = ctx.run(move || jobs::flush_journal(store, entries)).await?;
+            // Single-attempt run policy (ADR-002): see `teams_stage`.
+            let Json(journaled) = ctx
+                .run(move || jobs::flush_journal(store, entries))
+                .retry_policy(RunRetryPolicy::new().max_attempts(1))
+                .await?;
             tracing::info!(
                 endpoint = endpoint.as_str(),
                 window = window.as_str(),

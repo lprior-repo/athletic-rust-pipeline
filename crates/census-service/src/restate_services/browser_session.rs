@@ -165,6 +165,9 @@ impl BrowserSession {
         // the bytes are still `serde_json`'s encoding of the engine's own wire type.
         let outcome = ctx
             .run(move || async move { Ok::<_, HandlerError>(Json(manager.fetch(request).await)) })
+            // Single-attempt run policy (ADR-002): the census's durable layer owns retries, so
+            // `fetch` never retries where the journal cannot see it.
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
         Ok(outcome)
     }

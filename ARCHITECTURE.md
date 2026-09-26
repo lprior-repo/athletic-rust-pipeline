@@ -116,13 +116,34 @@ something more precise (`CanonicalAthleteId`, `SourceAthleteId`, `GraduationYear
 ## 5. Workflow backbone (§7-§9)
 
 ```text
-NationalCensus
-  +-- JurisdictionCensus(<each run jurisdiction>)   (the 48 + D.C.)
-  |     +-- SourceDiscovery / SchoolDiscovery / MeetDiscovery / AthleteDiscovery
-  |     +-- ResultAcquisition / CoachDiscovery / Reconciliation / GapAnalysis
-  +-- MeetWorkflow / AthleteWorkflow / SchoolWorkflow / CoachWorkflow / IdentityReviewWorkflow
-  +-- NationalReconciliation / NationalCoverageAudit / WorkbookExport / ArtifactVerification
+NationalCensus (implemented workflow: fans out JurisdictionCensus, folds NationalFailure rows, merges once via Consolidate)
+  +-- JurisdictionCensus(<each run jurisdiction>)   (the 48 + D.C.; implemented object: teams / rosters / meets / results)
+  |     +-- meets stage routes via Ingest (<slug>_<state>, ISO-week window); teams / rosters / results write the store directly inside ctx.run
+  |     +-- SourceDiscovery / SchoolDiscovery / MeetDiscovery / AthleteDiscovery,
+  |         ResultAcquisition / CoachDiscovery / Reconciliation / GapAnalysis — NOT Restate workflows;
+  |         offline batch (collect, provider, index, review, import-coaches)
+  +-- MeetWorkflow / AthleteWorkflow / SchoolWorkflow / CoachWorkflow / IdentityReviewWorkflow — NOT Restate workflows; offline batch
+  +-- Consolidate / Report / Bests / Workbook (implemented workflows: journaled blocking jobs) replace
+      NationalReconciliation / NationalCoverageAudit / WorkbookExport / ArtifactVerification as named workflows
+  +-- Census (implemented service: status, open_work, seal) + Sweep / Ingest (implemented) + BrowserSession (implemented object, bound only when --browser-profile serves a lane)
 ```
+
+Implemented means bound in `restate_services::build_endpoint` under the struct name as the wire
+name: `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`,
+`JurisdictionCensus`, `NationalCensus`, `BrowserSession` (`restate_services/mod.rs`). Anything not
+in that list — Discovery, ResultAcquisition, CoachDiscovery, Reconciliation, GapAnalysis as
+workflows; Meet/Athlete/School/Coach/IdentityReview workflows; NationalReconciliation,
+NationalCoverageAudit, WorkbookExport, ArtifactVerification as named workflows — does not exist as
+a Restate workflow. Index, review cases, §47 gaps and coach imports are offline batch over the
+store the service holds; they are durable work, not durable invocations. See
+`RESTATE_WORKFLOWS.md` §2.2 for the service table and `docs/OPERATIONS.md` for the batch chain,
+which does not route yet.
+
+Live `teams`, `meets` and `collect` with an ingress origin drive the full
+`JurisdictionCensus/run` for each named state — every stage the object still owes — not one stage
+in isolation (`cli/gather.rs` via `cli/live.rs::drive_states` and `jurisdiction_request`). The
+workflow fetcher carries `authorized_hosts` (wire default empty); the plan still refuses
+browser-transport sources by name when no lane is configured (`plan::BrowserLaneState::of`).
 
 Identities (§8) are deterministic and stable across retries:
 
@@ -132,7 +153,7 @@ meet:{source}:{source_meet_id}:{revision}     athlete:{source}:{source_athlete_i
 school:{source}:{source_school_id}:{revision} review:{evidence_digest}:{policy_revision}
 ```
 
-**§9 retry model**: One retry owner (Restate), max three attempts per failed external operation; transport performs one. Never stack retries across layers. See `docs/adr/ADR-002-restate-owns-retries.md` for the full retry policy contract, exhaustion semantics, and `FailureCode`/`AccessBlockKind`/`FetchError` error taxonomy.
+**§9 retry model**: One retry owner (Restate), max three attempts per failed external operation; transport performs one. Never stack retries across layers. Heavy jobs (`Consolidate`, `Report`, `Bests`, `Workbook`, `Sweep` prune/report, `Census` seal) run as journaled blocking jobs inside `ctx.run` with `max_attempts(1)`; the invocation-level `max_attempts = 3` is the only retry budget. Exhaustion parks the invocation with `on_max_attempts = pause`, except `JurisdictionCensus` which uses `on_max_attempts = kill` so `NationalCensus` folds the failure as a `NationalFailure` row and continues. Store-backed services declare 1h inactivity + 1h abort via `limits::census_service()`; `BrowserSession` keeps the SDK defaults. See `docs/adr/ADR-002-restate-owns-retries.md` for the full retry policy contract, exhaustion semantics, and `FailureCode`/`AccessBlockKind`/`FetchError` error taxonomy.
 
 ## 6. Admission and browser state (§10, §26-§28)
 

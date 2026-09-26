@@ -92,6 +92,7 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
         limit_per_state: args.limit_per_state,
         concurrency: args.concurrency,
         observed_on: None,
+        authorized_hosts: cli.authorized_hosts.clone(),
     };
     let handle = submit_national(&ingestion, &identity, request).await?;
     println!(
@@ -129,6 +130,7 @@ pub(crate) async fn run_jurisdiction(cli: &Cli, args: &JurisdictionArgs) -> Resu
         limit_per_state: args.limit_per_state,
         concurrency: args.concurrency,
         observed_on: None,
+        authorized_hosts: cli.authorized_hosts.clone(),
     };
     let object = JurisdictionCensusIngressClient::from_client(ingestion, identity.as_str());
     // No idempotency key: a jurisdiction object serializes its invocations per key, so a repeated

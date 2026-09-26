@@ -109,17 +109,25 @@ impl Census {
         let region = Arc::clone(self.jobs.region());
         let permit = self.jobs.permit().await?;
         let request = store_request(&request, &journal);
-        let reply = super::blocking(region, move || {
-            let _permit = permit;
-            // A seal that cannot read the store or find a workbook will not read them on a retry:
-            // the evidence is a function of what is already there, so a failure is terminal.
-            seal::seal(&store, &request).map_err(|error| JobError::Terminal {
-                message: error.to_string(),
+        // Journaled under a single-attempt run policy (ADR-002): a restart replays the seal
+        // outcome instead of re-walking the whole store, and the invocation retry owns every
+        // attempt after the first.
+        let reply = ctx
+            .run(move || async move {
+                super::blocking(region, move || {
+                    let _permit = permit;
+                    // A seal that cannot read the store or find a workbook will not read them on a retry:
+                    // the evidence is a function of what is already there, so a failure is terminal.
+                    seal::seal(&store, &request).map_err(|error| JobError::Terminal {
+                        message: error.to_string(),
+                    })
+                })
+                .await
+                .map(|outcome| Json(SealReply::of(&outcome)))
+                .map_err(super::job_error)
             })
-        })
-        .await
-        .map(|outcome| Json(SealReply::of(&outcome)))
-        .map_err(super::job_error)?;
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
+            .await?;
         Ok(reply)
     }
 }

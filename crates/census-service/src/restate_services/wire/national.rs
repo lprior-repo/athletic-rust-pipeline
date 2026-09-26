@@ -28,6 +28,11 @@ pub struct NationalRequest {
     pub concurrency: usize,
     #[serde(default)]
     pub observed_on: Option<String>,
+    /// Operator-authorized hosts for the run, fanned out to every jurisdiction: their robots.txt
+    /// rules are recorded as `robots_authorized` instead of blocking requests. Absent means none,
+    /// which is the current behavior.
+    #[serde(default)]
+    pub authorized_hosts: Vec<String>,
 }
 
 /// One jurisdiction's row in the national report.

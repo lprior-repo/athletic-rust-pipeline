@@ -193,6 +193,9 @@ impl Ingest {
                 .map(Json)
                 .map_err(job_error)
             })
+            // Single-attempt run policy (ADR-002): the invocation retry owns every attempt after
+            // this one, so the append never retries where the journal cannot see it.
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
         Ok(application)
     }

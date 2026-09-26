@@ -25,6 +25,7 @@ pub(crate) async fn journaled_today(
         let clock = Arc::clone(&clock);
         Ok::<_, restate_sdk::errors::HandlerError>(clock.today())
     })
+    .retry_policy(RunRetryPolicy::new().max_attempts(1))
     .await
     .map_err(restate_sdk::errors::HandlerError::from)
 }
@@ -39,6 +40,7 @@ pub(crate) async fn journaled_today_workflow(
         let clock = Arc::clone(&clock);
         Ok::<_, restate_sdk::errors::HandlerError>(clock.today())
     })
+    .retry_policy(RunRetryPolicy::new().max_attempts(1))
     .await
     .map_err(restate_sdk::errors::HandlerError::from)
 }

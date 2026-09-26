@@ -25,7 +25,7 @@ use restate_sdk::prelude::*;
 use super::national::{drive_jurisdiction, WorkflowFlags};
 use census_service::ingress;
 
-/// The `Consolidate` workflow's ingress client for `origin`, under today's key.
+/// The `Consolidate` workflow's ingress client for `origin`, under the generation-keyed run key.
 fn consolidate_client(origin: Option<&str>) -> Result<ConsolidateIngressClient<reqwest::Client>> {
     Ok(ConsolidateIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
@@ -33,7 +33,7 @@ fn consolidate_client(origin: Option<&str>) -> Result<ConsolidateIngressClient<r
     ))
 }
 
-/// The `Report` workflow's ingress client for `origin`, under today's key for `scope`.
+/// The `Report` workflow's ingress client for `origin`, under the generation-keyed run key for `scope`.
 fn report_client(
     origin: Option<&str>,
     scope: report::Scope,
@@ -44,7 +44,7 @@ fn report_client(
     ))
 }
 
-/// The `Bests` workflow's ingress client for `origin`, under today's key for the whole request.
+/// The `Bests` workflow's ingress client for `origin`, under the generation-keyed run key for the whole request.
 ///
 /// The cohort and the limit are part of the key: a different cohort or a different limit is a
 /// different answer, not a resubmission of this one.
@@ -66,7 +66,7 @@ fn bests_client(
     ))
 }
 
-/// The `Workbook` workflow's ingress client for `origin`, under today's key for the request.
+/// The `Workbook` workflow's ingress client for `origin`, under the generation-keyed run key for the request.
 ///
 /// `grad_year`, `limit`, and `scope` change the workbook's content, and `out` changes its path
 /// (the reply carries the path), so all four fields are part of the key. The default `out` is
@@ -197,6 +197,7 @@ pub(super) fn jurisdiction_request(
     refresh: bool,
     limit_per_state: Option<usize>,
     concurrency: usize,
+    authorized_hosts: Vec<String>,
 ) -> JurisdictionRequest {
     JurisdictionRequest {
         jurisdiction,
@@ -206,6 +207,7 @@ pub(super) fn jurisdiction_request(
         limit_per_state,
         concurrency,
         observed_on: None,
+        authorized_hosts,
     }
 }
 

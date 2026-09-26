@@ -116,4 +116,4 @@ Collapsing `RateLimited` or `SourceUnavailable`/`Unavailable` into "not found" i
 silently corrupts coverage reporting, which is the artifact the whole census is judged on. Where an
 outcome must cross an async boundary, keep the cause: `outcome::Outcome<T, E>`
 (`crates/census-service/src/outcome.rs`) separates `Ok`/`Err` from `Cancelled`/`Timeout`/`Panicked`,
-so panic and cancellation stay distinct from domain errors.
+so panic and cancellation stay distinct from domain errors. Retry exhaustion is a Restate policy, not a domain value: invocations park with `on_max_attempts = pause` except `JurisdictionCensus`, which uses `on_max_attempts = kill` so `NationalCensus` folds a `NationalFailure` and continues — see `ARCHITECTURE.md` §5 (§9) and `RESTATE_WORKFLOWS.md` §7.4.

@@ -90,7 +90,8 @@ fn meets_line(report: &JurisdictionReport) -> String {
 /// Fetch (and cache) team indexes for the given states.
 ///
 /// Offline it walks each state's index in-process; live it asks that state's own jurisdiction object,
-/// which runs the same stage through the store the service already holds.
+/// which runs the full jurisdiction census (all owed stages) through the store the service already
+/// holds and reports one line per state.
 pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
     let jurisdictions = resolve_states(args.all_states, &args.states)?;
     match cli.route(args.flags.ingress.as_deref())? {
@@ -114,7 +115,15 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
             let requests = jurisdictions
                 .iter()
                 .map(|jurisdiction| {
-                    jurisdiction_request(*jurisdiction, season, &args.flags, args.refresh, None, 4)
+                    jurisdiction_request(
+                        *jurisdiction,
+                        season,
+                        &args.flags,
+                        args.refresh,
+                        None,
+                        4,
+                        cli.authorized_hosts.clone(),
+                    )
                 })
                 .collect();
             live::drive_states(origin, requests, args.flags.rounds(), |report| {
@@ -126,6 +135,10 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
 }
 
 /// Enumerate every published meet in each state's results index and store the rows.
+///
+/// Offline it walks each state's index in-process; live it asks that state's own jurisdiction object,
+/// which runs the full jurisdiction census (all owed stages) through the store the service already
+/// holds.
 pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
     let jurisdictions = resolve_states(args.all_states, &args.states)?;
     match cli.route(args.flags.ingress.as_deref())? {
@@ -164,7 +177,15 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
             let requests = jurisdictions
                 .iter()
                 .map(|jurisdiction| {
-                    jurisdiction_request(*jurisdiction, season, &args.flags, args.refresh, None, 4)
+                    jurisdiction_request(
+                        *jurisdiction,
+                        season,
+                        &args.flags,
+                        args.refresh,
+                        None,
+                        4,
+                        cli.authorized_hosts.clone(),
+                    )
                 })
                 .collect();
             live::drive_states(origin, requests, args.flags.rounds(), |report| {
@@ -228,8 +249,9 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
 /// Walk rosters and emit canonical entities for the given states.
 ///
 /// Offline it drives the walk in-process; live it asks each state's own jurisdiction object, which
-/// runs the same roster stage through the store the service already holds. Both paths read the same
-/// [`census::CollectOptions`], so the two cannot disagree about which states a run covers.
+/// runs the full jurisdiction census (all owed stages) through the store the service already holds.
+/// Both paths read the same [`census::CollectOptions`], so the two cannot disagree about which states
+/// a run covers.
 pub(super) async fn run_collect(cli: &Cli, args: &CollectArgs) -> Result<()> {
     let options = collect_options(args)?;
     match cli.route(args.flags.ingress.as_deref())? {
@@ -256,6 +278,7 @@ pub(super) async fn run_collect(cli: &Cli, args: &CollectArgs) -> Result<()> {
                         options.refresh,
                         options.limit_per_state,
                         options.concurrency,
+                        cli.authorized_hosts.clone(),
                     )
                 })
                 .collect();

@@ -1,4 +1,3 @@
-use std::future::Future;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -275,16 +274,6 @@ pub fn collect_error(error: CrawlError) -> JobError {
             message: e.to_string(),
         },
     }
-}
-
-/// A closure that is total and cannot fail needs no policy; the `ctx.run` it wraps is pure
-/// observation whose result is deterministic.
-pub(super) async fn run_once<F, Fut>(closure: F) -> Fut::Output
-where
-    F: FnOnce() -> Fut,
-    Fut: Future,
-{
-    closure().await
 }
 
 /// A stage that should have completed has no recorded outcome: a bug in the stage sequence, not a

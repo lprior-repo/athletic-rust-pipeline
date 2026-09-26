@@ -27,22 +27,49 @@ use crate::restate_services::KEY_STATE;
 /// second, and the fetcher's own ceiling (2 rps) is unchanged: this is the floor, not the limit.
 const WORKFLOW_DELAY: Duration = Duration::from_millis(1_000);
 
+/// The run's operator-authorized hosts in the CLI's canonical form: blanks dropped, the rest
+/// sorted and deduped, the way the CLI normalizes `--authorized-host` before building its fetcher.
+fn normalize_hosts(hosts: &[String]) -> Vec<String> {
+    let mut normalized: Vec<String> = hosts
+        .iter()
+        .filter(|host| !host.trim().is_empty())
+        .cloned()
+        .collect();
+    normalized.sort();
+    normalized.dedup();
+    normalized
+}
+
 impl JurisdictionCensus {
     /// The shared fetcher, or a terminal error naming why it could not be built.
     ///
     /// A construction failure is terminal: it comes from the cache directory or the TLS client, and
     /// retrying with the same process state cannot repair either.
-    pub(super) async fn fetcher(&self) -> Result<Arc<Fetcher>, HandlerError> {
-        let mut slot = self.fetcher.lock().await;
-        if let Some(fetcher) = slot.as_ref() {
-            return Ok(Arc::clone(fetcher));
+    ///
+    /// `authorized_hosts` carries the run's operator-authorized hosts, in the CLI's canonical form
+    /// (blanks dropped, sorted, deduped): the normalized list is the cache key the fetcher is stored
+    /// under, so two runs naming the same hosts share one fetcher — with one set of per-host gates
+    /// and counters — while different host sets rebuild. Empty stays empty, which is the current
+    /// behavior.
+    pub(super) async fn fetcher(
+        &self,
+        authorized_hosts: &[String],
+    ) -> Result<Arc<Fetcher>, HandlerError> {
+        let normalized = normalize_hosts(authorized_hosts);
+        {
+            let slot = self.fetcher.lock().await;
+            if let Some((cached, fetcher)) = slot.as_ref() {
+                if *cached == normalized {
+                    return Ok(Arc::clone(fetcher));
+                }
+            }
         }
         let built = Fetcher::new(
             self.store.http_cache_dir(),
             None,
             WORKFLOW_DELAY,
             default_host_delays(),
-            Vec::new(),
+            normalized.clone(),
         )
         .map_err(|error| {
             HandlerError::from(TerminalError::new(format!(
@@ -58,7 +85,7 @@ impl JurisdictionCensus {
             None => built,
         };
         let shared = Arc::new(built);
-        *slot = Some(Arc::clone(&shared));
+        *self.fetcher.lock().await = Some((normalized, Arc::clone(&shared)));
         Ok(shared)
     }
 
@@ -142,7 +169,7 @@ impl JurisdictionCensus {
         state: &mut JurisdictionState,
         today: &str,
     ) -> Result<(), HandlerError> {
-        let fetcher = self.fetcher().await?;
+        let fetcher = self.fetcher(&request.authorized_hosts).await?;
         let lane = BrowserLaneState::of(&fetcher);
         let fingerprint =
             compute_plan_fingerprint(request.jurisdiction, request.season, request.revision, lane);
