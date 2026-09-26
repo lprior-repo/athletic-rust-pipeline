@@ -251,6 +251,7 @@ fn national_request(jurisdictions: Vec<UsJurisdiction>) -> NationalRequest {
         limit_per_state: None,
         concurrency: 4,
         observed_on: None,
+        authorized_hosts: Vec::new(),
     }
 }
 

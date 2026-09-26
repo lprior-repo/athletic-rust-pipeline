@@ -48,6 +48,10 @@ mod pipeline;
 mod stage_runs;
 mod stages;
 
+/// The shared fetcher beside the normalized authorized-host list it was built with: runs naming
+/// the same hosts share one fetcher's per-host gates, while different host sets rebuild.
+type CachedFetcher = Option<(Vec<String>, Arc<Fetcher>)>;
+
 #[derive(Clone)]
 pub struct JurisdictionCensus {
     store: Arc<Store>,
@@ -66,8 +70,10 @@ pub struct JurisdictionCensus {
     /// per *origin*, not per workflow. Giving each jurisdiction its own fetcher would multiply the
     /// traffic one origin sees by the number of jurisdictions running at once, which is precisely the
     /// admission hole §10 names. Built lazily because it opens the cache and a TLS client, and a
-    /// service construction path that cannot report an error must not hide one.
-    fetcher: Arc<Mutex<Option<Arc<Fetcher>>>>,
+    /// service construction path that cannot report an error must not hide one. Stored beside the
+    /// normalized authorized-host list it was built with, so runs naming different hosts rebuild
+    /// instead of sharing one fetcher's gates.
+    fetcher: Arc<Mutex<CachedFetcher>>,
 }
 
 impl JurisdictionCensus {

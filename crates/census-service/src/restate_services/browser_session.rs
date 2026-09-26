@@ -30,6 +30,7 @@
 //! * **`stop` reports the engine's own drain.** [`DrainReport`] counters come back whole, so a run's
 //!   §42 accounting includes the lane's tasks rather than assuming they stopped.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use athleticnet_browser::clock::Clock as EngineClock;
@@ -49,8 +50,12 @@ pub struct BrowserSession {
     settings: Arc<BrowserSettings>,
     clock: Arc<dyn EngineClock>,
     /// Process state, deliberately not journaled. A replay must not launch a second browser, so the
-    /// live handle lives here and `start` is idempotent over it.
+    /// live handle lives here and `start` refuses when one is already held.
     manager: Arc<AsyncMutex<Option<Arc<BrowserManager>>>>,
+    /// Process state, deliberately not journaled: it guards the launch window itself, so two
+    /// concurrent `start` calls cannot both pass the live-handle check and put two managers on
+    /// the one profile.
+    starting: Arc<AtomicBool>,
 }
 
 impl BrowserSession {
@@ -59,6 +64,7 @@ impl BrowserSession {
             settings: Arc::new(settings),
             clock,
             manager: Arc::new(AsyncMutex::new(None)),
+            starting: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -165,6 +171,9 @@ impl BrowserSession {
         // the bytes are still `serde_json`'s encoding of the engine's own wire type.
         let outcome = ctx
             .run(move || async move { Ok::<_, HandlerError>(Json(manager.fetch(request).await)) })
+            // Single-attempt run policy (ADR-002): the census's durable layer owns retries, so
+            // `fetch` never retries where the journal cannot see it.
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
         Ok(outcome)
     }
@@ -180,10 +189,11 @@ impl BrowserSession {
         Ok(Json(self.reading(ctx.key()).await))
     }
 
-    /// Launch the profile, or report the one already live.
+    /// Launch the profile, or refuse when one is already live or launching.
     ///
-    /// Idempotent over the process handle: a retried `start` must not put a second manager on the
-    /// profile directory.
+    /// A second `start` while a manager is held or a launch is in flight is a terminal error,
+    /// never a silent no-op: one process owns the profile and a second manager is a corruption
+    /// path, not a second lane.
     #[handler]
     #[tracing::instrument(skip_all, fields(profile = ctx.key()))]
     async fn start(
@@ -193,13 +203,30 @@ impl BrowserSession {
         let key = ctx.key().to_string();
         if let Some(manager) = self.manager.lock().await.clone() {
             if manager.is_alive() {
-                return Ok(Json(self.reading(&key).await));
+                return Err(TerminalError::new(
+                    "the browser lane is already started in this endpoint process: one process \
+                     owns the profile and a second manager is a corruption path, not a second \
+                     lane; stop the lane before starting it again",
+                )
+                .into());
             }
         }
-        // Deliberately not journaled: a browser is process state, not bytes. The `is_alive` guard
-        // above and this assignment are what make a replayed `start` idempotent - the second
-        // attempt finds the first manager instead of putting a second one on the same profile
-        // directory, which the engine documents as a corruption path rather than a second lane.
+        // Deliberately not journaled: a browser is process state, not bytes, so process state
+        // stays process state. The `is_alive` refusal above, the `starting` claim below and this
+        // assignment are what keep a retried or replayed `start` from putting a second manager on
+        // the same profile directory, which the engine documents as a corruption path rather than
+        // a second lane.
+        if self
+            .starting
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            return Err(TerminalError::new(
+                "a browser launch is already in progress in this endpoint process: one process \
+                 owns the profile and a second manager is a corruption path, not a second lane",
+            )
+            .into());
+        }
         let settings = Arc::clone(&self.settings);
         let clock = Arc::clone(&self.clock);
         let launched = match settings.cdp_endpoint.clone() {
@@ -207,9 +234,11 @@ impl BrowserSession {
             None => BrowserManager::launch((*settings).clone(), clock).await,
         };
         let manager = launched.map_err(|error| {
+            self.starting.store(false, Ordering::SeqCst);
             TerminalError::new(format!("the browser lane could not start: {error}"))
         })?;
         *self.manager.lock().await = Some(Arc::new(manager));
+        self.starting.store(false, Ordering::SeqCst);
         Ok(Json(self.reading(&key).await))
     }
 

@@ -149,6 +149,11 @@ pub struct JurisdictionRequest {
     /// Collection date stamped on the evidence this run writes; absent means today.
     #[serde(default)]
     pub observed_on: Option<String>,
+    /// Operator-authorized hosts for this run: their robots.txt rules are recorded as
+    /// `robots_authorized` instead of blocking requests. Absent means none, which is the current
+    /// behavior.
+    #[serde(default)]
+    pub authorized_hosts: Vec<String>,
 }
 
 fn default_concurrency() -> usize {
@@ -157,8 +162,8 @@ fn default_concurrency() -> usize {
 
 impl NationalRequest {
     /// The per-jurisdiction request one fan-out call carries. The national request holds the shared
-    /// knobs — season, revision, refresh, roster ceiling, concurrency, collection date — and this
-    /// projects them onto one state.
+    /// knobs — season, revision, refresh, roster ceiling, concurrency, collection date, authorized
+    /// hosts — and this projects them onto one state.
     pub fn for_jurisdiction(&self, jurisdiction: UsJurisdiction) -> JurisdictionRequest {
         JurisdictionRequest {
             jurisdiction,
@@ -168,6 +173,7 @@ impl NationalRequest {
             limit_per_state: self.limit_per_state,
             concurrency: self.concurrency,
             observed_on: self.observed_on.clone(),
+            authorized_hosts: self.authorized_hosts.clone(),
         }
     }
 }

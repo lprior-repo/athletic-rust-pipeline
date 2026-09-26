@@ -6,7 +6,8 @@ use restate_sdk::prelude::*;
 
 use crate::spawn::Spawner;
 
-use super::{blocking, write_sweep_report, JobError, SweepReport};
+use super::super::{blocking, JobError};
+use super::{write_sweep_report, SweepReport};
 
 /// Persist the sweep report through the blocking pool, updating `report_path` on success.
 pub(super) async fn blocking_write_report(

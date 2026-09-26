@@ -97,31 +97,40 @@ fn objects(rows: &[SourceObjectOpen]) -> Vec<SourceObject> {
 }
 
 /// Every jurisdiction the run scope covers, with the stages its object records.
+///
+/// Fan-out: one durable object call per jurisdiction, drained as completions arrive, with rows
+/// restored to scope order by index placement so the reply is byte-identical to the serial walk
+/// for the same inputs. Bound: exactly one call per entry of
+/// [`UsJurisdiction::CENSUS_SCOPE`] (49), mirroring the `national.rs` precedent which pushes all
+/// 49 with no semaphore machinery; each [`DurableFuturesUnordered::next`] removes one future, so
+/// the drain ends after at most one iteration per pushed call.
 async fn read_jurisdictions(
     ctx: &Context<'_>,
     season: SchoolYear,
     revision: Revision,
 ) -> Vec<JurisdictionOpen> {
     let scope = UsJurisdiction::CENSUS_SCOPE;
-    let mut rows = Vec::with_capacity(scope.len());
+    let mut rows: Vec<JurisdictionOpen> = Vec::with_capacity(scope.len());
+    let mut in_flight = DurableFuturesUnordered::new();
     for jurisdiction in scope {
         let identity = WorkflowIdentity::jurisdiction(jurisdiction, season, revision);
         let object = ctx.object_client::<JurisdictionCensusClient>(identity.as_str());
-        let Ok(Json(state)) = object.state().call().await else {
-            rows.push(JurisdictionOpen {
-                jurisdiction,
-                identity: identity.as_str().to_string(),
-                stages: JurisdictionStages::default(),
-                unreadable: true,
-            });
-            continue;
-        };
+        in_flight.push(object.state().call());
         rows.push(JurisdictionOpen {
             jurisdiction,
             identity: identity.as_str().to_string(),
-            stages: stages_of(&state),
-            unreadable: false,
+            stages: JurisdictionStages::default(),
+            unreadable: true,
         });
+    }
+    while let Ok(Some((index, outcome))) = in_flight.next().await {
+        let Ok(Json(state)) = outcome else {
+            continue;
+        };
+        if let Some(row) = rows.get_mut(index) {
+            row.stages = stages_of(&state);
+            row.unreadable = false;
+        }
     }
     rows
 }
@@ -140,25 +149,34 @@ fn stages_of(state: &JurisdictionState) -> JurisdictionStages {
 }
 
 /// One state per ingest object key the caller named.
+///
+/// Fan-out mirroring [`read_jurisdictions`]: one durable call per endpoint, drained as
+/// completions arrive, with rows kept in request order by index placement so the reply matches
+/// the serial walk for the same inputs. Bound: exactly one call per caller-named endpoint, the
+/// same precedent as `national.rs` (no semaphore machinery); the drain ends after at most one
+/// iteration per pushed call.
 async fn read_source_objects(ctx: &Context<'_>, endpoints: &[String]) -> Vec<SourceObjectOpen> {
-    let mut rows = Vec::with_capacity(endpoints.len());
+    let mut rows: Vec<SourceObjectOpen> = Vec::with_capacity(endpoints.len());
+    let mut in_flight = DurableFuturesUnordered::new();
     for endpoint in endpoints {
         let object = ctx.object_client::<IngestClient>(endpoint.as_str());
-        let row = match object.state().call().await {
-            Ok(Json(state)) => SourceObjectOpen {
-                endpoint: endpoint.clone(),
-                observations: state.total_observations,
-                windows: count(state.windows.len()),
-                unreadable: false,
-            },
-            _ => SourceObjectOpen {
-                endpoint: endpoint.clone(),
-                observations: 0,
-                windows: 0,
-                unreadable: true,
-            },
+        in_flight.push(object.state().call());
+        rows.push(SourceObjectOpen {
+            endpoint: endpoint.clone(),
+            observations: 0,
+            windows: 0,
+            unreadable: true,
+        });
+    }
+    while let Ok(Some((index, outcome))) = in_flight.next().await {
+        let Ok(Json(state)) = outcome else {
+            continue;
         };
-        rows.push(row);
+        if let Some(row) = rows.get_mut(index) {
+            row.observations = state.total_observations;
+            row.windows = count(state.windows.len());
+            row.unreadable = false;
+        }
     }
     rows
 }

@@ -6,12 +6,13 @@
 //! **`BrowserSession`**. Renaming a struct is a breaking API change; add a
 //! `#[handler(name = "...")]` instead.
 //!
-//! * `Census` — request/response over the store: `status`.
+//! * `Census` — request/response over the store: `status`, `open_work`, `seal`.
 //! * `Consolidate`, `Report`, `Bests`, `Workbook` — one workflow per heavy job, each addressed by a
 //!   [`run_key`] the caller chooses. The job runs as a region task on the blocking pool — started
 //!   through the shell's [`Spawner`], behind a semaphore sized by `--max-concurrent`, inside
-//!   `ctx.run` — so a restart replays the journal value instead of redoing a completed pass, and a
-//!   shutdown drain owns the job even when the invocation that started it was cancelled.
+//!   `ctx.run` under a single-attempt run policy — so a restart replays the journal value instead
+//!   of redoing a completed pass, and a shutdown drain owns the job even when the invocation that
+//!   started it was cancelled.
 //! * `Ingest` — a virtual object keyed by endpoint (`mshsl`, `wiha`, …). Restate serializes
 //!   invocations per key, which is what makes the per-endpoint cursor and window bookkeeping safe
 //!   against concurrent writers.
@@ -19,9 +20,10 @@
 //!   them, and leaves early when its `stop` signal is resolved.
 //! * `JurisdictionCensus` — a virtual object keyed by jurisdiction identity
 //!   (`jurisdiction:<state>:<season>:<revision>`). It runs that state's census stages — team index,
-//!   roster walk, consolidate — recording each in durable state as it completes, so a re-invocation
-//!   resumes at the stage it still owes.
-//! * `NationalCensus` — the root workflow (`national:<season>:<revision>`). It fans out one
+//!   roster walk, meet census, results — recording each in durable state as it completes, so a
+//!   re-invocation resumes at the stage it still owes. Snapshot consolidation runs once in the
+//!   national workflow, not per jurisdiction.
+//! * `NationalCensus` — the root workflow (`national:<season>:<scope>:<revision>`). It fans out one
 //!   `JurisdictionCensus` call per state and folds the reports into one national report, listing
 //!   failed states as rows instead of failing the run.
 //! * `BrowserSession` — the one headed profile, keyed [`SESSION_KEY`]: `fetch` posts a single page

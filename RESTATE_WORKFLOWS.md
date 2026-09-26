@@ -32,7 +32,7 @@ Two processes serve two endpoints.
 | Process | Started by | Binds | Serves |
 |---|---|---|---|
 | ~~**Pipeline worker**~~ | ~~`athletic-rust-pipeline worker --config <toml> --bind 127.0.0.1:19181` — `Command::Worker` (`src/cli/args.rs:15-21`) → `runtime::worker::serve` (`src/cli.rs:33`)~~ | ~~default `127.0.0.1:19181` (`src/cli/args.rs:19-20`)~~ | ~~the 13 definitions in §2.1~~ | — **historical**: root package deleted 2026-09-23.
-| **Census service** | `census-serve --listen 127.0.0.1:9080 --data-dir var/census-service --max-concurrent 8 --drain-timeout 30` (`crates/census-service/src/bin/census-serve.rs`) → `bootstrap::serve` | default `127.0.0.1:9080` and the other defaults live in `ServeOptions::default()` (`crates/census-service/src/bootstrap/options.rs`); flags parsed by `ServeOptions::from_env` (same file) | `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` |
+| **Census service** | `census-serve --listen 127.0.0.1:9080 --data-dir var/census-service --max-concurrent 8 --drain-timeout 30` (`crates/census-service/src/bin/census-serve.rs`) → `bootstrap::serve` | default `127.0.0.1:9080` and the other defaults live in `ServeOptions::default()` (`crates/census-service/src/bootstrap/options.rs`); flags parsed by `ServeOptions::from_env` (same file) | `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus`, plus `BrowserSession` when the deployment serves a lane (`--browser-profile`) |
 
 `census-service serve` is **not** a third server: it prints the `census-serve` argv built from
 `ServeOptions::default()`, so the printed command cannot drift from what the binary parses
@@ -50,12 +50,14 @@ subcommand.
 
 ## 2. Service and object catalog
 
-Wire names come from struct names (`restate_services/mod.rs:1-10`). The e2e test asserts each of the
+Wire names come from struct names (`restate_services/mod.rs`). The e2e test asserts each of the
 historical names `["Census", "Ingest", "Sweep"]`
 (`crates/census-service/tests/fjall_restate_e2e.rs:40`) is advertised by `/discover` — a subset
-check, so the endpoint may serve more definitions than the list (`build_endpoint` currently binds
-nine). Renaming a struct is therefore a breaking API change; the SDK escape hatch is
-`#[handler(name = "...")]`.
+check, so the endpoint may serve more definitions than the list (`build_endpoint` binds the ten
+definitions named in `restate_services/mod.rs`). Renaming a struct is therefore a breaking API change; the SDK escape hatch is
+`#[handler(name = "...")]`. `Discovery`, `ResultAcquisition`, `CoachDiscovery`, `Reconciliation`,
+`GapAnalysis` and `Meet`/`Athlete`/`School`/`Coach`/`IdentityReview` workflows do not exist as
+Restate workflows — index, review cases, gaps and coaches are offline batch (see ARCHITECTURE.md §5).
 
 ### 2.1 Pipeline worker (`src/runtime/worker.rs:23-60`) — **historical**: pipeline worker belonged to deleted root crate (`Cargo.toml` header + `ARCHITECTURE.md` §1).
 
@@ -82,20 +84,20 @@ everything invoked only by a sibling handler is `ingress_private`.
 
 | Definition | Kind | Handlers | Notes |
 |---|---|---|---|
-| `Census` | service | `status` | The operator's read surface, and nothing else: a status read answers from the store in milliseconds, so retaining an invocation per check would be retention with nothing behind it |
-| `Consolidate` | workflow | `run` | Merges the per-jurisdiction tables into the serving store's canonical tables. Key = `<national identity>:consolidate`, so the national run's replay attaches to the merge it already performed |
-| `Report` | workflow | `run` | Renders one scope's recruiting report. Key = `report:<scope>:<date>` |
-| `Bests` | workflow | `run` | Ranks the best marks in one scope and cohort. Key = `bests:<scope>:<grad year or all>:<limit or all>:<date>` — a different cohort or limit is a different answer, not a resubmission |
-| `Workbook` | workflow | `run` | Writes the recruiting workbook. Key = `workbook:<grad year or all>:<scope>:<date>` |
+| `Census` | service | `status`, `open_work`, `seal` | The operator's read surface plus the §70 seal: `status` answers from the store in milliseconds, `open_work` measures the run's own objects, and `seal` assembles the store and the journal where both are readable (`restate_services/census.rs`). Retaining an invocation per status check alone would be retention with nothing behind it, which is why the heavy jobs below are workflows of their own |
+| `Consolidate` | workflow | `run` | Merges the per-jurisdiction tables into the serving store's canonical tables. Key = `<national identity>:consolidate` (see `run_key`), so the national run's replay attaches to the merge it already performed. Separate workflow, not a `Census` handler |
+| `Report` | workflow | `run` | Renders one scope's recruiting report. Key names the scope (see `cli/live.rs` report client and `run_key`). Separate workflow, not a `Census` handler |
+| `Bests` | workflow | `run` | Ranks the best marks in one scope and cohort. Key names scope, grad year (or `all`) and limit (or `all`) — a different cohort or limit is a different answer, not a resubmission. Separate workflow, not a `Census` handler |
+| `Workbook` | workflow | `run` | Writes the recruiting workbook. Key names grad year (or `all`), scope, limit and out path. Separate workflow, not a `Census` handler |
 | `Ingest` | object | `record`, `state`, `complete_window` | Key = endpoint string; the whole state is one value under `"state"` (§3.1); `record` requires the caller's `operation_id` and applies it once through the store's receipt (§3.1.1); `state` is a shared (read-only) handler |
 | `Sweep` | workflow | `run`, `interrupt` | `run` chains windows; `interrupt` is a shared handler that resolves `STOP_SIGNAL` on the target invocation |
-| `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/census-reconcile/src/identity.rs`); one state's stages — team index, roster walk, meet census — recorded in durable state as each completes; its source plan (the applicable sources this machine may sweep and the ones it refuses by name) is recorded first, before any stage runs, and kept across re-invocations |
+| `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`WorkflowIdentity::jurisdiction`); one state's stages — teams, rosters, meets, results — recorded in durable state as each completes; its source plan (the applicable sources this machine may sweep and the ones it refuses by name) is recorded first, before any stage runs, and kept across re-invocations. Live `teams`/`meets`/`collect` drive the full `run` (all owed stages), not one stage. Uses `on_max_attempts = kill` so a dead jurisdiction becomes a `NationalFailure` row instead of parking the national run (see §7.4) |
 | `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<scope>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction`, folds the reports into one `NationalReport` (failed states land as `failures` rows instead of failing the run), and merges the table snapshots once through the `Consolidate` workflow before it assembles the report |
+| `BrowserSession` | object | `fetch` (shared), `status` (shared), `start`, `stop` | Key = `SESSION_KEY` (`profile-0`); the one headed profile. Bound only when the deployment serves a lane (`build_endpoint` `serves_lane`); without it the plan refuses browser-transport sources by name instead of sweeping them. Uses SDK-default timeouts (see §5.4), not the hour the store-backed services declare |
 
 The four job workflows share one `Jobs` holder: the store, the concurrency semaphore (`Jobs::permit`)
 and the shell's region. Each job starts through the region and runs on the blocking pool under one
-permit, so an aborted invocation leaves the work owned by the region rather than running unattached.
-They are workflows rather than service handlers because each one is a unit of completion: the journal
+permit inside `ctx.run` with `max_attempts(1)`, so an aborted invocation leaves the work owned by the region rather than running unattached, and a replay reuses the journaled result instead of redoing a completed pass. They are journaled blocking jobs, not `run_once`: the invocation-level `max_attempts = 3` is the only retry budget. The `Census` seal and the `Sweep` prune/report steps follow the same rule. They are workflows rather than service handlers because each one is a unit of completion: the journal
 records the merge or the render as it happens, the completion is retained for 180 days, and a
 re-invocation under the same key attaches to that result instead of redoing months of work.
 
@@ -142,17 +144,18 @@ ends up believing a limit was applied when it was not. One revision per paramete
 contract: a qualification run with a small limit and the exhaustive run that follows it must not
 share a revision.
 
-**Stage boundary.** A jurisdiction object owns exactly three durable stages — `teams`, `rosters`,
-`meets` (`restate_services/jurisdiction.rs:89-130`). The source plan is not a fourth: the object
+**Stage boundary.** A jurisdiction object owns exactly four durable stages — `teams`, `rosters`,
+`meets`, `results` (`JurisdictionCensus::run_owed_stages`). The source plan is not a fifth: the object
 records it in the same state value before the first stage runs, as a disposition the run carries
-(what it may sweep, what it refuses by name), so `stages_run` still names only the three stages. What
+(what it may sweep, what it refuses by name), so `stages_run` still names only the four stages. What
 the plan may call sweepable is exactly what those stages dispatch — the chain's own list of swept
-sources is `DISPATCHED` (`restate_services/jurisdiction.rs:133`), and every other applicable source
+sources is `DISPATCHED`, and every other applicable source
 is refused by name, for one of two reasons the refusal states: no stage sweeps it (a gap in this
 build — the source's walk is CLI-only or has no per-state form), or it arrives over a
 browser-session transport and no lane is configured (a gap in this machine). The reasons are asked
 in that order and carried into the record; `census-service national report` prints the owed slugs on
-every run (`cli/national/report.rs:144-154`), so an owed source cannot read as a swept one.
+every run, so an owed source cannot read as a swept one. The workflow fetcher carries
+`authorized_hosts` (wire default empty); the browser-lane refusal is still by source name when the lane is absent (`BrowserLaneState::of`).
 
 The `teams` stage runs the plan rather than a list of its own: it takes the recorded plan's
 sweepable slugs, in plan order, and runs one arm per slug (`restate_services/jobs.rs`, `TEAMS_ARMS`)
@@ -164,9 +167,9 @@ outcome, and every walk journals per unit, so an invocation that ends mid-walk r
 stopped instead of re-fetching. A slug the plan calls sweepable with no arm is a terminal error
 naming it, and `jurisdiction::tests::the_arms_are_the_dispatched_slugs` holds the two lists equal so
 that error stays unreachable in a build that compiles.
-Result acquisition, the researched coach-contact artifact and §47 gap classification are batch
-commands (`collect`, `provider`, `import-coaches`) or the separate acquisition pipeline; they are not
-stages of a durable jurisdiction run. Coach rows from the two association directories are the
+Result acquisition outside the `results` stage, the researched coach-contact artifact and §47 gap classification are batch
+commands (`collect`, `provider`, `import-coaches`) or offline index work; they are not
+stages of a durable jurisdiction run beyond what the four stages already cover. The `results` stage itself is the exception inside acquisition: it reads the meets this run enumerated (`source_meets`) and pulls them through its arms, with each arm's journal as the resume point. Coach rows from the two association directories are the
 exception, because those walks *are* the state's school universe: they arrive with the `teams` stage.
 A `NationalReport`'s columns still say nothing about coaches — they report what the team index and the
 roster walk covered — so coach coverage is read from the tables, not from that report.
@@ -255,18 +258,17 @@ cannot prove closed.
 `appended` is produced inside `ctx.run`, so a replay of an acknowledged step reuses the journaled
 count instead of re-appending.
 
-#### 3.1.1 The census's acquisition route
+#### 3.1.1 The census's acquisition route — meets stage only
 
-The census reaches `Ingest` from the meet-index stage of the jurisdiction workflow
-(`restate_services/jurisdiction/stage_runs.rs`). Each planned source's walk runs with a *recording*
-instead of the store (`census_crawl::recording`), and what it recorded is posted:
+Only the meets stage routes via `Ingest`, from `JurisdictionCensus::meets_stage`. Each planned source's walk runs with a *recording*
+beside the store (`census_crawl::Recording`), and what it recorded is posted:
 
 | Piece | Value | Site |
 |---|---|---|
-| endpoint key | `<planned slug>_<state>` (`wiaa_results_wi`, `wayzata_ia`) | `restate_services/ingest_post.rs::endpoint_of` |
-| window | the ISO week of the run day (`2026-W39`) | `ingest_post.rs::window_of` |
-| rows | the walk's entity batches, chunked to `MAX_ROWS_PER_REQUEST` | `ingest_post.rs::post` |
-| ordering | every batch posted, then the walk's journal entries written to the store | `stage_runs.rs`, `jobs::flush_journal` |
+| endpoint key | `<planned slug>_<state>` (`wiaa_results_wi`, `wayzata_ia`) | `ingest_post::endpoint_of` |
+| window | the ISO week of the run day (`2026-W39`) | `ingest_post::window_of` |
+| rows | the walk's entity batches, chunked to `MAX_ROWS_PER_REQUEST` | `ingest_post::post` |
+| ordering | every batch posted, then the walk's journal entries written to the store | `JurisdictionCensus::meets_stage`, `jobs::flush_journal` |
 
 Two consequences are worth naming. The endpoint is a *source* coordinate rather than a run
 coordinate — `wiaa_results_wi` outlives each run and the window says when it was read, which is what
@@ -275,9 +277,7 @@ cache after a lost acknowledgement — now appends nothing: each post carries an
 from the invocation, the endpoint, the window and the unit's position, so the store recognizes the
 rows it already holds and the journal entry is written once (§3.1.1).
 
-The stages that still write their own store — the state's own results index, the team-index and the
-roster stages — keep doing so: their walks are unchanged, and routing them is the same seam applied
-to their append sites.
+The teams, rosters and results stages write the store directly inside `ctx.run` (`JurisdictionCensus::teams_stage`, `rosters_stage`, `results_stage`): their walks are unchanged, and they do not route via `Ingest`. Nothing in the batch chain routes yet — see `docs/OPERATIONS.md`, which stays correct on this point — so the meets stage is the only routed acquisition.
 
 ### 3.2 `RunCoordinator` — per-run progress and sealed pages (pipeline)
 
@@ -303,7 +303,7 @@ The pipeline equivalent lives in the `global`-keyed `RunCoordinator`, spread ove
   does not fit), treats a missing sealed page as terminal, and never lets later progress alter the
   captured prefix.
 
-### 3.3 Other state-bearing objects
+### 3.3 Other state-bearing objects — **historical**: pipeline worker objects from the deleted root crate (see §2.1). The census objects are `Ingest`, `JurisdictionCensus`, `NationalCensus`, `Sweep` and the census `BrowserSession` as listed in §2.2 and §3.1.
 
 | Object | Keys | Purpose |
 |---|---|---|
@@ -434,14 +434,18 @@ Definition attributes (omitted option = not declared, so the SDK/server default 
 
 | Definitions | Attributes |
 |---|---|
-| `PipelineControl`, `WorkbookImport`, `RunCoordinator`, `ExportWorker`, `RowWorker`, `QueryWorker`, `ProfileWorker`, `ReviewCase` | `inactivity_timeout = "2h"`, `journal_retention = "30 days"`, `idempotency_retention = "30 days"`, retry `1s / 3 attempts / pause` (`SourceGateway` is identical minus `idempotency_retention`) |
-| `RankingsCollectionState` | `inactivity_timeout = "2h"`, both retentions `"30 days"`, **no** `invocation_retry_policy` |
-| `SourceCache` | `lazy_state`; no `inactivity_timeout`; both retentions `"30 days"`; retry declared without `initial_interval` (`max_attempts = 3, on_max_attempts = "pause"`) |
-| `BrowserSession` | `inactivity_timeout = "26h"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 3 / pause` (a human may be clearing a challenge) |
-| `LocalReviewer` | `inactivity_timeout = "10m"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 3 / pause` |
-| `Census`, `JurisdictionCensus`, `NationalCensus` | `invocation_retry_policy` with `max_attempts = 3` (one retry owner, §9), otherwise SDK/server defaults |
-| `Ingest` | `journal_retention = "90 days"`, `idempotency_retention = "30 days"`, retry `500ms / 1m / 3 attempts / pause` — the 90 days is the window a replay can reach back over, and so the window a store receipt must outlive (§3.1.1) |
-| `Sweep` | `journal_retention = "90 days"`, `workflow_completion_retention = "180 days"`, `idempotency_retention = "30 days"`, retry `max_attempts = 3` |
+| ~~`PipelineControl`, `WorkbookImport`, `RunCoordinator`, `ExportWorker`, `RowWorker`, `QueryWorker`, `ProfileWorker`, `ReviewCase` — `inactivity_timeout = "2h"`, `journal_retention = "30 days"`, `idempotency_retention = "30 days"`, retry `1s / 3 attempts / pause` (`SourceGateway` is identical minus `idempotency_retention`)~~ | **historical**: pipeline worker belonged to deleted root crate (see §2.1) |
+| ~~`RankingsCollectionState` — `inactivity_timeout = "2h"`, both retentions `"30 days"`, **no** `invocation_retry_policy`~~ | **historical**: pipeline worker belonged to deleted root crate |
+| ~~`SourceCache` — `lazy_state`; no `inactivity_timeout`; both retentions `"30 days"`; retry declared without `initial_interval` (`max_attempts = 3, on_max_attempts = "pause"`)~~ | **historical**: pipeline worker belonged to deleted root crate |
+| ~~`BrowserSession` (pipeline) — `inactivity_timeout = "26h"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 3 / pause` (a human may be clearing a challenge)~~ | **historical**: pipeline worker belonged to deleted root crate; the census `BrowserSession` below is the implemented one |
+| ~~`LocalReviewer` — `inactivity_timeout = "10m"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 3 / pause`~~ | **historical**: pipeline worker belonged to deleted root crate |
+| `Census` | `journal_retention = "1 hour"`, `idempotency_retention = "30 days"`, `invocation_retry_policy(500ms / 1m / 3 attempts / pause)`, plus 1h inactivity + 1h abort via `limits::census_service()` |
+| `Consolidate`, `Report`, `Bests`, `Workbook` | each `journal_retention = "90 days"`, `workflow_completion_retention = "180 days"`, `idempotency_retention = "30 days"`, `invocation_retry_policy(500ms / 1m / 3 attempts / pause)`, plus 1h inactivity + 1h abort via `limits::census_service()`. Heavy work runs as a journaled blocking job inside `ctx.run` with `max_attempts(1)` — not `run_once` — so the invocation policy is the only retry budget |
+| `Ingest` | `journal_retention = "90 days"`, `idempotency_retention = "30 days"`, retry `500ms / 1m / 3 attempts / pause` — the 90 days is the window a replay can reach back over, and so the window a store receipt must outlive (§3.1.1) — plus 1h inactivity + 1h abort via `limits::census_service()` |
+| `Sweep` | `journal_retention = "90 days"`, `workflow_completion_retention = "180 days"`, `idempotency_retention = "30 days"`, retry `500ms / 1m / 3 attempts / pause`, plus 1h inactivity + 1h abort via `limits::census_service()`. Prune and report steps run as journaled blocking jobs inside `ctx.run` with `max_attempts(1)` |
+| `JurisdictionCensus` | `journal_retention = "90 days"`, `idempotency_retention = "30 days"`, `invocation_retry_policy(500ms / 1m / 3 attempts / kill)` — kill, not pause, so `NationalCensus` folds a `NationalFailure` and continues (see §7.4) — plus 1h inactivity + 1h abort via `limits::census_service()` |
+| `NationalCensus` | `journal_retention = "90 days"`, `workflow_completion_retention = "180 days"`, `idempotency_retention = "30 days"`, `invocation_retry_policy(500ms / 1m / 3 attempts / pause)`, plus 1h inactivity + 1h abort via `limits::census_service()` |
+| `BrowserSession` (census) | `journal_retention = "90 days"`, `idempotency_retention = "30 days"`, `invocation_retry_policy(max_attempts = 1, on_max_attempts = "pause")`, SDK-default timeouts (1m inactivity / 10m abort): deliberately not bound via `limits::census_service()` (`restate_services/limits.rs`), so a hanging lane aborts quickly rather than holding for an hour |
 
 Handler-internal bounds:
 
@@ -474,7 +478,7 @@ open.
 
 ### 5.6 Where the browser pool is invoked
 
-All physical browser acts go through `BrowserSession` — "Restate, not the browser driver, owns
+~~All physical browser acts go through `BrowserSession` — "Restate, not the browser driver, owns
 challenge and human-wait policy" (`browser_session.rs:36`):
 
 ```text
@@ -490,7 +494,15 @@ Shared handlers (`status`, `capture_ready`, `recover`) still act inside `ctx.run
 must use ctx.run for physical acts"). Other components reach the browser indirectly:
 `SourceGateway::await_admission` waits on readiness (legacy) or takes a one-shot `capture_ready` check
 (rankings), and `PipelineControl::rankings_resume` refuses to resume unless `BrowserSession::recover`
-reports `Ready`.
+reports `Ready`.~~ — **historical**: pipeline worker belonged to deleted root crate.
+
+The census lane is `BrowserSession::{fetch,status,start,stop}` (`restate_services/browser_session.rs`)
+over the one headed profile (`SESSION_KEY`): `census_crawl::net::bridge::BrowserLane` posts each page
+to `fetch` and the endpoint runs the one persistent `BrowserManager`. `fetch` journals its capture
+inside `ctx.run`; `start` is deliberately not journaled (a replay must not launch a second browser
+on the same profile directory). A challenged profile reports `HumanRequired` as data — a stop
+condition for the source, not an obstacle to route around — and a fetcher built without the lane
+refuses browser-transport sources by name (`BrowserLaneState::of`).
 
 ## 6. Adding a handler or service
 
@@ -503,9 +515,9 @@ reports `Ready`.
    keep the
    handler thin — "Handler bodies stay thin; the work sits in free functions that take `&Store`, so
    the interesting behaviour is testable without a Restate runtime".
-2. Run heavy work as `ctx.run(|| async { blocking(|| …).await … })`: `blocking` puts it on
+2. Run heavy work as a journaled blocking job — `ctx.run(|| async { blocking(|| …).await … })` with `max_attempts(1)`: `blocking` puts it on
    `spawn_blocking` and classifies the outcome through `job_error` (`JobError::Transient` →
-   retryable, `JobError::Terminal` → terminal; panic and cancel are terminal).
+   retryable, `JobError::Terminal` → terminal; panic and cancel are terminal). The `max_attempts(1)` on the `ctx.run` is what keeps the invocation-level `max_attempts = 3` as the only retry budget.
 3. Size concurrency with the `Census` semaphore (`self.permit()`), not a new pool; a closed semaphore
    means shutdown and is terminal.
 4. Add the binding to `build_endpoint` and update the test's `/discover` expectation (it asserts each
@@ -533,21 +545,20 @@ reports `Ready`.
   `Store::consolidate` merges them through `Entity::merge`" (`crates/census-store/src/lib.rs`). A duplicate observation is
   visible in `total_observations` and in raw scans until the next consolidation; it is not deduplicated
 
-### 7.2 Dedup keys and short-circuits
+### 7.2 Dedup keys and short-circuits — pipeline rows **historical** (deleted root crate); census rows are the `Ingest` receipt/operation id, `Ingest::complete_window` window-set, `run_key` workflow keys and the jurisdiction/national identity keys
 
 | Layer | Mechanism |
 |---|---|
-| Ingress submission | `idempotency_key(...)` on `prepare`, `run`, `run_and_export`, `export`, keys derived from the request fingerprint, retained `30 days` ("how long the result of an idempotent invocation is retained for deduplication" — SDK option doc) |
-| Object identity | Content-derived keys: import key, source cache key, row job key, query job key, profile job key, review case key, export key, collection fingerprint |
-| Re-entry | Result-slot short-circuits in `RunCoordinator::run`, `RowWorker::process`, `QueryWorker::gather`, `ProfileWorker::gather`, `SourceCache::fetch` (non-rankings), `WorkbookImport::load`, `ExportWorker::publish`, `ReviewCase::review` |
-| Binding and paging | `ExportWorker` pins `owner-run` so one destination cannot be published by two runs; `ReviewCase` pins `assignment` and rejects a retained result whose lane contradicts the key; `RankingsCollectionState::step` is fenced by `generation`; `Ingest::complete_window` treats windows as a set; `RunCoordinator::snapshot` refuses to export unless every page digest of the captured progress is present, and that prefix is immutable |
+| ~~Ingress submission~~ | ~~`idempotency_key(...)` on `prepare`, `run`, `run_and_export`, `export`, keys derived from the request fingerprint, retained `30 days` ("how long the result of an idempotent invocation is retained for deduplication" — SDK option doc)~~ — **historical**: pipeline worker |
+| ~~Object identity~~ | ~~Content-derived keys: import key, source cache key, row job key, query job key, profile job key, review case key, export key, collection fingerprint~~ — **historical**: pipeline worker |
+| ~~Re-entry~~ | ~~Result-slot short-circuits in `RunCoordinator::run`, `RowWorker::process`, `QueryWorker::gather`, `ProfileWorker::gather`, `SourceCache::fetch` (non-rankings), `WorkbookImport::load`, `ExportWorker::publish`, `ReviewCase::review`~~ — **historical**: pipeline worker |
+| Census keys | `run_key` job keys (`Consolidate`/`Report`/`Bests`/`Workbook`), jurisdiction/national identity keys (`WorkflowIdentity::jurisdiction`, `WorkflowIdentity::national`), per-endpoint `Ingest` objects keyed `<slug>_<state>` with caller `operation_id` + payload digest receipt (§3.1.1) |
+| ~~Binding and paging~~ | ~~`ExportWorker` pins `owner-run` so one destination cannot be published by two runs; `ReviewCase` pins `assignment` and rejects a retained result whose lane contradicts the key; `RankingsCollectionState::step` is fenced by `generation`; `Ingest::complete_window` treats windows as a set; `RunCoordinator::snapshot` refuses to export unless every page digest of the captured progress is present, and that prefix is immutable~~ — **historical**: pipeline worker, except `Ingest::complete_window` treats windows as a set, which still holds |
 
 ### 7.3 Retention windows
 
-Journal and idempotency retention are 30 days on the pipeline definitions that declare them; the
-census definitions declare neither and inherit server defaults — the `Sweep` workflow carries no
-retention attribute at all, so a completed sweep follows the SDK/server default. `BrowserSession`
-keeps a 26 h inactivity window because a challenge can legitimately be waiting on a person.
+Journal and idempotency retention are 30 days on the ~~pipeline definitions that declare them~~ (**historical**: pipeline worker belonged to deleted root crate). The census definitions declare their own: `Census` keeps `journal_retention = "1 hour"` with `idempotency_retention = "30 days"`; `Ingest` and `JurisdictionCensus` keep `journal_retention = "90 days"` with `idempotency_retention = "30 days"`; `Consolidate`, `Report`, `Bests`, `Workbook`, `Sweep` and `NationalCensus` keep `journal_retention = "90 days"`, `workflow_completion_retention = "180 days"` and `idempotency_retention = "30 days"`; the census `BrowserSession` keeps `journal_retention = "90 days"` with `idempotency_retention = "30 days"` and SDK-default timeouts (see §5.4). ~~`BrowserSession`
+keeps a 26 h inactivity window because a challenge can legitimately be waiting on a person.~~ (**historical**: that 26 h window belonged to the deleted pipeline worker's `BrowserSession`; the census lane aborts on the SDK defaults instead.)
 
 ### 7.4 Cancellation
 
@@ -560,14 +571,12 @@ keeps a 26 h inactivity window because a challenge can legitimately be waiting o
   observes endpoints, writes its report, and returns `interrupted: true` with the windows it saw.
 ~~* **Rankings pause**: `RankingsCollectionState::pause` writes `Paused(Manual)` and stops~~
 ~~  re-scheduling; `resume` bumps the generation and requires a `Ready` browser.~~ (historical)
-* **Invocation pause at the retry ceiling**: a definition declared
-  `on_max_attempts = "pause"` suspends a failed invocation for a human instead of failing it forever
+* **Invocation pause at the retry ceiling, and the one kill**: every definition except `JurisdictionCensus` declares
+  `on_max_attempts = "pause"` — a failed invocation suspends for a human instead of failing forever
   — the SDK's own words are "the invocation enters the paused state and can be manually resumed from
-  the CLI or UI" (`restate-sdk/src/endpoint/builder.rs:130-132`). One consequence belongs on the
-  record for the national fan-out: a parent awaiting a paused child stays in flight rather than
-  seeing an error, so a jurisdiction that exhausted its three attempts parks the run until an
-  operator resumes that child — the pause is deliberate (three attempts, then a human), and the
-  jurisdictions' shared `state` reads stay callable, so `open-work` still names the ones that owe a
+  the CLI or UI". `JurisdictionCensus` declares `on_max_attempts = "kill"` instead (`restate_services/jurisdiction.rs`): an exhausted jurisdiction fails terminally, and `NationalCensus` folds it as a `NationalFailure` row via `classify`/`collect_outcomes` and continues with the remaining states, so one dead jurisdiction cannot strand the national run. A parent awaiting a *paused* child stays in flight rather than
+  seeing an error — the pause is deliberate (three attempts, then a human) — while a parent awaiting a *killed* jurisdiction child sees the failure immediately as data. The
+  jurisdictions' shared `state` reads stay callable either way, so `open-work` still names the ones that owe a
   stage.
 * **Process shutdown**: `serve_with_cancel` stops intake and lets in-flight work finish; the drain
   deadline then aborts and *counts* what is left (`cancelled`/`timed_out`/`aborted`). Cancellation is
@@ -598,10 +607,10 @@ for genuinely different work is refused rather than silently deduplicated.
 | Failure | What the code does |
 |---|---|
 | Endpoint not deployed / admin unreachable | Ingress calls fail client-side; `transport::ingress_error` prints Restate's message when a response body exists, otherwise the transport error. No CLI retry loop exists for submission (only `export` polls an already-submitted invocation). |
-| Endpoint process dies mid-invocation | The handler task dies with it; the server retries per policy — `1s` initial, 4 attempts, then **paused** for an operator. Journaled `ctx.run` values replay instead of recomputing. |
+| Endpoint process dies mid-invocation | The handler task dies with it; the server retries per policy — `500ms` initial, `1m` max interval, 3 attempts, then **paused** for an operator, except `JurisdictionCensus` which is **killed** so the national fan-out folds a `NationalFailure` and continues (see §7.4). Journaled `ctx.run` values replay instead of recomputing. |
 | Task cancelled mid-flight (drain deadline, operator stop) | Work that committed its `ctx.run` result may not have written its state yet: for `Ingest`, rows can be appended while `cursor`/`total_observations` stay at the previous value — the rows and their receipt are durable, so the producer that resends the batch appends nothing and the counters catch up on that replay (§3.1.1). For `RunCoordinator`, `progress:<run>` may lag the sealed pages, and `snapshot` refuses to export while a claimed page is missing. |
-| Browser challenged / human required / cooling down | `await_ready` never reports `Ready` on a stale observation: it writes `status`, arms `challenge-started-ms`, issues at most one recovery (`recovery-issued`), and ends the wait with `HumanRequired` or a 408 after the deadline. `SourceGateway` returns `BrowserUnavailable` for rankings instead of waiting; `rankings_resume` fails 409 until a recover reports `Ready`. |
-| Local model blocked / unusable source row | `LocalReviewer::review` records `blocked` and returns `ReviewOutcome::Failed` with `request: None` on later calls instead of burning retries against a model that is down; `RowWorker::process` publishes a terminal `ReviewRequired` report for a row it cannot use (missing row, validation issue, empty query plan) instead of retrying |
+| ~~Browser challenged / human required / cooling down~~ | ~~`await_ready` never reports `Ready` on a stale observation: it writes `status`, arms `challenge-started-ms`, issues at most one recovery (`recovery-issued`), and ends the wait with `HumanRequired` or a 408 after the deadline. `SourceGateway` returns `BrowserUnavailable` for rankings instead of waiting; `rankings_resume` fails 409 until a recover reports `Ready`.~~ — **historical**: pipeline worker belonged to deleted root crate; the census lane reports `HumanRequired` as data via `BrowserSession/fetch` and the plan refuses browser sources by name when no lane is configured |
+| ~~Local model blocked / unusable source row~~ | ~~`LocalReviewer::review` records `blocked` and returns `ReviewOutcome::Failed` with `request: None` on later calls instead of burning retries against a model that is down; `RowWorker::process` publishes a terminal `ReviewRequired` report for a row it cannot use (missing row, validation issue, empty query plan) instead of retrying~~ — **historical**: pipeline worker belonged to deleted root crate |
 | Panic or cancel inside `blocking` | `JobError::Terminal` with `format!("job panicked: {join}")` / `format!("job cancelled: {join}")`; only an ordinary `Err` becomes `Transient`. `job_error` is deliberately a function, not a `From` impl, so a terminal failure cannot take the SDK's blanket `From<E: StdError>` path and become retryable. |
 | Census store held by another process | `Store::open` fails with the reason instead of interleaving writes; `census-serve` and batch commands must not share `--data-dir`. |
 | Bad or oversized input | Terminal immediately — a retry cannot fix a typo, and the messages enumerate the accepted values — and refused before touching store or journal: rows over `MAX_ROWS_PER_REQUEST`, sweeps over 366 windows / 256 endpoints, runs over 256 concurrency or `MAX_RUN_ROWS`, labels over 128 bytes, admin responses over 64 KiB. |

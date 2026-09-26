@@ -9,10 +9,9 @@ use census_store::Store;
 use chrono::{Days, NaiveDate};
 
 use super::ingest::IngestClient;
-use super::jobs::run_once;
 use super::jobs::write_sweep_report;
 use super::wire::ingest::{EndpointObservation, SweepReport, SweepRequest};
-use super::{blocking, job_error, JobError, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS, STOP_SIGNAL};
+use super::{job_error, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS, STOP_SIGNAL};
 
 mod blocking_prune_receipts;
 mod blocking_write_report;
@@ -124,16 +123,23 @@ impl Sweep {
             Self::wait_windows(&ctx, request.windows, request.window_seconds).await?;
         let (endpoints, stale) = Self::observe_endpoints(&ctx, &request.endpoints).await?;
         let boundary = retention_boundary(&today)?;
-        let pruned = run_once(|| async move {
-            blocking_prune_receipts::blocking_prune_receipts(
-                Arc::clone(&self.region),
-                Arc::clone(&self.store),
-                boundary,
-            )
-            .await
-            .map_err(job_error)
-        })
-        .await?;
+        // Journaled under a single-attempt run policy (ADR-002): a restart replays the prune
+        // count instead of deleting receipts a second time, and the invocation retry owns every
+        // attempt after the first. `Json` is the bridge to the SDK's own serialization traits,
+        // which is what `run` journals with.
+        let Json(pruned) = ctx
+            .run(|| async move {
+                blocking_prune_receipts::blocking_prune_receipts(
+                    Arc::clone(&self.region),
+                    Arc::clone(&self.store),
+                    boundary,
+                )
+                .await
+                .map(Json)
+                .map_err(job_error)
+            })
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
+            .await?;
         let report = SweepReport {
             windows_observed,
             interrupted,
@@ -144,17 +150,19 @@ impl Sweep {
             pruned_receipts: pruned.removed,
             undated_receipts: pruned.undated,
         };
-        let written = run_once(|| async move {
-            blocking_write_report::blocking_write_report(
-                Arc::clone(&self.region),
-                Arc::clone(&self.store),
-                report,
-                today.clone(),
-            )
-            .await
-            .map_err(job_error)
-        })
-        .await?;
+        let written = ctx
+            .run(|| async move {
+                blocking_write_report::blocking_write_report(
+                    Arc::clone(&self.region),
+                    Arc::clone(&self.store),
+                    report,
+                    today.clone(),
+                )
+                .await
+                .map_err(job_error)
+            })
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
+            .await?;
         Ok(written)
     }
 

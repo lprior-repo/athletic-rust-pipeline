@@ -14,7 +14,7 @@ use crate::spawn::Spawner;
 use census_report::{bests, workbook};
 use census_store::Store;
 
-use super::jobs::{build_bests, build_report, build_workbook, consolidate_tables, run_once};
+use super::jobs::{build_bests, build_report, build_workbook, consolidate_tables};
 use super::wire::{
     BestsReply, BestsRequest, ConsolidateReply, ConsolidateRequest, ReportReply, ReportRequest,
     WorkbookReply, WorkbookRequest,
@@ -96,21 +96,26 @@ impl Consolidate {
     #[tracing::instrument(skip_all, fields(tables = request.tables.len()))]
     async fn run(
         &self,
-        _ctx: WorkflowContext<'_>,
+        ctx: WorkflowContext<'_>,
         Json(request): Json<ConsolidateRequest>,
     ) -> Result<Json<ConsolidateReply>, HandlerError> {
         let tables = resolve_tables(&request.tables)?;
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        let reply = run_once(move || async move {
-            let _permit = permit;
-            blocking(region, move || consolidate_tables(&store, &tables))
-                .await
-                .map(|tables| Json(ConsolidateReply { tables }))
-                .map_err(job_error)
-        })
-        .await?;
+        // Journaled under a single-attempt run policy (ADR-002): a restart replays the journal
+        // value instead of redoing a completed merge, and the invocation retry owns every attempt
+        // after the first.
+        let reply = ctx
+            .run(move || async move {
+                let _permit = permit;
+                blocking(region, move || consolidate_tables(&store, &tables))
+                    .await
+                    .map(|tables| Json(ConsolidateReply { tables }))
+                    .map_err(job_error)
+            })
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
+            .await?;
         Ok(reply)
     }
 }
@@ -143,21 +148,24 @@ impl Report {
     #[tracing::instrument(skip_all)]
     async fn run(
         &self,
-        _ctx: WorkflowContext<'_>,
+        ctx: WorkflowContext<'_>,
         Json(request): Json<ReportRequest>,
     ) -> Result<Json<ReportReply>, HandlerError> {
         let scope = resolve_scope(request.scope.as_deref())?;
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        let reply = run_once(move || async move {
-            let _permit = permit;
-            blocking(region, move || build_report(&store, scope))
-                .await
-                .map(Json)
-                .map_err(job_error)
-        })
-        .await?;
+        // Journaled under a single-attempt run policy (ADR-002): see `Consolidate::run`.
+        let reply = ctx
+            .run(move || async move {
+                let _permit = permit;
+                blocking(region, move || build_report(&store, scope))
+                    .await
+                    .map(Json)
+                    .map_err(job_error)
+            })
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
+            .await?;
         Ok(reply)
     }
 }
@@ -190,7 +198,7 @@ impl Bests {
     #[tracing::instrument(skip_all)]
     async fn run(
         &self,
-        _ctx: WorkflowContext<'_>,
+        ctx: WorkflowContext<'_>,
         Json(request): Json<BestsRequest>,
     ) -> Result<Json<BestsReply>, HandlerError> {
         let options = bests::Options {
@@ -201,14 +209,17 @@ impl Bests {
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        let reply = run_once(move || async move {
-            let _permit = permit;
-            blocking(region, move || build_bests(&store, &options))
-                .await
-                .map(Json)
-                .map_err(job_error)
-        })
-        .await?;
+        // Journaled under a single-attempt run policy (ADR-002): see `Consolidate::run`.
+        let reply = ctx
+            .run(move || async move {
+                let _permit = permit;
+                blocking(region, move || build_bests(&store, &options))
+                    .await
+                    .map(Json)
+                    .map_err(job_error)
+            })
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
+            .await?;
         Ok(reply)
     }
 }
@@ -241,7 +252,7 @@ impl Workbook {
     #[tracing::instrument(skip_all)]
     async fn run(
         &self,
-        _ctx: WorkflowContext<'_>,
+        ctx: WorkflowContext<'_>,
         Json(request): Json<WorkbookRequest>,
     ) -> Result<Json<WorkbookReply>, HandlerError> {
         let options = workbook::Options {
@@ -253,14 +264,17 @@ impl Workbook {
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        let reply = run_once(move || async move {
-            let _permit = permit;
-            blocking(region, move || build_workbook(&store, &options))
-                .await
-                .map(Json)
-                .map_err(job_error)
-        })
-        .await?;
+        // Journaled under a single-attempt run policy (ADR-002): see `Consolidate::run`.
+        let reply = ctx
+            .run(move || async move {
+                let _permit = permit;
+                blocking(region, move || build_workbook(&store, &options))
+                    .await
+                    .map(Json)
+                    .map_err(job_error)
+            })
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
+            .await?;
         Ok(reply)
     }
 }
