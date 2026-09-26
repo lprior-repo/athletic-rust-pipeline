@@ -40,11 +40,6 @@ impl RecordedBatch {
     pub fn len(&self) -> usize {
         self.rows.len()
     }
-
-    /// True when this batch carries no rows.
-    pub fn is_empty(&self) -> bool {
-        self.rows.is_empty()
-    }
 }
 
 /// One journal entry a routed walk produced: the marker that names a unit it read.
@@ -73,11 +68,6 @@ pub struct Recorded {
 }
 
 impl Recorded {
-    /// Rows across every batch.
-    pub fn rows(&self) -> usize {
-        self.rows.iter().map(RecordedBatch::len).sum()
-    }
-
     /// True when the walk neither produced rows nor read a unit worth journaling.
     pub fn is_empty(&self) -> bool {
         self.rows.is_empty() && self.journal.is_empty()

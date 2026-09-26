@@ -132,7 +132,6 @@ pub use athlete_observations::{observe_athletes_of, stamp_source_athletes};
 pub use context::{observe_schools_of, AdapterContext};
 pub use recording::{Recorded, RecordedBatch, RecordedJournal, Recording};
 
-use census_store::{Store, Table};
 use serde::Serialize;
 use std::time::Duration;
 
@@ -201,15 +200,6 @@ pub fn default_family_delays() -> std::collections::HashMap<String, Duration> {
         ("athletic.net", Duration::from_secs(1)),
     ]
     .into_iter()
-    .map(|(family, delay)| (family.to_string(), delay))
-    .collect()
-}
-
-/// Append a batch of entities, tolerating an empty batch.
-pub fn append_all<T: Serialize>(
-    store: &Store,
-    table: Table,
-    rows: &[T],
-) -> census_store::StoreResult<()> {
-    store.append_many(table, rows)
+        .map(|(family, delay)| (family.to_string(), delay))
+        .collect()
 }

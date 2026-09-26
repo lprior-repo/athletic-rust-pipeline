@@ -225,11 +225,6 @@ impl FetchStats {
         self.requests.saturating_sub(self.cache_hits)
     }
 
-    /// Requests the origin answered without an error.
-    pub fn successful_requests(&self) -> u64 {
-        self.requests.saturating_sub(self.errors)
-    }
-
     /// §45's headline efficiency metric: verified useful records per physical request.
     ///
     /// `None` where no physical request was made, because the ratio of something to nothing is not

@@ -11,7 +11,7 @@ pub fn strip_honorific(value: &str) -> String {
         .take_while(|part| {
             matches!(
                 part.trim_end_matches('.').to_ascii_lowercase().as_str(),
-                "mr" | "mrs" | "ms" | "miss" | "dr" | "coach" | "coach." | "sir" | "rev"
+                "mr" | "mrs" | "ms" | "miss" | "dr" | "coach" | "sir" | "rev"
             )
         })
         .count();

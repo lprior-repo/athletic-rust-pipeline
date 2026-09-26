@@ -86,7 +86,7 @@ pub fn strip_honorific(value: &str) -> String {
         let token = first.trim_end_matches('.').to_ascii_lowercase();
         if matches!(
             token.as_str(),
-            "mr" | "mrs" | "ms" | "miss" | "dr" | "coach" | "coach." | "sir" | "rev"
+            "mr" | "mrs" | "ms" | "miss" | "dr" | "coach" | "sir" | "rev"
         ) {
             parts.remove(0);
         } else {
