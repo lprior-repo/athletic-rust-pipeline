@@ -45,8 +45,8 @@ impl<'a> Absorb<'a> {
                 path: None,
             },
         );
-        for athlete in &roster.athletes {
-            self.absorb_roster_row(context, &school, season, athlete);
+        for (row_index, athlete) in roster.athletes.iter().enumerate() {
+            self.absorb_roster_row(context, &school, season, athlete, row_index);
         }
     }
 
@@ -83,6 +83,7 @@ impl<'a> Absorb<'a> {
         school: &SchoolId,
         season: PageSeason,
         athlete: &RosterAthlete,
+        row_index: usize,
     ) {
         self.stats.roster_rows_seen = self.stats.roster_rows_seen.saturating_add(1);
         let Some(name) = athlete.full_name() else {
@@ -105,6 +106,7 @@ impl<'a> Absorb<'a> {
                 sport: season.sport,
                 tfrrs_id: athlete.id,
                 url: None,
+                source_key: format!("{}:{}:roster:{row_index}", context.team.slug, season.school_year.get()),
                 observed_grade: Some(ObservedGrade {
                     grade,
                     school_year: season.school_year,

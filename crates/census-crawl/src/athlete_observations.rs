@@ -30,20 +30,23 @@ pub fn stamp_source_athletes<'a>(
     athletes: impl IntoIterator<Item = &'a CanonicalAthlete>,
     performances: &mut [CanonicalPerformance],
 ) -> usize {
-    let identities: HashMap<&str, &SourceIdentity> = athletes
-        .into_iter()
-        .filter_map(|athlete| {
-            athlete
-                .identity_in(namespace)
-                .map(|identity| (athlete.id.as_str(), identity))
-        })
-        .collect();
+    let mut identities: HashMap<&str, Option<&SourceIdentity>> = HashMap::new();
+    for athlete in athletes {
+        let Some(source) = owned_source(athlete, namespace) else { continue };
+        identities.entry(athlete.id.as_str())
+            .and_modify(|existing| {
+                if existing.is_some_and(|value| value.namespace != source.namespace || value.id != source.id) {
+                    *existing = None;
+                }
+            })
+            .or_insert(Some(source));
+    }
     let mut stamped = 0usize;
     for performance in performances {
         if performance.source_athlete.is_some() {
             continue;
         }
-        if let Some(identity) = identities.get(performance.athlete.as_str()) {
+        if let Some(Some(identity)) = identities.get(performance.athlete.as_str()) {
             performance.source_athlete = Some((*identity).clone());
             stamped = stamped.saturating_add(1);
         }
@@ -78,12 +81,20 @@ pub fn observe_athletes_of<'a>(
             let school = names
                 .get(athlete.school.as_str())
                 .map(|name| (*name).to_string());
-            SourceAthleteObservation::of_athlete(namespace, athlete, school, observed_on)
+            let source = owned_source(athlete, namespace)?;
+            SourceAthleteObservation::of_athlete(&source.namespace, athlete, school, observed_on)
         })
         .map(SourceObservation::Athlete)
         .collect();
     store.append_many(Table::SourceObservations, &rows)?;
     Ok(rows.len())
+}
+
+fn owned_source<'a>(athlete: &'a CanonicalAthlete, namespace: &SourceNamespace) -> Option<&'a SourceIdentity> {
+    athlete.source_owner().or_else(|| match athlete.source_identities.as_slice() {
+        [source] if &source.namespace == namespace => Some(source),
+        _ => None,
+    })
 }
 
 #[cfg(test)]

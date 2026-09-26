@@ -92,16 +92,14 @@ pub const COHORT_IDENTITY_CONFIDENCE_FAMILY: &str = "Class-of-2027 identity conf
 /// to the high bar: an athlete in the cohort with no grade observation retained, and one whose
 /// observations disagree with the class the row is published under.
 ///
-/// Both are decided by the rule the row is read through — [`CanonicalAthlete::derived_identity_confidence`]
-/// derives the confidence from the observations, and the row is published at the bar its evidence
-/// supports — so their cases start terminal. The acquisition that
-/// would change the answer (a source that carries the grade level) removes the finding itself, and
-/// the pass that derives it away closes the case as superseded.
+/// Cohort confidence is derived by [`CanonicalAthlete::derived_cohort_confidence`], separately from
+/// identity acceptance. These cases describe missing or contradictory cohort evidence; acquisition
+/// can remove a finding by retaining the missing published grade.
 ///
 /// Kept here, with the family names, because two readers count these cases rather than render them:
 /// the seal's cohort item and the mint rule that decides what that item can ever see.
 ///
-/// [`CanonicalAthlete::derived_identity_confidence`]: crate::model::CanonicalAthlete::derived_identity_confidence
+/// [`CanonicalAthlete::derived_cohort_confidence`]: crate::model::CanonicalAthlete::derived_cohort_confidence
 pub const COHORT_DECISION_FAMILIES: [&str; 2] =
     [COHORT_UNVERIFIED_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY];
 pub const UNRESOLVED_VENUE_FAMILY: &str = "Meet venue unresolved";

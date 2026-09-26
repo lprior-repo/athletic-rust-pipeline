@@ -135,8 +135,8 @@ impl<'a> Mapper<'a> {
                     url,
                 );
             }
-            for athlete in &qualifier.athletes {
-                self.qualifier(&school, athlete, list, url);
+            for (row_index, athlete) in qualifier.athletes.iter().enumerate() {
+                self.qualifier(&school, athlete, list, url, row_index);
             }
         }
     }
@@ -151,6 +151,7 @@ impl<'a> Mapper<'a> {
         row: &QualifierAthlete,
         list: &XcList<'_>,
         url: &str,
+        row_index: usize,
     ) {
         self.stats.qualifier_rows = self.stats.qualifier_rows.saturating_add(1);
         let name = joined_name(row.first_name.as_deref(), row.last_name.as_deref());
@@ -178,6 +179,7 @@ impl<'a> Mapper<'a> {
                 entry: row
                     .number
                     .map(|number| format!("{}:{number}", list.tournament_id)),
+                source_key: format!("{url}:school:{school}:row:{row_index}"),
             },
             evidence,
         );

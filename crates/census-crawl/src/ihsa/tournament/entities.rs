@@ -1,10 +1,7 @@
 //! Canonical entities: the teams, athletes and performances a run's rows mint.
 //!
-//! Every id the payload publishes is kept as a [`SourceIdentity`] and nothing else is: the team's
-//! `athleticNetId`, the athlete's `athleticNetId`/`athleticLiveId`, and the association's own entry
-//! number where the list publishes one. Two rows that agree on the same published id upsert one
-//! entity; a row with no published id falls back to the domain's natural key (school + normalized
-//! name + graduating class + gender for an athlete), which is why a grade-less row mints no athlete.
+//! Every provider id is retained. Name/school/class/category is only a candidate-search index;
+//! a missing provider id is represented by the document's row address, never an implicit person.
 //!
 //! [`SourceIdentity`]: census_domain::model::SourceIdentity
 
@@ -64,14 +61,12 @@ impl<'a> Mapper<'a> {
         };
         let identities = athlete_identities(row.net_id, row.live_id, row.entry.as_deref());
         let grad_year = observation.grad_year();
-        let key = row.net_id.map_or_else(
-            || {
-                CanonicalAthlete::mint(row.school, name, grad_year, row.gender)
-                    .as_str()
-                    .to_string()
-            },
-            |id| format!("net:{id}"),
+        let source = identities.first().cloned().map_or_else(
+            || SourceIdentity::new(SourceNamespace::Other("ihsa_result_row".to_string()), row.source_key),
+            |source| source,
         );
+        let id = CanonicalAthlete::mint(row.school, name, grad_year, row.gender, &source);
+        let key = id.as_str().to_string();
         if let Some(athlete) = self.accumulated.athletes.get_mut(&key) {
             push_once(&mut athlete.observed_grades, observation);
             push_once(&mut athlete.sports, row.sport);
@@ -79,10 +74,10 @@ impl<'a> Mapper<'a> {
             push_once(&mut athlete.evidence, evidence);
             return Some(athlete.id.clone());
         }
-        let mut athlete = CanonicalAthlete::new(row.school, name, grad_year, row.gender);
+        let mut athlete = CanonicalAthlete::new(row.school, name, grad_year, row.gender, source);
         athlete.sports.push(row.sport);
         athlete.observed_grades.push(observation);
-        athlete.source_identities.extend(identities);
+        push_all(&mut athlete.source_identities, identities);
         athlete.evidence.push(evidence);
         let id = athlete.id.clone();
         self.accumulated.athletes.insert(key, athlete);

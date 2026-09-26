@@ -18,7 +18,7 @@ use crate::hytek;
 use crate::result_file::ParsedRow;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalPerformance, CanonicalTeam, Evidence, Gender, GradYear,
-    Grade, ObservedGrade, SchoolId, SchoolYear, Sport, TeamId, TimingMethod,
+    Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, Sport, TeamId, TimingMethod,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -46,7 +46,7 @@ pub(super) fn record_row(
         context.school_year,
         context.evidence,
     );
-    let athlete_id = record_athlete(writer, context, &school_id, &row.name, shape.grade);
+    let athlete_id = record_athlete(writer, context, &school_id, &row.name, shape.grade, row_index);
     record_performance(
         writer,
         context,
@@ -200,17 +200,18 @@ fn record_athlete(
     school_id: &SchoolId,
     member_name: &str,
     grade: Grade,
+    row_index: usize,
 ) -> AthleteId {
     let grad_year = GradYear::of(grade, context.school_year);
-    let athlete_id =
-        CanonicalAthlete::mint(school_id, member_name, grad_year, context.event.gender);
+    let source = SourceIdentity::new(SourceNamespace::Other("milesplit_result_row".to_string()),
+        performance_key(context, row_index));
+    let athlete_id = CanonicalAthlete::mint(school_id, member_name, grad_year, context.event.gender, &source);
     let entry = writer
         .accumulated
         .athletes
         .entry(athlete_id.as_str().to_string())
         .or_insert_with(|| {
-            let mut athlete =
-                CanonicalAthlete::new(school_id, member_name, grad_year, context.event.gender);
+            let mut athlete = CanonicalAthlete::new(school_id, member_name, grad_year, context.event.gender, source);
             if let Some(sport) = context.sport {
                 athlete.sports.push(sport);
             }

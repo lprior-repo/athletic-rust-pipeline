@@ -66,7 +66,7 @@ pub(super) fn record_row(
         return false;
     };
     writer.stats.rows_mapped = writer.stats.rows_mapped.saturating_add(1);
-    let mapped = map_identity(writer, context, &school_id, &identity);
+    let mapped = map_identity(writer, context, &school_id, &identity, row_index);
     count_channels(writer.stats, row);
     let Some(mark) = row.canonical_mark(context.kind) else {
         // `NH` publishes `im: 0`: the athlete competed, so the identity above is the evidence, and
@@ -103,7 +103,7 @@ pub(super) fn record_standing(
         return false;
     };
     writer.stats.rows_mapped = writer.stats.rows_mapped.saturating_add(1);
-    let mapped = map_identity(writer, context, &school_id, &identity);
+    let mapped = map_identity(writer, context, &school_id, &identity, row_index);
     count_standing_channels(writer.stats, row);
     let Some(mark) = row.canonical_mark(context.kind) else {
         writer.stats.rows_without_mark = writer.stats.rows_without_mark.saturating_add(1);

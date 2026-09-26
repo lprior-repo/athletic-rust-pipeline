@@ -178,6 +178,7 @@ pub(super) struct AthleteRow<'a> {
     pub(super) live_id: Option<u64>,
     /// The association's own athlete key, when the payload publishes one (XC entry numbers).
     pub(super) entry: Option<String>,
+    pub(super) source_key: String,
 }
 
 /// One performance row's published facts.

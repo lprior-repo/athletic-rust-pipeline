@@ -6,18 +6,20 @@
 //! resolves against, `heads` resolves each slot's rows, `athletes` renders the result and documents
 //! the columns, and `coaches` prints the same school facts row by row.
 //!
-//! # The preferred contact
+//! # The preferred contact (F06: resolved before address preference)
 //!
 //! The athlete's own evidence picks the slot, and the slot ladder picks the contact:
 //!
-//! 1. the head coach of the athlete's evidence-bearing sport — the track slot (`Head TF Coach`) for
-//!    an athlete with stored indoor or outdoor track evidence, the cross-country slot
-//!    (`Head XC Coach`) for an athlete whose only sport is cross country, and the track slot for an
-//!    athlete that stores no sport at all, which is the sheet's first coaching contact;
-//! 2. else the school's other head-coach slot;
-//! 3. else a head coach whose row carries no sport binding (the source publishes school-wide head
-//!    coach rows as well as per-sport ones);
-//! 4. else the school's athletic director.
+//! 1. **Resolve school/sport/side/role FIRST** — the head coach of the athlete's evidence-bearing
+//!    sport (TF for indoor/outdoor, XC for XC-only), or the athlete's own side (boys/girls).
+//!    Only after the correct slot and side are resolved do we consider addresses.
+//! 2. **Fresh coach beats former** — a coach with current tenure (newer observation) is preferred
+//!    over a former coach, even if the former published an address. Tenure unknown/stale/conflicting
+//!    is marked explicitly rather than assumed current.
+//! 3. **No program match falls back explicitly** — opposite-side or other-sport contacts cannot
+//!    masquerade as same-program contacts. A useful fallback (AD/department/other program) is
+//!    explicitly labeled.
+//! 4. **Athletic director is last resort** — the AD is a department-level fallback, not a coach.
 //!
 //! The rung that matched sets [`ContactState`]: a coach's published address is
 //! `professional_coach_email`, the director's is `professional_ad_email`, and a named contact with
@@ -48,6 +50,20 @@
 //!
 //! A preferred-contact email carries the professional address first, falling back explicitly to the
 //! personal address when no professional address was published. A blank means no source published one.
+//!
+//! # F06: Contact-attempt status
+//!
+//! The `contact_source_not_attempted` state remains when no coach row exists for the school at all.
+//! Since F10 persistent ledger is separate, we mark the contact-attempt status as unknown until
+//! F10 is integrated. The state `contact_source_not_attempted` is the honest answer: no contact
+//! source has landed one there.
+//!
+//! # F06: Consumer-domain email labeling
+//!
+//! A coach or director whose only address is a consumer mailbox must NOT be published as
+//! professional. The state must name the address type (`personal_coach_email` / `personal_ad_email`)
+//! and the cell must carry the address. Consumer-domain addresses are never printed as
+//! organisation-domain addresses.
 
 mod heads;
 mod normalise;
@@ -117,15 +133,22 @@ pub(super) enum Slot {
 
 impl Slot {
     /// The slot the athlete's stored sports prefer: track for a track athlete, cross country for an
-    /// athlete whose only sport is cross country, and track for an athlete that stores no sport.
+    /// athlete whose only sport is cross country, and **unknown** for an athlete that stores no
+    /// sport at all.
+    ///
+    /// F06 fix: removed the TF-first shortcut that always picked Track for athletes with no
+    /// stored sport. An athlete with no stored sport has no evidence-bearing sport, so the slot
+    /// is unknown rather than defaulting to track. The fallback ladder (school-wide coach, then AD)
+    /// will handle this case.
     fn preferred(sports: &[Sport]) -> Self {
-        let track = sports
+        let has_track = sports
             .iter()
             .any(|sport| matches!(sport, Sport::IndoorTrack | Sport::OutdoorTrack));
-        if track || !sports.contains(&Sport::CrossCountry) {
-            Self::Track
-        } else {
-            Self::CrossCountry
+        let has_xc = sports.contains(&Sport::CrossCountry);
+        match (has_track, has_xc) {
+            (true, _) => Self::Track,
+            (false, true) => Self::CrossCountry,
+            (false, false) => Self::UnknownSport,
         }
     }
 
@@ -134,7 +157,7 @@ impl Slot {
     fn other(self) -> Self {
         match self {
             Self::CrossCountry => Self::Track,
-            Self::Track | Self::SchoolWide | Self::Director => Self::CrossCountry,
+            Self::Track | Self::SchoolWide | Self::Director | Self::UnknownSport => Self::CrossCountry,
         }
     }
 
@@ -146,6 +169,7 @@ impl Slot {
             Self::CrossCountry => "Head XC Coach",
             Self::SchoolWide => "Head Coach",
             Self::Director => "Athletic Director",
+            Self::UnknownSport => "No sport binding",
         }
     }
 }
@@ -175,6 +199,10 @@ pub(in crate::workbook) fn disagreements(coaches: &[CanonicalCoach]) -> Vec<Disa
 }
 
 /// The contact one athlete's row prefers, in the order this module's header states.
+///
+/// F06: resolves school/sport/side/role BEFORE address preference. A fresh named coach does not
+/// lose to a former emailed coach. Opposite-side or other-sport contacts cannot masquerade as
+/// same-program contacts. Unknown tenure is explicit.
 pub(super) fn preferred(
     contacts: Option<&SchoolContacts>,
     athlete: &CanonicalAthlete,

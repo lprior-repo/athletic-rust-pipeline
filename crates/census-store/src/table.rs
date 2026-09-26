@@ -101,6 +101,8 @@ pub enum Table {
     /// read again on a later day appends a second sighting, and a canonical merge that turns out to
     /// be wrong is re-decided from these rows without reading the provider again.
     SourceObservations,
+    /// Applied Rust identity decisions, bound to exact source-subject and verdict evidence.
+    AthleteIdentityDecisions,
 }
 
 impl Table {
@@ -122,10 +124,11 @@ impl Table {
             Table::IdentityVerdicts => "identity_verdicts",
             Table::SourceMeets => "source_meets",
             Table::SourceObservations => "source_observations",
+            Table::AthleteIdentityDecisions => "athlete_identity_decisions",
         }
     }
 
-    pub const ALL: [Table; 16] = [
+    pub const ALL: [Table; 17] = [
         Table::Schools,
         Table::Teams,
         Table::Coaches,
@@ -142,6 +145,7 @@ impl Table {
         Table::IdentityVerdicts,
         Table::SourceMeets,
         Table::SourceObservations,
+        Table::AthleteIdentityDecisions,
     ];
 
     /// Parse a wire name (`"schools"`) back into a table. Unknown names are rejected so a typo in an
@@ -171,7 +175,7 @@ impl Table {
             | Table::Performances
             | Table::SourceMeets
             | Table::SourceObservations => StorageMode::ObservationLog,
-            Table::SourceIdentities | Table::Conflicts | Table::Coverage => {
+            Table::SourceIdentities | Table::Conflicts | Table::Coverage | Table::AthleteIdentityDecisions => {
                 StorageMode::DerivedSnapshot
             }
             Table::ReviewCases

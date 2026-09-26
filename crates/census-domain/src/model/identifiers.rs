@@ -17,6 +17,9 @@ pub mod tag {
     /// The candidate role of [`Athlete`]: what one source's observation mints.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct AthleteCandidate;
+    /// A search bucket, never a source subject or accepted person.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct AthleteIndex;
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct Meet;
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -81,6 +84,7 @@ pub type SchoolId = Id<tag::School>;
 pub type TeamId = Id<tag::Team>;
 pub type CoachId = Id<tag::Coach>;
 pub type AthleteId = Id<tag::Athlete>;
+pub type AthleteIndexId = Id<tag::AthleteIndex>;
 /// A canonical athlete *candidate*'s id: what one source's observation of a (school, name, class,
 /// gender side) mints.
 ///

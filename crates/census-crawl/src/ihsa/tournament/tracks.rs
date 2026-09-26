@@ -96,12 +96,12 @@ impl<'a> Mapper<'a> {
         context: &EventContext<'_>,
         url: &str,
     ) {
-        for row in &summary.finishers {
+        for (row_index, row) in summary.finishers.iter().enumerate() {
             self.stats.rows = self.stats.rows.saturating_add(1);
             if row.members.is_empty() {
-                self.individual(row, context, url);
+                self.individual(row, context, url, row_index);
             } else {
-                self.relay(row, context, url);
+                self.relay(row, context, url, row_index);
             }
         }
     }
@@ -110,7 +110,7 @@ impl<'a> Mapper<'a> {
     ///
     /// The row is dropped, and counted, when the payload leaves out a field the performance cannot be
     /// keyed or valued by: a school it names, a grade, or a mark.
-    fn individual(&mut self, row: &FinisherRow, context: &EventContext<'_>, url: &str) {
+    fn individual(&mut self, row: &FinisherRow, context: &EventContext<'_>, url: &str, row_index: usize) {
         let Some(school) =
             self.school(row.ihsa_school_id.as_deref(), row.team_name.as_deref(), url)
         else {
@@ -131,6 +131,7 @@ impl<'a> Mapper<'a> {
                 net_id: reference.and_then(|who| who.athletic_net_id),
                 live_id: reference.and_then(|who| who.athletic_live_id),
                 entry: None,
+                source_key: format!("{url}:row:{row_index}"),
             },
             self.origin.evidence(url),
         ) else {
@@ -179,7 +180,7 @@ impl<'a> Mapper<'a> {
     }
 
     /// Mint a relay row's legs: four athletes, and no performance row for the team's own mark.
-    fn relay(&mut self, row: &FinisherRow, context: &EventContext<'_>, url: &str) {
+    fn relay(&mut self, row: &FinisherRow, context: &EventContext<'_>, url: &str, row_index: usize) {
         let Some(school) =
             self.school(row.ihsa_school_id.as_deref(), row.team_name.as_deref(), url)
         else {
@@ -193,7 +194,7 @@ impl<'a> Mapper<'a> {
             row.team.as_ref(),
             url,
         );
-        for member in &row.members {
+        for (leg_index, member) in row.members.iter().enumerate() {
             let Some(leg) = member.athlete.as_ref() else {
                 continue;
             };
@@ -208,6 +209,7 @@ impl<'a> Mapper<'a> {
                     net_id: leg.athletic_net_id,
                     live_id: leg.athletic_live_id,
                     entry: None,
+                    source_key: format!("{url}:row:{row_index}:leg:{leg_index}"),
                 },
                 self.origin.evidence(url),
             );

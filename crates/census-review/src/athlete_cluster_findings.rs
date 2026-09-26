@@ -35,7 +35,7 @@ impl Row {
         let stored = row.school.as_str();
         Self {
             id: row.id.as_str().to_string(),
-            candidate_id: row.candidate_key().candidate_id(),
+            candidate_id: row.id.cast(),
             name: row.canonical_name.clone(),
             // The case is read by an operator and by a model, so a site is named the way the store
             // names it; an unmapped school falls back to the id that is the only thing the store

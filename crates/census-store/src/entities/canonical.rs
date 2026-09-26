@@ -138,7 +138,8 @@ impl Entity for CanonicalAthlete {
         union_vec(&mut self.known_names, &other.known_names);
         union_vec(&mut self.sports, &other.sports);
         union_vec(&mut self.public_profile_urls, &other.public_profile_urls);
-        union_vec(&mut self.source_identities, &other.source_identities);
+        self.add_identity(other.source);
+        other.source_links.into_iter().for_each(|identity| self.add_identity(identity));
         union_vec(&mut self.evidence, &other.evidence);
         for observation in other.observed_grades {
             if !self.observed_grades.contains(&observation) {
@@ -148,18 +149,6 @@ impl Entity for CanonicalAthlete {
         self.publish();
     }
 
-    /// Derive the identity confidence from the row's own grade observations.
-    ///
-    /// A row written by one pass is never merged again, so deriving this only in
-    /// [`merge`](Entity::merge) left an athlete whose single observation agrees with its cohort
-    /// carrying the constructor's default — a row the workbook then reported as below the identity
-    /// bar and the review queue kept as a cohort finding. Every read publishes, so the derived value
-    /// is the one the report, the workbook, the snapshot and the Restate handlers see.
-    fn publish(&mut self) {
-        if let Some(confidence) = self.derived_identity_confidence() {
-            self.identity_confidence = confidence;
-        }
-    }
 }
 
 impl Entity for CanonicalMeet {

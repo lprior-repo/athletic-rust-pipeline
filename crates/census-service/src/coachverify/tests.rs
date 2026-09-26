@@ -1,284 +1,113 @@
-//! Rule tests for the coach-fragment gate: the matching and windowing rules are pure functions, so
-//! every claim the gate makes about a page is pinned here without a network.
-
-use super::verdict::RowEvidence;
+use super::evidence::RowEvidence;
 use super::*;
 
-fn row(role: &str, coach: &str, coach_email: &str, ad_name: &str, ad_email: &str) -> FragmentRow {
+fn fragment() -> FragmentRow {
     FragmentRow {
-        school: "Mosinee High School".to_string(),
-        city: "Mosinee".to_string(),
-        state: "WI".to_string(),
-        sport: "Track & Field".to_string(),
-        role: role.to_string(),
-        coach_name: coach.to_string(),
-        public_professional_email: coach_email.to_string(),
-        ad_name: ad_name.to_string(),
-        ad_email: ad_email.to_string(),
+        school: "Mosinee High School".to_string(), city: "Mosinee".to_string(),
+        state: "WI".to_string(), sport: "Cross Country".to_string(),
+        role: "Head XC Coach".to_string(), coach_name: "Dana Reid".to_string(),
+        public_professional_email: "dana@example.org".to_string(),
+        ad_name: String::new(), ad_email: String::new(),
         source_urls: vec!["https://example.org/staff".to_string()],
         last_observed: "2026-09-21".to_string(),
     }
 }
 
-#[test]
-fn flatten_collapses_every_whitespace_run() {
-    assert_eq!(flatten("a\n\nb\tc\r\n  d"), "a b c d");
-    assert_eq!(flatten("  leading"), " leading");
+fn staff(body: &str) -> String {
+    format!("<h1>Mosinee High School WI</h1><table>{body}</table>")
+}
+
+fn evaluate(row: &FragmentRow, body: &str) -> RowEvidence {
+    let mut evidence = RowEvidence::default();
+    evidence.absorb(body, row, &row.source_urls[0], "2026-09-26T12:00:00Z").expect("static selectors");
+    evidence
 }
 
 #[test]
-fn value_in_matches_a_value_broken_across_lines() {
-    let row = row("Head Coach", "Dana Reid", "", "", "");
-    let page = "Staff Directory\nDana\n   Reid\nMosinee High School";
-    assert!(!value_in(page, &row));
-    assert!(value_in(&flatten(page), &row));
+fn real_name_does_not_verify_an_absent_address() {
+    let evidence = evaluate(&fragment(), &staff("<tr><td>Dana Reid</td><td>Head XC Coach</td></tr>"));
+    assert!(!evidence.verdict().shipped());
+    assert!(!evidence.claims.iter().any(|claim| claim.field == "public_professional_email"));
 }
 
 #[test]
-fn value_in_ignores_empty_cells() {
-    let row = row("Head Coach", "", "", "", "");
-    assert!(!value_in(&flatten("anything at all"), &row));
+fn basketball_role_does_not_verify_cross_country() {
+    let evidence = evaluate(&fragment(), &staff("<tr><td>Dana Reid Head Basketball Coach dana@example.org</td></tr>"));
+    assert_eq!(evidence.verdict(), Verdict::RoleContradicted);
 }
 
 #[test]
-fn role_near_accepts_a_title_immediately_before_the_value() {
-    let row = row("Head Coach", "Dana Reid", "", "", "");
-    let page = flatten("Dana Reid, Head Coach — Mosinee High School");
-    assert!(role_near(&page, &row));
-    assert!(!role_contradicted(&page, &row));
+fn contradiction_overrides_a_matching_role() {
+    let mut evidence = evaluate(&fragment(), &staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>"));
+    assert_eq!(evidence.verdict(), Verdict::Ok);
+    evidence.contradicted = true;
+    assert_eq!(evidence.verdict(), Verdict::RoleContradicted);
 }
 
 #[test]
-fn role_near_rejects_a_role_outside_its_window() {
-    let row = row("Head Coach", "Dana Reid", "", "", "");
-    // "Coach" sits more than 200 bytes before the value: outside the window that opens 200 before.
-    let filler = "x".repeat(ROLE_BEFORE + 1);
-    let page = flatten(&format!("Coach {filler} Dana Reid"));
-    assert!(!role_near(&page, &row));
+fn adjacent_staff_cards_cannot_supply_someone_elses_email() {
+    let body = staff("<tr><td>Dana Reid Head XC Coach</td></tr><tr><td>Other Person Head XC Coach dana@example.org</td></tr>");
+    assert!(!evaluate(&fragment(), &body).verdict().shipped());
 }
 
 #[test]
-fn role_near_window_never_splits_a_multibyte_character() {
-    let row = row("Head Coach", "Dana Reid", "", "", "");
-    // ~300 bytes of two-byte characters before the title, so the window's start lands mid-character
-    // and has to snap forward to a boundary instead of slicing a UTF-8 sequence in half.
-    let filler = "é".repeat(ROLE_BEFORE / 2 + 50);
-    let page = flatten(&format!("{filler}Coach Dana Reid"));
-    assert!(role_near(&page, &row));
+fn exact_record_preserves_field_relationship_and_source_bytes() {
+    let body = staff("<tr><td>Dana Reid</td><td>Head XC Coach</td><td>dana@example.org</td></tr>");
+    let evidence = evaluate(&fragment(), &body);
+    assert_eq!(evidence.verdict(), Verdict::Ok);
+    let email = evidence.claims.iter().find(|claim| claim.field == "public_professional_email").expect("verified address");
+    assert_eq!(email.value, "dana@example.org");
+    assert_eq!(email.person, "Dana Reid");
+    assert_eq!(email.source_url, "https://example.org/staff");
+    assert_eq!(email.retrieved_at, "2026-09-26T12:00:00Z");
+    use sha2::{Digest, Sha256};
+    assert_eq!(email.source_sha256, format!("{:x}", Sha256::digest(body.as_bytes())));
 }
 
 #[test]
-fn an_athletic_director_row_is_not_corroborated_by_a_band_director() {
-    let row = row("Athletic Director", "", "", "Robin Vale", "");
-    // The band director is named far more than 200 bytes before the value — outside the window that
-    // opens before it — while the value's own title row says otherwise.
-    let filler = "x".repeat(ROLE_BEFORE + 20);
-    let page = flatten(&format!(
-        "Band Director: Lee Park. {filler} Office staff: Robin Vale, Administrative Assistant."
-    ));
-    assert!(!role_near(&page, &row));
-    assert!(role_contradicted(&page, &row));
-    assert_eq!(
-        RowEvidence {
-            found: true,
-            role_near: false,
-            contradicted: true,
-            body: true,
-            ..Default::default()
-        }
-        .verdict(),
-        Verdict::RoleContradicted
-    );
+fn public_role_consumer_mailbox_is_not_discarded() {
+    let mut row = fragment();
+    row.public_professional_email = "schooltrack@gmail.com".to_string();
+    let evidence = evaluate(&row, &staff("<tr><td>Dana Reid Head XC Coach schooltrack@gmail.com</td></tr>"));
+    assert_eq!(evidence.verdict(), Verdict::Ok);
 }
 
 #[test]
-fn an_athletic_director_row_is_corroborated_by_a_title_column() {
-    let row = row("Athletic Director", "", "", "Robin Vale", "");
-    let page = flatten("Robin Vale</td><td>Athletic Director</td>");
-    assert!(role_near(&page, &row));
-    assert!(!role_contradicted(&page, &row));
+fn a_different_school_cannot_verify_the_claimed_institution() {
+    let body = "<h1>Other High School WI</h1><table><tr><td>Dana Reid Head XC Coach dana@example.org</td></tr></table>";
+    assert!(!evaluate(&fragment(), body).verdict().shipped());
 }
 
 #[test]
-fn a_coach_row_contradicted_by_an_ad_title_column_is_dropped() {
-    let row = row("Head Track Coach", "Dana Reid", "", "", "");
-    // A title column that states the AD role and never says "coach": nothing corroborates the coach
-    // label, the neighbouring title contradicts it, and the row is dropped rather than relabelled.
-    let page = flatten(r#"{"Name":"Dana Reid","Title":"Athletic Director"}"#);
-    assert!(value_in(&page, &row));
-    assert!(!role_near(&page, &row));
-    assert!(role_contradicted(&page, &row));
-    assert_eq!(
-        RowEvidence {
-            found: true,
-            role_near: false,
-            contradicted: true,
-            body: true,
-            ..Default::default()
-        }
-        .verdict(),
-        Verdict::RoleContradicted
-    );
+fn final_reconciliation_detects_email_or_citation_mutation() {
+    let dir = tempfile::tempdir().expect("scratch");
+    let path = dir.path().join("contacts.csv");
+    let row = fragment();
+    let evidence = evaluate(&row, &staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>"));
+    let outcome = RowOutcome { row, verdict: evidence.verdict(), evidence: evidence.claims };
+    let verified = FragmentOutcome { file: "WI.csv".to_string(), rows: vec![outcome.clone()], counts: Default::default() };
+    write_fragment(&path, std::slice::from_ref(&outcome)).expect("publish");
+    assert_eq!(reconcile(&path, std::slice::from_ref(&verified)).expect("reconcile").unmatched_total(), 0);
+    let mut mutated = outcome.clone();
+    mutated.row.public_professional_email = "someoneelse@example.org".to_string();
+    write_fragment(&path, &[mutated]).expect("publish changed row");
+    assert_eq!(reconcile(&path, std::slice::from_ref(&verified)).expect("reconcile").unmatched_total(), 1);
+    let mut mutated = outcome;
+    mutated.row.source_urls = vec!["https://different.example.org/staff".to_string()];
+    write_fragment(&path, &[mutated]).expect("publish changed citation");
+    assert_eq!(reconcile(&path, &[verified]).expect("reconcile").unmatched_total(), 1);
 }
 
 #[test]
-fn a_coach_row_with_a_coach_title_ships() {
-    let row = row("Head Track Coach", "Dana Reid", "", "", "");
-    let page = flatten(r#"{"Name":"Dana Reid","Title":"Head Coach, Track & Field"}"#);
-    assert!(value_in(&page, &row));
-    assert!(role_near(&page, &row));
-    assert!(!role_contradicted(&page, &row));
+fn uncertain_or_failed_evidence_never_ships() {
+    [Verdict::OkRoleContext, Verdict::RoleContradicted, Verdict::RobotsBlocked,
+        Verdict::FetchFailed, Verdict::Empty, Verdict::Mismatch, Verdict::RenderRequired]
+        .into_iter().for_each(|verdict| assert!(!verdict.shipped()));
 }
 
 #[test]
-fn the_contradiction_window_is_tighter_than_the_role_window() {
-    let row = row("Head Coach", "Dana Reid", "", "", "");
-    // "principal" 150 bytes before the value: outside the 100-byte contradiction window, inside the
-    // 200-byte role window would not matter — there is no coach word either.
-    let filler = "x".repeat(CONTRA_BEFORE + 50);
-    let page = flatten(&format!("principal {filler} Dana Reid"));
-    assert!(!role_contradicted(&page, &row));
-    let close = flatten("principal Dana Reid");
-    assert!(role_contradicted(&close, &row));
-}
-
-#[test]
-fn a_role_without_vocabulary_needs_no_corroboration() {
-    let row = row("Athletics Secretary", "Dana Reid", "", "", "");
-    let page = flatten("Dana Reid");
-    assert!(role_near(&page, &row));
-    assert!(!role_contradicted(&page, &row));
-}
-
-#[test]
-fn verdicts_follow_the_documented_precedence() {
-    let found_role = RowEvidence {
-        found: true,
-        role_near: true,
-        body: true,
-        ..Default::default()
-    };
-    assert_eq!(found_role.verdict(), Verdict::Ok);
-
-    let found_only = RowEvidence {
-        found: true,
-        body: true,
-        ..Default::default()
-    };
-    assert_eq!(found_only.verdict(), Verdict::OkRoleContext);
-
-    let nothing = RowEvidence::default();
-    assert_eq!(nothing.verdict(), Verdict::Empty);
-
-    let blocked = RowEvidence {
-        robots: true,
-        ..Default::default()
-    };
-    assert_eq!(blocked.verdict(), Verdict::RobotsBlocked);
-
-    let failed = RowEvidence {
-        failed: true,
-        ..Default::default()
-    };
-    assert_eq!(failed.verdict(), Verdict::FetchFailed);
-
-    let shell = RowEvidence {
-        body: true,
-        script: true,
-        ..Default::default()
-    };
-    assert_eq!(shell.verdict(), Verdict::RenderRequired);
-
-    let real = RowEvidence {
-        body: true,
-        ..Default::default()
-    };
-    assert_eq!(real.verdict(), Verdict::Mismatch);
-}
-
-#[test]
-fn only_ok_and_ok_role_context_ship() {
-    assert!(Verdict::Ok.shipped());
-    assert!(Verdict::OkRoleContext.shipped());
-    for verdict in Verdict::ALL.iter().filter(|v| !v.shipped()) {
-        assert_ne!(*verdict, Verdict::Ok);
-        assert_ne!(*verdict, Verdict::OkRoleContext);
-    }
-}
-
-#[test]
-fn nsaa_school_drops_the_trailing_school_word() {
-    assert_eq!(nsaa_school("Omaha Central High School"), "Omaha Central");
-    assert_eq!(nsaa_school("Crete HS"), "Crete");
-    assert_eq!(nsaa_school("Lincoln High"), "Lincoln");
-    assert_eq!(nsaa_school("Wayne School"), "Wayne");
-    assert_eq!(nsaa_school("Elkhorn"), "Elkhorn");
-    // Only one suffix is stripped: "North Platte High School" -> "North Platte", never "North".
-    assert_eq!(nsaa_school("North Platte High School"), "North Platte");
-}
-
-#[test]
-fn identity_is_whitespace_and_case_insensitive() {
-    let a = row("Head Coach", "Dana  Reid", "", "", "");
-    let b = row("head coach", "dana reid", "", "", "");
-    assert_eq!(a.identity(), b.identity());
-    let mut c = b.clone();
-    c.school = "Other School".to_string();
-    assert_ne!(a.identity(), c.identity());
-}
-
-#[test]
-fn body_text_falls_back_to_lossy_decoding() {
-    let latin1 = b"Ren\xe9 Dupont, Head Coach";
-    let text = body_text(latin1, None);
-    assert!(text.contains("Head Coach"));
-    assert!(text.contains("Ren"));
-}
-
-#[test]
-fn read_fragment_takes_eleven_columns_and_ignores_a_verdict_cell() {
-    let path =
-        std::env::temp_dir().join(format!("coachverify-test-{}-read.csv", std::process::id()));
-    let body = "school,city,state,sport,role,coach_name,public_professional_email,ad_name,ad_email,source_url,last_observed,verify\r\n\
-Mosinee High School,Mosinee,WI,Track & Field,Head Coach,Dana Reid,dana@mosinee.k12.wi.us,,,https://example.org/staff  https://example.org/tf,2026-09-21,ok\r\n";
-    std::fs::write(&path, body).expect("scratch fragment is writable");
-    let rows = read_fragment(&path).expect("scratch fragment parses");
-    let _ = std::fs::remove_file(&path);
-    assert_eq!(rows.len(), 1);
-    assert_eq!(rows[0].coach_name, "Dana Reid");
-    assert_eq!(rows[0].last_observed, "2026-09-21");
-    assert_eq!(rows[0].source_urls.len(), 2);
-}
-
-#[test]
-fn write_fragment_emits_only_shipped_rows_in_the_input_shape() {
-    let dir = std::env::temp_dir().join(format!("coachverify-test-{}-write", std::process::id()));
-    let path = dir.join("WI.csv");
-    let kept = FragmentRow {
-        school: "Mosinee High School".to_string(),
-        ..row("Head Coach", "Dana Reid", "", "", "")
-    };
-    let dropped = FragmentRow {
-        school: "Wausau East".to_string(),
-        ..row("Head Coach", "Kim Alvarez", "", "", "")
-    };
-    let outcomes = vec![
-        RowOutcome {
-            row: kept,
-            verdict: Verdict::Ok,
-        },
-        RowOutcome {
-            row: dropped,
-            verdict: Verdict::RoleContradicted,
-        },
-    ];
-    write_fragment(&path, &outcomes).expect("verified fragment is writable");
-    let written = std::fs::read_to_string(&path).expect("verified fragment is readable");
-    let _ = std::fs::remove_dir_all(&dir);
-    // A fragment `merge-coaches` can read: eleven columns, shipped rows only, the verdict in `--csv`.
-    let mut lines = written.lines();
-    assert_eq!(lines.next(), Some(FRAGMENT_COLUMNS.join(",").as_str()));
-    assert!(written.contains("Dana Reid"));
-    assert!(!written.contains("Kim Alvarez"));
-    assert_eq!(lines.count(), 1, "one shipped row");
+fn future_observation_dates_cannot_be_verified() {
+    let mut row = fragment();
+    row.last_observed = "2027-09-21".to_string();
+    assert!(!evaluate(&row, &staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>")).verdict().shipped());
 }

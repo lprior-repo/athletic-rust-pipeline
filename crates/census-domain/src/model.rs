@@ -49,6 +49,7 @@ mod event_ontology;
 mod event_performance;
 mod fixed_mark;
 mod identifiers;
+mod identity_decision;
 mod meet;
 mod normalization;
 mod provenance;
@@ -63,13 +64,18 @@ pub use event_ontology::{EventKind, SourceEventLabel};
 pub use event_performance::{CanonicalEvent, CanonicalPerformance, Mark, TimingMethod};
 pub use fixed_mark::{CentiMetres, CentiPoints, CentiSeconds};
 pub use identifiers::{
-    tag, AthleteCandidateId, AthleteId, CoachId, EventId, Id, MeetId, PerformanceId, SchoolId,
+    tag, AthleteCandidateId, AthleteId, AthleteIndexId, CoachId, EventId, Id, MeetId, PerformanceId, SchoolId,
     TeamId,
 };
 pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
 pub use normalization::{flip_last_first, normalize_name, Counters};
 pub use provenance::{
     Confidence, Evidence, EvidenceMethod, SourceIdentity, SourceNamespace, SourceRef,
+};
+pub use identity_decision::{
+    athlete_identity_digest, has_person_source, identity_verdict_digest, person_provider,
+    shares_person_source, AppliedAthleteIdentity, AppliedIdentityKind, IdentityMember,
+    ATHLETE_IDENTITY_POLICY,
 };
 pub use school::CanonicalSchool;
 

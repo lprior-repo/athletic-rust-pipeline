@@ -62,6 +62,7 @@ use super::cells::write_sheet;
 use dataset::Dataset;
 
 mod athletes;
+mod identity;
 mod coaches;
 mod columns;
 mod contact;

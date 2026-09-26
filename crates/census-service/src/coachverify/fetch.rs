@@ -132,12 +132,14 @@ async fn run_passes(
     fetcher: &Fetcher,
     row: &super::FragmentRow,
     options: &GateOptions,
-) -> super::verdict::RowEvidence {
-    let mut evidence = super::verdict::RowEvidence::default();
+) -> anyhow::Result<super::evidence::RowEvidence> {
+    use census_store::clock::{Clock, SystemClock};
+    let at = SystemClock.today_iso8601();
+    let mut evidence = super::evidence::RowEvidence::default();
     // Pass 1: plain GET of every cited URL.
     for url in &row.source_urls {
         match fetch_text(fetcher, url, false, options).await {
-            Fetched::Text(text) => evidence.absorb(&text, row),
+            Fetched::Text(text) => evidence.absorb(&text, row, url, &at)?,
             Fetched::Robots => evidence.robots = true,
             Fetched::Failed => evidence.failed = true,
         }
@@ -146,7 +148,7 @@ async fn run_passes(
     if options.xhr_pass && !(evidence.found && evidence.role_near) {
         for url in &row.source_urls {
             match fetch_text(fetcher, url, true, options).await {
-                Fetched::Text(text) => evidence.absorb(&text, row),
+                Fetched::Text(text) => evidence.absorb(&text, row, url, &at)?,
                 Fetched::Robots => evidence.robots = true,
                 Fetched::Failed => evidence.failed = true,
             }
@@ -160,13 +162,13 @@ async fn run_passes(
             .filter(|url| url.contains(crate::coachverify::NSAA_EXPORT_SCREEN))
         {
             match fetch_nsaa_post(fetcher, url, &row.school, options).await {
-                Fetched::Text(text) => evidence.absorb(&text, row),
+                Fetched::Text(text) => evidence.absorb(&text, row, url, &at)?,
                 Fetched::Robots => evidence.robots = true,
                 Fetched::Failed => evidence.failed = true,
             }
         }
     }
-    evidence
+    Ok(evidence)
 }
 
 /// Inner loop of the gate: fetch, evaluate evidence, compute verdict per row.
@@ -183,16 +185,18 @@ pub(super) async fn verify_one_fragment(
         .map(|v| (v.as_str(), 0usize))
         .collect();
     for row in rows {
-        if row.source_urls.is_empty() {
-            continue;
-        }
-        let evidence = run_passes(fetcher, &row, options).await;
+        let evidence = run_passes(fetcher, &row, options).await?;
         let verdict = evidence.verdict();
         if let Some(slot) = counts.get_mut(verdict.as_str()) {
             *slot = slot.saturating_add(1);
         }
-        outcomes.push(super::RowOutcome { row, verdict });
+        outcomes.push(super::RowOutcome { row, verdict, evidence: evidence.claims });
     }
+    let claims: Vec<&super::ClaimEvidence> = outcomes.iter().flat_map(|row| &row.evidence).collect();
+    census_store::read::write_snapshot_rows(
+        &out_dir.join(format!("{}.evidence.jsonl", crate::coachverify::fragment_file_name(path))),
+        &claims,
+    )?;
     crate::coachverify::write_fragment(
         &out_dir.join(crate::coachverify::fragment_file_name(path)),
         &outcomes,

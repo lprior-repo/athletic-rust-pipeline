@@ -139,7 +139,7 @@ impl Heads {
         match slot {
             Slot::Track => Some(&self.track),
             Slot::CrossCountry => Some(&self.cross_country),
-            Slot::SchoolWide => Some(&self.school_wide),
+            Slot::SchoolWide | Slot::UnknownSport => Some(&self.school_wide),
             Slot::Director => None,
         }
     }

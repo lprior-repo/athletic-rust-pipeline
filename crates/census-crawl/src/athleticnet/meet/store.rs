@@ -120,9 +120,10 @@ pub(super) fn athlete(
         }
         return athlete.id.clone();
     }
-    let mut athlete =
-        CanonicalAthlete::new(row.school, row.name, observation.grad_year(), row.gender);
     let profile = u64::try_from(row.provider_id).ok().map(profile_url);
+    let mut athlete = CanonicalAthlete::new(row.school, row.name, observation.grad_year(), row.gender,
+    SourceIdentity { namespace: SourceNamespace::athletic_net("athlete"),
+        id: row.provider_id.to_string(), url: profile.clone() },);
     if let Some(url) = profile.clone() {
         athlete.public_profile_urls.push(url);
     }
@@ -131,13 +132,6 @@ pub(super) fn athlete(
     athlete
         .evidence
         .push(Evidence::parsed(source.clone(), observed_on));
-    athlete.source_identities.push(SourceIdentity {
-        namespace: SourceNamespace::AthleticNet {
-            kind: "athlete".to_string(),
-        },
-        id: row.provider_id.to_string(),
-        url: profile,
-    });
     let id = athlete.id.clone();
     accumulated.athletes.insert(key, athlete);
     id

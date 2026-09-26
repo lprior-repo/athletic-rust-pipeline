@@ -10,8 +10,9 @@ pub(crate) use rules::{HEADERS, TITLE, WIDTHS};
 
 use super::super::cells::{row, Cell};
 use super::columns::{
-    conflicts, coverage_state, flag, observed_grade, observed_school_year, published, source_count,
+    coverage_state, flag, observed_grade, observed_school_year, published, source_count,
 };
+use super::identity::has_conflicts;
 use super::contact::{self, Preferred, SchoolContacts};
 use super::dataset::Dataset;
 use super::facts::AthleteTally;
@@ -36,16 +37,18 @@ fn confidence_label(athlete: &CanonicalAthlete) -> &'static str {
     }
 }
 
-/// The review status column: `"verified"` when confidence is high and there are no conflicts,
-/// `"review"` when the athlete carries low confidence or has unresolved standing conflicts,
-/// and `"unknown"` when neither condition applies but the state is not fully resolved.
+/// The review status column: `"verified"` when identity_confidence is HIGH, there are no
+/// conflicts (grade, identity, or retained), and no unresolved review cases; `"review"` when
+/// the athlete carries low confidence, has unresolved conflicts, or has a pending/rejected
+/// review case; `"unknown"` when the decision state cannot be determined from available records.
 fn review_status(athlete: &CanonicalAthlete) -> Cell {
-    let has_conflicts = conflicts(athlete);
-    let low_conf = athlete.identity_confidence < Confidence::HIGH;
-    if low_conf || has_conflicts {
-        Cell::text("review")
-    } else {
-        Cell::text("verified")
+    let decision = super::identity::IdentityDecision::from_athlete(athlete);
+    let has_conflicts = has_conflicts(athlete);
+    match decision {
+        super::identity::IdentityDecision::Accepted => Cell::text("verified"),
+        super::identity::IdentityDecision::Rejected | super::identity::IdentityDecision::Unresolved => Cell::text("review"),
+        super::identity::IdentityDecision::NoDecision if !has_conflicts && athlete.identity_confidence >= Confidence::HIGH => Cell::text("verified"),
+        _ => Cell::text("review"),
     }
 }
 
@@ -180,7 +183,7 @@ fn audit_cells(
             tally.is_some_and(|t| t.performances > 0),
             !prs.is_empty()
         )),
-        flag(conflicts(athlete)),
+        flag(has_conflicts(athlete)),
         review_status(athlete),
     ))
 }

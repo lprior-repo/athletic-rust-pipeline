@@ -23,12 +23,12 @@ pub struct BatchEntities {
     pub rows_with_athlete_id: usize,
     pub rows_with_team_id: usize,
     pub rows_without_school: usize,
+    pub rows_without_subject_id: usize,
 }
 
 /// Canonical entities for a batch of athlete rows, deduplicated by canonical id.
 ///
-/// The athlete key is (school, name, grad year, gender): two meets that disagree on nothing produce
-/// one athlete, and the second meet's grade observation is appended rather than replacing the first.
+/// Provider-owned athlete ids or scoped meet-entry ids keep homonyms distinct.
 pub fn build_entities(
     hits: &[AthleteHit],
     targets: &HashMap<u64, &MeetTarget>,
@@ -156,12 +156,16 @@ fn absorb_athlete(
     let Some(grade) = row.grade else { return };
     out.rows_with_grade = out.rows_with_grade.saturating_add(1);
     let grad_year = GradYear::of(grade, row.school_year);
-    let athlete_id = CanonicalAthlete::mint(school_id, row.name, grad_year, row.gender);
+    let Some(source) = source_identity(hit, &row.target.tenant) else {
+        out.rows_without_subject_id = out.rows_without_subject_id.saturating_add(1);
+        return;
+    };
+    let athlete_id = CanonicalAthlete::mint(school_id, row.name, grad_year, row.gender, &source);
     let entry = minted
         .athletes
         .entry(athlete_id.as_str().to_string())
         .or_insert_with(|| {
-            let mut athlete = CanonicalAthlete::new(school_id, row.name, grad_year, row.gender);
+            let mut athlete = CanonicalAthlete::new(school_id, row.name, grad_year, row.gender, source);
             athlete.sports.push(row.sport);
             athlete.evidence.push(row.evidence.clone());
             athlete
@@ -258,28 +262,24 @@ fn note_team_ids(
     }
 }
 
-/// Record the Athletic.net athlete id and profile URL one row publishes on its athlete.
-fn note_athlete_ids(
-    entry: &mut CanonicalAthlete,
-    hit: &AthleteHit,
-    rows_with_athlete_id: &mut usize,
-) {
-    if let Some(an_athlete_id) = hit.athletic_net_athlete_id() {
-        *rows_with_athlete_id = (*rows_with_athlete_id).saturating_add(1);
-        let identity = SourceIdentity::new(
-            SourceNamespace::LegacyAthleticNet {
-                kind: "athlete".to_string(),
-            },
-            an_athlete_id.to_string(),
-        );
-        if !entry.source_identities.contains(&identity) {
-            entry.source_identities.push(identity);
-        }
-        // Athletic.net profile URLs are deterministic from the athlete id (research report 02).
-        let profile_url =
-            format!("https://www.athletic.net/athlete/{an_athlete_id}/track-and-field");
-        if !entry.public_profile_urls.contains(&profile_url) {
-            entry.public_profile_urls.push(profile_url);
+/// A meet-entry key is evidence about that entry, not an identity merge across meets.
+fn source_identity(hit: &AthleteHit, provider: &str) -> Option<SourceIdentity> {
+    if let Some(id) = hit.athletic_net_athlete_id() {
+        return Some(SourceIdentity::new(SourceNamespace::LegacyAthleticNet {
+            kind: "athlete".to_string(),
+        }, id.to_string()));
+    }
+    let (meet, row) = hit.meet_id().zip(hit.athleticlive_row_id())?;
+    Some(SourceIdentity::new(SourceNamespace::TimerAthlete { provider: provider.to_string() },
+        format!("meet:{meet}:entry:{row}")))
+}
+
+fn note_athlete_ids(entry: &mut CanonicalAthlete, hit: &AthleteHit, rows_with_athlete_id: &mut usize) {
+    if let Some(id) = hit.athletic_net_athlete_id() {
+        *rows_with_athlete_id = rows_with_athlete_id.saturating_add(1);
+        let profile = format!("https://www.athletic.net/athlete/{id}/track-and-field");
+        if !entry.public_profile_urls.contains(&profile) {
+            entry.public_profile_urls.push(profile);
         }
     }
 }

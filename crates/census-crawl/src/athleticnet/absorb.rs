@@ -109,7 +109,9 @@ impl<'a> Ctx<'a> {
         let id = match self.accumulated.athletes.get(&key) {
             Some(existing) => existing.id.clone(),
             None => {
-                let mut athlete = CanonicalAthlete::new(school, name, grad_year, gender);
+                let mut athlete = CanonicalAthlete::new(school, name, grad_year, gender,
+                    SourceIdentity::new(SourceNamespace::athletic_net("athlete"), self.target.athlete_id.to_string())
+                        .with_url(profile_url(self.target.athlete_id)));
                 athlete
                     .public_profile_urls
                     .push(profile_url(self.target.athlete_id));

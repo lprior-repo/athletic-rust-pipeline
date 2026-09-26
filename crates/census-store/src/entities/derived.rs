@@ -3,7 +3,7 @@
 //! about a school or an athlete.
 
 use census_domain::model::{
-    CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase, ReviewState,
+    AppliedAthleteIdentity, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase, ReviewState,
     ReviewVerdictRecord, SourceAccessCondition, SourceMeetRef, SourceObjectIdentity,
 };
 
@@ -137,4 +137,9 @@ impl Entity for ReviewVerdictRecord {
     }
 
     fn merge(&mut self, _other: Self) {}
+}
+
+impl Entity for AppliedAthleteIdentity {
+    fn entity_id(&self) -> &str { &self.id }
+    fn merge(&mut self, other: Self) { *self = other; }
 }

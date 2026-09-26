@@ -16,8 +16,7 @@ pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
             outcome.counts.get(verdict.as_str()).copied().unwrap_or(0)
         };
         let total = outcome.rows.len();
-        let shipped = count(super::verdict::Verdict::Ok)
-            .saturating_add(count(super::verdict::Verdict::OkRoleContext));
+        let shipped = count(super::verdict::Verdict::Ok);
         rows_total = rows_total.saturating_add(total);
         for verdict in super::verdict::Verdict::ALL {
             let slot = totals.entry(verdict.as_str()).or_insert(0);
@@ -39,11 +38,7 @@ pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
             share
         ));
     }
-    let shipped_total = totals
-        .get("ok")
-        .copied()
-        .unwrap_or(0)
-        .saturating_add(totals.get("ok_role_context").copied().unwrap_or(0));
+    let shipped_total = totals.get("ok").map_or(0, |value| *value);
     let share = pct(shipped_total, rows_total);
     table.push_str(&format!(
         "| **total ({})** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{:.1} %** |\n",
@@ -104,10 +99,14 @@ fn write_audit_csv_body(
             "ad_name",
             "source_url",
             super::VERDICT_COLUMN,
+            "field_relationship_evidence",
         ])
         .map_err(|error| census_store::read::csv_failure(published, error))?;
     for outcome in outcomes {
         for row in &outcome.rows {
+            let evidence = serde_json::to_string(&row.evidence).map_err(|error| {
+                census_store::StoreError::Invariant { detail: error.to_string() }
+            })?;
             writer
                 .write_record([
                     outcome.file.as_str(),
@@ -119,6 +118,7 @@ fn write_audit_csv_body(
                     row.row.ad_name.as_str(),
                     row.row.source_urls.join(" ").as_str(),
                     row.verdict.as_str(),
+                    evidence.as_str(),
                 ])
                 .map_err(|error| census_store::read::csv_failure(published, error))?;
         }

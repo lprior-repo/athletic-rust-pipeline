@@ -29,6 +29,7 @@ struct RowFacts<'r> {
     meet: &'r ParsedMeet,
     mark: Mark,
     sport: Sport,
+    ordinal: usize,
 }
 
 impl<'a> Absorb<'a> {
@@ -36,19 +37,19 @@ impl<'a> Absorb<'a> {
     pub(in crate::tfrrs) fn absorb_list(&mut self, context: &ListContext<'_>, page: &ParsedList) {
         for section in &page.sections {
             self.stats.sections = self.stats.sections.saturating_add(1);
-            for row in &section.rows {
-                self.absorb_row(context, section, row);
+            for (ordinal, row) in section.rows.iter().enumerate() {
+                self.absorb_row(context, section, row, ordinal);
             }
         }
     }
 
     /// Absorb one row of a performance list.
-    fn absorb_row(&mut self, context: &ListContext<'_>, section: &ParsedSection, row: &ParsedRow) {
+    fn absorb_row(&mut self, context: &ListContext<'_>, section: &ParsedSection, row: &ParsedRow, ordinal: usize) {
         self.stats.rows_seen = self.stats.rows_seen.saturating_add(1);
         if self.count_relay(row) {
             return;
         }
-        let Some(facts) = self.row_facts(context, row) else {
+        let Some(facts) = self.row_facts(context, row, ordinal) else {
             return;
         };
         let Some(grade) = grade_for(row, context.filter, &mut self.stats) else {
@@ -91,6 +92,7 @@ impl<'a> Absorb<'a> {
         &mut self,
         context: &ListContext<'_>,
         row: &'r ParsedRow,
+        ordinal: usize,
     ) -> Option<RowFacts<'r>> {
         let Some(team) = row.team.as_ref() else {
             self.stats.rows_without_team = self.stats.rows_without_team.saturating_add(1);
@@ -139,6 +141,7 @@ impl<'a> Absorb<'a> {
             meet,
             mark,
             sport,
+            ordinal,
         })
     }
 
@@ -164,8 +167,8 @@ impl<'a> Absorb<'a> {
         school: &SchoolId,
     ) {
         let (grade, _, _) = observed;
-        let mints = self.mint_entities(context, section, facts, observed, school);
-        let source_key = source_key(facts.date, facts.meet, facts.athlete.id, section, row);
+        let source_key = format!("{}:row:{}", source_key(facts.date, facts.meet, facts.athlete.id, section, row), facts.ordinal);
+        let mints = self.mint_entities(context, section, facts, observed, school, &source_key);
         let id = CanonicalPerformance::mint(
             &mints.athlete,
             &mints.meet,
@@ -206,6 +209,7 @@ impl<'a> Absorb<'a> {
         facts: &RowFacts<'_>,
         observed: (Grade, SchoolYear, Gender),
         school: &SchoolId,
+        source_key: &str,
     ) -> RowMints {
         let (grade, school_year, gender) = observed;
         let published_route = parse_team_path(&facts.team.path);
@@ -232,6 +236,7 @@ impl<'a> Absorb<'a> {
                 sport: facts.sport,
                 tfrrs_id: facts.athlete.id,
                 url: None,
+                source_key: source_key.to_string(),
                 observed_grade: Some(ObservedGrade {
                     grade,
                     school_year,

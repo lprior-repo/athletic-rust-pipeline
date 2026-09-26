@@ -55,6 +55,7 @@ pub(super) fn map_identity(
     context: &RowContext<'_>,
     school_id: &SchoolId,
     identity: &RowIdentity<'_>,
+    row_index: usize,
 ) -> Mapped {
     // The row publishes the competitor's own gender; the event's side is the fallback, so an
     // unknown token can never mint an athlete under a third gender.
@@ -67,7 +68,7 @@ pub(super) fn map_identity(
         note_team_ids(entry, context, identity, writer.stats);
         entry.id.clone()
     };
-    let athlete = record_athlete(writer, context, school_id, identity, gender);
+    let athlete = record_athlete(writer, context, school_id, identity, gender, row_index);
     Mapped { athlete, team }
 }
 
@@ -79,15 +80,21 @@ fn record_athlete(
     school_id: &SchoolId,
     identity: &RowIdentity<'_>,
     gender: Gender,
+    row_index: usize,
 ) -> AthleteId {
     let grad_year = GradYear::of(identity.grade, context.school_year);
-    let athlete_id = CanonicalAthlete::mint(school_id, identity.name, grad_year, gender);
+    let source = identity.an_athlete_id.map_or_else(
+        || SourceIdentity::new(SourceNamespace::TimerAthlete { provider: context.provider.to_string() },
+            format!("{}:row:{row_index}", context.event_key)),
+        |id| SourceIdentity::new(SourceNamespace::LegacyAthleticNet { kind: "athlete".to_string() }, id.to_string()),
+    );
+    let athlete_id = CanonicalAthlete::mint(school_id, identity.name, grad_year, gender, &source);
     let entry = writer
         .accumulator
         .athletes
         .entry(athlete_id.as_str().to_string())
         .or_insert_with(|| {
-            let mut athlete = CanonicalAthlete::new(school_id, identity.name, grad_year, gender);
+            let mut athlete = CanonicalAthlete::new(school_id, identity.name, grad_year, gender, source);
             athlete.sports.push(context.sport);
             athlete.evidence.push(context.evidence.clone());
             athlete

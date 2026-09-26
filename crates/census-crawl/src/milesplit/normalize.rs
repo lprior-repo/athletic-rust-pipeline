@@ -1,7 +1,7 @@
 //! Roster -> canonical entities: the school, its athletes with their observed grade, and one
 //! team per sport the roster carries.
 use census_domain::model::{
-    normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Confidence, Evidence, Gender,
+    normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, Gender,
     GradYear, Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
     SourceRef, Sport,
 };
@@ -119,27 +119,19 @@ fn roster_athlete_entity(
     observed_on: &str,
     site: &Site,
 ) -> CanonicalAthlete {
-    let mut athlete =
-        CanonicalAthlete::new(school_id, entry.name.clone(), entry.grad_year, entry.gender);
+    let mut athlete = CanonicalAthlete::new(school_id, entry.name.clone(), entry.grad_year, entry.gender,
+    SourceIdentity::new(SourceNamespace::MilesplitAthlete, entry.athlete_id.clone())
+        .with_url(entry.profile_url.clone()),);
     athlete.known_names = vec![entry.name.clone(), entry.roster_name.clone()];
     athlete.sports = entry.sports();
     if let Some(observation) = entry.observed_grade(school_year, source.clone()) {
         athlete.observed_grades.push(observation);
     }
     athlete.public_profile_urls.push(entry.profile_url.clone());
-    athlete.source_identities.push(
-        SourceIdentity::new(SourceNamespace::MilesplitAthlete, entry.athlete_id.clone())
-            .with_url(entry.profile_url.clone()),
-    );
     athlete.evidence.push(Evidence::parsed(
         SourceRef::new(site.source_id(), Some(entry.profile_url.clone())),
         observed_on.to_string(),
     ));
-    athlete.identity_confidence = if entry.grad_year == GradYear::CO2027 {
-        Confidence::HIGH
-    } else {
-        Confidence::MEDIUM
-    };
     athlete
 }
 

@@ -154,15 +154,14 @@ impl NaturalKey for CanonicalCoach {
 }
 
 impl NaturalKey for CanonicalAthlete {
-    /// `AthleteId::mint` hashes the school, the normalized name, the class and the gender side. The
-    /// gender is compared as the value it is, not as the single letter `mint` folds it to: `Mixed` and
-    /// `Unknown` both mint `u`, so a row observed as one and re-observed as the other is two claims
-    /// about one subject, which is exactly the disagreement this keeps visible instead of merging.
+    /// A subject is bound to the provider's object as well as the candidate-search facts.
     fn same_natural_key(&self, other: &Self) -> bool {
         self.school == other.school
             && self.grad_year == other.grad_year
             && self.gender == other.gender
             && same_name(&self.canonical_name, &other.canonical_name)
+            && self.source.namespace == other.source.namespace
+            && self.source.id == other.source.id
     }
 
     fn natural_key(&self) -> String {
@@ -176,7 +175,7 @@ impl NaturalKey for CanonicalAthlete {
     }
 
     fn sources(&self) -> String {
-        source_list(&self.source_identities)
+        source_list(self.identities())
     }
 
     fn retained_conflicts(&self) -> &[RetainedConflict] {
