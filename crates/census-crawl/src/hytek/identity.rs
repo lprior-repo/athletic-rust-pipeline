@@ -34,8 +34,6 @@ pub(super) fn individual_identity(label: &str) -> Option<(String, Grade, String)
     if graded.next().is_some() {
         return None;
     }
-    // `get` rather than indexing: a grade that sits first or last leaves no run on one side, and
-    // the slice that would be empty then fails the name and school checks below anyway.
     let name = parts.get(..grade_index)?.join(" ");
     let school = parts.get(grade_index.saturating_add(1)..)?.join(" ");
     if !looks_like_a_name(&name) {

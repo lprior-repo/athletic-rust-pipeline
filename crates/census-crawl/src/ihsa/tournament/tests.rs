@@ -72,8 +72,6 @@ const FIXTURE_XC_ERROR: &str =
 /// Capture: `tools/a13-ihsa/terms.json` (131 B). Measured: `currentTerm` 2026-27, newest term 2025-26.
 const FIXTURE_TERMS: &str = include_str!("../../../tests/fixtures/ihsa_tournament/terms.json");
 
-// ── Meet and event indexes ─────────────────────────────────────────────
-
 #[test]
 fn meets_index_pins_both_state_finals_and_their_athletic_net_live_ids() {
     let meets = parse_meets(FIXTURE_MEETS).expect("fixture must parse");
@@ -139,8 +137,6 @@ fn events_index_pins_97_event_rows_with_round_and_class_splits() {
         (Some("2026-05-28"), Some("2026-05-30"))
     );
 }
-
-// ── Individual event summary ───────────────────────────────────────────
 
 /// The published grade distribution of the captured 1A high jump final.
 fn hj_grade_counts(finishers: &[super::wire::FinisherRow]) -> Vec<(u8, usize)> {
@@ -225,8 +221,6 @@ fn summary_round_label_is_derived_from_the_published_code() {
     );
 }
 
-// ── Relay event summary ────────────────────────────────────────────────
-
 #[test]
 fn relay_summary_pins_four_legs_per_team_with_ids_and_grades() {
     let summary = parse_summary(FIXTURE_RELAY).expect("fixture must parse");
@@ -265,8 +259,6 @@ fn relay_summary_pins_four_legs_per_team_with_ids_and_grades() {
     assert_eq!(lead.athletic_net_id, Some(20_992_451));
     assert_eq!(lead.year.as_deref(), Some("12"));
 }
-
-// ── Cross-country qualifier lists ──────────────────────────────────────
 
 fn athletes(envelope: &QualifiersEnvelope) -> Vec<&QualifierAthlete> {
     envelope
@@ -311,8 +303,6 @@ fn xc_boys_1a_pins_ids_grades_and_sector_equality() {
         .sum();
     assert_eq!((team_legs, individual_legs), (348, 50));
 
-    // The sector list carries one row per qualifying athlete and no grade; the graded lists cover it
-    // exactly, in both totals and entry type.
     let sectors: usize = envelope.box_assignments.len();
     assert_eq!(
         sectors,
@@ -417,8 +407,6 @@ fn xc_missing_archive_is_an_error_envelope_not_a_qualifier_payload() {
     );
 }
 
-// ── Terms ──────────────────────────────────────────────────────────────
-
 #[test]
 fn terms_pin_the_newest_completed_school_year() {
     let envelope = super::parse::parse_terms(FIXTURE_TERMS).expect("fixture must parse");
@@ -431,8 +419,6 @@ fn terms_pin_the_newest_completed_school_year() {
         Some("2025-26")
     );
 }
-
-// ── Field parsers ──────────────────────────────────────────────────────
 
 #[test]
 fn mark_forms_seen_in_the_corpus_parse_to_canonical_marks() {
@@ -563,8 +549,6 @@ fn captain_summaries_are_distinct_events() {
     assert!(hj.event_name.contains("High Jump"));
     assert!(relay.event_name.contains("4x800m Relay"));
 }
-
-// ── School years ───────────────────────────────────────────────────────
 
 /// A published date is placed on the domain's Aug 1 boundary, and a date that names a year no
 /// season may open in is read as the run's own school year (the domain's documented fallback)

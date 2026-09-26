@@ -37,9 +37,6 @@ pub(super) fn capture(capture: &Capture<'_>) -> Result<String> {
         return raw(capture, &site, &meet_id, &rsid);
     }
     if let Some((site, meet_id, template)) = results_fixture(file) {
-        // The page's own address is a label here, not a route: the reader is handed the capture's
-        // corpus name, because a results page served from `www` has no jurisdiction host to name and
-        // the rows come out of the body either way.
         let url = format!("corpus://milesplit/{file}");
         let files = milesplit::parse_meet_result_files(&url, body)?;
         ensure_rows(file, files.len(), "result files")?;
@@ -50,8 +47,6 @@ pub(super) fn capture(capture: &Capture<'_>) -> Result<String> {
                 files.len()
             ));
         }
-        // The inline template publishes no file list: the page is its own one result set, so its rows
-        // are the page's `<pre>` block rather than a `/raw` route of their own.
         let set = files
             .first()
             .context("an inline results page publishes one result set")?;

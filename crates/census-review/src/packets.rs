@@ -44,8 +44,6 @@ pub(super) fn pending_cases(
                 )
             }),
     );
-    // One order for both sources, and the review table wins a duplicate: it is the row a pass wrote
-    // last, and its state is the one an operator reads.
     pending.sort_by(|a, b| a.id.cmp(&b.id));
     pending.dedup_by(|a, b| a.id == b.id);
     Ok(pending
@@ -92,8 +90,6 @@ impl SubjectIndex {
         } else {
             HashMap::new()
         };
-        // An athlete case compares two rows, so the whole table is read: the group a case belongs to
-        // is a property of the rows, not of the case.
         let athletes = if wants_athletes {
             AthleteIndex::read(store.scan::<CanonicalAthlete>(Table::Athletes)?)
         } else {

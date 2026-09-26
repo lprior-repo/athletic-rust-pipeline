@@ -55,7 +55,6 @@ impl Rule {
             Some(core) => (core, true),
             None => (pattern, false),
         };
-        // Escape the literal pattern first, then widen the one metacharacter robots.txt defines.
         let mut source = String::with_capacity(core.len().saturating_add(4));
         source.push('^');
         source.push_str(&regex::escape(core).replace(r"\*", ".*"));
@@ -75,7 +74,7 @@ impl RobotsRules {
     /// ties. A path no pattern matches is allowed.
     pub(super) fn allows(&self, path: &str) -> bool {
         if !self.fetched {
-            return true; // absent robots.txt == allow
+            return true;
         }
         let mut best: Option<(usize, bool)> = None;
         for rule in &self.rules {
@@ -86,7 +85,6 @@ impl RobotsRules {
             match best {
                 Some((best_len, _)) if best_len > len => {}
                 Some((best_len, best_allow)) if best_len == len => {
-                    // Allow wins ties.
                     if rule.allow && !best_allow {
                         best = Some((len, true));
                     }
@@ -133,21 +131,11 @@ impl Fetcher {
         let url = format!("{scheme_host}/robots.txt");
         let rules = match self.fetch_robots(&url).await {
             Ok((200, body)) => parse_robots(&String::from_utf8_lossy(&body)),
-            // A server that answers 401/403 for its own robots.txt is refusing this client outright.
-            // Walking it anyway is the 403 storm this branch exists to prevent, and it makes a run's
-            // verdicts depend on whether that fetch happened to be refused - which an audit gate
-            // cannot be.
             Ok((401 | 403, _)) => parse_robots(REFUSAL_RULES),
-            // A server that has no robots.txt or no longer serves it: per RFC 9309, the absence
-            // of a file means "walk anything".
             Ok((404 | 410, _)) => RobotsRules {
                 fetched: false,
                 ..Default::default()
             },
-            // Rate-limited, server error, or transport failure: we fetched the file but could not
-            // read rules from it. Mark as fetched (not absent) so the host's pacing still applied,
-            // but do not close the host — we simply don't know its rules. The caller receives an
-            // unknown outcome: we tried, we just couldn't classify the result.
             Ok((status, _)) => {
                 debug!(
                     status,
@@ -197,7 +185,6 @@ impl Fetcher {
                 })?;
         let status = response.status().as_u16();
 
-        // Read the body under the robots body cap.
         let mut body = Vec::new();
         let mut stream = response.bytes_stream();
         while let Some(chunk) =
@@ -211,7 +198,6 @@ impl Fetcher {
                 })?
         {
             if body.len().saturating_add(chunk.len()) > ROBOTS_MAX_BODY {
-                // Body too large — return with what we have; the caller will get an empty parse.
                 break;
             }
             body.extend_from_slice(&chunk);

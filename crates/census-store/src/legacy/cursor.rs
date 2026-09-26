@@ -57,8 +57,6 @@ pub(crate) fn read_legacy_line(
                 ),
             });
         }
-        // `take` rather than a slice: the bytes a line keeps are the bytes of the line and nothing
-        // else, and there is no length here that could bound past the buffer.
         line.extend(available.iter().take(taken).copied());
         reader.consume(taken);
         if newline.is_some() {

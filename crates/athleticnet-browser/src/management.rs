@@ -127,8 +127,6 @@ impl Actor {
         let now = self.clock.now_instant();
         let until = match now.checked_add(delay) {
             Some(value) => value,
-            // A deadline the platform clock cannot represent must not panic;
-            // bound it to the longest representable fallback instead.
             None => now.checked_add(Duration::from_secs(86_400)).unwrap_or(now),
         };
         let current = match self.cooldown_until.lock() {
@@ -240,10 +238,6 @@ impl Actor {
             .map_err(|_| anyhow::anyhow!("browser bootstrap failed"))?;
             let is_ready = matches!(outcome, NavigationOutcome::Ready);
             self.apply_navigation(outcome);
-            // The generation is observed after the navigation and the compare-and-set still guards
-            // the window between observing and opening. Observing it *before* the navigation would
-            // count the challenge this navigation settled as a concurrent revocation, which is the
-            // one revocation its own settling sample has already answered.
             if !is_ready || !self.gate.try_open(self.gate.snapshot().generation) {
                 break;
             }

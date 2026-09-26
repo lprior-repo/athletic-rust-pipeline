@@ -49,10 +49,6 @@ use census_service::census::CollectOptions;
 use census_store::{Store, Table};
 use sha2::{Digest, Sha256};
 
-// -------------------------------------------------------------------------------------------------
-// Inputs and constants
-// -------------------------------------------------------------------------------------------------
-
 /// The one URL the KS adapter requests, spelled exactly as `sources/ks/collect.rs` builds it.
 const KS_DIRECTORY_URL: &str = "https://kshsaa-api.kshsaa.org/directory/search/name/a/";
 /// The resume-journal phases the two adapters write.
@@ -104,10 +100,6 @@ const EXPECTED_SERVICES: [&str; 9] = [
     "JurisdictionCensus",
     "NationalCensus",
 ];
-
-// -------------------------------------------------------------------------------------------------
-// Evidence helpers
-// -------------------------------------------------------------------------------------------------
 
 /// One evidence line: every scenario prints what it is about to assert on.
 fn note(scenario: &str, message: impl std::fmt::Display) {
@@ -166,10 +158,6 @@ fn school_ids(store: &Store) -> BTreeSet<String> {
         .map(|school| school.id.to_string())
         .collect()
 }
-
-// -------------------------------------------------------------------------------------------------
-// Shared fixtures
-// -------------------------------------------------------------------------------------------------
 
 /// Seed the fetcher's on-disk cache for `url`, so an adapter that fetches runs with no socket: the
 /// key is `sha256(method \x1f url \x1f body)[..16]`, the form `net::cache` writes.
@@ -296,10 +284,6 @@ fn wi_options(limit_per_state: Option<usize>) -> CollectOptions {
     }
 }
 
-// -------------------------------------------------------------------------------------------------
-// Store-level units
-// -------------------------------------------------------------------------------------------------
-
 /// One unit's observation: a school named after the unit, stamped with the observation date.
 fn unit_school(key: &str, observed_on: &str) -> CanonicalSchool {
     let name = format!("Recovery Unit {key}");
@@ -343,10 +327,6 @@ fn process_units(store: &Store, units: &[&str], observed_on: &str) {
         process_unit(store, unit, observed_on);
     }
 }
-
-// -------------------------------------------------------------------------------------------------
-// Real-process helpers
-// -------------------------------------------------------------------------------------------------
 
 /// A `census-service` command against `root`, with tracing silenced so stdout is the payload and a
 /// dead proxy so a cache miss cannot reach a source host.
@@ -436,7 +416,6 @@ fn attempt_kill(
         .expect("spawning census-service");
     std::thread::sleep(delay);
     let exited_before_kill = child.try_wait().expect("try_wait").is_some();
-    // A child that already exited refuses the signal; the status below carries the evidence.
     let _ = child.kill();
     let status = child.wait().expect("waiting for the killed child");
     let store = open_store(root);
@@ -671,10 +650,6 @@ fn send_sigterm(child: &Child) {
     assert!(status.success(), "kill -TERM was refused: {status}");
 }
 
-// -------------------------------------------------------------------------------------------------
-// 1. Store resume path (in-process)
-// -------------------------------------------------------------------------------------------------
-
 #[test]
 fn store_reopen_after_a_writer_stops_mid_batch_resumes_at_the_first_unjournaled_unit() {
     const SCENARIO: &str = "store-resume";
@@ -692,8 +667,6 @@ fn store_reopen_after_a_writer_stops_mid_batch_resumes_at_the_first_unjournaled_
             .consolidate::<CanonicalSchool>(Table::Schools, &root.join("out/schools.jsonl"))
             .expect("consolidate");
         (journal, counts, merged.len(), consolidated)
-        // The store is dropped here: the writer is gone mid-batch, exactly as at the end of a
-        // process that never returns from its run.
     };
     note(
         SCENARIO,
@@ -745,9 +718,6 @@ fn store_reopen_after_a_writer_stops_mid_batch_resumes_at_the_first_unjournaled_
     assert_eq!(finished_journal.len(), 4);
     assert_eq!(count_of(&finished_counts, Table::Schools), 4);
 
-    // Sequence continuity: a fresh observation of an already-processed unit appends a *new* row. A
-    // sequence counter that restarted with the database would overwrite the earlier row instead and
-    // leave the count where it was.
     process_unit(&store, "unit-1", "2026-09-21");
     let after_duplicate = store.stats().expect("stats").observations;
     let merged = store.scan::<CanonicalSchool>(Table::Schools).expect("scan");
@@ -784,16 +754,11 @@ fn store_reopen_after_a_writer_stops_mid_batch_resumes_at_the_first_unjournaled_
     );
 }
 
-// -------------------------------------------------------------------------------------------------
-// 2. Adapter restart (in-process, real adapter over a seeded cache)
-// -------------------------------------------------------------------------------------------------
-
 #[tokio::test]
 async fn adapter_restart_reuses_finished_units_without_refetch_or_duplicate_rows() {
     const SCENARIO: &str = "adapter-resume";
     let dir = tempfile::tempdir().expect("temp dir");
 
-    // Control: one clean pass in its own store.
     let control_root = dir.path().join("control");
     let (control_journal, control_schools, control_coaches, control_report, control_counts) = {
         let store = store_seeded_with_ks(&control_root);
@@ -831,7 +796,6 @@ async fn adapter_restart_reuses_finished_units_without_refetch_or_duplicate_rows
         "the fixture must carry at least two units"
     );
 
-    // A worker that stops after two units.
     let restart_root = dir.path().join("restart");
     let first_journal = {
         let store = store_seeded_with_ks(&restart_root);
@@ -847,10 +811,8 @@ async fn adapter_restart_reuses_finished_units_without_refetch_or_duplicate_rows
         assert_eq!(journal.len(), 2);
         assert_eq!(report.requests, 0);
         journal
-        // store dropped: the writer is gone mid-batch
     };
 
-    // Restart: the same adapter over the same store.
     let store = open_store(&restart_root);
     let resumed = ks_pass(&store, None).await;
     let resumed_journal = journal_keys(&store, KS_PHASE);
@@ -915,10 +877,6 @@ async fn adapter_restart_reuses_finished_units_without_refetch_or_duplicate_rows
         "one observation per journaled unit"
     );
 }
-
-// -------------------------------------------------------------------------------------------------
-// 3. Exporter restart (in-process)
-// -------------------------------------------------------------------------------------------------
 
 #[tokio::test]
 async fn exporter_restart_republishes_identical_snapshots_and_totals() {
@@ -990,7 +948,6 @@ fn export(store: &Store) -> Export {
     let snapshots = Table::ALL
         .into_iter()
         .filter_map(|table| {
-            // `census::consolidate` publishes the merged snapshot under `out/`, one file per table.
             let bytes =
                 std::fs::read(store.out_dir().join(format!("{}.jsonl", table.file()))).ok()?;
             let mut hasher = Sha256::new();
@@ -1006,8 +963,6 @@ fn export(store: &Store) -> Export {
     let census = report::build_census(store, report::Scope::AllSources).expect("census");
     let mut projected = serde_json::to_value(&census).expect("census json");
     if let Some(object) = projected.as_object_mut() {
-        // The two values that legitimately differ between runs: the wall-clock stamp and the
-        // store's own path (a temp directory here).
         object.remove("generated_on");
         object.remove("store_dir");
     }
@@ -1035,16 +990,11 @@ fn export(store: &Store) -> Export {
     }
 }
 
-// -------------------------------------------------------------------------------------------------
-// 4. Worker restart across real processes
-// -------------------------------------------------------------------------------------------------
-
 #[test]
 fn cli_worker_restart_across_processes_resumes_and_keeps_counters() {
     const SCENARIO: &str = "cli-restart";
     let dir = tempfile::tempdir().expect("temp dir");
 
-    // Control: one process, one clean pass.
     let control_root = dir.path().join("control");
     {
         let store = store_seeded_with_ks(&control_root);
@@ -1070,7 +1020,6 @@ fn cli_worker_restart_across_processes_resumes_and_keeps_counters() {
         "the clean process covered every unit"
     );
 
-    // A worker that stops after two units, then restarts on the same store.
     let root = dir.path().join("restart");
     {
         let store = store_seeded_with_ks(&root);
@@ -1174,7 +1123,6 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() {
         input.to_str().expect("csv path"),
     ];
 
-    // Control: the clean run's runtime and terminal counts.
     let control_root = dir.path().join("control");
     let started = Instant::now();
     run_census(&control_root, &args);
@@ -1195,7 +1143,6 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() {
         "one meet row per journaled meet"
     );
 
-    // Kill ladder on the same workload in a fresh store.
     let root = dir.path().join("killed");
     let attempts = kill_ladder(
         SCENARIO,
@@ -1224,7 +1171,6 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() {
         );
     }
 
-    // Restart: the worker that was killed finishes the units it still owes.
     let resumed = report_of(&run_census(&root, &args));
     let (journal, ids) = {
         let store = open_store(&root);
@@ -1278,10 +1224,6 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() {
     );
 }
 
-// -------------------------------------------------------------------------------------------------
-// 6. SIGKILL of the service, then restart and a clean drain
-// -------------------------------------------------------------------------------------------------
-
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn sigkill_of_the_service_keeps_durable_work_and_the_restart_drains_cleanly() {
     const SCENARIO: &str = "sigkill-service";
@@ -1297,7 +1239,6 @@ async fn sigkill_of_the_service_keeps_durable_work_and_the_restart_drains_cleanl
         let counts = table_counts(&store);
         let merged = store.scan::<CanonicalSchool>(Table::Schools).expect("scan");
         (journal, counts, digest_of(&merged))
-        // The store is closed before the service starts: one process owns it at a time.
     };
     note(
         SCENARIO,
@@ -1305,8 +1246,6 @@ async fn sigkill_of_the_service_keeps_durable_work_and_the_restart_drains_cleanl
     );
 
     let port = free_loopback_port();
-    // The deployed unit's own flags (`deploy/systemd/census-serve.service`): the drain deadline has
-    // to outlive this test's `/discover` poll.
     let (mut child, manifest) = spawn_serve(&root, port, 30).await;
     assert_manifest_advertises(SCENARIO, &manifest);
     assert!(
@@ -1355,9 +1294,6 @@ async fn sigkill_of_the_service_keeps_durable_work_and_the_restart_drains_cleanl
     );
     drop(store);
 
-    // Two operator restarts over the same store. Each one has to come up, answer, drain on SIGTERM
-    // and leave the counters exactly where the kill did - the service path of §59's "restart worker /
-    // restart machine-level services".
     for restart in 1..=2 {
         let (child, manifest) = spawn_serve(&root, port, 30).await;
         assert_manifest_advertises(SCENARIO, &manifest);
@@ -1447,10 +1383,6 @@ fn parse_drain_line(line: &str) -> BTreeMap<String, u64> {
         .collect()
 }
 
-// -------------------------------------------------------------------------------------------------
-// 7. A service nobody stops, measured against its own drain deadline
-// -------------------------------------------------------------------------------------------------
-
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn service_with_no_stop_request_survives_its_drain_deadline() {
     const SCENARIO: &str = "drain-deadline";
@@ -1474,9 +1406,6 @@ async fn service_with_no_stop_request_survives_its_drain_deadline() {
     let (mut child, manifest) = spawn_serve(&root, port, DRAIN_SECS).await;
     assert_manifest_advertises(SCENARIO, &manifest);
 
-    // No signal and no shutdown future reach this service. An endpoint is expected to serve until one
-    // arrives, and to spend the drain deadline on the reap that follows it (`src/bootstrap.rs`: the
-    // supervisor "waits for a stop request, drains inside a bounded deadline").
     let exited = wait_for_exit(&mut child, Duration::from_secs(DRAIN_SECS + 8));
     let still_answering = endpoint_answers(&discovery_client(), port).await;
     match exited {
@@ -1498,8 +1427,6 @@ async fn service_with_no_stop_request_survives_its_drain_deadline() {
             );
         }
         None if !still_answering => {
-            // A process that is up but serves nothing is worse than one that exited: nothing
-            // restarts it, and the port is dead.
             send_sigterm(&child);
             let output = child
                 .wait_with_output()
@@ -1551,8 +1478,6 @@ async fn service_with_no_stop_request_survives_its_drain_deadline() {
         }
     }
 
-    // Whichever of the two happened, the durable side is the part that must hold: an exit nobody
-    // asked for cannot change the journal or a counter.
     let store = open_store(&root);
     let journal_after = journal_keys(&store, UNIT_PHASE);
     let counts_after = table_counts(&store);
@@ -1573,16 +1498,11 @@ async fn service_with_no_stop_request_survives_its_drain_deadline() {
     );
 }
 
-// -------------------------------------------------------------------------------------------------
-// 8. KS: the journal-before-append window, measured on a real kill
-// -------------------------------------------------------------------------------------------------
-
 #[tokio::test]
 async fn ks_directory_walk_claims_units_the_kill_can_lose() {
     const SCENARIO: &str = "ks-window";
     let dir = tempfile::tempdir().expect("temp dir");
 
-    // Control: one clean pass, in-process (only the unit count is needed from it).
     let control_root = dir.path().join("control");
     let (control_total, control_counts) = {
         let store = store_seeded_with_ks(&control_root);
@@ -1595,7 +1515,6 @@ async fn ks_directory_walk_claims_units_the_kill_can_lose() {
         format!("control units={control_total} tables={control_counts:?}"),
     );
 
-    // Measure the clean runtime of the same pass as a process, then kill at fractions of it.
     let timed_root = dir.path().join("timed");
     {
         let store = store_seeded_with_ks(&timed_root);
@@ -1624,7 +1543,6 @@ async fn ks_directory_walk_claims_units_the_kill_can_lose() {
         clean_runtime,
     );
 
-    // The window: units the kill claimed done while the pass had not yet appended their rows.
     for attempt in &attempts {
         let claimed_without_rows = attempt.journal.len() as i64 - attempt.observations as i64;
         if claimed_without_rows > 0 {
@@ -1675,9 +1593,6 @@ async fn ks_directory_walk_claims_units_the_kill_can_lose() {
         control_total,
         "the restart completes the journal set"
     );
-    // The unit accounting that must hold whatever the on-disk ordering is: the pass writes exactly
-    // the units the journal does not claim, so the final rows are the rows already on disk at kill
-    // time plus every unclaimed unit.
     assert_eq!(
         final_schools as usize,
         rows_at_kill as usize + (control_total - journal_at_kill.len()),
@@ -1694,10 +1609,6 @@ async fn ks_directory_walk_claims_units_the_kill_can_lose() {
         ),
     );
 }
-
-// -------------------------------------------------------------------------------------------------
-// 9. Jurisdiction walk (team index + rosters) resume
-// -------------------------------------------------------------------------------------------------
 
 /// The jurisdiction object's two collection stage bodies are `census::collect_state_teams` and
 /// `census::collect_state_rosters` (`restate_services/jobs.rs`), so the durable claims those stages
@@ -1716,7 +1627,6 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
     let dir = tempfile::tempdir().expect("temp dir");
     let site = milesplit::Site::for_jurisdiction(UsJurisdiction::Wisconsin);
 
-    // Control: one clean walk over the seeded cache, in its own store.
     let control_root = dir.path().join("control");
     let control = {
         let store = store_seeded_with_wisconsin(&control_root, &site);
@@ -1742,8 +1652,6 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
         let athletes = store
             .scan::<CanonicalAthlete>(Table::Athletes)
             .expect("scan athletes");
-        // The class-of-2027 count is the roster page's own: `roster_entities` files every athlete and
-        // the sweep counts the graded ones, once per roster walked.
         let parsed = milesplit::parse_roster(WI_ROSTER_FIXTURE, teams[0].clone())
             .expect("the roster fixture parses");
         let per_roster = parsed
@@ -1806,8 +1714,6 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
         walk
     };
 
-    // A pass that stops after one roster. The store handle is dropped mid-walk, the way a process
-    // that ends without finishing its set leaves the disk.
     let restart_root = dir.path().join("restart");
     let stopped_after = {
         let store = store_seeded_with_wisconsin(&restart_root, &site);
@@ -1842,8 +1748,6 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
         journal
     };
 
-    // Restart on the same store: the index stage re-reads its journaled copy, and the roster stage
-    // claims only the rosters the first pass left unjournaled.
     let store = open_store(&restart_root);
     let fetcher = fetcher_for(&store);
     let teams = census::collect_state_teams(&fetcher, &store, UsJurisdiction::Wisconsin, false)

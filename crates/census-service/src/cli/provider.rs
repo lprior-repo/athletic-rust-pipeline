@@ -72,8 +72,6 @@ impl ProviderArgs {
 
 /// Run one association contact adapter by name.
 pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) -> Result<()> {
-    // The adapter's own registry slug, so every access condition this fetcher records is attributed
-    // to the source that hit it (§69).
     let fetcher = build_fetcher(cli, store)?.with_source(args.name.clone());
     let observed_on = args
         .observed_on
@@ -116,8 +114,6 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
             "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, coach_contacts"
         ),
     };
-    // §69: the blocked hosts are named before the report, so a run that hit a hard block never reads
-    // like a clean one — including when the adapter fails after the block.
     super::source::print_blocked_hosts(&fetcher).await;
     let report = outcome.with_context(|| format!("adapter {}", args.name))?;
     println!("{}", serde_json::to_string_pretty(&report)?);

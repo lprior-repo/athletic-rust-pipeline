@@ -15,10 +15,6 @@
 //! decode failure.
 use serde::Deserialize;
 
-// ---------------------------------------------------------------------------
-// Track & field: meet and event indexes
-// ---------------------------------------------------------------------------
-
 /// Envelope returned by `GET /v1/track-field/meets`.
 #[derive(Debug, Clone, Deserialize)]
 pub struct MeetsEnvelope {
@@ -83,10 +79,6 @@ pub struct EventRow {
     #[serde(rename = "metadataFetchedAt")]
     pub metadata_fetched_at: Option<String>,
 }
-
-// ---------------------------------------------------------------------------
-// Track & field: event summary
-// ---------------------------------------------------------------------------
 
 /// `GET /v1/track-field/events/{eventId}/summary`.
 #[derive(Debug, Clone, Deserialize)]
@@ -176,10 +168,6 @@ pub struct RelayMember {
     pub athlete: Option<AthleteRef>,
 }
 
-// ---------------------------------------------------------------------------
-// Cross country: state-finalist lists
-// ---------------------------------------------------------------------------
-
 /// `GET /v1/{term}/statefinal/cc-qualifiers?tournamentId={id}`.
 #[derive(Debug, Clone, Deserialize)]
 pub struct QualifiersEnvelope {
@@ -244,10 +232,6 @@ pub struct QualifierAthlete {
     #[serde(rename = "box")]
     pub r#box: Option<String>,
 }
-
-// ---------------------------------------------------------------------------
-// Terms
-// ---------------------------------------------------------------------------
 
 /// `GET /v1/terms`: the terms the archive API answers for.
 #[derive(Debug, Clone, Deserialize)]

@@ -19,8 +19,6 @@ static EVENT_LABEL: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     )
 });
 
-// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
-// back as a typed error that the readers answer as "this file carries no meet" — never a panic.
 fn event_number() -> CrawlResult<&'static Regex> {
     EVENT_NUMBER
         .as_ref()

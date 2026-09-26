@@ -28,8 +28,6 @@ pub fn build_request_body(packet: &ReviewPacket, options: &ModelOptions) -> Valu
             }
         }),
     );
-    // A reasoning model's thinking is spent from the same output budget as its answer, and this
-    // task's answer is short: ask the template not to think.
     body.insert(
         "chat_template_kwargs".to_string(),
         json!({ "enable_thinking": false }),

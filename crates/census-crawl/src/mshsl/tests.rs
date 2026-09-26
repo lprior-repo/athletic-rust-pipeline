@@ -17,15 +17,9 @@ const WAYZATA: &str =
     include_str!("../../tests/fixtures/mshsl/school_detail_wayzata-high-school.html");
 const ACADEMIC_ARTS: &str =
     include_str!("../../tests/fixtures/mshsl/school_detail_academic-arts-high-school.html");
-// Live captures (2026-09-20, HTTP 200) of
-// https://www.mshsl.org/jsonapi/views/teams/list_school?views-argument[]=611 (sparse fieldset) and
-// https://www.mshsl.org/api/coaches/589034, verbatim.
 const WAYZATA_TEAMS: &str = include_str!("../../tests/fixtures/mshsl/team_nodes_wayzata.json");
 const WAYZATA_TF_COACHES: &str =
     include_str!("../../tests/fixtures/mshsl/coach_records_wayzata_track_boys.json");
-// Live captures (2026-09-20T14:39Z, HTTP 200, verbatim) of school 7's team list and of the two
-// coach payloads its two track nodes point at, plus the page-0 listing with the pager trimmed so
-// the cached run below stays on one page.
 const LISTING_FIRST_PAGE: &str =
     include_str!("../../tests/fixtures/mshsl/schools_listing_first_page.html");
 const AITKIN_TEAMS: &str = include_str!("../../tests/fixtures/mshsl/team_nodes_aitkin.json");
@@ -110,7 +104,6 @@ fn listing_rows_carry_slug_name_and_city() {
 
 #[test]
 fn pagination_follows_the_real_pager() {
-    // The capture is listing page 0 and shows numbered links 0..8 plus a "next page" anchor.
     assert_eq!(parse_next_listing_page(LISTING, 0), Some(1));
     assert_eq!(parse_next_listing_page(LISTING, 1), Some(2));
     assert_eq!(
@@ -124,7 +117,6 @@ fn pagination_follows_the_real_pager() {
         None,
         "a detail page has no pager"
     );
-    // A pager whose only continuation is the "next" anchor (attributes reordered) is still followed.
     let next_only =
         r#"<nav class="pager"><a rel="next" class="pager__link" href="?page=9">Next ›</a></nav>"#;
     assert_eq!(parse_next_listing_page(next_only, 8), Some(9));
@@ -140,7 +132,6 @@ fn pagination_follows_the_real_pager() {
 
 #[test]
 fn cfemail_decodes_to_the_published_addresses() {
-    // Real Cloudflare payloads from the three captures.
     assert_eq!(
         decode_cfemail("8de0eff8e8eee6e8fffecdecfdfdfea3e4fee9b8bca3e2ffea").as_deref(),
         Some("mbueckers@apps.isd51.org")
@@ -154,7 +145,6 @@ fn cfemail_decodes_to_the_published_addresses() {
             .as_deref(),
         Some("meghan.potter@wayzataschools.org")
     );
-    // The attribute form a DOM snapshot carries decodes with the same routine.
     let attributes = decode_cfemail_fragment(
         r#"<span data-cfemail="8de0eff8e8eee6e8fffecdecfdfdfea3e4fee9b8bca3e2ffea"></span>"#,
     );
@@ -213,14 +203,12 @@ fn school_page_yields_canonical_school_with_identity_and_evidence() {
     let evidence = school.evidence.first().expect("evidence");
     assert_eq!(evidence.source.url.as_deref(), Some(url.as_str()));
     assert_eq!(evidence.observed_on, OBSERVED_ON);
-    // Neither the listing row nor the page contributes a name: no school can be minted.
     let nameless = SchoolListRow {
         slug: "nameless".to_string(),
         name: String::new(),
         city: None,
     };
     assert!(school_entities(&nameless, &SchoolDetail::default(), &url, OBSERVED_ON).is_none());
-    // A listing row name is enough: the school is minted from the row even with no page facts.
     let (from_row, _) =
         school_entities(row, &SchoolDetail::default(), &url, OBSERVED_ON).expect("school");
     assert_eq!(from_row.name, "Aitkin High School");
@@ -273,7 +261,6 @@ fn athletic_directors_are_the_only_admin_rows_emitted() {
             assert_eq!(coach.source_identities.len(), 1);
         }
     }
-    // Foley's assistant director is published without a contact: that row exists with no email.
     let foley = parse_school_detail(FOLEY);
     let assistant = foley
         .admin
@@ -286,8 +273,6 @@ fn athletic_directors_are_the_only_admin_rows_emitted() {
 
 #[test]
 fn office_roles_never_become_coaches_or_athletic_directors() {
-    // Wayzata publishes fifteen Administration entries, two of them "AD Administrative Assistant"
-    // with addresses and an athletic trainer on a hospital domain.
     let detail = parse_school_detail(WAYZATA);
     assert_eq!(detail.admin.len(), 15);
     let foley = parse_school_detail(FOLEY);
@@ -323,7 +308,6 @@ fn office_roles_never_become_coaches_or_athletic_directors() {
     }
     assert!(emitted.contains("meghan.potter@wayzataschools.org"));
     assert!(emitted.contains("sydney.helmbrecht@wayzataschools.org"));
-    // Foley publishes its AD administrative assistant with an address in the same block.
     let foley = parse_school_detail(FOLEY);
     let foley_row = row_for(&rows, "foley-high-school", &foley);
     let foley_url = school_page_url(&foley_row.slug);
@@ -421,9 +405,6 @@ fn published_phones_are_withheld_and_consumer_mailboxes_land_personal() {
         );
     }
     assert!(coaches.iter().all(|coach| coach.phone.is_none()));
-    // Addresses are the opposite: the site publishes them, so they are kept whatever their domain.
-    // A consumer mailbox is a personal address the recruiter can still write to, and the mailbox
-    // kind is what the store routes on — it never silently becomes the professional one.
     let personal: Vec<&str> = coaches
         .iter()
         .filter_map(|coach| coach.personal_email.as_deref())
@@ -541,7 +522,6 @@ fn coach_levels_map_to_roles_and_published_addresses_survive() {
     );
     assert_eq!(published_coach_email("not-an-address", &domains), None);
 
-    // The unexercised branch: a record whose level is not published and a non-MSHSL level record.
     let node = TeamNode {
         nid: "1".to_string(),
         title: "Wayzata High School Track and Field, Boys".to_string(),
@@ -578,7 +558,6 @@ fn coach_levels_map_to_roles_and_published_addresses_survive() {
 
 #[test]
 fn ad_email_fill_rate_on_the_fixtures() {
-    // Measured over the four school captures: AD rows and how many carry a decoded address.
     let mut rows_total = 0usize;
     let mut with_email = 0usize;
     let school_rows = parse_school_list(LISTING);
@@ -796,8 +775,6 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
         .iter()
         .any(|coach| coach.name == "Ava Carlson" && coach.gender == Gender::Girls));
     let stored = serde_json::to_string(&coaches).expect("json");
-    // The same Administration block publishes the principal, superintendent, advisors and trainer:
-    // none of them may be stored as a coach or an athletic director.
     for office in [
         "Lisa DeMars",
         "Dan Stifter",
@@ -826,7 +803,6 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
         HashSet::from([String::from("MN:aitkin-high-school")])
     );
 
-    // A re-run resumes: the journalled school is skipped and nothing is appended twice.
     let second = collect(&ctx, &options).await.expect("second collect");
     assert_eq!(second.rows, 0, "the school was already journalled");
     assert_eq!(second.requests, 0);

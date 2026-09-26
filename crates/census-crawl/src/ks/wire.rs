@@ -32,21 +32,13 @@ pub struct KshsaaRecord {
     #[serde(rename = "ADEmail")]
     #[serde(default)]
     pub ad_email: Option<String>,
-    // Deliberately not used by the adapter; present only for test assertions that these
-    // phone/principal fields never leak into canonical entities.
     #[serde(rename = "ADCell")]
     #[serde(default)]
     pub ad_cell: Option<String>,
     #[serde(rename = "PrincipalName")]
     #[serde(default)]
     pub principal_name: Option<String>,
-    // Fields deliberately NOT mapped: ADCell, PresCell, PrincipalCell, PrincipalName, PresName,
-    // PresEmail, SchoolPhone, SchoolFax, Email, TwitterUserName.
 }
-
-// ---------------------------------------------------------------------------
-// Parsing
-// ---------------------------------------------------------------------------
 
 /// Parse the JSON envelope returned by the KSHSAA directory API.
 ///

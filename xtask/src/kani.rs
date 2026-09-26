@@ -47,11 +47,9 @@ fn mandatory_harnesses() -> &'static [&'static str] {
 fn resolve_targets(user_harnesses: &[String]) -> Result<Vec<&HarnessInfo>> {
     let required = mandatory_harnesses();
 
-    // Build a quick lookup from name -> HarnessInfo.
     let by_name: HashMap<&str, &HarnessInfo> = KNOWN_HARNESS.iter().map(|h| (h.name, h)).collect();
 
     let targets = if user_harnesses.is_empty() {
-        // All mandatory: validate none are missing from the known set.
         let mut missing = Vec::new();
         let mut targets = Vec::with_capacity(required.len());
         for &name in required {
@@ -187,12 +185,10 @@ pub enum Outcome {
 pub fn classify_kani_output(stdout: &str, stderr: &str) -> Outcome {
     let combined = format!("{stdout}{stderr}");
 
-    // Timeout.
     if combined.contains("Timed out") {
         return Outcome::Timeout;
     }
 
-    // Success: the real Kani 0.67.0 format.
     if combined.contains("VERIFICATION:- SUCCESSFUL")
         && combined.contains("successfully verified harnesses")
     {
@@ -208,19 +204,14 @@ pub fn classify_kani_output(stdout: &str, stderr: &str) -> Outcome {
         }
     }
 
-    // Failure: checked before error heuristics so "CBMC failed" + "VERIFICATION:- FAILED"
-    // is classified as Fail rather than BuildFail.
     if combined.contains("VERIFICATION:- FAILED") {
         return Outcome::Fail;
     }
 
-    // Legacy "All checks were verified" from older Kani versions.
     if combined.contains("All checks were verified") {
         return Outcome::Pass;
     }
 
-    // A harness the crate does not contain: distinct from a build failure, because it says the
-    // coverage table and the crate have drifted apart rather than that a proof did not compile.
     if combined.contains("Error: no harness found")
         || combined.contains("could not find harness")
         || combined.contains("no harness")
@@ -228,12 +219,10 @@ pub fn classify_kani_output(stdout: &str, stderr: &str) -> Outcome {
         return Outcome::Missing;
     }
 
-    // Build failure: non-zero exit or explicit error text.
     if combined.contains("CBMC failed") || combined.contains("Error: ") {
         return Outcome::BuildFail;
     }
 
-    // Unknown output — treat as build fail to be safe.
     Outcome::BuildFail
 }
 

@@ -14,11 +14,6 @@ const SECTIONS: &str =
 
 #[test]
 fn an_individual_row_under_a_relay_header_keeps_its_athlete_grade_and_school() {
-    // The capture drops the jump section's own header, so the published row
-    // `-- Donavin Bond              10 Nicolet                   FOUL        2`
-    // sits under the relay header that names only a `School` column. It is still an individual
-    // row: reading its label as a school would file the athlete under the school and empty the
-    // name, which downstream reports as an unresolved school instead of a performance.
     let meet = parse(
         &lines_from_html(SECTIONS),
         SourceRef::new("wiaa_results", None),
@@ -53,8 +48,6 @@ fn an_individual_row_under_a_relay_header_keeps_its_athlete_grade_and_school() {
 
 #[test]
 fn the_relay_rows_around_it_stay_school_labels() {
-    // The same section's relay rows name schools and list their legs; the identity reader must not
-    // reach into them.
     let meet = parse(
         &lines_from_html(SECTIONS),
         SourceRef::new("wiaa_results", None),
@@ -98,9 +91,6 @@ fn the_individual_shape_reads_back_as_athlete_grade_and_school() {
 
 #[test]
 fn a_school_label_that_is_not_an_identity_is_left_alone() {
-    // The shape is exact, because guessing an identity from a school label is worse than leaving
-    // it: two grade-shaped tokens, a grade with no run on one side, or digits in the tail are all
-    // declared unknown rather than split.
     assert_eq!(individual_identity("Nicolet"), None);
     assert_eq!(individual_identity("Wisconsin Luth."), None);
     assert_eq!(individual_identity("10 Nicolet"), None, "a grade lead");

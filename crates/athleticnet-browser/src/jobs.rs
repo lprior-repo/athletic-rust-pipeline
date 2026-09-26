@@ -102,9 +102,6 @@ impl Actor {
                     Err(error) => BrowserOutcome::failed(error),
                 };
                 if let BrowserOutcome::Captured(capture) = &outcome {
-                    // The verdict the caller receives drives the profile's own state: the latch and
-                    // the cooldown read that one classification, so a caller can never observe
-                    // "challenged" on a gate that stayed ready.
                     if capture.challenge {
                         self.latch_challenge(Some(&job.request));
                     }

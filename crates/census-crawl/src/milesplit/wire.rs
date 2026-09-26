@@ -227,8 +227,6 @@ impl ResultSetRef {
             .strip_prefix("https://")
             .or_else(|| trimmed.strip_prefix("http://"))?
             .split_once('/')?;
-        // Only state hosts and the canonical www host are accepted. A `www` URL needs the caller's
-        // jurisdiction; a state host carries its own.
         if host == "www.milesplit.com" {
             return result_set(host, path, Site::for_jurisdiction(jurisdiction));
         }

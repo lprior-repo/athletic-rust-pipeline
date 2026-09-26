@@ -40,8 +40,6 @@ pub(super) async fn dispatch(cli: &Cli, store: &Store) -> Result<()> {
         Command::ExportData(args) => export_data::run_export_data(args)?,
         Command::QaReports(args) => qa_reports::run_qa_reports(args)?,
         Command::SchoolNames(args) => school_names::run_school_names(store, args)?,
-        // The pipeline commands are matched in `super::run` before the store is opened: they either
-        // submit through the ingress or need no store at all.
         other => anyhow::bail!("{other:?} is routed before dispatch and never opens the store"),
     }
     Ok(())

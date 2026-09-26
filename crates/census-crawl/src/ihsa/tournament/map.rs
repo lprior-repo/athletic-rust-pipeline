@@ -23,10 +23,6 @@ pub(super) use crate::ihsa::ASSOCIATION;
 /// The level string the sibling adapters put on a team.
 pub(super) const HIGH_SCHOOL: &str = "high_school";
 
-// ---------------------------------------------------------------------------
-// Run state
-// ---------------------------------------------------------------------------
-
 /// What every row of one run shares: the adapter its evidence is filed under and the observation
 /// date stamped into it.
 #[derive(Debug, Clone, Copy)]
@@ -190,10 +186,6 @@ pub(super) struct PerformanceRow<'a> {
     /// Provider-local result key, used for idempotent upserts.
     pub(super) source_key: String,
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 /// The published event name an ontology miss is filed under.
 pub(super) fn unmapped(event_name: &str) -> EventKind {

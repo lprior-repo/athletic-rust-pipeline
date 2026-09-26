@@ -64,7 +64,6 @@ impl Entity for CanonicalSchool {
         }
         self.co_op |= other.co_op;
         if other.name.len() > self.name.len() && other.name.starts_with(&self.name) {
-            // keep the longer, more specific name
             self.name = other.name;
         }
         union_vec(&mut self.aliases, &other.aliases);

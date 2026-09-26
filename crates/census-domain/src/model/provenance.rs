@@ -1,9 +1,5 @@
 use super::*;
 
-// -------------------------------------------------------------------------------------------------
-// Provenance
-// -------------------------------------------------------------------------------------------------
-
 /// A registered data source. `id` is a stable slug used in evidence and reports.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct SourceRef {

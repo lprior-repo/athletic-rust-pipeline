@@ -25,13 +25,9 @@ use tokio::sync::Mutex;
 mod evidence;
 mod refusal;
 
-// This seat's tests drive [`refusal`]'s methods and read the transport's verdict vocabulary back
-// through here; the seat's own code never names a verdict, because naming one is the first step
-// towards re-deriving it.
 #[cfg(test)]
 use crate::net::bridge::{BrowserError, Verdict};
 
-// Re-exports needed by browser/tests.rs via `super::*`.
 #[cfg(test)]
 use base64::engine::general_purpose::STANDARD as BASE64;
 #[cfg(test)]
@@ -48,9 +44,6 @@ impl Fetcher {
         plan: &FetchPlan<'_>,
     ) -> Result<FetchOutcome, FetchError> {
         if !plan.method.eq_ignore_ascii_case("GET") {
-            // The lane carries GETs and nothing else: its mirrored action has no body to post. A
-            // non-GET reaching this seat is a routing fault, not a source observation, so it fails
-            // loudly rather than being refused as if the host had said something.
             return Err(FetchError::Invariant {
                 detail: format!(
                     "browser lane carries GET only, and {} was routed to it",
@@ -70,8 +63,6 @@ impl Fetcher {
         };
         match lane.answer(&spec).await {
             Err(error) => {
-                // The call never reached a verdict, so nothing was classified: what is known is that
-                // the deployment's lane did not answer, which is the applicability row.
                 if let FetchError::BrowserLane { detail, .. } = &error {
                     self.record_access_condition(
                         plan.host,
@@ -133,8 +124,6 @@ impl Fetcher {
     ) -> Result<FetchOutcome, FetchError> {
         let status = capture.response.status;
         self.count_request(plan.host, status).await;
-        // A 403 or 429 is an observation about the *host*, not about this URL, so it is recorded
-        // once per run here exactly as it is on the HTTP path.
         if let Some(kind) = blocking_kind(status) {
             let retry_after = capture.retry_after_ms.map(|ms| ms / 1_000);
             self.record_access_condition(
@@ -150,8 +139,6 @@ impl Fetcher {
             200 => self.mint_capture(plan, capture).await,
             404 => self.handle_404_capture(plan, capture).await,
             304 => Err(FetchError::Invariant {
-                // A capture that reports 304 came from a transport that sent conditional headers; a
-                // capture that was taken from the source cannot be a revalidation.
                 detail: format!(
                     "browser lane answered 304 for {}: a capture is a take, not a revalidation",
                     plan.url
@@ -162,7 +149,6 @@ impl Fetcher {
     }
 }
 
-// Re-export for browser/tests.rs.
 #[cfg(test)]
 pub(super) use crate::net::MAX_BODY_BYTES;
 

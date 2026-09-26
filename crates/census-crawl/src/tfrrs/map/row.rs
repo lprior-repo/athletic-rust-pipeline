@@ -80,9 +80,6 @@ pub(super) fn source_key(
         |id| format!("m{id}"),
     );
     let athlete_ref = athlete_id.map_or_else(|| "-".to_string(), |id| id.to_string());
-    // The host's own standard-event handle when the section publishes one (`standard_event_hnd_46`,
-    // every section of the captured list) and the printed label otherwise: a mark keeps one key
-    // when the host rewords a label it still serves under the same handle.
     let event_ref = section
         .event_hnd
         .map_or_else(|| section.label.clone(), |handle| format!("e{handle}"));

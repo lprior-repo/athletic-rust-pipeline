@@ -47,8 +47,6 @@ pub fn parse_batch(content: &str) -> Result<VerdictBatch, ModelError> {
             verdicts,
         });
     }
-    // Both shapes failed, so the text is not JSON at all: re-parse once to hand the caller the
-    // parser's own complaint instead of a message this layer invented.
     match serde_json::from_str::<VerdictBatch>(cleaned) {
         Ok(batch) => Ok(batch),
         Err(source) => Err(ModelError::Content {

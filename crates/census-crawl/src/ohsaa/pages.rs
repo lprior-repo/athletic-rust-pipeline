@@ -8,8 +8,6 @@ use super::parse::{
 };
 use census_domain::model::Sport;
 
-// ── Sports parsing ─────────────────────────────────────────────────────────
-
 /// Map a sport label to a Sport variant.
 pub fn parse_sport_label(label: &str) -> Option<Sport> {
     let cleaned = collapse_whitespace(&decode_entities(label));
@@ -64,7 +62,6 @@ pub fn parse_sports_table(html: &str) -> Vec<(String, Option<CoachEntry>, Option
 
     let mut sections = Vec::new();
     for chunk in table.split_inclusive("</tr>") {
-        // A `<tr` that never closes cannot yield a row; the previous cursor walk stopped there.
         if chunk.strip_suffix("</tr>").is_none() {
             break;
         }
@@ -110,7 +107,6 @@ fn extract_td_text(row: &str, index: usize) -> String {
         if count == index {
             return text.to_string();
         }
-        // The previous cursor moved past `</td>`, so a `<td` nested inside a cell is not a cell.
         rest = after;
         count = count.saturating_add(1);
     }
@@ -122,10 +118,8 @@ fn extract_td_text(row: &str, index: usize) -> String {
 /// Returns the Athletic Director (first "Athletic Director:" row) and skips
 pub fn parse_ad_page(html: &str) -> AdPage {
     let mut ad = AdPage::default();
-    // Collect the body rows; separator rows (`<br>`) carry no labels or values.
     let mut rows: Vec<&str> = Vec::new();
     for chunk in html.split_inclusive("</tr>") {
-        // A `<tr` that never closes ends the walk, as the previous cursor loop did.
         if chunk.strip_suffix("</tr>").is_none() {
             break;
         }
@@ -140,10 +134,6 @@ pub fn parse_ad_page(html: &str) -> AdPage {
         }
         rows.push(row);
     }
-    // The association writes label rows followed by value rows: a row of
-    // `athleticDepartmentSubheader` spans names the role (and repeats an `Email:` label), the next
-    // row carries the person and their mailto link. Labels therefore stay pending until a row with
-    // a name appears.
     let mut pending: Vec<String> = Vec::new();
     for row in rows.iter().copied() {
         let labels: Vec<String> = extract_subheader_labels(row)
@@ -166,9 +156,7 @@ pub fn parse_ad_page(html: &str) -> AdPage {
                 ad.director = Some((name, email));
             }
             Some(label) => ad.office_roles.push((label.to_string(), name)),
-            None => {
-                // A name under a label we do not track (or under no label at all).
-            }
+            None => {}
         }
     }
 

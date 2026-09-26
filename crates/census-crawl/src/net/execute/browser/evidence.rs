@@ -30,8 +30,6 @@ pub(super) fn decode_capture_body(
     let body = BASE64
         .decode(capture.response.body.as_bytes())
         .map_err(|error| FetchError::Invariant {
-            // The transport's own codec writes this field by construction, so a body that does
-            // not decode did not come from the lane's codec: fail loudly, mint nothing.
             detail: format!("browser lane body for {} is not base64 ({error})", plan.url),
         })?;
     if body.len() > MAX_BODY_BYTES {
@@ -75,8 +73,6 @@ impl Fetcher {
         let content_hex: String = digest.iter().map(|b| format!("{b:02x}")).collect();
         let bytes = body.len();
         let content_type = content_type(&capture.response.headers);
-        // The transport stamps the capture; a stamp that is not an instant falls back to this
-        // process's clock rather than dropping the receipt.
         let fetched_at = capture
             .fetched_at_ms
             .and_then(instant_iso8601)
@@ -89,7 +85,6 @@ impl Fetcher {
             content_digest: content_hex,
             bytes,
             fetched_at: fetched_at.clone(),
-            // The lane sends no conditional headers, so it has neither validator to carry forward.
             etag: None,
             last_modified: None,
             content_type: content_type.clone(),

@@ -1,9 +1,5 @@
 use super::*;
 
-// -------------------------------------------------------------------------------------------------
-// Canonical entities
-// -------------------------------------------------------------------------------------------------
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalSchool {
     pub id: SchoolId,
@@ -42,10 +38,6 @@ impl CanonicalSchool {
     /// this parameter used to hold — so typing the parameter re-mints no school id.
     pub fn mint(state: UsJurisdiction, name: &str, normalized_name: &str) -> SchoolId {
         let _ = name;
-        // The key is the normalized name with whitespace/punctuation removed. Providers publish the
-        // same school both as a display name ("Aberdeen Central") and as a URL slug
-        // ("aberdeencentral"), so the compressed form is what makes those two observations mint one
-        // canonical school instead of two.
         let compressed: String = normalized_name
             .chars()
             .filter(char::is_ascii_alphanumeric)

@@ -71,8 +71,6 @@ fn descriptor_answers_every_registered_slug_and_nothing_else() {
     }
     assert!(descriptor("no_such_source").is_none());
     assert!(descriptor("").is_none());
-    // `wiaa` is a prefix of `wiaa_results`, and `athleticlive` of `athleticlive_athletes`: a lookup
-    // that matched on a prefix would answer both with the wrong source.
     assert_eq!(descriptor("wiaa").map(|entry| entry.slug), Some("wiaa"));
     assert_eq!(
         descriptor("wiaa_results").map(|entry| entry.slug),

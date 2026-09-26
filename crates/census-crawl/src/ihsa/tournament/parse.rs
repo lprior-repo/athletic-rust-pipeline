@@ -11,10 +11,6 @@ use crate::{CrawlError, CrawlResult};
 use census_domain::model::{CentiMetres, CentiSeconds};
 use census_domain::model::{Grade, Mark};
 
-// ---------------------------------------------------------------------------
-// Envelope decoders
-// ---------------------------------------------------------------------------
-
 /// Decode one JSON payload, naming it in the error so a run's log says which shape failed.
 fn decode<T: serde::de::DeserializeOwned>(body: &str, what: &str) -> CrawlResult<T> {
     serde_json::from_str(body).map_err(|source| CrawlError::Decode {
@@ -68,10 +64,6 @@ pub fn newest_term(body: &str) -> CrawlResult<Option<String>> {
     let envelope: TermsEnvelope = parse_terms(body)?;
     Ok(envelope.terms.first().map(|row| row.term.clone()))
 }
-
-// ---------------------------------------------------------------------------
-// Field parsers
-// ---------------------------------------------------------------------------
 
 /// Parse a published mark into a canonical [`Mark`].
 ///

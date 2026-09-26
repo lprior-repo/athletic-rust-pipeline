@@ -55,7 +55,6 @@ pub(super) fn decode_body(encoded: &str) -> Result<Vec<u8>, BrowserError> {
         Ok(value) => value,
         Err(_) => return Err(BrowserError::Protocol),
     };
-    // Base64 expands by 4/3, so the largest admissible body is the ceiling.
     let max_encoded = match u64::try_from(MAX_SOURCE_RESPONSE_BYTES)
         .ok()
         .and_then(|value| value.checked_add(2))

@@ -79,7 +79,6 @@ fn times_run_down_and_field_marks_run_up() {
     assert!(!Measure::Distance.better(610, 642));
     assert!(Measure::Field.better(185, 170));
     assert!(Measure::Points.better(312000, 290000));
-    // Unparsed marks are carried but never chosen.
     assert_eq!(Measure::of(&Mark::Raw("DNS".to_string())), None);
 }
 
@@ -151,8 +150,6 @@ fn a_reader_holding_the_sidecar_keeps_the_pass_it_opened() {
     );
 }
 
-// ── Notation agreement over the corpus range ───────────────────────────────────
-
 /// `format_time` must agree with the tree's independent renderer over every
 /// centisecond in the range 0..36_000_000 (ten hours).
 #[test]
@@ -215,7 +212,7 @@ fn field_marks_distinguish_quarter_inches() {
 #[test]
 fn best_value_is_integer_not_float() {
     let row = best_row("test", "Test");
-    let _: i32 = row.best_value; // compiles → i32
+    let _: i32 = row.best_value;
 }
 
 /// Two runs over the same data always produce identical sorted output.
@@ -223,19 +220,14 @@ fn best_value_is_integer_not_float() {
 /// deterministic: no float comparison, no HashMap-order dependency.
 #[test]
 fn two_runs_produce_identical_bytes() {
-    // Build two identical sets of BestResult, sort each, compare byte-for-byte.
     let rows = vec![
         best_row("ath_001", "Alice"),
         best_row("ath_002", "Bob"),
         best_row("ath_003", "Charlie"),
     ];
-    // Sort the same data twice and compare — deterministic output requires:
-    // 1. Integer comparison (no float non-determinism)
-    // 2. athlete_id tiebreaker (no HashMap-order dependency)
     let mut sorted1 = rows.clone();
     let mut sorted2 = rows.clone();
 
-    // Verify the sort chain is deterministic by comparing sort results
     sorted1.sort_by(|left, right| {
         left.state
             .cmp(&right.state)
@@ -270,15 +262,12 @@ fn two_runs_produce_identical_bytes() {
 /// Regression: athleticlive rounding (1_578_000 µm → 158, not 157).
 #[test]
 fn athleticlive_rounds_not_truncates() {
-    // 1_578_000 µm = 157.8 cm → rounds to 158, truncates to 157
     let micros: u64 = 1_578_000;
     let rounded_cm = (micros + 5_000) / 10_000;
     let truncated_cm = micros / 10_000;
     assert_eq!(rounded_cm, 158, "rounding gives 158");
     assert_eq!(truncated_cm, 157, "truncation gives 157 (wrong)");
 }
-
-// ── measure module tests ────────────────────────────────────────────────────────────
 
 #[test]
 fn mark_value_converts_each_published_scale() {

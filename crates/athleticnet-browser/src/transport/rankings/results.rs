@@ -60,8 +60,6 @@ pub(super) fn next_page_after(body: &[u8], page: u32) -> Option<u32> {
         return None;
     }
     match page_extent(body) {
-        // Malformed pages end pagination: strict publication parsing rejects
-        // them before a checkpoint is written.
         Err(_) => None,
         Ok((0, _)) => None,
         Ok((rows, Some(depth))) if rows < depth => None,

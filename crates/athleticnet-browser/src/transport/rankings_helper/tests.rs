@@ -61,8 +61,6 @@ fn navigation_url_is_already_canonical() -> anyhow::Result<()> {
         page: 3,
         capture: RankingsCapture::Navigation,
     };
-    // The source strips a trailing slash and the `page` query, and a
-    // canonicalising navigation aborts its own first document.
     {
         let left_value = &(build_ui_url(&origin, &action)?);
         let right_value =

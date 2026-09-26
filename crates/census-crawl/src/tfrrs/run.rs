@@ -182,9 +182,6 @@ impl<'a> Run<'a> {
         ctx.store.append_many(Table::Meets, &meets)?;
         ctx.store.append_many(Table::Teams, &teams)?;
         ctx.store.append_many(Table::Athletes, &athletes)?;
-        // A school this page named either minted a row or resolved against the consolidated index, so
-        // both lists are handed over: the minted row carries the page's own spelling and wins, and the
-        // consolidated row names the school for an athlete whose label the index answered.
         ctx.observe_athletes(
             &SourceNamespace::TfrrsAthlete,
             &athletes,

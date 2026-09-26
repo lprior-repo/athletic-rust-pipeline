@@ -42,7 +42,6 @@ async fn confirm_abort(page: &Page) -> Option<bool> {
         .await
         .ok()?
         .ok()?;
-    // Decode {ok: bool, confirmed: bool} via typed extraction.
     value
         .into_value::<serde_json::Value>()
         .ok()

@@ -31,8 +31,6 @@ static SEASON_CELL_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(
     )
 });
 
-// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
-// back as a typed error the parsers hand to the caller — never a panic.
 fn team_row_regex() -> CrawlResult<&'static Regex> {
     TEAM_ROW_REGEX
         .as_ref()
@@ -121,7 +119,6 @@ pub fn parse_team_index(html: &str) -> CrawlResult<Vec<TeamRef>> {
         });
     }
     if teams.is_empty() {
-        // The page carries no URL of its own, so the shape failure is reported against its text.
         return Err(CrawlError::Invariant {
             detail: "team index contained no team rows (markup change or empty state page)"
                 .to_string(),

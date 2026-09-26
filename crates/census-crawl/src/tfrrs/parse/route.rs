@@ -96,7 +96,6 @@ pub(super) fn href_name(href: &str) -> Option<String> {
             break;
         }
     }
-    // The name is the segment after the school, which is the segment after the numeric id.
     let _id = segments.next()?;
     let _school = segments.next()?;
     let file = segments.next()?;

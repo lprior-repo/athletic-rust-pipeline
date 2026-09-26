@@ -26,8 +26,6 @@ pub(super) fn write_performance(
     mapped: &Mapped,
     facts: &PerformanceFacts,
 ) {
-    // The event's key plus the athlete: an event document's row position and a standings payload's
-    // row position are different numbers for the same race, so neither can be part of the key.
     let source_key = format!("{}:{}", context.event_key, mapped.athlete.as_str());
     let performance_id = CanonicalPerformance::mint(
         &mapped.athlete,
@@ -53,8 +51,6 @@ pub(super) fn write_performance(
             place: facts.place,
             heat: facts.heat.clone(),
             round: context.round.clone(),
-            // Neither payload states a timing method, and AthleticLIVE is not the timer, so none is
-            // claimed.
             timing: Some(TimingMethod::Unknown),
             observed_grade: Some(facts.grade),
             evidence: vec![evidence],

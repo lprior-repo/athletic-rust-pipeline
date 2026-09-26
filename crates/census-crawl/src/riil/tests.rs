@@ -18,7 +18,6 @@ fn parse_directory_returns_schools() {
 #[test]
 fn parse_directory_count() {
     let tables = parse_directory(FIXTURE);
-    // The page has 55 <details> elements; all should parse.
     assert!(
         tables.len() >= 50,
         "expected at least 50 schools, got {}",
@@ -71,19 +70,16 @@ fn barrington_xc_coaches() {
         .map(|r| r.coach_name.as_str())
         .collect();
 
-    // Barrington has Mike Katz as Boys Cross Country head coach
     assert!(
         names.contains(&"Mike Katz"),
         "expected Mike Katz (Boys XC) in Barrington, got {:?}",
         names
     );
-    // Barrington has Molly Lacher-Katz as Girls Cross Country head coach
     assert!(
         names.contains(&"Molly Lacher-Katz"),
         "expected Molly Lacher-Katz (Girls XC) in Barrington, got {:?}",
         names
     );
-    // Barrington has Bill Barrass as Boys Indoor Track head coach
     assert!(
         names.contains(&"Bill Barrass"),
         "expected Bill Barrass (Boys Indoor Track) in Barrington, got {:?}",
@@ -104,7 +100,6 @@ fn bishop_hendricken_coaches() {
         .map(|r| r.coach_name.as_str())
         .collect();
 
-    // Bishop Hendricken has Jim Doyle for Boys Cross Country
     assert!(
         names.contains(&"Jim Doyle"),
         "expected Jim Doyle (Boys XC) in Bishop Hendricken, got {:?}",
@@ -114,8 +109,6 @@ fn bishop_hendricken_coaches() {
 
 #[test]
 fn non_xc_sport_rows_exist_in_fixture() {
-    // The page carries non-XC sport rows (e.g. Boys Basketball, Girls Volleyball).
-    // This adapter targets only XC/TF rows, but the fixture proves other sports exist.
     assert!(
         FIXTURE.contains("Boys Basketball"),
         "fixture should contain Boys Basketball rows"
@@ -176,14 +169,12 @@ fn gender_from_barrington_rows() {
         } else {
             Gender::Mixed
         };
-        // Verify the sport maps to a valid Sport variant
         assert!(
             parse_sport_label(&row.sport_label).is_some(),
             "sport '{}' should map to a valid Sport variant",
             row.sport_label
         );
         assert_eq!(row.sport, parse_sport_label(&row.sport_label).unwrap());
-        // Verify gender matches sport label prefix
         match row.sport_label.as_str() {
             s if s.starts_with("Boys ") => assert_eq!(expected_gender, Gender::Boys),
             s if s.starts_with("Girls ") => assert_eq!(expected_gender, Gender::Girls),
@@ -208,7 +199,6 @@ fn school_extract_mints_coaches() {
         "Barrington should have at least 5 coaches"
     );
 
-    // All coaches should have the same school id
     let school_id = &extract.school.id;
     for coach in &extract.coaches {
         assert_eq!(coach.school, *school_id);

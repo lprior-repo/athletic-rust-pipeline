@@ -10,8 +10,6 @@ impl Actor {
                     let now = self.clock.now_instant();
                     match now.checked_add(delay) {
                         Some(until) => until,
-                        // A deadline the platform clock cannot represent must not panic;
-                        // bound it to the longest representable fallback instead.
                         None => now.checked_add(Duration::from_secs(300)).unwrap_or(now),
                     }
                 })

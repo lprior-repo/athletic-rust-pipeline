@@ -45,8 +45,6 @@ proptest! {
         body in prop::collection::vec(any::<u8>(), 0..512),
         format_index in 0usize..2,
     ) {
-        // `Unparsed` never parses, and a body `pdftotext` cannot read is not a meet either — the
-        // same answer with the tool installed and with it missing.
         let format = [ArtifactFormat::Pdf, ArtifactFormat::Unparsed][format_index];
         prop_assert_eq!(parse_result_body(&body, format, source(), ARCHIVE_YEAR), None);
     }

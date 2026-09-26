@@ -192,7 +192,6 @@ pub fn parse_targets(body: &str, default_states: &[UsJurisdiction]) -> CrawlResu
             }
             None => fallback,
         };
-        // A registry may legitimately repeat an athlete across state files; read it once.
         if seen.insert(athlete_id) {
             targets.push(Target { athlete_id, state });
         }

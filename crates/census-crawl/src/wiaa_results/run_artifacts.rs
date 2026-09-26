@@ -68,8 +68,6 @@ fn index_unparsed(
     run.stats.artifacts_unparsed = run.stats.artifacts_unparsed.saturating_add(1);
     let formats = run.stats.formats.entry(extension.to_string()).or_default();
     *formats = formats.saturating_add(1);
-    // Buffered, not written: the entry commits with the entity tables at the end of the walk, so the
-    // artifact is marked read only once the rows this run minted are durable.
     run.pending.push((
         artifact.url.clone(),
         json!({
@@ -161,10 +159,6 @@ fn parse_artifact(
             crate::hytek::parse(&crate::hytek::lines_from_text(body), source.clone())
         }
         ArtifactFormat::RaceDay => {
-            // RaceDay reports its own typed parse error; for this runner a body that is not a
-            // RaceDay report is the same thing the other arms return as `None` — an artifact
-            // that yielded no meet, reported below as an unparsed body. The cause goes to the
-            // run notes so the failure is diagnosable rather than only counted.
             match crate::raceday::parse(body, source.clone(), artifact.year) {
                 Ok(parsed) => Some(parsed),
                 Err(error) => {
@@ -231,10 +225,6 @@ fn record_parsed_artifact(
     run: &mut ArtifactRun,
     read: ReadArtifact<'_>,
 ) -> CrawlResult<()> {
-    // The domain bounds the years a season may open in. A file dated outside them — or, when it
-    // publishes no date, filed by the archive under such a year — is refused before anything is
-    // counted as read, so no row is filed under a year no source published and a later parser
-    // version retries the artifact instead of finding it journaled as read.
     let Some(school_year) = school_year_for(&read.parsed.date, read.sport, read.artifact.year)
     else {
         run.stats.artifacts_parse_failed = run.stats.artifacts_parse_failed.saturating_add(1);
@@ -268,8 +258,6 @@ fn record_parsed_artifact(
             accumulator: &mut run.accumulated,
         },
     );
-    // Buffered, not written: the entry commits with the entity tables at the end of the walk, so the
-    // artifact is marked read only once the rows absorbed here are durable.
     run.pending.push((
         read.artifact.url.clone(),
         json!({

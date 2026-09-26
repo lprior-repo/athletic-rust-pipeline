@@ -127,7 +127,6 @@ fn walk() -> Result<(Vec<Package>, Vec<SourceFile>)> {
 
 /// The scanned files of one root, skipping the ones that name themselves test code.
 fn root_files(package: &str, root: &Root) -> Result<Vec<SourceFile>> {
-    // A root is a directory to walk, except for a package's build script, which is a single file.
     let paths = if root.path.is_file() {
         vec![root.path.clone()]
     } else {
@@ -200,8 +199,6 @@ fn measure(packages: &[Package], files: &[SourceFile]) -> Result<Measured> {
         let Some(scan) = scans.get_mut(&file.package) else {
             continue;
         };
-        // A harness file counts against the package's file total but contributes no production
-        // lines: it is a target the scan read, not source the budgets measure.
         scan.add_file(if file.harness { 0 } else { production.len() });
         if file.harness {
             continue;
@@ -240,9 +237,6 @@ fn report_value(measured: Measured) -> Value {
         "functions_over_60_lines".to_string(),
         Value::from(count(measured.functions_over_60.len())),
     );
-    // The sites ride along as evidence: a budget the gate fails on has to name the function that
-    // broke it, or the fix starts with a search instead of a read. They are not ratcheted — the count
-    // above is the metric this scan certifies.
     structure.insert(
         "functions_over_60_sites".to_string(),
         Value::Array(

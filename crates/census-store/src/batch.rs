@@ -130,9 +130,6 @@ pub(super) fn stage_derived_encoded(
         }
         batch.insert(entities, key, value);
     }
-    // Observation-log tables keep their appended rows: their keys are sequences under an id the
-    // acquisition owns, so a derivation that names the same id must not clear that history. The
-    // old per-record guard checked this per id; the table's mode does not vary inside a batch.
     if table.storage_mode() != StorageMode::ObservationLog {
         drop_foreign_batch(entities, batch, table, &staged.named)?;
     }

@@ -1,9 +1,5 @@
 use super::*;
 
-// -------------------------------------------------------------------------------------------------
-// Normalization
-// -------------------------------------------------------------------------------------------------
-
 /// Normalize a person/school/meet name for identity comparisons: lowercase, strip diacritics and
 /// punctuation, collapse whitespace, drop school-type suffixes that vary between sources
 /// ("high school", "hs", "school", "academy" is *kept* because it is distinguishing).
@@ -54,7 +50,6 @@ fn strip_type_suffix(parts: &mut Vec<&str>) -> bool {
     ] {
         let tokens: Vec<&str> = suffix.split(' ').collect();
         if parts.len() > tokens.len() && parts.ends_with(&tokens) {
-            // Guarded above (`parts.len() > tokens.len()`), so saturating is exact here.
             parts.truncate(parts.len().saturating_sub(tokens.len()));
             return true;
         }
@@ -63,8 +58,6 @@ fn strip_type_suffix(parts: &mut Vec<&str>) -> bool {
 }
 
 fn strip_diacritic(ch: char) -> Option<char> {
-    // A tiny, deterministic folding table is enough for Midwest school/person names; anything else
-    // falls back to the unaccented ASCII range when possible.
     let folded = match ch {
         'á' | 'à' | 'â' | 'ä' | 'ã' | 'å' | 'ā' => 'a',
         'é' | 'è' | 'ê' | 'ë' | 'ē' | 'ę' => 'e',

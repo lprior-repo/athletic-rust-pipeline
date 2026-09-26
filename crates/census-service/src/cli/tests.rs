@@ -42,7 +42,6 @@ fn a_restriction_with_no_flag_is_empty_not_wisconsin() {
     assert_eq!(explicit, vec![UsJurisdiction::Ohio]);
     assert!(resolve_restriction(true, &[UsJurisdiction::Ohio]).is_err());
 }
-// ─── Verify subcommand acceptance tests ──────────────────────────────────────
 
 use std::path::Path;
 
@@ -78,7 +77,6 @@ fn write_test_workbook(
     let path = dir.join("verify-test.xlsx");
     let mut book = Xlsx::new();
 
-    // Athletes sheet
     let athletes_sheet = book.add_worksheet();
     let _ = athletes_sheet.set_name("Athletes");
     let headers = ["Athlete ID", "Name", "School", "Graduation Year"];
@@ -93,7 +91,6 @@ fn write_test_workbook(
         let _ = athletes_sheet.write_string(row, 3, grad_year);
     }
 
-    // Performances sheet
     let perf_sheet = book.add_worksheet();
     let _ = perf_sheet.set_name("Performances_001");
     let perf_headers = ["Athlete ID", "Event", "Mark"];
@@ -107,13 +104,11 @@ fn write_test_workbook(
         let _ = perf_sheet.write_string(row, 2, mark);
     }
 
-    // Coverage sheet
     let coverage = book.add_worksheet();
     let _ = coverage.set_name("Coverage");
     let _ = coverage.write_string(0, 0, "state");
     let _ = coverage.write_string(1, 0, "WI");
 
-    // Run Metrics sheet
     let metrics = book.add_worksheet();
     let _ = metrics.set_name("Run Metrics");
     let _ = metrics.write_string(0, 0, "metric");
@@ -212,9 +207,6 @@ fn acceptance_agreement() {
             (
                 a1.id.as_str().to_string(),
                 "Alice Runner".to_string(),
-                // The sheet prints the school by *name* (`Dataset::school_name`); the raw id is
-                // only the fallback for a school the store holds no row for, and `verify` treats
-                // an id printed where a name exists as the disagreement it is.
                 school_rec.name.clone(),
                 "2027".to_string(),
             ),
@@ -228,9 +220,6 @@ fn acceptance_agreement() {
         &[
             (
                 a1.id.as_str().to_string(),
-                // The sheet prints the event by the label its kind mints and the mark in the
-                // published notation (`mark_text`); the store holds both event rows, so the labels
-                // are what `verify` must resolve.
                 e1.kind.stable_key().to_string(),
                 mark_text(&p1.mark),
             ),
@@ -323,7 +312,6 @@ fn acceptance_empty_event_cell_with_no_store_row() {
         GradYear::new(2027).unwrap(),
         Gender::Girls,
     );
-    // The event names a row the store never got, so the sheet has no label for it.
     let e1 = make_event(EventKind::Track200m, Gender::Girls);
     let p1 = make_perf(&a1.id, &team, &e1, 26);
 
@@ -377,7 +365,6 @@ fn acceptance_disagreement() {
         .expect("append school");
     store.append(Table::Athletes, &a1).expect("append athlete");
 
-    // Write workbook with WRONG name.
     let _ = write_test_workbook(
         dir.path(),
         &[(
@@ -456,7 +443,6 @@ fn acceptance_school_id_where_the_store_has_a_name() {
 fn acceptance_school_id_with_no_store_row() {
     let dir = tempfile::tempdir().unwrap();
     let (school_rec, _) = school("Jefferson High", census_domain::UsJurisdiction::Wisconsin);
-    // The athlete names a school the store never scanned, so no name resolves for it.
     let ghost_id: census_domain::model::SchoolId = Id::mint("school", &["Ghost High"]);
     let a1 = CanonicalAthlete::new(
         &ghost_id,
@@ -501,7 +487,7 @@ fn acceptance_missing_column() {
 
     let athletes_sheet = book.add_worksheet();
     let _ = athletes_sheet.set_name("Athletes");
-    let headers = ["Athlete ID", "Name", "School"]; // no Graduation Year
+    let headers = ["Athlete ID", "Name", "School"];
     for (col, header) in headers.iter().enumerate() {
         let _ = athletes_sheet.write_string(0, u16::try_from(col).unwrap_or(0), *header);
     }
@@ -509,7 +495,6 @@ fn acceptance_missing_column() {
     let _ = athletes_sheet.write_string(1, 1, "Test Athlete");
     let _ = athletes_sheet.write_string(1, 2, "Jefferson High");
 
-    // Empty Performances sheet with correct headers.
     let perf_sheet = book.add_worksheet();
     let _ = perf_sheet.set_name("Performances_001");
     let perf_headers = ["Athlete ID", "Event", "Mark"];
@@ -517,7 +502,6 @@ fn acceptance_missing_column() {
         let _ = perf_sheet.write_string(0, u16::try_from(col).unwrap_or(0), *header);
     }
 
-    // Coverage and Run Metrics sheets.
     let coverage = book.add_worksheet();
     let _ = coverage.set_name("Coverage");
     let _ = coverage.write_string(0, 0, "state");

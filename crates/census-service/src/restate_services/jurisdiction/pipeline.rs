@@ -28,8 +28,6 @@ impl JurisdictionCensus {
         state: &mut JurisdictionState,
         today: &str,
     ) -> Result<(), HandlerError> {
-        // The stage runs the plan, so a run that reached this point without one skipped the
-        // recording step; a list invented here would be the second opinion the plan prevents.
         let Some(plan) = state.plan.as_ref() else {
             return Err(TerminalError::new(
                 "the teams stage ran before the run recorded its source plan",
@@ -80,16 +78,12 @@ impl JurisdictionCensus {
         state: &mut JurisdictionState,
         today: &str,
     ) -> Result<(), HandlerError> {
-        // The season year reaches the results index as a query parameter, so a year the URL cannot
-        // carry is a request fault rather than a source condition.
         let year = u16::try_from(request.season.get()).map_err(|_| {
             TerminalError::new(format!(
                 "season year {} is not a results-index year",
                 request.season.get()
             ))
         })?;
-        // The stage runs the plan for the same reason the team-index stage does: a source list
-        // invented here would be the second opinion the recorded plan exists to prevent.
         let Some(plan) = state.plan.as_ref() else {
             return Err(TerminalError::new(
                 "the meets stage ran before the run recorded its source plan",

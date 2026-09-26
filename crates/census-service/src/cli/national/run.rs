@@ -49,9 +49,6 @@ pub(crate) async fn submit_national(
     let national = NationalCensusIngressClient::from_client(ingestion.clone(), identity.as_str());
     let handle = match national.run(Json(request)).send().await {
         Ok(submitted) => {
-            // Restate deduplicates a workflow run by its identity alone: a repeat submission attaches
-            // to the run that exists and its payload is *not* re-read. Saying so out loud is the
-            // difference between "your parameters were applied" and "you are watching an older run".
             if matches!(submitted.send_status(), SendStatus::PreviouslyAccepted) {
                 println!(
                     "note: {} already had a run — restate deduplicated this submission, so a changed \
@@ -62,10 +59,6 @@ pub(crate) async fn submit_national(
             submitted.invocation_handle()
         }
         Err(error) => {
-            // §8: the workflow identity *is* the logical job. Restate refuses a second run under it
-            // rather than starting a parallel fan-out, so the honest answer is to observe the run
-            // that exists — and to print the refusal, because an operator who changed a parameter
-            // has to see that nothing was started and that the fix is a new revision.
             println!(
                 "national run {} already exists — observing it instead",
                 identity.as_str()
@@ -133,9 +126,6 @@ pub(crate) async fn run_jurisdiction(cli: &Cli, args: &JurisdictionArgs) -> Resu
         authorized_hosts: cli.authorized_hosts.clone(),
     };
     let object = JurisdictionCensusIngressClient::from_client(ingestion, identity.as_str());
-    // No idempotency key: a jurisdiction object serializes its invocations per key, so a repeated
-    // call queues behind the one in flight and then finds its stages already recorded. The key is
-    // the identity, which is what §8 asks for.
     let submitted = object
         .run(Json(request))
         .send()

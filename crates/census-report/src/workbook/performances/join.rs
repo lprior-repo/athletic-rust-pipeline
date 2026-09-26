@@ -45,18 +45,12 @@ impl Parents {
             retain_core(&mut meets);
             retain_core(&mut events);
         }
-        // Run-scope filter: exclude jurisdictions outside CENSUS_SCOPE (ADR-009). Athlete
-        // jurisdiction comes from school state (the report's rule), and the placement index carries
-        // the excluded school rows too — so an athlete whose school the run scope leaves out is
-        // excluded with it rather than read as unplaced and then cited with a raw school id.
         let mut schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
         let outside_schools = exclude_out_of_scope(&mut schools, |school| school.state.into());
         let mut school_state = school_state_index(&schools);
         school_state.extend(school_state_index(&outside_schools));
         athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
         meets.retain(|m| in_run_scope(JurisdictionBucket::from(m.state)));
-        // Cohort filter: keep only athletes matching the graduating class, the same predicate the
-        // recruiting Dataset uses — one source of truth for cohort membership.
         if let Some(year) = grad_year {
             athletes.retain(|a| a.grad_year.get() == year);
         }

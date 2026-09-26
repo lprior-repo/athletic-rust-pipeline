@@ -140,11 +140,6 @@ fn parse_bencher_line_large_seconds() {
     assert!((ns - 123_456_000_000.0).abs() < 1.0);
 }
 
-// ---------------------------------------------------------------------------
-// Tests for compare.rs: missing evidence, empty maps, and non-finite values.
-// These tests must fail if the corresponding guard is removed from compare.rs.
-// ---------------------------------------------------------------------------
-
 use crate::perf::compare::check_throughput;
 use crate::perf::{GroupMeasurement, Meta, PerfBaseline};
 use std::collections::BTreeMap;
@@ -225,7 +220,6 @@ fn missing_baseline_group_is_rejected() {
     );
     let baseline = make_baseline(baseline_groups, "x86_64", 8, "1.75", "abc123", 42);
 
-    // Current run only produced "census/parse", missing "pipeline/result_file".
     let mut current = BTreeMap::new();
     current.insert(
         "census/parse".to_string(),

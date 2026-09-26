@@ -50,7 +50,6 @@ impl BrowserLane {
         &self,
         spec: &RequestSpec,
     ) -> Result<BrowserOutcome, FetchError> {
-        // Host guard: the browser lane only serves its admitted hosts.
         let parsed = Url::parse(&spec.url).map_err(|source| FetchError::Policy {
             detail: format!("cannot parse browser URL: {source}"),
         })?;

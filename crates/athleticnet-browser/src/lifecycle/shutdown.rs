@@ -20,8 +20,6 @@ impl BrowserManager {
         write_state(&self.status, BrowserState::Stopped);
         let deadline = match self.clock.now_instant().checked_add(SHUTDOWN_TIMEOUT) {
             Some(value) => value,
-            // A deadline the platform clock cannot represent must not panic; fall back to "now",
-            // which is the same immediate-residual path a reached deadline takes.
             None => self.clock.now_instant(),
         };
         let (report, mut failure) = self.send_shutdown_command(deadline).await;

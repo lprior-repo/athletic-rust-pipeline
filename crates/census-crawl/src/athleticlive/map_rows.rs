@@ -69,8 +69,6 @@ pub(super) fn record_row(
     let mapped = map_identity(writer, context, &school_id, &identity, row_index);
     count_channels(writer.stats, row);
     let Some(mark) = row.canonical_mark(context.kind) else {
-        // `NH` publishes `im: 0`: the athlete competed, so the identity above is the evidence, and
-        // there is no performance to write.
         writer.stats.rows_without_mark = writer.stats.rows_without_mark.saturating_add(1);
         return true;
     };
@@ -111,7 +109,6 @@ pub(super) fn record_standing(
     };
     let facts = PerformanceFacts {
         mark,
-        // The standings payload publishes no wind channel.
         wind_mps: None,
         place: row.place(),
         heat: None,
@@ -197,9 +194,6 @@ fn decode_standing<'a>(writer: &mut Writer<'_>, row: &'a StandingRow) -> Option<
             .map(gender_from_token)
             .unwrap_or(Gender::Unknown),
         an_athlete_id: row.an_athlete_id(),
-        // The standings payload publishes no team id, only the run's short team key, which is not a
-        // team identity this census can hold: it is counted (`rows_with_timer_team_key`), never
-        // minted.
         timer_team_id: None,
         an_team_id: None,
     })
@@ -217,8 +211,6 @@ fn read_grade(stats: &mut ResultStats, value: Option<&Value>) -> Option<Grade> {
     }
     match grade_from_token(&token) {
         Some(grade) => Some(grade),
-        // A numeric token outside 9..=12 is a below-high-school entry: an open meet publishes one,
-        // and the census cohort holds only high-school grades.
         None if token.parse::<u8>().is_ok() => refused(stats, Refusal::BelowHighSchool),
         None => refused(stats, Refusal::NoGrade),
     }

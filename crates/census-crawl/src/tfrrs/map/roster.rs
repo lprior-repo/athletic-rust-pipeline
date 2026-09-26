@@ -32,8 +32,6 @@ impl<'a> Absorb<'a> {
         let Some(school) = self.school_for(context.page, school_name) else {
             return;
         };
-        // The roster's own rows carry no team link, so the page's team is minted from the season it
-        // states; its athletes are minted from the roster table below.
         self.team_for(
             context.page,
             &TeamFacts {
@@ -106,7 +104,11 @@ impl<'a> Absorb<'a> {
                 sport: season.sport,
                 tfrrs_id: athlete.id,
                 url: None,
-                source_key: format!("{}:{}:roster:{row_index}", context.team.slug, season.school_year.get()),
+                source_key: format!(
+                    "{}:{}:roster:{row_index}",
+                    context.team.slug,
+                    season.school_year.get()
+                ),
                 observed_grade: Some(ObservedGrade {
                     grade,
                     school_year: season.school_year,

@@ -9,10 +9,6 @@ use census_domain::model::{CanonicalCoach, Evidence, SchoolId, SourceNamespace, 
 use census_store::Table;
 use std::collections::{HashMap, HashSet};
 
-// ---------------------------------------------------------------------------
-// Collect
-// ---------------------------------------------------------------------------
-
 /// Collect this provider's Illinois schools and coach/AD contacts into the canonical store.
 ///
 /// Strategy:
@@ -47,7 +43,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         process_record(ctx, record, &schools_url, &done_keys, &mut run, &mut report).await?;
     }
 
-    // Finalize stats and counts.
     let after = ctx.fetcher.stats().await;
     let delta_requests = after.requests.saturating_sub(before.requests);
     report.rows = u64::try_from(run.processed).map_err(|_| CrawlError::Arithmetic {
@@ -108,7 +103,6 @@ async fn process_record(
     run: &mut IhsaRun<'_>,
     report: &mut AdapterReport,
 ) -> CrawlResult<()> {
-    // Skip already-processed schools (resume support).
     let journal_key = format!("IL:{}", record.school_id);
     if done_keys.contains(&journal_key) {
         run.skipped = run.skipped.saturating_add(1);
@@ -116,7 +110,6 @@ async fn process_record(
     }
     run.revealed_emails.clear();
 
-    // Parse school.
     let Some((school, school_id)) = parse_school(record, schools_url, &run.options.observed_on)
     else {
         return Ok(());
@@ -131,7 +124,6 @@ async fn process_record(
 
     let coaches = emit_coaches(ctx, record, &staff, &school_id, &staff_url, run, report).await;
 
-    // This school's coach rows and the entry that journals it reach the store as one commit.
     journal_school(
         ctx,
         &journal_key,
@@ -197,7 +189,6 @@ async fn emit_coaches(
                 }
             };
             if let Some(address) = revealed {
-                // A revealed address is classified like any other published one.
                 coach.set_published_email(&address);
                 coach.evidence.push(Evidence::parsed(
                     SourceRef::new("ihsa", Some(email_url)),

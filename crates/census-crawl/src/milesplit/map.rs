@@ -40,7 +40,6 @@ pub(super) fn absorb_result_set(
     accumulated: &mut Accumulator,
 ) -> usize {
     if page.meet.rows_parsed == 0 {
-        // An empty result set is data, not an error; the caller notes it and writes nothing.
         return 0;
     }
     let (meet, evidence, source) = meet_for(page, reference, observed_on, stats);

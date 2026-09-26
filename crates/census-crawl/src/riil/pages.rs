@@ -9,8 +9,6 @@
 use super::map::{CoachRow, SchoolTable};
 use census_domain::model::Sport;
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
 /// Remove HTML tags, keeping one space where a tag separated two words.
 fn strip_tags(fragment: &str) -> String {
     let mut out = String::with_capacity(fragment.len());
@@ -89,8 +87,6 @@ fn extract_td_text(row: &str, index: usize) -> String {
     String::new()
 }
 
-// ── Sport parsing ──────────────────────────────────────────────────────────
-
 /// Map a sport label to a `Sport` variant, or `None` for non-TC/XC sports.
 pub fn parse_sport_label(label: &str) -> Option<Sport> {
     let cleaned = collapse_whitespace(&decode_entities(label));
@@ -116,8 +112,6 @@ fn parse_coach_name(cell: &str) -> String {
     collapse_whitespace(&text)
 }
 
-// ── Parsing ────────────────────────────────────────────────────────────────
-
 /// Parse one school's `<table class='DirectoryStaffTable'>` into coach rows.
 fn parse_table_rows(table_html: &str) -> Vec<CoachRow> {
     let mut rows = Vec::new();
@@ -135,12 +129,10 @@ fn parse_table_rows(table_html: &str) -> Vec<CoachRow> {
         let sport_label = collapse_whitespace(&decode_entities(&sport_raw));
         let role = collapse_whitespace(&decode_entities(&role_raw));
 
-        // Only coach rows: first cell (sport) must be non-empty
         if sport_label.is_empty() {
             continue;
         }
 
-        // Filter to only head coach rows
         if !role.contains("Head Coach") {
             continue;
         }

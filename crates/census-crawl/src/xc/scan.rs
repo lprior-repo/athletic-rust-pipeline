@@ -26,7 +26,6 @@ impl XcScan {
     pub(super) fn new() -> Self {
         Self {
             events: Vec::new(),
-            // Row counters saturate: the counts feed the report, and no file carries 2^64 rows.
             rows_parsed: 0,
             rows_skipped: 0,
             gender: Gender::Boys,

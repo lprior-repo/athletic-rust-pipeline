@@ -30,21 +30,15 @@ pub(super) fn render(evidence: &SealEvidence) -> String {
         .map(|gap| format!("{}:{}:{}", gap.class, gap.unit, gap.count))
         .collect::<Vec<_>>()
         .join("|");
-    // The workbook's own bytes belong in the digest: two exports with the same row count are not
-    // the same artifact, and a seal that cannot tell them apart certifies neither.
     let mut workbook_digests = evidence.workbook.digests.clone();
     workbook_digests.sort();
     let workbook_digests = workbook_digests.join("|");
-    // Names, not the order a caller named keys in: sorted, so two seals over the same source objects
-    // agree whatever order the run was measured in.
     let silent_sources = {
         let mut names = evidence.retained.silent_sources.clone();
         names.sort();
         names.dedup();
         names.join("|")
     };
-    // Tri-state: an unmeasured count must not hash like a measured zero, or two seals with
-    // different evidence would share a digest.
     let source_failures = match evidence.retained.source_failures {
         Some(count) => count.to_string(),
         None => "unmeasured".to_string(),

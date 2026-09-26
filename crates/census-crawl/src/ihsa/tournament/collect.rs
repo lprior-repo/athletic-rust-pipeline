@@ -114,9 +114,6 @@ impl<'a> Run<'a> {
             return Ok(());
         };
         for row in &rows {
-            // The limit bounds the index rows this run considers, not the meets it happens to walk:
-            // a resumed run skips the rows it already has, and counting only walked meets would walk
-            // the next row — a meet another run owns — to fill the quota.
             let considered = self.walked.saturating_add(self.skipped_meets);
             if self.options.limit.is_some_and(|limit| considered >= limit) {
                 break;

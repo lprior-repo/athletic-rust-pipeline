@@ -87,7 +87,6 @@ pub fn parse_table(table_html: &str) -> Option<SchoolTable> {
         };
         let row = chunk.get(open..)?;
 
-        // Skip header row
         if row.contains("<th>") {
             continue;
         }
@@ -133,8 +132,6 @@ pub fn parse_directory(html: &str) -> Vec<(String, SchoolTable)> {
             continue;
         }
 
-        // The table runs from its opening tag to the first `</table>` after it; a capture that stops
-        // inside the table keeps whatever survived of it.
         let Some(from_table) = html.get(table_start..) else {
             continue;
         };

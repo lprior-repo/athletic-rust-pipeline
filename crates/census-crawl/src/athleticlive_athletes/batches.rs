@@ -28,8 +28,6 @@ pub(super) async fn run_batches<'t>(
         }
         let ids: Vec<u64> = batch.iter().map(|t| t.athleticlive_meet_id).collect();
         let (hits, total) = page_hits(ctx, options, &ids, report).await?;
-        // A batch whose total exceeds the Elasticsearch result window must be split: the missing
-        // rows are not recoverable by paging past 10,000.
         if split_batch(queue, &batch, total, report, stats) {
             continue;
         }
@@ -124,7 +122,6 @@ fn split_batch<'t>(
         ));
         return true;
     }
-    // Every larger batch was split and re-queued above, so exactly one meet remains here.
     let Some(target) = batch.first() else {
         return true;
     };
@@ -159,9 +156,6 @@ fn emit_batch<'t>(
     }
 
     let entities = fill_page(ctx, options, batch, hits, by_id, &mut page)?;
-    // The batch's rows and the entries naming the meets it covered commit together: a meet is marked
-    // read only once every row the batch read is durable, and the whole batch is one durability
-    // boundary rather than one per table plus one per meet.
     page.commit()?;
     stats.meets = stats.meets.saturating_add(batch.len());
     stats.rows = stats.rows.saturating_add(entities.rows);

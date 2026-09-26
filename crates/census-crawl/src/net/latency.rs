@@ -34,10 +34,6 @@ impl FetchStats {
     pub fn record_latency(&mut self, millis: u64) {
         self.latency_ms_sum = self.latency_ms_sum.saturating_add(millis);
         self.latency_ms_max = self.latency_ms_max.max(millis);
-        // A value past every edge lands in the last bucket. The index is computed with
-        // `saturating_sub`: the edge table is a fixed non-empty array, so this is the last index,
-        // and the saturating form keeps that arithmetic provably unable to underflow — a panic here
-        // would be a panic in the request path, which is the one thing the lint exists to prevent.
         let bucket = match LATENCY_BUCKET_EDGES_MS
             .iter()
             .position(|edge| millis <= *edge)
@@ -64,9 +60,6 @@ impl FetchStats {
         if samples == 0 {
             return None;
         }
-        // `checked_div` rather than `/`: the guard above already refuses the zero, and expressing the
-        // division as the checked operation keeps the sum from ever being divided by nothing even if
-        // that guard is ever moved.
         self.latency_ms_sum.checked_div(samples)
     }
 
@@ -81,7 +74,6 @@ impl FetchStats {
             return None;
         }
         let percentile = u64::from(percentile.min(100));
-        // The rank of the last sample the percentile covers, counting from one.
         let rank = samples
             .saturating_mul(percentile)
             .saturating_add(99)

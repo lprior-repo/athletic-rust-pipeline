@@ -84,7 +84,6 @@ pub(crate) async fn fetch(
         return Err(BrowserError::HumanRequired);
     }
     let listeners = subscribe_fetch(page).await?;
-    // Recheck gate/generation immediately after async listener setup.
     let snap = gate.snapshot();
     if !snap.ready {
         return Err(BrowserError::HumanRequired);

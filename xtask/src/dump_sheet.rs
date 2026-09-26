@@ -25,7 +25,6 @@ pub fn run(workbook_path: &Path, sheet_names: &[String]) -> anyhow::Result<()> {
         .with_context(|| format!("opening workbook {}", workbook_path.display()))?;
 
     for name in sheet_names {
-        // Print a separator before each sheet for readability.
         if sheet_names.len() > 1 {
             eprintln!("=== {} ===", name);
         }
@@ -33,12 +32,9 @@ pub fn run(workbook_path: &Path, sheet_names: &[String]) -> anyhow::Result<()> {
         let range = book
             .worksheet_range(name)
             .with_context(|| format!("reading sheet '{name}'"))?;
-        // Print header row then data rows, all non-empty.
-        // Use an owned vector so we don't hold the workbook open while iterating data.
         let mut row_iter = range.rows();
         let headers: Vec<String>;
 
-        // First row: header if it carries text; otherwise a data row.
         if let Some(first_row) = row_iter.next() {
             let first_strs: Vec<String> = first_row
                 .iter()
@@ -47,7 +43,6 @@ pub fn run(workbook_path: &Path, sheet_names: &[String]) -> anyhow::Result<()> {
 
             let is_header = !first_strs.iter().all(|s| s.is_empty());
 
-            // Print header as raw values (no column=value prefix).
             if is_header {
                 let header_fields: Vec<String> = first_strs
                     .iter()
@@ -56,10 +51,8 @@ pub fn run(workbook_path: &Path, sheet_names: &[String]) -> anyhow::Result<()> {
                 println!("{}", header_fields.join(" "));
             }
 
-            // Headers come from the first row for all subsequent rows.
             headers = first_strs;
 
-            // Remaining rows: column=value pairs.
             for row in row_iter {
                 if !row_has_text(row) {
                     continue;

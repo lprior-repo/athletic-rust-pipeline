@@ -113,9 +113,6 @@ pub(super) fn run_integrity(store: &Store) -> Result<()> {
     let report = store.integrity().context("checking store integrity")?;
     println!("ok\t{}", report.ok);
     for t in &report.tables {
-        // A table is `ok` when its ledger agrees with its keyspace *and* its write mode's own
-        // invariant holds: the counts can agree while a derived table holds a row keyed under a
-        // foreign sequence, which is a finding this command exists to surface.
         let status = if t.expected == t.actual && t.details.is_empty() {
             "ok"
         } else {
@@ -125,8 +122,6 @@ pub(super) fn run_integrity(store: &Store) -> Result<()> {
             "table\t{}\texpected={}\tactual={}\t{status}",
             t.table, t.expected, t.actual
         );
-        // One greppable line per finding, beneath the table's own line: the existing columns keep
-        // their shape, and `store-integrity | grep '^detail'` is the gate's answer.
         for detail in &t.details {
             println!("detail\t{}\t{detail}", t.table);
         }

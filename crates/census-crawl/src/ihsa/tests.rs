@@ -26,8 +26,6 @@ const FIXTURE_STAFF_RICH: &str = include_str!("../../tests/fixtures/ihsa/staff2_
 const FIXTURE_STAFF_OFFICE: &str =
     include_str!("../../tests/fixtures/ihsa/staff2_office_only.json");
 
-// ── Schools parsing tests ──────────────────────────────────────────────
-
 #[test]
 fn parses_schools_fixture() {
     let records = parse_schools(FIXTURE_SCHOOLS).expect("fixture must parse");
@@ -56,11 +54,8 @@ fn parses_school_into_canonical() {
     assert_eq!(school.state, Some(UsJurisdiction::Illinois));
     assert_eq!(school.association.as_deref(), Some("ihsa"));
     assert_eq!(school.city.as_deref(), Some("Abingdon"));
-    // `/v1/schools` rows carry no `URL` field (see this capture-backed fixture), so the school
-    // website stays unset for IHSA.
     assert_eq!(school.school_website, None);
 
-    // Source identity carries the IHSA SchoolID.
     assert_eq!(school.source_identities.len(), 1);
     assert_eq!(
         school.source_identities[0].namespace,
@@ -70,7 +65,6 @@ fn parses_school_into_canonical() {
     );
     assert_eq!(school.source_identities[0].id, "0101");
 
-    // School id is deterministic.
     let expected_id = CanonicalSchool::mint(
         UsJurisdiction::Illinois,
         "Abingdon-Avon High School",
@@ -81,8 +75,6 @@ fn parses_school_into_canonical() {
 
 #[test]
 fn school_url_becomes_school_website() {
-    // Constructed input, not a capture: the live `/v1/schools` rows carry no `URL` field, but the
-    // adapter still maps one when a row has it.
     let row = SchoolRecord {
         school_id: "9999".into(),
         name_formal: "Example High School".into(),
@@ -125,13 +117,9 @@ fn school_with_blank_name_is_skipped() {
     assert!(parse_school(&row, "https://example.com/api", "2026-09-19").is_none());
 }
 
-// ── Staff parsing tests ─────────────────────────────────────────────────
-
 #[test]
 fn parses_staff_fixture_rich() {
     let all = parse_staff(FIXTURE_STAFF_RICH).expect("fixture must parse");
-    // Live payload for school 0101: six categories, 31 (PersonID, title) rows. Reid Kelso is
-    // both ADs and listed once as official representative, so role rows outnumber people.
     assert_eq!(
         all.len(),
         31,
@@ -144,7 +132,6 @@ fn parses_staff_fixture_rich() {
 #[test]
 fn parses_staff_fixture_office_only() {
     let all = parse_staff(FIXTURE_STAFF_OFFICE).expect("fixture must parse");
-    // Live payload for school 0138: administration only, no athletics staff categories.
     assert_eq!(all.len(), 6, "office-only fixture has 6 staff rows");
 }
 
@@ -208,8 +195,6 @@ fn role_returns_none_for_office_roles() {
     assert!(parse_role("Athletic Director Secretary").is_none());
 }
 
-// ── Coach entity construction tests ─────────────────────────────────────
-
 #[test]
 fn coach_entity_from_rich_fixture() {
     let records = parse_schools(FIXTURE_SCHOOLS).expect("fixture must parse");
@@ -223,15 +208,12 @@ fn coach_entity_from_rich_fixture() {
         .filter_map(|p| parse_coach(p, &school_id, "https://example.com/api", "2026-09-19"))
         .collect();
 
-    // Kept: 17 sport head coaches + 2 AD rows + 2 "unknown" coach titles = 21 entities.
-    // Dropped: principals, superintendent, medical staff, official representative.
     assert_eq!(
         coaches.len(),
         21,
         "rich fixture yields 21 coach/AD entities"
     );
 
-    // Verify head coaches have correct sport/gender mapping.
     let boys_xc = coaches
         .iter()
         .find(|c| {
@@ -241,7 +223,6 @@ fn coach_entity_from_rich_fixture() {
         })
         .expect("should have a Boys Cross Country coach named Mink");
     assert_eq!(boys_xc.role, CoachRole::HeadCoach);
-    // The address is not in the staff payload; it comes from the reveal endpoint.
     assert_eq!(boys_xc.professional_email, None);
 
     let girls_tf = coaches
@@ -255,7 +236,6 @@ fn coach_entity_from_rich_fixture() {
     assert_eq!(girls_tf.role, CoachRole::HeadCoach);
     assert_eq!(girls_tf.professional_email, None);
 
-    // Verify ADs have sport = None, gender = Mixed.
     let ad = coaches
         .iter()
         .find(|c| c.role == CoachRole::AthleticDirector)
@@ -267,12 +247,10 @@ fn coach_entity_from_rich_fixture() {
 
 #[test]
 fn email_reveal_parses_only_real_addresses() {
-    // Live body: /v1/schools/0101/staff/96256/email → {"email":"jrakestraw@atown276.net"}
     assert_eq!(
         parse_email(r#"{"email":"jrakestraw@atown276.net"}"#).as_deref(),
         Some("jrakestraw@atown276.net")
     );
-    // Blank / missing / malformed reveals store nothing.
     assert_eq!(parse_email(r#"{"email":"   "}"#), None);
     assert_eq!(parse_email(r#"{"email":null}"#), None);
     assert_eq!(parse_email("{}"), None);
@@ -299,7 +277,7 @@ fn kept_staff_rows_advertise_an_email() {
 #[test]
 fn office_roles_excluded_from_coaches() {
     let records = parse_schools(FIXTURE_SCHOOLS).expect("fixture must parse");
-    let unity = &records[2]; // Unity Christian
+    let unity = &records[2];
     let (_, school_id) =
         parse_school(unity, "https://example.com/api", "2026-09-19").expect("Unity has a name");
 
@@ -309,14 +287,12 @@ fn office_roles_excluded_from_coaches() {
         .filter_map(|p| parse_coach(p, &school_id, "https://example.com/api", "2026-09-19"))
         .collect();
 
-    // Unity's live payload: 6 administration rows of which only the two AD rows are coaches.
     assert_eq!(
         coaches.len(),
         2,
         "only 2 AD entities from the office-only fixture"
     );
 
-    // Verify non-coaching roles were excluded and the ADs survive.
     assert!(coaches
         .iter()
         .all(|c| c.role == CoachRole::AthleticDirector));
@@ -348,7 +324,6 @@ fn honorifics_stripped_from_names() {
         "honorific 'Coach' should be stripped"
     );
 
-    // Also test other honorifics.
     person.name = "Mr. Justin Rakestraw".to_string();
     let coach = parse_coach(&person, &school_id, "https://example.com/api", "2026-09-19").unwrap();
     assert_eq!(
@@ -384,12 +359,8 @@ fn no_cell_phones_or_personal_data_in_entities() {
         {
             assert!(coach.phone.is_none(), "coach phone must be None");
         }
-        // Whether or not the role is kept, the payload's phone/fax never reach an entity: the
-        // only carrier is `StaffPerson`, which the entity conversion does not read for phones.
     }
 }
-
-// ── Error handling tests ────────────────────────────────────────────────
 
 #[test]
 fn malformed_json_errors_out() {
@@ -402,12 +373,10 @@ fn malformed_json_errors_out() {
 
 #[test]
 fn empty_json_object_parses_empty_lists() {
-    // An empty schools object should yield 0 records, not error.
     let result = parse_schools("{\"data\": []}");
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 0);
 
-    // An empty staff object should yield 0 persons, not error.
     let result = parse_staff("{}");
     assert!(
         result.is_err(),
@@ -417,19 +386,13 @@ fn empty_json_object_parses_empty_lists() {
     assert!(empty.is_empty());
 }
 
-// ── Coach relevance test ────────────────────────────────────────────────
-
 #[test]
 fn email_reveal_covers_every_retained_row_that_advertises_one() {
-    // The reveal is a paid request, so it stays bounded — by the payload's own `HasEmail` flag
-    // rather than by the sport: the census keeps every address a source publishes, so a football
-    // coach's is as publishable as a distance coach's.
     let records = parse_schools(FIXTURE_SCHOOLS).expect("fixture must parse");
     let (_, school_id) =
         parse_school(&records[0], "https://example.com/api", "2026-09-19").unwrap();
     let staff = parse_staff(FIXTURE_STAFF_RICH).expect("fixture must parse");
 
-    // What the collector asks for: a row it retains whose payload advertises an address.
     let requested: std::collections::BTreeSet<i64> = staff
         .iter()
         .filter(|person| {
@@ -459,8 +422,6 @@ fn email_reveal_covers_every_retained_row_that_advertises_one() {
 
 #[test]
 fn track_and_cross_country_roles_are_kept() {
-    // The census exists for TF/XC: every one of those roles in the rich fixture must survive
-    // with the right sport and gender, and ADs must survive without a sport.
     let records = parse_schools(FIXTURE_SCHOOLS).expect("fixture must parse");
     let abingdon = &records[0];
     let (_, school_id) = parse_school(abingdon, "https://example.com/api", "2026-09-19").unwrap();

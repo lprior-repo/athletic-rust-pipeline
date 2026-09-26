@@ -8,8 +8,6 @@ fn make_row(fields: Vec<&str>) -> Row {
     Row::from_fields(s)
 }
 
-// ─── Normalization tests ─────────────────────────────────────────────
-
 #[test]
 fn multi_url_trims_to_first() {
     let mut row = make_row(vec![
@@ -87,8 +85,6 @@ fn url_with_no_https_stays_untrimmed() {
     row.normalize();
     assert_eq!(row.source_url, "not-a-url");
 }
-
-// ─── Judge tests ─────────────────────────────────────────────────────
 
 #[test]
 fn director_with_empty_sport_passes() {
@@ -416,8 +412,6 @@ fn invalid_url_rejected() {
     assert!(reason.contains("not a URL"));
 }
 
-// ─── Resolves_sport tests ────────────────────────────────────────────
-
 #[test]
 fn resolves_track() {
     assert!(resolves_sport("Boys Track"));
@@ -442,8 +436,6 @@ fn does_not_resolve_soccer() {
     assert!(!resolves_sport("Basketball"));
 }
 
-// ─── Integration: file load + validate + output ──────────────────────
-
 #[test]
 fn merge_round_trip_keeps_every_row_importable_and_distinct() {
     let dir = tempfile::tempdir().expect("temp dir");
@@ -463,7 +455,6 @@ fn merge_round_trip_keeps_every_row_importable_and_distinct() {
          rae.lindqvist@washburn.example.org,,,https://washburn.example.org/athletics,2026-09-22\n",
     )
     .expect("write MN fragment");
-    // A second WI fragment repeats one row less richly: the merge keeps the richer copy once.
     std::fs::write(
         dir.path().join("WI-extra.csv"),
         "school,city,state,sport,role,coach_name,public_professional_email,ad_name,ad_email,source_url,last_observed\n\

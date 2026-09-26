@@ -106,8 +106,6 @@ pub(super) fn observation_id(bytes: &[u8]) -> StoreResult<&str> {
 }
 
 impl Store {
-    // -- resume journal ---------------------------------------------------------------------------
-
     pub(super) fn journal_key(phase: &str, key: &str) -> Vec<u8> {
         let mut out = Vec::with_capacity(phase.len().saturating_add(key.len()).saturating_add(2));
         out.extend_from_slice(phase.as_bytes());

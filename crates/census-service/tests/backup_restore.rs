@@ -51,10 +51,6 @@ fn observation(source: &str, observed_on: &str) -> Evidence {
     Evidence::parsed(SourceRef::id(source), observed_on)
 }
 
-// -------------------------------------------------------------------------------------------------
-// Corpus
-// -------------------------------------------------------------------------------------------------
-
 /// A synthetic season that fills every table the census reads: three schools in three states, each
 /// with a team, a coach, a meet, two athletes, one event per athlete and two performances per
 /// athlete.
@@ -283,10 +279,6 @@ fn add_history(store: &Store, first: &CanonicalSchool) {
         .expect("appending the third history observation");
 }
 
-// -------------------------------------------------------------------------------------------------
-// Read model
-// -------------------------------------------------------------------------------------------------
-
 /// Everything the drill reads out of one store. Captured from the live store before the copy and
 /// from the restored copy after it; every field must be identical.
 struct ReadModel {
@@ -314,8 +306,6 @@ fn drill(root: &Path) -> (Corpus, PathBuf) {
     let restored = root.join("restored");
     let corpus = corpus();
 
-    // Step 1: the census an operator would have collected, plus the resume journal that records
-    // which units of work finished.
     {
         let store = Store::open(&live).expect("opening the live store");
         corpus.append(&store);
@@ -330,7 +320,6 @@ fn drill(root: &Path) -> (Corpus, PathBuf) {
         store.flush().expect("flushing the live store");
     }
 
-    // Step 2: consistent backup.
     copy_tree(&live, &backup);
     assert_eq!(
         tree_digest(&live.join("fjall")),
@@ -338,8 +327,6 @@ fn drill(root: &Path) -> (Corpus, PathBuf) {
         "the backup must be a byte image of the stopped store's database"
     );
 
-    // Step 3: restore. Only `fjall/` is needed — `Store::open` recreates the cache and output
-    // directories — so this is also the minimum restore set.
     copy_tree(&backup.join("fjall"), &restored.join("fjall"));
     assert_eq!(
         tree_digest(&restored.join("fjall")),
@@ -512,11 +499,6 @@ fn expected_observations(corpus: &Corpus) -> Vec<(String, u64)> {
         let rows = u64::try_from(rows).expect("a corpus table holds fewer than 2^64 rows");
         (table.file().to_string(), rows)
     };
-    // `stats()` reports every table in `Table::ALL` order, so both groups below are listed in that
-    // order: the seven evidence tables the corpus writes, then the five derived index tables. The
-    // drill's chain never runs the derivation, so the index tables must be empty here — they are
-    // listed at zero rather than omitted, because a store that suddenly held derived rows would be a
-    // different store and this assertion is what says so.
     let evidence = [
         row(
             Table::Schools,
@@ -537,10 +519,7 @@ fn expected_observations(corpus: &Corpus) -> Vec<(String, u64)> {
         Table::Snapshots,
         Table::SourceAccess,
         Table::IdentityVerdicts,
-        // No meet census runs in this fixture, so the table that stage writes is empty here.
         Table::SourceMeets,
-        // The fixture builds canonical rows directly instead of walking an adapter, so no provider
-        // sighting is filed — the table the walks write is empty here too.
         Table::SourceObservations,
     ]
     .into_iter()
@@ -608,10 +587,6 @@ fn assert_history(school: &CanonicalSchool) {
     assert_eq!(school.enrollment, Some(420));
     assert!(school.co_op, "the third observation set co_op");
 }
-
-// -------------------------------------------------------------------------------------------------
-// Filesystem helpers
-// -------------------------------------------------------------------------------------------------
 
 /// Recursively copy `from` into a fresh `to`, byte for byte. Directories are walked in sorted order
 /// so a failure names the same file on every run.
@@ -839,19 +814,13 @@ fn school_rows(store: &Store) -> BTreeMap<String, String> {
         .collect()
 }
 
-// -------------------------------------------------------------------------------------------------
-// Drill
-// -------------------------------------------------------------------------------------------------
-
 #[test]
 fn cold_copy_backup_restores_the_read_model_exactly() {
     let dir = tempfile::tempdir().expect("a temporary drill directory");
 
-    // Steps 1-3: collect, stop, back up cold, restore into a fresh data directory.
     let (corpus, restored_root) = drill(dir.path());
     let before_root = dir.path().join("live");
 
-    // Step 4: reopen the restored copy and read it back.
     let before = {
         let store = Store::open(&before_root).expect("reopening the stopped live store");
         capture(&store, &corpus.history_school)
@@ -861,11 +830,9 @@ fn cold_copy_backup_restores_the_read_model_exactly() {
         capture(&store, &corpus.history_school)
     };
 
-    // The corpus first, so a drill that loses the same rows on both sides still fails.
     assert_live_store_matches_corpus(&before, &corpus);
     assert_history(&before.history);
 
-    // Then the restore claim: the restored copy is the live store, surface for surface.
     assert_eq!(
         after.tables, before.tables,
         "restored per-table observation counts"
@@ -906,9 +873,6 @@ fn the_restored_store_reopens_and_appends_without_overwriting() {
     assert_history(&restored_history);
     let before = reopened.stats().expect("restored store stats");
 
-    // A write on the reopened copy: a restore that seeded its sequence counter wrong would hand out
-    // a sequence number that is already stored and overwrite a restored observation instead of
-    // appending one.
     let mut fourth = restored_history.clone();
     fourth.evidence = vec![observation(SECOND_SOURCE, AFTER_RESTORE_DATE)];
     reopened
@@ -933,8 +897,6 @@ fn the_restored_store_reopens_and_appends_without_overwriting() {
     );
     drop(reopened);
 
-    // Reopen once more: the append has to survive the same durability boundary the restored rows
-    // did, and the sequence has to resume from the restored store's high-water mark.
     let again = Store::open(&restored_root).expect("reopening after the append");
     let final_history = merged_school(&again, &corpus.history_school);
     assert_eq!(final_history.evidence.len(), 4);
@@ -946,13 +908,6 @@ fn the_restored_store_reopens_and_appends_without_overwriting() {
 
 #[test]
 fn a_copy_taken_while_the_store_handle_is_open_keeps_every_committed_batch() {
-    // The unit is stopped but the process is still up: `append_many` commits with `SyncData`, so the
-    // journal on disk already holds every returned batch and a file copy needs no `Store::flush`
-    // (SyncAll) to be complete. Regression this pins: a durability downgrade to `Buffer` would make
-    // the copy lose the unpersisted tail — silently, which is the failure mode a backup cannot have.
-    //
-    // Nothing here protects a copy taken *while* a batch is mid-commit; that window is recorded as
-    // not covered in `docs/FJALL_BACKUP.md`.
     let dir = tempfile::tempdir().expect("a temporary drill directory");
     let live = dir.path().join("live");
     let copy = dir.path().join("copy");
@@ -961,7 +916,6 @@ fn a_copy_taken_while_the_store_handle_is_open_keeps_every_committed_batch() {
     let store = Store::open(&live).expect("opening the live store");
     corpus.append(&store);
     add_history(&store, corpus.history_row());
-    // Deliberately no `flush()`: the copy is taken from a live handle.
     let before = store.stats().expect("live store stats");
     copy_tree(&live.join("fjall"), &copy.join("fjall"));
 
@@ -974,9 +928,6 @@ fn a_copy_taken_while_the_store_handle_is_open_keeps_every_committed_batch() {
 
 #[test]
 fn a_second_open_of_a_live_store_is_refused() {
-    // Why the drill's copy is cold: Fjall takes an exclusive lock on the database directory, so a
-    // live store cannot be opened — and therefore cannot be read or copied by the census — a second
-    // time. A backup run against a live unit fails here instead of copying a moving database.
     let dir = tempfile::tempdir().expect("a temporary drill directory");
     let live = Store::open(dir.path()).expect("opening the live store");
     let error = Store::open(dir.path())
@@ -992,12 +943,6 @@ fn a_second_open_of_a_live_store_is_refused() {
 
 #[test]
 fn the_restored_store_does_not_re_import_the_legacy_journals_it_carries() {
-    // A whole-root backup carries `entities/*.jsonl` and `journal/*.jsonl` next to the database, and
-    // the import markers live in the `meta` keyspace. A restore that loses the markers re-imports
-    // every legacy observation on the next import, doubling the counts in exactly the tables that
-    // still have a log. Opening a store is a read, so the import is called explicitly here — the
-    // same call the `import-legacy` verb and the offline census run make — which is what makes a
-    // restore that lost the markers observable rather than theoretical.
     let dir = tempfile::tempdir().expect("a temporary drill directory");
     let live = dir.path().join("live");
     let backup = dir.path().join("backup");
@@ -1006,8 +951,6 @@ fn the_restored_store_does_not_re_import_the_legacy_journals_it_carries() {
 
     let (tables, observations, keys) = {
         let store = Store::open(&live).expect("opening the live store");
-        // Opening is a read; the one-time migration is the caller's decision, so the drill makes it
-        // and then asserts what it imported.
         let imported = store
             .import_legacy()
             .expect("importing the legacy journals");
@@ -1038,8 +981,6 @@ fn the_restored_store_does_not_re_import_the_legacy_journals_it_carries() {
     for attempt in 1..=2 {
         let store = Store::open(&restored)
             .unwrap_or_else(|error| panic!("restored open {attempt} failed: {error}"));
-        // The markers rode the copy, so asking for the same migration again must do nothing at all:
-        // a restore that lost them would double every count in the tables that still have a log.
         let reimported = store.import_legacy().expect("re-importing after restore");
         assert_eq!(
             (reimported.observations, reimported.skipped),
@@ -1062,11 +1003,6 @@ fn the_restored_store_does_not_re_import_the_legacy_journals_it_carries() {
 
 #[test]
 fn a_copy_whose_journal_stops_mid_batch_keeps_the_complete_prefix() {
-    // A file copy that catches a *commit* in flight produces exactly this: a journal whose last frame
-    // is incomplete. Fjall's reader drops the incomplete tail and keeps every complete batch
-    // (`fjall-3.1.10/src/journal/reader.rs:56-79`), so the copy opens and reads back the prefix — a
-    // hot copy loses the tail *silently*, which is why the drill states the shape of that loss
-    // instead of pretending it cannot happen.
     let dir = tempfile::tempdir().expect("a temporary drill directory");
     let live = dir.path().join("live");
     let copy = dir.path().join("copy");
@@ -1087,7 +1023,6 @@ fn a_copy_whose_journal_stops_mid_batch_keeps_the_complete_prefix() {
         "the cut points must sit inside the {settled}-byte journal"
     );
 
-    // One byte into the second batch's first frame: the second and third batches are gone.
     let (rows, ids) = cut_and_read(
         &copy,
         &full,
@@ -1103,7 +1038,6 @@ fn a_copy_whose_journal_stops_mid_batch_keeps_the_complete_prefix() {
         "the survivors are exactly the first batch"
     );
 
-    // One byte short of the journal: only the incomplete *last* batch is dropped.
     let (rows, ids) = cut_and_read(&copy, &full, usize::try_from(settled - 1).expect("fits"));
     assert_eq!(rows, 4, "the incomplete last batch is dropped");
     assert_eq!(
@@ -1121,11 +1055,6 @@ fn a_copy_whose_journal_stops_mid_batch_keeps_the_complete_prefix() {
 
 #[test]
 fn a_copy_with_a_torn_byte_inside_a_row_never_yields_an_invented_row() {
-    // The other half of the racing-copy hazard: a frame whose bytes are complete but not the bytes
-    // the writer computed. Fjall checksums every batch (`journal/batch_reader.rs:124-127`), so a torn
-    // value costs the frame it sits in and everything after it - never a row the source never had.
-    // The tear is aimed at a *value*: putting one in fjall's entry header trips its own debug
-    // assertion instead of exercising recovery (reported in `docs/FJALL_BACKUP.md`, §3.5).
     let dir = tempfile::tempdir().expect("a temporary drill directory");
     let live = dir.path().join("live");
     let copy = dir.path().join("copy");
@@ -1136,8 +1065,6 @@ fn a_copy_with_a_torn_byte_inside_a_row_never_yields_an_invented_row() {
     let journal = journal_file(&copy);
     let full = fs::read(&journal)
         .unwrap_or_else(|error| panic!("reading {} failed: {error}", journal.display()));
-    // Row values are stored as uncompressed JSON, so a row's own name locates bytes that belong to
-    // the second batch's frame rather than to a header.
     let needle = b"Batch School 2";
     let start = full
         .windows(needle.len())

@@ -181,8 +181,6 @@ pub(super) fn classify_performances(
     grad_year: Option<i16>,
     buckets: &mut BucketMap,
 ) {
-    // The orphan bucket holds rows whose athlete was never stored: they publish as performances and
-    // gap counts, never as athletes, because no athlete row exists for those columns to describe.
     {
         let bucket = bucket_mut(buckets, JurisdictionBucket::Unplaced);
         bucket.row.performances = bucket.row.performances.saturating_add(orphan.rows);

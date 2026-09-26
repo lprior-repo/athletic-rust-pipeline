@@ -40,10 +40,6 @@ fn budget_mentions(root: &Path) -> Result<Vec<String>, String> {
 
 #[test]
 fn the_transport_declares_no_attempt_budget_of_its_own() {
-    // Not the name in prose but the presence of it at all: the transport performs one attempt, so a
-    // budget here is a second retry owner the journal cannot see, and no first-party crate needs to
-    // name one. The scan walks the same two roots the retry-ceiling scan does; the root package that
-    // used to hold the rest was deleted, and a scan of its `src/` is a scan of nothing.
     let root = workspace_root().expect("locate the workspace root");
     let mut mentions = Vec::new();
     for source in [root.join("crates"), root.join("xtask")] {

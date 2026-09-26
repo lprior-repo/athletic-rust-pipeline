@@ -99,9 +99,6 @@ async fn a_running_blocking_job_is_waited_for_and_counted_as_completed() {
 
 #[tokio::test]
 async fn drain_returns_promptly_when_task_overruns_deadline() {
-    // A sleeping task, with a short deadline: the drain must not wait for its sleep to end. It
-    // aborts and reaps it non-blockingly, so it returns promptly and the task is accounted as
-    // reclaimed rather than as work still in flight.
     let spawner = Spawner::new();
     spawner.spawn(async { tokio::time::sleep(Duration::from_secs(10)).await });
     let start = std::time::Instant::now();
@@ -158,9 +155,6 @@ async fn adopting_counts_the_set_it_was_handed() {
 async fn a_timeout_the_clock_cannot_represent_still_drains() {
     let spawner = Spawner::new();
     spawner.spawn(async {});
-    // A deadline no instant can hold: the drain has no deadline to reach, and that is a wait, not a
-    // panicked `now + timeout` and not an immediate abort. The outer bound is the test's own, so a
-    // platform whose clock *can* hold this waits the region out instead of hanging the suite.
     let counted = tokio::time::timeout(
         Duration::from_secs(5),
         spawner.drain(Duration::from_secs(u64::MAX)),
@@ -195,8 +189,6 @@ async fn a_drain_counts_finished_work_and_the_deadline_separately() {
     let spawner = Spawner::new();
     spawner.spawn(async {});
     spawner.spawn(pending());
-    // The clock is paused, so the finished task is reaped before the deadline arrives and the
-    // deadline only fires once the drain has nothing left to reap but the task that never finishes.
     let counted = spawner
         .drain(Duration::from_millis(1))
         .await
@@ -213,8 +205,6 @@ async fn a_drain_counts_finished_work_and_the_deadline_separately() {
 
 #[test]
 fn counts_saturate_instead_of_wrapping() {
-    // The report promises counts that never wrap into a smaller, quieter number, and a region
-    // adopted at the ceiling is the one place that promise is reachable.
     let mut ledger = super::ledger::Ledger::holding(u64::MAX);
     ledger.accept();
     assert_eq!(

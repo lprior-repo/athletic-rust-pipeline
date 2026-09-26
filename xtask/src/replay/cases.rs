@@ -237,8 +237,6 @@ fn ihsa_tournament(capture: &Capture<'_>) -> Result<String> {
         ));
     }
     if file.starts_with("cc_qualifiers_") {
-        // One capture is the archive's own error envelope for a term it does not hold; the empty
-        // 2024-25 envelope is a real answer, not a refusal.
         if let Some(error) = tournament::parse::parse_error(body) {
             return Ok(format!("cc_qualifiers archive_error={error:?}"));
         }

@@ -89,8 +89,6 @@ fn main() -> Result<()> {
 /// One append per row, then one `append_many` per batch, then the optional read phases. Each phase
 /// checks the row counts it produced before the next one starts.
 fn append_phases(store: &Store, dir: &TempDir, options: &Options) -> Result<Measured> {
-    // Both passes use the same names, so the second pass merges onto the first: the scan phase then
-    // proves the substrate kept both observations instead of overwriting one.
     let single = append_one_by_one(store, &build_rows(options.rows, OBSERVED_ON_SINGLE))?;
     let observations = u64::try_from(single.items).context("row count does not fit u64")?;
     expect_observations(store, observations, "single appends")?;

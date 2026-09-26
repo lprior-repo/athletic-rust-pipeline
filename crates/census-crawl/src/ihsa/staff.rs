@@ -17,7 +17,6 @@ pub fn strip_honorific(value: &str) -> String {
         .count();
     match parts.get(stripped..) {
         Some(kept) if !kept.is_empty() => kept.join(" "),
-        // The value held nothing but honorifics (or no tokens at all): keep the original text.
         _ => value.trim().to_string(),
     }
 }
@@ -36,7 +35,6 @@ pub fn parse_coach_title(title: &str) -> Option<(Sport, Gender)> {
         return None;
     }
 
-    // Office/medical roles are not coaches.
     const NON_COACHING: [&str; 10] = [
         "secretary",
         "administrative assistant",
@@ -53,7 +51,6 @@ pub fn parse_coach_title(title: &str) -> Option<(Sport, Gender)> {
         return None;
     }
 
-    // Must contain "coach" to be a coaching role.
     if !lowered.contains("coach") {
         return None;
     }
@@ -86,10 +83,6 @@ pub fn parse_coach_title(title: &str) -> Option<(Sport, Gender)> {
 pub fn parse_role(title: &str) -> Option<CoachRole> {
     let lowered = title.to_ascii_lowercase();
 
-    // Office, medical and building staff are published in the same tables as coaches, and their
-    // labels ("Athletic Director Secretary", "AD Administrative Assistant", "Athletic Trainer")
-    // contain the words we would otherwise classify on.
-    // NON_COACHING runs FIRST so "Athletic Director Secretary" gets filtered out before the AD check.
     const NON_COACHING: [&str; 8] = [
         "secretary",
         "administrative assistant",
@@ -104,9 +97,6 @@ pub fn parse_role(title: &str) -> Option<CoachRole> {
         return None;
     }
 
-    // AD roles — check AFTER NON_COACHING.
-    // "Boys Athletic Director" → AD (contains "athletic director", no "assistant")
-    // "Boys Athletic Director's Assistant" → NOT AD (also contains "assistant")
     if lowered.contains("athletic director") && !lowered.contains("assistant") {
         return Some(CoachRole::AthleticDirector);
     }

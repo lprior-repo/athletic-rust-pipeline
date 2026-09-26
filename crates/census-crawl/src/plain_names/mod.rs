@@ -52,7 +52,6 @@
 use crate::net::FetchOptions;
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 
-// The module doc links `CoachRole`; rustdoc needs it in scope, rustc does not.
 #[cfg(doc)]
 use census_domain::model::CoachRole;
 use census_domain::UsJurisdiction;
@@ -120,8 +119,6 @@ use nd_coaches::collect_north_dakota;
 use nsaa_coaches::collect_nebraska;
 use parse::nonempty;
 
-// The moved test module reaches these three through `use super::*`; no production path in this
-// file needs them, so they are bound for tests only instead of widening their visibility.
 #[cfg(test)]
 use nsaa::NSAA_ALL_SCHOOLS;
 #[cfg(test)]
@@ -129,9 +126,6 @@ use parse::email_regex;
 #[cfg(test)]
 use parse::split_person_names;
 
-// ---------------------------------------------------------------------------------------------------
-// Shared context helpers
-// ---------------------------------------------------------------------------------------------------
 
 /// Evidence date: `options.observed_on` when set, else the run's own date.
 fn observed_on(ctx: &AdapterContext<'_>, options: &Options) -> String {
@@ -148,9 +142,6 @@ fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
     fetch
 }
 
-// ---------------------------------------------------------------------------------------------------
-// Collect
-// ---------------------------------------------------------------------------------------------------
 
 /// Collect this provider's schools and coach/AD contacts into the canonical store.
 ///
@@ -164,7 +155,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let run_nd = options.states.is_empty() || options.states.contains(&UsJurisdiction::NorthDakota);
     let run_ne = options.states.is_empty() || options.states.contains(&UsJurisdiction::Nebraska);
 
-    // Counters saturate: they only feed the report, and no source carries 2^64 rows.
     let mut schools_written = 0u64;
     let mut coaches_written = 0u64;
     if run_nd {
@@ -194,7 +184,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     report.note(format!(
         "wrote {schools_written} schools and {coaches_written} coach/AD rows"
     ));
-    // Neither provider publishes a coach email; every coach entity is written with `None`.
     report.with_email = 0;
     report.note("names only: provider publishes no coach email");
     Ok(report)

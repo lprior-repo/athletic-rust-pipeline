@@ -15,7 +15,6 @@ mod search;
 
 use search::resolve_schools;
 
-// ── Collection ─────────────────────────────────────────────────────────────
 
 /// Collect OHSAA schools and coaches.
 ///
@@ -30,7 +29,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     };
     let before = ctx.fetcher.stats().await;
 
-    // Restrict to OH state
     if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Ohio) {
         let after = ctx.fetcher.stats().await;
         report.requests = after.requests.saturating_sub(before.requests);
@@ -146,7 +144,6 @@ async fn process_school(
     };
     let extract = school_entities(sr, &sports_html, &ad_html, observed_on);
 
-    // Count office roles skipped
     let ad = parse_ad_page(&ad_html);
     tally.office_roles_skipped = tally
         .office_roles_skipped
@@ -166,10 +163,6 @@ fn emit_school(
     tally: &mut Tally,
 ) -> CrawlResult<()> {
     let school_key = format!("OH:{}", sr.ohsaa_id);
-    // One page: the school, every coach row and every journal entry commit together. The coach rows go
-    // in one append rather than one call per coach, and the entries are buffered in the same page, so
-    // the unit is one durability boundary instead of one per row. The school observation stays a
-    // direct write, the way every school arm writes it.
     let mut batch = ctx.store.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
     ctx.observe_school(

@@ -191,11 +191,6 @@ fn assemble(
     }
 }
 
-// A national census can run for days. The server's default journal retention is one day, which
-// would garbage-collect the journal of an invocation that is still fanning out, and the default
-// invocation retry policy would park a long run behind a transient endpoint failure. Both are
-// pinned here: the journal outlives the run by months, and exhausted retries pause for an operator
-// instead of silently burning attempts.
 #[workflow(
     journal_retention = "90 days",
     workflow_completion_retention = "180 days",
@@ -221,9 +216,6 @@ impl NationalCensus {
     ) -> Result<Json<NationalReport>, HandlerError> {
         let identity =
             WorkflowIdentity::national(request.season, request.revision, &request.jurisdictions);
-        // The workflow id is the identity. A run addressed by one id but carrying another's season, run
-        // scope or revision would fold a different set of states into this run than its id names, and no
-        // retry can route it correctly, so the mismatch is terminal.
         if ctx.key() != identity.as_str() {
             return Err(TerminalError::new(format!(
                 "request identity {} does not match workflow id {}",
@@ -245,12 +237,6 @@ impl NationalCensus {
         }
         let (jurisdictions, failures) = collect_outcomes(&mut in_flight, &targets).await?;
 
-        // One snapshot merge for the whole run, after every jurisdiction has appended, and as a
-        // workflow keyed by this run so it is as durable as the fan-out itself: the journal records
-        // the merge, and a replay of the fan-out attaches to the merge this run already performed
-        // rather than merging the corpus again. Merging a table reads every observation of it, so
-        // the per-jurisdiction merge this replaces re-read the whole corpus once per state: tens of
-        // gigabytes resident for a snapshot that does not depend on which state walked last.
         let Json(consolidated) = ctx
             .workflow_client::<ConsolidateClient>(format!("{}:consolidate", identity.as_str()))
             .run(Json(ConsolidateRequest { tables: Vec::new() }))
@@ -261,8 +247,6 @@ impl NationalCensus {
             "merged table snapshots for the run"
         );
 
-        // Journaled: the fan-out above can span days, and `ctx.set` compares payloads on replay, so
-        // a wall-clock read would turn a legitimate replay into a journal mismatch.
         let today = super::journaled_today_workflow(&ctx, &self.clock).await?;
         let report = assemble(
             request.season,

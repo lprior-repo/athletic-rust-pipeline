@@ -70,9 +70,6 @@ pub fn parse_sport(label: &str) -> Option<(Sport, Gender)> {
 /// coach table free of non-coaching staff.
 pub fn parse_role(label: &str) -> Option<CoachRole> {
     let lowered = label.to_ascii_lowercase();
-    // Office, medical and building staff are published in the same tables as coaches, and their
-    // labels ("Athletic Director Secretary", "AD Administrative Assistant", "Athletic Trainer")
-    // contain the words we would otherwise classify on.
     const NON_COACHING: [&str; 8] = [
         "secretary",
         "administrative assistant",

@@ -12,9 +12,6 @@
 
 use super::SourceDescriptor;
 
-// The table is one flat list published in order, so it is sharded by position rather than by
-// taxonomy: `through_milesplit` carries the entries up to and including `milesplit`, `from_mshsl`
-// the rest, and `descriptors()` splices both back into the published order.
 mod from_mshsl;
 mod through_milesplit;
 

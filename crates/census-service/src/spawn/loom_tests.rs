@@ -27,9 +27,6 @@ struct Region {
 #[test]
 fn accepted_units_are_counted_exactly_once() {
     let mut builder = loom::model::Builder::new();
-    // Two workers, one finishing and one panicking, and the thread budget counts the modeling
-    // thread: two workers plus the observer is three. The preemption bound is what keeps the
-    // exploration inside the all-features gate's budget.
     builder.max_threads = 3;
     builder.preemption_bound = Some(2);
     builder.check(|| {
@@ -37,13 +34,11 @@ fn accepted_units_are_counted_exactly_once() {
         let worker = |state: DrainState| {
             let region = Arc::clone(&region);
             thread::spawn(move || {
-                // The locked step the spawner takes when it hands a unit to the set ...
                 {
                     let mut held = region.lock().expect("region lock");
                     held.ledger.accept();
                     held.in_flight += 1;
                 }
-                // ... and the locked step a later reap of that same unit takes.
                 {
                     let mut held = region.lock().expect("region lock");
                     held.ledger.classify(state);
@@ -54,7 +49,6 @@ fn accepted_units_are_counted_exactly_once() {
         let completed = worker(DrainState::Completed);
         let panicked = worker(DrainState::Panicked);
 
-        // The identity holds in every state the region passes through, not only once it is quiet.
         check_identity(&region);
         completed.join().expect("worker finished");
         check_identity(&region);
@@ -70,8 +64,6 @@ fn accepted_units_are_counted_exactly_once() {
         assert_eq!(report.cancelled, 0);
         assert_eq!(report.timed_out, 0);
         assert_eq!(report.remaining, 0);
-        // A drain takes the counters, so the next region starts from zero and the unit that follows
-        // is the next drain's business, never this one's.
         held.ledger = Ledger::default();
         assert_eq!(held.ledger.report(), TaskReport::default());
     });

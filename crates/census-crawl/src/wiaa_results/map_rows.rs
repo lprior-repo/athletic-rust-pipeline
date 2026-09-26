@@ -6,7 +6,8 @@ use super::{MeetContext, RowWriter};
 use crate::result_file::ParsedRow;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalPerformance, CanonicalTeam, Evidence, Gender, GradYear,
-    Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport, TeamId,
+    Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    TeamId,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -31,7 +32,6 @@ pub(super) fn record_row(
         return 0;
     };
 
-    // Individual rows name an athlete; relay rows name a school and list their legs.
     let members: Vec<(Option<u8>, String, Option<Grade>)> = if row.legs.is_empty() {
         vec![(None, row.name.clone(), row.grade)]
     } else {
@@ -102,7 +102,8 @@ fn record_members(
         }
         athlete_rows = athlete_rows.saturating_add(1);
         let source_key = performance_key(context, row_index, leg_position);
-        let athlete_id = record_athlete(writer, context, school_id, &member_name, grade, &source_key);
+        let athlete_id =
+            record_athlete(writer, context, school_id, &member_name, grade, &source_key);
         let performance_id = CanonicalPerformance::mint(
             &athlete_id,
             &context.meet.id,
@@ -132,8 +133,6 @@ fn record_members(
                 evidence: vec![evidence],
                 source_key,
                 source_athlete: None,
-                // A row this mapping just built has been merged with nothing, so it has retained no
-                // canonical-id collision: collisions are raised in the store's merge, not here.
                 retained_conflicts: Vec::new(),
             });
     }
@@ -150,14 +149,29 @@ fn record_athlete(
     source_key: &str,
 ) -> AthleteId {
     let grad_year = GradYear::of(grade, context.school_year);
-    let source = SourceIdentity::new(SourceNamespace::Other("wiaa_result_row".to_string()), source_key);
-    let athlete_id = CanonicalAthlete::mint(school_id, member_name, grad_year, context.event.gender, &source);
+    let source = SourceIdentity::new(
+        SourceNamespace::Other("wiaa_result_row".to_string()),
+        source_key,
+    );
+    let athlete_id = CanonicalAthlete::mint(
+        school_id,
+        member_name,
+        grad_year,
+        context.event.gender,
+        &source,
+    );
     let entry = writer
         .accumulator
         .athletes
         .entry(athlete_id.as_str().to_string())
         .or_insert_with(|| {
-            let mut athlete = CanonicalAthlete::new(school_id, member_name, grad_year, context.event.gender, source);
+            let mut athlete = CanonicalAthlete::new(
+                school_id,
+                member_name,
+                grad_year,
+                context.event.gender,
+                source,
+            );
             athlete.sports.push(context.sport);
             athlete
         });

@@ -31,7 +31,6 @@ pub(super) fn event_list(_athlete: &CanonicalAthlete, prs: &[&PrRow]) -> Vec<Cel
     if prs.is_empty() {
         return vec![Cell::Empty];
     }
-    // Collect unique events in canonical PR_EVENTS order
     let mut event_set = std::collections::BTreeSet::new();
     for pr in prs {
         event_set.insert(&pr.event);
@@ -50,7 +49,6 @@ pub(super) fn headline_pr_summary(_athlete: &CanonicalAthlete, prs: &[&PrRow]) -
     if prs.is_empty() {
         return vec![Cell::Empty];
     }
-    // Build a map from event key to mark, then iterate in canonical order
     let mut mark_map: std::collections::HashMap<&str, String> = std::collections::HashMap::new();
     for pr in prs {
         mark_map.entry(pr.event.as_str()).or_insert_with(|| {

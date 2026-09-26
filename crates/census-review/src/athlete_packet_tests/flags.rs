@@ -54,8 +54,6 @@ fn the_flags_state_what_the_store_already_knows_before_the_model_runs() {
 #[test]
 fn provider_objects_that_differ_are_stated_and_never_called_a_shared_one() {
     let (boys, mut girls, _) = rows();
-    // One provider, two athlete objects: a later mint that keeps both rows has to be told this, and
-    // a model must not have to compare the two ids itself to see it.
     girls
         .source_identities
         .retain(|identity| identity.namespace != SourceNamespace::MilesplitAthlete);

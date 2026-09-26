@@ -49,8 +49,6 @@ fn formats_are_decided_by_extension_and_sniffed_body() {
 
 #[test]
 fn current_season_files_are_found_under_the_dated_upload_path() {
-    // The state meet pages link the newest releases as `/sites/default/files/<year>-<month>/…`,
-    // which carries no `/Results/` segment; missing them costs the whole current season.
     let body = r#"
         <a href="/sites/default/files/2026-08/trb2026d1stateresults.pdf">Boys</a>
         <a href="/sites/default/files/2026-08/tr2026arrowheadregionalindiv.pdf">Arrowhead</a>
@@ -78,17 +76,14 @@ fn current_season_files_are_found_under_the_dated_upload_path() {
 
 #[test]
 fn school_year_follows_the_sport_boundary() {
-    // Spring 2025 track is inside school year 2024-25: grade 11 there is class of 2026.
     let spring =
         school_year_for("2025-06-06", Sport::OutdoorTrack, 2025).expect("2025-06 is a season");
     assert_eq!(spring.get(), 2024);
     assert_eq!(GradYear::of(Grade::new(11).unwrap(), spring).get(), 2026);
-    // Fall 2025 cross country opens school year 2025-26: grade 11 there is class of 2027.
     let fall =
         school_year_for("2025-10-25", Sport::CrossCountry, 2025).expect("2025-10 is a season");
     assert_eq!(fall.get(), 2025);
     assert_eq!(GradYear::of(Grade::new(11).unwrap(), fall).get(), 2027);
-    // A year-only date (RaceDay) still lands in the right school year per sport.
     assert_eq!(
         school_year_for("2023", Sport::CrossCountry, 2023)
             .expect("2023 is a season")
@@ -105,9 +100,6 @@ fn school_year_follows_the_sport_boundary() {
 
 #[test]
 fn years_no_season_may_open_in_are_refused() {
-    // The domain bounds the years a season may open in, so a file dated outside the window - or,
-    // when it publishes no date, filed by the archive under such a year - is refused by the adapter
-    // rather than filed under a year no source published.
     assert_eq!(
         school_year_for("1801-06-06", Sport::OutdoorTrack, 1801),
         None,

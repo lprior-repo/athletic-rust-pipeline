@@ -130,14 +130,10 @@ impl StoreRows {
     /// their durable table, preserving store order for the review sheet's verdict rows.
     fn read(store: &Store, scope: Scope) -> ReportResult<Self> {
         let mut schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
-        // The placement index carries the excluded school rows too, so an athlete or coach whose
-        // school the run scope leaves out is placed by that school's jurisdiction and excluded with
-        // it, instead of reading as unplaced and inflating the counts this block reconciles.
         let outside_schools = exclude_out_of_scope(&mut schools, |school| school.state.into());
         let mut meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
         meets.retain(|m| in_run_scope(JurisdictionBucket::from(m.state)));
         let mut athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
-        // Athlete jurisdiction comes from school state (the report's placement rule).
         let mut school_state = school_state_index(&schools);
         school_state.extend(school_state_index(&outside_schools));
         athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
@@ -146,7 +142,6 @@ impl StoreRows {
             retain_core(&mut athletes);
         }
         let mut coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
-        // Coach jurisdiction also comes from school state.
         coaches.retain(|c| in_run_scope(jurisdiction_of(&school_state, c.school.as_str())));
         let verdicts: Vec<ReviewVerdictRecord> = store.scan(Table::IdentityVerdicts)?;
         Ok(Self {

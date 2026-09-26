@@ -228,8 +228,6 @@ fn the_columns_are_the_objectives_order_and_the_budget_keeps_the_margin() {
             "Source URL",
         ]
     );
-    // The stated margin: a sheet writes its header plus at most one budget of data rows, and spends
-    // PARTITION_MARGIN rows less than Excel's own cap on that.
     assert_eq!(DATA_ROWS_PER_SHEET, 1_000_000);
     assert_eq!(
         EXCEL_ROWS_PER_SHEET - DATA_ROWS_PER_SHEET - HEADER_ROWS,
@@ -268,16 +266,12 @@ fn a_row_prints_the_canonical_values_behind_it() {
     assert_eq!(row.normalized, Some(48.55));
     assert_eq!(row.timing.as_deref(), Some("Fat"));
     assert_eq!(row.wind_mps, Some(1.4));
-    // The performance published no round of its own, so the round of its event is what the sheet
-    // prints rather than a blank.
     assert_eq!(row.round.as_deref(), Some("Finals"));
     assert_eq!(row.place, Some(2));
     assert_eq!(row.source, SOURCE);
     assert_eq!(row.source_result, "test:Ada:2026-05-01");
     assert_eq!(row.source_url, RESULT_URL);
 
-    // A mark the census has not parsed is carried as published and normalizes to nothing, rather
-    // than to a number nobody measured.
     let raw = rows
         .iter()
         .find(|row| row.mark == "DNS")
@@ -340,10 +334,8 @@ fn the_same_rows_in_a_differently_ordered_store_partition_identically() {
     let first_rows = performance_rows(&first, Scope::Core).unwrap();
     let second_rows = performance_rows(&second, Scope::Core).unwrap();
     assert_eq!(first_rows, second_rows);
-    // A re-run over the same store produces the same rows, and therefore the same partitioning.
     assert_eq!(first_rows, performance_rows(&first, Scope::Core).unwrap());
 
-    // The same rows, so the same split and the same sheet names.
     let first_path = first_dir.path().join("first.xlsx");
     let second_path = second_dir.path().join("second.xlsx");
     write_sheets(&first_rows, 2, &first_path);
@@ -373,8 +365,6 @@ fn the_spilled_rows_match_the_collected_rows_across_range_seams() {
     let store = seeded_store(&dir, &fixtures());
     let collected = performance_rows(&store, Scope::Core).unwrap();
 
-    // Two rows a range: five rows over three ranges, so a range seam falls between the two schools
-    // and a sheet boundary falls inside a range.
     let streamed: Vec<PerformanceRow> =
         PerformanceRows::with_ranges(&store, Scope::Core, None, 2, 64)
             .unwrap()
@@ -382,7 +372,6 @@ fn the_spilled_rows_match_the_collected_rows_across_range_seams() {
             .unwrap();
     assert_eq!(streamed, collected, "the spill preserves the sheet order");
 
-    // One range holds the whole table: same rows, so the range seams are not what orders them.
     let single: Vec<PerformanceRow> =
         PerformanceRows::with_ranges(&store, Scope::Core, None, 1_000, 64)
             .unwrap()
@@ -390,7 +379,6 @@ fn the_spilled_rows_match_the_collected_rows_across_range_seams() {
             .unwrap();
     assert_eq!(single, collected, "one range reproduces the same order");
 
-    // The streamed rows partition exactly as the collected ones do.
     let streamed_path = dir.path().join("streamed.xlsx");
     let mut book = Workbook::new();
     write_partitions(
@@ -456,8 +444,6 @@ fn a_performance_the_store_cannot_join_is_still_written() {
     school.evidence.push(observation());
     store.append(Table::Schools, &school).unwrap();
 
-    // A performance whose athlete, meet and event rows the store never received: the ids are all it
-    // has, and the sheet prints them rather than dropping the mark.
     let athlete = CanonicalAthlete::mint(&school_id, "Orphan", GradYear::CO2027, Gender::Boys);
     let meet = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
@@ -528,8 +514,6 @@ fn the_frozen_entry_point_writes_the_partitioned_sheets() {
     write_performance_sheets(&mut book, &path, &store, Scope::Core, None).unwrap();
     book.save(&path).unwrap();
 
-    // Five rows under the real 1,000,000-row budget are one sheet, and it carries the header the
-    // objective lists plus one row per stored performance.
     let mut book: Xlsx<_> = open_workbook(&path).unwrap();
     assert_eq!(book.sheet_names(), vec!["Performances_001".to_string()]);
     let range = book.worksheet_range("Performances_001").unwrap();

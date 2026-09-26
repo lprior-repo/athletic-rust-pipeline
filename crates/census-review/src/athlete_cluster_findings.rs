@@ -37,9 +37,6 @@ impl Row {
             id: row.id.as_str().to_string(),
             candidate_id: row.id.cast(),
             name: row.canonical_name.clone(),
-            // The case is read by an operator and by a model, so a site is named the way the store
-            // names it; an unmapped school falls back to the id that is the only thing the store
-            // holds about it.
             school: schools
                 .get(stored)
                 .cloned()
@@ -80,8 +77,6 @@ pub(super) struct Observed {
 impl Observed {
     pub(super) fn read(store: &Store) -> StoreResult<Self> {
         let mut observed = Self::default();
-        // The schools first: a finding names the sites it spans, and a site is named the way the
-        // school table names it rather than by the id only the store can read.
         store.for_each_merged::<CanonicalSchool>(Table::Schools, |school| {
             observed
                 .schools
@@ -215,8 +210,6 @@ impl Span {
             lines.join("; "),
             reason
         );
-        // The members are evidence, not decoration: binding them at mint time is what makes a finding
-        // about three rows a different case from the same words about two.
         let members: Vec<AthleteCandidateId> = self
             .rows
             .iter()

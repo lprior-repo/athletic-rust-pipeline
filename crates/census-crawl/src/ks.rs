@@ -28,7 +28,6 @@ pub use wire::{parse_records, KshsaaRecord};
 /// observation rows are filed under it.
 pub const ASSOCIATION: &str = "kshsaa";
 
-// The moved bodies reach these through `super::*`; the test module is the only reader.
 #[cfg(test)]
 use census_domain::model::{normalize_name, CanonicalSchool, CoachRole, Gender, SourceNamespace};
 

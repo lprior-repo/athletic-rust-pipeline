@@ -99,7 +99,7 @@ pub(super) fn write_performance_sheets(
     Ok(PerformanceSheetPopulation {
         cohort_year: grad_year,
         scope,
-        cohort_athletes: 0, // Filled in by caller from recruiting dataset
+        cohort_athletes: 0,
         total_rows: row_count,
     })
 }
@@ -134,18 +134,14 @@ fn write_partitions_with_count(
     let last_column = COLUMNS.len().saturating_sub(1);
     let mut rows = rows.into_iter();
     if per_sheet == 0 {
-        // The first row is pulled only to name it in the refusal: a budget of 0 drops rows, and the
-        // operator is told which row it would have dropped.
         let first = rows.next().transpose()?;
         return Err(no_budget(first.as_ref()));
     }
     let mut sheets = 0_usize;
     let mut total_rows = 0_usize;
-    // One row of lookahead, so a full last sheet is not followed by an empty one.
     let mut next = rows.next().transpose()?;
     while next.is_some() {
         let filled = {
-            // The sheet's borrow of `book` ends with this block, so the next sheet can be added.
             let mut sheet = SheetWriter::start(book, path, &sheet_name(sheets), &widths)?;
             sheet.write_row(0, &header_row)?;
             let mut filled = 0_usize;
@@ -165,8 +161,6 @@ fn write_partitions_with_count(
         }
     }
     if sheets == 0 {
-        // A census with no performances in scope still publishes the sheet, header and all: an
-        // absent sheet would read as "the run never got there".
         let mut sheet = SheetWriter::start(book, path, &sheet_name(0), &widths)?;
         sheet.write_row(0, &header_row)?;
         sheet.finish(HEADER_ROWS, last_column)?;

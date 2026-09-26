@@ -45,7 +45,6 @@ const SEASON: i16 = 2026;
 /// Capture time of the seeded cache entries (the fetcher only reads it back).
 const SEEDED_AT: &str = "2026-09-20T14:39:00Z";
 
-// ── Shared plumbing ────────────────────────────────────────────────────────
 
 /// The fixture file name without its extension.
 fn stem_of(file: &str) -> &str {
@@ -163,7 +162,6 @@ fn assert_rollup(source: &str, cases: BTreeMap<String, String>, inputs: usize) -
     common::assert_golden(&format!("{source}__rollup"), &Rollup { cases, inputs })
 }
 
-// ── OHSAA (Ohio) ───────────────────────────────────────────────────────────
 
 /// One search-result row, with the page URLs its id derives.
 #[derive(Serialize)]
@@ -178,8 +176,6 @@ struct SearchRow {
 
 impl SearchRow {
     fn of(result: &ohsaa::SearchResult) -> Self {
-        // Exhaustive on purpose: a new published field on the parse shape fails this file to
-        // compile, so the golden cannot silently miss it.
         let ohsaa::SearchResult {
             name,
             city,
@@ -279,8 +275,6 @@ fn ohsaa_case(file: &str, body: &str) -> Result<(String, String)> {
     let name = format!("ohsaa__{stem}");
     if stem.starts_with("search_") {
         let rows = ohsaa::parse_search(body);
-        // Resolve the fixture's own first row: this provider has no bulk index, so name resolution
-        // is the call the adapter makes for every requested school.
         let query = rows.first().map_or(String::new(), |row| row.name.clone());
         let mut notes = Vec::new();
         let resolved = ohsaa::resolve_school_name(body, &query, &mut notes);
@@ -354,8 +348,6 @@ async fn ohsaa_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
     let result = rows
         .first()
         .context("the search fixture carries Dublin Coffman")?;
-    // The search URL the adapter builds for `school_names = ["Dublin Coffman"]`: host + the search
-    // path, with the name encoder writing a space as `%20`.
     let search_url = format!("{}/Outside/SearchSchool?Name=Dublin%20Coffman", ohsaa::HOST);
 
     let dir = tempfile::tempdir().context("temp dir")?;
@@ -414,7 +406,6 @@ async fn ohsaa_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
     )
 }
 
-// ── IHSA (Illinois) ────────────────────────────────────────────────────────
 
 /// One row of the `/v1/schools` payload.
 #[derive(Serialize)]
@@ -564,11 +555,6 @@ fn ihsa_case(file: &str, body: &str) -> Result<(String, String)> {
     }
     if stem.starts_with("staff2_") {
         let staff = ihsa::parse_staff(body)?;
-        // The rich payload belongs to school 0101, the first row of the schools fixture. The
-        // office-only payload names no school of its own, so it is anchored to the same one: the
-        // anchor only enters the coaches a payload mints, and those are what the golden pins — here
-        // the school's two athletic-director titles, and none of its office, medical or principal
-        // rows.
         let anchor = ihsa_anchor_school(&records, "0101")?;
         let mut coaches = Vec::new();
         let mut paid_reveal_names = Vec::new();
@@ -608,7 +594,6 @@ fn ihsa_fixtures_match_the_golden_corpus() -> Result<()> {
     assert_rollup("ihsa", cases, paths.len())
 }
 
-// ── KSHSAA (Kansas) ────────────────────────────────────────────────────────
 
 /// One row of the KSHSAA directory payload, including the columns the adapter parses but never
 /// publishes: the canonical half of this golden is the proof they stay out of entities.
@@ -749,7 +734,6 @@ async fn ks_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
     )
 }
 
-// ── Wayzata Results (Minnesota timer) ──────────────────────────────────────
 
 /// One schedule row, with the venue and level resolution the meet carries.
 #[derive(Serialize)]
@@ -859,7 +843,6 @@ async fn wayzata_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
     )
 }
 
-// ── Compiled result exports (WIAA) ─────────────────────────────────────────
 
 /// One parsed result file.
 #[derive(Serialize)]

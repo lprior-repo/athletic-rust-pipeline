@@ -21,9 +21,6 @@ mod walk;
 
 use walk::{absorb_targets, flush_batch};
 
-// -------------------------------------------------------------------------------------------------
-// Collection
-// -------------------------------------------------------------------------------------------------
 
 /// Read every available result for the registry's athletes into the canonical store.
 ///
@@ -43,7 +40,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let index = consolidated_index(ctx)?;
     let source = SourceRef::new("athleticnet", Some(BIO_ENDPOINT.to_string()));
     let done = journaled_urls(ctx)?;
-    // One resolution per (state, school) for the whole run, so the counts are per school.
     let mut run = RunState {
         resolved: HashMap::new(),
         stats: Stats::default(),

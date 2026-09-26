@@ -44,8 +44,6 @@ pub fn parse_directory(html: &str) -> Vec<SchoolEntry> {
         let Some(wrapper) = html.get(wrapper_start..) else {
             break;
         };
-        // A wrapper never nests, so its span ends at the next one. Bounding the span here is what
-        // stops a wrapper with no `<p>` of its own from borrowing the next school's name.
         let span = wrapper
             .get(SCHOOL_LIST_WRAPPER.len()..)
             .and_then(|after| after.find(SCHOOL_LIST_WRAPPER))
@@ -53,9 +51,6 @@ pub fn parse_directory(html: &str) -> Vec<SchoolEntry> {
             .unwrap_or(wrapper.len());
         let wrapper = wrapper.get(..span).unwrap_or_default();
 
-        // The anchor that owns this wrapper closes before it, and its `href` carries the SchoolID:
-        // `<a href='/SchoolPages/School.aspx?SchoolID=25'>`. The nearest one to the left is this
-        // wrapper's, because the page emits anchor then wrapper, anchor then wrapper.
         let school_id = html
             .get(..wrapper_start)
             .and_then(|before| before.rfind(SCHOOL_ID))
@@ -67,7 +62,6 @@ pub fn parse_directory(html: &str) -> Vec<SchoolEntry> {
             entries.push(SchoolEntry { name, school_id });
         }
 
-        // The marker was found inside `html`, so its end is a boundary `html` already has.
         match wrapper_start.checked_add(SCHOOL_LIST_WRAPPER.len()) {
             Some(next) if next > cursor => cursor = next,
             _ => break,
@@ -114,7 +108,6 @@ pub fn parse_staff_table(html: &str) -> Vec<CoachRow> {
     let mut rest = html.get(table_start..).unwrap_or_default();
 
     let mut rows = Vec::new();
-    // Walk through all <tr> elements in the table.
     while let Some(tr_start) = rest.find("<tr>") {
         let Some(from_row) = rest.get(tr_start..) else {
             break;
@@ -133,7 +126,6 @@ pub fn parse_staff_table(html: &str) -> Vec<CoachRow> {
         };
         rest = after_row;
 
-        // Extract cells from the row; a row narrower than the three coach columns is not read.
         let cells = extract_cells(row);
         let [sport_cell, role_cell, coach_cell, ..] = cells.as_slice() else {
             continue;
@@ -142,7 +134,6 @@ pub fn parse_staff_table(html: &str) -> Vec<CoachRow> {
         let role = decode_html(role_cell.trim());
         let coach = decode_html(coach_cell.trim());
 
-        // Only keep Head Coach rows (skip Principal, AD, etc.)
         if role == "Head Coach" && !sport.is_empty() && !coach.is_empty() {
             rows.push(CoachRow { sport, coach });
         }
@@ -166,7 +157,6 @@ fn extract_cells(row: &str) -> Vec<String> {
         let Some(cell_html) = from_cell.get(..td_end) else {
             break;
         };
-        // Strip HTML tags from the cell.
         cells.push(strip_html(cell_html));
         let Some(after_cell) = from_cell
             .get(td_end..)

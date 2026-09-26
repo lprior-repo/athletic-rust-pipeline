@@ -77,8 +77,6 @@ fn print_open_work(reply: &OpenWorkReply) {
     println!("source objects owed: {}", count(reply.source_objects));
     for row in &reply.jurisdictions {
         if row.unreadable {
-            // The object did not answer, so the stage record says nothing about what ran; the row is
-            // still counted as owing, and saying exactly that is the honest form of it.
             println!(
                 "  {} {}: unreadable, counted as owing",
                 row.jurisdiction.code(),

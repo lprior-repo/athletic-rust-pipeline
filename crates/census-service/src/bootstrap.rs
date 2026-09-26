@@ -56,14 +56,10 @@ pub use options::ServeOptions;
 pub use serve::{init_tracing, serve, serve_until};
 pub use stop::StopReason;
 
-// The usage text stays in the facade because `error` prints it from three flag messages through
-// `super::USAGE`; the parser that produces those flags lives in `options`.
 const USAGE: &str = "census-serve [--listen ADDR] [--data-dir DIR] \
                      [--max-concurrent N] [--drain-timeout SECONDS] \
                      [--browser-profile DIR] [--browser-executable PATH] [--browser-headless] [--help]";
 
-// The verbatim `tests` module resolves the supervisor, the drain entry point and the two tokio
-// types through `use super::*`, exactly as the net split feeds its tests module from `mod.rs`.
 #[cfg(test)]
 use drain::drain;
 #[cfg(test)]

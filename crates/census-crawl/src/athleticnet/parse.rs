@@ -7,10 +7,6 @@ use census_domain::model::{EventKind, Gender, Mark, Sport, TimingMethod};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
-// -------------------------------------------------------------------------------------------------
-// Wire format
-// -------------------------------------------------------------------------------------------------
-
 /// One athlete bio payload. Fields the adapter does not read are not declared.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Bio {
@@ -204,10 +200,6 @@ where
         Some(other) => return Err(D::Error::custom(format!("unexpected place value {other}"))),
     })
 }
-
-// -------------------------------------------------------------------------------------------------
-// Marks
-// -------------------------------------------------------------------------------------------------
 
 /// The mark a published result token denotes, plus whether it was fully automatic, or `None` when
 /// the token is not a mark at all.

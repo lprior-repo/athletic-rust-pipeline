@@ -36,9 +36,6 @@ pub mod headers {
             let value = value.to_str().map_err(serde::ser::Error::custom)?;
             pairs.push((name.as_str(), value));
         }
-        // Sorted by name, and stably: `HeaderMap` yields entries in its own order, which would make
-        // the bytes of one capture depend on the map's internal layout. Duplicate names keep the
-        // order they were captured in, because for `set-cookie` that order is part of the response.
         pairs.sort_by(|left, right| left.0.cmp(right.0));
         pairs.serialize(serializer)
     }

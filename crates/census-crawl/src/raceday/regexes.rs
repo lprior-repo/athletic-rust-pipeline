@@ -19,8 +19,6 @@ static BODY: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?is)<tbody[^>]*>.*?</tbody>"));
 static TAGS: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>"));
 
-// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
-// back as a typed error that the reader answers as "this file carries no meet" — never a panic.
 pub(super) fn table_regex() -> CrawlResult<&'static Regex> {
     TABLE.as_ref().map_err(|source| CrawlError::RegexInit {
         pattern: "TABLE",
