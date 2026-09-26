@@ -235,10 +235,6 @@ async fn open_store(region: &Spawner, data_dir: PathBuf) -> Result<Arc<Store>, B
             state: DrainState::Cancelled,
             reason: "task cancelled".to_string(),
         }),
-        Outcome::Timeout => Err(BootstrapError::StoreTask {
-            state: DrainState::Cancelled,
-            reason: "task timed out".to_string(),
-        }),
     }
 }
 

@@ -120,25 +120,3 @@ fn a_confidence_outside_the_field_range_is_clamped_not_trusted() {
     assert_eq!(admitted[0].confidence, 100);
     assert!(admitted[0].proposes_a_value());
 }
-
-#[test]
-fn the_two_kinds_parse_from_their_slugs_and_their_spaced_spellings() {
-    assert_eq!(
-        ReviewVerdictKind::parse("value_proposed"),
-        Some(ReviewVerdictKind::ValueProposed)
-    );
-    assert_eq!(
-        ReviewVerdictKind::parse("Value Proposed"),
-        Some(ReviewVerdictKind::ValueProposed)
-    );
-    assert_eq!(
-        ReviewVerdictKind::parse("insufficient evidence"),
-        Some(ReviewVerdictKind::InsufficientEvidence)
-    );
-    assert_eq!(
-        ReviewVerdictKind::parse("insufficient_evidence"),
-        Some(ReviewVerdictKind::InsufficientEvidence)
-    );
-    assert_eq!(ReviewVerdictKind::parse("probably"), None);
-    assert_eq!(ReviewVerdictKind::ValueProposed.slug(), "value_proposed");
-}

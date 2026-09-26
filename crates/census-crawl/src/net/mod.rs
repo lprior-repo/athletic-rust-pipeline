@@ -162,11 +162,6 @@ impl Fetcher {
         self.family_delays.get(family).copied()
     }
 
-    /// Borrow the user-agent string without taking ownership.
-    pub fn user_agent(&self) -> &str {
-        &self.user_agent
-    }
-
     /// Borrow the cache directory path.
     pub fn cache_dir(&self) -> &Path {
         &self.cache_dir

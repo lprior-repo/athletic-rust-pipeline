@@ -18,9 +18,9 @@ fn coverage_rows_are_one_per_subject_and_name_their_metrics() {
 
 #[test]
 fn a_snapshot_is_keyed_by_the_pass_that_finished() {
-    let snapshot = CollectionSnapshot::new("derive", "2026-09-22")
-        .with_observations("athletes", 10)
-        .with_observations("schools", 4);
+    let mut snapshot = CollectionSnapshot::new("derive", "2026-09-22");
+    snapshot.observations.insert("athletes".to_string(), 10);
+    snapshot.observations.insert("schools".to_string(), 4);
     assert_eq!(snapshot.id, "derive:2026-09-22");
     assert_eq!(snapshot.observations.get("schools"), Some(&4));
     assert_ne!(

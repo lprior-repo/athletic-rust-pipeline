@@ -128,12 +128,4 @@ impl SourceMeetRef {
     pub fn row_id(source: &str, source_meet_id: &str) -> String {
         format!("{source}:{source_meet_id}")
     }
-
-    /// The season as the typed value, when the row's own string names one.
-    pub fn season_of(&self) -> Option<&str> {
-        match self.season.as_str() {
-            "cc" | "indoor" | "outdoor" => Some(self.season.as_str()),
-            _ => None,
-        }
-    }
 }

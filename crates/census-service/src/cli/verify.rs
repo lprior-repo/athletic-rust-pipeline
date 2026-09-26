@@ -28,10 +28,6 @@ pub struct VerifyArgs {
     /// At most 5 000 samples per sheet regardless of k.
     #[arg(long, default_value_t = 10)]
     pub sample_every: usize,
-
-    /// Graduation year used to locate the newest workbook in `out/` (for year-prefixed names).
-    #[arg(long, default_value_t = 2027)]
-    pub grad_year: i16,
 }
 
 /// Find the newest `.xlsx` file in the store's `out` directory.

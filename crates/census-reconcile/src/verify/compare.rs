@@ -9,15 +9,12 @@ use census_store::{Store, Table};
 /// A single discrepancy found during verification.
 #[derive(Debug)]
 pub struct Discrepancy {
-    pub row: usize,
     pub message: String,
 }
 
 /// A verification pass over one entity type.
 #[derive(Debug)]
 pub struct EntityCheck {
-    /// Total data rows read from the sheet(s).
-    pub total_rows: usize,
     /// Number of rows that passed verification.
     pub passed: usize,
     /// Indices that were sampled.
@@ -47,14 +44,12 @@ pub fn verify_athletes(
 ) -> Result<EntityCheck, Discrepancy> {
     let athletes: Vec<CanonicalAthlete> =
         store.scan(Table::Athletes).map_err(|source| Discrepancy {
-            row: 0,
             message: format!("reading athletes from store: {source}"),
         })?;
 
     let school_names: HashMap<String, String> = store
         .scan(Table::Schools)
         .map_err(|source| Discrepancy {
-            row: 0,
             message: format!("reading schools from store: {source}"),
         })?
         .into_iter()
@@ -65,7 +60,6 @@ pub fn verify_athletes(
 
     for &idx in sampled {
         let row = rows.get(idx).ok_or_else(|| Discrepancy {
-            row: idx,
             message: "row index out of range".to_string(),
         })?;
         check_athlete_row(idx, row, &athletes, &school_names, col_map)?;
@@ -73,7 +67,6 @@ pub fn verify_athletes(
     }
 
     Ok(EntityCheck {
-        total_rows: rows.len(),
         passed,
         sampled_indices: sampled.to_vec(),
     })
@@ -94,13 +87,11 @@ fn check_athlete_row(
         .iter()
         .find(|a| a.id.as_str() == aid)
         .ok_or_else(|| Discrepancy {
-            row: idx,
             message: format!("athletes row {idx}: id {aid} not in store"),
         })?;
 
     if store_athlete.canonical_name != name {
         return Err(Discrepancy {
-            row: idx,
             message: format!(
                 "athletes row {idx}: id {aid} name '{name}' != store '{}'",
                 store_athlete.canonical_name,
@@ -138,14 +129,12 @@ fn check_athlete_school(
     match school_names.get(school_id) {
         Some(store_school) if store_school == school => Ok(()),
         Some(store_school) => Err(Discrepancy {
-            row: idx,
             message: format!(
                 "athletes row {idx}: id {aid} school '{school}' != store '{store_school}'"
             ),
         }),
         None if school == school_id => Ok(()),
         None => Err(Discrepancy {
-            row: idx,
             message: format!(
                 "athletes row {idx}: id {aid} school row '{school_id}' not in store, and the sheet \
                  prints '{school}'"
@@ -169,7 +158,6 @@ fn check_athlete_cohort(
         return Ok(());
     }
     Err(Discrepancy {
-        row: idx,
         message: format!(
             "athletes row {idx}: id {aid} grad_year {} != 2027",
             grad_year.map_or("?".to_string(), |y| y.to_string()),

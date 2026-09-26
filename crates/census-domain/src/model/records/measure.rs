@@ -83,12 +83,6 @@ impl CollectionSnapshot {
             observations: BTreeMap::new(),
         }
     }
-
-    /// Record one table's appended-observation count.
-    pub fn with_observations(mut self, table: &str, observations: u64) -> Self {
-        self.observations.insert(table.to_string(), observations);
-        self
-    }
 }
 
 /// What kind of access condition a source imposed on this client (§69).

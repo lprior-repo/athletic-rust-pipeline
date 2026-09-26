@@ -28,7 +28,6 @@ pub fn verify_performances(
         store
             .scan(Table::Performances)
             .map_err(|source| Discrepancy {
-                row: 0,
                 message: format!("reading performances from store: {source}"),
             })?;
     let event_labels = event_labels(store)?;
@@ -38,7 +37,6 @@ pub fn verify_performances(
 
     for &idx in sampled {
         let row = rows.get(idx).ok_or_else(|| Discrepancy {
-            row: idx,
             message: "row index out of range".to_string(),
         })?;
         check_performance_row(idx, row, &lookup, &event_labels, col_map)?;
@@ -46,7 +44,6 @@ pub fn verify_performances(
     }
 
     Ok(EntityCheck {
-        total_rows: rows.len(),
         passed,
         sampled_indices: sampled.to_vec(),
     })
@@ -55,7 +52,6 @@ pub fn verify_performances(
 /// Every event row's printed label, by event id: the sheet writes `kind.stable_key()`.
 fn event_labels(store: &Store) -> Result<HashMap<String, String>, Discrepancy> {
     let events: Vec<CanonicalEvent> = store.scan(Table::Events).map_err(|source| Discrepancy {
-        row: 0,
         message: format!("reading events from store: {source}"),
     })?;
     Ok(events
@@ -110,7 +106,6 @@ fn check_performance_row(
     }
     if let Some(label) = event_labels.get(event) {
         return Err(Discrepancy {
-            row: idx,
             message: format!(
                 "performances row {idx}: id {aid} event '{event}' is the store's id for '{label}'; \
                  the sheet prints the label"
@@ -118,7 +113,6 @@ fn check_performance_row(
         });
     }
     Err(Discrepancy {
-        row: idx,
         message: format!(
             "performances row {idx}: id {aid} event '{event}' mark '{mark}' not in store"
         ),

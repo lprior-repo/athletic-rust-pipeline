@@ -139,7 +139,7 @@ fn process_answers(
     let mut verdicts = Vec::new();
     let mut closed = Vec::new();
     for (index, reviewer, answer) in asked {
-        let Some((case, family)) = pending.get(index) else {
+        let Some((case, _)) = pending.get(index) else {
             continue;
         };
         match answer {
@@ -158,7 +158,7 @@ fn process_answers(
                 report.answered = report.answered.saturating_add(1);
                 report.dropped = report.dropped.saturating_add(dropped);
                 let (rows, states, tally) =
-                    record_case(case, *family, triaged, reviewer, observed_at);
+                    record_case(case, triaged, reviewer, observed_at);
                 report.absorb(tally);
                 verdicts.extend(rows);
                 closed.extend(states);

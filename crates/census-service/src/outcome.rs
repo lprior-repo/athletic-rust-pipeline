@@ -1,12 +1,12 @@
 /// Outcome lattice at async boundaries: classifies `tokio::task::JoinError` and inner results
-/// into a five-state enum so every boundary has a single, testable policy decision point.
+/// into a four-state enum so every boundary has a single, testable policy decision point.
 ///
 /// The wire semantics are preserved: `Cancelled` stays terminal (a cancelled `ctx.run` is a
 /// region shutdown or abort, not a retryable fault). `Panicked` is also terminal because
 /// replaying the journal value that panicked would panic again.
 use tokio::task::JoinError;
 
-/// The five possible outcomes of an async boundary.
+/// The four possible outcomes of an async boundary.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Outcome<T, E> {
     /// The job completed successfully.
@@ -15,8 +15,6 @@ pub enum Outcome<T, E> {
     Err(E),
     /// The task was cancelled (abort, shutdown, or deadline).
     Cancelled,
-    /// The task timed out before producing a result.
-    Timeout,
     /// The task panicked.
     Panicked,
 }

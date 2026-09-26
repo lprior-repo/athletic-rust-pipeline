@@ -31,8 +31,6 @@ pub enum EvidenceMethod {
     Parsed,
     /// Deterministically derived from other evidence (e.g. grade + school year -> grad year).
     Derived,
-    /// Asserted by an upstream dataset that is itself under evidence (legacy import).
-    Inherited,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
