@@ -143,7 +143,6 @@ pub fn labelled_count(rows: &[Vec<String>], label: &str) -> Option<u64> {
     })
 }
 
-
 /// The workbook's own bytes, hashed in chunks so a large export never lands in memory twice.
 pub fn file_digest(path: &Path) -> Result<String> {
     let mut file = File::open(path).with_context(|| format!("opening {}", path.display()))?;

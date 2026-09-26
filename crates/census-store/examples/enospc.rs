@@ -1,5 +1,5 @@
-use census_domain::model::{CanonicalSchool, Evidence, EvidenceMethod, SourceRef};
 use census_domain::model::normalize_name;
+use census_domain::model::{CanonicalSchool, Evidence, EvidenceMethod, SourceRef};
 use census_domain::UsJurisdiction;
 use census_store::{Application, Store, StoreError, Table};
 use sha2::{Digest, Sha256};
@@ -27,14 +27,17 @@ fn check_bounded_fs(root: &Path) {
         if part.starts_with("size=") {
             let val = &part[5..];
             let size = if val.ends_with('k') || val.ends_with('K') {
-                val[..val.len()-1].parse::<u64>().unwrap_or(0) * 1024
+                val[..val.len() - 1].parse::<u64>().unwrap_or(0) * 1024
             } else if val.ends_with('m') || val.ends_with('M') {
-                val[..val.len()-1].parse::<u64>().unwrap_or(0) * 1024 * 1024
+                val[..val.len() - 1].parse::<u64>().unwrap_or(0) * 1024 * 1024
             } else {
                 val.parse::<u64>().unwrap_or(0)
             };
-            assert!(size <= 256 * 1024 * 1024,
-                "filesystem cap too large: {} bytes", size);
+            assert!(
+                size <= 256 * 1024 * 1024,
+                "filesystem cap too large: {} bytes",
+                size
+            );
         }
     }
 }
@@ -54,7 +57,8 @@ fn bytes_hex(bytes: &[u8]) -> String {
 
 fn mk_school(index: usize) -> CanonicalSchool {
     let name = format!("School_{:04}", index);
-    let (mut school, _id) = CanonicalSchool::new(UsJurisdiction::Kansas, &name, normalize_name(&name));
+    let (mut school, _id) =
+        CanonicalSchool::new(UsJurisdiction::Kansas, &name, normalize_name(&name));
     school.evidence.push(Evidence {
         source: SourceRef::id(format!("drill:{}", index)),
         method: EvidenceMethod::Fetched,
@@ -95,7 +99,11 @@ fn baseline(store: &Store) {
     let d = digest_for(&schools);
     batch.commit_once(op, &d).unwrap();
     let count = store.scan::<CanonicalSchool>(Table::Schools).unwrap().len();
-    assert_eq!(count, BASELINE_COUNT, "baseline count: got {} expected {}", count, BASELINE_COUNT);
+    assert_eq!(
+        count, BASELINE_COUNT,
+        "baseline count: got {} expected {}",
+        count, BASELINE_COUNT
+    );
     println!("PASS: baseline {} schools", BASELINE_COUNT);
 }
 
@@ -104,7 +112,8 @@ fn drain_writes(store: &Store) -> (Vec<(String, u64)>, Option<(usize, String, bo
     let mut first_failure = None;
 
     for attempt in 0..ENOSPC_RETRIES {
-        let schools: Vec<CanonicalSchool> = ((BASELINE_COUNT + attempt * BATCH_COUNT)..(BASELINE_COUNT + (attempt + 1) * BATCH_COUNT))
+        let schools: Vec<CanonicalSchool> = ((BASELINE_COUNT + attempt * BATCH_COUNT)
+            ..(BASELINE_COUNT + (attempt + 1) * BATCH_COUNT))
             .map(mk_school)
             .collect();
         let mut batch = store.write_batch();
@@ -129,9 +138,12 @@ fn drain_writes(store: &Store) -> (Vec<(String, u64)>, Option<(usize, String, bo
         }
     }
 
-    assert!(first_failure.is_some(),
+    assert!(
+        first_failure.is_some(),
         "no failure after {} attempts, committed: {}",
-        ENOSPC_RETRIES, committed.len());
+        ENOSPC_RETRIES,
+        committed.len()
+    );
     (committed, first_failure)
 }
 
@@ -141,9 +153,15 @@ fn verify_reopen(root: &Path, committed: &[(String, u64)], fail: Option<(usize, 
     let store = Store::open(root).unwrap();
 
     let all_rows: Vec<CanonicalSchool> = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
-    let total_expected: u64 = BASELINE_COUNT as u64 + committed.iter().map(|(_, c)| *c).sum::<u64>();
-    assert_eq!(all_rows.len(), total_expected as usize,
-        "reopen count: got {} expected {}", all_rows.len(), total_expected);
+    let total_expected: u64 =
+        BASELINE_COUNT as u64 + committed.iter().map(|(_, c)| *c).sum::<u64>();
+    assert_eq!(
+        all_rows.len(),
+        total_expected as usize,
+        "reopen count: got {} expected {}",
+        all_rows.len(),
+        total_expected
+    );
 
     let ids: HashSet<String> = all_rows.iter().map(|s| s.id.as_str().to_string()).collect();
 
@@ -156,7 +174,11 @@ fn verify_reopen(root: &Path, committed: &[(String, u64)], fail: Option<(usize, 
     for (_, count) in committed {
         for j in 0..*count as usize {
             let expected_id = mk_school(expected_start + j).id.as_str().to_string();
-            assert!(ids.contains(&expected_id), "committed {} missing", expected_id);
+            assert!(
+                ids.contains(&expected_id),
+                "committed {} missing",
+                expected_id
+            );
         }
         expected_start += *count as usize;
     }
@@ -168,15 +190,22 @@ fn verify_reopen(root: &Path, committed: &[(String, u64)], fail: Option<(usize, 
             assert!(!ids.contains(&expected_id), "failed {} leaked", j);
         }
         if was_enospc {
-            println!("PASS: {} baseline, {} batches committed, {} refused (ENOSPC), no duplicates",
-                BASELINE_COUNT, committed.len(), fail_idx);
+            println!(
+                "PASS: {} baseline, {} batches committed, {} refused (ENOSPC), no duplicates",
+                BASELINE_COUNT,
+                committed.len(),
+                fail_idx
+            );
         } else {
             println!("PASS: {} baseline, {} batches committed, {} refused (non-ENOSPC: {}), no duplicates",
                 BASELINE_COUNT, committed.len(), fail_idx, err_str);
         }
     } else {
-        println!("PASS: {} baseline, {} batches committed, no failure",
-            BASELINE_COUNT, committed.len());
+        println!(
+            "PASS: {} baseline, {} batches committed, no failure",
+            BASELINE_COUNT,
+            committed.len()
+        );
     }
 }
 
