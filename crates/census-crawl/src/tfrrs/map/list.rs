@@ -44,7 +44,13 @@ impl<'a> Absorb<'a> {
     }
 
     /// Absorb one row of a performance list.
-    fn absorb_row(&mut self, context: &ListContext<'_>, section: &ParsedSection, row: &ParsedRow, ordinal: usize) {
+    fn absorb_row(
+        &mut self,
+        context: &ListContext<'_>,
+        section: &ParsedSection,
+        row: &ParsedRow,
+        ordinal: usize,
+    ) {
         self.stats.rows_seen = self.stats.rows_seen.saturating_add(1);
         if self.count_relay(row) {
             return;
@@ -98,7 +104,6 @@ impl<'a> Absorb<'a> {
             self.stats.rows_without_team = self.stats.rows_without_team.saturating_add(1);
             return None;
         };
-        // The list route states the sport; a path without it (a hand-built URL) states no season.
         let Some(sport) = context.list.season.and_then(|season| season.sport) else {
             self.stats.rows_without_season = self.stats.rows_without_season.saturating_add(1);
             return None;
@@ -167,7 +172,11 @@ impl<'a> Absorb<'a> {
         school: &SchoolId,
     ) {
         let (grade, _, _) = observed;
-        let source_key = format!("{}:row:{}", source_key(facts.date, facts.meet, facts.athlete.id, section, row), facts.ordinal);
+        let source_key = format!(
+            "{}:row:{}",
+            source_key(facts.date, facts.meet, facts.athlete.id, section, row),
+            facts.ordinal
+        );
         let mints = self.mint_entities(context, section, facts, observed, school, &source_key);
         let id = CanonicalPerformance::mint(
             &mints.athlete,

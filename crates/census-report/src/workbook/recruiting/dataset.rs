@@ -139,11 +139,6 @@ impl ScopedTables {
     /// The run scope is also applied: athletes are placed by their school's jurisdiction
     /// (the same rule the census report uses), and coaches are kept only for in-scope schools.
     fn read(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
-        // Run-scope filter: schools first, so we can place athletes by their school's jurisdiction.
-        // The placement index then carries the excluded rows too, exactly as the census report's
-        // does: an athlete whose school the run scope leaves out is placed by that school's
-        // jurisdiction and excluded with it, rather than reading as unplaced — which published an
-        // out-of-scope athlete with its raw school id printed where a school name belongs.
         let mut schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
         let outside_schools = exclude_out_of_scope(&mut schools, |school| school.state.into());
         let mut school_state = school_state_index(&schools);

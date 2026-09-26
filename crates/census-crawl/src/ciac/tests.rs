@@ -3,13 +3,9 @@
 use super::*;
 use census_domain::model::{CoachRole, Gender, Sport};
 
-// ── Fixture data ─────────────────────────────────────────────────────
-
 fn fixture_directory() -> &'static str {
     include_str!("tests/fixtures/ciac_directory.html")
 }
-
-// ── Directory parsing tests ──────────────────────────────────────────
 
 #[test]
 fn parse_directory_returns_schools() {
@@ -41,8 +37,6 @@ fn parsed_schools_have_coach_rows() {
         schools_with_rows.len()
     );
 }
-
-// ── Sport label parsing tests ────────────────────────────────────────
 
 #[test]
 fn parse_sport_label_returns_cross_country() {
@@ -84,8 +78,6 @@ fn parse_sport_label_returns_none_for_non_xc_tf() {
     );
 }
 
-// ── Gender parsing tests ─────────────────────────────────────────────
-
 #[test]
 fn parse_gender_returns_boys() {
     assert_eq!(pages::parse_gender("Boys Cross Country"), Gender::Boys);
@@ -100,8 +92,6 @@ fn parse_gender_returns_girls() {
 fn parse_gender_returns_mixed_for_coed() {
     assert_eq!(pages::parse_gender("Coed Outdoor Track"), Gender::Mixed);
 }
-
-// ── School extract tests ─────────────────────────────────────────────
 
 #[test]
 fn school_entities_mints_school() {
@@ -156,8 +146,6 @@ fn school_entities_skips_placeholder_names() {
 
 #[test]
 fn school_entities_captures_non_xc_tf_rows() {
-    // A school table row for a non-XC/TF sport should be present in the parsed
-    // table but not emitted as a coach entity.
     let table = SchoolTable {
         rows: vec![
             ("Boys Baseball".to_string(), "Steve Bova".to_string()),
@@ -165,13 +153,10 @@ fn school_entities_captures_non_xc_tf_rows() {
         ],
     };
     let extract = map::school_entities("Abbott Tech", &table, "2026-09-24");
-    // Only the XC row produces a coach; the Baseball row is in the table but not as a coach.
     assert_eq!(extract.coaches.len(), 1);
     assert_eq!(extract.coaches[0].sport, Some(Sport::CrossCountry));
     assert_eq!(extract.coaches[0].name, "Mario Longo");
 }
-
-// ── Fixture-level coach row count ────────────────────────────────────
 
 #[test]
 fn fixture_has_182_schools_with_xc_tf_rows() {
@@ -185,7 +170,6 @@ fn fixture_has_182_schools_with_xc_tf_rows() {
                 .any(|(sport, _)| pages::parse_sport_label(sport).is_some())
         })
         .collect();
-    // Measured yield: 182 schools carry an XC/TF head-coach row.
     assert!(
         schools_with_xc_tf.len() >= 170,
         "should have ~182 schools with XC/TF rows, got {}",
@@ -197,15 +181,12 @@ fn fixture_has_182_schools_with_xc_tf_rows() {
 fn fixture_has_xc_tf_coach_rows_counting_over_1000() {
     let parsed = pages::parse_directory(fixture_directory());
     let total_rows: usize = parsed.iter().map(|(_, t)| t.rows.len()).sum();
-    // Measured yield: 1043+ published XC/TF rows.
     assert!(
         total_rows > 1000,
         "should have 1000+ XC/TF coach rows total, got {}",
         total_rows
     );
 }
-
-// ── Specific coach assertions ────────────────────────────────────────
 
 #[test]
 fn abbott_tech_has_bcx_coach_mario_longo() {

@@ -109,8 +109,6 @@ async fn a_roster_pass_files_an_observation_per_published_athlete() {
         "the pass read the one team it was given"
     );
 
-    // What the roster page itself publishes, through the parser the pass used: the provider's own
-    // athlete ids, the names beside them, and the profile page each id was read from.
     let roster = milesplit::parse_roster(WI_ROSTER_FIXTURE, first.clone())
         .expect("the roster fixture parses");
     let published: BTreeMap<String, (&str, &str)> = roster
@@ -147,7 +145,6 @@ async fn a_roster_pass_files_an_observation_per_published_athlete() {
         "one observation per athlete the roster published, keyed by MileSplit's own id"
     );
 
-    // The school the pass placed those athletes at, which is the school row it appended beside them.
     let schools: Vec<CanonicalSchool> = store.scan(Table::Schools).expect("schools read");
     assert_eq!(schools.len(), 1, "one indexed roster, one school");
     for (id, (name, profile_url)) in &published {
@@ -181,8 +178,6 @@ async fn a_roster_pass_files_an_observation_per_published_athlete() {
         );
     }
 
-    // The canonical rows the same pass minted, so each observation names a provider object the store
-    // can be asked about: the athlete rows carry MileSplit's own id for this source.
     let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes).expect("athletes read");
     assert_eq!(athletes.len(), published.len());
     for athlete in &athletes {
@@ -198,8 +193,6 @@ async fn a_roster_pass_files_an_observation_per_published_athlete() {
         );
     }
 
-    // The first athlete the page lists, spelled out: the id in the profile link, the school that
-    // owns the roster, and the name the page printed beside them.
     let sample = roster.athletes.first().expect("the fixture lists athletes");
     let observation = filed
         .get(sample.athlete_id.as_str())

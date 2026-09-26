@@ -240,7 +240,6 @@ fn a_later_pass_on_the_same_date_applies_its_own_payload() {
     assert_eq!(morning.decided, 1, "the first pair is decided");
     let standing = verdicts(&store);
 
-    // A later collection cycle the same day lands a second pair of rows.
     let east = school("East");
     let north = school("North");
     let mut third = athlete(&east.id, "Riley Chen", Gender::Boys);

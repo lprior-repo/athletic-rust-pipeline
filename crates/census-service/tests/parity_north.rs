@@ -103,9 +103,6 @@ fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
     Ok(())
 }
 
-// ---------------------------------------------------------------------------------------------------
-// MSHSL
-// ---------------------------------------------------------------------------------------------------
 
 /// Every fixture in `tests/fixtures/mshsl`, one golden plus one aggregate digest per file.
 #[test]
@@ -438,9 +435,6 @@ async fn mshsl_collect_matches_golden() -> Result<()> {
     )
 }
 
-// ---------------------------------------------------------------------------------------------------
-// North Dakota (NDHSAA) + Nebraska (NSAA)
-// ---------------------------------------------------------------------------------------------------
 
 /// Every fixture in `tests/fixtures/plain_names`, one golden plus an aggregate digest per file.
 #[test]
@@ -690,9 +684,6 @@ async fn plain_names_collect_matches_golden() -> Result<()> {
     )
 }
 
-// ---------------------------------------------------------------------------------------------------
-// Hy-Tek
-// ---------------------------------------------------------------------------------------------------
 
 /// The Hy-Tek fixtures its own `#[cfg(test)]` tests read, with the line splitter each needs.
 ///
@@ -770,8 +761,6 @@ fn hytek_fixtures_match_golden() -> Result<()> {
             "lines": lines.len(),
             "meet": meet.as_ref().map(meet_json),
         });
-        // The golden carries the whole file name: `d1boysstateresults-dash.htm` and
-        // `d1boysstateresults-dash.txt` are one report in two shapes, so their stems collide.
         let golden = format!("hytek__{file}");
         claim_golden(&mut claimed, &golden)?;
         common::assert_golden(&golden, &value)?;

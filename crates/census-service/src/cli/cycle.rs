@@ -72,8 +72,6 @@ pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
             let store = Store::open(root)?;
-            // Opening a store is a read; the census run is one of the paths that migrates, so it
-            // imports the pre-Fjall corpus here, before its first stage reads a row.
             store.import_legacy()?;
             run_offline(cli, &store, args).await
         }
@@ -106,12 +104,6 @@ async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
         index.source_identities, index.conflicts, index.reviews, index.superseded, index.coverage
     );
 
-    // After the index pass, never before: `consolidate`'s finding half writes the derived tables'
-    // `out/*.jsonl` snapshots, and the index pass above is what rewrites those tables. Running it
-    // first published the previous cycle's rows — `conflicts.jsonl` held 4,548 lines against a
-    // 5,300-row ledger, and it did so while `docs/OPERATIONS.md` described the chain as
-    // consolidate-then-index. The gather stage above writes the same tables' append log, so this
-    // cannot move any earlier than here either.
     let counts = census::consolidate(store).context("consolidating the store")?;
     println!(
         "consolidate\t{}",
@@ -170,8 +162,6 @@ async fn gather_athleticnet(
     observed_on: String,
 ) -> Result<()> {
     let fetcher = build_fetcher(cli, store)?;
-    // A literal year, still passed through the domain's own constructor: the field is private so a
-    // value the domain would refuse cannot be constructed anywhere else in the tree.
     let season =
         SchoolYear::new(2026).ok_or_else(|| anyhow::anyhow!("2026 is not a valid school year"))?;
     let context = census_crawl::AdapterContext {

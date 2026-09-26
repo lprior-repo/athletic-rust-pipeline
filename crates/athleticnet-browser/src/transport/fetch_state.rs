@@ -105,7 +105,6 @@ impl<'a> FetchCapture<'a> {
         if self.evaluation_result.is_some() && self.response.is_some() && self.loading_finished {
             return Ok(true);
         }
-        // If JS failed and loading finished, exit loop to return Transport.
         Ok(self.evaluation_result.as_ref().is_some_and(|r| !r.ok) && self.loading_finished)
     }
 
@@ -208,7 +207,6 @@ impl<'a> FetchCapture<'a> {
     /// Reject the fetch when the confirmed request failed.
     fn on_failed(&mut self, event: &EventLoadingFailed) -> Result<(), BrowserError> {
         if self.request_id.as_ref() == Some(&event.request_id) {
-            // Redirect rejection: extra-info recorded 3xx, then loadingFailed.
             if self.redirect_status.take().is_some() {
                 return Err(BrowserError::Redirect);
             }

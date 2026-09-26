@@ -33,11 +33,9 @@ fn fixture_store() -> (TempDir, Store) {
         "hinsdale central",
     );
     store.append(Table::Schools, &school_c).unwrap();
-    // Minted but never stored: this school id is what a missing school looks like in the store.
     let (_school_d, school_d_id) =
         CanonicalSchool::new(UsJurisdiction::Ohio, "Never Stored", "never stored");
 
-    // WI: one athlete the platform's own evidence reaches, with a comparable mark and a profile.
     let mut wi_core = CanonicalAthlete::new(
         &school_a_id,
         "Julian Aguilera",
@@ -58,8 +56,6 @@ fn fixture_store() -> (TempDir, Store) {
         .push(observed_grade(11, 2025, "milesplit_roster"));
     store.append(Table::Athletes, &wi_core).unwrap();
 
-    // WI: one athlete known only through the Athletic.net mirror, with an unparsed mark whose event
-    // row was never stored.
     let mut wi_mirror = CanonicalAthlete::new(
         &school_a_id,
         "Rae Lindgren",
@@ -69,7 +65,6 @@ fn fixture_store() -> (TempDir, Store) {
     wi_mirror.evidence.push(evidence("athleticlive_athletes"));
     store.append(Table::Athletes, &wi_mirror).unwrap();
 
-    // MN: one in-cohort athlete whose school carries no coach, and one athlete outside the cohort.
     let mut mn_athlete = CanonicalAthlete::new(
         &school_b_id,
         "Nora Halvorsen",
@@ -87,8 +82,6 @@ fn fixture_store() -> (TempDir, Store) {
     mn_off_cohort.evidence.push(evidence("delphi_timing"));
     store.append(Table::Athletes, &mn_off_cohort).unwrap();
 
-    // KS: a school universe with no athlete in the cohort at all — "covered, empty", which the row
-    // has to publish as schools counted and athletes zero.
     let (school_k, school_k_id) =
         CanonicalSchool::new(UsJurisdiction::Kansas, "Olathe West", "olathe west");
     store.append(Table::Schools, &school_k).unwrap();
@@ -101,7 +94,6 @@ fn fixture_store() -> (TempDir, Store) {
     ks_off_cohort.evidence.push(evidence("kshsaa_results"));
     store.append(Table::Athletes, &ks_off_cohort).unwrap();
 
-    // IL: one athlete whose observed grade implies a different graduation year than the stored one.
     let mut il_athlete =
         CanonicalAthlete::new(&school_c_id, "Theo Vance", GradYear::CO2027, Gender::Boys);
     il_athlete.evidence.push(evidence("ihsa_results"));
@@ -110,7 +102,6 @@ fn fixture_store() -> (TempDir, Store) {
         .push(observed_grade(11, 2024, "ihsa_results"));
     store.append(Table::Athletes, &il_athlete).unwrap();
 
-    // The unplaceable athlete: nothing in the school table carries its school id.
     let mut unplaced = CanonicalAthlete::new(
         &school_d_id,
         "Unplaced Runner",
@@ -159,7 +150,6 @@ fn fixture_store() -> (TempDir, Store) {
     );
     store.append(Table::Performances, &comparable).unwrap();
 
-    // A performance whose event row is deliberately absent, carrying a mark nothing can compare.
     let missing_event =
         CanonicalEvent::new(&meet.id, EventKind::Track200m, Gender::Girls, None, None);
     let unparsed = performance(
@@ -174,8 +164,6 @@ fn fixture_store() -> (TempDir, Store) {
     );
     store.append(Table::Performances, &unparsed).unwrap();
 
-    // An event the ontology has no home for yet, with one row published under it: the vocabulary gap
-    // is the event's, and the class is raised for the rows that reference that event.
     let unmapped_event = CanonicalEvent::new(
         &meet.id,
         EventKind::Unmapped {
@@ -200,8 +188,6 @@ fn fixture_store() -> (TempDir, Store) {
     );
     store.append(Table::Performances, &unmapped_row).unwrap();
 
-    // A performance whose athlete was never stored: a partial run leaves these behind, and the
-    // report has to keep them visible without inventing an athlete row for them.
     let never_stored =
         CanonicalAthlete::new(&school_d_id, "Never Stored", GradYear::CO2027, Gender::Boys);
     let orphan = performance(
@@ -264,7 +250,6 @@ fn performance(
         evidence: vec![evidence(source)],
         source_key: source_key.to_string(),
         source_athlete: None,
-        // The fixture mints the id from its own fields and merges nothing, so no id ever collided.
         retained_conflicts: Vec::new(),
     }
 }
@@ -293,8 +278,6 @@ fn an_empty_store_publishes_every_jurisdiction_with_a_gap() {
 
     let report = coverage_report(&store, None).unwrap();
 
-    // Every configured jurisdiction plus UNKNOWN: an omitted row is the one outcome the report may
-    // not produce, so an empty store still publishes the full set.
     assert_eq!(
         report.jurisdictions.len(),
         UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1)
@@ -312,9 +295,6 @@ fn an_empty_store_publishes_every_jurisdiction_with_a_gap() {
         .iter()
         .any(|row| row.jurisdiction.code() == "WI" && row.schools == 0));
 
-    // ... and an explicit gap class for every row, the unplaceable one included, so emptiness is
-    // findable rather than inferred from an absent key. A jurisdiction outside the run scope has no
-    // row to carry a gap: its absence is ADR-009, not a finding.
     assert_eq!(
         report.gaps.len(),
         UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1)
@@ -343,7 +323,6 @@ fn jurisdiction_rows_sum_to_the_store_totals() {
     let report = coverage_report(&store, Some(2027)).unwrap();
     let published = report.published_totals();
 
-    // Every stored row is either published in a jurisdiction or reported as off cohort.
     let stored_athletes = store
         .scan::<CanonicalAthlete>(Table::Athletes)
         .unwrap()
@@ -422,21 +401,15 @@ fn a_jurisdiction_row_carries_the_counted_columns() {
     assert_eq!(wi.schools_with_xc_coach, 1);
     assert_eq!(wi.schools_with_coach_email, 1);
     assert_eq!(wi.meets, 1);
-    // One row per stored performance, not one per athlete: the core athlete's comparable mark, the
-    // mirror athlete's unparsed mark, and the row published under the event the ontology has no home
-    // for yet.
     assert_eq!(wi.performances, 3);
     assert_eq!(wi.sources.get("milesplit_roster"), Some(&1));
     assert_eq!(wi.sources.get("athleticlive_athletes"), Some(&1));
 
-    // MN: a school, an in-cohort athlete, and no coach row at all.
     let mn = row(&report, "MN");
     assert_eq!(mn.schools, 1);
     assert_eq!(mn.athletes, 1);
     assert_eq!(mn.coaches, 0);
 
-    // KS: the school universe exists and the cohort is empty — the row publishes the school count and
-    // zero athletes instead of dropping the state.
     let ks = row(&report, "KS");
     assert_eq!(ks.schools, 1);
     assert_eq!(ks.athletes, 0);
@@ -445,8 +418,6 @@ fn a_jurisdiction_row_carries_the_counted_columns() {
     let unplaced = row(&report, "UNKNOWN");
     assert_eq!(unplaced.schools, 0);
     assert_eq!(unplaced.athletes, 1);
-    // The orphan performance is a stored row with no stored athlete: it publishes as a performance
-    // count and never as an athlete, because no athlete row exists for those columns to describe.
     assert_eq!(unplaced.performances, 1);
     assert_eq!(unplaced.with_performance, 0);
     assert_eq!(unplaced.with_comparable_mark, 0);
@@ -458,8 +429,6 @@ fn gap_classes_carry_the_count_that_produced_them() {
 
     let report = coverage_report(&store, Some(2027)).unwrap();
 
-    // WI: the mirror-only athlete has no grade observation, no profile and no comparable mark, and
-    // its performance names an event the events table does not hold.
     assert_eq!(
         gap(&report, "WI", GapClass::MissingGraduationEvidence),
         Some(1)
@@ -467,9 +436,6 @@ fn gap_classes_carry_the_count_that_produced_them() {
     assert_eq!(gap(&report, "WI", GapClass::MissingProfile), Some(1));
     assert_eq!(gap(&report, "WI", GapClass::MissingPrSupport), Some(1));
     assert_eq!(gap(&report, "WI", GapClass::MissingEventContext), Some(1));
-    // The same row's kind is a source label the ontology has no home for yet, which is its own
-    // class: a row that can only publish under a vendor string is a vocabulary gap, and it must not
-    // be folded into "the events table is missing an id".
     assert_eq!(gap(&report, "WI", GapClass::UnmappedEvent), Some(1));
     let unmapped = report
         .gaps
@@ -488,7 +454,6 @@ fn gap_classes_carry_the_count_that_produced_them() {
         .unwrap();
     assert_eq!(event_context.unit, "performances");
 
-    // IL: the observed grade implies 2026, the stored cohort says 2027.
     assert_eq!(row(&report, "IL").identity_conflicts, 1);
     assert_eq!(gap(&report, "IL", GapClass::ConflictingIdentity), Some(1));
     assert_eq!(
@@ -496,11 +461,8 @@ fn gap_classes_carry_the_count_that_produced_them() {
         None
     );
 
-    // MN: its athlete's school carries no coach row at all.
     assert_eq!(gap(&report, "MN", GapClass::MissingCoach), Some(1));
 
-    // UNKNOWN: the school id has no row, so the athlete is missing a school and a coach, and its
-    // row is where an unplaceable athlete stays visible.
     assert_eq!(gap(&report, "UNKNOWN", GapClass::MissingSchool), Some(1));
     assert_eq!(gap(&report, "UNKNOWN", GapClass::MissingCoach), Some(1));
     assert_eq!(
@@ -508,14 +470,11 @@ fn gap_classes_carry_the_count_that_produced_them() {
         Some(1)
     );
     assert_eq!(gap(&report, "UNKNOWN", GapClass::MissingProfile), Some(1));
-    // The orphan performance's event row is absent too, so the row that keeps it visible is the
-    // one that names the missing event context.
     assert_eq!(
         gap(&report, "UNKNOWN", GapClass::MissingEventContext),
         Some(1)
     );
 
-    // A jurisdiction with a school universe is not "empty"; one with nothing at all is.
     assert_eq!(gap(&report, "MN", GapClass::EmptyJurisdiction), None);
     assert_eq!(gap(&report, "WY", GapClass::EmptyJurisdiction), Some(0));
 }
@@ -538,8 +497,6 @@ fn a_mirror_result_plane_row_is_counted_but_never_core() {
         .push(evidence("athleticlive_results"));
     store.append(Table::Athletes, &mirror_athlete).unwrap();
 
-    // The Athletic.net result plane is a mirror: its row counts in the all-sources columns and in its
-    // own provider column, and drops out of the core columns because `NON_CORE_SOURCE_IDS` names it.
     let report = coverage_report(&store, Some(2027)).unwrap();
     let ohio = row(&report, "OH");
     assert_eq!(ohio.athletes, 2);
@@ -561,8 +518,6 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
 
-    // OH: one athlete the platform's own evidence reaches and one the mirror carries, so both sides
-    // of the core split stay measured while the reconciliation balances.
     let (school, school_id) =
         CanonicalSchool::new(UsJurisdiction::Ohio, "Dublin Coffman", "dublin coffman");
     store.append(Table::Schools, &school).unwrap();
@@ -577,7 +532,6 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
         .push(evidence("athleticlive_results"));
     store.append(Table::Athletes, &mirror_athlete).unwrap();
 
-    // AK: the same wave left a school, a cohort athlete, a coach, a meet and a result behind.
     let (ak_school, ak_school_id) =
         CanonicalSchool::new(UsJurisdiction::Alaska, "Service High", "service high");
     store.append(Table::Schools, &ak_school).unwrap();
@@ -620,8 +574,6 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
 
     let report = coverage_report(&store, Some(2027)).unwrap();
 
-    // The published universe is the census run scope: no row for Alaska, while the state that is in
-    // scope keeps measuring both source scopes.
     assert!(report
         .jurisdictions
         .iter()
@@ -630,7 +582,6 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
     assert_eq!(ohio.athletes, 2);
     assert_eq!(ohio.athletes_core, 1);
 
-    // Every read counter stops where the rows stop, and the cohort filter is not what stopped it.
     assert_eq!(report.off_cohort_athletes, 0);
     assert_eq!(report.read, report.published_totals());
     assert_eq!(report.read.schools, 1);
@@ -640,7 +591,6 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
     assert_eq!(report.read.performances, 0);
     report.reconcile().unwrap();
 
-    // What the run scope left out is published as a note carrying the counters that were left out.
     let scope_note = report
         .notes
         .iter()
@@ -660,7 +610,6 @@ fn reconcile_refuses_a_report_whose_rows_lost_or_invented_a_row() {
     let (_dir, store) = fixture_store();
     let report = coverage_report(&store, Some(2027)).unwrap();
 
-    // Lost: the unplaced row carries a cohort athlete and its orphan performance.
     let mut lost = report.clone();
     lost.jurisdictions.pop();
     let error = lost.reconcile().unwrap_err().to_string();
@@ -670,7 +619,6 @@ fn reconcile_refuses_a_report_whose_rows_lost_or_invented_a_row() {
         "{error}"
     );
 
-    // Invented: a second copy of the unplaced row publishes an athlete nothing read.
     let mut invented = report.clone();
     invented.jurisdictions.push(row(&report, "UNKNOWN").clone());
     let error = invented.reconcile().unwrap_err().to_string();

@@ -147,9 +147,6 @@ impl Spawner {
     {
         let (tx, rx) = oneshot::channel();
         self.push_blocking(move || {
-            // A panicking job publishes that truth *before* its unwind resumes: the caller must not
-            // read "no value came back" as a cancellation when the region counted a panic, and the
-            // resumed unwind keeps the join error a panic, so both counts stay honest.
             match catch_unwind(AssertUnwindSafe(job)) {
                 Ok(result) => publish(tx, Completion::Returned(result)),
                 Err(payload) => {
@@ -162,8 +159,6 @@ impl Spawner {
             Ok(Completion::Returned(Ok(value))) => Outcome::Ok(value),
             Ok(Completion::Returned(Err(error))) => Outcome::Err(error),
             Ok(Completion::Panicked) => Outcome::Panicked,
-            // No value and no panic: the job was aborted before it ran (a region shutdown), so the
-            // caller learns the region stopped instead of a value it must not trust.
             Err(_) => Outcome::Cancelled,
         }
     }
@@ -176,9 +171,6 @@ impl Spawner {
     #[tracing::instrument(skip_all, fields(timeout_secs = timeout.as_secs()))]
     pub async fn drain(&self, timeout: Duration) -> Result<TaskReport, SpawnError> {
         let mut region = self.take();
-        // `checked_add` keeps the deadline arithmetic panic-free. A timeout the clock cannot
-        // represent is a timeout there is no deadline to reach — the region is waited for — rather
-        // than a number clamped into something quieter than what the caller asked for.
         let deadline = SystemClock.now().checked_add(timeout);
         while !region.tasks.is_empty() {
             let joined = match deadline {
@@ -190,12 +182,6 @@ impl Spawner {
                             tracing::warn!(remaining, "drain deadline reached; aborting");
                             region.ledger.note_deadline(remaining);
                             region.tasks.abort_all();
-                            // The abort lands on the runtime's next turn, so reap across a few
-                            // turns instead of once: the tasks the abort reclaims are counted as
-                            // `aborted` and stop being reported as still in flight. The budget is
-                            // turns, not time — a job the abort cannot reclaim (a blocking job
-                            // that already started) never becomes ready, and the drain must not
-                            // wait on it.
                             const REAP_TURNS: usize = 8;
                             for _ in 0..REAP_TURNS {
                                 while let Some(joined) = region.tasks.try_join_next() {

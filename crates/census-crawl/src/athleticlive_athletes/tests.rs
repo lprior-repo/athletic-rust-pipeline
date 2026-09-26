@@ -51,19 +51,15 @@ fn grade_tokens_cover_numeric_and_letter_encodings() {
 #[test]
 fn grade_is_interpreted_against_the_meet_school_year() {
     let fallback = SchoolYear::new(2026).expect("2026 is a season");
-    // Grade 11 in a 2025-26 meet is class of 2027.
     let spring_2026 = school_year_for_date("2026-04-25", fallback);
     assert_eq!(
         GradYear::of(Grade::new(11).unwrap(), spring_2026).get(),
         2027
     );
-    // Grade 12 in a 2026-27 meet is also class of 2027.
     let fall_2026 = school_year_for_date("2026-09-12", fallback);
     assert_eq!(GradYear::of(Grade::new(12).unwrap(), fall_2026).get(), 2027);
-    // A 2025 XC meet (2025-26) with grade 11 is class of 2027 too.
     let fall_2025 = school_year_for_date("2025-10-04", fallback);
     assert_eq!(GradYear::of(Grade::new(11).unwrap(), fall_2025).get(), 2027);
-    // Bad dates fall back rather than panicking - a year no season may open in included.
     assert_eq!(school_year_for_date("", fallback).get(), 2026);
     assert_eq!(school_year_for_date("garbage", fallback).get(), 2026);
     assert_eq!(school_year_for_date("1801-06-06", fallback).get(), 2026);
@@ -92,7 +88,6 @@ fn rows_become_canonical_entities_with_athletic_net_seeds() {
     );
     assert!(!entities.athletes.is_empty(), "graded rows mint athletes");
     for athlete in &entities.athletes {
-        // Fixture meet is 2025-04 (school year 2024-25): grade 9-12 maps to classes 2025-2028.
         assert!(
             (2024..=2031).contains(&athlete.grad_year.get()),
             "grad year {} is outside the plausible window for this meet",
@@ -206,8 +201,6 @@ fn meet_targets_deduplicate_by_athleticlive_id_and_respect_state_filter() {
 
 #[test]
 fn implausible_meet_dates_are_skipped_and_counted() {
-    // The tenant meet index carries placeholder rows dated in the 2220s. A grade interpreted
-    // against such a date would mint a class of 2223, so the meet is refused, not guessed at.
     let mut placeholder = CanonicalMeet::new(
         Some(UsJurisdiction::Kansas),
         "Sample Meet",

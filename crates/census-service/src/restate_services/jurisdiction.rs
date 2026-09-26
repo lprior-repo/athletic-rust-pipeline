@@ -103,8 +103,6 @@ impl JurisdictionCensus {
         identity: &WorkflowIdentity,
         state: &mut JurisdictionState,
     ) -> Result<Vec<String>, HandlerError> {
-        // Journaled once for the whole run: the options, every stage's `at` and the saved state all
-        // carry this date, so a replay — even one that crosses midnight — sees one consistent day.
         let today = super::journaled_today(ctx, &self.clock).await?;
         let options = self.options(request, &today)?;
         let mut stages_run: Vec<String> = Vec::new();
@@ -182,8 +180,6 @@ fn report(
     stages_run: Vec<String>,
     completed_at: String,
 ) -> Result<JurisdictionReport, HandlerError> {
-    // The plan is recorded before the first stage, so a report without one means this function ran
-    // ahead of the sequence rather than that a source told us nothing.
     let plan = state
         .plan
         .clone()
@@ -196,15 +192,11 @@ fn report(
         .rosters
         .clone()
         .ok_or_else(|| jobs::invariant("no walk outcome recorded after the rosters stage"))?;
-    // Snapshots are merged once by the national run, so a jurisdiction reports no table counts of
-    // its own. The field stays for the reports written when the merge was a jurisdiction stage.
     let consolidated = state.consolidated.clone().unwrap_or_default();
     let meets = state
         .meets
         .clone()
         .ok_or_else(|| jobs::invariant("no meet census recorded after the meets stage"))?;
-    // The results stage runs whenever its field is absent, so a full sequence always records one —
-    // a gap here means the report was built ahead of the sequence.
     let results = state
         .results
         .clone()
@@ -259,9 +251,6 @@ impl JurisdictionCensus {
     ) -> Result<Json<JurisdictionReport>, HandlerError> {
         let identity =
             WorkflowIdentity::jurisdiction(request.jurisdiction, request.season, request.revision);
-        // The key is the identity. A request naming a different jurisdiction, season or revision
-        // would write another jurisdiction's rows under this key, and no retry can route it
-        // correctly, so the mismatch is terminal rather than transient.
         if ctx.key() != identity.as_str() {
             return Err(TerminalError::new(format!(
                 "request identity {} does not match object key {}",
@@ -275,8 +264,6 @@ impl JurisdictionCensus {
         let stages_run = self
             .run_owed_stages(&ctx, &request, &identity, &mut state)
             .await?;
-        // Journaled for the same reason the stages journal theirs: this date becomes part of the
-        // report the national run folds into its own durable state.
         let observed_on = super::journaled_today(&ctx, &self.clock).await?;
         Ok(Json(report(
             &request,

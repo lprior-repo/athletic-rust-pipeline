@@ -23,8 +23,6 @@ static DATED: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     )
 });
 
-// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
-// back as a typed error that the readers answer as "this file carries no meet" — never a panic.
 fn event_header_regex() -> CrawlResult<&'static Regex> {
     EVENT_HEADER
         .as_ref()
@@ -99,8 +97,6 @@ pub(super) fn event_header(trimmed: &str) -> Option<ParsedEvent> {
     };
     let label = captures.get(2)?.as_str().trim().to_string();
     let kind = hytek_event_kind(&label);
-    // The pattern also matches prose (`Boys of summer 2025`), so only labels the ontology knows, or
-    // labels shaped like a track event, become events.
     if matches!(kind, EventKind::Unmapped { .. }) && !looks_like_event(&label) {
         return None;
     }

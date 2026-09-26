@@ -80,8 +80,6 @@ impl Fetcher {
             Some(robots) if robots > configured => robots,
             _ => configured,
         };
-        // Authorization permits a host whose robots rules would otherwise block the request; it
-        // never permits a faster rate than the collection policy's 2 rps ceiling.
         if self.is_authorized_host(host) && effective < MIN_AUTHORIZED_DELAY {
             effective = MIN_AUTHORIZED_DELAY;
         }
@@ -112,10 +110,6 @@ impl Fetcher {
             match buckets.get_mut(&key) {
                 Some(s) => {
                     let now = SystemClock.now();
-                    // The reserved slot is a floor: resume from the later of "now" and the slot,
-                    // then push the slot one delay further. `checked_add` keeps the instant
-                    // arithmetic panic-free, and a clock far enough out to overflow `Instant`
-                    // cannot occur in a run, so "no reservation" is the honest answer there.
                     let from = match s.next_allowed {
                         Some(at) if at > now => at,
                         _ => now,
@@ -149,7 +143,6 @@ impl Fetcher {
             .unwrap_or_default();
         let key = Self::key_for(method, url, &extra);
         let (body_path, meta_path) = self.cache_paths(&key);
-        // read_cache verifies the body against the metadata; a mismatch returns None (miss).
         let cached = read_cache(&body_path, &meta_path)?;
         if let Some((meta, body)) = cached.as_ref() {
             if let Some(outcome) = self
@@ -176,9 +169,6 @@ impl Fetcher {
             options,
             timeout_secs,
         };
-        // Which transport carries the request is the registry's declaration, not the caller's
-        // request: a registered host whose table entry says `Browser` is the one place that fact
-        // lives, and a host no descriptor claims keeps the HTTP path it has always had.
         let started = Instant::now();
         let outcome = match crate::registry::transport_for_host(&host) {
             Some(crate::registry::TransportKind::Browser) => self.fetch_browser(gate, &plan).await,
@@ -206,9 +196,6 @@ impl Fetcher {
         {
             let mut stats = self.stats.lock().await;
             stats.cache_hits = stats.cache_hits.saturating_add(1);
-            // The origin itself saw nothing, but the request still names it: §45's per-provider row
-            // banks this as a cache hit, so `requests - cache_hits` stays the physical traffic that
-            // host actually answered.
             let entry = stats.per_host.entry(crate::net::host_of(url)).or_default();
             entry.requests = entry.requests.saturating_add(1);
             entry.cache_hits = entry.cache_hits.saturating_add(1);
@@ -239,7 +226,6 @@ impl Fetcher {
             return Ok(rules.crawl_delay);
         }
         if self.is_authorized_host(host) {
-            // Operator-authorized host: the rule is recorded on the run, not enforced.
             {
                 let mut stats = self.stats.lock().await;
                 stats.robots_authorized = stats.robots_authorized.saturating_add(1);

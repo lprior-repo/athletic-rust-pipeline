@@ -33,8 +33,6 @@ mod results;
 mod standings;
 mod wire;
 
-// The event-document reader and the URL it requires: `xtask replay` hands both to the committed
-// captures, and `results/tests.rs` reads the same two through these same paths.
 pub use docs::parse_event_document;
 pub use meets::build_meets;
 pub use parse::{implausible_year, infer_level, parse_meets_csv, MeetRow};
@@ -120,9 +118,6 @@ fn write_meets(
         if done.contains(meet.id.as_str()) {
             continue;
         }
-        // Placeholder rows in the tenant index carry impossible dates (`2222-08-23`). A meet is
-        // the anchor for the school year a grade is read against, so an impossible date would
-        // mint an impossible graduating class downstream: refuse it here instead.
         if implausible_year(&meet.date) {
             skipped_corrupt = skipped_corrupt.saturating_add(1);
             continue;

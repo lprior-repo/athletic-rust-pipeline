@@ -130,7 +130,6 @@ async fn a_result_set_whose_rows_never_landed_is_read_again_by_the_next_run() {
     let ctx = context(&store, &fetcher);
     let reference = super::super::wire::ResultSetRef::parse(OH_RAW_URL).expect("a /raw URL");
 
-    // The interrupted run: it reads the set, then the run ends before the flush.
     let mut interrupted = interrupted_run(&ctx);
     interrupted.read(&ctx, &reference).await;
     assert_eq!(
@@ -157,7 +156,6 @@ async fn a_result_set_whose_rows_never_landed_is_read_again_by_the_next_run() {
     );
     drop(interrupted);
 
-    // The next run: the same set, read again, with its rows and its entry landing together.
     let report = collect(
         &ctx,
         &ResultSetOptions {
@@ -188,7 +186,6 @@ async fn a_result_set_whose_rows_never_landed_is_read_again_by_the_next_run() {
     assert_eq!(keys.len(), 1, "one entry per result set: {keys:?}");
     assert!(keys.contains(OH_RAW_KEY), "keys: {keys:?}");
 
-    // A third run has a journaled unit to resume, and resumes it: the entry means the rows landed.
     let third = collect(
         &ctx,
         &ResultSetOptions {

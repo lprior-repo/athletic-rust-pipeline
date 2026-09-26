@@ -143,7 +143,6 @@ pub(super) fn read(
         return Err(Refusal::UnnamedCase);
     }
     match verdict.kind {
-        // The protocol's own way of declining: nothing proposed, nothing to check.
         ReviewVerdictKind::InsufficientEvidence => Ok(AthleteVerdict::InsufficientEvidence),
         ReviewVerdictKind::ValueProposed => {
             if verdict.field.as_deref().map(str::trim) != Some(IDENTITY_FIELD) {

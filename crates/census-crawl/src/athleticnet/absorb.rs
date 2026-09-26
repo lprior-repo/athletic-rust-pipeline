@@ -109,9 +109,17 @@ impl<'a> Ctx<'a> {
         let id = match self.accumulated.athletes.get(&key) {
             Some(existing) => existing.id.clone(),
             None => {
-                let mut athlete = CanonicalAthlete::new(school, name, grad_year, gender,
-                    SourceIdentity::new(SourceNamespace::athletic_net("athlete"), self.target.athlete_id.to_string())
-                        .with_url(profile_url(self.target.athlete_id)));
+                let mut athlete = CanonicalAthlete::new(
+                    school,
+                    name,
+                    grad_year,
+                    gender,
+                    SourceIdentity::new(
+                        SourceNamespace::athletic_net("athlete"),
+                        self.target.athlete_id.to_string(),
+                    )
+                    .with_url(profile_url(self.target.athlete_id)),
+                );
                 athlete
                     .public_profile_urls
                     .push(profile_url(self.target.athlete_id));
@@ -150,8 +158,6 @@ fn grade_observations(bio: &Bio, source: &SourceRef) -> Vec<ObservedGrade> {
         let Some(grade) = Grade::new(grade) else {
             continue;
         };
-        // A season the domain will not place is dropped rather than recorded as the year a grade was
-        // observed in: the observation is evidence, and no source published that year.
         let Some(school_year) = SchoolYear::containing(season, 5) else {
             continue;
         };

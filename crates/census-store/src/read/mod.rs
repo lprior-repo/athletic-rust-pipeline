@@ -109,9 +109,6 @@ impl Store {
                 }
                 continue;
             }
-            // A different id: the entity in hand is complete, so it is published, handed over, and
-            // the memory it held is the visitor's now. A refused visit returns before the replacement
-            // row is read any further.
             if let Some((_, mut entity)) = merged.replace((record.entity_id().to_string(), record))
             {
                 entity.publish();

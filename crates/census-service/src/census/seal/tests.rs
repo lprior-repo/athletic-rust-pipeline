@@ -94,7 +94,6 @@ fn write_coverage_sheets(
     let coverage = book.add_worksheet().set_name(COVERAGE_SHEET)?;
     coverage.write_string(0, 0, "state")?;
     let states = all_jurisdictions();
-    // Only the first 49 are in CENSUS_SCOPE (Alaska=1, Hawaii=11 are excluded)
     let scope_states = &states[..50];
     let mut row = 1u32;
     for i in 0..n_jurisdictions {
@@ -118,16 +117,13 @@ fn seed_and_workbook(
 ) -> Result<(Store, PathBuf)> {
     let store = Store::open(dir)?;
 
-    // Create schools in all 49 CENSUS_SCOPE jurisdictions.
-    // The coverage report reads jurisdictions from schools, athletes, coaches, meets.
-    // We need schools in every jurisdiction for the coverage report to see all of them.
     let scope_states: &[UsJurisdiction; 49] = &all_jurisdictions()
         .iter()
         .filter(|s| **s != UsJurisdiction::Alaska && **s != UsJurisdiction::Hawaii)
         .copied()
         .collect::<Vec<_>>()
         .try_into()
-        .unwrap(); // First 50 minus Alaska(1) and Hawaii(11)
+        .unwrap();
 
     for (i, state) in scope_states.iter().enumerate() {
         let (school, _) = CanonicalSchool::new(
@@ -138,7 +134,6 @@ fn seed_and_workbook(
         store.append(Table::Schools, &school)?;
     }
 
-    // Create athletes with grad_year = 2027, distributed across schools.
     for i in 0..athlete_count {
         let school_idx = i as usize % scope_states.len();
         let school = &scope_states[school_idx];
@@ -161,7 +156,6 @@ fn seed_and_workbook(
         store.append(Table::Athletes, &athlete)?;
     }
 
-    // Create one coach and one meet per school.
     for (i, state) in scope_states.iter().enumerate() {
         let (school, school_id) = CanonicalSchool::new(
             *state,
@@ -186,21 +180,17 @@ fn seed_and_workbook(
         store.append(Table::Meets, &meet)?;
     }
 
-    // Write the workbook with 50 unique jurisdictions.
     let path = dir.join("census-service-test.xlsx");
     let mut book = Xlsx::new();
 
-    // Athletes sheet.
     let athletes = book.add_worksheet().set_name(ATHLETES_SHEET)?;
     athletes.write_string(0, 0, "athlete")?;
     for i in 0..athlete_count {
         athletes.write_string(i + 1, 0, format!("Athlete {i}"))?;
     }
 
-    // Coverage sheet with unique jurisdictions.
     write_coverage_sheets(&mut book, EXPECTED_JURISDICTIONS, 1)?;
 
-    // Run Metrics sheet.
     let metrics = book.add_worksheet().set_name(RUN_METRICS_SHEET)?;
     metrics.write_string(0, 0, "metric")?;
     metrics.write_string(0, 1, "value")?;
@@ -259,11 +249,9 @@ fn workbook_with_dupes(
 
     let coverage = book.add_worksheet().set_name(COVERAGE_SHEET)?;
     coverage.write_string(0, 0, "state")?;
-    // First jurisdiction duplicated `dupe_count` times
     for i in 0..dupe_count {
         coverage.write_string(i + 1, 0, "WI")?;
     }
-    // Then unique jurisdictions
     let states = [
         "AK", "AZ", "CA", "CO", "CT", "FL", "GA", "IL", "MA", "MD", "MI", "MN", "NY", "NC", "OH",
         "OR", "PA", "TX", "WA", "WI",
@@ -330,7 +318,6 @@ fn a_workbook_that_agrees_with_the_store_verifies() {
 #[test]
 fn a_workbook_that_disagrees_refuses_and_names_the_number() {
     let dir = tempfile::tempdir().expect("a temp dir");
-    // Store has 5 athletes, workbook says 4
     let (store, path) = seed_and_workbook(dir.path(), 5, Some(4)).expect("seeds");
 
     let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");
@@ -338,7 +325,6 @@ fn a_workbook_that_disagrees_refuses_and_names_the_number() {
     assert!(!check.counts_reconciled);
     assert!(!check.export_verified);
     let named = &check.discrepancies[0];
-    // The Run Metrics sheet says 4, but the store has 5
     assert!(named.contains("4") && named.contains("5"), "{named}");
 }
 
@@ -361,10 +347,8 @@ fn a_workbook_that_omits_the_cohort_row_refuses() {
 #[test]
 fn a_coverage_sheet_short_of_jurisdictions_refuses() {
     let dir = tempfile::tempdir().expect("a temp dir");
-    // Store has 50 jurisdictions (coverage report), workbook only has 3
     let (store, _) = seed_and_workbook(dir.path(), 5, Some(5)).expect("seeds");
 
-    // Write a workbook with only 3 coverage rows (override the seeded one)
     let path = simple_workbook(dir.path(), Some(5), 3).expect("writes override");
 
     let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");
@@ -415,11 +399,8 @@ fn the_digest_moves_with_the_bytes() {
 #[test]
 fn a_duplicated_coverage_jurisdiction_is_refused() {
     let dir = tempfile::tempdir().expect("a temp dir");
-    // Store has 50 jurisdictions
     let (store, _) = seed_and_workbook(dir.path(), 1, Some(1)).expect("seeds");
 
-    // Write a workbook with WI duplicated 3 times (3 rows, 1 unique) plus 1 unique
-    // Total: 4 rows, 2 unique — unique count (2) < expected (50), plus duplicates
     let path = workbook_with_dupes(dir.path(), Some(1), 1, 3).expect("writes workbook");
 
     let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");
@@ -436,7 +417,6 @@ fn a_duplicated_coverage_jurisdiction_is_refused() {
 #[test]
 fn a_correct_workbook_still_verifies_with_unique_coverage() {
     let dir = tempfile::tempdir().expect("a temp dir");
-    // Store has data, workbook has 50 unique jurisdictions matching expected
     let (store, path) = seed_and_workbook(dir.path(), 3, Some(3)).expect("seeds");
 
     let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");

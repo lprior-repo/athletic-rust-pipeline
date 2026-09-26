@@ -11,11 +11,7 @@ pub(crate) fn parse_field_imperial(feet_mark: &str) -> Option<i32> {
     let (feet_text, inches_text) = split_feet_inches(feet_mark)?;
     let feet: i64 = feet_text.trim().parse().ok()?;
     let inches: i64 = parse_inches_hundredths(inches_text)?;
-    // Work in hundredths of an inch: 1 foot = 12 inches = 1200, and 1 hundredth of an inch is
-    // 0.254 mm, so millimetres = hundredths * 254 / 1000. Integer-only, like the rest of the
-    // kernel, so no `as` cast is needed ([`crate::bests`] comparisons are exactly ordered).
     let hundredths = feet.checked_mul(1200)?.checked_add(inches)?;
-    // Each step is checked so a pathological source string refuses instead of wrapping.
     let millimetres = hundredths.checked_mul(254)?.checked_add(500)?;
     i32::try_from(millimetres / 1000).ok()
 }
@@ -43,8 +39,6 @@ fn parse_inches_hundredths(s: &str) -> Option<i64> {
         None => (s, ""),
     };
     let whole: i64 = whole.parse().ok()?;
-    // Pad or truncate frac to exactly 2 digits. A longer fraction is truncated, not rejected.
-    // `get` fails on a non-boundary index, which is the right refusal for a non-ASCII fraction.
     let frac = match frac.len() {
         0 => 0,
         1 => frac.parse::<i64>().ok()?.checked_mul(10)?,

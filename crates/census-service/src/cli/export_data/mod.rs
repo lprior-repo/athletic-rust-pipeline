@@ -102,19 +102,14 @@ pub(super) fn run_export_data(args: &ExportDataArgs) -> Result<()> {
         .filter_map(|s| s.get("id").and_then(|id| id.as_str()).map(|id| (id, s)))
         .collect();
 
-    // -- canonical schools -------------------------------------------------------------------
     schools::write_canonical_schools(&schools, data)?;
 
-    // -- canonical coaches -------------------------------------------------------------------
     coaches::write_canonical_coaches(&coaches, &by_school, data)?;
 
-    // -- canonical meets ---------------------------------------------------------------------
     meets::write_canonical_meets(&meets, data)?;
 
-    // -- athletes ----------------------------------------------------------------------------
     let (co27, multi) = athletes::write_athletes(&athletes, &by_school, data)?;
 
-    // -- recruiting projection ---------------------------------------------------------------
     let coach_index = recruiting::build_coach_index(&coaches);
     let (with_coach, with_email) =
         recruiting::write_recruiting(&athletes, &coach_index, &by_school, data)?;

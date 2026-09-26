@@ -125,8 +125,6 @@ pub fn labelled_count(rows: &[Vec<String>], label: &str) -> Option<u64> {
         if !named.starts_with(label) {
             return None;
         }
-        // Collect all numeric cells; pick the last one (All-sources column in
-        // two-scope layouts).
         let mut candidates: Vec<u64> = row
             .iter()
             .skip(1)

@@ -154,7 +154,6 @@ async fn mismatches_without_readable_pages_stop_the_walk() {
     for url in &junk {
         seed_cache(&cache, url, 200, FOREIGN_PAGE);
     }
-    // A readable page after the stop: it must not be reached, so its files must not appear.
     seed_cache(&cache, OH_MEET_RESULTS_URL, 200, OH_MEET_RESULTS);
 
     let mut walked = junk.clone();
@@ -179,7 +178,6 @@ fn only_a_milesplit_results_page_belongs_to_this_reader() {
     assert!(is_results_page(OH_MEET_RESULTS_URL));
     assert!(is_results_page("https://www.milesplit.com/meets/1/results"));
     assert!(is_results_page("https://oh.milesplit.com/meets/1/results/"));
-    // Another provider's page, and a MileSplit page that is not a meet's results.
     assert!(!is_results_page(
         "https://www.athletic.net/TrackAndField/meet/634313/results"
     ));

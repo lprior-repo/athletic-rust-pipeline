@@ -35,8 +35,6 @@ impl Store {
     /// manifest's digests describe the bytes that were published.
     pub fn backup(from: &Path, to: &Path) -> StoreResult<BackupReport> {
         let start = std::time::Instant::now();
-        // Held for the whole copy: the lock is the proof the store is closed, and keeping it is what
-        // stops a writer from opening the store halfway through the traversal.
         let _closed = ClosedStore::acquire(from)?;
         check_backup_destination(from, to)?;
         let generation = Generation::create(to, STAGING_PREFIX)?;

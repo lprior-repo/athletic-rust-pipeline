@@ -131,7 +131,6 @@ fn state_blocks_carry_place_grade_and_time() -> anyhow::Result<()> {
             "left={left_value:?} right={right_value:?}"
         );
     }
-    // A row that prints no school of its own must not be guessed into an athlete.
     anyhow::ensure!(event.rows.iter().all(|row| !row.school.is_empty()));
     Ok(())
 }

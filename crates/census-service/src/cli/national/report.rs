@@ -54,10 +54,6 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
         "st", "teams", "walked", "had", "owed", "athletes", "co2027"
     );
     for summary in &report.jurisdictions {
-        // The `owed` column is the one an operator cannot reconstruct from the others: a state whose
-        // host refused requests walks a handful of rosters and leaves the rest unfinished, and that
-        // is a coverage gap rather than a small state. `?` is a report written before the column
-        // existed — never printed as `0`.
         println!(
             "{:>3}  {:>8}  {:>7}  {:>7}  {:>7}  {:>9}  {:>8}  {}",
             summary.jurisdiction.code(),
@@ -141,10 +137,7 @@ pub(crate) fn print_jurisdiction(report: &JurisdictionReport, json: bool) -> Res
     for error in &report.rosters.errors {
         println!("error {error}");
     }
-    // The plan's owed sources, printed on every run: a refusal is not a failure, so without this
-    // line a run that owed ten sources reads exactly like a run that swept them.
     if !report.plan.refused.is_empty() {
-        // The plan's own counts: a refusal is not a failure, so the line names what a run owed.
         let refused = report.plan.refused.len();
         let sweepable = report.plan.sweepable.len();
         let planned = refused.saturating_add(sweepable);

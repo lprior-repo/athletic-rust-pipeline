@@ -5,8 +5,6 @@ use super::*;
 
 #[test]
 fn corpus_ids_keep_the_digest_they_were_minted_with() {
-    // Pinned to the bytes the pre-`stable_key` mints produced for these fixtures (captured by running
-    // the `Debug`-based mint over them), so every spelling below is a stored id that must not move.
     let school = CanonicalSchool::mint(
         UsJurisdiction::Wisconsin,
         "Abbotsford High School",
@@ -136,9 +134,6 @@ fn every_event_kind() -> Vec<EventKind> {
 
 #[test]
 fn stable_key_spells_exactly_what_the_mint_hashed_before() {
-    // The whole point of `stable_key` is that it is byte-identical to the `Debug` spelling the mints
-    // hashed, for every value they can hash: exhaustive here, so a renamed variant or a re-derived
-    // `Debug` cannot move a stored id unnoticed.
     let sports = [Sport::OutdoorTrack, Sport::IndoorTrack, Sport::CrossCountry];
     for sport in sports {
         assert_eq!(sport.stable_key(), format!("{sport:?}"), "sport spelling");
@@ -159,8 +154,6 @@ fn stable_key_spells_exactly_what_the_mint_hashed_before() {
             "timing method spelling"
         );
     }
-    // CanonicalEvent mint: the id is built from each input's stable key, so the spelling below is the
-    // persistence contract, and `stable_key` above is what those inputs must keep spelling.
     let meet_id = CanonicalMeet::mint(None, "2026-06-01", "Invitational", None);
     let event = CanonicalEvent::new(
         &meet_id,
@@ -191,7 +184,6 @@ fn stable_key_spells_exactly_what_the_mint_hashed_before() {
             "event kind spelling"
         );
     }
-    // A label that needs escaping: the mint hashed the escaped literal, and so must the key.
     let escaped = EventKind::Unmapped {
         label: "4x100 \"relay\"\\heat".to_string(),
     };
@@ -259,7 +251,6 @@ fn school_year_flips_at_august_first() {
         SchoolYear::containing(2025, 12),
         Some(SchoolYear::new(2025).unwrap())
     );
-    // A date that steps back past the earliest season a source publishes is not a season.
     assert_eq!(SchoolYear::containing(SchoolYear::MIN_START_YEAR, 1), None);
 }
 
@@ -271,8 +262,6 @@ fn every_namespace_renders_and_classifies() {
     let team = |p: String| TimerTeam { provider: p };
     let timer = |p: String| TimerAthlete { provider: p };
     let meet = |p: String| TimerMeet { provider: p };
-    // The two namespaces that are not supplied by our own adapters; `legacy_*` is retained
-    // Athletic.net evidence, `net` is the live Athletic.net adapter.
     let old = |kind: String| LegacyAthleticNet { kind };
     let net = |kind: String| AthleticNet { kind };
     let cases: &[(SourceNamespace, &str, bool)] = &[
@@ -332,7 +321,6 @@ fn every_event_label_maps_to_its_kind() {
         let got = format!("{:?}", EventKind::from_source_label(label));
         assert_eq!(got, want, "label {label:?}");
     }
-    // An unrecognized label is preserved as evidence, whitespace trimmed.
     let unmapped = |l: String| EventKind::Unmapped { label: l };
     let got = EventKind::from_source_label(" 3,200m ");
     assert_eq!(got, unmapped("3,200m".into()));
@@ -356,7 +344,6 @@ fn field_and_relay_flags_match_the_kind() {
 
 #[test]
 fn milesplit_gender_aliases_parse() {
-    // The trailing separator on the last row is the empty string: no side at all.
     for (aliases, gender) in [
         ("m|male|boys|boy| BOYS |Male", Gender::Boys),
         ("f|female|girls|girl|Female", Gender::Girls),
@@ -374,7 +361,6 @@ fn athlete_ids_separate_gender_sides_and_ignore_spacing() {
     let cohort = GradYear::new(2027).unwrap();
     let mint = |name: &str, gender| CanonicalAthlete::mint(&school, name, cohort, gender);
     let boys = mint("Julian Aguilera", Gender::Boys);
-    // Name spelling is normalized away; the gender side and cohort are part of the key.
     assert_eq!(boys, mint("  Julian   Aguilera  ", Gender::Boys));
     assert_eq!(boys.to_string(), "ath_77445d74c6dd8dbb");
     let girls = mint("Julian Aguilera", Gender::Girls);
@@ -408,12 +394,10 @@ fn mark_raw_reports_the_published_value_or_its_unit() {
 
 #[test]
 fn published_email_classifies_domains_and_keeps_personal_mailboxes() {
-    // One empty half is enough to refuse a malformed address.
     assert_eq!(published_email("@ofsd.k12.wi.us"), None);
     assert_eq!(published_email("coach@"), None);
     assert_eq!(published_email(""), None);
     assert_eq!(published_email("no-at-sign"), None);
-    // Personal mailboxes are kept and labelled, exact and in a subdomain, in any case.
     for domain in ["gmail.com", "GMAIL.com", "sub.gmail.com", "proton.me"] {
         let mailbox = format!("coach@{domain}");
         let published = published_email(&mailbox);
@@ -423,7 +407,6 @@ fn published_email_classifies_domains_and_keeps_personal_mailboxes() {
             "{domain}"
         );
     }
-    // Organisation mailboxes are professional, including domains that merely contain a consumer name.
     for domain in ["notgmail.com", "llhs.org", "gmail.com.evil.org"] {
         let address = format!("ad@{domain}");
         assert_eq!(
@@ -467,14 +450,12 @@ fn normalize_name_turns_separators_into_one_space() {
 #[test]
 fn normalize_name_folds_every_accented_arm() {
     let accented = "áàâäãåāéèêëēęíìîïīóòôöõōøúùûüūñńçćšśžźżýÿłæœß";
-    // One ASCII letter per arm, in the order the arms are written: a e i o u n c s z y l a o s.
     let folded = "aaaaaaaeeeeeeiiiiiooooooouuuuunnccsszzzyylaos";
     assert_eq!(accented.chars().count(), folded.chars().count());
     for (raw, expected) in accented.chars().zip(folded.chars()) {
         let name = raw.to_string();
         assert_eq!(normalize_name(&name), expected.to_string(), "{raw}");
     }
-    // Characters outside the table are dropped; their ASCII neighbors survive.
     assert_eq!(normalize_name("Řeřicha School"), "eicha");
     assert_eq!(normalize_name("César Chávez School"), "cesar chavez");
 }
@@ -489,7 +470,6 @@ fn normalize_name_strips_school_suffixes_only_from_longer_names() {
         ("Glencoe Sr High", "glencoe"),
         ("Glencoe Senior High", "glencoe"),
         ("Abbotsford Academy", "abbotsford academy"),
-        // A name that is nothing but a suffix keeps its tokens; stripping it would leave "".
         ("HS", "hs"),
         ("Sr High", "sr high"),
     ] {
@@ -499,8 +479,6 @@ fn normalize_name_strips_school_suffixes_only_from_longer_names() {
 
 #[test]
 fn normalize_name_reaches_a_fixpoint_on_repeated_suffixes() {
-    // A trailing suffix that survives one pass would mint a different `SchoolId` for a source that
-    // re-normalizes a name another source already normalized.
     for (raw, expected) in [
         ("X School School", "x"),
         ("Center Grove High School High School", "center grove"),
@@ -526,7 +504,6 @@ fn flip_last_first_handles_both_shapes() {
     assert_eq!(flip_last_first("Aguilera, Julian"), "Julian Aguilera");
     assert_eq!(flip_last_first(" Aguilera , Julian "), "Julian Aguilera");
     assert_eq!(flip_last_first("Julian Aguilera"), "Julian Aguilera");
-    // A comma with an empty half is not a "Last, First" roster pair.
     assert_eq!(flip_last_first("Aguilera,"), "Aguilera,");
     assert_eq!(flip_last_first(", Julian"), ", Julian");
     assert_eq!(flip_last_first(","), ",");
@@ -592,9 +569,6 @@ fn meet_identity_is_date_and_name_scoped() {
         level,
     );
     assert_eq!(built.id, a, "constructor and mint must agree");
-    // The literal is the pre-cutover id, computed independently from
-    // `sha256("meet" 0x1f "WI" 0x1f date 0x1f normalized)`: the jurisdiction participates as its
-    // USPS code, so typing the parameter re-mints nothing already in the store.
     assert_eq!(a.to_string(), "meet_019891d607bdeb6c");
     assert_eq!(built.state, Some(UsJurisdiction::Wisconsin));
 }
@@ -603,8 +577,6 @@ fn meet_identity_is_date_and_name_scoped() {
 #[test]
 fn an_unplaced_meet_keeps_the_legacy_unknown_state_id() {
     let unplaced = CanonicalMeet::mint(None, "2026-05-29", "D3 Sectional #3", None);
-    // Literal from `sha256("meet" 0x1f "??" 0x1f date 0x1f normalized)`: the same bytes the
-    // free-string era hashed for this row, so the 442 stored `"state":"??"` meets are not orphaned.
     assert_eq!(unplaced.to_string(), "meet_ddb3074882d2561f");
     let placed = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
@@ -648,25 +620,18 @@ fn school_state_is_stored_as_the_validated_jurisdiction() {
         "abbotsford",
     );
     assert_eq!(school.state, Some(UsJurisdiction::Wisconsin));
-    // Same id as the free-string era: the natural key hashes the jurisdiction code.
     assert_eq!(id.to_string(), "sch_b5ea31ddfcd999ba");
-    // The jurisdiction's code is what a report or key renderer asks for, and it is the wire form.
     assert_eq!(school.state.map(UsJurisdiction::code), Some("WI"));
 }
 
 #[test]
 fn candidate_key_mints_the_id_the_athlete_row_carries() {
-    // Both ids are pinned to bytes computed outside this program (SHA-256 over `prefix 0x1f part…`,
-    // first eight bytes), so a change to the part order, the separator or the gender letter shows up
-    // here as a moved stored key instead of a silent re-mint of every athlete row.
     let school = SchoolId::mint("sch", &["madison west"]);
     assert_eq!(school.as_str(), "sch_86dce1a10ef047d3");
     let class = GradYear::new(2027).expect("2027 is a class the census places");
     let key = AthleteCandidateKey::new(&school, "Jane Doe", class, Gender::Girls);
     assert_eq!(key.name, "jane doe");
     assert_eq!(key.candidate_id().as_str(), "ath_2df0e32537167dac");
-    // A cluster of one candidate carries that candidate's id, and the row minted from the same four
-    // facts is that cluster.
     assert_eq!(key.cluster_id().as_str(), key.candidate_id().as_str());
     assert_eq!(
         CanonicalAthlete::mint(&school, "Jane Doe", class, Gender::Girls).as_str(),
@@ -684,13 +649,10 @@ fn candidate_key_equality_agrees_with_the_retained_athlete_key() {
     let class = GradYear::new(2027).expect("2027 is a class the census places");
     let raw = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Girls);
     let respelled = CanonicalAthlete::new(&school, "jane  DOE", class, Gender::Girls);
-    // One subject spelled two ways: one id, one key, one subject to the merge.
     assert_eq!(raw.id, respelled.id);
     assert_eq!(raw.candidate_key(), respelled.candidate_key());
     assert!(raw.same_natural_key(&respelled));
 
-    // `Mixed` and `Unknown` both mint the letter `u`, so those rows share an id while stating two
-    // different keys: one id, two claims — a disagreement the merge retains instead of resolving.
     let mixed = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Mixed);
     let unknown = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Unknown);
     assert_eq!(mixed.id, unknown.id);
@@ -717,12 +679,8 @@ fn candidate_key_order_is_the_minted_letter_order_and_stays_total() {
         Gender::Girls,
         GradYear::new(2028).expect("2028 is a class the census places"),
     );
-    // The order is the letters the ids are minted from — `f` before `m` — never the enum's order, so a
-    // new variant cannot land between two existing ones and move a cluster id.
     assert!(girls < boys);
     assert!(girls < later);
-    // `Mixed` and `Unknown` share the letter and the frozen stable key still separates them, so `Ord`
-    // and `Eq` agree and a `BTreeSet` of keys keeps both.
     assert_ne!(mixed, unknown);
     assert!(mixed < unknown);
     let mut sorted = vec![unknown.clone(), boys.clone(), mixed.clone(), girls.clone()];

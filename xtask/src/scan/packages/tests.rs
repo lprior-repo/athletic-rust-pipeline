@@ -111,9 +111,6 @@ fn a_package_with_no_such_directory_has_no_such_root() {
 
 #[test]
 fn an_example_target_is_harness_code_and_a_build_script_is_not() {
-    // The judgement made about each root, asserted on its own so that a change of heart has to change
-    // this test too: an example is built only when someone asks for it, while a build script is
-    // compiled into every build and is therefore production code.
     let fixture = Fixture::new("judgement");
     fixture.dir("examples");
     fixture.file("build.rs");
@@ -125,8 +122,6 @@ fn an_example_target_is_harness_code_and_a_build_script_is_not() {
 
 #[test]
 fn a_fuzz_directory_that_is_its_own_workspace_is_not_a_root() {
-    // `cargo-fuzz` makes `fuzz/` a crate of its own; walking its targets as first-party roots would
-    // scan fuzz code in as production.
     let fixture = Fixture::new("fuzz-workspace");
     fixture.dir("fuzz/fuzz_targets");
     fixture.file("fuzz/Cargo.toml");
@@ -136,9 +131,6 @@ fn a_fuzz_directory_that_is_its_own_workspace_is_not_a_root() {
 
 #[test]
 fn a_build_script_is_a_root_of_one_file() {
-    // The walker's other roots are directories, so this is the one root `paths::rust_files` cannot
-    // list: reading it as a directory would fail, and reading it as nothing would leave a compiled
-    // file unmeasured.
     let fixture = Fixture::new("one-file");
     let script = fixture.file("build.rs");
 

@@ -6,8 +6,6 @@ use census_domain::model::CentiSeconds;
 /// championship meet per jurisdiction so the batch covers the country instead of one state.
 pub(super) fn performance_observations() -> Result<Vec<CanonicalPerformance>> {
     let mut batch = Vec::with_capacity(PERFORMANCES.saturating_mul(OBSERVATIONS_PER_PERFORMANCE));
-    // 49-state product scope (CENSUS_SCOPE): the merge bench feeds a synthetic batch of
-    // 5_000 performances across the jurisdictions the census run actually covers.
     let jurisdictions = UsJurisdiction::CENSUS_SCOPE.iter().cycle().copied();
     for (index, jurisdiction) in (0..PERFORMANCES).zip(jurisdictions) {
         batch.extend(performance_for_index(jurisdiction, index)?);

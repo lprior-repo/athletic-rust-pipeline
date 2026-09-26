@@ -72,8 +72,6 @@ pub(super) struct SealArgs {
 pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
-            // Staging-only: this route never reads the run's objects, so the two journal-backed
-            // counts stay unmeasured here. Measured coverage comes only from the live path.
             let store = Store::open(root)?;
             let outcome = seal::seal(&store, &store_request(args))?;
             present(&Ladder::of_outcome(&outcome))

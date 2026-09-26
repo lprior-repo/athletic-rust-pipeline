@@ -68,10 +68,6 @@ pub(super) async fn post(
     batches: &[RecordedBatch],
 ) -> Result<u64, HandlerError> {
     let object = ctx.object_client::<IngestClient>(endpoint);
-    // The name a re-post of one unit repeats, and a later walk does not: this invocation, the
-    // endpoint and window it serves, the table, and the unit's position in the page the walk
-    // produced. A crash between the append and the marker re-reads the unit from cache and posts it
-    // again under this same name, which is exactly what the store's receipt answers.
     let run = ctx.invocation_id();
     let mut appended = 0_u64;
     for (batch_index, batch) in batches.iter().enumerate() {

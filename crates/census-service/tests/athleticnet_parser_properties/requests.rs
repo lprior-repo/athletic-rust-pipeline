@@ -62,8 +62,6 @@ fn every_request_goes_to_one_https_host_and_a_distinct_endpoint() {
 
 #[test]
 fn a_negative_id_is_carried_rather_than_normalised_away() {
-    // Ids arrive from parsed pages; one carrying a sign or a fraction is a parse bug upstream, and it
-    // must be visible in the URL rather than silently truncated into a valid one.
     let urls = urls_for(-1);
     assert!(
         urls.iter().all(|url| url.contains("meetId=-1")),

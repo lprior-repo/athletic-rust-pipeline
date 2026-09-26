@@ -18,8 +18,6 @@ static DATE_SLASH: LazyLock<Result<Regex, regex::Error>> =
 static VENUE_NOISE: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?i)\b(high school|hs)\b|,\s*[A-Z]{2}\s*$"));
 
-// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
-// back as a typed error that the readers answer as "this file carries no meet" — never a panic.
 fn page_stamp() -> CrawlResult<&'static Regex> {
     PAGE_STAMP.as_ref().map_err(|source| CrawlError::RegexInit {
         pattern: "PAGE_STAMP",

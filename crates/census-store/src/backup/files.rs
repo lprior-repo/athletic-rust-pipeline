@@ -50,8 +50,6 @@ pub(crate) fn stream_copy(reader: &mut impl Read, writer: &mut impl Write) -> io
         if read == 0 {
             break;
         }
-        // A `Read` that reports more bytes than it was given room for has broken its contract; that is
-        // an error, never a slice that could panic on it.
         let Some(filled) = buffer.get(..read) else {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,

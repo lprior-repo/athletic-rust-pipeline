@@ -52,9 +52,6 @@ fn a_national_run_without_failures_exits_successfully() {
 
 #[test]
 fn a_national_run_with_a_failed_jurisdiction_exits_non_zero() {
-    // A failed jurisdiction is not the same observable as a jurisdiction that ran and found a
-    // blocked source: the report carries its error text, and the exit code has to say the
-    // census did not cover what it claimed.
     let failures = vec![NationalFailure {
         jurisdiction: UsJurisdiction::SouthDakota,
         identity: "jurisdiction:SD:2026-27:1".to_string(),
@@ -69,8 +66,6 @@ fn a_national_run_with_a_failed_jurisdiction_exits_non_zero() {
 
 #[test]
 fn a_national_report_prints_every_jurisdiction_row_it_is_given() {
-    // The report is the artifact §46 is read from: one row per jurisdiction, and the fold's
-    // totals are the sums of the rows, never a separate number that can disagree with them.
     let report = report(Vec::new());
     assert_eq!(report.jurisdictions.len(), 1);
     assert_eq!(
@@ -109,9 +104,6 @@ fn a_blocked_row_owes_the_index_it_did_not_walk() {
 
 #[test]
 fn a_total_over_a_partly_recorded_report_is_unknown_not_smaller() {
-    // A report written before the owed column existed, sitting beside one that has it: summing
-    // the known rows alone would print a national total that understates the unfinished walk,
-    // which is exactly how a coverage gap becomes invisible.
     let mut report = report(Vec::new());
     let mut old = summary(UsJurisdiction::Utah, 172);
     old.rosters_owed = None;
@@ -136,9 +128,6 @@ fn totals_sum_when_every_row_records_the_denominator() {
 
 #[test]
 fn a_report_carrying_a_blocked_row_still_exits_successfully() {
-    // A refusal is a source condition, not a run failure: the run reached a terminal state for
-    // the jurisdiction and the work stays owed. Failing the exit code here would make every
-    // census run over a host that rate-limits read as failed.
     let mut report = report(Vec::new());
     report.jurisdictions = vec![blocked_summary(UsJurisdiction::Texas, 2423)];
     assert!(failure_exit(&report).is_ok());

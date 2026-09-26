@@ -56,8 +56,6 @@ proptest! {
 
 #[test]
 fn figures_that_are_not_finite_are_never_marks() {
-    // Written the way a hostile or corrupted cell writes them: the text parses as an `f64`, so only
-    // an explicit finiteness check refuses it.
     for token in [
         "inf", "-inf", "NaN", "infinity", "1e400", "inf-0", "inf'6\"", "inf:30", "1:inf:00",
         "1:2:inf",
@@ -77,7 +75,6 @@ fn figures_that_are_not_finite_are_never_marks() {
 
 #[test]
 fn a_negative_or_overlong_field_figure_is_not_a_mark() {
-    // Twelve inches is a foot, so an inch figure of twelve or more is a misread field.
     for token in ["5-12", "5-13", "0-12", "-1-0", "5- 1-", "1e400-1"] {
         assert!(
             parse_field_mark(token).is_none(),

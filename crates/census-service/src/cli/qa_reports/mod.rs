@@ -53,7 +53,6 @@ pub(super) fn run_qa_reports(args: &QaReportsArgs) -> Result<()> {
     let mut problems: Vec<String> = Vec::new();
     let mut ok_count: usize = 0;
 
-    // Pre-build section regexes once.
     let section_rees: Vec<(&str, Option<regex::Regex>)> = constants::REQUIRED_SECTIONS
         .iter()
         .map(|name| (*name, check::section_re(name)))
@@ -76,7 +75,6 @@ pub(super) fn run_qa_reports(args: &QaReportsArgs) -> Result<()> {
         }
     }
 
-    // Check evidence directories for gap-phase reports (31–46).
     check::check_evidence(
         &evidence_dir,
         constants::EVIDENCE_START,
@@ -84,7 +82,6 @@ pub(super) fn run_qa_reports(args: &QaReportsArgs) -> Result<()> {
         &mut problems,
     );
 
-    // Check synthesis file.
     check::check_synthesis(&synthesis_file, &mut problems);
 
     print_and_exit(ok_count, &problems);

@@ -4,7 +4,6 @@ use serde_json::{Map, Value};
 
 /// Returns `(meets_by_state_rows, top_provider_rows, provider_count)`.
 pub(super) fn build(meets: &Map<String, Value>) -> (Vec<Vec<String>>, Vec<Vec<String>>, usize) {
-    // ── by_state ───────────────────────────────────────────────────
     let meets_by_state = meets
         .get("by_state")
         .and_then(|v| v.as_object())
@@ -22,7 +21,6 @@ pub(super) fn build(meets: &Map<String, Value>) -> (Vec<Vec<String>>, Vec<Vec<St
             .collect()
     };
 
-    // ── by_provider ────────────────────────────────────────────────
     let providers = meets
         .get("by_provider")
         .and_then(|v| v.as_object())

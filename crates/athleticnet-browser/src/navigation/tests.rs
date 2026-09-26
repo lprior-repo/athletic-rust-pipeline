@@ -38,8 +38,6 @@ async fn a_challenge_that_clears_itself_settles_on_the_page_it_became() {
     .expect("a scripted sampler never fails");
 
     assert_eq!(settled, NavigationOutcome::Ready);
-    // Three poll intervals: the wait re-samples rather than spinning or sleeping out the
-    // budget it was given.
     assert_eq!(started.elapsed(), CHALLENGE_POLL * 3);
 }
 
@@ -75,7 +73,6 @@ async fn a_settled_retry_decision_ends_the_wait() {
     .await
     .expect("a scripted sampler never fails");
 
-    // A 429's `Retry-After` is the caller's decision, not a challenge to wait out.
     assert_eq!(settled, cooldown);
 }
 

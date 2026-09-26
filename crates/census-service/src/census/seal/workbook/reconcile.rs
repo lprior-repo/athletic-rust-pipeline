@@ -73,7 +73,7 @@ pub(super) fn reconcile_athletes(
     match sheet_rows(book, ATHLETES_SHEET)? {
         Some(rows) => {
             let data_rows = rows.iter().filter(|r| !r.is_empty()).count();
-            let actual_count = count(data_rows.saturating_sub(1)); // skip header
+            let actual_count = count(data_rows.saturating_sub(1));
             if actual_count == 0 {
                 discrepancies.push(format!(
                     "{ATHLETES_SHEET} has no athlete data rows; the store has {expected_athletes}"

@@ -26,8 +26,6 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
     if events.is_empty() {
         return None;
     }
-    // The source reference is part of the parser chain's uniform signature; a parsed meet
-    // carries no source field of its own.
     let _ = source;
     Some(ParsedMeet {
         name,

@@ -118,12 +118,9 @@ pub(super) fn read_cache(
         path: body_path.to_path_buf(),
         source,
     })?;
-    // Verify length first (cheap), then content digest.
     if body.len() != meta.bytes {
         return Ok(None);
     }
-    // If content_digest is present (new format), verify it; old entries with an empty digest
-    // skip the digest check (they were written before self-verification existed).
     if !meta.content_digest.is_empty() && content_digest(&body) != meta.content_digest {
         return Ok(None);
     }

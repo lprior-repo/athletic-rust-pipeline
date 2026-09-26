@@ -110,9 +110,6 @@ fn evidence_normalization_ignores_case_and_whitespace() {
 
 #[test]
 fn an_attribution_swap_is_not_the_same_evidence() {
-    // The same tokens with the opposite meaning: only the association between each side and its value
-    // differs. Folding a statement into a sorted bag of tokens minted one case for both, so a verdict
-    // taken about one package of evidence was read as a verdict about the other.
     let forward = ReviewCase::pending(
         "Athlete identity",
         "ath_a",
@@ -133,8 +130,6 @@ fn an_attribution_swap_is_not_the_same_evidence() {
 
 #[test]
 fn a_sign_and_a_unit_are_part_of_the_value() {
-    // Surrounding punctuation is formatting and goes; a sign is the value's own and stays, or a
-    // headwind and a tailwind would read as one measurement.
     let tailwind = ReviewCase::pending("Athlete identity", "ath_a", "Row", "wind_mps +1.4");
     let headwind = ReviewCase::pending("Athlete identity", "ath_a", "Row", "wind_mps -1.4");
     assert_ne!(
@@ -242,7 +237,6 @@ fn a_cohort_claim_its_evidence_does_not_raise_is_minted_retained() {
             "the state is not part of the id for these either: the evidence keys the case"
         );
     }
-    // The families this store cannot answer for itself stay the lane's work.
     for family in [
         UNRESOLVED_SCHOOL_FAMILY,
         UNRESOLVED_VENUE_FAMILY,

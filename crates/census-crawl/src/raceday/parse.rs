@@ -25,8 +25,6 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> CrawlResult<ParsedMeet
     let patterns = Patterns::compile()?;
     let tables = read_tables(body, tags, &patterns, gender, division);
     if tables.events.is_empty() {
-        // The archive page a body was read from is the only identity a body carries; the source id
-        // names the provider when the artifact URL is unknown.
         return Err(CrawlError::Schema {
             url: source.url.unwrap_or(source.id),
             detail: "no events parsed from RaceDay export".to_string(),
@@ -76,8 +74,6 @@ fn read_tables(
             patterns.body,
         );
         if let Some(first) = rejections.first() {
-            // The reason is what the counter cannot carry: which column the reader wanted and did
-            // not find, or which cell it could not read as a time.
             tracing::debug!(
                 rows = rejections.len(),
                 reason = first.reason.as_str(),

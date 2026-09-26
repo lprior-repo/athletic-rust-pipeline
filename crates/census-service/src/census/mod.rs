@@ -171,8 +171,6 @@ impl TransportReport {
                 bytes: traffic.bytes,
             })
             .collect();
-        // Busiest first, host as the tie-break: the report is a projection that must render the same
-        // way twice, so equal traffic cannot be left in hash order.
         sources.sort_by(|left, right| {
             right
                 .requests

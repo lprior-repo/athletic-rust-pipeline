@@ -34,7 +34,6 @@ pub fn check_report(
     let text = std::fs::read_to_string(path)
         .unwrap_or_else(|e| format!("error reading {}: {e}", path.display()));
 
-    // Check required sections.
     let missing: Vec<&str> = section_rees
         .iter()
         .filter(|(_, rx)| rx.as_ref().is_none_or(|rx| !rx.is_match(&text)))
@@ -49,7 +48,6 @@ pub fn check_report(
         ));
     }
 
-    // Check leading header.
     let leading = text.trim_start();
     if let Some(captures) = header_regex.captures(leading) {
         if captures
@@ -62,7 +60,6 @@ pub fn check_report(
         problems.push(format!("HEADER: {fname} does not start with '# {num}.'"));
     }
 
-    // Check for Status: line near the top.
     let prefix: String = text.chars().take(2000).collect();
     if !prefix.contains("Status:") {
         problems.push(format!("STATUS: {fname} has no Status line near the top"));
@@ -80,7 +77,6 @@ pub fn check_evidence(evidence_dir: &Path, start: usize, end: usize, problems: &
                 "EVIDENCE: report {num} has no evidence/gaps/{num} directory"
             ));
         } else if ev.read_dir().is_ok_and(|mut iter| iter.next().is_none()) {
-            // Directory exists but is empty.
             problems.push(format!("EVIDENCE: evidence/gaps/{num} is empty"));
         }
     }

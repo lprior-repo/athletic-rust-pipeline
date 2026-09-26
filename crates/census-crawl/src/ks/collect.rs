@@ -38,13 +38,10 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let mut report = AdapterReport::new("ks", "schools");
     report.unit = "schools".to_string();
 
-    // Snapshot fetcher stats before work.
     let before = ctx.fetcher.stats().await;
 
-    // Build the API URL. The `a` endpoint returns the full directory.
     let url = format!("{KSHSAA_API}a/");
 
-    // Fetch with caching (respect `options.refresh`).
     let outcome = match ctx.fetcher.get(&url, &ctx.fetch_options()).await {
         Ok(o) => o,
         Err(e) => {
@@ -54,19 +51,16 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         }
     };
 
-    // Parse JSON.
     let records = parse_records(&outcome.text())?;
     report.requests = report.requests.saturating_add(1);
     if outcome.from_cache {
         report.from_cache = report.from_cache.saturating_add(1);
     }
 
-    // Load the resume set (keys already journalled in this phase).
     let done_keys: HashSet<String> = ctx.store.journal_keys("kshsaa_schools")?;
 
     let tally = collect_records(&records, ctx, options, &url, &done_keys, &mut report)?;
 
-    // Finalize stats and counts.
     let after = ctx.fetcher.stats().await;
     let delta_requests = after.requests.saturating_sub(before.requests);
     report.rows = u64::try_from(tally.processed).unwrap_or(u64::MAX);
@@ -116,14 +110,12 @@ fn collect_records(
     };
 
     for record in records {
-        // Honour limit.
         if let Some(max) = limit {
             if tally.processed >= max {
                 break;
             }
         }
 
-        // Skip already-processed schools (resume support).
         let journal_key = format!("KS:{}", record.identifier);
         if done_keys.contains(&journal_key) {
             tally.skipped = tally.skipped.saturating_add(1);
@@ -157,16 +149,12 @@ fn collect_record(
     observed_on: &str,
     journal_key: &str,
 ) -> CrawlResult<KsRead> {
-    // Parse school.
     let Some((school, school_id)) = parse_school(record, url, observed_on) else {
         return Ok(KsRead::Unreadable);
     };
 
-    // Parse AD coach.
     let coach = parse_ad_coach(record, &school_id, url, observed_on);
 
-    // This record's rows and the entry that journals it reach the store as one commit, so a resume
-    // can neither see a journaled school whose rows are missing nor re-read one it already holds.
     let mut batch = ctx.store.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&school))?;
     ctx.observe_school(

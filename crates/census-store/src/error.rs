@@ -1,9 +1,5 @@
 //! The store's error taxonomy: what every fallible store call returns, and what each failure names.
 
-// ---------------------------------------------------------------------------
-// Error types
-// ---------------------------------------------------------------------------
-
 /// Store failures: fjall, row encoding, journal bounds, counters and sidecar I/O.
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {

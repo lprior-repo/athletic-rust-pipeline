@@ -57,18 +57,15 @@ pub fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
             .filter(|l| l.starts_with("test ") && l.contains("bench:"))
             .collect();
 
-        // Collect per-group wall times (average them).
         let mut group_times: BTreeMap<String, Vec<f64>> = BTreeMap::new();
         for line in &bencher_lines {
             let (group, wall_ns) = parse_bencher_line(line)?;
             group_times.entry(group).or_default().push(wall_ns);
         }
 
-        // Parse criterion output directory for throughput declarations.
         let criterion_dir = format!("target/criterion/{bench_name}");
         let throughput_map = read_throughputs(Path::new(&criterion_dir))?;
 
-        // Build group measurements.
         group_measurements(group_times, &throughput_map, peak_rss, &mut groups)?;
     }
 
@@ -96,7 +93,6 @@ fn group_measurements(
         let avg_ns: f64 = times.iter().sum::<f64>() / f64::from(samples);
         let wall_s = avg_ns / 1e9;
 
-        // Throughput: elements/s = declared elements / wall time in seconds.
         let throughput = match throughput_map.get(&group) {
             Some(elements) => {
                 let elements = u32::try_from(*elements)
@@ -246,8 +242,6 @@ fn read_throughputs(dir: &Path) -> Result<BTreeMap<String, u64>> {
             Ok(c) => c,
             Err(_) => continue,
         };
-        // A file this reader cannot place - another throughput kind, or a shape Criterion changed -
-        // leaves the group with its wall time and no throughput, never with an invented one.
         let Ok(data) = serde_json::from_str::<BenchmarkFile>(&content) else {
             continue;
         };

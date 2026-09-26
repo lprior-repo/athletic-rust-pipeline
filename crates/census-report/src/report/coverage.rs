@@ -42,7 +42,6 @@ mod gaps;
 mod reads;
 mod state;
 
-// The typed jurisdiction helpers the report module's rollups bucket by.
 pub(crate) use state::{jurisdiction_of, school_state_index};
 
 pub use gaps::{CoverageGap, GapClass};

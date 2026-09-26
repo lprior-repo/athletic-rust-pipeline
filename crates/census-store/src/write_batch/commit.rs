@@ -48,13 +48,6 @@ impl StoreBatch<'_> {
         let _appends = store.lock_appends();
         let (pages, journal, replacements) = (self.pages, self.journal, self.replacements);
         let mut batch = store.db.batch();
-        // The receipt is decided before any reservation moves: a page refused as a repeat must not
-        // leave a table's counter advanced past rows that were never written, and a repeat writes
-        // nothing at all — it never reaches the bound check or a reservation.
-        //
-        // The receipt insert lands on this same batch, so the rows and the receipt that covers them
-        // reach the database in one commit. A receipt written to a batch of its own would be dropped
-        // uncommitted, and the replay it exists to answer would append the page again.
         let written = prepare_receipt(&pages, store, once, &mut batch)?;
         if matches!(written, Some(Application::Repeated(_))) {
             return Ok(written);

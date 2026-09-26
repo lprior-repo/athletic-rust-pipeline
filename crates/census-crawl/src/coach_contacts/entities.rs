@@ -39,10 +39,6 @@ pub fn row_entities(
         coaches.push(coach);
     }
 
-    // Coaching rows in IA/IL/NE/OH/WI also carry the school's AD columns; import that person so the
-    // contact graph has an athletic office even where no dedicated AD row was captured. Rows whose
-    // role is a non-athletic office (Superintendent/Principal/Trainer/Secretary) are dropped above and
-    // never reach here, so their names cannot leak through this branch.
     if matches!(
         role,
         Some(CoachRole::HeadCoach | CoachRole::AssistantCoach | CoachRole::Unknown)
@@ -112,11 +108,9 @@ fn primary_coach(
     role: Option<CoachRole>,
 ) -> CrawlResult<Option<CanonicalCoach>> {
     match role {
-        // A sport-scoped coaching row.
         Some(CoachRole::HeadCoach | CoachRole::AssistantCoach | CoachRole::Unknown) => {
             sport_coach(row, school_id, source, role)
         }
-        // A school-wide athletic-director row.
         Some(CoachRole::AthleticDirector) => Ok(ad_coach(row, school_id, source)),
         None => Ok(None),
     }

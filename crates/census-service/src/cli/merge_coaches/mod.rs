@@ -61,8 +61,6 @@ static EMAIL_RE: LazyLock<Option<Regex>> =
 static VACANT_RE: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::new(r"(?i)^(vacant|tba|tbd|n/?a|none|unknown|-+)$").ok());
 
-// Compiled once per process with no panic path: a malformed pattern yields `None`, and every check
-// treats an unavailable pattern as "nothing matched" rather than rejecting the corpus.
 fn url_re() -> Option<&'static Regex> {
     URL_RE.as_ref()
 }

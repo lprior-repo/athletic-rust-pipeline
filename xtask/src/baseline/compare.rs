@@ -64,9 +64,6 @@ pub(super) fn scan(scan: &Value, known: &Value, failures: &mut Vec<String>) -> R
                 .and_then(|counts| counts.get(metric))
                 .and_then(Value::as_u64)
                 .unwrap_or(0);
-            // An unlisted metric is a measurement this ratchet has not classified. Debt is the
-            // conservative reading: it fails once, and recording it in the baseline is the deliberate
-            // act that says whether it is a budget or a description of the tree.
             let debt = !CONTEXT_METRICS.contains(&metric.as_str());
             if debt && value > was {
                 failures.push(format!("scan {name}.{metric}: {was} -> {value}"));
@@ -101,8 +98,6 @@ pub(super) fn structure(scan: &Value, known: &Value, failures: &mut Vec<String>)
         }
         if value > was {
             failures.push(format!("structure {metric}: {was} -> {value}"));
-            // A failed budget names its sites: the count alone sends the reader back to grep for the
-            // function that broke it.
             for site in strings(structure.get(FUNCTION_SITES)) {
                 println!("    {site}");
             }
@@ -188,10 +183,6 @@ fn raised_structure(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Resu
         .get("structure")
         .and_then(Value::as_object)
         .context("the scan report has no `structure` object")?;
-    // Compared by path, not by cardinality: a refresh that swapped one oversized file for another
-    // would keep the count flat, and that swap is exactly the growth this refusal exists to catch.
-    // `oversized` reads the same ledger the same way, so a baseline cannot record under "no movement"
-    // what the ratchet would then report as a new file.
     let before_files = file_entries(old_structure.and_then(|old| old.get(OVERSIZED_FILES)));
     let known_files: BTreeMap<&str, &FileEntry> = before_files
         .iter()

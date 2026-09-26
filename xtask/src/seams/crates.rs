@@ -81,8 +81,6 @@ fn aliases_of(package: &Value, members: &BTreeSet<String>) -> BTreeMap<String, S
         .into_iter()
         .flatten();
     for dependency in dependencies {
-        // `kind` is null for a normal dependency and names the other classes: a dev dependency on a
-        // sibling is a test's convenience, not an edge of the product graph.
         if dependency.get("kind").and_then(Value::as_str).is_some() {
             continue;
         }

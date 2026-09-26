@@ -77,15 +77,12 @@ impl SchoolIndex {
         let mut exact = HashMap::new();
         let mut by_state: HashMap<UsJurisdiction, Vec<Entry>> = HashMap::new();
         for school in schools {
-            // A school with no jurisdiction cannot be resolved against: the label's state is the
-            // first half of the key, and guessing one would cross state lines.
             let Some(state) = school.state else {
                 continue;
             };
             exact
                 .entry((state, school.normalized_name.clone()))
                 .or_insert_with(|| school.id.clone());
-            // Aliases resolve only when they do not collide with a real name.
             for alias in &school.aliases {
                 exact
                     .entry((state, normalize_name(alias)))
@@ -121,8 +118,6 @@ impl SchoolIndex {
                 }
             }
         }
-        // Relay squads are published as `<school> A`, `<school> B`, …; the letter is not part of
-        // the school name.
         if let Some(without_squad) = without_squad_letter(&normalized) {
             if let Some(id) = self.exact.get(&(state, without_squad.to_string())) {
                 return Some((id.clone(), SchoolMatch::Exact));
@@ -145,7 +140,6 @@ impl SchoolIndex {
     /// Token-aligned partial match; returns a candidate only when exactly one school matches.
     fn partial(&self, state: UsJurisdiction, normalized: &str) -> Option<(SchoolId, SchoolMatch)> {
         let entries = self.by_state.get(&state)?;
-        // A single-token label (`Memorial`, `Central`) is ambiguous by construction.
         let (head, last) = normalized.rsplit_once(' ')?;
         let head = format!("{head} ");
         let tail = format!(" {normalized}");
@@ -221,7 +215,6 @@ mod tests {
     #[test]
     fn truncated_and_prefixed_labels_resolve_to_the_unique_school() {
         let index = index();
-        // Hy-Tek truncates the school column and drops the district prefix.
         assert_eq!(
             index
                 .resolve(UsJurisdiction::Wisconsin, "Brookfield Cent.")
@@ -263,7 +256,6 @@ mod tests {
                 .map(|(_, kind)| kind),
             Some(SchoolMatch::Exact)
         );
-        // An abbreviated label carries the squad letter too: the letter drops after expansion.
         assert_eq!(
             index
                 .resolve(UsJurisdiction::Wisconsin, "Milw. Bradley Tech A")

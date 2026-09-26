@@ -134,8 +134,6 @@ fn side_facts(side: Side, row: &CanonicalAthlete) -> Vec<ReviewEvidenceFact> {
         ));
     }
     for identity in identities(row) {
-        // The namespace is the fact's source: a source athlete id means nothing without the provider
-        // that issued it, and two providers can number their athletes independently.
         facts.push(ReviewEvidenceFact::new(
             identity.namespace.to_string(),
             field("athlete_id"),

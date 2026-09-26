@@ -12,8 +12,6 @@ use census_domain::model::SourceNamespace;
 use census_domain::UsJurisdiction;
 use census_store::Table;
 
-// ── Collection ─────────────────────────────────────────────────────────────
-
 /// Collect MPA schools and coaches.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("mpa", "schools");
@@ -24,7 +22,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     };
     let before = ctx.fetcher.stats().await;
 
-    // Restrict to ME state
     if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Maine) {
         record_spend(ctx, &mut report, &before).await;
         let codes: Vec<&str> = options.states.iter().map(|state| state.code()).collect();
@@ -34,7 +31,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         return Ok(report);
     }
 
-    // Fetch the directory page
     let dir_url = format!("{HOST_WWW}/SchoolPages/School.aspx");
     let dir_html = match ctx.fetcher.get(&dir_url, &ctx.fetch_options()).await {
         Ok(outcome) if outcome.status == 200 => outcome.text(),

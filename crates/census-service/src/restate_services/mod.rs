@@ -97,7 +97,6 @@ mod sweep;
 mod teams_arms;
 mod wire;
 
-// ---------------------------------------------------------------- wire types
 
 pub use wire::{
     BestsReply, BestsRequest, ConsolidateReply, ConsolidateRequest, ConsolidatedTable,
@@ -109,20 +108,13 @@ pub use wire::{
     WindowRequest, WorkbookReply, WorkbookRequest,
 };
 
-// ---------------------------------------------------------------- planning
 
-// The applicability-driven plan. Public because the planner is the layer's first consumer of
-// `sources::applicability` and its dispositions are what a jurisdiction report records.
 pub use plan::{
     owed, plan, plan_sources, sweepable, BrowserLaneState, Dispatch, PlannedUnit, Refusal,
     UnitDisposition,
 };
 
-// ---------------------------------------------------------------- services
 
-// The job layer the handlers share. `JobError` stays reachable at this path because a caller
-// outside the module reads it; `blocking` and `job_error` are re-exported for stage submodules
-// to use so they can classify `JobError` into `HandlerError` at the boundary.
 #[allow(unused_imports)]
 pub(super) use jobs::collect_error;
 pub(super) use resolve::{cohort_label, resolve_scope, resolve_table, resolve_tables};
@@ -153,8 +145,6 @@ pub const STOP_SIGNAL: &str = "stop";
 /// endpoint (cursor advanced but totals not, or the reverse) cannot exist.
 const KEY_STATE: &str = "state";
 
-// The ceilings an invocation is bounded by. They stay reachable at this path because `Ingest`, the
-// sweeps and the jurisdiction object read them, and `limits` holds their explanations.
 pub use limits::{
     MAX_LIMIT_PER_STATE, MAX_ROWS_PER_REQUEST, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS,
 };
@@ -183,7 +173,6 @@ pub(super) fn options_for_request(
         jurisdictions: vec![request.jurisdiction],
         limit_per_state: request.limit_per_state,
         concurrency: request.concurrency,
-        // One jurisdiction is one state host, so there is nothing to interleave.
         state_concurrency: 1,
         refresh: request.refresh,
         school_year: request.season,
@@ -194,12 +183,8 @@ pub(super) fn options_for_request(
     })
 }
 
-// The journaled clock reads live in `journaled`, re-exported here so every handler keeps calling
-// `super::journaled_today` / `super::journaled_today_workflow` at the path it always did.
 pub(super) use journaled::{journaled_today, journaled_today_workflow};
 
-// The invocation timeouts, and the definition wrapper that applies them, live in `limits` beside
-// the other ceilings an invocation is bounded by.
 use limits::census_service;
 
 /// Build the endpoint the HTTP server serves. Service names come from the struct names: `Census`,

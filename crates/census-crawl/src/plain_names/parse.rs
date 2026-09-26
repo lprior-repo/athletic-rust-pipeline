@@ -22,8 +22,6 @@ static COOP_REGEX: LazyLock<Result<Regex, regex::Error>> =
 static NAME_SPLIT_REGEX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"\s*[,/&]\s*"));
 
-// Accessors for the literal patterns above: a bad pattern is a programming error, so it comes back
-// as a typed `RegexInit` naming the pattern — never a panic.
 fn tag_regex() -> CrawlResult<&'static Regex> {
     TAG_REGEX.as_ref().map_err(|source| CrawlError::RegexInit {
         pattern: "tag",
@@ -99,7 +97,6 @@ pub(super) fn without_comments(html: &str) -> CrawlResult<Cow<'_, str>> {
 /// Strip tags, decode the entities these two sources publish and collapse whitespace.
 pub(super) fn clean_text(raw: &str) -> CrawlResult<String> {
     let untagged = tag_regex()?.replace_all(raw, " ");
-    // `&amp;` must be decoded last so `&amp;lt;` cannot become a tag.
     let decoded = untagged
         .replace("&#039;", "'")
         .replace("&#39;", "'")

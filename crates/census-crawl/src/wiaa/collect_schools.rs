@@ -45,11 +45,6 @@ pub(super) async fn plan_schools(
         )
     };
 
-    // Phase 1: identify eligible schools (skip already journaled, apply filter).
-    //
-    // The entries are cloned into the list rather than borrowed from the index: a borrowed entry
-    // would tie this walk's future to the index's lifetime, and the future has to be `Send` for
-    // every lifetime to run inside a durable `ctx.run`.
     let eligible: Vec<(usize, IndexEntry)> = index
         .iter()
         .enumerate()
@@ -70,8 +65,6 @@ pub(super) async fn plan_schools(
         .map(|(index, entry)| (index, entry.clone()))
         .collect();
 
-    // Phase 2: fetch all school pages in parallel (bounded concurrency, shared bound).
-    // Each fetch is independent — same host, but rate-limited by the fetcher's gate.
     const SCHOOL_CONCURRENCY: usize = crate::CONCURRENCY_BOUND;
     stream::iter(eligible)
         .map(|(idx, entry)| {
@@ -142,10 +135,6 @@ fn record_school(
     page: &SchoolPage,
     extract: SchoolExtract,
 ) -> CrawlResult<()> {
-    // One page: the school, its coach rows and both journal entries commit together, so a resume
-    // cannot skip this unit while the rows it names are missing. The school observation stays a
-    // direct write, the way every school arm writes it: it is re-derived from this row on every pass,
-    // so it is not what a resume decision reads.
     let mut batch = ctx.store.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
     ctx.observe_school(

@@ -23,7 +23,6 @@ pub fn rankings_spec(origin: &Url, action: RankingsAction) -> Result<RequestSpec
         "/TrackAndField/rankings/list/{}/{}/{}/",
         action.list_id, action.gender, action.event_short
     );
-    // Build semantic_url: legacy UI path + query params
     let mut semantic_url = endpoint(origin, &path)?;
     semantic_url
         .query_pairs_mut()
@@ -33,7 +32,6 @@ pub fn rankings_spec(origin: &Url, action: RankingsAction) -> Result<RequestSpec
             .query_pairs_mut()
             .append_pair("grades", &grade.to_string());
     }
-    // Physical url: API endpoint, no query string
     let url = endpoint(origin, "/api/v1/tfRankings/GetRankings")?;
     checked(url, semantic_url, RequestAction::Rankings(action))
 }

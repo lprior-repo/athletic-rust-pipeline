@@ -75,9 +75,6 @@ mod tests;
 /// A row is added when a module gains a dependency its design already argued for, never to silence a
 /// violation. Edges *inside* another crate are that crate's business and are not walked here.
 const ALLOWED: &[(&str, &str)] = &[
-    // The serving region: `bootstrap` binds the durable ingress endpoint, so it names the router it
-    // serves and drains here. That is composition-root wiring rather than a lane edge — `ingress`
-    // names nothing back — and the endpoint's own task and shutdown live in this module.
     ("bootstrap", "ingress"),
     ("bootstrap", "outcome"),
     ("bootstrap", "restate_services"),
@@ -97,82 +94,25 @@ const ALLOWED: &[(&str, &str)] = &[
 /// it is the harness, it drives the census through the library and the services, and nothing depends
 /// on it. Rows are added when a crate is extracted, never to silence a violation.
 const ALLOWED_CRATES: &[(&str, &str)] = &[
-    // The acquisition plane: the polite fetcher, the browser bridge, one module per provider and the
-    // provider registry. It is below the run — it maps provider data onto domain rows and writes them
-    // through the store — and names nothing above it, so the run's shape and the durable layer's shape
-    // cannot leak back into an adapter. `net`'s one recorded exception, reading the registry to learn
-    // which transport carries a host, is now a lookup inside this crate rather than an edge between
-    // two: the browser bridge's `lane.rs` reaches the Restate ingress client as a library, not as the
-    // workspace's service definitions, which is why the SDK appears here as a dependency and the
-    // service crate does not.
     ("census-crawl", "census-domain"),
-    // The fetch cache, the request-evidence tables and the clock the net layer stamps a crawl with.
     ("census-crawl", "census-store"),
-    // The bottom of the graph: types and their rules, no store, no network, no runtime.
     ("census-review", "census-domain"),
-    // The review lane reads retained cases and writes verdicts through the store that owns both
-    // tables; it never opens Fjall itself.
     ("census-review", "census-store"),
-    // The reconciliation lane: the derive pass, deterministic workflow identity, which is a pure
-    // function of explicit values, and the row-level check that holds the workbook against the store.
-    // It reads the domain and the store and names nothing back, so a projection's verdict cannot
-    // depend on the service that published it. Its one outward edge is the reporting plane's own
-    // rendering — the coverage report and the families the workbook sheets print — reused *because*
-    // the derived tables and the workbook must not be shown two different findings; it is one-way,
-    // because the reporting plane names no reconciliation module.
     ("census-reconcile", "census-domain"),
     ("census-reconcile", "census-report"),
     ("census-reconcile", "census-store"),
-    // The reporting plane: coverage, per-athlete bests and the workbook export. It reads the canonical
-    // model and the store's read model, renders the review lane's retained families as its conflict and
-    // review sheets, and names the acquisition plane only for the adapter surface the meta sheets print
-    // as data. It acquires nothing, so nothing above it can leak into a projection.
     ("census-report", "census-crawl"),
     ("census-report", "census-domain"),
     ("census-report", "census-review"),
     ("census-report", "census-store"),
     ("census-store", "census-domain"),
-    // The composition root: it owns the sweep, the durable services and the published artifacts, and it
-    // is the only crate that may name the acquisition plane, the review lane and the store together.
-    //
-    // The three edges carry the contracts that used to be module rows:
-    //
-    // * `census-crawl` — ARCHITECTURE.md §1: the batch path and the durable path share the adapters and
-    //   differ only in who owns the journal, so the workflow layer names the adapter error type it
-    //   classifies into the durable retry policy (`jobs::collect_error`) and the polite fetcher the
-    //   jurisdiction object holds for the whole process (§3, one origin drawing from one admission
-    //   budget). The workbook's meta sheets render the adapter surface itself — slug, transport,
-    //   declared capabilities, per-origin cost — so they read the registry table as data and never
-    //   call an adapter. The provenance gate (`coachverify`) fetches cited pages through the same
-    //   fetcher, three passes over one shared cache.
-    // * `census-review` — the athlete key (`school, normalized name, cohort`) has one definition, in
-    //   the review lane's flags, and the conflict queue groups by that same function rather than
-    //   stating a second copy that could drift from the flags the lane states to a model. Nothing else
-    //   of the lane is named: the queue reads the key and the store's rows.
-    // * `census-store` — every derived artifact is published the way the store publishes one: through
-    //   its atomic-rename writer and its CSV failure type, so a reader never sees a half-written state
-    //   file and one publication bug has one implementation. `bests`, `index`, `report` and the coach
-    //   fragments all take that edge for the writer plumbing and read no row through it.
-    // The composition root also hosts the browser lane. The persistent headed session is a durable
-    // service — a Restate object owns the profile, so the process that serves it must be the one
-    // holding the lane (`restate_services/browser_session.rs`, its `mod.rs` clock, the CLI client and
-    // the bootstrap options). `census-crawl` owns the *protocol* side of that lane and reaches the
-    // ingress as a library, this crate owns the *host*, and the edge closes no loop: the lane crate
-    // declares no workspace dependency at all, so the one-way property below still holds.
     ("census-service", "athleticnet-browser"),
     ("census-service", "census-crawl"),
-    // The reconciliation lane is named by the durable services, which derive each workflow's identity
-    // from it, and by the `verify` verb that runs its row-level check. It names nothing back.
     ("census-service", "census-reconcile"),
-    // The reporting plane is the composition root's projection layer: the CLI's export and seal verbs
-    // and the durable workbook service name it, and it names nothing back.
     ("census-service", "census-report"),
     ("census-service", "census-domain"),
     ("census-service", "census-review"),
     ("census-service", "census-store"),
-    // The harness reads the store for its status verb, drives the census services through their
-    // ingress clients, replays a provider adapter against its capture, and crosses the report scope
-    // when it resolves a run's artifact paths, so it names all four.
     ("xtask", "census-crawl"),
     ("xtask", "census-domain"),
     ("xtask", "census-report"),

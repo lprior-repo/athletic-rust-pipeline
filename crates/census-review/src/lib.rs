@@ -272,9 +272,6 @@ pub async fn run_lanes(
             &mut report,
         )
         .await?;
-        // A replayed checkpoint returns Application::Repeated. The cases in that chunk were
-        // already closed by a prior run. pending_cases already filters closed cases, so a
-        // second pass over the same data will find these cases closed and skip them entirely.
     }
     info!(summary = %report.summary(), "review pass finished");
     Ok(report)

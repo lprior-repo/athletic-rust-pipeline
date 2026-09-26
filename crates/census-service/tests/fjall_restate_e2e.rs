@@ -261,7 +261,6 @@ fn store_round_trip_merges_observations_and_reports_stats() {
     assert_eq!(athletes.len(), 1);
     assert_eq!(athletes[0].canonical_name, "Ada Runner");
 
-    // Stats count observations, not merged entities: two school observations and one athlete.
     assert_observation_counts(&store.stats().unwrap());
 }
 
@@ -320,8 +319,6 @@ fn legacy_jsonl_journals_are_imported_once() {
 
     {
         let store = Store::open(root).unwrap();
-        // Opening a store is a read, so the one-time import is the caller's decision: this test is
-        // the caller, exactly as the offline run and the `import-legacy` verb are.
         store.import_legacy().unwrap();
         let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
         assert_eq!(
@@ -341,12 +338,7 @@ fn legacy_jsonl_journals_are_imported_once() {
         assert_eq!(store.journal_payloads("mshsl_schools").unwrap().len(), 1);
     }
 
-    // Reopen only after the first store is dropped: Fjall holds a file lock on its directory, so a
-    // second live open of the same path is rejected by design. The import marker must now make the
-    // importer a no-op instead of duplicating every observation.
     let store = Store::open(root).unwrap();
-    // The marker the first import wrote makes this call a no-op: the second open must not duplicate
-    // a single observation.
     store.import_legacy().unwrap();
     let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
     assert_eq!(
@@ -552,13 +544,9 @@ async fn restate_endpoint_advertises_services_and_drains_on_request() {
         data_dir: data_dir.clone(),
         max_concurrent: 4,
         drain_timeout: Duration::from_secs(5),
-        // No lane: this endpoint is proved without a browser, which is the deployment shape that
-        // serves the nine store-backed services only.
         lane: None,
     };
 
-    // The shutdown future is the supervisor's "request" stage. The sender stays alive until the
-    // endpoint has answered, so the server cannot stop before the assertions below run.
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
     let mut tasks: JoinSet<anyhow::Result<DrainReport>> = JoinSet::new();
     tasks.spawn(async move {
@@ -584,12 +572,6 @@ async fn restate_endpoint_advertises_services_and_drains_on_request() {
         "the endpoint advertises exactly its services, nothing more: {names:?}"
     );
 
-    // Restate reads these two timeouts out of the manifest and falls back to its own defaults when
-    // they are absent: one minute without journal progress, then a ten-minute abort. Every handler
-    // here queues behind a blocking slot, and the fan-out submits more jurisdictions than there are
-    // slots, so on 2026-09-24 those defaults aborted 47 of the nationwide run's 49 jurisdiction
-    // invocations while they were queued rather than stalled. Both are advertised per service because
-    // the manifest is the only place Restate reads them from.
     let advertised = 60 * 60 * 1000;
     let services = manifest
         .get("services")
@@ -632,7 +614,6 @@ async fn restate_endpoint_advertises_services_and_drains_on_request() {
         "a task panicked during drain: {report:?}"
     );
 
-    // Finalization dropped the Fjall database, so the directory can be opened again.
     let reopened = Store::open(&data_dir).unwrap();
     assert_eq!(reopened.stats().unwrap().tables.len(), Table::ALL.len());
 }
@@ -720,8 +701,6 @@ async fn an_unrequested_stop_does_not_end_the_endpoint_at_the_drain_deadline() {
         EXPECTED_SERVICES[0]
     );
 
-    // Outlive three drain deadlines with the stop still unrequested: draining before the watch
-    // resolves would have ended the supervisor here and reported `ServerExit`.
     let deadlines = 3;
     tokio::time::sleep(Duration::from_millis(250) * deadlines).await;
     let still_serving = discover_service_names(&client, &url).await;

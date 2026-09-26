@@ -77,9 +77,6 @@ impl JurisdictionCensus {
             )))
         })?
         .with_family_budgets(default_family_delays());
-        // The lane is a deployment fact this process was handed. Installing it is what makes a
-        // browser-transported source sweepable: the plan asks this fetcher, so a deployment without
-        // a lane refuses that source by name instead of failing requests against it.
         let built = match &self.lane {
             Some(lane) => built.with_browser_lane(lane.clone()),
             None => built,

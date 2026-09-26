@@ -55,8 +55,6 @@ pub fn school_entities(school_name: &str, table: &SchoolTable, observed_on: &str
                 coaches.push(row);
             }
         }
-        // Non-XC/TF rows are parsed but not stored as coach entities;
-        // we keep them attributable via the SchoolTable.
     }
 
     SchoolExtract {
@@ -75,9 +73,6 @@ fn sport_coach(
     gender: Gender,
     observed_on: &str,
 ) -> Option<CanonicalCoach> {
-    // A placeholder is the source saying no one holds this row. The parser already drops such rows
-    // from the table, but the rule is enforced here too, where the coach is minted: this is the
-    // only site that can put a name in the workbook, so it is the one that must refuse.
     if super::pages::is_placeholder_name(coach_name) {
         return None;
     }

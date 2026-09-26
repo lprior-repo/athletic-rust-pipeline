@@ -12,10 +12,6 @@ use thiserror::Error;
 
 use super::MAX_BODY_BYTES;
 
-// ---------------------------------------------------------------------------
-// Error types
-// ---------------------------------------------------------------------------
-
 /// Errors that can occur during fetch operations.
 #[derive(Debug, Error)]
 pub enum FetchError {
@@ -126,10 +122,6 @@ impl FetchError {
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Internal types
-// ---------------------------------------------------------------------------
 
 /// Options controlling fetch behaviour.
 #[derive(Debug, Clone, Default)]
@@ -247,17 +239,11 @@ impl FetchStats {
         if physical == 0 {
             return None;
         }
-        // Converted through `u32` so the ratio needs no `as` cast: a count past four billion does
-        // not occur in a census run, and reporting no ratio beats reporting an approximate one.
         let records = u32::try_from(records).ok()?;
         let physical = u32::try_from(physical).ok()?;
         Some(f64::from(records) / f64::from(physical))
     }
 }
-
-// ---------------------------------------------------------------------------
-// Request keys
-// ---------------------------------------------------------------------------
 
 /// The host a request URL names, so the per-origin counters cannot be keyed by a whole URL.
 ///

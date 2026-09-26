@@ -94,9 +94,6 @@ pub(super) fn pdftotext(body: &[u8]) -> CrawlResult<String> {
         });
     };
     let payload = body.to_vec();
-    // The child's own exit status below is the failure the caller reports; a failed write only
-    // means `pdftotext` stopped reading, so the result is discarded rather than double-reported.
-    // Dropping the closure also drops the pipe, which is what tells the child its input is complete.
     let writer = std::thread::spawn(move || drop(stdin.write_all(&payload)));
     let output = child.wait_with_output().map_err(pdftotext_failed)?;
     writer.join().ok();

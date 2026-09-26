@@ -47,9 +47,6 @@ use std::time::Duration;
 const OBSERVED_ON: &str = "2026-09-20";
 const SCHOOL_YEAR: SchoolYear = SchoolYear::new(2026).expect("2026 is a season");
 
-// -------------------------------------------------------------------------------------------------
-// Harness
-// -------------------------------------------------------------------------------------------------
 
 /// A scratch store plus a fetcher over its HTTP cache — the same wiring `main` builds.
 struct Harness {
@@ -130,9 +127,6 @@ fn hex_prefix(hasher: Sha256) -> Result<String> {
     Ok(head.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
-// -------------------------------------------------------------------------------------------------
-// Case recording
-// -------------------------------------------------------------------------------------------------
 
 /// Asserts one case against its golden and records its digest for the source's aggregate.
 fn case(cases: &mut Vec<(String, String)>, name: &str, value: &Value) -> Result<()> {
@@ -156,9 +150,6 @@ fn file_stem(name: &str) -> Result<String> {
         .with_context(|| format!("fixture `{name}` has no file stem"))
 }
 
-// -------------------------------------------------------------------------------------------------
-// athleticlive: the tenant/meet harvest artifact
-// -------------------------------------------------------------------------------------------------
 
 fn meet_row_json(row: &athleticlive::MeetRow) -> Value {
     json!({
@@ -184,7 +175,6 @@ async fn athleticlive_harvest_parity() -> Result<()> {
         let stem = file_stem(&file)?;
         let body = common::fixture(SOURCE, &file)?;
 
-        // The parse path: rows as published, then the canonical meets they mint.
         let rows = athleticlive::parse_meets_csv(&body)
             .with_context(|| format!("parsing {SOURCE}/{file}"))?;
         case(
@@ -202,7 +192,6 @@ async fn athleticlive_harvest_parity() -> Result<()> {
             &serde_json::to_value(&meets)?,
         )?;
 
-        // The adapter's own entry point over the same bytes: journal, appended meets and report.
         let harness = Harness::new()?;
         let options = athleticlive::Options::for_input(path.display().to_string(), OBSERVED_ON);
         let report = athleticlive::collect(&harness.adapter_context(), &options)
@@ -230,9 +219,6 @@ async fn athleticlive_harvest_parity() -> Result<()> {
     digest_all(SOURCE, &cases)
 }
 
-// -------------------------------------------------------------------------------------------------
-// athleticlive_athletes: the timer-published athlete index
-// -------------------------------------------------------------------------------------------------
 
 /// The rows an `athlete_list` response carries: `hits.hits[]._source`.
 fn hits_from_response(body: &str) -> Result<Vec<AthleteHit>> {
@@ -325,7 +311,6 @@ async fn athleticlive_athletes_fixture_corpus_parity() -> Result<()> {
             }),
         )?;
 
-        // Target selection and the query body the adapter pages with.
         let selection =
             athleticlive_athletes::meet_targets(&[captured_meet()], &[UsJurisdiction::Kansas]);
         let targets: Vec<MeetTarget> = selection.targets;
@@ -355,7 +340,6 @@ async fn athleticlive_athletes_fixture_corpus_parity() -> Result<()> {
             }),
         )?;
 
-        // The rows as canonical entities, the way this adapter's `#[cfg(test)]` module drives it.
         let by_id: HashMap<u64, &MeetTarget> = targets
             .iter()
             .map(|target| (target.athleticlive_meet_id, target))
@@ -387,9 +371,6 @@ async fn athleticlive_athletes_fixture_corpus_parity() -> Result<()> {
     digest_all(SOURCE, &cases)
 }
 
-// -------------------------------------------------------------------------------------------------
-// milesplit: the per-state team index and graded roster HTML
-// -------------------------------------------------------------------------------------------------
 
 fn team_json(team: &milesplit::TeamRef) -> Value {
     json!({
@@ -440,8 +421,6 @@ fn roster_fixture(name: &str) -> Option<(String, String)> {
         .filter(|part| !part.is_empty())
         .collect();
     match (parts.first(), parts.get(1), parts.get(2), parts.len()) {
-        // A three-part name is the bare form (`wi_roster_52649.html`); a fourth part is the slug the
-        // site publishes after the id (`oh_roster_10002_mason.html`).
         (Some(site), Some(&"roster"), Some(team_id), 3 | 4) => {
             Some(((*site).to_string(), (*team_id).to_string()))
         }
@@ -456,7 +435,6 @@ async fn milesplit_html_parity() -> Result<()> {
     let mut indexes: HashMap<String, (String, Vec<milesplit::TeamRef>)> = HashMap::new();
     let mut rosters: Vec<(String, String, String, String, String)> = Vec::new();
 
-    // Pass one: team indexes, keyed by the site prefix their file name carries.
     for path in common::fixtures(SOURCE)? {
         let file = common::file_name(&path)?;
         let stem = file_stem(&file)?;
@@ -493,19 +471,12 @@ async fn milesplit_html_parity() -> Result<()> {
                 }),
             )?;
         } else if file.contains("_meet_") {
-            // The per-meet captures: a meet's results page in either template the platform serves
-            // (the `meetResultFiles` literal or the `ddResultsPage` select), its file-list page and
-            // a `/raw` body. Their routes are asserted end to end by the adapter's own tests
-            // (`milesplit::tests` parses the captures and maps their rows into canonical entities),
-            // so this harness — whose case set is the index, roster and results-index routes — names
-            // them instead of aborting the whole walk.
             continue;
         } else {
             bail!("uncovered {SOURCE} fixture `{file}`: parity_national.rs has no case for it");
         }
     }
 
-    // Pass two: each roster resolves its team out of the matching index capture.
     for (file, stem, body, site_id, team_id) in rosters {
         let jurisdiction = UsJurisdiction::from_code(&site_id)
             .with_context(|| format!("{site_id} is not a USPS jurisdiction code"))?;
@@ -538,9 +509,6 @@ async fn milesplit_html_parity() -> Result<()> {
             &json!({ "school": school, "athletes": athletes, "teams": teams }),
         )?;
 
-        // The fetch entry points the census calls, over the same captures. The pairs must be equal
-        // by construction — the fetcher serves the seeded bytes — so a drift in either direction is
-        // a failure, and `requests == 0` proves nothing left the machine.
         let harness = Harness::new()?;
         let index_body = common::fixture(SOURCE, index_file)?;
         harness.seed(
@@ -595,9 +563,6 @@ async fn milesplit_html_parity() -> Result<()> {
     digest_all(SOURCE, &cases)
 }
 
-// -------------------------------------------------------------------------------------------------
-// coach_contacts: the contact CSV
-// -------------------------------------------------------------------------------------------------
 
 #[tokio::test]
 async fn coach_contacts_csv_parity() -> Result<()> {
@@ -605,8 +570,6 @@ async fn coach_contacts_csv_parity() -> Result<()> {
     let mut cases: Vec<(String, String)> = Vec::new();
     let fixtures = common::fixtures_dir()?;
 
-    // The contact captures sit in the fixtures root beside the per-source directories; only the
-    // `coach_contacts*` files belong to this source.
     let mut paths: Vec<PathBuf> = Vec::new();
     for entry in
         std::fs::read_dir(&fixtures).with_context(|| format!("listing {}", fixtures.display()))?
@@ -629,7 +592,6 @@ async fn coach_contacts_csv_parity() -> Result<()> {
         let stem = file_stem(&file)?;
         let body = common::fixture("", &file)?;
 
-        // Every row of the capture, including the rows whose role imports nobody.
         let mut reader = csv::Reader::from_reader(body.as_bytes());
         let parsed: Vec<coach_contacts::CoachContactRow> = reader
             .deserialize()
@@ -667,7 +629,6 @@ async fn coach_contacts_csv_parity() -> Result<()> {
             &json!({ "file": file, "rows": rows }),
         )?;
 
-        // The import entry point over the same capture, into a scratch store.
         let harness = Harness::new()?;
         let report = coach_contacts::import_csv(&harness.store, &path, OBSERVED_ON)
             .with_context(|| format!("importing {SOURCE}/{file}"))?;
@@ -703,9 +664,6 @@ async fn coach_contacts_csv_parity() -> Result<()> {
     digest_all(SOURCE, &cases)
 }
 
-// -------------------------------------------------------------------------------------------------
-// athleticnet: the bio surface, replayed from the module's own inline captures
-// -------------------------------------------------------------------------------------------------
 
 /// The registry the adapter's own tests read (comments, blank lines, a repeat, a per-line state and
 /// a bare id the default fills in).
@@ -837,7 +795,6 @@ async fn athleticnet_inline_capture_parity() -> Result<()> {
     const SOURCE: &str = "athleticnet";
     let mut cases: Vec<(String, String)> = Vec::new();
 
-    // The registry: a per-line state wins, the default fills a bare id, a repeat reads once.
     let targets = athleticnet::parse_targets(REGISTRY, &[UsJurisdiction::Wisconsin])?;
     case(
         &mut cases,
@@ -851,7 +808,6 @@ async fn athleticnet_inline_capture_parity() -> Result<()> {
         }),
     )?;
 
-    // The refusals, message and all: an ambiguous or malformed registry is an error, not a guess.
     let mut refusals: Vec<Value> = Vec::new();
     for (registry, states) in REFUSED_REGISTRIES {
         let states: Vec<UsJurisdiction> = states.to_vec();
@@ -873,7 +829,6 @@ async fn athleticnet_inline_capture_parity() -> Result<()> {
         &json!({ "refusals": refusals }),
     )?;
 
-    // The published mark tokens: what each one denotes and whether it is automatic.
     let marks: Vec<Value> = MARK_TOKENS
         .iter()
         .map(|(kind, published)| {
@@ -890,7 +845,6 @@ async fn athleticnet_inline_capture_parity() -> Result<()> {
         &json!({ "marks": marks }),
     )?;
 
-    // The two published bio shapes the adapter decodes.
     let track: athleticnet::Bio =
         serde_json::from_str(BIO_TRACK_FIELD).context("the track payload decodes")?;
     let track_rows = track

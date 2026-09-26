@@ -21,8 +21,6 @@ static RELAY_LEG: LazyLock<Result<Regex, regex::Error>> =
 static PLACE_PREFIX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"^\d+\)"));
 
-// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
-// back as a typed error that the readers answer as "this file carries no meet" — never a panic.
 fn relay_leg_regex() -> CrawlResult<&'static Regex> {
     RELAY_LEG.as_ref().map_err(|source| CrawlError::RegexInit {
         pattern: "RELAY_LEG",
@@ -96,8 +94,6 @@ impl Section {
     /// The token printed under `column`: numeric columns are right-aligned to the label's edge, so
     /// the match is on the token that ends there.
     fn numeric_token_for<'a>(&self, tokens: &[Token<'a>], column: &Column) -> Option<Token<'a>> {
-        // The right-aligned token meets the label's edge, within the single space that separates
-        // the columns; the bound saturates instead of wrapping past the end of the line.
         let edge = column.end.saturating_add(1);
         tokens
             .iter()
@@ -142,7 +138,6 @@ pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Opti
     let tokens = tokens(line);
     let (place, name, school, grade) = row_identity(line, &tokens, section)?;
 
-    // The mark is a published result column, never the `Seed` entry mark.
     let mut marks = None;
     for label in MARK_LABELS {
         let Some(token) = section.numeric_token(&tokens, label) else {
@@ -185,15 +180,12 @@ fn row_identity(
 ) -> Option<(Option<u16>, String, String, Option<Grade>)> {
     let first_column_start = section.columns.first()?.start;
 
-    // Place sits left of the first labelled column and is optional (unranked rows print blank).
     let place = tokens
         .iter()
         .rfind(|token| token.end <= first_column_start)
         .and_then(|token| token.text.parse::<u16>().ok());
 
     let name_start = section.column("Name").map(|column| column.start);
-    // Relay sections print the school where individual sections print the athlete; `Team` and
-    // `Relay` are the same idea under other names.
     let school_start = ["School", "Team", "Relay", "Athlete"]
         .iter()
         .find_map(|label| section.column(label).map(|column| column.start))
@@ -216,9 +208,6 @@ fn row_identity(
         .numeric_token(tokens, "Year")
         .and_then(|token| token.text.parse::<u8>().ok())
         .and_then(Grade::new);
-    // A section that names no athlete column lists schools. A row beneath it that carries an
-    // athlete, a grade and a school is an individual row a capture left under that header; its own
-    // text holds the columns the header does not.
     if name_start.is_none() {
         if let Some((athlete, row_grade, school_label)) = individual_identity(&school) {
             name = athlete;
@@ -242,8 +231,6 @@ pub(super) fn parse_legs(trimmed: &str, filled: usize) -> Vec<RelayLeg> {
     };
     let mut legs = Vec::new();
     for captures in relay_leg.captures_iter(trimmed) {
-        // The fallback counts the legs already on the row; it saturates rather than wrapping, so a
-        // leg is never renumbered to 0 the way a truncating cast would.
         let fallback =
             u8::try_from(filled.saturating_add(legs.len()).saturating_add(1)).unwrap_or(u8::MAX);
         let position: u8 = captures

@@ -47,9 +47,6 @@ pub(super) async fn supervise(
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> Result<DrainReport, BootstrapError> {
     init_tracing();
-    // One region for the whole service: the store's first writer, the services' blocking jobs and
-    // the endpoint task are all started through it, so the drain below owns everything this process
-    // started and finalize cannot race a writer the region had forgotten.
     let region = Arc::new(Spawner::new());
     let store = open_store(&region, options.data_dir.clone()).await?;
     let (listener, bound) = bind_listener(&options).await?;
@@ -58,10 +55,6 @@ pub(super) async fn supervise(
     let reason = Arc::new(AtomicU8::new(StopReason::ServerExit.to_raw()));
     let over_budget = Arc::new(tokio::sync::Notify::new());
     let (cancel, endpoint_done) = spawn_endpoint(&region, &store, &options, listener, lane);
-    // The budget watcher reads /proc and has to keep watching while the region drains — a drain can
-    // take the whole timeout, and a swap during it is still the operator's problem. So it runs
-    // outside the region: the drain owns writers, and a watchdog that only returns when the budget
-    // trips would otherwise leave every stop report with one task `timed_out`.
     let _watcher = tokio::spawn(super::guard::watch_memory(
         super::DEFAULT_MEMORY_BUDGET_BYTES,
         Arc::clone(&over_budget),
@@ -80,7 +73,6 @@ pub(super) async fn supervise(
         endpoint_done,
     )
     .await;
-    // A failed send means the endpoint's own watch is already gone; the drain below is what matters.
     cancel.send(()).ok();
     let counted = region
         .drain(options.drain_timeout)
@@ -89,8 +81,6 @@ pub(super) async fn supervise(
     let mut report = DrainReport::from_counted(counted);
     report.stop_reason = StopReason::from_raw(reason.load(Ordering::SeqCst));
 
-    // Finalize after the region is empty: the drain waited for every task it started, so nothing can
-    // still be writing when the journal is synced.
     let finalized = store.flush();
     drop(store);
     finalized.map_err(|source| BootstrapError::StoreFlush { source })?;
@@ -149,7 +139,6 @@ async fn bind_listener(
     options: &ServeOptions,
 ) -> Result<(tokio::net::TcpListener, SocketAddr), BootstrapError> {
     if !options.listen.ip().is_loopback() {
-        // The endpoint carries no request-identity key, so the SDK's verifier accepts every caller.
         return Err(BootstrapError::NonLoopbackListen {
             listen: options.listen,
         });
@@ -188,7 +177,6 @@ fn spawn_endpoint(
     let (cancel, cancelled) = tokio::sync::oneshot::channel::<()>();
     let (ended, endpoint_done) = tokio::sync::oneshot::channel::<()>();
     let stop = async move {
-        // The stop future only has to observe the cancel; a dropped sender ends it too.
         cancelled.await.ok();
     };
     let endpoint = restate_services::build_endpoint(
@@ -202,8 +190,6 @@ fn spawn_endpoint(
         HttpServer::new(endpoint)
             .serve_with_cancel(listener, stop)
             .await;
-        // Fires on both exits: the supervisor may already be draining, in which case the send is a
-        // no-op, but an exit *without* a cancel is what the supervisor is waiting to hear about.
         ended.send(()).ok();
     });
     (cancel, endpoint_done)
@@ -222,9 +208,6 @@ async fn open_store(region: &Spawner, data_dir: PathBuf) -> Result<Arc<Store>, B
                 path: data_dir.clone(),
                 source,
             })?;
-            // The service owns the store for the live route, so it is one of the paths that migrate: a
-            // pre-Fjall corpus reaches the census only because the open that owns it imported it.
-            // Opening a store is otherwise a read, so a verb that only measures one no longer writes.
             let imported = store
                 .import_legacy()
                 .map_err(|source| BootstrapError::StoreOpen {

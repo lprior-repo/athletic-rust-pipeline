@@ -50,9 +50,6 @@ fn derived(id: &str, note: u32) -> DerivedRow {
 
 #[test]
 fn keys_with_a_zero_low_sequence_byte_still_reopen() {
-    // A sequence is stored big-endian in the key tail, so every 256th key ends in 0x00 — the
-    // same byte that separates the id from the sequence. Parsing that separator by search made
-    // `Store::open` fail forever once such a key existed.
     let dir = tempfile::tempdir().unwrap();
     {
         let store = Store::open(dir.path()).unwrap();
@@ -137,7 +134,6 @@ fn journal_roundtrips_resume_keys() {
         store.journal_payloads("milesplit_rosters").unwrap().len(),
         2
     );
-    // A second phase must not leak into the first phase's resume set.
     store
         .journal_done("other_phase", "wi:1", &serde_json::json!({}))
         .unwrap();
@@ -146,9 +142,6 @@ fn journal_roundtrips_resume_keys() {
 
 #[test]
 fn a_journal_key_past_its_ceiling_is_refused_and_writes_nothing() {
-    // A phase key is an adapter's URL or path and it rides inside the row's key, which Fjall asserts
-    // stays under 64 KiB. This ceiling is what keeps that assertion unreachable, and the refusal runs
-    // before the batch exists: an entry the store refuses is one the store does not hold.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     let key = "k".repeat(MAX_JOURNAL_KEY_BYTES + 1);
@@ -174,9 +167,6 @@ fn a_journal_key_past_its_ceiling_is_refused_and_writes_nothing() {
 
 #[test]
 fn a_journal_value_past_its_ceiling_leaves_the_phase_as_it_was() {
-    // The value's true size is only known once it is serialized, so the check runs between the
-    // serialization and the batch: a payload that never lands leaves the phase holding exactly the
-    // entries it held before, and the refusal names the key that was being written.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     store
@@ -218,8 +208,6 @@ fn observations_survive_reopen_without_overwriting() {
         store.append(Table::Schools, &first).unwrap();
     }
     {
-        // Reopening must resume the sequence, not restart it: a restarted sequence would
-        // overwrite the first observation and silently drop its evidence.
         let store = Store::open(dir.path()).unwrap();
         let mut second = school("Abbotsford");
         second.evidence.push(Evidence::parsed(
@@ -263,7 +251,6 @@ fn legacy_journals_are_imported_once() {
             .unwrap()
             .contains("wi:1"));
     }
-    // The importer is idempotent: the second import sees the marker and adds nothing.
     let store = Store::open(&root).unwrap();
     store.import_legacy().unwrap();
     assert_eq!(
@@ -279,7 +266,6 @@ fn an_interrupted_import_resumes_at_its_committed_offset() {
     let root = dir.path().to_path_buf();
     std::fs::create_dir_all(root.join("entities")).unwrap();
 
-    // A store that has never seen the journal, so the fixture decides what a killed import left.
     let store = Store::open(&root).unwrap();
     store.meta.remove("imported:schools").unwrap();
 
@@ -292,8 +278,6 @@ fn an_interrupted_import_resumes_at_its_committed_offset() {
     journal.push('\n');
     std::fs::write(root.join("entities/schools.jsonl"), &journal).unwrap();
 
-    // Exactly what a kill after the first chunk leaves behind: that chunk's row is in the store and
-    // its offset is in `meta`, because the offset travels in the same batch as the rows.
     store.append(Table::Schools, &first).unwrap();
     store
         .meta
@@ -302,7 +286,6 @@ fn an_interrupted_import_resumes_at_its_committed_offset() {
 
     store.import_legacy().unwrap();
 
-    // The resume re-read the tail only: the row the store already held keeps one observation.
     let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
     assert_eq!(rows.len(), 2);
     assert_eq!(store.stats().unwrap().observations, 2);
@@ -311,10 +294,6 @@ fn an_interrupted_import_resumes_at_its_committed_offset() {
 
 #[test]
 fn legacy_lines_are_trimmed_before_they_are_parsed() {
-    // The importer trims each journal line in place before it parses, so blank separators and
-    // hand-padded rows are ordinary input: a whitespace-only line is skipped, and a row wrapped in
-    // spaces or tabs is still that row. An off-by-one on either edge would instead drop a row or
-    // abort the import on one, so both edges are pinned here.
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path().to_path_buf();
     std::fs::create_dir_all(root.join("entities")).unwrap();
@@ -367,9 +346,6 @@ fn stats_count_observations_per_table() {
         .unwrap();
     assert_eq!(schools, 3);
     assert_eq!(stats.observations, 3);
-    // The recursive store size carries what the LSM level sizes leave out: a freshly written store
-    // keeps its newest batch in the write-ahead journal, so the directory holds bytes even when
-    // `bytes_on_disk` reports few, and sizing a copy by that column alone under-counts.
     assert!(stats.store_bytes > 0);
     assert!(stats.store_bytes >= stats.bytes_on_disk);
 }
@@ -422,10 +398,6 @@ fn a_consumer_mailbox_is_published_as_personal_and_a_school_address_as_professio
 
 #[test]
 fn derived_rows_replace_in_place_and_never_move_the_append_counter() {
-    // A derivation is a function of the store, not evidence about it: re-running it must leave one
-    // row per key. Appending would instead add an observation per pass until the table's 20M cap
-    // aborted every scan of it. The table is a derived map, so the write is the whole of what happens
-    // to it: no sequence is reserved, and no observation is appended.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     store
@@ -463,8 +435,6 @@ fn a_rejected_derived_record_leaves_the_table_untouched() {
         .replace_many(Table::Schools, std::slice::from_ref(&good))
         .unwrap();
 
-    // An id the store's key contract refuses (empty) must fail the whole batch, and the row that was
-    // already there must survive: a rejected derivation may not leave a half-written table behind.
     let mut broken = school("Colby");
     broken.id = serde_json::from_str::<SchoolId>("\"\"").unwrap();
     assert!(broken.id.as_str().is_empty());
@@ -480,9 +450,6 @@ fn a_rejected_derived_record_leaves_the_table_untouched() {
 
 #[test]
 fn a_derived_map_table_keys_one_row_per_id_under_sequence_zero() {
-    // The mode's own invariant, read off the keys: one physical row per entity key, every row keyed
-    // under sequence zero, and no id owning two rows. Two rows under one id would merge at read time,
-    // and the older copy wins wherever the newer says nothing — which is how a re-derived row reverts.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     store
@@ -491,7 +458,6 @@ fn a_derived_map_table_keys_one_row_per_id_under_sequence_zero() {
             &[derived("case:1", 1), derived("case:2", 1)],
         )
         .unwrap();
-    // A second pass: one id the table already holds, one id named twice by the same batch.
     store
         .replace_many(
             Table::ReviewCases,
@@ -529,9 +495,6 @@ fn a_derived_map_table_keys_one_row_per_id_under_sequence_zero() {
 
 #[test]
 fn a_snapshot_write_replaces_the_rows_it_does_not_name() {
-    // A snapshot table's batch is its whole new content: a region that lost its last meet must lose its
-    // row, or a report goes on counting a jurisdiction the store no longer has. A map is the opposite,
-    // and its rows are pinned by the map test above.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     store
@@ -568,10 +531,6 @@ fn a_snapshot_write_replaces_the_rows_it_does_not_name() {
 
 #[test]
 fn an_empty_snapshot_write_empties_the_table() {
-    // The strongest statement a derivation can make is that it derived nothing, and a table that keeps
-    // the rows a write does not name cannot express it: a conflict queue no longer holding the finding
-    // would go on serving the previous pass's row. A map table is the opposite — an empty write there
-    // names nothing and removes nothing — so the table's mode decides what an empty batch means.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     store
@@ -606,10 +565,6 @@ fn an_empty_snapshot_write_empties_the_table() {
 
 #[test]
 fn a_derived_write_clears_the_foreign_sequences_of_the_ids_it_names() {
-    // A store that predates the import gate holds derived rows under sequences of their own, and the
-    // merged read takes the later row: such a copy outranks every re-derivation and no path removes it,
-    // so the derivation loses to the row it replaced. This is the repair: an id a derived write names
-    // comes out of that write holding exactly the row the write put there.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     let imported = derived("case:1", 7);
@@ -646,10 +601,6 @@ fn a_derived_write_clears_the_foreign_sequences_of_the_ids_it_names() {
 
 #[test]
 fn the_row_ledger_is_a_count_the_keyspace_can_contradict() {
-    // A count is worth keeping only if a later reader can be contradicted by it. The ledger travels in
-    // the same batch as the rows it counts, so a keyspace that lost a row behind the store's back reads
-    // as one row to a walk and two to the store — the drift `integrity` reports. A count re-derived by
-    // walking at report time could never disagree with the walk it was re-derived from.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     let abbotsford = school("Abbotsford").id;
@@ -681,13 +632,6 @@ fn the_row_ledger_is_a_count_the_keyspace_can_contradict() {
 
 #[test]
 fn an_append_at_the_row_ceiling_lands_and_the_next_one_is_refused() {
-    // The last legal observation is the one that brings the table to exactly `MAX_ROWS_PER_TABLE`:
-    // refusing that one would withhold a sequence the writer is entitled to hand out. The append
-    // after it is refused, and the refusal may not spend a sequence — a refused batch that moved the
-    // counter would refuse every later append for a row that was never written.
-    //
-    // The edge is reached by moving the counter the way the store moves it, rather than by writing
-    // 20M observations: the count is what the bound is measured in.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     assert_eq!(
@@ -734,10 +678,6 @@ fn an_append_at_the_row_ceiling_lands_and_the_next_one_is_refused() {
 
 #[test]
 fn a_batch_that_would_straddle_the_row_ceiling_is_refused_before_it_reserves() {
-    // The bound is on the sequence the batch would *reach*, not on the batch's own length: one row
-    // short of the ceiling a two-row batch is over it although two rows on their own are not. A check
-    // on the length instead of the reach would commit this batch and leave the table unreadable,
-    // because a scan aborts on the row past the ceiling.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     store
@@ -767,19 +707,12 @@ fn a_batch_that_would_straddle_the_row_ceiling_is_refused_before_it_reserves() {
 
 #[test]
 fn the_reservation_funnel_refuses_a_run_that_would_cross_the_ceiling() {
-    // The check `append_many` makes on its way in runs before the append lock, so it can only ever be
-    // a courtesy: two batches can both pass it and then, one after the other, take the sequences it
-    // said were there. The reservation itself is the authority, because it is the one place every
-    // sequence spender passes through — the appenders and the legacy import's chunk commits alike —
-    // and it runs under the lock, so the bound has to hold here on the sequence the run would reach.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     store
         .reserve(Table::Schools, MAX_ROWS_PER_TABLE - 1)
         .unwrap();
 
-    // The last legal run ends exactly at the ceiling, and a zero-length run is legal even at it: the
-    // import opens with that probe, and a probe reaches nothing.
     let last = store.reserve(Table::Schools, 1).unwrap();
     assert_eq!(last.mark, MAX_ROWS_PER_TABLE);
     let probe = store.reserve(Table::Schools, 0).unwrap();
@@ -796,8 +729,6 @@ fn the_reservation_funnel_refuses_a_run_that_would_cross_the_ceiling() {
             "a refused run must leave the counter where it found it"
         );
     }
-    // A run whose reach overflows the counter is refused for the same reason a reach past the ceiling
-    // is: there is no sequence it could land on.
     match store.reserve(Table::Schools, u64::MAX) {
         Err(StoreError::CounterOverflow) => {}
         other => panic!("expected an unrepresentable run to be refused, got {other:?}"),
@@ -806,10 +737,6 @@ fn the_reservation_funnel_refuses_a_run_that_would_cross_the_ceiling() {
 
 #[test]
 fn the_ceiling_holds_when_two_appenders_meet_at_the_edge() {
-    // The entry check is stale by the time a batch commits, so the guarantee is the reservation's:
-    // with one sequence left, two threads appending at once may land one row and never two. Without
-    // the check inside the funnel both would pass the entry check, and the table would hold a row past
-    // the bound every scan aborts on — a row no later reader could ever get past.
     let dir = tempfile::tempdir().unwrap();
     let store = std::sync::Arc::new(Store::open(dir.path()).unwrap());
     store
@@ -857,10 +784,6 @@ fn the_ceiling_holds_when_two_appenders_meet_at_the_edge() {
 
 #[test]
 fn an_over_bound_replace_batch_is_refused_before_a_single_row_is_encoded() {
-    // A derived table's batch is a whole row set rather than a run of sequences, so the ceiling bounds
-    // the batch itself. `()` is the cheapest `Serialize` fixture there is, and it is the reason this
-    // batch is only ever counted: a refusal that happened after encoding would report each unit row
-    // as an unkeyable row instead of the ceiling, so the typed error is the proof of the ordering.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     let records = vec![(); usize::try_from(MAX_ROWS_PER_TABLE).unwrap_or(usize::MAX) + 1];
@@ -884,11 +807,6 @@ fn an_over_bound_replace_batch_is_refused_before_a_single_row_is_encoded() {
 
 #[test]
 fn the_storage_mode_follows_the_writer_that_owns_each_table() {
-    // Which ceiling a table's writer applies follows from how the table is written, so the split is
-    // pinned against the call sites: the evidence tables the adapters (and the roster and meet walks)
-    // feed through `append_many` spend a sequence per row, and the state the index, coverage, review
-    // and sweep passes rebuild through `replace_many` spends none. A table that changed sides without
-    // its writer changing is what this catches.
     let logs: Vec<&str> = Table::ALL
         .into_iter()
         .filter(|table| table.storage_mode() == StorageMode::ObservationLog)
@@ -939,15 +857,6 @@ fn the_storage_mode_follows_the_writer_that_owns_each_table() {
 
 #[test]
 fn a_derived_batch_keeps_the_appended_rows_of_an_observation_log() {
-    // An observation-log table's rows are keyed by a sequence the acquisition owns, and a derived row
-    // sits at `DERIVED_SEQUENCE` 0, so a derived batch that names an appended id must leave that
-    // appended row standing. `replace_many` counts such a table as `held + added` for exactly that
-    // reason: a batch that cleared the foreign row would leave the durable mark counting a row the
-    // table no longer holds. The per-record guard that keeps this true was dropped in the batch-scan
-    // rewrite and review caught it - this test is the suite's.
-    // The fixture carries a second id because a table's first append lands at sequence 0, which is
-    // `DERIVED_SEQUENCE` itself: deriving that id overwrites that row's payload by design, and the
-    // guard under test only ever protects rows at a nonzero sequence.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     store
@@ -1005,11 +914,6 @@ fn a_published_snapshot_leaves_no_temporary_behind() {
 
 #[test]
 fn concurrent_snapshot_writers_only_publish_whole_files() {
-    // Two consolidations can hold one snapshot path at once: the durable national run consolidates
-    // one jurisdiction per object and the service runs several of those concurrently, while a reader
-    // (the report, the workbook, an operator with `less`) may be reading the same path. Publication
-    // is a rename, so every observation is one whole snapshot; writing in place let a reader catch a
-    // half-file and let two writers interleave into one.
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
 
@@ -1057,10 +961,6 @@ fn concurrent_snapshot_writers_only_publish_whole_files() {
 
 #[test]
 fn opening_a_store_reclaims_what_a_dead_writer_left_behind() {
-    // A consolidation publishes by rename, so a temporary exists only while its writer is alive and
-    // holding the store lock. A crash mid-write (the crash drill in this repository's run evidence)
-    // left a 377 MB and an 863 MB `.part` behind; they are partial copies of tables that are still
-    // in the store, and nothing else would ever remove them.
     let dir = tempfile::tempdir().unwrap();
     let entities = dir.path().join("entities");
     {
@@ -1068,7 +968,6 @@ fn opening_a_store_reclaims_what_a_dead_writer_left_behind() {
         store
             .replace_many(Table::Schools, &[school("Abbotsford")])
             .unwrap();
-        // The published snapshot, written the way the consolidation writes it.
         store
             .consolidate_table(Table::Schools, &entities.join("schools.jsonl"))
             .unwrap();
@@ -1099,8 +998,6 @@ fn opening_a_store_reclaims_what_a_dead_writer_left_behind() {
 
 #[test]
 fn the_sweep_only_removes_snapshot_temporaries() {
-    // The rule is `.<name>.part`, not "anything dot-prefixed": a store root also holds `.` entries
-    // the filesystem owns, and an unrelated file must not be deleted by a store open.
     let dir = tempfile::tempdir().unwrap();
     std::fs::create_dir_all(dir.path().join("entities")).unwrap();
     let keep = dir.path().join("entities").join("notes.txt");
@@ -1136,8 +1033,6 @@ fn a_page_of_work_commits_rows_across_tables_and_the_journal_together() {
     batch
         .append_many(Table::Meets, std::slice::from_ref(&meet))
         .unwrap();
-    // A second page for a table already in the batch joins the first, so its rows share the table's
-    // mark rather than being written under a reservation of their own.
     batch
         .append_many(Table::Schools, &[school("Second High")])
         .unwrap();
@@ -1155,7 +1050,6 @@ fn a_page_of_work_commits_rows_across_tables_and_the_journal_together() {
     );
     drop(store);
 
-    // The whole page was one commit, so a reopen finds every table and the journal entry together.
     let reopened = Store::open(dir.path()).unwrap();
     assert_eq!(
         reopened
@@ -1182,8 +1076,6 @@ fn a_refused_entry_leaves_the_page_unwritten_and_every_counter_where_it_was() {
         .unwrap();
     let refused = batch.journal_done("unit", "too-big", &"x".repeat(MAX_JOURNAL_VALUE_BYTES + 1));
     assert!(refused.is_err(), "an entry past its ceiling is refused");
-    // The caller's `?` drops the batch here: the rows buffered before the refusal are never written,
-    // so the unit a resume re-runs cannot find half of itself.
     drop(batch);
 
     assert_eq!(
@@ -1224,7 +1116,6 @@ impl serde::Serialize for FlakyRecord {
         if call == 3 {
             return Err(serde::ser::Error::custom("real encode failure"));
         }
-        // Serialize a simple two-field object.
         use serde::ser::SerializeStruct;
         let mut s = serializer.serialize_struct("FlakyRecord", 2)?;
         s.serialize_field("id", &self.id)?;
@@ -1273,9 +1164,7 @@ impl Entity for FlakyRecord {
     fn entity_id(&self) -> &str {
         &self.id
     }
-    fn merge(&mut self, _other: Self) {
-        // Never called — this test only appends.
-    }
+    fn merge(&mut self, _other: Self) {}
 }
 
 /// A page's encode failure leaves the store untouched: no rows, no journal, no counter moved.
@@ -1292,7 +1181,6 @@ impl Entity for FlakyRecord {
 fn a_store_batch_encode_failure_commits_nothing() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
-    // Reset the flaky counter so this test is deterministic in isolation.
     FLAKY_SERIALIZE_FAIL_AT.store(3, Ordering::Relaxed);
 
     let before_seq = sequence_pointer(&store, Table::Schools);
@@ -1311,14 +1199,11 @@ fn a_store_batch_encode_failure_commits_nothing() {
         id: "r2".to_string(),
         value: 2,
     };
-    // The journal entry is buffered before the records, so the abandoned batch already holds
-    // real work when the append refuses: the entry cannot escape on its own either.
     batch
         .journal_done("unit", "fail-atomic", &serde_json::json!({"rows": 3}))
         .unwrap();
     let refused = batch.append_many(Table::Schools, &[r0, r1, r2]);
 
-    // The third record's serialization is what refuses the append; `commit` is never reached.
     assert!(
         refused.is_err(),
         "append_many should have refused the unencodable record"
@@ -1329,7 +1214,6 @@ fn a_store_batch_encode_failure_commits_nothing() {
     );
     drop(batch);
 
-    // A reopen shows the store is exactly as it was before the batch: no rows, no journal.
     drop(store);
     let reopened = Store::open(dir.path()).unwrap();
     assert_eq!(

@@ -48,7 +48,6 @@ pub struct LegacyImport {
 }
 
 impl Store {
-    // -- legacy import ----------------------------------------------------------------------------
 
     /// Import pre-Fjall journals once. A table is marked imported only after every observation of
     /// that table has been committed, so an interrupted import resumes instead of restarting.
@@ -97,8 +96,6 @@ impl Store {
                             "imported legacy entity journal"
                         );
                     }
-                    // Any mode that is not an append-only log is derived state, and a derived table is
-                    // rebuilt by its pass rather than restored from a file.
                     mode => {
                         imported.skipped = imported.skipped.saturating_add(1);
                         self.meta
@@ -188,19 +185,11 @@ impl Store {
                 break;
             };
             if ending == LineEnding::Truncated {
-                // The file's last line has no newline, so a writer died before it finished and those
-                // bytes were never an observation. The import stops here: everything the file
-                // durably held was read, the chunk commits the offset of the line boundary before
-                // the tail, and the tail is never parsed. Parsing it as a row is what used to wedge
-                // every later `Store::open` on the same truncated bytes.
                 break;
             }
-            // The byte count includes the newline, so the offset a chunk commits stays a line
-            // boundary in the same file.
             chunk.offset = chunk
                 .offset
                 .saturating_add(u64::try_from(line.len()).unwrap_or(u64::MAX));
-            // `trim_ascii` allocates nothing, so a 1.9 GB journal's line is parsed in place.
             let trimmed = line.trim_ascii();
             if trimmed.is_empty() {
                 continue;

@@ -18,7 +18,8 @@ use crate::hytek;
 use crate::result_file::ParsedRow;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalPerformance, CanonicalTeam, Evidence, Gender, GradYear,
-    Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, Sport, TeamId, TimingMethod,
+    Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, Sport, TeamId,
+    TimingMethod,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -46,7 +47,14 @@ pub(super) fn record_row(
         context.school_year,
         context.evidence,
     );
-    let athlete_id = record_athlete(writer, context, &school_id, &row.name, shape.grade, row_index);
+    let athlete_id = record_athlete(
+        writer,
+        context,
+        &school_id,
+        &row.name,
+        shape.grade,
+        row_index,
+    );
     record_performance(
         writer,
         context,
@@ -142,8 +150,6 @@ fn record_performance(
             place: row.place,
             heat: row.heat.clone(),
             round: context.event.round.clone(),
-            // The `/raw` payload states no timing method, and MileSplit is not the timer; nothing on
-            // the page lets one be read, so none is claimed.
             timing: Some(TimingMethod::Unknown),
             observed_grade: Some(shape.grade),
             evidence: vec![evidence],
@@ -203,15 +209,29 @@ fn record_athlete(
     row_index: usize,
 ) -> AthleteId {
     let grad_year = GradYear::of(grade, context.school_year);
-    let source = SourceIdentity::new(SourceNamespace::Other("milesplit_result_row".to_string()),
-        performance_key(context, row_index));
-    let athlete_id = CanonicalAthlete::mint(school_id, member_name, grad_year, context.event.gender, &source);
+    let source = SourceIdentity::new(
+        SourceNamespace::Other("milesplit_result_row".to_string()),
+        performance_key(context, row_index),
+    );
+    let athlete_id = CanonicalAthlete::mint(
+        school_id,
+        member_name,
+        grad_year,
+        context.event.gender,
+        &source,
+    );
     let entry = writer
         .accumulated
         .athletes
         .entry(athlete_id.as_str().to_string())
         .or_insert_with(|| {
-            let mut athlete = CanonicalAthlete::new(school_id, member_name, grad_year, context.event.gender, source);
+            let mut athlete = CanonicalAthlete::new(
+                school_id,
+                member_name,
+                grad_year,
+                context.event.gender,
+                source,
+            );
             if let Some(sport) = context.sport {
                 athlete.sports.push(sport);
             }
@@ -222,8 +242,6 @@ fn record_athlete(
             entry.sports.push(sport);
         }
     }
-    // The grade the row published, dated by the school year the meet sits in: the evidence the
-    // canonical grad year above is a projection of.
     let observation = ObservedGrade {
         grade,
         school_year: context.school_year,

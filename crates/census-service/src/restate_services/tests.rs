@@ -37,7 +37,6 @@ fn empty_table_list_means_every_table_in_order() {
 
 #[test]
 fn an_omitted_scope_matches_the_cli_default_and_unknown_scopes_are_rejected() {
-    // `census-service report` without `--core` reports every source, so the service must too.
     assert_eq!(resolve_scope(None).unwrap(), Scope::AllSources);
     assert_eq!(resolve_scope(Some("core")).unwrap(), Scope::Core);
     assert_eq!(
@@ -64,11 +63,6 @@ fn physical(store: &Store, table: Table) -> (u64, u64) {
 
 #[test]
 fn three_attempts_at_one_operation_append_it_once_and_leave_one_receipt() {
-    // The window §15 names: the append commits, the writer dies before it hears its own
-    // acknowledgement, and the same unit of work is offered again — by the retry policy, and again
-    // after a restart. Three attempts, one page: the second and third must find the store's receipt
-    // and append nothing, and the physical counts after all three must be the counts after the
-    // first.
     let dir = tempfile::tempdir().unwrap();
     let operation = "wiaa_results_wi:inv-1:2026-W39:performances:0:0";
     let rows = vec![
@@ -86,7 +80,6 @@ fn three_attempts_at_one_operation_append_it_once_and_leave_one_receipt() {
     );
     let after_first = physical(&store, Table::Performances);
     assert_eq!(after_first, (2, 1), "two rows, one receipt");
-    // No flush, no close: the commit is the durability boundary, so what a crash leaves is this.
     drop(store);
 
     let store = Store::open(dir.path()).unwrap();
@@ -112,9 +105,6 @@ fn three_attempts_at_one_operation_append_it_once_and_leave_one_receipt() {
 
 #[test]
 fn a_second_operation_with_different_rows_is_not_mistaken_for_a_replay() {
-    // The other half of the contract: an id the store has not seen is new work, even beside a page
-    // whose rows overlap the first operation's. Only the operation id decides, and the digest is
-    // checked under it.
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     let rows = vec![serde_json::json!({"id": "perf:wi:1", "mark": "10.94"})];
@@ -167,8 +157,6 @@ fn oversized_batches_are_refused_without_touching_the_store() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     let rows = vec![serde_json::json!({"id": "x"}); MAX_ROWS_PER_REQUEST + 1];
-    // The ceiling is an admission bound, not a hiccup: it must reach Restate as a terminal outcome,
-    // or the invocation would replay a batch that can never fit.
     let refused = apply_observations(&store, Table::Schools, &rows, "op-1", "digest-1")
         .map_err(JobError::from)
         .expect_err("a batch over the ceiling is refused");
@@ -189,7 +177,6 @@ fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_re
         .unwrap();
     let region = Arc::new(Spawner::new());
 
-    // The store's own bound was violated: replaying the same journal value cannot restore it.
     let refused = runtime.block_on(blocking(Arc::clone(&region), || {
         Err::<u8, StoreError>(StoreError::Invariant {
             detail: "50001 rows exceeds the per-request ceiling of 50000".to_string(),
@@ -197,7 +184,6 @@ fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_re
     }));
     assert!(matches!(refused, Err(JobError::Terminal { .. })));
 
-    // Every other store failure is what a journaled retry repairs.
     let transient = runtime.block_on(blocking(Arc::clone(&region), || {
         Err::<u8, StoreError>(StoreError::Io {
             path: PathBuf::from("/dev/null/nowhere"),
@@ -206,7 +192,6 @@ fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_re
     }));
     assert!(matches!(transient, Err(JobError::Transient { .. })));
 
-    // A report failure classifies through its own conversion, including the store failure it wraps.
     let report = runtime.block_on(blocking(Arc::clone(&region), || {
         Err::<u8, ReportError>(ReportError::Store(StoreError::Invariant {
             detail: "table schools would exceed 20000000 rows in one scan".to_string(),
@@ -214,8 +199,6 @@ fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_re
     }));
     assert!(matches!(report, Err(JobError::Terminal { .. })));
 
-    // A report-side invariant is terminal for the same reason a store-side one is: it is a bug, not
-    // a bad night, and the replay would reproduce it exactly.
     let report_invariant = runtime.block_on(blocking(Arc::clone(&region), || {
         Err::<u8, ReportError>(ReportError::Invariant {
             detail: "the core scope reports more than the all-sources scope".to_string(),
@@ -223,7 +206,6 @@ fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_re
     }));
     assert!(matches!(report_invariant, Err(JobError::Terminal { .. })));
 
-    // Everything else the report path can fail with stays retryable.
     let report_io = runtime.block_on(blocking(Arc::clone(&region), || {
         Err::<u8, ReportError>(ReportError::Io {
             path: PathBuf::from("/dev/null/nowhere"),
@@ -237,8 +219,6 @@ fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_re
     }));
     assert!(matches!(panicked, Err(JobError::Terminal { .. })));
 }
-
-// ------------------------------------------------------- national fan-out admission
 
 /// The national request every fan-out test varies: season 2026-27 at revision 1, the CLI's default
 /// concurrency, and no roster ceiling.
@@ -261,7 +241,6 @@ fn an_empty_jurisdiction_list_covers_the_census_scope_in_declaration_order() {
     assert_eq!(targets.len(), UsJurisdiction::CENSUS_SCOPE.len());
     let jurisdictions: Vec<UsJurisdiction> = targets.iter().map(|row| row.0).collect();
     assert_eq!(jurisdictions, UsJurisdiction::CENSUS_SCOPE.to_vec());
-    // Each state is addressed by the identity of its own census, not by the position it was pushed.
     for (jurisdiction, key) in &targets {
         assert_eq!(
             key.as_str(),
@@ -314,7 +293,6 @@ fn the_walk_options_carry_the_runs_shared_knobs() {
     assert_eq!(options.jurisdictions, vec![UsJurisdiction::Iowa]);
     assert_eq!(options.limit_per_state, Some(17));
     assert_eq!(options.concurrency, 3);
-    // One jurisdiction is one state host: nothing to interleave, whatever the national run asked for.
     assert_eq!(options.state_concurrency, 1);
     assert!(options.refresh);
     assert_eq!(
@@ -376,8 +354,6 @@ fn a_walk_with_no_concurrency_is_refused() {
     );
 }
 
-// ------------------------------------------------------ national fan-out tolerance
-
 /// One jurisdiction's report as `JurisdictionCensus` returns it: seven teams, five rosters walked,
 /// eleven athletes of whom three are in the 2027 cohort — enough to see the summary's own arithmetic.
 fn answered_report() -> JurisdictionReport {
@@ -436,8 +412,6 @@ fn a_state_that_did_not_answer_becomes_a_failure_row_and_the_run_keeps_its_summa
         failure.error
     );
 
-    // The same fold takes the summary of a state that did answer, with the owed rosters the report
-    // publishes derived from the two counts the jurisdiction returned.
     let answered = national::classify(
         UsJurisdiction::Wisconsin,
         "jurisdiction:WI:2026-27:1",
@@ -576,7 +550,6 @@ fn a_refused_source_is_owed_evidence_and_is_never_dispatched() {
         "a source object that accepted no observation is owed work"
     );
 }
-// ----------------------------------------------------------------------- defect regression
 
 /// FetchError variants that retryable() says are retryable: all become Transient.
 ///
@@ -587,39 +560,30 @@ fn a_refused_source_is_owed_evidence_and_is_never_dispatched() {
 fn fetch_error_retryable_variants_become_transient() {
     use census_crawl::net::FetchError;
 
-    // Transport is retryable (verified by retryable() in census-crawl; constructible only with
-    // reqwest::Error, so we skip direct construction here). The collect_error path below
-    // confirms the other retryable variants.
-
-    // Timeout is retryable.
     assert!(FetchError::Timeout {
         url: "https://example.com".to_string(),
         timeout_secs: 30,
     }
     .retryable());
 
-    // RateLimited is retryable.
     assert!(FetchError::RateLimited {
         url: "https://example.com".to_string(),
         retry_after_secs: None,
     }
     .retryable());
 
-    // 5xx HTTP responses are retryable.
     assert!(FetchError::Http {
         status: 500,
         url: "https://example.com".to_string(),
     }
     .retryable());
 
-    // 429 is retryable.
     assert!(FetchError::Http {
         status: 429,
         url: "https://example.com".to_string(),
     }
     .retryable());
 
-    // BrowserLane { retryable: true } is retryable.
     assert!(FetchError::BrowserLane {
         url: "https://example.com".to_string(),
         detail: "profile busy".to_string(),
@@ -627,7 +591,6 @@ fn fetch_error_retryable_variants_become_transient() {
     }
     .retryable());
 
-    // Now confirm collect_error honours these through the actual classification path.
     let timeout = collect_error(CrawlError::Fetch(FetchError::Timeout {
         url: "https://example.com".to_string(),
         timeout_secs: 30,
@@ -701,14 +664,12 @@ fn fetch_error_nonretryable_variants_become_terminal() {
     }));
     assert!(matches!(invalid_url, JobError::Terminal { .. }));
 
-    // 4xx HTTP (non-429) is terminal.
     let http_404 = collect_error(CrawlError::Fetch(FetchError::Http {
         status: 404,
         url: "https://example.com".to_string(),
     }));
     assert!(matches!(http_404, JobError::Terminal { .. }));
 
-    // 4xx other non-429 is terminal.
     let http_403 = collect_error(CrawlError::Fetch(FetchError::Http {
         status: 403,
         url: "https://example.com".to_string(),
@@ -762,25 +723,21 @@ fn non_fetch_crawl_errors_are_terminal() {
 /// the same input cannot fix them.
 #[test]
 fn deterministic_store_errors_classify_terminal() {
-    // CounterOverflow: no more u64 available, retry yields nothing.
     let error = JobError::from(StoreError::CounterOverflow);
     assert!(matches!(error, JobError::Terminal { .. }));
 
-    // Decode: corrupt JSON in store, retry reproduces the same corruption.
     let error = JobError::from(StoreError::Decode {
         key: "schools:1".to_string(),
         source: serde_json::from_str::<serde_json::Value>("not json").unwrap_err(),
     });
     assert!(matches!(error, JobError::Terminal { .. }));
 
-    // Json: unkeyed bytes failed to decode.
     let error = JobError::from(StoreError::Json {
         detail: "raw row".to_string(),
         source: serde_json::from_str::<serde_json::Value>("not json").unwrap_err(),
     });
     assert!(matches!(error, JobError::Terminal { .. }));
 
-    // SnapshotRow: a JSONL snapshot line is corrupt.
     let error = JobError::from(StoreError::SnapshotRow {
         path: PathBuf::from("/tmp/out/schools.jsonl"),
         line: 42,
@@ -788,14 +745,12 @@ fn deterministic_store_errors_classify_terminal() {
     });
     assert!(matches!(error, JobError::Terminal { .. }));
 
-    // TooManyRows: a scan would exceed the ceiling — retry does not shrink the table.
     let error = JobError::from(StoreError::TooManyRows {
         table: "schools".to_string(),
         max: 20_000_000,
     });
     assert!(matches!(error, JobError::Terminal { .. }));
 
-    // JournalTooLarge: entry exceeds the ceiling — the data is what it is.
     let error = JobError::from(StoreError::JournalTooLarge {
         what: "value",
         phase: "teams".to_string(),
@@ -805,19 +760,16 @@ fn deterministic_store_errors_classify_terminal() {
     });
     assert!(matches!(error, JobError::Terminal { .. }));
 
-    // Refused: the request did not meet the condition the store enforces.
     let error = JobError::from(StoreError::Refused {
         detail: "destination busy".to_string(),
     });
     assert!(matches!(error, JobError::Terminal { .. }));
 
-    // Legacy: the one-time import failed — retrying the same data fails again.
     let error = JobError::from(StoreError::Legacy {
         detail: "column count mismatch".to_string(),
     });
     assert!(matches!(error, JobError::Terminal { .. }));
 
-    // Invariant: replaying cannot restore it (this was already terminal, confirming it stays so).
     let error = JobError::from(StoreError::Invariant {
         detail: "row id missing".to_string(),
     });
@@ -831,15 +783,11 @@ fn deterministic_store_errors_classify_terminal() {
 /// identical: `Self::Transient { message }`.
 #[test]
 fn environmental_store_errors_classify_transient() {
-    // Io: sidecar file I/O might resolve on retry.
     let error = JobError::from(StoreError::Io {
         path: PathBuf::from("/tmp/test"),
         source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
     });
     assert!(matches!(error, JobError::Transient { .. }));
-
-    // The other environmental variants (Open, Flush, Read, Write) all carry fjall::Error
-    // as their source and are classified identically — the match arm is the same for all.
 }
 
 /// run_key: identical semantic requests with the same generation produce identical keys.
@@ -882,7 +830,6 @@ fn same_semantics_different_generation_produces_new_key() {
     assert_eq!(key_default, "report:core:1");
     assert_eq!(key_new, "report:core:2");
 
-    // Different generation values must always differ.
     assert_ne!(
         run_key("bests", &["all", "2027", "50"], "1"),
         run_key("bests", &["all", "2027", "50"], "abc-def"),
@@ -919,7 +866,6 @@ fn differing_semantic_parts_produce_different_keys() {
         "different grad year must produce different keys"
     );
 
-    // Different out paths produce different keys.
     assert_ne!(
         run_key(
             "workbook",
@@ -934,7 +880,6 @@ fn differing_semantic_parts_produce_different_keys() {
         "different out path must produce different keys"
     );
 
-    // Different limits produce different keys.
     assert_ne!(
         run_key("workbook", &["2027", "core", "50", "."], DEFAULT_GENERATION),
         run_key(
@@ -952,8 +897,6 @@ fn differing_semantic_parts_produce_different_keys() {
 /// not a timestamp.
 #[test]
 fn run_key_is_independent_of_wall_clock() {
-    // Verify the key shape: for a key with N parts, there are N+2 segments
-    // (job + parts + generation).
     let key = run_key("report", &["core"], DEFAULT_GENERATION);
     let segments: Vec<&str> = key.split(':').collect();
     assert_eq!(segments.len(), 3, "report:core:1 has exactly 3 segments");
@@ -976,7 +919,6 @@ fn run_key_is_independent_of_wall_clock() {
         "the last segment must be the generation"
     );
 
-    // For an empty-parts key, there are exactly 2 segments (job + generation).
     let key3 = run_key("consolidate", &[], DEFAULT_GENERATION);
     let segments3: Vec<&str> = key3.split(':').collect();
     assert_eq!(segments3.len(), 2, "consolidate:1 has 2 segments");
@@ -991,17 +933,14 @@ fn run_key_is_independent_of_wall_clock() {
 fn classification_survives_through_job_error() {
     use super::job_error;
 
-    // Terminal CrawlError must survive as Terminal HandlerError.
     let terminal = job_error(JobError::Terminal {
         message: "robots.txt disallowed".to_string(),
     });
-    // The HandlerError must be terminal, not transient.
     assert!(
         format!("{terminal:?}").contains("Terminal"),
         "JobError::Terminal must produce TerminalHandlerError, got {terminal:?}"
     );
 
-    // Transient CrawlError must survive as Transient HandlerError.
     let transient = job_error(JobError::Transient {
         message: "transport error".to_string(),
     });
@@ -1018,7 +957,6 @@ fn classification_survives_through_job_error() {
 fn crawl_error_survives_through_collect_error_and_job_error() {
     use super::job_error;
 
-    // Robots (non-retryable FetchError) must become Terminal HandlerError.
     let robots_h = job_error(collect_error(CrawlError::Fetch(FetchError::Robots(
         "https://example.com/robots.txt".to_string(),
     ))));
@@ -1027,7 +965,6 @@ fn crawl_error_survives_through_collect_error_and_job_error() {
         "Robots must become Terminal HandlerError, got {robots_h:?}"
     );
 
-    // BrowserLane { retryable: false } (non-retryable) must become Terminal.
     let browser_not_retryable_h =
         job_error(collect_error(CrawlError::Fetch(FetchError::BrowserLane {
             url: "https://example.com".to_string(),
@@ -1039,7 +976,6 @@ fn crawl_error_survives_through_collect_error_and_job_error() {
         "BrowserLane{{retryable:false}} must become Terminal HandlerError, got {browser_not_retryable_h:?}"
     );
 
-    // Timeout (retryable) must become Transient HandlerError.
     let timeout_h = job_error(collect_error(CrawlError::Fetch(FetchError::Timeout {
         url: "https://example.com".to_string(),
         timeout_secs: 30,
@@ -1049,7 +985,6 @@ fn crawl_error_survives_through_collect_error_and_job_error() {
         "Timeout must become Transient HandlerError, got {timeout_h:?}"
     );
 
-    // Schema mismatch (non-fetch, terminal) must become Terminal.
     let schema_h = job_error(collect_error(CrawlError::Schema {
         url: "https://example.com".to_string(),
         detail: "missing required field".to_string(),

@@ -52,8 +52,6 @@ proptest! {
 
 #[test]
 fn the_notation_table_holds_and_defers_to_one_time_parser() {
-    // The two routes to a published time — this source's mark reader and the shared vendor parser
-    // that reads the same notation — must not diverge: a divergence stores two values for one mark.
     for (text, expected) in [
         ("10.56", 10.56),
         ("1:54.32", 114.32),

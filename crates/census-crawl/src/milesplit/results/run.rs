@@ -50,8 +50,6 @@ impl Run {
         self.stats.result_sets = self.stats.result_sets.saturating_add(1);
         self.stats.skipped_lines = self.stats.skipped_lines.saturating_add(page.skipped.len());
         if page.meet.rows_parsed == 0 {
-            // An empty result set is data, not an error: it is journaled so the run does not repeat
-            // it, and nothing is minted from it.
             self.stats.result_sets_empty = self.stats.result_sets_empty.saturating_add(1);
         } else {
             absorb_result_set(

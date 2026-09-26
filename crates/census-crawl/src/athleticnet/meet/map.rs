@@ -128,8 +128,6 @@ fn place_meet(meet: &MeetData, counts: &mut MeetStats) -> Option<Placement> {
         counts.meets_without_season = counts.meets_without_season.saturating_add(1);
         return None;
     };
-    // A published season the domain will not place is refused exactly as an absent one: the meet's
-    // rows are not filed under a year no source published.
     let Some(school_year) = SchoolYear::containing(season, 5) else {
         counts.meets_without_season = counts.meets_without_season.saturating_add(1);
         return None;

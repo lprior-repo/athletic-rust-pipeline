@@ -54,8 +54,6 @@ static BREAK: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?is)<br\s*/?>"));
 static TAG: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>"));
 
-// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
-// back as a typed error that the readers answer as "this file carries no meet" — never a panic.
 fn pre_regex() -> CrawlResult<&'static Regex> {
     PRE.as_ref().map_err(|source| CrawlError::RegexInit {
         pattern: "PRE",
@@ -97,8 +95,6 @@ pub fn parse(lines: &[String], source: SourceRef) -> Option<ParsedMeet> {
 
     let mut events: Vec<ParsedEvent> = Vec::new();
     let mut section: Option<Section> = None;
-    // Report counters saturate: a file of more than `usize::MAX` lines cannot exist, so saturation
-    // never changes a published count and the increments cannot wrap.
     let mut row_lines = 0usize;
     let mut skipped_rows = 0usize;
     let place_prefix = place_prefix_regex().ok();
@@ -198,8 +194,6 @@ fn extend_relay_legs(
 /// Hy-Tek's HTML export either wraps each report line in one `<p>` or hands the whole report over
 /// inside a single `<pre>`; both shapes occur in the WIAA archive and must yield the same lines.
 pub fn lines_from_html(body: &str) -> Vec<String> {
-    // Older releases wrap the whole report in one `<PRE>` block (line breaks carry the layout, tags
-    // arrive uppercase); newer releases emit one `<P>` per line.
     let pre = pre_regex().ok();
     let breaks = break_regex().ok();
     if let Some(capture) = pre.and_then(|pattern| pattern.captures(body)) {
@@ -247,7 +241,6 @@ fn strip_tags(inner: &str) -> String {
 }
 
 fn clean_line(raw: &str) -> String {
-    // `&nbsp;` arrives both decoded (U+00A0) and escaped, and Hy-Tek pads columns with it.
     let unescaped = raw
         .replace("&nbsp;", " ")
         .replace("&amp;", "&")

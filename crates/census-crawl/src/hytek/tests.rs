@@ -21,9 +21,6 @@ fn parse_html(body: &str) -> ParsedMeet {
 
 #[test]
 fn the_trackside_template_parses_place_grade_school_and_field_marks() {
-    // TrackSide Timing publishes the `Name / Year / School / Finals / H# / Points` header and
-    // right-aligned field marks (`115-10`, `J5-11.00`, `NH`); PrimeTime publishes `Grade` and
-    // `Time`. Both templates come out of the same archive.
     let body = include_str!("../../tests/fixtures/wiaa_results/trackside-regional.htm");
     let parsed = parse(&lines_from_html(body), source()).expect("fixture has a meet header");
     assert_eq!(parsed.name, "WIAA Division 1 Badger Regional");
@@ -48,9 +45,6 @@ fn the_trackside_template_parses_place_grade_school_and_field_marks() {
 
 #[test]
 fn a_seed_column_does_not_bleed_into_the_school_label_or_the_mark() {
-    // Sections that publish a `Seed` column print two field marks side by side. Reading the
-    // school to a fixed offset swallowed the seed (`Flambeau  36-11.00`), which then failed
-    // school resolution and silently dropped every placed thrower in the section.
     let body = include_str!("../../tests/fixtures/wiaa_results/seed-column-regional.htm");
     let parsed = parse(&lines_from_html(body), source()).expect("fixture has a meet header");
     let shot = parsed
@@ -73,7 +67,6 @@ fn a_seed_column_does_not_bleed_into_the_school_label_or_the_mark() {
         winner.mark
     );
     assert_eq!(winner.points, Some(10.0));
-    // Labels stay clean for every row, which is what school resolution depends on.
     assert!(
         shot.rows
             .iter()
@@ -88,8 +81,6 @@ fn a_seed_column_does_not_bleed_into_the_school_label_or_the_mark() {
 
 #[test]
 fn uppercase_pre_blocks_parse_like_plain_text() {
-    // WIAA's older releases wrap the whole report in one uppercase `<PRE>` block instead of
-    // one `<P>` per line; both shapes must yield the same report lines.
     let html = "<HTML>\r\n<BODY>\r\n<P>\r\n<PRE>\r\nLicensed to TrackSide\r\n\
                Event 3  Girls Discus Throw\r\n  1 Smith, Jane  11 Badger  120-03\r\n";
     let lines = lines_from_html(html);
@@ -107,8 +98,6 @@ fn uppercase_pre_blocks_parse_like_plain_text() {
 
 #[test]
 fn pdf_page_breaks_do_not_glue_pages_together() {
-    // `pdftotext` separates pages with a form feed; a page footer must not join the next page's
-    // first line, or the header and the first result row fuse into one unparsable line.
     let text = "Licensed to TrackSide\r\nEvent 3  Girls Discus Throw\r\n1 A, B  11  Badger\u{c}11/1/25, 12:38 PM\r\nLicensed to TrackSide\r\n";
     let lines = lines_from_pdf_text(text);
     assert!(
@@ -198,7 +187,6 @@ fn individual_rows_carry_place_grade_school_mark_and_wind() {
     assert_eq!(winner.school, "West De Pere");
     assert_eq!(winner.mark, Mark::TimeSeconds(CentiSeconds::new(1056)));
     assert_eq!(winner.wind_mps, Some(0.4));
-    // Every prelim row carries a grade in this section; the parser must not invent one.
     assert!(event.rows.iter().all(|row| row.grade.is_some()));
     assert!(event.rows.len() >= 20, "got {} rows", event.rows.len());
 }
@@ -243,7 +231,6 @@ fn relay_rows_name_the_school_and_list_their_legs_with_grades() {
         winner.name.is_empty(),
         "relay rows name a school, not an athlete"
     );
-    // Hy-Tek lists the four legs and then any alternates, each numbered as published.
     assert!(
         winner.legs.len() >= 4,
         "at least the four legs are listed, got {:?}",
@@ -260,8 +247,6 @@ fn relay_rows_name_the_school_and_list_their_legs_with_grades() {
 
 #[test]
 fn team_score_lines_are_not_mistaken_for_results() {
-    // `  21) Green Bay Preble            11       22) Holmen                     10` is a team
-    // score table, not an individual result.
     let meet = parse_html(DASH);
     for event in &meet.events {
         for row in &event.rows {

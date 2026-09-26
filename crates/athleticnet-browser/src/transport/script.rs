@@ -56,10 +56,6 @@ pub(super) const FETCH_FUNCTION: &str = r#"async function(spec) {
     }
 }"#;
 
-// ABORT_FUNCTION: aborts the fetch and awaits the completion promise.
-// Returns {ok: true, confirmed: <promise_value>}.
-// Obtains completion whether controller exists or not. Aborts if present.
-// Only explicit true confirms.
 pub(super) const ABORT_FUNCTION: &str = r#"() => {
     const controller = globalThis.__adlaw_transport_controller;
     if (controller) controller.abort();

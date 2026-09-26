@@ -22,7 +22,6 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use clap::Args;
 
-// Re-export Seeds so `run_census_doc` can read fields.
 pub(crate) use self::counted_seeds::Seeds;
 
 /// Arguments for the `census-doc` subcommand.

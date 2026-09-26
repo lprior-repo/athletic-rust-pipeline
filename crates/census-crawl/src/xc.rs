@@ -31,7 +31,6 @@ mod scan;
 pub use crate::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};
 pub use parse::parse;
 
-// The moved bodies reach these through `super::*`; the test module is the only reader.
 #[cfg(test)]
 use crate::CrawlError;
 #[cfg(test)]

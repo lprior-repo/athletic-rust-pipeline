@@ -181,7 +181,6 @@ async fn collect_mints_core_meets_from_the_provider_schedule_without_touching_th
         report.notes
     );
 
-    // The meets are in the store with core evidence and the provider's own key.
     let appended: Vec<CanonicalMeet> = store.scan(Table::Meets).expect("scan meets from Fjall");
     assert!(
         appended.len() >= 20,
@@ -232,8 +231,6 @@ async fn collect_mints_core_meets_from_the_provider_schedule_without_touching_th
     assert_eq!(xc.date, "2026-08-27");
     assert_eq!(xc.sports, vec![Sport::CrossCountry]);
 
-    // A venue the table does not claim stays unplaced: the report spells that bucket
-    // `MEET_STATE_UNRESOLVED`, so the meet must carry no jurisdiction at all.
     assert!(
         appended.iter().any(|meet| meet.state.is_none()),
         "the fixture carries venues the table does not claim"
@@ -311,7 +308,6 @@ fn a_school_shaped_venue_is_read_with_its_suffix_written_out() {
 
 #[test]
 fn a_school_venue_resolves_only_where_exactly_one_state_owns_it() {
-    // Canonical schools carry a normalized name, exactly as the store writes them.
     let school = |state: UsJurisdiction, name: &str| {
         census_domain::model::CanonicalSchool::new(
             state,
@@ -322,7 +318,6 @@ fn a_school_venue_resolves_only_where_exactly_one_state_owns_it() {
     };
     let mut cache = HashMap::new();
 
-    // The same school name in two states is never guessed at.
     let both = SchoolIndex::from_schools(&[
         school(UsJurisdiction::Minnesota, "Albany High School"),
         school(UsJurisdiction::Wisconsin, "Albany High School"),
@@ -332,7 +327,6 @@ fn a_school_venue_resolves_only_where_exactly_one_state_owns_it() {
         VenueResolution::Unknown
     );
 
-    // With one owner it resolves, including for the punctuated spelling a timer may print.
     let one = SchoolIndex::from_schools(&[
         school(UsJurisdiction::Minnesota, "Albany High School"),
         school(UsJurisdiction::Wisconsin, "River Falls High School"),

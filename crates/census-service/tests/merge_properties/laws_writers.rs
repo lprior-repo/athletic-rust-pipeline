@@ -47,8 +47,6 @@ proptest! {
         prop_assert_eq!(&merged.normalized_name, &normalized);
         prop_assert_eq!(merged.co_op, co_op | other_co_op);
 
-        // The reverse merge keeps the other observation's values: the first writer survives, not
-        // one fixed side of the merge.
         let mut reversed = second;
         reversed.merge(first);
         prop_assert_eq!(&reversed.city, &Some(other_city));
@@ -198,8 +196,6 @@ proptest! {
         second.professional_email = Some(other_address.clone());
         second.phone = Some("608-555-0199".to_string());
 
-        // Each side's address reaches the field its own domain names, and the first writer of a
-        // field keeps it: the later side can only fill the field the earlier one left empty.
         let address_slots = published_slots(&address);
         let other_slots = published_slots(&other_address);
         let want = merged_slots(&address_slots, &other_slots);
@@ -222,10 +218,6 @@ proptest! {
         prop_assert_eq!(reversed.phone.as_deref(), Some("608-555-0199"));
     }
 }
-
-// ---------------------------------------------------------------------------
-// Athlete cohort rule: observed grades drive identity_confidence
-// ---------------------------------------------------------------------------
 
 proptest! {
     #![proptest_config(law_config())]
@@ -250,7 +242,6 @@ proptest! {
         let expected = if agrees { Confidence::HIGH } else { Confidence::LOW };
         prop_assert_eq!(merged.identity_confidence, expected);
 
-        // A second copy of the same observation cannot move the confidence again.
         let settled = merged.clone();
         merged.merge(incoming);
         prop_assert_eq!(merged, settled);

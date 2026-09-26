@@ -97,8 +97,6 @@ where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<NavigationOutcome, BrowserError>>,
 {
-    // A budget the platform clock cannot represent is no budget: the profile is reported as
-    // challenged rather than pinned to a deadline that cannot exist.
     let Some(deadline) = clock.now_instant().checked_add(budget) else {
         return Ok(NavigationOutcome::Challenged);
     };
@@ -217,15 +215,12 @@ pub(crate) async fn inspect(
         Err(e) => return Err(e),
     };
     let current = Url::parse(&current_url).map_err(|_| BrowserError::Protocol)?;
-    // Foreign origin: abort immediately.
     if current.origin() != origin.origin() {
         return Err(BrowserError::Unavailable);
     }
-    // Same-origin but observation.url differs — pending URL transition.
     if observation.url != current_url {
         return Ok(NavigationOutcome::Pending);
     }
-    // Page still loading — return Pending so actor waits/retries.
     if !ready {
         return Ok(NavigationOutcome::Pending);
     }
@@ -237,7 +232,6 @@ fn classify_observation(
     gate: &ProfileGate,
     clock: &dyn Clock,
 ) -> Result<NavigationOutcome, BrowserError> {
-    // Check 429/cooldown FIRST — Retry-After header takes precedence.
     if observation.status.is_some() && observation.status.unwrap_or(0) == 429 {
         let cooldown = retry_after(clock, &observation.headers)?;
         if observation.challenged || observation.body_challenged {
@@ -252,13 +246,9 @@ fn classify_observation(
     if observation.failed {
         return Err(BrowserError::Transport);
     }
-    // body_complete must be true — response headers alone do not
-    // guarantee the body has been captured.
-    // Pending: observation is incomplete — missing body or headers.
     if !observation.body_complete {
         return Ok(NavigationOutcome::Pending);
     }
-    // Same-origin URL transition — body captured but status unknown.
     let Some(status) = observation.status else {
         return Ok(NavigationOutcome::Pending);
     };
@@ -278,7 +268,6 @@ fn classify_observation(
 }
 fn retry_after(clock: &dyn Clock, headers: &HeaderMap) -> Result<Duration, BrowserError> {
     let delay = retry_after_now(clock, headers).map_err(|_| BrowserError::Protocol)?;
-    // Absent or zero Retry-After — use conservative 60s.
     if delay.is_zero() {
         return Ok(Duration::from_secs(60));
     }

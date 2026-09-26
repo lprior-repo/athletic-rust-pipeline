@@ -99,10 +99,6 @@ fn pattern(len: usize) -> Vec<u8> {
     (0..len).map(|index| pattern_byte(index as u64)).collect()
 }
 
-// ---------------------------------------------------------------------------
-// Backup / restore round-trip
-// ---------------------------------------------------------------------------
-
 #[test]
 fn backup_and_restore_roundtrip() {
     let dir = tempfile::tempdir().unwrap();
@@ -134,7 +130,6 @@ fn backup_and_restore_roundtrip() {
     assert!(report.tables.contains_key("schools"));
     assert_eq!(report.tables.get("schools").copied(), Some(5));
 
-    // The published generation is what the manifest describes: every entry is there, byte for byte.
     let manifest = read_manifest(&backup_dir);
     assert_eq!(manifest.version, MANIFEST_VERSION);
     assert_eq!(manifest.tables.get("schools").copied(), Some(5));
@@ -152,27 +147,20 @@ fn backup_and_restore_roundtrip() {
         "the restore materialises exactly the generation the manifest lists"
     );
 
-    // Verify the restored store opens and has the same data.
     let restored_store = Store::open(&restore_dir).unwrap();
     let schools_back: Vec<CanonicalSchool> = restored_store
         .scan::<CanonicalSchool>(Table::Schools)
         .unwrap();
     assert_eq!(schools_back.len(), 5);
 
-    // Verify journal roundtrips.
     let journal_keys = restored_store.journal_keys("milesplit_rosters").unwrap();
     assert_eq!(journal_keys.len(), 2);
     assert!(journal_keys.contains("wi:school1"));
     assert!(journal_keys.contains("wi:school2"));
 
-    // Integrity should be ok.
     let integrity = restored_store.integrity().unwrap();
     assert!(integrity.ok);
 }
-
-// ---------------------------------------------------------------------------
-// Item 16: a backup is a cold copy, and says so
-// ---------------------------------------------------------------------------
 
 #[test]
 fn backup_refuses_a_store_that_is_open() {
@@ -196,7 +184,6 @@ fn backup_refuses_a_store_that_is_open() {
     );
     assert!(!to.exists(), "a refused backup publishes nothing");
 
-    // Closing the store is what makes the same call succeed.
     drop(store);
     let report = Store::backup(&root, &to).unwrap();
     assert_eq!(report.tables.get("schools").copied(), Some(1));
@@ -233,10 +220,6 @@ fn backup_refuses_a_destination_inside_the_store_it_is_copying() {
     );
     assert!(!to.exists());
 }
-
-// ---------------------------------------------------------------------------
-// Item 22: the traversal copies regular files and directories, and refuses the rest
-// ---------------------------------------------------------------------------
 
 #[cfg(unix)]
 #[test]
@@ -279,10 +262,6 @@ fn backup_refuses_a_socket_in_the_store_tree() {
     assert!(!to.exists());
 }
 
-// ---------------------------------------------------------------------------
-// Item 18: generations are staged and swapped, never edited in place
-// ---------------------------------------------------------------------------
-
 #[test]
 fn a_failed_backup_leaves_the_previous_generation_untouched() {
     let dir = tempfile::tempdir().unwrap();
@@ -293,18 +272,12 @@ fn a_failed_backup_leaves_the_previous_generation_untouched() {
     let published = tree_image(&to);
     assert!(published.contains_key("backup.json"));
 
-    // The store moves on, so a second generation's bytes differ from the published one: a run that
-    // wrote into `to` would leave new files beside the old manifest, and `published` catches exactly
-    // that. Without this the two implementations copy byte-identical files and the assertion below
-    // could not tell them apart.
     {
         let store = Store::open(&root).unwrap();
         store
             .append_many(Table::Schools, &[school("Kept Three")])
             .unwrap();
     }
-    // The failure is planted in the last root the traversal reaches (`out`), so a run that wrote
-    // straight into `to` has already overwritten `fjall` and every root before it when it dies.
     let out = root.join("out");
     std::fs::create_dir_all(&out).unwrap();
     let link = out.join("link-to-elsewhere");
@@ -323,7 +296,6 @@ fn a_failed_backup_leaves_the_previous_generation_untouched() {
         staging_leftovers(dir.path())
     );
 
-    // Removing what broke the run leaves a backup that restores the original rows.
     std::fs::remove_file(&link).unwrap();
     let restore_dir = dir.path().join("restored");
     Store::restore(&to, &restore_dir).unwrap();
@@ -356,7 +328,6 @@ fn a_backup_into_an_existing_generation_replaces_it_whole() {
     let report = Store::backup(&root, &to).unwrap();
     assert_eq!(report.tables.get("schools").copied(), Some(4));
 
-    // The second generation is the one on disk: its manifest describes its own files and rows.
     let manifest = read_manifest(&to);
     assert_eq!(manifest.tables.get("schools").copied(), Some(4));
     for entry in &manifest.files {
@@ -374,10 +345,6 @@ fn a_backup_into_an_existing_generation_replaces_it_whole() {
     assert_eq!(restored.tables.get("schools").copied(), Some(4));
 }
 
-// ---------------------------------------------------------------------------
-// Item 17: one streaming pass, constant memory
-// ---------------------------------------------------------------------------
-
 /// A reader that serves a payload and fails the copy if it is ever asked for more than one buffer.
 struct OneBufferAtATime {
     remaining: u64,
@@ -387,8 +354,6 @@ struct OneBufferAtATime {
 impl std::io::Read for OneBufferAtATime {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         if buf.len() > COPY_BUFFER_BYTES {
-            // Reported rather than asserted: the reader is a fixture inside an `io::Read`, and a
-            // copy that asks for more than one buffer has to fail the copy it is measuring.
             return Err(std::io::Error::other(format!(
                 "the copier asked for {} bytes at once: more than the {} byte buffer it is supposed to hold",
                 buf.len(),
@@ -429,7 +394,6 @@ fn backup_digests_a_file_larger_than_the_copy_buffer() {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path().join("store");
     store_with(&root, &["Buffered"]);
-    // Well past any single buffer: a copy that held the file would hold this.
     let payload = pattern(COPY_BUFFER_BYTES * 9 + 1_234);
     let big = root.join("http").join("response.bin");
     std::fs::write(&big, &payload).unwrap();
@@ -453,10 +417,6 @@ fn backup_digests_a_file_larger_than_the_copy_buffer() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// Item 19: the manifest version is read or refused, never assumed
-// ---------------------------------------------------------------------------
-
 #[test]
 fn restore_refuses_a_manifest_version_it_does_not_read() {
     let dir = tempfile::tempdir().unwrap();
@@ -478,10 +438,6 @@ fn restore_refuses_a_manifest_version_it_does_not_read() {
     assert!(!restore_dir.exists());
     assert!(staging_leftovers(dir.path()).is_empty());
 }
-
-// ---------------------------------------------------------------------------
-// Item 20 and 21: a restore reconciles, and a failed restore leaves nothing behind
-// ---------------------------------------------------------------------------
 
 #[test]
 fn restore_refuses_rows_that_disagree_with_the_manifest_and_a_retry_still_works() {
@@ -506,7 +462,6 @@ fn restore_refuses_rows_that_disagree_with_the_manifest_and_a_retry_still_works(
     );
     assert!(staging_leftovers(dir.path()).is_empty());
 
-    // The retry into the same destination succeeds once the manifest tells the truth again.
     edit_manifest(&to, |document| {
         document["tables"]["schools"] = serde_json::Value::from(3);
     });
@@ -522,10 +477,6 @@ fn restore_refuses_rows_that_disagree_with_the_manifest_and_a_retry_still_works(
     );
 }
 
-// ---------------------------------------------------------------------------
-// Corruption detection
-// ---------------------------------------------------------------------------
-
 #[test]
 fn corrupt_file_fails_restore_leaving_destination_empty() {
     let dir = tempfile::tempdir().unwrap();
@@ -534,7 +485,6 @@ fn corrupt_file_fails_restore_leaving_destination_empty() {
     store_with(&root, &["School 0", "School 1", "School 2"]);
     Store::backup(&root, &backup_path).unwrap();
 
-    // Corrupt one file in the backup (flip a byte in the first data file we find).
     let manifest = read_manifest(&backup_path);
     let target = manifest
         .files
@@ -546,12 +496,10 @@ fn corrupt_file_fails_restore_leaving_destination_empty() {
     let original = std::fs::read(&target_path).unwrap();
     assert!(!original.is_empty());
 
-    // Corrupt the first byte.
     let mut corrupted = original.clone();
     corrupted[0] ^= 0xFF;
     std::fs::write(&target_path, &corrupted).unwrap();
 
-    // Restore should fail, naming the corrupted file.
     let restore_dir = tempfile::tempdir().unwrap();
     let restore_path = restore_dir.path().to_path_buf();
     let result = Store::restore(&backup_path, &restore_path);
@@ -563,7 +511,6 @@ fn corrupt_file_fails_restore_leaving_destination_empty() {
         "error should mention the corrupted file: {err}"
     );
 
-    // Destination must stay empty.
     let entries: Vec<_> = std::fs::read_dir(&restore_path)
         .unwrap()
         .filter_map(|e| e.ok())
@@ -575,17 +522,12 @@ fn corrupt_file_fails_restore_leaving_destination_empty() {
     assert!(staging_leftovers(dir.path()).is_empty());
 }
 
-// ---------------------------------------------------------------------------
-// Destination refusals
-// ---------------------------------------------------------------------------
-
 #[test]
 fn backup_refuses_non_empty_non_backup_destination() {
     let dir = tempfile::tempdir().unwrap();
     let root = dir.path().join("store");
     store_with(&root, &["Refused"]);
 
-    // Create a non-empty directory that is not a backup.
     let bad_dest = dir.path().join("not_a_backup");
     std::fs::create_dir_all(&bad_dest).unwrap();
     std::fs::write(bad_dest.join("random_file.txt"), "hello").unwrap();
@@ -607,7 +549,6 @@ fn restore_refuses_non_empty_destination() {
     store_with(&root, &["Occupied"]);
     Store::backup(&root, &backup_dir).unwrap();
 
-    // Create a non-empty destination.
     let bad_dest = dir.path().join("restore_here");
     std::fs::create_dir_all(&bad_dest).unwrap();
     std::fs::write(bad_dest.join("existing.txt"), "data").unwrap();
@@ -621,10 +562,6 @@ fn restore_refuses_non_empty_destination() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// Manifest contents
-// ---------------------------------------------------------------------------
-
 #[test]
 fn backup_includes_manifest_and_durable_material() {
     let dir = tempfile::tempdir().unwrap();
@@ -634,11 +571,9 @@ fn backup_includes_manifest_and_durable_material() {
 
     Store::backup(&root, &backup_dir).unwrap();
 
-    // Manifest must exist.
     let manifest_path = backup_dir.join("backup.json");
     assert!(manifest_path.exists());
 
-    // Manifest must be valid JSON with expected structure.
     let manifest = read_manifest(&backup_dir);
     assert_eq!(manifest.version, MANIFEST_VERSION);
     assert!(!manifest.written_at.is_empty());
@@ -650,7 +585,6 @@ fn backup_includes_manifest_and_durable_material() {
         "the manifest records a count for every table"
     );
 
-    // Every file in the manifest must exist.
     for entry in &manifest.files {
         assert!(
             backup_dir.join(&entry.path).exists(),
@@ -659,7 +593,6 @@ fn backup_includes_manifest_and_durable_material() {
         );
     }
 
-    // The database is in there: a backup that skipped fjall/ would be no backup at all.
     assert!(manifest
         .files
         .iter()
@@ -678,16 +611,11 @@ fn restore_reopens_store_and_verifies_data() {
     let restore_dir = dir.path().join("restored");
     Store::restore(&backup_dir, &restore_dir).unwrap();
 
-    // Open restored store and verify data.
     let restored = Store::open(&restore_dir).unwrap();
     let schools_back: Vec<CanonicalSchool> =
         restored.scan::<CanonicalSchool>(Table::Schools).unwrap();
     assert_eq!(schools_back.len(), 3);
 }
-
-// ---------------------------------------------------------------------------
-// Integrity checks
-// ---------------------------------------------------------------------------
 
 #[test]
 fn integrity_reports_ok_for_fresh_store() {
@@ -701,9 +629,6 @@ fn integrity_reports_ok_for_fresh_store() {
 
 #[test]
 fn integrity_reports_mismatch_when_entity_log_has_extra_rows() {
-    // A store appends observations and keeps the count its writer commits with them, so a reopened
-    // store reports the same figure it wrote: the ledger is not the sequence pointer, which a failed
-    // commit leaves ahead of the rows the store holds.
     let dir = tempfile::tempdir().unwrap();
     {
         let store = Store::open(dir.path()).unwrap();
@@ -712,12 +637,10 @@ fn integrity_reports_mismatch_when_entity_log_has_extra_rows() {
             .unwrap();
     }
 
-    // Open again and check integrity.
     let store = Store::open(dir.path()).unwrap();
     let report = store.integrity().unwrap();
     assert!(report.ok);
 
-    // Find the schools table.
     let schools_row = report
         .tables
         .iter()
@@ -732,7 +655,6 @@ fn integrity_reports_unreadable_journal() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
 
-    // Journal a key (creates the journal directory and file).
     store
         .journal_done(
             "milesplit_rosters",
@@ -741,7 +663,6 @@ fn integrity_reports_unreadable_journal() {
         )
         .unwrap();
 
-    // Integrity should be ok.
     let report = store.integrity().unwrap();
     assert!(report.ok);
 }
