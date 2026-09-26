@@ -66,31 +66,3 @@ fn a_namespaced_provider_keeps_its_slug_in_the_row_id() {
     );
     assert_eq!(timer.id, "timer_meet:wayzata:meets:556");
 }
-
-#[test]
-fn a_merge_row_keeps_both_sides_of_the_decision_it_records() {
-    let merge = CanonicalMerge::new("sch_a", "sch_b", SourceEntityKind::Schools)
-        .with_retired_key("Madison West (WI)")
-        .with_surviving_key("West High (WI)")
-        .with_sources("milesplit_school:wi-madison-west", "wiaa:1234")
-        .with_rationale("School identity: one state, one normalized name")
-        .with_decided_on("2026-09-22");
-
-    assert_eq!(merge.id, "schools:sch_a");
-    assert_eq!(merge.entity, SourceEntityKind::Schools);
-    assert_eq!(merge.surviving_id, "sch_b");
-    assert_eq!(
-        merge.retired_key, "Madison West (WI)",
-        "both sides' material is kept: a bare id redirect cannot be reversed"
-    );
-    assert_eq!(merge.retired_sources, "milesplit_school:wi-madison-west");
-    assert_eq!(
-        merge.rationale,
-        "School identity: one state, one normalized name"
-    );
-    assert_eq!(
-        CanonicalMerge::new("sch_a", "sch_c", SourceEntityKind::Schools).id,
-        merge.id,
-        "one row per retired id: a re-derivation replaces the row for the id it retires"
-    );
-}

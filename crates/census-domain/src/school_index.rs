@@ -38,16 +38,6 @@ pub enum SchoolMatch {
     Partial,
 }
 
-impl SchoolMatch {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            SchoolMatch::Exact => "exact",
-            SchoolMatch::Abbreviation => "abbreviation",
-            SchoolMatch::Partial => "partial",
-        }
-    }
-}
-
 /// Timer abbreviations that never normalize onto the canonical spelling.
 ///
 /// Only *word* abbreviations belong here. Punctuation variants (`St.` vs `St`) and trailing periods

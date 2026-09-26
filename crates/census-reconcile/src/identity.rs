@@ -107,50 +107,6 @@ impl WorkflowIdentity {
         )
     }
 
-    /// `source-sweep:<source>:<state>:<season>:<revision>` — one source's sweep of one jurisdiction.
-    pub fn source_sweep(
-        source: &str,
-        jurisdiction: UsJurisdiction,
-        season: SchoolYear,
-        revision: Revision,
-    ) -> Self {
-        Self::join(
-            "source-sweep",
-            &[
-                source,
-                jurisdiction.code(),
-                &season.short(),
-                &revision.to_string(),
-            ],
-        )
-    }
-
-    /// `meet:<source>:<source_meet_id>:<revision>` — one meet's acquisition.
-    pub fn meet(source: &str, source_meet_id: &str, revision: Revision) -> Self {
-        Self::join("meet", &[source, source_meet_id, &revision.to_string()])
-    }
-
-    /// `athlete:<source>:<source_athlete_id>:<revision>` — one athlete's enrichment.
-    pub fn athlete(source: &str, source_athlete_id: &str, revision: Revision) -> Self {
-        Self::join(
-            "athlete",
-            &[source, source_athlete_id, &revision.to_string()],
-        )
-    }
-
-    /// `school:<source>:<source_school_id>:<revision>` — one school's enrichment.
-    pub fn school(source: &str, source_school_id: &str, revision: Revision) -> Self {
-        Self::join("school", &[source, source_school_id, &revision.to_string()])
-    }
-
-    /// `review:<evidence_digest>:<policy_revision>` — one identity review under one policy revision.
-    ///
-    /// Keyed by the evidence digest, not by a candidate pair: identical evidence packages reuse the
-    /// prior review, which is what keeps AI inference a scarce resource (§32).
-    pub fn review(evidence_digest: &str, policy_revision: Revision) -> Self {
-        Self::join("review", &[evidence_digest, &policy_revision.to_string()])
-    }
-
     /// The wire form: the string Restate receives as the object key or workflow id.
     pub fn as_str(&self) -> &str {
         &self.0
@@ -198,7 +154,7 @@ pub fn admitted_scope(jurisdictions: &[UsJurisdiction]) -> Vec<UsJurisdiction> {
 /// rather than dropped. Admission is what refuses such a set (`national::targets`,
 /// `cli::within_census_scope`), and until it is refused the set still earns an identity no admissible
 /// set shares — a digest that silently discarded Alaska would be the identity of a different run.
-pub fn scope_digest(jurisdictions: &[UsJurisdiction]) -> String {
+fn scope_digest(jurisdictions: &[UsJurisdiction]) -> String {
     let admitted = admitted_scope(jurisdictions);
     let mut ordered: Vec<UsJurisdiction> = UsJurisdiction::CENSUS_SCOPE
         .iter()

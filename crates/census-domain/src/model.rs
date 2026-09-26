@@ -15,7 +15,6 @@ use crate::jurisdiction::UsJurisdiction;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
 use std::borrow::Cow;
-use std::collections::BTreeMap;
 use std::fmt;
 use std::marker::PhantomData;
 
@@ -27,7 +26,7 @@ pub use collision::{id_collision, CANONICAL_ID_COLLISION_FAMILY};
 pub use natural_key::NaturalKey;
 
 pub use records::{
-    AccessBlockKind, CanonicalMerge, CaseEvidence, CollectionSnapshot, CoverageRow, CoverageScope,
+    AccessBlockKind, CaseEvidence, CollectionSnapshot, CoverageRow, CoverageScope,
     EvidenceFact, RetainedConflict, ReviewCase, ReviewState, SourceAccessCondition,
     SourceAthleteObservation, SourceEntityKind, SourceMeetRef, SourceObjectIdentity,
     SourceObservation, SourceSchoolObservation, ATHLETE_IDENTITY_FAMILY, COHORT_DECISION_FAMILIES,
@@ -68,7 +67,7 @@ pub use identifiers::{
     TeamId,
 };
 pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
-pub use normalization::{flip_last_first, normalize_name, Counters};
+pub use normalization::{flip_last_first, normalize_name};
 pub use provenance::{
     Confidence, Evidence, EvidenceMethod, SourceIdentity, SourceNamespace, SourceRef,
 };

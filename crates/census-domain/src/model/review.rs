@@ -111,19 +111,6 @@ impl ReviewVerdictKind {
             Self::InsufficientEvidence => "insufficient_evidence",
         }
     }
-
-    /// Parse the slug a model returned, in the spellings models drift between.
-    pub fn parse(value: &str) -> Option<Self> {
-        match value.trim().to_ascii_lowercase().as_str() {
-            "value_proposed" | "value proposed" | "valueproposed" | "proposed" => {
-                Some(Self::ValueProposed)
-            }
-            "insufficient_evidence" | "insufficient evidence" | "insufficientevidence" => {
-                Some(Self::InsufficientEvidence)
-            }
-            _ => None,
-        }
-    }
 }
 
 /// One verdict, with the model's own confidence and the reason it gave.

@@ -138,99 +138,16 @@ fn identity_is_a_pure_function_of_its_fields() {
 }
 
 #[test]
-fn source_sweep_identity_separates_state_and_source() {
-    let milesplit_wi = WorkflowIdentity::source_sweep(
-        "milesplit",
-        UsJurisdiction::Wisconsin,
-        season(),
-        Revision(1),
-    );
-    assert_eq!(milesplit_wi.as_str(), "source-sweep:milesplit:WI:2026-27:1");
-
-    let milesplit_dc = WorkflowIdentity::source_sweep(
-        "milesplit",
-        UsJurisdiction::DistrictOfColumbia,
-        season(),
-        Revision(1),
-    );
-    let athleticnet_wi = WorkflowIdentity::source_sweep(
-        "athleticnet",
-        UsJurisdiction::Wisconsin,
-        season(),
-        Revision(1),
-    );
-    assert_ne!(milesplit_wi, milesplit_dc);
-    assert_ne!(milesplit_wi, athleticnet_wi);
-}
-
-#[test]
-fn an_oversized_provider_id_is_digested_not_truncated() {
-    let long = "m".repeat(MAX_PART_BYTES.saturating_add(40));
-    let other = format!("{long}x");
-    let first = WorkflowIdentity::athlete("milesplit", &long, Revision(1));
-    let second = WorkflowIdentity::athlete("milesplit", &other, Revision(1));
-
-    assert!(first.as_str().len() <= MAX_IDENTITY_BYTES);
-    assert!(second.as_str().len() <= MAX_IDENTITY_BYTES);
-    assert_ne!(
-        first, second,
-        "two provider ids sharing a long prefix must not collapse onto one athlete"
-    );
-}
-
-#[test]
-fn a_separator_inside_a_field_cannot_forge_field_structure() {
-    let forged = WorkflowIdentity::meet("athleticnet", "a:b", Revision(1));
-    let plain = WorkflowIdentity::meet("athleticnet", "a", Revision(1));
-    let shifted = WorkflowIdentity::meet("athleticnet:a", "b", Revision(1));
-
-    assert_ne!(forged, plain);
-    assert_ne!(
-        forged, shifted,
-        "the source and the meet id must not swap roles"
-    );
-    assert_eq!(
-        forged.as_str().matches(':').count(),
-        3,
-        "a field carrying the separator must not add a fourth level"
-    );
-}
-
-#[test]
-fn an_empty_field_is_digested_rather_than_dropped() {
-    let missing = WorkflowIdentity::school("wiaa", "", Revision(1));
-    assert!(
-        missing.as_str().len() > "school:wiaa:".len(),
-        "an absent school id must still occupy its field"
-    );
-    assert_ne!(missing, WorkflowIdentity::school("wiaa", "-", Revision(1)));
-}
-
-#[test]
-fn review_identity_keys_on_evidence_and_policy() {
-    let digest = "9f2c4d";
-    let policy = Revision(2);
-    let review = WorkflowIdentity::review(digest, policy);
-    assert_eq!(review.as_str(), "review:9f2c4d:2");
-    assert_ne!(review, WorkflowIdentity::review("9f2c4e", policy));
-    assert_ne!(review, WorkflowIdentity::review(digest, Revision(3)));
-}
-
-#[test]
 fn every_jurisdiction_fits_the_identity_ceiling() {
     for jurisdiction in UsJurisdiction::ALL {
-        let sweep = WorkflowIdentity::source_sweep(
-            "coach-directories",
-            jurisdiction,
-            season(),
-            Revision(u32::MAX),
-        );
+        let identity =
+            WorkflowIdentity::jurisdiction(jurisdiction, season(), Revision(u32::MAX));
         assert!(
-            sweep.as_str().len() <= MAX_IDENTITY_BYTES,
+            identity.as_str().len() <= MAX_IDENTITY_BYTES,
             "{} exceeds the ceiling: {} bytes for {}",
             jurisdiction.code(),
-            sweep.as_str().len(),
-            sweep.as_str()
+            identity.as_str().len(),
+            identity.as_str()
         );
     }
 }

@@ -90,6 +90,3 @@ pub fn flip_last_first(raw: &str) -> String {
     }
     trimmed.to_string()
 }
-
-/// Convenience map for counters used by adapter reports.
-pub type Counters = BTreeMap<String, u64>;

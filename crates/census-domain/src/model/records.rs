@@ -10,14 +10,12 @@
 //! The rows are grouped by what they are evidence of, one module each: [`source`] holds the §31
 //! `source object -> canonical row` join and the enumerated meets, [`observation`] holds what a source
 //! published about a school or an athlete before any canonical decision,
-//! [`source_observation`] carries that pair as one row a store can key, [`merge`] holds the merges
-//! this program decided so one can be reversed, and [`measure`] holds coverage, snapshots and access
-//! conditions. The queues this module keeps itself are the two findings a pass acts on: the conflict
+//! [`source_observation`] carries that pair as one row a store can key, and [`measure`] holds
+//! coverage, snapshots and access conditions. The queues this module keeps itself are the two findings a pass acts on: the conflict
 //! the merge retained, and the review case the lane asks about.
 
 mod evidence;
 mod measure;
-mod merge;
 mod observation;
 mod review_record;
 mod source;
@@ -27,7 +25,6 @@ pub use evidence::{CaseEvidence, EvidenceFact, MEMBER_SET_LABEL};
 pub use measure::{
     AccessBlockKind, CollectionSnapshot, CoverageRow, CoverageScope, SourceAccessCondition,
 };
-pub use merge::CanonicalMerge;
 pub use observation::{SourceAthleteObservation, SourceSchoolObservation};
 pub use review_record::{
     RetainedConflict, ReviewCase, ReviewState, ATHLETE_IDENTITY_FAMILY, COHORT_DECISION_FAMILIES,
