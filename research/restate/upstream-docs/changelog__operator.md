@@ -1,0 +1,1549 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Kubernetes Operator changelog
+
+> Releases of the Kubernetes Operator.
+
+<Update label="2026-09-22" description="Kubernetes Operator v3.1.0">
+  ### Restate Operator v3.1.0 Release Notes
+
+  See the [v3.0.1 release notes](https://github.com/restatedev/restate-operator/blob/main/release-notes/v3.0.1.md) for changes prior to this release.
+
+  ### Highlights
+
+  * **`deletePolicy` for `RestateDeployment`.** Deleting a deployment now has a deadline, a way out, and a `.status.deletion` that says what the deletion is waiting for.
+  * **Suspend reconciliation per resource.** `restate.dev/reconcile: disabled` makes the operator leave a resource and its children alone — Flux's `suspend`, without scaling the operator to zero.
+  * **Credential canaries retry instead of looping or stalling.** The Pod Identity canary no longer deletes a Job out from under its own retry, and both canary Jobs now have a five-minute active deadline.
+  * **Rolled-back versions keep their drain delay** instead of being scaled to zero on the first reconcile.
+  * **ApplySet bookkeeping labels no longer propagate** to operator-owned children, so `kubectl apply --prune --applyset` cannot take a draining Service with it.
+
+  ### Table of Contents
+
+  * [Upgrade Notes](#upgrade-notes)
+  * [New Features](#new-features)
+  * [Improvements](#improvements)
+  * [Bug Fixes](#bug-fixes)
+
+  ### Upgrade Notes
+
+  * **Apply the new CRDs before rolling the operator image.** Two changes need them: the new `spec.restate.deletePolicy` / `spec.restate.drain` fields on `RestateDeployment`, and a status subresource on `RestateCloudEnvironment`. With the default `installCrds: true` the bundled chart handles this; if you manage CRDs yourself (`installCrds: false`), apply `crd/*.yaml` or upgrade the standalone `restate-operator-crds` chart first.
+  * **Metric label change.** `restate_operator_reconciliation_errors_total` now labels `RestateDeployment` failures with the error the reconciler actually raised (`DeletionDrainOverdue`, `DeploymentInUse`, `AdminCallFailed`, …) instead of collapsing them all into `FinalizerError`. Alerts or dashboards matching `error="FinalizerError"` for this controller need updating.
+  * **A blocked deletion reports differently after one hour.** A `drain` deletion that is still held raises `DeletionDrainOverdue` with `phase: Overdue` instead of `DeploymentInUse`. The Kubernetes event reason is unchanged (`FailedReconcile`); only its message changes.
+  * **Rollback followed by another rollout now takes `drainDelaySeconds` longer** to tear the intermediate version down. That delay is the fix, not a regression.
+
+  ### New Features
+
+  ### `deletePolicy` for RestateDeployment (#198)
+
+  Deleting a `RestateDeployment` is now governed by `spec.restate.deletePolicy`, whose terms are set by `spec.restate.drain`:
+
+  * `deletePolicy: drain` (default): the existing behaviour — wait for in-flight invocations to finish before deregistering. `drain.timeoutSeconds` (default `3600`) sets the deadline and `drain.onTimeout` decides what happens there:
+    * `hold` (default): keep waiting, and report the drain as overdue.
+    * `force`: deregister anyway, abandoning whatever is left.
+  * `deletePolicy: force`: deregister and tear down immediately, skipping the drain, `drainDelaySeconds` and the revision history limit. `drain` is ignored entirely.
+
+  Progress is reported on `.status.deletion`, which names the versions holding the deletion and their pinned/unpinned invocation counts, alongside the phase (`Draining`, `Overdue`, `Forcing`), the deadline, what happens at it, and a total. `kubectl get rsd -o wide` shows the phase and total. A force deletion that walked over unfinished invocations raises a `ForcedDeletion` warning event naming what it abandoned.
+
+  **Why this matters.** A deletion blocked by a scheduled invocation days out, or by a workflow that will never complete, previously had no deadline and no visible reason: the only signal was a warning event and the operator log, and the only way out was to find and cancel the invocations. There is now a bounded option, and a status field that answers "what is this waiting for".
+
+  **Impact.** Existing deployments keep the current behaviour — no `deletePolicy` means `drain`, which still waits indefinitely. `deletePolicy: force` skips the wait, not the deregistration: it still needs the Restate admin API to be reachable, so it will not unstick a deletion blocked because Restate is down. A paused `RestateDeployment` (`restate.dev/reconcile: disabled`) still deletes normally, and now drops the `Disabled` reconciliation state and its `Reconciling` condition when the deletion starts, rather than reporting itself suspended throughout the teardown.
+
+  **Migration.** Apply the updated CRDs (`helm upgrade` of `restate-operator-crds`, or `kubectl apply --server-side -f crd/restatedeployments.yaml`). No changes are required to existing `RestateDeployment` resources. To unstick a deletion that is already blocked, patch the terminating object:
+
+  ```bash theme={null}
+  kubectl patch rsd greeter --type=merge \
+    -p '{"spec":{"restate":{"deletePolicy":"force"}}}'
+  ```
+
+  See [`docs/delete-policy.md`](https://github.com/restatedev/restate-operator/blob/main/docs/delete-policy.md).
+
+  ### Suspend reconciliation by annotation (#197)
+
+  Annotating a `RestateCluster`, `RestateDeployment` or `RestateCloudEnvironment` with `restate.dev/reconcile: disabled` makes the operator leave that resource and everything it owns alone until the annotation is removed — Flux's `suspend`, per resource, for hand-editing generated objects during an incident without scaling the whole operator to zero.
+
+  Only the exact value `disabled` suspends, so a typo cannot silently stop reconciliation. `.status.reconciliation` reports `Reconciling`, `Disabled` or `ResumingReconciliation` (annotation gone, not `Ready` again yet), and the rest of the status stays frozen as of the last real reconcile.
+
+  Deletion is not suspended — the annotation stops the operator managing a resource, not tearing it down, so a suspended resource still deletes and cleans up normally.
+
+  `RestateCloudEnvironment` gained a status subresource for this, so if you manage CRDs yourself (`installCrds: false`), apply the new CRDs before rolling the operator image.
+
+  ### Improvements
+
+  ### CRDs
+
+  * `RestateCloudEnvironment` gained printer columns, so `kubectl get rce` shows its state without `-o yaml` (#133).
+
+  ### Bug Fixes
+
+  ### RestateCluster
+
+  #### Stalled credential canaries are retried (#194, #200)
+
+  The Pod Identity pod shortcut now only accelerates success: missing credentials on an individual pod no longer delete the Job before its retry can run. Terminally failed Jobs are deleted with their pods — deletion cascades rather than orphaning them — and retried on the next reconcile. Pod checks are scoped to the current Job, so a stale pod from an earlier attempt can no longer decide the verdict.
+
+  Both Pod Identity and Workload Identity canary Jobs now carry a five-minute active deadline, so a Job that makes no progress (a pod stuck in `Pending`, say) fails and is retried instead of waiting forever. Successful Jobs are retained.
+
+  **Why this matters.** Credential propagation and scheduling delays no longer cause premature Job deletion or leave a canary waiting indefinitely. Before this fix, one orphaned canary pod could put the check into a loop that created pods at roughly three per second for as long as it lasted.
+
+  **Impact.** New and existing clusters receive the deadline on reconciliation. Previously orphaned canary pods are not removed by this fix and may still need separate cleanup:
+
+  ```bash theme={null}
+  kubectl -n <namespace> delete pods -l job-name=restate-pia-canary \
+    --field-selector=status.phase!=Running
+  ```
+
+  ### RestateDeployment
+
+  #### Rolled-back versions keep their drain delay (#174, #179)
+
+  A version that is rolled back to — or reintroduced with an identical spec — no longer carries a stale removal deadline into its next rollout.
+
+  When a version is superseded, the operator stamps `restate.dev/remove-version-at` on its ReplicaSet (Knative mode: its Configuration) to schedule teardown after `spec.restate.drainDelaySeconds`. Because ReplicaSets and Services are named by a content hash of the pod template, and Configurations by tag, rolling back re-adopts that exact object rather than creating a new one — and the stamp came with it. Nothing removed it: the annotation has its own field manager, and the cleanup pass skips whichever version is currently latest. The next time that version was superseded, its deadline had already passed, so it was scaled to zero on the first reconcile instead of being given its drain window.
+
+  The operator now clears the annotation when it re-adopts a version as the latest one, in both deployment modes. Clearing it also works now: in ReplicaSet mode the old clear left the annotation behind with an empty value instead of removing it, so a version that became active again while draining kept an empty deadline for good and was re-patched on every reconcile.
+
+  **Why this matters.** The drain delay exists so that invocations already pinned to a version can finish on it. A version that skipped the delay was scaled to zero while that work was still in flight, which surfaces as invocations retrying against a version with no pods behind it until they are re-pinned or time out. The window needed a rollback (or a re-applied identical spec) followed by another rollout — the ordinary shape of "revert, fix forward".
+
+  **Impact.** No configuration change. A version currently holding a stale or empty deadline has it cleared the next time it is reconciled as the latest version.
+
+  #### ApplySet bookkeeping labels are no longer propagated (#170, #171)
+
+  `RestateDeployment` no longer copies labels in the `applyset.kubernetes.io/` namespace onto its operator-owned Services, Knative Configurations, or Knative Routes. Other user labels continue to propagate.
+
+  **Why this matters.** kubectl uses `applyset.kubernetes.io/part-of` to decide which resources belong to an ApplySet. Copying that label made operator-owned child resources look like direct members of the ApplySet that contained the `RestateDeployment`, so a later `kubectl apply --prune --applyset=...` could delete a versioned Service before Restate had drained the corresponding deployment.
+
+  **Impact.** No manifest changes. The operator removes the bookkeeping labels from children on reconciliation, and kubectl continues to manage and prune the `RestateDeployment` itself.
+
+  #### No panic on the Knative reconcile path (#174, #181)
+
+  `RegistrationAction::AlreadyLatest` now carries the deployment id it was decided from, so the Knative reconciler reads it out of the verdict instead of unwrapping the `Option` it had just passed in. The invariant held — the planner reaches `AlreadyLatest` only after matching a recorded id against Restate's usage map — so the `.expect()` was not reachable in practice, but it sat on the most frequently taken branch of the reconciler, where the cost of being wrong is the controller task unwinding rather than an error condition. Moving the id into the variant makes the bad state unrepresentable.
+
+  **Impact.** None: no behaviour change, no CRD change, and no new status field or annotation.
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v3.1.0)
+</Update>
+
+<Update label="2026-08-14" description="Kubernetes Operator v3.0.1">
+  ### Restate Operator v3.0.1 Release Notes
+
+  See the [v3.0.0 release notes](https://github.com/restatedev/restate-operator/blob/main/release-notes/v3.0.0.md) for changes prior to this release.
+
+  ### Reduced RestateDeployment introspection query load
+
+  The RestateDeployment controller no longer issues a Restate introspection query (`POST /query` over `sys_invocation_status`) on every reconcile, and no longer reconciles on every HorizontalPodAutoscaler status update.
+
+  * **Owned HPAs are watched for spec changes only.** The Kubernetes HPA controller re-writes an HPA's status on a \~15s timer; with per-version autoscaling that is one such write per version (including every draining one), and each previously woke the owning RestateDeployment. The watch now filters to generation (spec) changes, so those heartbeats no longer trigger reconciles. The operator's HPA cache still sees every update.
+  * **The deployment-usage query runs only when needed.** The query answers whether this version is the one Restate routes new invocations to (registration) and whether older versions have drained (cleanup). In the common case — this version already latest, with no older version to drain — the operator reads "already latest" from the cheaper `GET /services` and skips the invocation-status query entirely. Registration, promotion, rollback, foreign-takeover, and drain paths run the full query exactly as before.
+
+  ### Why this matters
+
+  With per-version autoscaling enabled, a deployment carrying several draining versions produced a steady stream of reconciles — roughly one HPA heartbeat every 15 seconds per version — each issuing an invocation-status query. Across many deployments sharing one Restate admin endpoint this multiplied into sustained query load that could overwhelm Restate's query engine, surfacing as `500 Internal Server Error` ("No such scanner") responses from `/query`.
+
+  ### Impact
+
+  * No configuration change, and no change to registration, rollback, or drain behaviour.
+  * Restate admin/query load from the operator drops sharply in the common case: introspection queries are issued during rollouts and drains, not continuously.
+  * HorizontalPodAutoscaler status changes no longer trigger RestateDeployment reconciles; spec changes and (re)creation still do.
+
+  Related: #185.
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v3.0.1)
+</Update>
+
+<Update label="2026-08-13" description="Kubernetes Operator v3.0.0">
+  ### Restate Operator v3.0.0 Release Notes
+
+  See the [v2.8.1 release notes](https://github.com/restatedev/restate-operator/blob/main/release-notes/v2.8.1.md) for changes prior to this release.
+
+  This is a major release: upgrading an existing install requires a **one-time CRD ownership hand-off** (see [Breaking Changes](#breaking-changes)), and several deployment-lifecycle fixes change behavior on the first reconcile after upgrade (see [Upgrade Notes](#upgrade-notes)).
+
+  ### Highlights
+
+  * **CRDs now upgrade with the chart.** The three CRDs ship as a templated, standalone `restate-operator-crds` chart, so `helm upgrade` applies schema changes instead of silently skipping them. The first upgrade from ≤ 2.8.1 needs a one-time ownership hand-off.
+  * **The operator waits for its CRDs on startup** instead of exiting/crashlooping, and surfaces the wait via `/ready`, a metric, and a Kubernetes event.
+  * **`RestateDeployment` deletion no longer hangs forever** on its own latest version.
+  * **Rolling back now moves Restate's routing**, and `Ready=True` is stricter — inconsistent deployments are promoted on the next reconcile after upgrade.
+  * **GCP workload-identity** `IAMPolicyMember` server-side-apply wedge is fixed.
+
+  ### Table of Contents
+
+  * [Upgrade Notes](#upgrade-notes)
+  * [Breaking Changes](#breaking-changes)
+  * [Improvements](#improvements)
+  * [Bug Fixes](#bug-fixes)
+
+  ### Upgrade Notes
+
+  Read these before upgrading — each is expanded below.
+
+  * **CRDs: one-time ownership hand-off.** The first upgrade to templated CRDs fails with `invalid ownership metadata` until you hand ownership to Helm. See [Breaking Changes](#breaking-changes). Nothing is deleted if you skip it — the upgrade just aborts.
+  * **Chart and image move in lockstep.** The readiness probe now targets `/ready`, which older operator images do not serve. If you pin the chart `version` to an image older than 3.0.0, pin the chart to a matching older version too — otherwise the `/ready` `404` leaves the pod `NotReady` forever.
+  * **Inconsistent `RestateDeployment`s are promoted on the next reconcile.** If a deployment's desired revision is not the one Restate currently routes to, the operator will move routing to it — a routing change that happens without being asked for. Upgrade when that is acceptable. Endpoints registered *outside* their `RestateDeployment` now stall at `Ready=False` with reason `ForeignDeployment` instead of being silently tolerated.
+  * **Deletion now waits out the drain window.** Deleting a `RestateDeployment` now takes at least `spec.restate.drainDelaySeconds` (default 300s) and still blocks on unfinished invocations (including scheduled ones, which have no upper bound).
+
+  ### Breaking Changes
+
+  ### CRD installation now upgrades with the chart — action required on first upgrade
+
+  Through 2.8.1 the CRDs shipped through Helm's native `crds/` directory, which is install-only: once the CRDs were in the cluster, `helm upgrade` never touched them again. That bit a customer — after an operator upgrade, new schema fields were silently pruned at admission until the CRDs were reapplied by hand.
+
+  The CRDs now live in their own `restate-operator-crds` chart, rendered as ordinary templates, so upgrading the chart applies the new schema. They carry `helm.sh/resource-policy: keep`, so `helm uninstall` will not take the CRDs (or the custom resources under them) down with it. `restate-operator-helm` bundles this chart behind `installCrds` (default `true`), so a standalone operator install is unchanged. The CRD chart is also published on its own:
+
+  ```bash theme={null}
+  helm upgrade --install restate-operator-crds \
+    oci://ghcr.io/restatedev/restate-operator-crds --version 3.0.0
+  ```
+
+  **One-time ownership hand-off.** CRDs installed through the old `crds/` directory (2.8.1 or earlier) carry no Helm ownership metadata, so the first upgrade to the templated CRDs fails with `invalid ownership metadata` until ownership is handed over. Pick one:
+
+  * **Helm ≥ 3.17** — add `--take-ownership` to the upgrade. Where you pass it depends on how you run the CRDs:
+    * **Bundled (default, `installCrds=true`):** `helm upgrade restate-operator … --take-ownership`
+    * **Standalone CRD chart (`installCrds=false`):** `helm upgrade restate-operator-crds … --take-ownership`
+  * **Older Helm** — set the `app.kubernetes.io/managed-by=Helm` label plus the `meta.helm.sh/release-name` and `meta.helm.sh/release-namespace` annotations on the three CRDs, for the release that owns them.
+  * **ArgoCD / Flux** — no action needed; they adopt the resources on sync and never hit Helm's ownership gate.
+
+  Either way **no custom resources are deleted** — the failure aborts the upgrade, it does not cascade.
+
+  **If you don't want Helm upgrading your CRDs.** CRDs are cluster-scoped, so on a shared or multi-tenant cluster a `helm upgrade` now mutates a cluster-wide object that can affect other teams. To gate CRD changes behind manual review — or if you already manage CRDs via GitOps — set `installCrds=false` on the operator and own the CRD lifecycle yourself: apply `crd/*.yaml` directly, or install the standalone `restate-operator-crds` chart on your own cadence. This is the recommended path for ArgoCD/Flux.
+
+  ### Improvements
+
+  ### Startup: wait for CRDs instead of exiting (#166, #169)
+
+  If a required CRD (`RestateCluster`, `RestateDeployment`, `RestateCloudEnvironment`) is not yet installed when the operator starts, it no longer logs an error and exits. It now polls the apiserver's discovery endpoint and waits for each CRD to appear, then begins reconciling. This matches how most Kubernetes operators behave and removes the ordering/restart dance in GitOps flows where the operator and its CRDs are applied together.
+
+  Missing group/versions, `404`/`429`/`5xx` responses, and an unreachable apiserver are all treated as "not ready yet, keep waiting". Genuine configuration errors (`401`/`403`, bad kubeconfig) still log and exit. The `PodIdentityAssociation` check (when `aws-pod-identity-association-cluster` is set) still exits, since that is a configuration error rather than a race.
+
+  The wait is observable three ways:
+
+  * **Readiness endpoint.** `/ready` returns `200` only once every controller has its CRD and has started reconciling, otherwise `503` with the pending controllers listed:
+
+    ```json theme={null}
+    {"ready":false,"pendingControllers":["RestateCluster","RestateDeployment"]}
+    ```
+
+    `/health` keeps its always-`200` behavior and is now the liveness probe.
+  * **Metric.** `restate_operator_crd_missing&#123;crd="&lt;plural&gt;.&lt;group&gt;"&#125;` is `1` while waiting and `0` once available — alert with e.g. `restate_operator_crd_missing > 0 for 5m`.
+  * **Event.** A single `Warning`/`WaitingForCRD` event is recorded against the operator's own pod naming every CRD being waited on, closed out by a `Normal`/`CRDsAvailable` event. Nothing is emitted if the CRDs land within the first 10 seconds (the common case).
+
+  No new RBAC is required.
+
+  ### Helm Chart
+
+  * The CRDs are delivered by the templated, standalone `restate-operator-crds` chart — see [Breaking Changes](#breaking-changes).
+  * The readiness probe now targets `/ready`; a liveness probe targeting `/health` was added. **See the [chart/image lockstep note](#upgrade-notes).**
+  * The Deployment passes `OPERATOR_POD_NAME` and `OPERATOR_POD_UID` via the downward API so operator-level events attach to the right pod. If you deploy the operator without the chart, set both (or neither — without them the operator still logs and reports the metric, but emits no events).
+  * The operator `Service` sets `publishNotReadyAddresses: true`, so a `NotReady` operator — exactly when `restate_operator_crd_missing` needs scraping — stays in the `ServiceMonitor`'s targets.
+
+  ### Examples & Docs
+
+  * Example manifests, Pkl templates, and docs now reference Restate server 1.7 (#151). No forced default: the operator does not hardcode a server image, so existing clusters keep whatever version their manifests pin.
+
+  ### Bug Fixes
+
+  ### RestateDeployment
+
+  **Deletion no longer hangs forever (#172).** Cleanup previously conflated "a service still points at this deployment" with "it has unfinished invocations", so during a deletion the latest version stayed "active" forever, the finalizer never completed, and `kubectl delete restatedeployment` never returned (namespace deletion inherited the hang). The operator now tracks the two facts separately: being a service's current endpoint holds a version through a rollout but is ignored during a deletion; only unfinished invocations can hold a deletion, and they drain on their own.
+
+  * Deletion now takes at least `spec.restate.drainDelaySeconds` (default 300s), and still blocks on unfinished invocations — scheduled invocations days out have no upper bound. A blocked deletion now backs off (30s → 5m) and the `DeploymentInUse` event names each version and its pinned/unpinned invocation counts.
+  * No migration needed: a currently-stuck deletion proceeds on the next reconcile after upgrade (no manual finalizer edits). To see what is holding a deletion:
+
+    ```bash theme={null}
+    kubectl describe restatedeployment <name> -n <namespace>
+    ```
+
+  **Rolling back now moves Restate's routing (#174).** Because ReplicaSets/Services are named by a content hash, `v1 → v2 → v1` re-adopts the original Restate deployment id, so restoring the Kubernetes revision was never enough on its own — Restate also has to be told the restored deployment is latest again. The operator now decides on whether Restate routes new invocations to the recorded deployment, re-registers with overwrite when it does not (preserving the deployment id and pinned invocations), verifies routing via `GET /services` before reporting `Ready`, and emits a `Promoted` event.
+
+  * `Ready=True` is stricter: it now means Restate routes new invocations to the desired revision, not merely that the pods are up. See the [routing-promotion upgrade note](#upgrade-notes) for the on-upgrade impact (unrequested promotions, `ForeignDeployment` stalls, and that a promoted deployment's registration timestamp is reset in Restate).
+  * To check for the inconsistent state this fixes:
+
+    ```bash theme={null}
+    kubectl get restatedeployment <name> -n <namespace> -o jsonpath='{.status.deploymentId}'
+    curl -s "$RESTATE_ADMIN/services/<ServiceName>" | jq -r .deployment_id
+    ```
+
+  ### RestateCluster
+
+  **Request-identity config emitted under the nested `worker.invoker` key (#158).** With request signing enabled (`spec.security.requestSigningPrivateKey`), the operator now emits `RESTATE_WORKER__INVOKER__REQUEST_IDENTITY_PRIVATE_KEY_PEM_FILE` (→ `worker.invoker.request-identity-private-key-pem-file`) instead of the flat alias restate-server deprecated. Only the env var name changes; signing behavior is unchanged. No action required — this removes the startup deprecation warning and keeps working once restate-server drops the alias.
+
+  **GCP workload-identity `IAMPolicyMember` SSA wedge fixed (#136).** The `restate-workload-identity` `IAMPolicyMember` CR is now applied with `spec.resourceRef.apiVersion` set, matching what Config Connector defaults at creation. Previously SSA stripped the defaulted value on every reconcile, Config Connector's `deny-immutable-field-updates` webhook rejected it, and the reconcile loop blocked unrelated `RestateCluster` updates. Affects BYOC installs on GKE / Config Connector; existing wedged installs unblock once the upgraded operator reconciles.
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v3.0.0)
+</Update>
+
+<Update label="2026-07-14" description="Kubernetes Operator v2.8.1">
+  ### Restate Operator v2.8.1 Release Notes
+
+  See the [v2.7.0 release notes](https://github.com/restatedev/restate-operator/blob/main/release-notes/v2.7.0.md) for changes prior to this release. (v2.8.0 was an unpublished, broken release and is superseded by v2.8.1.)
+
+  ### CRD installation
+
+  The chart's CRDs (`RestateCluster`, `RestateDeployment`, `RestateCloudEnvironment`) now ship via an optional `restate-operator-crds` subchart that places them in Helm's native `crds/` directory. Installation is gated by the `installCrds` value (default `true`).
+
+  * **Fresh installs** get all three CRDs by default.
+  * Set `installCrds: false` to manage the CRDs out-of-band (BYOC / GitOps):
+
+    ```yaml theme={null}
+    installCrds: false
+    ```
+
+  ### Upgrading
+
+  Upgrading from \<= 2.7 is uneventful. Existing CRDs are left untouched — there is no ownership adoption, no `invalid ownership metadata` error, and no `--take-ownership` step. `helm uninstall` never deletes the CRDs or your custom resources.
+
+  ```bash theme={null}
+  helm upgrade restate-operator restatedev/restate-operator --version 2.8.1
+  ```
+
+  ### Note on CRD schema updates
+
+  Native `crds/` are **install-only** under `helm upgrade` — this is Helm's deliberately conservative CRD lifecycle, and it means chart upgrades will not apply CRD schema changes to an existing install. To update CRD schemas, apply the new CRDs explicitly:
+
+  ```bash theme={null}
+  kubectl apply -f crd/restateclusters.yaml -f crd/restatedeployments.yaml -f crd/restatecloudenvironments.yaml
+  ```
+
+  or let a GitOps tool re-apply them on sync (e.g. ArgoCD). The CRDs are also published as GitHub release artifacts (`crd/restateclusters.yaml`, `crd/restatedeployments.yaml`, `crd/restatecloudenvironments.yaml`).
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.8.1)
+</Update>
+
+<Update label="2026-07-07" description="Kubernetes Operator v2.7.0">
+  ### Restate Operator v2.7.0 Release Notes
+
+  ### Highlights
+
+  * **Pod lifecycle, sidecars, and extra volumes on `RestateCluster`** — five new optional `spec.compute` fields (`lifecycle`, `sidecars`, `terminationGracePeriodSeconds`, `extraVolumes`, `extraVolumeMounts`) are passed through to the StatefulSet pod template, enabling graceful-shutdown hooks, companion containers, and mounting reusable content next to Restate. All fields are optional and defaults are unchanged.
+
+  ### New Features
+
+  ### Pod lifecycle, sidecars, termination grace period, and extra volumes
+
+  Five new optional fields on `RestateCluster` `spec.compute` are passed through to
+  the underlying StatefulSet pod template:
+
+  * `lifecycle` — container lifecycle hooks (`postStart` / `preStop`) for the Restate
+    container. Note: Kubernetes runs `postStart` concurrently with the container
+    entrypoint, so it is not a reliable "before Restate starts" hook; wrap the
+    entrypoint via `command`/`args` for strict pre-start ordering.
+  * `sidecars` — native sidecar containers. Each runs alongside the Restate container
+    (started before it, terminated after it); the operator forces `restartPolicy: Always`
+    so an entry behaves as a sidecar rather than a startup-blocking init container.
+    Requires Kubernetes 1.29+ (native sidecars GA in 1.33).
+  * `terminationGracePeriodSeconds` — overrides the pod termination grace period
+    (previously hardcoded to 60 seconds). A value of `0` terminates immediately
+    (SIGKILL, skipping any `preStop` hook).
+  * `extraVolumes` — additional pod volumes alongside the operator-managed ones.
+  * `extraVolumeMounts` — additional volume mounts for the Restate container; sidecars
+    carry their own mounts and share these pod-level `extraVolumes`.
+
+  These let operators wire in graceful-shutdown hooks, run companion containers (log
+  shippers, proxies, metrics exporters) next to Restate with correct start/stop
+  ordering, and tune the shutdown window for their workload.
+
+  Volume and mount collisions are validated up front: an `extraVolumes` name that
+  reuses an operator-managed volume (`storage`, `tmp`, `config`, the trusted-CA
+  volumes, or the request-signing volumes), or an `extraVolumeMounts` entry that
+  reuses a path the operator already mounts on the Restate container, is rejected
+  with a clear `InvalidRestateConfig` error rather than an opaque API-server failure.
+
+  **Impact on Users:**
+
+  * Existing deployments: no impact — all five fields are optional and omitting them
+    preserves today's behaviour (no lifecycle hooks, no sidecars, no extra volumes,
+    60s grace period).
+  * New deployments: opt in via `spec.compute`.
+
+  **Usage:**
+
+  ```yaml theme={null}
+  spec:
+    compute:
+      image: docker.restate.dev/restatedev/restate:latest
+      terminationGracePeriodSeconds: 120
+      extraVolumes:
+        - name: hooks
+          configMap:
+            name: node-state-control
+            defaultMode: 0755
+      extraVolumeMounts:
+        - name: hooks
+          mountPath: /node-state-control
+          readOnly: true
+      lifecycle:
+        preStop:
+          exec:
+            command: ["/bin/sh", "/node-state-control/pre-stop.sh"]
+      sidecars:
+        - name: log-shipper
+          image: log-shipper:latest
+          volumeMounts:
+            - name: hooks
+              mountPath: /node-state-control
+  ```
+
+  *Related: PR [#153](https://github.com/restatedev/restate-operator/pull/153)*
+
+  ***
+
+  ### Upgrading
+
+  This release adds new optional fields to the `RestateCluster` CRD. Apply the
+  updated CRDs (server-side) and upgrade the operator via Helm:
+
+  ```bash theme={null}
+  helm upgrade restate-operator restatedev/restate-operator --version 2.7.0
+  ```
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.7.0)
+</Update>
+
+<Update label="2026-06-12" description="Kubernetes Operator v2.6.1">
+  ### Restate Operator v2.6.1 Release Notes
+
+  ### Highlights
+
+  * **Fix: in-process Restate Cloud tunnels now accept BYOC regions** - `RestateCloudEnvironment.spec.region` may now contain multiple DNS labels, such as `inl4edhpbxasp9yuz1n0yvvkme.byoc`, when used with `RestateDeployment` in `tunnelMode: in-process`.
+
+  ### Bug Fixes
+
+  ### In-process tunnel mode rejected multi-label BYOC regions
+
+  The `tunnelMode: in-process` validation for `RestateCloudEnvironment` regions
+  only allowed a single lowercase DNS label (`[a-z0-9-]`). This rejected BYOC
+  Cloud environments whose regions are represented as multiple labels, for
+  example:
+
+  ```yaml theme={null}
+  spec:
+    region: inl4edhpbxasp9yuz1n0yvvkme.byoc
+  ```
+
+  Those regions are valid for the tunnel hostname
+  `tunnel.&lt;region&gt;.restate.cloud`, and the centralized tunnel path already
+  accepted them. The operator now allows dots in the region while still rejecting
+  invalid dotted forms with empty labels, such as `.us`, `us.`, and `us..eu`.
+
+  **Impact on Users:**
+
+  * BYOC Restate Cloud environments using `RestateDeployment` with
+    `tunnelMode: in-process` can now reconcile and register successfully.
+  * Standard single-label regions such as `us` and `eu` are unchanged.
+  * Malformed region values are still rejected during reconciliation with an
+    `InvalidRestateConfig` error.
+
+  **Migration Guidance:**
+  No configuration changes are required. Upgrade the operator if you use
+  in-process tunnels against BYOC Restate Cloud environments.
+
+  *Related: PR [#147](https://github.com/restatedev/restate-operator/pull/147)*
+
+  ***
+
+  ### Upgrading
+
+  No CRD changes in this release. Upgrade the operator via Helm:
+
+  ```bash theme={null}
+  helm upgrade restate-operator restatedev/restate-operator --version 2.6.1
+  ```
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.6.1)
+</Update>
+
+<Update label="2026-06-12" description="Kubernetes Operator v2.6.0">
+  ### Restate Operator v2.6.0 Release Notes
+
+  ### Highlights
+
+  * **Per-version autoscaling for draining `RestateDeployment` versions** — an opt-in `spec.autoscaling` block lets the operator run a HorizontalPodAutoscaler per non-latest version, so old versions shed compute as their invocations drain instead of holding full replicas for the entire (potentially multi-hour) drain window.
+  * **`tunnelMode: in-process` for Restate Cloud deployments** — pods hold their own outbound tunnel connections (e.g. via `@restatedev/restate-sdk-tunnel`), serving a Restate Cloud environment with zero inbound networking, while keeping the operator's per-revision registration and draining.
+  * **Fix: HPA metrics on a `RestateDeployment` are no longer polluted by draining versions** — the scale subresource's label selector is now scoped to the latest version's pods, fixing under-provisioning of a busy latest version during drains.
+  * **`tolerations` and `nodeSelector` in the Helm chart** — schedule the operator pod through chart values instead of forking the chart.
+
+  ### New Features
+
+  ### Per-version autoscaling for draining RestateDeployment versions
+
+  A new optional `spec.autoscaling` field on `RestateDeployment` (ReplicaSet mode)
+  lets the operator manage a `HorizontalPodAutoscaler` per **non-latest** version.
+  It is a pass-through HPA `.spec` (`minReplicas`, `maxReplicas`, `metrics`,
+  `behavior`); the operator injects `scaleTargetRef` per version and owns the HPA,
+  so it is garbage-collected with the `RestateDeployment`. A non-latest version
+  gets an HPA while Restate still reports it active, and the HPA is removed when it
+  goes inactive — before the operator scales the ReplicaSet to zero.
+
+  Previously every old version was held at its full `replicas` for the entire
+  drain window — which can last hours for long-running or stuck workflows —
+  multiplying compute cost across concurrently-draining versions, with no lever to
+  reduce it (an HPA on the `RestateDeployment` scale subresource only ever scales
+  the latest version). Now old versions shed compute as their load falls, while
+  remaining available for in-flight invocations.
+
+  **Impact on Users:**
+
+  * Existing deployments: no impact — the field is optional, and omitting it
+    preserves today's behaviour (draining versions stay at full `replicas`).
+  * Knative mode: unaffected (Knative's own autoscaler handles this); the field is
+    rejected in Knative mode.
+
+  **Usage:**
+
+  ```yaml theme={null}
+  spec:
+    autoscaling:
+      minReplicas: 1
+      maxReplicas: 10
+      metrics:
+        - type: Resource
+          resource:
+            name: cpu
+            target:
+              type: Utilization
+              averageUtilization: 70
+  ```
+
+  Notes:
+
+  * The **latest** version is not covered here — autoscale it with your own HPA
+    targeting the `RestateDeployment` scale subresource (now correct thanks to the
+    selector fix below).
+  * `minReplicas` is floored at 1 (there is no scale-to-zero in ReplicaSet mode).
+    Only `Resource`/`ContainerResource`/`Pods` metrics are per-version (scoped via
+    the target's pod selector); an `Object`/`External` metric in the shared
+    template is read globally, so every draining version would scale on the same
+    value.
+  * CPU/memory metrics require container resource `requests`; prefer CPU (memory
+    does not scale back down).
+  * **RBAC:** the bundled Helm chart now grants the operator
+    `get,list,watch,create,patch,delete` on `horizontalpodautoscalers` (the
+    `autoscaling` API group). **If you deploy the operator with your own RBAC**,
+    add this, or per-version HPAs will silently fail to be created.
+
+  *Related: Issue [#140](https://github.com/restatedev/restate-operator/issues/140), PR [#143](https://github.com/restatedev/restate-operator/pull/143)*
+
+  ### `tunnelMode: in-process` for Restate Cloud deployments
+
+  `RestateDeployment` gained `spec.restate.tunnelMode` (takes effect only with
+  `register.cloud`). With `tunnelMode: in-process`, the deployment's pods hold
+  their own outbound tunnel connections to Restate Cloud — for example with the
+  `@restatedev/restate-sdk-tunnel` npm package — instead of being reached through
+  the tunnel-client pods and each version's `Service`. Workloads in private
+  networks can therefore serve a Restate Cloud environment with **zero inbound
+  networking**, while keeping the operator's transparent per-revision registration
+  and draining.
+
+  For such deployments the operator injects `RESTATE_INPROC_TUNNEL_NAME` (the
+  versioned name of the revision), `RESTATE_INPROC_ENVIRONMENT_ID`,
+  `RESTATE_INPROC_CLOUD_REGION` and `RESTATE_INPROC_SIGNING_PUBLIC_KEY` into every
+  container and init container of the pod template (declaring one of these
+  yourself is a reconcile error), and registers each version under its tunnel URL
+  (`https://tunnel.&lt;region&gt;.restate.cloud:9080/&lt;env&gt;/&lt;versioned-name&gt;/http/in-process/9080/`)
+  instead of the Service URL. Credentials are never injected —
+  `RESTATE_INPROC_AUTH_TOKEN_FILE` is reserved for your own Secret mount. A change
+  to the referenced `RestateCloudEnvironment`'s environment id, region or signing
+  key mints a new version, exactly like a pod-template change (these values are
+  folded into the revision hash only when the mode is set, so existing deployments
+  keep their hashes). `tunnelMode: in-process` is rejected in Knative mode.
+
+  **Impact on Users:**
+
+  * Existing deployments: no impact. The field is optional, and hashes of
+    deployments that don't set it are unchanged, so no ReplicaSets roll on upgrade.
+
+  **Usage:**
+
+  ```yaml theme={null}
+  spec:
+    restate:
+      register:
+        cloud: my-cloud-environment
+      tunnelMode: in-process
+  ```
+
+  Run an in-process tunnel client in your pods and mount an API key Secret (point
+  `RESTATE_INPROC_AUTH_TOKEN_FILE` at it). To adopt the mode on an existing
+  cloud-registered deployment, add `tunnelMode: in-process` — this creates a new
+  version (new hash), registered through the tunnel while the old Service-routed
+  version drains as usual.
+
+  *Related: PR [#144](https://github.com/restatedev/restate-operator/pull/144)*
+
+  ### Tolerations and nodeSelector in the Helm chart
+
+  `tolerations` and `nodeSelector` are now declared in
+  `charts/restate-operator-helm/values.yaml`, so the operator pod can be scheduled
+  onto tainted or dedicated nodes through chart values instead of forking the
+  chart or layering a post-render patch. The `tolerations` template was already
+  wired; this exposes it via the values file and adds a matching `nodeSelector`
+  block.
+
+  **Impact on Users:** existing deployments — no impact (both fields are optional).
+
+  **Usage:**
+
+  ```yaml theme={null}
+  tolerations:
+    - key: "service"
+      operator: "Exists"
+      effect: "NoSchedule"
+  nodeSelector:
+    workload: controllers
+  ```
+
+  *Related: Issue [#127](https://github.com/restatedev/restate-operator/issues/127)*
+
+  ### Bug Fixes
+
+  ### RestateDeployment
+
+  * **Scale-subresource `labelSelector` scoped to the latest version**
+    ([#139](https://github.com/restatedev/restate-operator/issues/139)). The
+    `RestateDeployment` scale subresource's `.status.labelSelector` now appends the
+    latest `pod-template-hash`. Previously it was written verbatim from
+    `spec.selector` with no version filter, so an HPA targeting a
+    `RestateDeployment` averaged metrics across **every** ReplicaSet the deployment
+    had ever owned — the latest plus any old ones still draining pinned
+    invocations. Over the (potentially multi-hour) drain window this polluted the
+    averaged metric, under-provisioning — or even scaling down — the genuinely-busy
+    latest version. No action required; deployments without an HPA are unaffected.
+
+  ### Upgrading
+
+  Reapply the CRDs before using the new fields:
+
+  ```bash theme={null}
+  kubectl apply --server-side -f crd/restatedeployments.yaml
+  ```
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.6.0)
+</Update>
+
+<Update label="2026-04-17" description="Kubernetes Operator v2.5.1">
+  ### Restate Operator v2.5.1 Release Notes
+
+  ### Highlights
+
+  * **Fix: Knative deployments now work with Restate Cloud** — The Knative reconciler was passing raw in-cluster Route URLs to the Restate admin API, which Restate Cloud cannot reach. Service URLs are now routed through the cloud tunnel, matching the existing ReplicaSet behavior.
+
+  ### Bug Fixes
+
+  ### Knative service URLs not tunneled for Restate Cloud
+
+  When using RestateDeployment in Knative mode with a Restate Cloud endpoint
+  (`spec.restate.register.cloud`), the operator passed the in-cluster Knative
+  Route URL directly to `register_service_with_restate`. Restate Cloud cannot
+  reach in-cluster URLs, so registration failed and the operator looped
+  indefinitely.
+
+  The fix extracts a `maybe_tunnel_url()` method from `RestateAdminEndpoint` and
+  calls it in the Knative reconciler after resolving the Route URL, matching how
+  the ReplicaSet reconciler already handled this case.
+
+  **Impact on Users:**
+
+  * **Knative + Restate Cloud deployments**: This was broken; it now works.
+  * **Knative + non-Cloud deployments**: No change; `maybe_tunnel_url` is a no-op
+    when `cloud` is not set.
+  * **ReplicaSet deployments**: No change. The internal refactoring of
+    `service_url_for_deployment()` is equivalent to the previous behavior.
+
+  *Related: Issue [#120](https://github.com/restatedev/restate-operator/issues/120), PR [#122](https://github.com/restatedev/restate-operator/pull/122)*
+
+  ***
+
+  ### Upgrading
+
+  No CRD changes in this release. Upgrade the operator via Helm:
+
+  ```bash theme={null}
+  helm upgrade restate-operator restatedev/restate-operator --version 2.5.1
+  ```
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.5.1)
+</Update>
+
+<Update label="2026-04-17" description="Kubernetes Operator v2.5.0">
+  ### Restate Operator v2.5.0 Release Notes
+
+  ### Highlights
+
+  * **Custom pod annotations and labels** — RestateCluster now supports `spec.compute.annotations` and `spec.compute.labels`, enabling integrations that require pod-level metadata (GKE ComputeClass, Vault agent injection, Prometheus scraping, etc.).
+  * **Default canary image changed to `alpine:3.21`** — Fixes `trustedCaCerts` (introduced in v2.4.0), which required a CA bundle that the previous `busybox:uclibc` default did not ship.
+  * **Default tunnel client image bumped to `0.6.0`** — Picks up the latest restate-cloud-tunnel-client release for new RestateCloudEnvironment deployments.
+
+  ### New Features
+
+  ### Custom pod annotations and labels
+
+  Added `spec.compute.annotations` and `spec.compute.labels` to the RestateCluster
+  CRD. Both fields are propagated to the Restate StatefulSet pod template.
+
+  User-specified annotations and labels are merged with any the operator sets
+  internally (e.g. for Workload Identity, trusted CA certs). In case of conflict,
+  operator-managed values take precedence.
+
+  This unblocks integrations that rely on pod-level metadata, including GKE
+  ComputeClass scheduling (`cloud.google.com/compute-class`), Vault agent
+  injection, Datadog, Prometheus scraping, and custom scheduling constraints.
+
+  **Impact on Users:**
+
+  * Existing deployments: No impact, both fields are optional.
+  * New deployments: Can now set annotations and labels for integrations that
+    require them on the pod template.
+
+  **Usage:**
+
+  ```yaml theme={null}
+  spec:
+    compute:
+      annotations:
+        cloud.google.com/compute-class: "restate-workload"
+      labels:
+        team: "platform"
+  ```
+
+  *Related: Issue [#45](https://github.com/restatedev/restate-operator/issues/45), PR [#119](https://github.com/restatedev/restate-operator/pull/119)*
+
+  ***
+
+  ### Bug Fixes
+
+  ### Default canary image now ships a CA bundle
+
+  The default `canaryImage` has changed from `busybox:uclibc` to `alpine:3.21`.
+
+  The `trustedCaCerts` feature added in v2.4.0 uses an init container (the canary
+  image) to concatenate system CA certificates with custom trusted CAs. The init
+  container reads the system CA bundle from `/etc/ssl/certs/ca-certificates.crt`,
+  but `busybox:uclibc` does not ship a CA bundle at that path, causing the init
+  container to fail with:
+
+  ```
+  cat: can't open '/etc/ssl/certs/ca-certificates.crt': No such file or directory
+  ```
+
+  This made `trustedCaCerts` non-functional with the default canary image.
+
+  **Impact on Users:**
+
+  * **Existing deployments using `trustedCaCerts`**: Will work after upgrading. If
+    you previously worked around this by setting `canaryImage` to an image with a
+    CA bundle, you can remove that override.
+  * **Existing deployments not using `trustedCaCerts`**: No impact. The canary
+    image is also used for Pod Identity and Workload Identity canary jobs, which
+    do not depend on the CA bundle and will continue to work with `alpine:3.21`.
+  * **Custom `canaryImage` overrides**: If you use a custom canary image, ensure
+    it includes a CA bundle at `/etc/ssl/certs/ca-certificates.crt` if you plan to
+    use `trustedCaCerts`.
+
+  **Migration Guidance:**
+  No action required. The default will change automatically on upgrade.
+
+  If you override `canaryImage` in your Helm values and want to use
+  `trustedCaCerts`, ensure your image includes a CA certificate bundle:
+
+  ```yaml theme={null}
+  # Image must have /etc/ssl/certs/ca-certificates.crt and provide cat, grep, wget
+  canaryImage: my-registry.example.com/alpine:3.21
+  ```
+
+  *Related: PR [#116](https://github.com/restatedev/restate-operator/pull/116)*
+
+  ***
+
+  ### Improvements
+
+  ### Default tunnel client image bumped to 0.6.0
+
+  The default `tunnelClientDefaultImage` has been updated from
+  `ghcr.io/restatedev/restate-cloud-tunnel-client:0.5.0` to `0.6.0`. This applies
+  to new RestateCloudEnvironment deployments that don't explicitly override the
+  tunnel client image.
+
+  **Impact on Users:**
+
+  * Existing deployments pinning their own tunnel client image: no impact.
+  * Deployments relying on the operator default: will pick up `0.6.0` on the next
+    reconcile after upgrade.
+
+  Override via the `--tunnel-client-default-image` CLI flag or the
+  `OPERATOR_TUNNEL_CLIENT_DEFAULT_IMAGE` environment variable (settable through
+  the chart's generic `env` value) if you need to pin a specific version.
+
+  *Related: PR [#118](https://github.com/restatedev/restate-operator/pull/118)*
+
+  ***
+
+  ### Upgrading
+
+  **CRD Update Required**: Helm does not upgrade CRDs on `helm upgrade`. Before upgrading the operator, manually apply the updated CRDs:
+
+  ```bash theme={null}
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.5.0/restateclusters.yaml
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.5.0/restatedeployments.yaml
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.5.0/restatecloudenvironments.yaml
+  ```
+
+  Then upgrade the operator via Helm:
+
+  ```bash theme={null}
+  helm upgrade restate-operator restatedev/restate-operator --version 2.5.0
+  ```
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.5.0)
+</Update>
+
+<Update label="2026-03-30" description="Kubernetes Operator v2.4.0">
+  ### Restate Operator v2.4.0 Release Notes
+
+  ### Highlights
+
+  * **Trusted CA certificates** - RestateCluster now supports custom trusted CA certificates via `spec.security.trustedCaCerts`, removing the need for custom Restate images when using internal CAs.
+  * **Configurable canary image** - The canary job image is now configurable via Helm, supporting air-gapped and restricted registry environments.
+  * **IPv6 support** - The operator now binds to a dual-stack address, fixing readiness probe failures on IPv6-only clusters.
+  * **Faster drain cleanup** - Old deployment versions are now polled every 10 seconds during drain, instead of waiting up to 5 minutes.
+
+  ### New Features
+
+  ### Trusted CA certificates
+
+  You can now configure custom trusted CA certificates for RestateCluster via
+  `spec.security.trustedCaCerts`. This is useful when Restate needs to trust internal CAs, for example when
+  calling services behind an internal load balancer with a private certificate.
+
+  The operator adds an init container that concatenates the system CA bundle with
+  your custom certificates into a single PEM file, and sets `SSL_CERT_FILE` on
+  the Restate container to point to the combined bundle.
+
+  Changing the Secret references (name or key) triggers a pod rollout.
+
+  ```yaml theme={null}
+  spec:
+    security:
+      trustedCaCerts:
+        - secretName: internal-ca
+          key: ca.pem
+  ```
+
+  *Related: PR [#111](https://github.com/restatedev/restate-operator/pull/111)*
+
+  ***
+
+  ### Configurable canary image
+
+  The container image used for PIA and Workload Identity canary jobs is now
+  configurable via the `canaryImage` Helm value, `CANARY_IMAGE` environment
+  variable, or `--canary-image` CLI flag. Previously `busybox:uclibc` was
+  hardcoded, which fails in environments that cannot pull from Docker Hub.
+
+  ```yaml theme={null}
+  canaryImage: my-registry.example.com/busybox:uclibc
+  ```
+
+  The simplest approach is to mirror the default image:
+
+  ```bash theme={null}
+  docker pull busybox:uclibc
+  docker tag busybox:uclibc my-registry.example.com/busybox:uclibc
+  docker push my-registry.example.com/busybox:uclibc
+  ```
+
+  If using a different image, it must provide `cat`, `grep`, and `wget`.
+
+  *Related: Issue [#94](https://github.com/restatedev/restate-operator/issues/94), PR [#106](https://github.com/restatedev/restate-operator/pull/106)*
+
+  ***
+
+  ### Bug Fixes
+
+  ### IPv6 dual-stack support
+
+  The operator now binds its HTTP server to `[::]` instead of `0.0.0.0`,
+  supporting both IPv4 and IPv6 clusters. Previously, the readiness probe
+  failed on IPv6-only clusters because the operator only listened on IPv4.
+
+  *Related: Issue [#93](https://github.com/restatedev/restate-operator/issues/93), PR [#107](https://github.com/restatedev/restate-operator/pull/107)*
+
+  ***
+
+  ### Faster drain cleanup polling
+
+  When old deployment versions still have active invocations (draining), the
+  operator now requeues every 10 seconds instead of waiting for the default
+  5-minute reconcile interval. This means old versions are cleaned up within
+  seconds of drain completion rather than up to 5 minutes.
+
+  *Related: PR [#112](https://github.com/restatedev/restate-operator/pull/112)*
+
+  ***
+
+  ### Upgrading
+
+  **CRD Update Required**: Helm does not upgrade CRDs on `helm upgrade`. Before upgrading the operator, manually apply the updated CRDs:
+
+  ```bash theme={null}
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.4.0/restateclusters.yaml
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.4.0/restatedeployments.yaml
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.4.0/restatecloudenvironments.yaml
+  ```
+
+  Then upgrade the operator via Helm:
+
+  ```bash theme={null}
+  helm upgrade restate-operator restatedev/restate-operator --version 2.4.0
+  ```
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.4.0)
+</Update>
+
+<Update label="2026-03-20" description="Kubernetes Operator v2.3.1">
+  ### Restate Operator v2.3.1 Release Notes
+
+  This contains an important fix for a bug introduced v2.3.0. If you're using v2.3.0 you will need to upgrade to this version.
+
+  ### Highlights
+
+  * **Fix**: GCP Workload Identity now requires explicit opt-in via `gcpWorkloadIdentity: true` Helm value, fixing a 403 error loop on non-GCP clusters introduced in v2.3.0.
+
+  ### Bug Fixes
+
+  ### IAMPolicyMember cleanup causes 403 on non-GCP clusters
+
+  In v2.3.0, the operator unconditionally attempted to delete IAMPolicyMember
+  resources during reconciliation, even on non-GCP clusters where the RBAC rules
+  were not granted. This caused a 403 Forbidden error loop on every reconcile.
+
+  The operator now requires the `gcpWorkloadIdentity` Helm value to be explicitly
+  set before it will create or delete IAMPolicyMember resources. The
+  `iam.gke.io/gcp-service-account` annotation is ignored with a warning unless
+  the flag is enabled.
+
+  **Impact on Users:**
+
+  * **Non-GCP clusters**: The 403 reconcile loop is fixed. No action needed.
+  * **GCP clusters using Workload Identity**: You must now set
+    `gcpWorkloadIdentity: true` in your Helm values.
+
+  **Migration Guidance:**
+
+  If you are using GCP Workload Identity with Config Connector, add to your Helm
+  values:
+
+  ```yaml theme={null}
+  gcpWorkloadIdentity: true
+  ```
+
+  *Related: Issue [#103](https://github.com/restatedev/restate-operator/issues/103), PR [#104](https://github.com/restatedev/restate-operator/pull/104)*
+
+  ***
+
+  ### Upgrading
+
+  Upgrade the operator via Helm:
+
+  ```bash theme={null}
+  helm upgrade restate-operator restatedev/restate-operator --version 2.3.1
+  ```
+
+  No CRD changes in this release.
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.3.1)
+</Update>
+
+<Update label="2026-03-19" description="Kubernetes Operator v2.3.0">
+  ### Restate Operator v2.3.0
+
+  ### ✨ New Features
+
+  * **GCP Workload Identity via Config Connector** — The operator now automatically creates `IAMPolicyMember` resources to bind Kubernetes service accounts to GCP service accounts via Workload Identity. This is triggered when a RestateCluster has `iam.gke.io/gcp-service-account` in `serviceAccountAnnotations`. The GCP project ID is extracted from the service account email, so no additional configuration is needed beyond the annotation. A canary job validates that credentials are available before the StatefulSet proceeds. This mirrors the existing AWS Pod Identity Association pattern and requires Config Connector to be installed on the GKE cluster.
+
+  * **Configurable cluster DNS suffix** — The operator now supports configuring the Kubernetes cluster DNS suffix via the `--cluster-dns` CLI flag, `CLUSTER_DNS` environment variable, or Helm `clusterDns` value. Previously `cluster.local` was hardcoded in all internal service URLs. This is needed for multi-cluster setups, federated environments, and clusters with custom DNS naming.
+
+  * **Configurable drain delay** — Added `drainDelaySeconds` to the RestateDeployment CRD's `spec.restate` section. This controls how long the operator waits after a deployment is drained before removing the old version. Default remains 300 seconds (5 minutes). ([https://github.com/restatedev/restate-operator/pull/96](https://github.com/restatedev/restate-operator/pull/96))
+
+  ### 🐛 Bug Fixes
+
+  * **Improved admin API error messages** — When a deployment registration is rejected by the admin API (e.g. breaking changes without `--force`), the error message now includes the response from Restate and is logged and emitted as a Kubernetes event, making failures much easier to diagnose. ([#100](https://github.com/restatedev/restate-operator/pull/100))
+
+  * **Fixed canary job completion detection** — Fixed a bug where a completed canary job was treated as still pending, causing the operator to loop indefinitely with a `NotReady` status condition. ([#102](https://github.com/restatedev/restate-operator/pull/102))
+
+  ### ⚙️ Configuration Changes
+
+  * New Helm value `clusterDns` for configuring the cluster DNS suffix (default: `cluster.local`)
+  * Conditional RBAC for `IAMPolicyMember` CRDs when GCP Workload Identity is enabled
+
+  ***
+
+  ### ⚠️ Upgrading Notes
+
+  **CRD Update Required**: Helm does not upgrade CRDs on `helm upgrade`. Before upgrading the operator, manually apply the updated CRDs:
+
+  ```bash theme={null}
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.3.0/restateclusters.yaml
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.3.0/restatedeployments.yaml
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.3.0/restatecloudenvironments.yaml
+  ```
+
+  Then upgrade the operator via Helm:
+
+  ```bash theme={null}
+  helm upgrade restate-operator restatedev/restate-operator --version 2.3.0
+  ```
+
+  ***
+
+  **Full release notes**: [`release-notes/v2.3.0.md`](https://github.com/restatedev/restate-operator/blob/main/release-notes/v2.3.0.md)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.3.0)
+</Update>
+
+<Update label="2026-02-12" description="Kubernetes Operator v2.2.0">
+  ### Restate Operator v2.2.0
+
+  ### ✨ New Features
+
+  * **Knative Serving deployment mode** — `RestateDeployment` now supports [Knative Serving](https://knative.dev/docs/serving/) as an alternative to traditional ReplicaSets. This enables:
+
+    * **Scale-to-zero**: Services automatically scale down when idle, saving resources
+    * **Automatic scaling**: Replicas scale based on concurrent request load
+    * **In-place updates**: Update service implementation without changing Restate deployment identity
+    * **Tag-based identity**: Control versioning behavior with the `tag` field — same tag means in-place update, changed tag means versioned update, no tag means auto-versioning
+
+    See the [Knative Serving Mode documentation](https://github.com/restatedev/restate-operator#knative-serving-mode) for details. ([https://github.com/restatedev/restate-operator/pull/64](https://github.com/restatedev/restate-operator/pull/64))
+
+  ### 🐛 Bug Fixes
+
+  * **Fix DNS network policy for NodeLocal DNSCache** — The operator now creates DNS egress policies that work with both traditional kube-dns **and** NodeLocal DNSCache (`169.254.20.10`). This fixes DNS resolution issues on GKE Autopilot and other Kubernetes environments using node-local DNS caching. ([https://github.com/restatedev/restate-operator/pull/88](https://github.com/restatedev/restate-operator/pull/88))
+
+  ### ⚙️ Configuration Changes
+
+  * **Default partitions increased to 24** — The default number of partitions is now 24 (previously lower), providing better parallelism for most workloads. ([https://github.com/restatedev/restate-operator/pull/84](https://github.com/restatedev/restate-operator/pull/84))
+
+  ### 📝 Documentation
+
+  * Added dedicated Knative Serving mode section to README with examples and tag-based versioning guide
+  * Added troubleshooting section for DNS resolution issues
+  * Updated RocksDB memory documentation ([https://github.com/restatedev/restate-operator/pull/82](https://github.com/restatedev/restate-operator/pull/82))
+
+  ***
+
+  ### ⚠️ Upgrading Notes
+
+  **CRD Update Required**: Helm does not upgrade CRDs on `helm upgrade`. Before upgrading the operator, manually apply the updated CRDs:
+
+  ```bash theme={null}
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.2.0/restateclusters.yaml
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.2.0/restatedeployments.yaml
+  kubectl apply --server-side -f https://github.com/restatedev/restate-operator/releases/download/v2.2.0/restatecloudenvironments.yaml
+  ```
+
+  > **Note:** The `restatedeployments` CRD update is especially important for this release as it includes the new Knative Serving deployment mode fields.
+
+  Then upgrade the operator via Helm:
+
+  ```bash theme={null}
+  helm upgrade restate-operator restatedev/restate-operator --version 2.2.0
+  ```
+
+  ***
+
+  ### New Contributors
+
+  * @AhmedSoliman made their first contribution in [https://github.com/restatedev/restate-operator/pull/82](https://github.com/restatedev/restate-operator/pull/82)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.2.0)
+</Update>
+
+<Update label="2026-01-12" description="Kubernetes Operator v2.1.0">
+  ### ✨ New Features
+
+  * **Operator-driven cluster provisioning** - Added support for automatic cluster provisioning via the new `spec.cluster.autoProvision` field. When enabled, the operator will automatically provision the Restate cluster by calling the gRPC `ProvisionCluster` API after pods are running. This is particularly useful for multi-node clusters where manual provisioning was previously required. The provisioning status is tracked in `status.provisioned` to prevent repeated provisioning attempts. (#55)
+
+    > ⚠️ **Important**: When using `cluster.autoProvision: true`, you must set `auto-provision = false` in your Restate config to avoid split brain situations.
+
+    🎯 **`cluster.autoProvision: true` is the recommended approach for provisioning Restate clusters.**
+
+  ### 🔧 Improvements
+
+  * Simplified example configurations by removing default values that are no longer needed (replicated loglet and replicated metadata server are now defaults)
+
+  ### 🏗️ CRD Changes
+
+  * Added `spec.cluster.autoProvision` field to enable operator-managed cluster provisioning
+  * Added `status.provisioned` field to track provisioning state
+
+  ### ⬆️ Upgrading
+
+  **CRD Update Required**: Helm does not upgrade CRDs on `helm upgrade`. Before upgrading the operator, manually apply the updated CRDs:
+
+  ```
+  kubectl apply -f https://github.com/restatedev/restate-operator/releases/download/v2.1.0/restateclusters.yaml
+  kubectl apply -f https://github.com/restatedev/restate-operator/releases/download/v2.1.0/restatedeployments.yaml
+  kubectl apply -f https://github.com/restatedev/restate-operator/releases/download/v2.1.0/restatecloudenvironments.yaml
+  ```
+
+  Then upgrade the operator:
+
+  ```
+  helm upgrade restate-operator restatedev/restate-operator --version 2.1.0
+  ```
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.1.0)
+</Update>
+
+<Update label="2026-01-05" description="Kubernetes Operator v2.0.0">
+  ### What's Changed
+
+  * Update default tunnel client version by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/81](https://github.com/restatedev/restate-operator/pull/81)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v2.0.0)
+</Update>
+
+<Update label="2025-12-15" description="Kubernetes Operator v1.9.2">
+  ### What's Changed
+
+  * Avoid reconcile loop in netpol peer list by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/73](https://github.com/restatedev/restate-operator/pull/73)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.9.2)
+</Update>
+
+<Update label="2025-12-05" description="Kubernetes Operator v1.9.1">
+  ### What's Changed
+
+  * Ignore completed invs when determining active invocations by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/71](https://github.com/restatedev/restate-operator/pull/71)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.9.1)
+</Update>
+
+<Update label="2025-11-28" description="Kubernetes Operator v1.9.0">
+  ### What's Changed
+
+  * \[Security] Update assorted dependencies by @pcholakov in [https://github.com/restatedev/restate-operator/pull/69](https://github.com/restatedev/restate-operator/pull/69)
+  * Support existing namespaces by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/70](https://github.com/restatedev/restate-operator/pull/70)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.9.0)
+</Update>
+
+<Update label="2025-11-25" description="Kubernetes Operator v1.8.4">
+  ### What's Changed
+
+  * Add priorityClassName to restatecluster by @pcholakov in [https://github.com/restatedev/restate-operator/pull/63](https://github.com/restatedev/restate-operator/pull/63)
+  * Release v1.8.4 by @pcholakov in [https://github.com/restatedev/restate-operator/pull/66](https://github.com/restatedev/restate-operator/pull/66)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.8.4)
+</Update>
+
+<Update label="2025-11-18" description="Kubernetes Operator v1.8.3">
+  ### What's Changed
+
+  * Add service path parameter by @krisztiansala in [https://github.com/restatedev/restate-operator/pull/56](https://github.com/restatedev/restate-operator/pull/56)
+  * feat: Add topology spread constraints support to RestateCluster by @EronWright in [https://github.com/restatedev/restate-operator/pull/60](https://github.com/restatedev/restate-operator/pull/60)
+  * Delete jobs on immutable conflict by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/61](https://github.com/restatedev/restate-operator/pull/61)
+  * Release v1.8.3 by @pcholakov in [https://github.com/restatedev/restate-operator/pull/62](https://github.com/restatedev/restate-operator/pull/62)
+
+  ### New Contributors
+
+  * @EronWright made their first contribution in [https://github.com/restatedev/restate-operator/pull/60](https://github.com/restatedev/restate-operator/pull/60)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.8.3)
+</Update>
+
+<Update label="2025-11-05" description="Kubernetes Operator v1.8.2">
+  ### What's Changed
+
+  * Allow cleaning up old replicasets while the new one is not ready by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/59](https://github.com/restatedev/restate-operator/pull/59)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.8.2)
+</Update>
+
+<Update label="2025-10-14" description="Kubernetes Operator v1.7.5">
+  ### What's Changed
+
+  * Support registering at a subpath by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/37](https://github.com/restatedev/restate-operator/pull/37)
+  * Allow setting the http1.1 flag from the restate operator by @damianr13 in [https://github.com/restatedev/restate-operator/pull/38](https://github.com/restatedev/restate-operator/pull/38)
+  * Fix cleanup replicasets to only look at those in this ns by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/41](https://github.com/restatedev/restate-operator/pull/41)
+  * Add RestateCluster compute spec imagePullSecrets property by @pcholakov in [https://github.com/restatedev/restate-operator/pull/39](https://github.com/restatedev/restate-operator/pull/39)
+  * Add volumeAttributesClassName by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/42](https://github.com/restatedev/restate-operator/pull/42)
+  * Add support for custom restate entrypoint/args by @pcholakov in [https://github.com/restatedev/restate-operator/pull/43](https://github.com/restatedev/restate-operator/pull/43)
+
+  ### New Contributors
+
+  * @damianr13 made their first contribution in [https://github.com/restatedev/restate-operator/pull/38](https://github.com/restatedev/restate-operator/pull/38)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.7.5)
+</Update>
+
+<Update label="2025-10-14" description="Kubernetes Operator v1.8.1">
+  ### What's Changed
+
+  * fix: Honor use\_http11 flag by @krisztiansala in [https://github.com/restatedev/restate-operator/pull/52](https://github.com/restatedev/restate-operator/pull/52)
+  * fix: Add restatecloudenvironment crd to the helm chart
+
+  ### New Contributors
+
+  * @krisztiansala made their first contribution in [https://github.com/restatedev/restate-operator/pull/52](https://github.com/restatedev/restate-operator/pull/52)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.8.1)
+</Update>
+
+<Update label="2025-09-26" description="Kubernetes Operator v1.8.0">
+  This release introduces a new crd (restatecloudenvironment). Helm won’t install new crds when upgrading so if you update you’ll need to install the new crd, which is attached to this release.
+
+  ### What's Changed
+
+  * Add initial readiness delay by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/44](https://github.com/restatedev/restate-operator/pull/44)
+  * Add RestateCloudEnvironment by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/40](https://github.com/restatedev/restate-operator/pull/40)
+  * Don't propagate last applied configuration annotation by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/46](https://github.com/restatedev/restate-operator/pull/46)
+  * Add warnings about minio by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/47](https://github.com/restatedev/restate-operator/pull/47)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.8.0)
+</Update>
+
+<Update label="2025-07-24" description="Kubernetes Operator v1.7.4">
+  ### What's Changed
+
+  * Fix: add missing patch events to RBAC config by @2snEM6 in [https://github.com/restatedev/restate-operator/pull/35](https://github.com/restatedev/restate-operator/pull/35)
+
+  ### New Contributors
+
+  * @2snEM6 made their first contribution in [https://github.com/restatedev/restate-operator/pull/35](https://github.com/restatedev/restate-operator/pull/35)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.7.4)
+</Update>
+
+<Update label="2025-07-17" description="Kubernetes Operator v1.7.3">
+  ### What's Changed
+
+  * Document all of operator CRD by @haf in [https://github.com/restatedev/restate-operator/pull/30](https://github.com/restatedev/restate-operator/pull/30)
+  * Split out minio docs and document network isolation by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/33](https://github.com/restatedev/restate-operator/pull/33)
+
+  ### New Contributors
+
+  * @haf made their first contribution in [https://github.com/restatedev/restate-operator/pull/30](https://github.com/restatedev/restate-operator/pull/30)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.7.3)
+</Update>
+
+<Update label="2025-06-17" description="Kubernetes Operator v1.7.2">
+  ### What's Changed
+
+  * Netpol fixes by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/28](https://github.com/restatedev/restate-operator/pull/28)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.7.2)
+</Update>
+
+<Update label="2025-06-16" description="Kubernetes Operator v1.7.1">
+  Fixes network policy enforcement for distributed clusters
+
+  See the [release notes for 1.6.0](https://github.com/restatedev/restate-operator/releases/tag/v1.6.0) if you're upgrading from a pre 1.6.0 version.
+
+  ### What's Changed
+
+  * Allow restate clusters to talk to themselves by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/26](https://github.com/restatedev/restate-operator/pull/26)
+  * Document cluster better by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/27](https://github.com/restatedev/restate-operator/pull/27)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.7.1)
+</Update>
+
+<Update label="2025-06-11" description="Kubernetes Operator v1.7.0">
+  This release adds PodDisruptionBudgets for clusters, and a new CRD, RestateDeployment, which manages versioning for your Restate SDK services automatically.
+
+  See the [release notes for 1.6.0](https://github.com/restatedev/restate-operator/releases/tag/v1.6.0) if you're upgrading from a pre 1.6.0 version.
+
+  ### What's Changed
+
+  * Add RestateDeployment v1beta1 crd by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/20](https://github.com/restatedev/restate-operator/pull/20)
+  * Create pdb for clusters by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/25](https://github.com/restatedev/restate-operator/pull/25)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.7.0)
+</Update>
+
+<Update label="2025-05-22" description="Kubernetes Operator v1.6.0">
+  When upgrading to v1.6.0, you may need to delete the operator-managed StatefulSets so that the operator can recreate them with the new pod management policy, as Kubernetes enforces this as an immutable field. You can do this with `kubectl -n your-restate-namespace delete statefulset restate --cascade=orphan`, without causing any interruption to your cluster.
+
+  ### What's Changed
+
+  * Set RESTATE\_NODE\_NAME to POD\_NAME by default by @tillrohrmann in [https://github.com/restatedev/restate-operator/pull/21](https://github.com/restatedev/restate-operator/pull/21)
+  * Set pod management policy to parallel by @tillrohrmann in [https://github.com/restatedev/restate-operator/pull/23](https://github.com/restatedev/restate-operator/pull/23)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.6.0)
+</Update>
+
+<Update label="2025-05-07" description="Kubernetes Operator v1.5.0">
+  ### What's Changed
+
+  * Add CLA automation by @tillrohrmann in [https://github.com/restatedev/restate-operator/pull/18](https://github.com/restatedev/restate-operator/pull/18)
+  * Make it easier to run a multinode cluster with the operator by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/19](https://github.com/restatedev/restate-operator/pull/19)
+
+  ### New Contributors
+
+  * @tillrohrmann made their first contribution in [https://github.com/restatedev/restate-operator/pull/18](https://github.com/restatedev/restate-operator/pull/18)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.5.0)
+</Update>
+
+<Update label="2025-05-07" description="Kubernetes Operator v1.4.0">
+  ### What's Changed
+
+  * Added affinity to restate operator by @kumorikarasu in [https://github.com/restatedev/restate-operator/pull/17](https://github.com/restatedev/restate-operator/pull/17)
+
+  ### New Contributors
+
+  * @kumorikarasu made their first contribution in [https://github.com/restatedev/restate-operator/pull/17](https://github.com/restatedev/restate-operator/pull/17)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.4.0)
+</Update>
+
+<Update label="2025-02-25" description="Kubernetes Operator v1.3.0">
+  ### What's Changed
+
+  * Fix papercuts by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/16](https://github.com/restatedev/restate-operator/pull/16)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.3.0)
+</Update>
+
+<Update label="2024-12-11" description="Kubernetes Operator v1.2.0">
+  ### What's Changed
+
+  * Use predicates to dedupe changes to cm, svc, ss, job by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/13](https://github.com/restatedev/restate-operator/pull/13)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.2.0)
+</Update>
+
+<Update label="2024-12-03" description="Kubernetes Operator v1.1.1">
+  Avoid spurious updates from namespaces and service accounts
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.1.1)
+</Update>
+
+<Update label="2024-12-02" description="Kubernetes Operator v1.1.0">
+  ### What's Changed
+
+  * Node selector support by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/12](https://github.com/restatedev/restate-operator/pull/12)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.1.0)
+</Update>
+
+<Update label="2024-07-12" description="Kubernetes Operator v1.0.2">
+  ### What's Changed
+
+  * Add support for specifying restate pod tolerations by @pcholakov in [https://github.com/restatedev/restate-operator/pull/11](https://github.com/restatedev/restate-operator/pull/11)
+
+  ### New Contributors
+
+  * @pcholakov made their first contribution in [https://github.com/restatedev/restate-operator/pull/11](https://github.com/restatedev/restate-operator/pull/11)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.0.2)
+</Update>
+
+<Update label="2024-06-07" description="Kubernetes Operator v1.0.0">
+  1.0 release coincides with the release of [Restate 1.0](https://github.com/restatedev/restate/releases/tag/v1.0.0)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v1.0.0)
+</Update>
+
+<Update label="2024-06-07" description="Kubernetes Operator v0.9.0">
+  ### What's Changed
+
+  * Add config file support by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/10](https://github.com/restatedev/restate-operator/pull/10)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.9.0)
+</Update>
+
+<Update label="2024-05-16" description="Kubernetes Operator v0.8.0">
+  ### What's Changed
+
+  * Bump rustls from 0.21.10 to 0.21.12 by @dependabot in [https://github.com/restatedev/restate-operator/pull/9](https://github.com/restatedev/restate-operator/pull/9)
+  * Bump h2 from 0.3.24 to 0.3.26 by @dependabot in [https://github.com/restatedev/restate-operator/pull/8](https://github.com/restatedev/restate-operator/pull/8)
+  * RUST\_LOG is no longer set to debug; uses Restate default of info. Set the environment variable in the RestateCluster object to override.
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.8.0)
+</Update>
+
+<Update label="2024-05-07" description="Kubernetes Operator v0.7.2">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.7.2)
+</Update>
+
+<Update label="2024-05-03" description="Kubernetes Operator v0.7.1">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.7.1)
+</Update>
+
+<Update label="2024-05-03" description="Kubernetes Operator v0.7.0">
+  ### What's Changed
+
+  * Canary pods need to be created via Jobs by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/7](https://github.com/restatedev/restate-operator/pull/7)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.7.0)
+</Update>
+
+<Update label="2024-04-30" description="Kubernetes Operator v0.6.1">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.6.1)
+</Update>
+
+<Update label="2024-04-24" description="Kubernetes Operator v0.6.0">
+  ### What's Changed
+
+  * Signing key integration by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/6](https://github.com/restatedev/restate-operator/pull/6)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.6.0)
+</Update>
+
+<Update label="2024-04-18" description="Kubernetes Operator v0.5.2">
+  ### What's Changed
+
+  * Avoid apply loops with predicate filters by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/5](https://github.com/restatedev/restate-operator/pull/5)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.5.2)
+</Update>
+
+<Update label="2024-04-16" description="Kubernetes Operator v0.5.0">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.5.0)
+</Update>
+
+<Update label="2024-04-16" description="Kubernetes Operator v0.4.3">
+  ### What's Changed
+
+  * Bump mio from 0.8.10 to 0.8.11 by @dependabot in [https://github.com/restatedev/restate-operator/pull/4](https://github.com/restatedev/restate-operator/pull/4)
+
+  ### New Contributors
+
+  * @dependabot made their first contribution in [https://github.com/restatedev/restate-operator/pull/4](https://github.com/restatedev/restate-operator/pull/4)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.4.3)
+</Update>
+
+<Update label="2024-03-13" description="Kubernetes Operator v0.4.2">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.4.2)
+</Update>
+
+<Update label="2024-03-08" description="Kubernetes Operator v0.4.1">
+  ### What's Changed
+
+  * Propagate labels and annotations into all created objects by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/3](https://github.com/restatedev/restate-operator/pull/3)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.4.1)
+</Update>
+
+<Update label="2024-03-08" description="Kubernetes Operator v0.4.0">
+  ### What's Changed
+
+  * SecurityGroupPolicy support by @jackkleeman in [https://github.com/restatedev/restate-operator/pull/2](https://github.com/restatedev/restate-operator/pull/2)
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.4.0)
+</Update>
+
+<Update label="2024-03-06" description="Kubernetes Operator v0.3.3">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.3.3)
+</Update>
+
+<Update label="2024-03-06" description="Kubernetes Operator v0.3.2">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.3.2)
+</Update>
+
+<Update label="2024-03-05" description="Kubernetes Operator v0.3.1">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.3.1)
+</Update>
+
+<Update label="2024-02-29" description="Kubernetes Operator v0.3.0">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.3.0)
+</Update>
+
+<Update label="2024-02-29" description="Kubernetes Operator v0.2.6">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.2.6)
+</Update>
+
+<Update label="2024-02-29" description="Kubernetes Operator v0.2.5">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.2.5)
+</Update>
+
+<Update label="2024-02-28" description="Kubernetes Operator v0.2.4">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.2.4)
+</Update>
+
+<Update label="2024-02-26" description="Kubernetes Operator v0.2.3">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.2.3)
+</Update>
+
+<Update label="2024-02-26" description="Kubernetes Operator v0.2.2">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.2.2)
+</Update>
+
+<Update label="2024-02-26" description="Kubernetes Operator v0.2.1">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.2.1)
+</Update>
+
+<Update label="2024-02-20" description="Kubernetes Operator v0.2.0">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.2.0)
+</Update>
+
+<Update label="2024-02-16" description="Kubernetes Operator v0.1.0">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.1.0)
+</Update>
+
+<Update label="2024-02-16" description="Kubernetes Operator v0.0.5">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.0.5)
+</Update>
+
+<Update label="2024-02-14" description="Kubernetes Operator v0.0.4">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.0.4)
+</Update>
+
+<Update label="2024-02-14" description="Kubernetes Operator v0.0.3">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.0.3)
+</Update>
+
+<Update label="2024-02-13" description="Kubernetes Operator v0.0.2">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.0.2)
+</Update>
+
+<Update label="2024-02-12" description="Kubernetes Operator v0.0.1">
+  🚀
+
+  [View on GitHub](https://github.com/restatedev/restate-operator/releases/tag/v0.0.1)
+</Update>

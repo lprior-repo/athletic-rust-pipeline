@@ -1,0 +1,171 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Durable Steps
+
+> Persist results of operations.
+
+Restate uses an execution log to replay operations after failures and suspensions. Non-deterministic operations (database calls, HTTP requests, UUID generation) must be wrapped to ensure deterministic replay.
+
+## Run
+
+Use `Restate.run` (Java) / `runBlock` (Kotlin) to safely wrap any non-deterministic operation, like HTTP calls or database responses, and have Restate store its result in the execution log.
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/JournalingResults.java#side_effect"}  theme={null}
+  String output = Restate.run("db-request", String.class, () -> doDbRequest());
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/JournalingResults.kt#side_effect"}  theme={null}
+  val output = runBlock { doDbRequest() }
+  ```
+</CodeGroup>
+
+Note that inside a run block, you cannot use other Restate operations (e.g., state access, sleep, or a nested run).
+
+<AccordionGroup>
+  <Accordion title="Asynchronous run actions">
+    To run an action asynchronously, use `Restate.runAsync` (Java) / `runAsync` (Kotlin):
+
+    <CodeGroup>
+      ```java Java {"CODE_LOAD::java/src/main/java/develop/JournalingResults.java#async_side_effect"}  theme={null}
+      DurableFuture<String> myRunFuture =
+          Restate.runAsync("something-slow", String.class, () -> doSomethingSlow());
+      ```
+
+      ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/JournalingResults.kt#async_side_effect"}  theme={null}
+      val myRunFuture = runAsync { doSomethingSlow() }
+      ```
+    </CodeGroup>
+
+    You can use this to combine your run actions with other asynchronous operations, like waiting for a timer or an awakeable.
+
+    Check out [Concurrent tasks](/develop/java/concurrent-tasks).
+  </Accordion>
+
+  <Accordion title="Serialization">
+    Have a look at the [serialization docs](/develop/java/serialization) to learn how to serialize and deserialize your objects.
+  </Accordion>
+
+  <Accordion title="Error handling and retry policies">
+    Failures in a run block are treated the same as any other handler error. Restate will retry it unless configured otherwise or unless a [`TerminalException`](/develop/java/error-handling) is thrown.
+
+    You can customize how a run block retries via:
+
+    <CodeGroup>
+      ```java Java {"CODE_LOAD::java/src/main/java/develop/RetryRunService.java#here"}  theme={null}
+      try {
+        RetryPolicy myRunRetryPolicy =
+            RetryPolicy.defaultPolicy()
+                .setInitialDelay(Duration.ofMillis(500))
+                .setExponentiationFactor(2)
+                .setMaxDelay(Duration.ofSeconds(10))
+                .setMaxAttempts(10)
+                .setMaxDuration(Duration.ofMinutes(5));
+        Restate.run("my-run", myRunRetryPolicy, () -> writeToOtherSystem());
+      } catch (TerminalException e) {
+        // Handle the terminal error after retries exhausted
+        // For example, undo previous actions (see sagas guide) and
+        // propagate the error back to the caller
+      }
+      ```
+
+      ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/RetryRunService.kt#here"}  theme={null}
+      try {
+        val myRunRetryPolicy =
+            RetryPolicy(
+                initialDelay = 5.seconds,
+                exponentiationFactor = 2.0f,
+                maxDelay = 60.seconds,
+                maxAttempts = 10,
+                maxDuration = 5.minutes,
+            )
+        runBlock("write", myRunRetryPolicy) { writeToOtherSystem() }
+      } catch (e: TerminalException) {
+        // Handle the terminal error after retries exhausted
+        // For example, undo previous actions (see sagas guide) and
+        // propagate the error back to the caller
+        throw e
+      }
+      ```
+    </CodeGroup>
+
+    * You can limit retries by time or count
+    * When the policy is exhausted, a `TerminalException` is thrown
+    * See the [Error Handling Guide](/guides/error-handling) and the [Sagas Guide](/guides/sagas) for patterns like compensation
+  </Accordion>
+
+  <Accordion title="Increasing timeouts">
+    If Restate doesn't receive new journal entries from a service for more than one minute (by default), it will automatically suspend the invocation and retry it.
+
+    However, some business logic can take longer to complete—for example, an LLM call that takes up to 3 minutes to respond.
+
+    In such cases, you can adjust the service’s [inactivity timeout and abort timeout](/services/configuration) settings to accommodate longer execution times.
+
+    For more information, see the [error handling guide](/guides/error-handling).
+  </Accordion>
+</AccordionGroup>
+
+## Deterministic randoms
+
+The SDK provides deterministic helpers for random values that return the **same result on retries**.
+
+### UUIDs
+
+To generate stable UUIDs for things like idempotency keys:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/JournalingResults.java#uuid"}  theme={null}
+  UUID uuid = Restate.random().nextUUID();
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/JournalingResults.kt#uuid"}  theme={null}
+  val uuid = random().nextUUID()
+  ```
+</CodeGroup>
+
+Do not use this in cryptographic contexts.
+
+### Random numbers
+
+To generate a deterministic float between `0` and `1`:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/JournalingResults.java#random_nb"}  theme={null}
+  int value = Restate.random().nextInt();
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/JournalingResults.kt#random_nb"}  theme={null}
+  val value = random().nextInt()
+  ```
+</CodeGroup>
+
+This behaves like the standard library `Random` class but is deterministically replayable.
+You can use any of the methods of [`java.util.Random`](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/Random.html) to generate random numbers: for example, `nextBoolean()`, `nextLong()`, `nextFloat()`, etc.
+
+## Deterministic time
+
+Reading the system clock directly can produce a different value during replay. Use the SDK clock to obtain the current time as a durable value:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/JournalingResults.java#deterministic_time"}  theme={null}
+  Instant now = Restate.instantNow();
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/DeterministicTime.kt#deterministic_time"}  theme={null}
+  import dev.restate.sdk.annotation.Handler
+  import dev.restate.sdk.kotlin.*
+  import kotlin.time.Clock
+  import kotlin.time.ExperimentalTime
+
+  @OptIn(ExperimentalTime::class)
+  @Handler
+  suspend fun myHandler(): String {
+    val now = Clock.Restate.now()
+    return "Current time: $now"
+  }
+  ```
+</CodeGroup>
+
+Do not use `Instant.now()`, `System.currentTimeMillis()`, or `Clock.System.now()` in handler logic because those values can change during replay.

@@ -1,0 +1,93 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Restate Server Configuration
+
+> Configure the Restate Server.
+
+The Restate Server has a wide range of configuration options to tune it according to your needs.
+
+<Info title="Configuration Reference">
+  To learn about the configuration options, have a look at the [full configuration reference](/references/server-config).
+</Info>
+
+<Info title="Networking Configuration">
+  For details on configuring network ports, addresses, and listeners, see the [networking guide](/server/networking).
+</Info>
+
+## Configuration file
+
+The Restate Server accepts a [TOML](https://toml.io/en/) configuration file that can be specified either providing the command-line option `--config-file=<PATH>` or setting the environment variable `RESTATE_CONFIG=<PATH>`. If not set, the [default configuration](/references/server-config#default-configuration) will be applied.
+
+## Overrides
+
+Restate server accepts a sub-set of the configuration through command-line arguments, you can see all available options by adding `--help` to `restate-server`.
+
+The order of applying configuration layers follows the following order:
+
+1. Built-in defaults
+2. Configuration file (`--config-file` or via `RESTATE_CONFIG`)
+3. Environment variables
+4. Command line arguments (`--cluster-name=<VALUE>`)
+
+Every layer overrides the previous. For instance, command-line arguments will override a configuration key supplied through environment variable (if set).
+
+### Environment variables
+
+You can override any configuration entry with an environment variable, this overrides values loaded from the configuration file. To do that, the following rule applies:
+
+* Prefix the configuration entry key with `RESTATE_`
+* Separate every nested struct with `__` (double underscore) and all hyphens `-` with a `_` (single underscore).
+
+For example, to override the `admin.bind-address`, the corresponding environment variable is `RESTATE_ADMIN__BIND_ADDRESS`.
+
+Names are matched case-insensitively, but uppercase is the convention used throughout the docs.
+
+A list or a table is set as a single value, since there is no syntax for addressing one element:
+
+```shell theme={null}
+RESTATE_ROLES='["worker","admin"]'
+RESTATE_TRACING_HEADERS='{authorization="Bearer xyz"}'
+```
+
+The [configuration reference](/references/server-config) shows the environment variable for every option that has one, next to the TOML key it maps to.
+
+## Configuration introspection
+
+If you want to generate a configuration file that includes values loaded from your environment variables or overrides applied to `restate-server` command-line, you can add `--dump-config` to dump the default TOML config with overrides applied:
+
+```shell theme={null}
+restate-server --cluster-name=mycluster --dump-config
+```
+
+Example output:
+
+```toml theme={null}
+roles = [
+    "worker",
+    "admin",
+    "metadata-server",
+    "log-server",
+    "http-ingress",
+]
+cluster-name = "mycluster"
+...
+```
+
+At any time, you ask restate daemon to print the loaded configuration to the log by sending a `SIGUSR1` to the server process. This prints a dump of the live configuration to standard error.
+
+For instance on Mac/Linux, you can find the PID of restate-server by running:
+
+```shell theme={null}
+pgrep restate-server
+994921
+```
+
+Then send the signal to the process ID returned from `pgrep`'s output:
+
+```shell theme={null}
+kill -USR1 994921
+```
+
+Observe the output of the server for a dump of the configuration file contents.

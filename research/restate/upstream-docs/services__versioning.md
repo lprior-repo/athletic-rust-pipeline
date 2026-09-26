@@ -1,0 +1,271 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Versioning
+
+> Understand deployments, registration, and versioning in Restate.
+
+Deploying new versions of code without breaking ongoing work **is complicated in every stateful application**.
+You need to make sure that requests start, retry, and complete on the same version of your "business logic", to avoid problems like inconsistent execution or state corruption.
+
+Restate helps via the concept of **immutable deployments**. When you deploy a version of your code, you give it an immutable, unique endpoint and register it with Restate.
+Restate then makes sure that requests start and end on the same version, by sending any retry attempts always to the same endpoint.
+This eliminates mid-execution version mismatches: **no version compatibility logic is needed** in your code.
+
+## Service deployments
+
+A service deployment is a specific instance of your service code associated with an HTTP endpoint, a Lambda function, or other supported environment.
+
+### Registering a deployment
+
+Deployments can be managed through the [Restate UI](/installation#restate-ui), the CLI, or the Admin REST API:
+
+```shell theme={null}
+# Register a deployment
+restate deployments register http://localhost:9080
+# Get detailed information about a specific deployment
+restate deployment describe <deployment_id>
+# Check the registered deployments
+restate deployments list
+```
+
+<Note>
+  Some deployment targets support only HTTP/1.1. Use `--use-http1.1` when registering these deployments.
+</Note>
+
+<Note>
+  For AWS Lambda, use the function ARN instead of a URL. See [AWS Lambda deployment](/services/deploy/lambda).
+</Note>
+
+<Tip>
+  Avoid long-running handlers (days or months) - otherwise you need to keep old deployments around until all invocations complete. Instead, break work into smaller chunks using delayed calls.
+</Tip>
+
+## Automatic versioning with FaaS platforms
+
+Function-as-a-Service (FaaS) platforms automatically handle immutable versioning through version-specific URLs or ARNs.
+This makes them ideal for Restate deployments as they eliminate the complexity of manual version management.
+
+Have a look at the dedicated deployment docs to learn more:
+
+* [Vercel](/services/deploy/vercel#register-the-service-to-restate): Register the Commit URL so that Restate can address specific Vercel deployments.
+* [AWS Lambda](/services/deploy/lambda): When you [publish a Lambda function](https://docs.aws.amazon.com/lambda/latest/dg/configuration-versions.html), it automatically creates an immutable version with a unique ARN that never changes.
+* [Deno Deploy](/services/deploy/deno-deploy#register-the-service-to-restate): Register the Preview URLs so that Restate can target specific Deno deployments.
+* [Cloudflare Workers](/services/deploy/cloudflare-workers#register-the-service-to-restate): Register the Preview URLs so that Restate can target specific Cloudflare deployments.
+
+## Automatic versioning with Kubernetes Operator
+
+The [Restate Kubernetes operator](/services/deploy/kubernetes) provides a higher-level abstraction for managing service deployments and their versions automatically.
+
+The operator handles the complete versioning lifecycle:
+
+1. **Deploy new versions**: Create a new `RestateDeployment` with your updated container image
+2. **Automatic registration**: The operator registers the new deployment with the Restate cluster
+3. **Traffic routing**: New requests automatically route to the latest version
+4. **Graceful draining**: The operator monitors older deployments for ongoing invocations
+5. **Auto-scaling to zero**: Once drained, older versions automatically scale to zero
+
+For complete examples and specifications, see [Restate Operator git repo](https://github.com/restatedev/restate-operator).
+
+## Manual versioning
+
+For non-FaaS deployments, you can use either the UI or the CLI to manage deployments. The typical update flow looks like this:
+
+<Steps>
+  <Step title="Deploy new version">
+    Deploy your updated service code to a new endpoint (e.g., `http://greeter-v2/`).
+  </Step>
+
+  <Step title="Register the new deployment">
+    Then register it with Restate:
+
+    ```shell CLI theme={null}
+    restate deployments register http://greeter-v2/
+    ```
+
+    Restate automatically routes new requests to the latest deployment. Existing requests continue on the original deployment.
+  </Step>
+
+  <Step title="Monitor deployment status">
+    Check for in-flight invocations on deployments [via the UI](https://restate.dev/blog/announcing-restate-ui/#an-aid-for-versioning) or CLI.
+
+    ```shell theme={null}
+    # Get detailed information about a specific deployment
+    # including the list of active invocations
+    restate deployment describe <deployment_id> --extra
+    ```
+  </Step>
+
+  <Step title="Remove old deployment">
+    Once all invocations are complete, you can safely remove the old deployment via the UI or CLI.
+
+    ```shell theme={null}
+    restate deployments remove <deployment_id>
+    ```
+
+    If you need to force removal before the deployment is fully drained, use the `--force` flag in CLI.
+  </Step>
+</Steps>
+
+<Note title="State compatibility">
+  Virtual Object state persists across versions. Ensure your state schema remains backward compatible.
+</Note>
+
+## Local development
+
+During local development, you're iterating quickly on your code and don't need immutable deployments.
+You can safely re-register the same endpoint after code changes using the `--force` flag:
+
+```shell theme={null}
+restate deployments register --force localhost:9080
+```
+
+This overwrites the existing deployment registration, allowing Restate to discover your updated service definition.
+
+<Note>
+  In-flight invocations might keep failing with [non-determinism errors](/references/errors#rt0016), but this is typically fine during development.
+
+  You can kill all the in-flight invocations to a service using either CLI or UI:
+
+  ```shell CLI theme={null}
+  restate invocations kill <SERVICE_NAME>
+  ```
+</Note>
+
+## Advanced operations and troubleshooting
+
+This section covers common scenarios you may encounter when managing deployments, and some of the troubleshooting best practices we recommend.
+
+### Journal mismatch errors
+
+Restate performs journal compatibility checks during replay to prevent corruption.
+When you see a journal mismatch error ([RT0016](/references/errors#rt0016)), it means the code executed during replay has produced a different journal than the original execution.
+This is typically caused by two scenarios:
+
+**Non-deterministic code**: Code that produces different results on each execution, even with the same inputs.
+
+Examples of non-deterministic operations:
+
+* External operations such as HTTP requests
+* Performing any Restate Context operation, such as calling another service using `ctx.serviceClient`, inside `ctx.run` closures
+* Random value generation: `Math.random()`, `uuid.v4()`, etc.
+* Getting the current time or date: `new Date()`
+* Iterating over unordered collections, such as hash maps
+* Mutating outer scope variables (e.g. `myVar = newValue`) or object fields (e.g. `myObject.setValue()`) inside `ctx.run`, then relying on those values in the rest of the handler code.
+
+To record non-deterministic operation results for replay, you need to record its results using `ctx.run`.
+For more info, see the **durable steps** documentation: [TypeScript](/develop/ts/durable-steps), [Python](/develop/python/durable-steps), [Java/Kotlin](/develop/java/durable-steps), [Go](/develop/go/durable-steps).
+
+**In-place code changes**: Modifying deployed code at the same endpoint. This violates the immutable deployment principle and can cause in-flight invocations to fail when they replay with the updated code.
+
+Unsafe changes include:
+
+* Reordering Restate SDK operations (`run`, state access, service calls, awakeables)
+* Adding or removing SDK operations in the execution path
+* Changing operation inputs (state keys, service call payloads)
+* Modifying conditional logic that affects which operations execute
+
+See the sections above for deployment best practices and the sections below for how to fix in-flight invocations.
+
+### Fixing a bug by updating deployed code
+
+If you have a bug in your deployment code, sometimes it is safe to fix it by updating the deployment in-place.
+
+| Change                                                                 | Safe? |
+| ---------------------------------------------------------------------- | ----- |
+| Fixing a bug inside `ctx.run`                                          | ✅     |
+| Fixing a bug that consistently reproduces (e.g. deserialization error) | ✅     |
+| Changing the order of Restate operations, or adding/removing them      | ❌     |
+| Changing operation inputs (state keys, call payloads, etc.)            | ❌     |
+
+<Note>
+  This approach doesn't work on FaaS platforms (e.g. Lambda) or with the Kubernetes Operator, since these use immutable deployments by design.
+  In those cases, use [pause and resume](#pause-invocations-and-resume-on-a-new-deployment) instead.
+</Note>
+
+### Pause invocations and resume on a new deployment
+
+This is the **recommended approach** for fixing bugs affecting in-flight invocations. It works on all platforms, including FaaS and Kubernetes.
+
+When a bug affects in-flight invocations, they remain pinned to the original deployment.
+Registering a new deployment with a fix only helps new invocations. To fix existing invocations:
+
+<Steps>
+  <Step title="Register a new deployment with the fix">
+    Deploy your fixed code and register it with Restate:
+
+    ```shell theme={null}
+    restate deployments register http://greeter-v2/
+    ```
+  </Step>
+
+  <Step title="Pause the affected invocations">
+    ```shell theme={null}
+    restate invocations pause <invocation_id>
+    ```
+  </Step>
+
+  <Step title="Resume on the new deployment">
+    ```shell theme={null}
+    restate invocations resume <invocation_id> --deployment <new_deployment_id>
+    ```
+  </Step>
+</Steps>
+
+The fix must be compatible with already-executed journal entries so they can replay successfully.
+If the business logic differs, the invocation will fail with [non-determinism errors](/references/errors#rt0016).
+
+For more details, see [managing invocations](/services/invocation/managing-invocations#resume).
+
+### Reassigning a deployment endpoint
+
+<Warning>
+  This is an advanced technique. In most cases, use [pause and resume](#pause-invocations-and-resume-on-a-new-deployment) instead.
+</Warning>
+
+You can use the Admin API to change which endpoint a deployment points to.
+This is useful when you've deployed a fix to a new URL and want stuck invocations to use it:
+
+```shell theme={null}
+curl -X PUT localhost:9070/deployments/dp_14LsPzGz9HBxXIeBoH5wYUh \
+  --json '{"uri": "http://greeter-patched/"}'
+```
+
+The same determinism rules apply: the fix must be compatible with already-executed journal entries.
+
+### Updating a service interface
+
+When you register a new deployment, Restate validates that it doesn't break existing service interfaces: adding handlers is allowed, but removing or renaming them is not.
+
+For example, given you register a new deployment for the already existing service `Greeter`, renaming its handler from `greet` to `sayGreet` is a breaking change, thus registration will fail.
+
+To allow breaking changes, use the `--breaking` flag:
+
+```shell theme={null}
+restate deployments register --breaking http://greeter-v2/
+```
+
+<Tip>
+  Before using `--breaking`, make sure all callers have been updated to use the new service interface.
+</Tip>
+
+### Removing a service
+
+In Restate to remove a service, you must remove the deployment that contains it.
+
+To do this safely, follow the steps below:
+
+1. Ensure no other handlers or services have business logic that calls the service you're removing.
+2. If several services are bundled in the same deployment, you can't remove only one of them. You have to remove the whole deployment.
+   So make sure that you first deploy the services you want to keep in a separate new deployment.
+3. [Make the service private](/services/security#private-services) to avoid accepting new HTTP requests.
+4. Check whether the service has pending invocations by filtering the invocations on deployment ID in the [UI](/installation#restate-ui) or via `restate services status`, and wait until the service is drained (i.e. no ongoing invocations).
+
+**When all prerequisites are fulfilled**, you can remove the deployment containing the service via the [UI](/installation#restate-ui) or via CLI:
+
+```shell theme={null}
+restate deployments remove dp_14LsPzGz9HBxXIeBoH5wYUh
+```
+
+If the deployment isn't drained yet but you still want to remove it, use the `--force` flag in CLI.

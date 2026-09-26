@@ -1,0 +1,116 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Services
+
+> Implementing Restate services with the Python SDK.
+
+<GitHub.Repo repo="restatedev/sdk-python" />
+
+The Restate SDK lets you implement **handlers**. Handlers can be part of a **[Basic Service](/foundations/services#basic-service)**, a **[Virtual Object](/foundations/services#virtual-object)**, or a **[Workflow](/foundations/services#workflow)**. This page shows how to define them with the Python SDK.
+
+The Restate Python SDK is open source (MIT).
+
+## Prerequisites
+
+* Python >= v3.11
+
+## Getting started
+
+<Tip>
+  Get started quickly with the [Python Quickstart](/quickstart#python).
+</Tip>
+
+Add the `restate_sdk[serde]` dependency to your Python project to start developing Restate services.
+
+## Basic Services
+
+[Basic Services](/foundations/services) group related **handlers** and expose them as callable endpoints:
+
+```python {"CODE_LOAD::python/src/develop/my_service.py"}  theme={null}
+import restate
+
+my_service = restate.Service("MyService")
+
+
+@my_service.handler("myHandler")
+async def my_handler(ctx: restate.Context, greeting: str) -> str:
+    return f"{greeting}!"
+
+
+app = restate.app([my_service])
+```
+
+* Initialize the Service and specify the service name (here `MyService`).
+* Annotate each handler with `@my_service.handler()`. Optionally, you can override the handler name (here `myHandler`).
+* Each handler can then be called at `<RESTATE_INGRESS>/myService/myHandler`
+* Handlers take the `restate.Context` as the first argument.
+* Handlers can take one optional JSON-serializable input and must return an optional output. These can be of any primitive type, `TypedDict` or Pydantic model (or see [custom serialization](/develop/python/serialization) for advanced types).
+* Finally, initialize the app, bind the service(s) to it, and serve it. Look at the [serving docs](/develop/python/serving) to learn more about serving your app.
+
+## Virtual Objects
+
+[Virtual Objects](/foundations/services) are services that are stateful and key-addressable — each object instance has a unique ID and persistent state.
+
+```python {"CODE_LOAD::python/src/develop/my_virtual_object.py"}  theme={null}
+import restate
+
+my_object = restate.VirtualObject("MyVirtualObject")
+
+
+@my_object.handler("myHandler")
+async def my_handler(ctx: restate.ObjectContext, greeting: str) -> str:
+    return f"{greeting} {ctx.key()}!"
+
+
+@my_object.handler(kind="shared")
+async def my_concurrent_handler(ctx: restate.ObjectSharedContext, greeting: str) -> str:
+    return f"{greeting} {ctx.key()}!"
+
+
+app = restate.app([my_object])
+```
+
+* Initialize a `restate.VirtualObject` and specify the object's name (here `MyVirtualObject`).
+* Each instance is identified by a key (accessible via `ctx.key()`).
+* Virtual Objects can have [exclusive and shared handlers](/foundations/handlers#handler-behavior).
+* Exclusive handlers receive an `ObjectContext`, allowing read/write access to object state.
+* Shared handlers have the annotation `kind="shared"` and receive an `ObjectSharedContext`.
+
+## Workflows
+
+[Workflows](/foundations/services) are long-lived processes with a defined lifecycle. They run once per key and are ideal for long-running, multi-step processes that need to preserve progress, wait for external events, or accept input while they are running.
+
+```python {"CODE_LOAD::python/src/develop/my_workflow.py"}  theme={null}
+import restate
+
+my_workflow = restate.Workflow("MyWorkflow")
+
+
+@my_workflow.main()
+async def run(ctx: restate.WorkflowContext, req: str) -> str:
+    # ... implement workflow logic here ---
+    return "success"
+
+
+@my_workflow.handler()
+async def interact_with_workflow(ctx: restate.WorkflowSharedContext, req: str):
+    # ... implement interaction logic here ...
+    return
+
+
+app = restate.app([my_workflow])
+```
+
+* Initialize a `restate.Workflow` and specify its name (here `MyWorkflow`).
+* Every workflow **must** include a `run` handler:
+  * This is the main orchestration entry point and is annotated with `@my_workflow.main()`.
+  * It runs exactly once per workflow execution and uses the `WorkflowContext`
+  * Resubmission of the same workflow will fail with "Previously accepted". The invocation ID can be found in the request header `x-restate-id`.
+  * Use `ctx.key()` to access the workflow's unique ID
+* Additional handlers are annotated with `@my_workflow.handler()` and must use the `WorkflowSharedContext`. They can query state or resolve workflow promises, run concurrently with the `run` handler, and remain callable until the retention time expires.
+
+## Configuring services
+
+Check out the [service configuration docs](/services/configuration) to learn how to configure service behavior, including timeouts and retention policies.

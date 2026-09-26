@@ -1,0 +1,745 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Rust SDK changelog
+
+> Releases of the Rust SDK.
+
+<Update label="2026-09-22" description="Rust SDK v0.12.1">
+  ### Restate Rust SDK v0.12.1 Release Notes
+
+  ### Highlights
+
+  * **Scoped ingress clients** — bind a generated ingress client to a Restate Cloud scope once, instead of threading a `.scope(...)` call through every request
+  * **Workflow handle lookup** — re-attach to a running workflow by key alone with the new `handle()` method on generated workflow ingress clients, no need to persist the invocation ID
+
+  ### Table of Contents
+
+  * [New Features](#new-features)
+    * [Scoped ingress clients and workflow handle lookup](#scoped-ingress-clients-and-workflow-handle-lookup)
+
+  ### New Features
+
+  ### Scoped ingress clients and workflow handle lookup
+
+  Generated ingress clients gain two additions:
+
+  * **`scoped_client(...)`** — an alternative constructor (alongside `from_client`) that binds the
+    client to a Restate Cloud scope. Every request issued by a scoped client (and its workflow
+    `handle()` lookup) is routed through the `/restate/scope/&#123;scope&#125;/...` prefix.
+  * **Workflow `handle()`** — generated workflow ingress clients expose an async `handle()` method
+    that resolves the `InvocationHandle` for the workflow invocation keyed by the client's key. The
+    handle is typed to the workflow's `run` handler output, so `attach()`/`output()` decode that
+    result. If a workflow declares a handler literally named `handle`, its generated method is renamed
+    to `_handle` so the injected lookup keeps the plain `handle` name (the on-the-wire handler name is
+    unchanged).
+
+  At the transport level, `Client::lookup_workflow(workflow_name, workflow_key, scope)` is now public.
+  It resolves a workflow invocation to a typed `InvocationHandle` through the `/restate/lookup` route.
+
+  **Why this matters:**
+
+  * Restate Cloud users can target a specific scope from a single `Client` without threading a
+    `.scope(...)` call through every request.
+  * Workflows can be re-attached from outside a Restate service by key alone, without having to
+    persist the invocation ID returned at submission time.
+
+  **Impact on users:**
+
+  * No breaking changes; these are purely additive APIs.
+  * `handle()` and `lookup_workflow` require Restate >= 1.7 (the `/restate/lookup` route).
+  * Scoped routing requires Restate Cloud.
+
+  **Example:**
+
+  ```rust theme={null}
+  use restate_sdk::ingress::ReqwestClient;
+
+  let client = ReqwestClient::connect("http://localhost:8080".parse()?)?;
+
+  // Submit a workflow, then re-attach to it later by key.
+  let workflow = MyWorkflowIngressClient::from_client(client.clone(), "order-42");
+  workflow.run("input".to_owned()).send().await?;
+
+  let handle = workflow.handle().await?;
+  let result = handle.attach().await?.into_body();
+
+  // Scoped client: every request runs in the given Restate Cloud scope.
+  let scoped = MyWorkflowIngressClient::scoped_client(client, "order-42", "prod");
+  ```
+
+  **Related Issues:**
+
+  * PR [#129](https://github.com/restatedev/sdk-rust/pull/129)
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.12.1)
+</Update>
+
+<Update label="2026-09-02" description="Rust SDK v0.12.0">
+  ### Restate Rust SDK v0.12.0 Release Notes
+
+  ### Ingress client
+
+  The SDK now generates a typed `&lt;Type&gt;IngressClient` for every impl-block service, virtual object,
+  and workflow. Ingress clients invoke handlers from outside a Restate service and require Restate
+  1.7 or newer.
+
+  Enable the `reqwest-client` feature to use the built-in `reqwest` client:
+
+  ```rust theme={null}
+  use restate_sdk::ingress::ReqwestClient;
+
+  let client = ReqwestClient::connect("http://localhost:8080".parse()?)?;
+  let greeter = GreeterIngressClient::from_client(client);
+  let greeting = greeter
+      .greet("Ada".to_owned())
+      .call()
+      .await?
+      .into_body()?;
+
+  println!("{greeting}");
+  ```
+
+  To use another HTTP client, implement `RequestExecutor` and pass it to `Client::new`.
+
+  Check out the docs for more details: [https://docs.rs/restate-sdk/0.12.0/restate\_sdk/ingress/index.html](https://docs.rs/restate-sdk/0.12.0/restate_sdk/ingress/index.html)
+
+  ### In-process Restate Cloud tunnel
+
+  The SDK can now serve an endpoint over outbound HTTP/2 connections to Restate Cloud, so a
+  service no longer needs an inbound HTTP port.
+
+  ```toml theme={null}
+  restate-sdk = { version = "0.12", features = ["tunnel"] }
+  ```
+
+  It works transparently with the Kubernetes operator:
+
+  ```rust theme={null}
+  use restate_sdk::prelude::*;
+
+  let endpoint = Endpoint::builder().bind(Greeter).build();
+  Tunnel::new(endpoint).run().await?;
+  ```
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.12.0)
+</Update>
+
+<Update label="2026-08-14" description="Rust SDK v0.11.1">
+  ### What's Changed
+
+  * Bump shared core to 7.0.3 by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/125](https://github.com/restatedev/sdk-rust/pull/125)
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.11.1)
+</Update>
+
+<Update label="2026-07-21" description="Rust SDK v0.11.0">
+  ### Release v0.11.0
+
+  ### New Features
+
+  ### (Preview) Scope and limit key to enable flow control
+
+  This release adds the SDK API for [flow control](https://docs.restate.dev/services/flow-control), the new Restate 1.7 feature to cap how many invocations run concurrently within a **scope**, with optional hierarchical **limit keys**. Use it to bound cost (especially for AI agents, where every concurrent invocation is real model/API spend), shield downstream systems from bursts, and share capacity fairly across tenants.
+
+  To use scope and limit keys in service to service communication:
+
+  ```rust theme={null}
+  // Route a call into a named scope
+  ctx.service_client::<MyServiceClient>()
+      .process(payload)
+      .scope("tenant-123")
+      .call()
+      .await?;
+
+  // Add a limit key for hierarchical concurrency limits within the scope
+  ctx.workflow_client::<MyWorkflowClient>("wf-key")
+      .run(input)
+      .scope("tenant-123")
+      .limit_key("api-key/user42")
+      .call()
+      .await?;
+  ```
+
+  Check out the [flow control documentation](https://docs.restate.dev/services/flow-control) for more details on how concurrency limits work and how to set them up.
+
+  > **NOTE:** This API is in preview and is not enabled by default. To use it in restate-server 1.7, enable the flow control and protocol v7 experimental features via `RESTATE_EXPERIMENTAL_ENABLE_PROTOCOL_V7=true` and `RESTATE_EXPERIMENTAL_ENABLE_VQUEUES=true` (new clusters only). See [https://docs.restate.dev/services/flow-control](https://docs.restate.dev/services/flow-control) for details.
+
+  ### Signals and the `InvocationHandle` API
+
+  The Rust SDK gains **signals**, alongside a redesigned `InvocationHandle` API.
+
+  Signals let invocations communicate directly with each other: one invocation waits for a signal, and any other handler can resolve or reject it by referencing the target invocation's ID.
+
+  ```rust theme={null}
+  // Inside the invocation that wants to wait:
+  let approved: bool = ctx.signal::<bool>("approved").await?;
+
+  // Inside another handler that knows the target invocation's ID:
+  let target = ctx.invocation_handle(target_invocation_id);
+  target.signal("approved").resolve(true);
+  // or, to wake the waiter with a terminal error:
+  target.signal("approved").reject(TerminalError::new("Request denied"));
+  ```
+
+  ### New API to define services, objects and workflows
+
+  Services, virtual objects and workflows are now defined by putting `#[restate_sdk::service]` (or `#[object]`/`#[workflow]`) on the **`impl` block** of a plain struct, with `#[handler]` on each method.
+
+  No more separate trait + impl, no more `.serve()`.
+
+  **Before:**
+
+  ```rust theme={null}
+  #[restate_sdk::service]
+  trait Greeter {
+      async fn greet(name: String) -> HandlerResult<String>;
+  }
+
+  struct GreeterImpl;
+
+  impl Greeter for GreeterImpl {
+      async fn greet(&self, _ctx: Context<'_>, name: String) -> HandlerResult<String> {
+          Ok(format!("Greetings {name}"))
+      }
+  }
+
+  Endpoint::builder().bind(GreeterImpl.serve()).build();
+  ```
+
+  **After:**
+
+  ```rust theme={null}
+  struct Greeter;
+
+  #[restate_sdk::service]
+  impl Greeter {
+      #[handler]
+      async fn greet(&self, _ctx: Context<'_>, name: String) -> HandlerResult<String> {
+          Ok(format!("Greetings {name}"))
+      }
+  }
+
+  Endpoint::builder().bind(Greeter).build();
+  ```
+
+  For virtual objects and workflows, whether a handler is shared or exclusive is inferred directly from the context type in its signature (`ObjectContext`/`SharedObjectContext`, `WorkflowContext`/`SharedWorkflowContext`):
+
+  ```rust theme={null}
+  struct Counter;
+
+  #[restate_sdk::object]
+  impl Counter {
+      #[handler]
+      async fn add(&self, ctx: ObjectContext<'_>, val: u64) -> HandlerResult<u64> {
+          let new = ctx.get::<u64>("count").await?.unwrap_or(0) + val;
+          ctx.set("count", new);
+          Ok(new)
+      }
+
+      #[handler]
+      async fn get(&self, ctx: SharedObjectContext<'_>) -> HandlerResult<u64> {
+          Ok(ctx.get::<u64>("count").await?.unwrap_or(0))
+      }
+  }
+  ```
+
+  The new API supports overriding service/handler names and client visibility, and fully generic services (type params, bounds, where-clauses):
+
+  ```rust theme={null}
+  #[restate_sdk::service(name = "greeter", client_visibility = "pub(crate)")]
+  impl Greeter {
+      #[handler(name = "myGreet")]
+      async fn my_greet(&self, _ctx: Context<'_>, name: String) -> HandlerResult<String> {
+          Ok(name)
+      }
+  }
+  ```
+
+  Together with this change, you can now express service and handler level configuration directly in the macro arguments:
+
+  ```rust theme={null}
+  struct MyService;
+
+  #[restate_sdk::service(
+      inactivity_timeout = "1m",
+      idempotency_retention = "1 day",
+      journal_retention = "3 days",
+      invocation_retry_policy(
+          initial_interval = "100ms",
+          max_interval = "10s",
+          factor = 2.0,
+          max_attempts = 10,
+          on_max_attempts = "pause"
+      )
+  )]
+  impl MyService {
+      #[handler(journal_retention = "1h", lazy_state)]
+      async fn my_handler(&self, ctx: Context<'_>) -> HandlerResult<()> {
+          // ...
+          Ok(())
+      }
+  }
+  ```
+
+  See the [`configuration` module docs](https://docs.rs/restate-sdk/0.11.0/restate_sdk/configuration/) for the complete reference.
+
+  > **NOTE:** The old trait-based definition API still works but is **deprecated** and will emit a warning; please migrate to the struct-based API above.
+
+  ### Durable `map` / `map_ok` / `map_err` combinators
+
+  `DurableFuture` gains `map`, `map_ok` and `map_err`. Unlike `futures`' `FutureExt::map` / `TryFutureExt::map_ok`, these **preserve the durable future type**, so the mapped result is still a `DurableFuture` and can keep being used in `select!` and in `DurableFuturesUnordered`.
+
+  ```rust theme={null}
+  use restate_sdk::prelude::*;
+  use restate_sdk::context::DurableFuture; // brings map / map_ok / map_err into scope
+
+  async fn example(ctx: Context<'_>) -> Result<(), TerminalError> {
+      // map: transform the whole Output. Here Result<(), _> becomes String, so no `?` needed.
+      let outcome: String = ctx
+          .sleep(std::time::Duration::from_secs(1))
+          .map(|res| match res {
+              Ok(())  => "woke up".to_owned(),
+              Err(e)  => format!("cancelled: {e}"),
+          })
+          .await;
+
+      // map_ok: transform only the success value; a terminal error passes through untouched.
+      let len: usize = ctx.signal::<String>("count").map_ok(|s| s.len()).await?;
+
+      // map_err: transform only the terminal error; the success value passes through untouched.
+      let token: String = ctx
+          .signal::<String>("token")
+          .map_err(|e| TerminalError::new(format!("token signal failed: {}", e.message())))
+          .await?;
+
+      let _ = (outcome, len, token);
+      Ok(())
+  }
+  ```
+
+  ### Turn any error into a terminal error with `.terminal()`
+
+  A new `TerminalErrorExt` trait provides the shorthand to convert `Result` error value to terminal error using `.terminal()`:
+
+  ```rust theme={null}
+  use restate_sdk::prelude::*;
+
+  async fn handle() -> Result<(), HandlerError> {
+      let parsed: i32 = "not a number".parse().terminal()?;
+      Ok(())
+  }
+  ```
+
+  ### `attach()` and the redesigned `InvocationHandle`
+
+  `InvocationHandle` was redesigned to hold `attach()` and the new `signal()` handle.
+
+  You can obtain one when you already know an invocation id (`ctx.invocation_handle(id)`), by `.await`-ing the handle returned from a one-way `send()`, or from a `call()` future:
+
+  ```rust theme={null}
+  let handle = ctx.invocation_handle(invocation_id);
+
+  // Known synchronously, no await:
+  let id: &str = handle.invocation_id();
+
+  // Await the invocation's output/result:
+  let output: MyOutput = handle.attach::<MyOutput>().await?;
+
+  // Fire-and-forget cancellation:
+  handle.cancel();
+  ```
+
+  This is a **breaking change** to the previous `InvocationHandle` trait and their usage:
+
+  * `invocation_id()` is now a synchronous `-> &str` (was `async -> Result<String, _>`).
+  * `cancel()` is now a synchronous fire-and-forget (was async).
+  * `CallFuture` doesn't implement `InvocationHandle` anymore, now you need to call `invocation_handle(&self)`.
+  * `send()` / `send_after()` now return an awaitable `SendHandle`: `.await`-ing it yields an `InvocationHandle` to the new invocation.
+
+  ### Additional changes
+
+  * Re-exported the `rand` and `uuid` crates (#123).
+  * Bumped the shared e2e test suite to `restatedev/e2e/sdk-tests@v2.2` and conformed `test-services` to the v2.0/v2.2 contract (#124).
+  * CI now reuses a prebuilt `test-services` image: `integration.yaml` accepts a `serviceImage` input, and a new `docker.yaml` builds and pushes `ghcr.io/restatedev/test-services-rust` (#124).
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.11.0)
+</Update>
+
+<Update label="2026-04-28" description="Rust SDK v0.10.0">
+  ### New Features
+
+  ### `DurableFuturesUnordered`
+
+  Push a dynamic number of durable futures and consume them in completion order. Each result comes back with the index of the future that completed, so you can correlate it with your input.
+
+  ```rust theme={null}
+  let mut futures = DurableFuturesUnordered::new();
+  futures.push(ctx.sleep(Duration::from_secs(1)));
+  futures.push(ctx.sleep(Duration::from_secs(2)));
+  futures.push(ctx.sleep(Duration::from_secs(3)));
+
+  while let Some((index, result)) = futures.next().await? {
+      result?;
+      // ...
+  }
+  ```
+
+  PR [#106](https://github.com/restatedev/sdk-rust/pull/106)
+
+  ### Selectable `jsonwebtoken` crypto backend
+
+  You can now pick `jsonwebtoken`'s backend explicitly, either `rust_crypto` or `aws_lc_rs`:
+
+  ```toml theme={null}
+  restate-sdk = { version = "0.10", default-features = false, features = ["http_server", "aws_lc_rs"] }
+  ```
+
+  `rust_crypto` remains the default. Disabling both lets you call `jsonwebtoken::crypto::CryptoProvider::install_default()` yourself.
+
+  PR [#108](https://github.com/restatedev/sdk-rust/pull/108)
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.10.0)
+</Update>
+
+<Update label="2026-02-20" description="Rust SDK v0.9.0">
+  ### ✨ Highlights
+
+  * 🔧 **MSRV raised to 1.90.0** — a downstream dependency silently raised its MSRV, which would cause build failures for users relying on our previously announced MSRV
+  * 🏷️ **`#[lazy_state]` handler attribute** — opt into lazy state loading on a per-handler basis
+
+  ### ⚠️ Breaking Changes
+
+  ### Dependency bumps with user-facing API changes
+
+  Several dependencies have been bumped. Most are transparent, but the following affect user code:
+
+  #### `rand` 0.9 → 0.10
+
+  The `rand()` method on context types returns `&mut rand::prelude::StdRng`. In rand 0.10, the trait that provides convenience methods like `.random()` and `.random_range()` was renamed from `Rng` to `RngExt`. If you import this trait, update your code:
+
+  ```diff theme={null}
+  - use rand::Rng;
+  + use rand::RngExt;
+  ```
+
+  Additionally, the low-level trait `RngCore` (providing `next_u32()`, `next_u64()`, `fill_bytes()`) was renamed to `Rng`:
+
+  ```diff theme={null}
+  - use rand::RngCore;
+  + use rand::Rng;
+  ```
+
+  `StdRng` no longer implements `Clone`. If you were cloning the RNG returned by `ctx.rand()`, this is no longer possible.
+
+  #### Other dependency bumps (no user-facing changes)
+
+  The following dependencies were also bumped but require no changes to user code:
+
+  | Dependency                | Old      | New     |
+  | ------------------------- | -------- | ------- |
+  | `restate-sdk-shared-core` | `0.6.0`  | `0.9.0` |
+  | `aws_lambda_events`       | `0.16.1` | `1.0`   |
+  | `lambda_runtime`          | `0.14.2` | `1.0`   |
+  | `typify`                  | `0.1.0`  | `0.6`   |
+  | `jsonptr`                 | `0.5.1`  | `0.7`   |
+  | `regress`                 | `0.10.3` | `0.10`  |
+  | `bytes`                   | `1.10`   | `1.11`  |
+  | `http`                    | `1.3`    | `1.4`   |
+  | `hyper`                   | `1.6`    | `1.8`   |
+  | `tokio`                   | `1.44`   | `1.49`  |
+  | `uuid`                    | `1.16.0` | `1.20`  |
+  | `schemars`                | `1.0.0`  | `1.2`   |
+  | `reqwest` (dev)           | `0.12`   | `0.13`  |
+  | `testcontainers`          | `0.23.3` | `0.27`  |
+
+  ### MSRV raised to 1.90.0
+
+  The minimum supported Rust version (MSRV) has been raised from **1.85.0** to **1.90.0**.
+
+  This bump was necessary because a downstream dependency raised its own MSRV without announcing it. Without this change, users relying on our previously announced MSRV of 1.85.0 would encounter build failures. Any user building with a toolchain between 1.85.0 and 1.87.x is affected. Rather than pinning to an older version of the dependency, we chose to follow the ecosystem forward.
+
+  **Impact on Users:**
+
+  * Projects using a Rust toolchain older than 1.90.0 will fail to compile against this version of the SDK
+  * Your own crate's `edition` field does not need to change, but your installed Rust toolchain must be >= 1.90.0
+
+  **Migration Guidance:**
+
+  Update your Rust toolchain:
+
+  ```bash theme={null}
+  rustup update stable
+  ```
+
+  Verify your version:
+
+  ```bash theme={null}
+  rustc --version  # Must be >= 1.90.0
+  ```
+
+  ### 🆕 New Features
+
+  ### `#[lazy_state]` handler attribute
+
+  You can now annotate individual handlers with `#[lazy_state]` to enable lazy state loading for that handler. When enabled, state is fetched on demand rather than eagerly loaded when the handler is invoked.
+
+  **Example:**
+
+  ```rust theme={null}
+  #[restate_sdk::object]
+  pub trait MyObject {
+      #[lazy_state]
+      async fn my_handler(name: String) -> Result<String, HandlerError>;
+  }
+  ```
+
+  **Related Issues:**
+
+  * PR [#90](https://github.com/restatedev/sdk-rust/pull/90)
+
+  ***
+
+  📄 [Full release notes](https://github.com/restatedev/sdk-rust/blob/v0.9.0/release-notes/v0.9.0.md)
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.9.0)
+</Update>
+
+<Update label="2026-02-12" description="Rust SDK v0.8.0">
+  ### ✨ Highlights
+
+  * 🔧 **MSRV raised to 1.85.0** with Rust edition 2024 — ensure your toolchain is up to date
+  * 🆔 **Invocation ID now accessible** from all handler context types via `invocation_id()`
+  * 🔓 **`ProtocolMode` and `HandleOptions` are now public** — enabling custom server integrations beyond the built-in HTTP server and Lambda endpoint
+
+  ### ⚠️ Breaking Changes
+
+  ### Rust edition 2024 and MSRV 1.85.0
+
+  The SDK now uses Rust edition 2024 and requires a minimum supported Rust version (MSRV) of **1.85.0** (previously 1.76.0).
+
+  **Impact on Users:**
+
+  * Projects using an older Rust toolchain will fail to compile against this version of the SDK
+  * Your own crate's `edition` field does not need to change, but your installed Rust toolchain must be >= 1.85.0
+
+  **Migration Guidance:**
+
+  Update your Rust toolchain:
+
+  ```bash theme={null}
+  rustup update stable
+  ```
+
+  Verify your version:
+
+  ```bash theme={null}
+  rustc --version  # Must be >= 1.85.0
+  ```
+
+  **Related Issues:**
+
+  * PR [#82](https://github.com/restatedev/sdk-rust/pull/82)
+
+  ### 🚀 New Features
+
+  ### 🆔 Invocation ID available in handler context
+
+  All handler context types now expose an `invocation_id()` method that returns the current Restate invocation ID as a `&str`.
+
+  This is useful for logging, debugging, and correlating requests across services.
+
+  **Example:**
+
+  ```rust theme={null}
+  impl Greeter for GreeterImpl {
+      async fn greet(&self, ctx: Context<'_>, name: String) -> HandlerResult<String> {
+          let id = ctx.invocation_id();
+          tracing::info!("Handling invocation {id} for {name}");
+          Ok(format!("Greetings {name}"))
+      }
+  }
+  ```
+
+  Available on all context types: `Context`, `ObjectContext`, `SharedObjectContext`, `WorkflowContext`, and `SharedWorkflowContext`.
+
+  **Related Issues:**
+
+  * PR [#83](https://github.com/restatedev/sdk-rust/pull/83)
+
+  ### 🔓 Public `ProtocolMode`, `HandleOptions`, and `handle_with_options`
+
+  `ProtocolMode`, `HandleOptions`, and the `Endpoint::handle_with_options()` method are now part of the public API (exported via the prelude).
+
+  This enables building custom server integrations beyond the built-in `HttpServer` and `LambdaEndpoint`. For example, you can now implement your own HTTP framework adapter or request-response transport by calling `handle_with_options` directly with the desired `ProtocolMode`.
+
+  **Related Issues:**
+
+  * PR [#86](https://github.com/restatedev/sdk-rust/pull/86)
+
+  ***
+
+  📄 [Full release notes](https://github.com/restatedev/sdk-rust/blob/main/release-notes/v0.8.0.md)
+
+  ### 👋 New Contributors
+
+  * @sagikazarmark made their first contribution in [https://github.com/restatedev/sdk-rust/pull/80](https://github.com/restatedev/sdk-rust/pull/80)
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.8.0)
+</Update>
+
+<Update label="2025-09-16" description="Rust SDK v0.7.0">
+  ### AWS Lambda support
+
+  You can now use the Rust SDK with AWS Lambda, check out [https://github.com/restatedev/sdk-rust?tab=readme-ov-file#running-on-lambda](https://github.com/restatedev/sdk-rust?tab=readme-ov-file#running-on-lambda) for more details on how to set it up.
+
+  ### Invocation retry policy
+
+  When used with Restate 1.5, you can now configure the invocation retry policy from the SDK directly. See [https://github.com/restatedev/restate/releases/tag/v1.5.0](https://github.com/restatedev/restate/releases/tag/v1.5.0) for more details on the new invocation retry policy configuration.
+
+  ### What's Changed
+
+  * Refactor Endpoint internals. by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/71](https://github.com/restatedev/sdk-rust/pull/71)
+  * Add lambda runtime support by @muhamadazmy in [https://github.com/restatedev/sdk-rust/pull/70](https://github.com/restatedev/sdk-rust/pull/70)
+  * Add new retry policy options by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/73](https://github.com/restatedev/sdk-rust/pull/73)
+  * Clarify max attempts meaning by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/74](https://github.com/restatedev/sdk-rust/pull/74)
+
+  ### New Contributors
+
+  * @muhamadazmy made their first contribution in [https://github.com/restatedev/sdk-rust/pull/70](https://github.com/restatedev/sdk-rust/pull/70)
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.7.0)
+</Update>
+
+<Update label="2025-07-02" description="Rust SDK v0.6.0">
+  Introduce new feature `bind_with_options`, allowing to customize service and handler configuration options. Please note, this feature works only with Restate 1.4 onward.
+
+  ### What's Changed
+
+  * Discovery protocol v3 by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/62](https://github.com/restatedev/sdk-rust/pull/62)
+  * Update shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/63](https://github.com/restatedev/sdk-rust/pull/63)
+  * Update shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/66](https://github.com/restatedev/sdk-rust/pull/66)
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.6.0)
+</Update>
+
+<Update label="2025-04-29" description="Rust SDK v0.5.0">
+  ### What's Changed
+
+  ### Schema generation
+
+  By enabling the optional dependency `schemars`, the SDK will generate and propagate JSON schemas of your handlers input/output, which will be available in the generated [OpenAPI](https://docs.restate.dev/invoke/http/#openapi-support) and in the Restate Playground. For more details on the schema generation, and info on how to tune it, check the [https://docs.rs/restate-sdk/latest/restate\_sdk/serde/trait.PayloadMetadata.html](https://docs.rs/restate-sdk/latest/restate_sdk/serde/trait.PayloadMetadata.html) documentation.
+
+  Thanks to @hxphsts for the contribution!
+
+  ### New `restate-sdk-testcontainers` module
+
+  We've released a first version of the testcontainers integration, that simplifies testing locally your restate service. Check [https://github.com/restatedev/sdk-rust/blob/main/testcontainers/tests/test\_container.rs](https://github.com/restatedev/sdk-rust/blob/main/testcontainers/tests/test_container.rs) for a full example.
+
+  Thanks to @kpwebb for the contribution.
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.5.0)
+</Update>
+
+<Update label="2025-04-09" description="Rust SDK v0.4.0">
+  We're pleased to announce the release of Rust SDK 0.4.0, in combination with Restate 1.3.
+  Check out the announcement blog post for more details about Restate 1.3 and the new SDK features: [https://restate.dev/blog/announcing-restate-1.3/](https://restate.dev/blog/announcing-restate-1.3/)
+
+  This SDK introduces the following new APIs:
+
+  * Support the new features of Restate 1.3, check [`InvocationHandle`](https://docs.rs/restate-sdk/latest/restate_sdk/context/trait.InvocationHandle.html) for more details
+  * You can now use the new macro [`select!`](https://docs.rs/restate-sdk/latest/restate_sdk/macro.select.html) (alike `tokio::select`) to await concurrently for multiple operations to complete.
+  * `Request::send_with_delay` was renamed to `Request::send_after`
+  * The SDK now provides a utility to use in combination with `tracing` that hides logs on replay. Check [https://docs.rs/restate-sdk/latest/restate\_sdk/filter/struct.ReplayAwareFilter.html](https://docs.rs/restate-sdk/latest/restate_sdk/filter/struct.ReplayAwareFilter.html) for more details.
+
+  Rust SDK 0.4.0 can be used in combination with Restate 1.3 onward.
+
+  ### Full changelog
+
+  * Add note on retry policies for ctx.run by @gvdongen in [https://github.com/restatedev/sdk-rust/pull/39](https://github.com/restatedev/sdk-rust/pull/39)
+  * Improve workflow docs by @gvdongen in [https://github.com/restatedev/sdk-rust/pull/40](https://github.com/restatedev/sdk-rust/pull/40)
+  * Use test suite 2.4 by @jackkleeman in [https://github.com/restatedev/sdk-rust/pull/37](https://github.com/restatedev/sdk-rust/pull/37)
+  * rust testcontainer framework by @kpwebb in [https://github.com/restatedev/sdk-rust/pull/41](https://github.com/restatedev/sdk-rust/pull/41)
+  * Pin sha2 version by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/45](https://github.com/restatedev/sdk-rust/pull/45)
+  * Service Protocol V4 by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/46](https://github.com/restatedev/sdk-rust/pull/46)
+  * Fix cancel test by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/47](https://github.com/restatedev/sdk-rust/pull/47)
+  * Replay aware logger by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/48](https://github.com/restatedev/sdk-rust/pull/48)
+  * Update test suite by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/49](https://github.com/restatedev/sdk-rust/pull/49)
+  * Protocol V5 by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/50](https://github.com/restatedev/sdk-rust/pull/50)
+  * First pass at a select statement by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/51](https://github.com/restatedev/sdk-rust/pull/51)
+  * Add CLA automation by @tillrohrmann in [https://github.com/restatedev/sdk-rust/pull/52](https://github.com/restatedev/sdk-rust/pull/52)
+  * Fix little bug with run cancellation by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/54](https://github.com/restatedev/sdk-rust/pull/54)
+  * Dependency bumping by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/55](https://github.com/restatedev/sdk-rust/pull/55)
+  * Bump SDK versions by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/57](https://github.com/restatedev/sdk-rust/pull/57)
+
+  ### New Contributors
+
+  * @jackkleeman made their first contribution in [https://github.com/restatedev/sdk-rust/pull/37](https://github.com/restatedev/sdk-rust/pull/37)
+  * @kpwebb made their first contribution in [https://github.com/restatedev/sdk-rust/pull/41](https://github.com/restatedev/sdk-rust/pull/41)
+  * @tillrohrmann made their first contribution in [https://github.com/restatedev/sdk-rust/pull/52](https://github.com/restatedev/sdk-rust/pull/52)
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.4.0)
+</Update>
+
+<Update label="2024-12-05" description="Rust SDK v0.3.2">
+  ### What's Changed
+
+  * Add MSRV computed with `cargo msrv` by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/26](https://github.com/restatedev/sdk-rust/pull/26)
+  * Example with periodic task by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/28](https://github.com/restatedev/sdk-rust/pull/28)
+  * Make endpoint handle function independent of other handlers by @h7kanna in [https://github.com/restatedev/sdk-rust/pull/29](https://github.com/restatedev/sdk-rust/pull/29)
+  * No need for the run future to be `Sync` by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/32](https://github.com/restatedev/sdk-rust/pull/32)
+  * Documentation for Rust SDK by @gvdongen in [https://github.com/restatedev/sdk-rust/pull/34](https://github.com/restatedev/sdk-rust/pull/34)
+  * Fix docs landing page by @gvdongen in [https://github.com/restatedev/sdk-rust/pull/36](https://github.com/restatedev/sdk-rust/pull/36)
+
+  ### New Contributors
+
+  * @h7kanna made their first contribution in [https://github.com/restatedev/sdk-rust/pull/29](https://github.com/restatedev/sdk-rust/pull/29)
+  * @gvdongen made their first contribution in [https://github.com/restatedev/sdk-rust/pull/34](https://github.com/restatedev/sdk-rust/pull/34)
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.3.2)
+</Update>
+
+<Update label="2024-09-10" description="Rust SDK v0.3.0">
+  ### Breaking changes
+
+  * The `ctx.run` API now does not require `name` as first parameter anymore
+  * Renamed `Endpoint.with_service` to `Endpoint.bind`
+  * This SDK is compatible only with Restate >= 1.1
+
+  ### New features
+
+  * It is now possible to configure a retry policy for `ctx.run`
+  * Now std `Result` can be returned from handlers, and similarly any error type can be used. Behind the hood, the error type will always be converted to `HandlerError`, following the rules described here: [https://docs.rs/restate-sdk/latest/restate\_sdk/errors/struct.HandlerError.html](https://docs.rs/restate-sdk/latest/restate_sdk/errors/struct.HandlerError.html)
+
+  ### What's Changed
+
+  * Rust docs by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/17](https://github.com/restatedev/sdk-rust/pull/17)
+  * Fix bad indendation in docs by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/18](https://github.com/restatedev/sdk-rust/pull/18)
+  * Add x\_restate\_server header by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/21](https://github.com/restatedev/sdk-rust/pull/21)
+  * Side effect retry by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/20](https://github.com/restatedev/sdk-rust/pull/20)
+  * Now a standalone Result can be returned from handlers by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/22](https://github.com/restatedev/sdk-rust/pull/22)
+  * Naming improvements by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/23](https://github.com/restatedev/sdk-rust/pull/23)
+  * Docs improvements by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/24](https://github.com/restatedev/sdk-rust/pull/24)
+  * Add rust toolchain file by @slinkydeveloper in [https://github.com/restatedev/sdk-rust/pull/25](https://github.com/restatedev/sdk-rust/pull/25)
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.3.0)
+</Update>
+
+<Update label="2024-08-22" description="Rust SDK v0.2.0">
+  ### New features
+
+  * Generated clients from the respective service/object/workflow macros. To use them, just use `context.service_client::&lt;MyTraitClient&gt;()` et al.
+  * You can now use the hyper integration alone, without using our `HttpServer` that depends on `tokio`, by enabling the feature `hyper` and disabling the feature `http_server`
+  * Now the context methods are defined in traits
+  * Add `ctx.rand()` and `ctx.rand_uuid()` for deterministic random number/uuid generation
+  * Add `ctx.headers()` and `ctx.headers_mut()` to access the ingress headers
+  * Add identity verification
+
+  ### Breaking changes
+
+  * Renamed `HyperServer` to `HttpServer`
+  * Removed context `send`, `send_delay` and `call`, replaced with `ctx.request(..).send()` and `ctx.request(..).call()` (in future this `Request` struct will allow to configure some parameters of the request, such as headers)
+
+  [View on GitHub](https://github.com/restatedev/sdk-rust/releases/tag/v0.2.0)
+</Update>

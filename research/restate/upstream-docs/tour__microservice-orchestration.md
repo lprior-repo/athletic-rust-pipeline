@@ -1,0 +1,2038 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Microservice Orchestration
+
+> Learn how to orchestrate microservices with durable execution, sagas, and async communication patterns.
+
+export const GitHubLink = ({url}) => <div style={{
+  marginTop: '-8px',
+  marginBottom: '8px',
+  textAlign: 'right'
+}}>
+    <a href={url} target="_blank" rel="noopener noreferrer" style={{
+  fontSize: '0.75rem',
+  color: '#6B7280',
+  textDecoration: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '3px',
+  padding: '2px 6px',
+  borderRadius: '3px',
+  border: '1px solid #E5E7EB',
+  backgroundColor: 'transparent',
+  transition: 'all 0.2s ease'
+}} onMouseOver={e => {
+  e.target.style.color = '#6B7280';
+  e.target.style.backgroundColor = '#F9FAFB';
+}} onMouseOut={e => {
+  e.target.style.color = '#6B7280';
+  e.target.style.backgroundColor = 'transparent';
+}}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.230 3.297-1.230.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+      </svg>
+      View on GitHub
+    </a>
+  </div>;
+
+Microservice orchestration is about coordinating multiple services to complete complex business workflows. Restate provides powerful primitives for building resilient, observable orchestration patterns.
+
+In this guide, you'll learn how to:
+
+* Build durable, fault-tolerant service orchestrations with automatic failure recovery
+* Implement sagas for distributed transactions with resilient compensation
+* Use durable timers and external events for complex async patterns
+* Implement stateful entities with Virtual Objects
+
+## Getting Started
+
+A Restate application is composed of two main components:
+
+* **Restate Server**: The core engine that manages durable execution and orchestrates services. It acts as a message broker or reverse proxy in front of your services.
+* **Your Services**: Your business logic, implemented as service handlers using the Restate SDK to perform durable operations.
+
+<img src="https://mintcdn.com/restate-6d46e1dc/Oh8MpY60meT4qOGp/img/tour/microservices/microservice-app-layout.png?fit=max&auto=format&n=Oh8MpY60meT4qOGp&q=85&s=17442baf501cca3758b4c4c1dda147ca" alt="Application Structure" width="2949" height="831" data-path="img/tour/microservices/microservice-app-layout.png" />
+
+A basic subscription service orchestration looks like this:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```ts src/getstarted/service.ts {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/typescript/tutorials/tour-of-orchestration-typescript/src/getstarted/service.ts?collapse_prequel"}  theme={null}
+    export const subscriptionService = restate.service({
+      name: "SubscriptionService",
+      handlers: {
+        add: async (ctx: Context, req: SubscriptionRequest) => {
+          const paymentId = ctx.rand.uuidv4();
+
+          const payRef = await ctx.run("pay", () =>
+            createRecurringPayment(req.creditCard, paymentId),
+          );
+
+          for (const subscription of req.subscriptions) {
+            await ctx.run(`add-${subscription}`, () =>
+              createSubscription(req.userId, subscription, payRef),
+            );
+          }
+        },
+      },
+    });
+    ```
+
+    <GitHubLink url="https://github.com/restatedev/examples/blob/main/typescript/tutorials/tour-of-orchestration-typescript/src/getstarted/service.ts" />
+  </Tab>
+
+  <Tab title="Java">
+    ```java getstarted/SubscriptionService.java {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/getstarted/SubscriptionService.java?collapse_prequel"}  theme={null}
+    @Service
+    public class SubscriptionService {
+
+      @Handler
+      public void add(SubscriptionRequest req) {
+        var paymentId = Restate.random().nextUUID().toString();
+
+        String payRef =
+            Restate.run("pay", String.class, () -> createRecurringPayment(req.creditCard(), paymentId));
+
+        for (String subscription : req.subscriptions()) {
+          Restate.run(
+              "add-" + subscription, () -> createSubscription(req.userId(), subscription, payRef));
+        }
+      }
+    }
+    ```
+
+    <GitHubLink url="https://github.com/restatedev/examples/blob/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/getstarted/SubscriptionService.java" />
+  </Tab>
+
+  <Tab title="Go">
+    ```go getstarted.go {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/go/tutorials/tour-of-orchestration-go/examples/getstarted.go?collapse_prequel"}  theme={null}
+    type SubscriptionService struct{}
+
+    func (SubscriptionService) Add(ctx restate.Context, req SubscriptionRequest) error {
+      paymentId := restate.UUID(ctx).String()
+
+      payRef, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+        return CreateRecurringPayment(req.CreditCard, paymentId)
+      }, restate.WithName("pay"))
+      if err != nil {
+        return err
+      }
+
+      for _, subscription := range req.Subscriptions {
+        _, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+          return CreateSubscription(req.UserId, subscription, payRef)
+        }, restate.WithName(fmt.Sprintf("add-%s", subscription)))
+        if err != nil {
+          return err
+        }
+      }
+
+      return nil
+    }
+    ```
+
+    <GitHubLink url="https://github.com/restatedev/examples/blob/main/go/tutorials/tour-of-orchestration-go/examples/getstarted.go" />
+  </Tab>
+
+  <Tab title="Python">
+    ```python app/getstarted/service.py {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/python/tutorials/tour-of-orchestration-python/app/getstarted/service.py?collapse_prequel"}  theme={null}
+    subscription_service = restate.Service("SubscriptionService")
+
+
+    @subscription_service.handler()
+    async def add(ctx: restate.Context, req: SubscriptionRequest) -> None:
+        payment_id = str(ctx.uuid())
+
+        pay_ref = await ctx.run_typed(
+            "pay",
+            create_recurring_payment,
+            credit_card=req.credit_card,
+            payment_id=payment_id,
+        )
+
+        for subscription in req.subscriptions:
+            await ctx.run_typed(
+                f"add-{subscription}",
+                create_subscription,
+                user_id=req.user_id,
+                subscription=subscription,
+                payment_ref=pay_ref,
+            )
+    ```
+
+    <GitHubLink url="https://github.com/restatedev/examples/blob/main/python/tutorials/tour-of-orchestration-python/app/getstarted/service.py" />
+  </Tab>
+</Tabs>
+
+A service has handlers that can be called over HTTP. Each handler receives a `Context` object that provides durable execution primitives. Any action performed with the Context is automatically recorded and can survive failures.
+
+You don't need to run your services in any special way. Restate works with how you already deploy your code, whether that's in Docker, on Kubernetes, or via AWS Lambda.
+
+<div className="hidden-tabs">
+  <Tabs>
+    <Tab title="TypeScript">
+      The endpoint that serves the services of this tour over HTTP is defined in `src/app.ts`.
+    </Tab>
+
+    <Tab title="Java">
+      The endpoint that serves the services of this tour over HTTP is defined in `AppMain.java`.
+    </Tab>
+
+    <Tab title="Go">
+      The endpoint that serves the services of this tour over HTTP is defined in `main.go`.
+    </Tab>
+
+    <Tab title="Python">
+      The endpoint that serves the services of this tour over HTTP is defined in `__main__.py`.
+    </Tab>
+  </Tabs>
+</div>
+
+### Run the example
+
+[Install Restate](/installation) and launch it:
+
+```bash theme={null}
+restate-server
+```
+
+<div className="hidden-tabs">
+  <Tabs>
+    <Tab title="TypeScript">
+      Get the example:
+
+      ```bash theme={null}
+      restate example typescript-tour-of-orchestration && cd typescript-tour-of-orchestration
+      npm install
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/typescript/tutorials/tour-of-orchestration-typescript" />
+
+      Run the example:
+
+      ```bash theme={null}
+      npm run dev
+      ```
+
+      Then, tell Restate where your services are running via the UI (`http://localhost:9070`) or CLI:
+
+      ```bash theme={null}
+      restate deployments register http://localhost:9080
+      ```
+
+      This registers a set of services that we will be covering in this tutorial.
+
+      To invoke a handler, send a request to `restate-ingress/MyServiceName/handlerName`:
+
+      ```bash theme={null}
+      curl localhost:8080/restate/call/SubscriptionService/add \
+      --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime"]}'
+      ```
+    </Tab>
+
+    <Tab title="Java">
+      Get the example:
+
+      ```bash theme={null}
+      restate example java-tour-of-orchestration && cd java-tour-of-orchestration
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/java/tutorials/tour-of-orchestration-java" />
+
+      Run the example:
+
+      ```bash theme={null}
+      ./gradlew run
+      ```
+
+      Then, tell Restate where your services are running via the UI (`http://localhost:9070`) or CLI:
+
+      ```bash theme={null}
+      restate deployments register http://localhost:9080
+      ```
+
+      This registers a set of services that we will be covering in this tutorial.
+
+      To invoke a handler, send a request to `restate-ingress/MyServiceName/handlerName`:
+
+      ```bash theme={null}
+      curl localhost:8080/restate/call/SubscriptionService/add \
+      --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime"]}'
+      ```
+    </Tab>
+
+    <Tab title="Go">
+      Get the example:
+
+      ```bash theme={null}
+      restate example go-tour-of-orchestration && cd go-tour-of-orchestration
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/go/tutorials/tour-of-orchestration-go/examples" />
+
+      Run the example:
+
+      ```bash theme={null}
+      go run .
+      ```
+
+      Then, tell Restate where your services are running via the UI (`http://localhost:9070`) or CLI:
+
+      ```bash theme={null}
+      restate deployments register http://localhost:9080
+      ```
+
+      This registers a set of services that we will be covering in this tutorial.
+
+      To invoke a handler, send a request to `restate-ingress/MyServiceName/handlerName`:
+
+      ```bash theme={null}
+      curl localhost:8080/restate/call/SubscriptionService/Add \
+      --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime"]}'
+      ```
+    </Tab>
+
+    <Tab title="Python">
+      Get the example:
+
+      ```bash theme={null}
+      restate example python-tour-of-orchestration && cd python-tour-of-orchestration
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/python/tutorials/tour-of-orchestration-python" />
+
+      Run the example:
+
+      ```bash theme={null}
+      uv run .
+      ```
+
+      Then, tell Restate where your services are running via the UI (`http://localhost:9070`) or CLI:
+
+      ```bash theme={null}
+      restate deployments register http://localhost:9080
+      ```
+
+      This registers a set of services that we will be covering in this tutorial.
+
+      To invoke a handler, send a request to `restate-ingress/MyServiceName/handlerName`:
+
+      ```bash theme={null}
+      curl localhost:8080/restate/call/SubscriptionService/add \
+      --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime"]}'
+      ```
+    </Tab>
+  </Tabs>
+</div>
+
+Click in the UI's invocations tab on the inovcation ID of your request to see the execution trace of your request.
+
+<Frame>
+  <img src="https://mintcdn.com/restate-6d46e1dc/tvS-y_ZjFgXdznzA/img/tour/microservices/traces.png?fit=max&auto=format&n=tvS-y_ZjFgXdznzA&q=85&s=f2a4d8ff93443548cbd82ef1ebadb830" alt="Invocation overview" width="2321" height="1054" data-path="img/tour/microservices/traces.png" />
+</Frame>
+
+## Durable Execution
+
+Restate uses Durable Execution to ensure your orchestration logic survives failures and restarts.
+Whenever a handler executes an action with the Restate `Context`, this gets send over to the Restate Server and persisted in a log.
+
+On a failure or a crash, the Restate Server sends a retry request that contains the log of the actions that were executed so far.
+The service then replays the log to restore state and continues executing the remaining actions.
+This process continues until the handler runs till completion.
+
+<img src="https://mintcdn.com/restate-6d46e1dc/URzU73HLYEFjTaoH/img/tour/microservices/durable-execution-animation-microservices.gif?s=0827f2ae83a67c2a8ffea61e18ffbe4b" alt="Context in Restate" width="1920" height="800" data-path="img/tour/microservices/durable-execution-animation-microservices.gif" />
+
+**Key Benefits:**
+
+* Context `run` actions make external calls or non-deterministic operations durable. They get replayed on failures.
+* If the service crashes after payment creation, it resumes at the subscription step
+* Deterministic IDs logged with the context ensure operations are idempotent
+* Full execution traces for debugging and monitoring
+
+<Accordion title="Try out Durable Execution" icon={"laptop"}>
+  <div className="hidden-tabs">
+    <Tabs>
+      <Tab title="TypeScript">
+        Try to add a subscription for Netflix:
+
+        ```bash theme={null}
+        curl localhost:8080/restate/call/SubscriptionService/add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "Netflix"]}'
+        ```
+
+        On the invocation page in the UI, you can see that your request is retrying because the Netflix API is down:
+
+        <Frame>
+          <img src="https://mintcdn.com/restate-6d46e1dc/6r2NW7-47rpl2Tkq/img/tour/microservices/netflix_stuck.png?fit=max&auto=format&n=6r2NW7-47rpl2Tkq&q=85&s=ef618de21f20a8e007edadb33b591d74" alt="Invocation overview" width="1613" height="1314" data-path="img/tour/microservices/netflix_stuck.png" />
+        </Frame>
+
+        To fix the problem, remove the line `failOnNetflix` from the `createSubscription` function in the `utils.ts` file:
+
+        ```ts {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/typescript/tutorials/tour-of-orchestration-typescript/src/utils.ts#subscription"}  theme={null}
+        export function createSubscription(
+          userId: string,
+          subscription: string,
+          _paymentRef: string,
+        ): string {
+          failOnNetflix(subscription);
+          terminalErrorOnDisney(subscription);
+          console.log(`>>> Created subscription ${subscription} for user ${userId}`);
+          return "SUCCESS";
+        }
+        ```
+      </Tab>
+
+      <Tab title="Java">
+        Try to add a subscription for Netflix:
+
+        ```bash theme={null}
+        curl localhost:8080/restate/call/SubscriptionService/add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "Netflix"]}'
+        ```
+
+        On the invocation page in the UI, you can see that your request is retrying because the Netflix API is down:
+
+        <Frame>
+          <img src="https://mintcdn.com/restate-6d46e1dc/6r2NW7-47rpl2Tkq/img/tour/microservices/netflix_stuck.png?fit=max&auto=format&n=6r2NW7-47rpl2Tkq&q=85&s=ef618de21f20a8e007edadb33b591d74" alt="Invocation overview" width="1613" height="1314" data-path="img/tour/microservices/netflix_stuck.png" />
+        </Frame>
+
+        To fix the problem, remove the line `failOnNetflix` from the `createSubscription` function in the `auxiliary/clients/SubscriptionClient.java` file:
+
+        ```java {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/auxiliary/clients/SubscriptionClient.java#subscription"}  theme={null}
+        public static String createSubscription(String userId, String subscription, String paymentRef) {
+          failOnNetflix(subscription);
+          terminalErrorOnDisney(subscription);
+          System.out.println(">>> Created subscription " + subscription + " for user " + userId);
+          return "SUCCESS";
+        }
+        ```
+      </Tab>
+
+      <Tab title="Go">
+        Try to add a subscription for Netflix:
+
+        ```bash theme={null}
+        curl localhost:8080/restate/call/SubscriptionService/Add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "Netflix"]}'
+        ```
+
+        On the invocation page in the UI, you can see that your request is retrying because the Netflix API is down:
+
+        <Frame>
+          <img src="https://mintcdn.com/restate-6d46e1dc/6r2NW7-47rpl2Tkq/img/tour/microservices/netflix_stuck.png?fit=max&auto=format&n=6r2NW7-47rpl2Tkq&q=85&s=ef618de21f20a8e007edadb33b591d74" alt="Invocation overview" width="1613" height="1314" data-path="img/tour/microservices/netflix_stuck.png" />
+        </Frame>
+
+        To fix the problem, remove the line `failOnNetflix` from the `CreateSubscription` function in the `utils.go` file:
+
+        ```go {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/go/tutorials/tour-of-orchestration-go/examples/utils.go#subscription"}  theme={null}
+        func CreateSubscription(userId, subscription, paymentRef string) (string, error) {
+          if err := failOnNetflix(subscription); err != nil {
+            return "", err
+          }
+          if err := terminalErrorOnDisney(subscription); err != nil {
+            return "", err
+          }
+          fmt.Printf(">>> Created subscription %s for user %s\n", subscription, userId)
+          return "SUCCESS", nil
+        }
+        ```
+      </Tab>
+
+      <Tab title="Python">
+        Try to add a subscription for Netflix:
+
+        ```bash theme={null}
+        curl localhost:8080/restate/call/SubscriptionService/add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "Netflix"]}'
+        ```
+
+        On the invocation page in the UI, you can see that your request is retrying because the Netflix API is down:
+
+        <Frame>
+          <img src="https://mintcdn.com/restate-6d46e1dc/6r2NW7-47rpl2Tkq/img/tour/microservices/netflix_stuck.png?fit=max&auto=format&n=6r2NW7-47rpl2Tkq&q=85&s=ef618de21f20a8e007edadb33b591d74" alt="Invocation overview" width="1613" height="1314" data-path="img/tour/microservices/netflix_stuck.png" />
+        </Frame>
+
+        To fix the problem, remove the line `fail_on_netflix` from the `create_subscription` function in the `utils.py` file:
+
+        ```python {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/python/tutorials/tour-of-orchestration-python/app/utils.py#subscription"}  theme={null}
+        def create_subscription(user_id: str, subscription: str, payment_ref: str) -> str:
+            fail_on_netflix(subscription)
+            terminal_error_on_disney(subscription)
+            print(f">>> Created subscription {subscription} for user {user_id}")
+            return "SUCCESS"
+        ```
+      </Tab>
+    </Tabs>
+  </div>
+
+  Once you restart the service, the workflow finishes successfully:
+
+  <Frame>
+    <img src="https://mintcdn.com/restate-6d46e1dc/tvS-y_ZjFgXdznzA/img/tour/microservices/netflix_fixed.png?fit=max&auto=format&n=tvS-y_ZjFgXdznzA&q=85&s=73f2250c80679bc6af2d9a0f98882f4a" alt="Invocation overview" width="2152" height="1002" data-path="img/tour/microservices/netflix_fixed.png" />
+  </Frame>
+</Accordion>
+
+## Error Handling
+
+By default, Restate retries failures infinitely with an exponential backoff strategy.
+For some failures, you might not want to retry or only retry a limited number of times.
+
+For these cases, Restate distinguishes between two types of errors:
+
+* **Transient Errors**: These are temporary issues that can be retried, such as network timeouts or service unavailability. Restate automatically retries these errors.
+* **Terminal Errors**: These indicate a failure that will not be retried, such as invalid input or business logic violations. Restate stops execution and allows you to handle these errors gracefully.
+
+Throw a terminal error in your handler to indicate a terminal failure:
+
+<div className="hidden-tabs">
+  <Tabs>
+    <Tab title="TypeScript">
+      ```typescript {"CODE_LOAD::ts/src/tour/microservices/terminal_error.ts#terminal_error"}  theme={null}
+      throw new TerminalError("Invalid credit card");
+      ```
+    </Tab>
+
+    <Tab title="Java">
+      ```java {"CODE_LOAD::java/src/main/java/tour/microservices/ErrorHandler.java#here"}  theme={null}
+      throw new TerminalException("Invalid credit card");
+      ```
+    </Tab>
+
+    <Tab title="Go">
+      ```go {"CODE_LOAD::go/tour/microservices/errorhandling.go#here"}  theme={null}
+      return restate.ToTerminalError(fmt.Errorf("invalid credit card"))
+      ```
+    </Tab>
+
+    <Tab title="Python">
+      ```python {"CODE_LOAD::python/src/tour/microservices/terminal_error.py#here"}  theme={null}
+      from restate.exceptions import TerminalError
+
+      raise TerminalError("Invalid credit card")
+      ```
+    </Tab>
+  </Tabs>
+</div>
+
+<Accordion title="Configuring Retry Behavior">
+  Some actions let you configure their retry behavior, for example to limit the number of retries of a run block:
+
+  <div className="hidden-tabs">
+    <Tabs>
+      <Tab title="TypeScript">
+        ```ts {"CODE_LOAD::ts/src/tour/microservices/retries.ts#retries"}  theme={null}
+        const retryPolicy = {
+          maxRetryAttempts: 3,
+          initialRetryIntervalMillis: 1000,
+        };
+
+        const payRef = await ctx.run(
+          "pay",
+          () => createRecurringPayment(req.creditCard, paymentId),
+          retryPolicy
+        );
+        ```
+      </Tab>
+
+      <Tab title="Java">
+        ```java {"CODE_LOAD::java/src/main/java/tour/microservices/Retries.java#here"}  theme={null}
+        RetryPolicy myRunRetryPolicy =
+            RetryPolicy.defaultPolicy().setInitialDelay(Duration.ofSeconds(1)).setMaxAttempts(3);
+        String payRef =
+            Restate.run(
+                "pay",
+                String.class,
+                myRunRetryPolicy,
+                () -> createRecurringPayment(req.creditCard(), paymentId));
+        ```
+      </Tab>
+
+      <Tab title="Go">
+        ```go {"CODE_LOAD::go/tour/microservices/retries.go#here"}  theme={null}
+        result, err := restate.Run(ctx,
+          func(ctx restate.RunContext) (string, error) {
+            return createRecurringPayment(req.CreditCard, paymentId)
+          },
+          restate.WithInitialRetryInterval(time.Millisecond*100),
+          restate.WithMaxRetryAttempts(3),
+          restate.WithName("pay"),
+        )
+        if err != nil {
+          return err
+        }
+        ```
+      </Tab>
+
+      <Tab title="Python">
+        ```python {"CODE_LOAD::python/src/tour/microservices/retries.py#here"}  theme={null}
+        pay_ref = await ctx.run_typed(
+            "pay",
+            lambda: create_recurring_payment(req["creditCard"], payment_id),
+            restate.RunOptions(max_attempts=10, max_retry_duration=timedelta(seconds=30)),
+        )
+        ```
+      </Tab>
+    </Tabs>
+  </div>
+
+  When the retries are exhausted, the run block will throw a `TerminalError`, that you can handle in your handler logic.
+</Accordion>
+
+Learn more with the [Error Handling Guide](/guides/error-handling).
+
+## Sagas and Rollback
+
+On a terminal failure, Restate stops the execution of the handler.
+You might, however, want to roll back the changes made by the workflow to keep your system in a consistent state.
+This is where Sagas come in.
+
+Sagas are a pattern for rolling back changes made by a handler when it fails.
+
+In Restate, you can implement a saga by building a list of compensating actions for each step of the workflow.
+On a terminal failure, you execute them in reverse order:
+
+<div className="hidden-tabs">
+  <Tabs>
+    <Tab title="TypeScript">
+      ```ts src/sagas/service.ts {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/typescript/tutorials/tour-of-orchestration-typescript/src/sagas/service.ts?collapse_prequel"}  theme={null}
+      export const subscriptionSaga = restate.service({
+        name: "SubscriptionSaga",
+        handlers: {
+          add: async (ctx: Context, req: SubscriptionRequest) => {
+            const compensations = [];
+
+            try {
+              const paymentId = ctx.rand.uuidv4();
+              compensations.push(() =>
+                ctx.run("undo-pay", () => removeRecurringPayment(paymentId)),
+              );
+              const payRef = await ctx.run("pay", () =>
+                createRecurringPayment(req.creditCard, paymentId),
+              );
+
+              for (const subscription of req.subscriptions) {
+                compensations.push(() =>
+                  ctx.run(`undo-${subscription}`, () =>
+                    removeSubscription(req.userId, subscription),
+                  ),
+                );
+                await ctx.run(`add-${subscription}`, () =>
+                  createSubscription(req.userId, subscription, payRef),
+                );
+              }
+            } catch (e) {
+              if (e instanceof restate.TerminalError) {
+                for (const compensation of compensations.reverse()) {
+                  await compensation();
+                }
+              }
+              throw e;
+            }
+          },
+        },
+      });
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/typescript/tutorials/tour-of-orchestration-typescript/src/sagas/service.ts" />
+    </Tab>
+
+    <Tab title="Java">
+      ```java sagas/SubscriptionSaga.java {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/sagas/SubscriptionSaga.java?collapse_prequel"}  theme={null}
+      @Service
+      public class SubscriptionSaga {
+
+        @Handler
+        public void add(SubscriptionRequest req) {
+          List<Runnable> compensations = new ArrayList<>();
+          try {
+            var paymentId = Restate.random().nextUUID().toString();
+
+            compensations.add(
+                () -> Restate.run("undo-pay", () -> PaymentClient.removeRecurringPayment(paymentId)));
+            String payRef =
+                Restate.run(
+                    "pay",
+                    String.class,
+                    () -> PaymentClient.createRecurringPayment(req.creditCard(), paymentId));
+
+            for (String subscription : req.subscriptions()) {
+              compensations.add(
+                  () ->
+                      Restate.run(
+                          "undo-" + subscription,
+                          () -> SubscriptionClient.removeSubscription(req.userId(), subscription)));
+              Restate.run(
+                  "add-" + subscription,
+                  () -> SubscriptionClient.createSubscription(req.userId(), subscription, payRef));
+            }
+          } catch (TerminalException e) {
+            // Run compensations in reverse order
+            Collections.reverse(compensations);
+            for (Runnable compensation : compensations) {
+              compensation.run();
+            }
+            throw e;
+          }
+        }
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/sagas/SubscriptionSaga.java" />
+    </Tab>
+
+    <Tab title="Go">
+      ```go sagas.go {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/go/tutorials/tour-of-orchestration-go/examples/sagas.go?collapse_prequel"}  theme={null}
+      type SubscriptionSaga struct{}
+
+      func (SubscriptionSaga) Add(ctx restate.Context, req SubscriptionRequest) (err error) {
+        var compensations []func() error
+
+        // Run compensations at the end if err != nil
+        defer func() {
+          if err != nil {
+            for _, compensation := range slices.Backward(compensations) {
+              if compErr := compensation(); compErr != nil {
+                err = compErr
+              }
+            }
+          }
+        }()
+
+        paymentId := restate.UUID(ctx).String()
+
+        // Add compensation for payment
+        compensations = append(compensations, func() error {
+          _, err := restate.Run(ctx, func(ctx restate.RunContext) (restate.Void, error) {
+            return RemoveRecurringPayment(paymentId)
+          }, restate.WithName("undo-pay"))
+          return err
+        })
+
+        // Create payment
+        payRef, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+          return CreateRecurringPayment(req.CreditCard, paymentId)
+        }, restate.WithName("pay"))
+        if err != nil {
+          return err
+        }
+
+        // Process subscriptions
+        for _, subscription := range req.Subscriptions {
+          // Add compensation for this subscription
+          sub := subscription // Capture loop variable
+          compensations = append(compensations, func() error {
+            _, err := restate.Run(ctx, func(ctx restate.RunContext) (restate.Void, error) {
+              return RemoveSubscription(req.UserId, sub)
+            }, restate.WithName(fmt.Sprintf("undo-%s", sub)))
+            return err
+          })
+
+          // Create subscription
+          _, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+            return CreateSubscription(req.UserId, subscription, payRef)
+          }, restate.WithName(fmt.Sprintf("add-%s", subscription)))
+          if err != nil {
+            return err
+          }
+        }
+
+        return nil
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/go/tutorials/tour-of-orchestration-go/examples/sagas.go" />
+    </Tab>
+
+    <Tab title="Python">
+      ```python app/sagas/service.py {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/python/tutorials/tour-of-orchestration-python/app/sagas/service.py?collapse_prequel"}  theme={null}
+      subscription_saga = restate.Service("SubscriptionSaga")
+
+
+      @subscription_saga.handler()
+      async def add(ctx: restate.Context, req: SubscriptionRequest) -> None:
+          compensations = []
+
+          try:
+              payment_id = str(ctx.uuid())
+
+              # Add compensation for payment
+              compensations.append(
+                  lambda: ctx.run_typed(
+                      "undo-pay", remove_recurring_payment, payment_id=payment_id
+                  )
+              )
+
+              # Create payment
+              pay_ref = await ctx.run_typed(
+                  "pay",
+                  create_recurring_payment,
+                  credit_card=req.credit_card,
+                  payment_id=payment_id,
+              )
+
+              # Process subscriptions
+              for subscription in req.subscriptions:
+                  # Add compensation for this subscription
+                  compensations.append(
+                      lambda s=subscription: ctx.run_typed( # type: ignore
+                          f"undo-{s}",
+                          remove_subscription,
+                          user_id=req.user_id,
+                          subscription=s,
+                      )
+                  )
+
+                  # Create subscription
+                  await ctx.run_typed(
+                      f"add-{subscription}",
+                      create_subscription,
+                      user_id=req.user_id,
+                      subscription=subscription,
+                      payment_ref=pay_ref,
+                  )
+
+          except restate.TerminalError as e:
+              # Run compensations in reverse order
+              for compensation in reversed(compensations):
+                  await compensation()
+              raise e
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/python/tutorials/tour-of-orchestration-python/app/sagas/service.py" />
+    </Tab>
+  </Tabs>
+</div>
+
+**Benefits with Restate:**
+
+* The list of compensations can be recovered after a crash, and Restate knows which compensations still need to be run.
+* Sagas always run till completion (success or complete rollback)
+* Full trace of all operations and compensations
+* No complex state machines needed
+
+<Accordion title="Try out sagas" icon={"laptop"}>
+  Add a subscription for Disney:
+
+  <div className="hidden-tabs">
+    <Tabs>
+      <Tab title="TypeScript">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/SubscriptionSaga/add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "Disney"]}'
+        ```
+      </Tab>
+
+      <Tab title="Java">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/SubscriptionSaga/add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "Disney"]}'
+        ```
+      </Tab>
+
+      <Tab title="Go">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/SubscriptionSaga/Add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "Disney"]}'
+        ```
+      </Tab>
+
+      <Tab title="Python">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/SubscriptionSaga/add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "Disney"]}'
+        ```
+      </Tab>
+    </Tabs>
+  </div>
+
+  The Disney subscription is not available, so the handler will fail and run compensations:
+
+  <Frame>
+    <img src="https://mintcdn.com/restate-6d46e1dc/0LGDWcCFfrGNze9u/img/tour/microservices/sagas.png?fit=max&auto=format&n=0LGDWcCFfrGNze9u&q=85&s=19333b96373c591e7612ecd38e236bbc" alt="Sagas" width="1874" height="1308" data-path="img/tour/microservices/sagas.png" />
+  </Frame>
+</Accordion>
+
+Learn more with the [Sagas Guide](/guides/sagas).
+
+## Virtual Objects
+
+Until now, the services we looked at did not share any state between requests.
+
+To implement stateful entities like shopping carts, user profiles, or AI agents, Restate provides **Virtual Objects**.
+
+Each Virtual Object instance maintains isolated state and is identified by a unique key.
+
+Here is an example of a Virtual Object that tracks user subscriptions:
+
+<img src="https://mintcdn.com/restate-6d46e1dc/ljjz_dSeR6PsMalr/img/tour/microservices/subscriptions_objects.png?fit=max&auto=format&n=ljjz_dSeR6PsMalr&q=85&s=b744937283e801404adfa25107ad6e12" alt="Objects" width="2236" height="730" data-path="img/tour/microservices/subscriptions_objects.png" />
+
+<div className="hidden-tabs">
+  <Tabs>
+    <Tab title="TypeScript">
+      ```ts src/objects/service.ts {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/typescript/tutorials/tour-of-orchestration-typescript/src/objects/service.ts?collapse_prequel"}  theme={null}
+      export const userSubscriptions = restate.object({
+        name: "UserSubscriptions",
+        handlers: {
+          add: async (ctx: ObjectContext, subscription: string) => {
+            // Get current subscriptions
+            const subscriptions = (await ctx.get<string[]>("subscriptions")) ?? [];
+
+            // Add new subscription
+            if (!subscriptions.includes(subscription)) {
+              subscriptions.push(subscription);
+            }
+            ctx.set("subscriptions", subscriptions);
+
+            // Update metrics
+            ctx.set("lastUpdated", await ctx.date.toJSON());
+          },
+
+          getSubscriptions: restate.handlers.object.shared(
+            async (ctx: ObjectSharedContext) => {
+              return (await ctx.get<string[]>("subscriptions")) ?? [];
+            },
+          ),
+        },
+      });
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/typescript/tutorials/tour-of-orchestration-typescript/src/objects/service.ts" />
+
+      Virtual Objects are ideal for implementing any entity with mutable state:
+
+      * **Long-lived state**: K/V state is stored permanently. It has no automatic expiry. Clear it via `ctx.clear()`.
+      * **Durable state changes**: State changes are logged with Durable Execution, so they survive failures and are consistent with code execution
+      * **State is queryable** via the state tab in the UI:
+
+      <Frame>
+        <img src="https://mintcdn.com/restate-6d46e1dc/0LGDWcCFfrGNze9u/img/tour/microservices/state.png?fit=max&auto=format&n=0LGDWcCFfrGNze9u&q=85&s=1350d24bf8db29b00b30e8178467856d" alt="State" width="2354" height="327" data-path="img/tour/microservices/state.png" />
+      </Frame>
+
+      * **Built-in concurrency control**: Restate’s Virtual Objects have built-in queuing and consistency guarantees per object key. Handlers either have read-write access (`ObjectContext`) or read-only access (shared object context).
+      * Only one handler with write access can run at a time per object key to prevent concurrent/lost writes or race conditions.
+      * Handlers with read-only access can run concurrently to the write-access handlers.
+
+      <img src="https://mintcdn.com/restate-6d46e1dc/ljjz_dSeR6PsMalr/img/tour/microservices/subscriptions_queue.png?fit=max&auto=format&n=ljjz_dSeR6PsMalr&q=85&s=4f896ee4e7942b9689f0f3e8889160de" alt="Queue" width="1944" height="916" data-path="img/tour/microservices/subscriptions_queue.png" />
+    </Tab>
+
+    <Tab title="Java">
+      ```java objects/UserSubscriptions.java {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/objects/UserSubscriptions.java?collapse_prequel"}  theme={null}
+      @VirtualObject
+      public class UserSubscriptions {
+        private static final StateKey<Set<String>> SUBSCRIPTIONS =
+            StateKey.of("subscriptions", new TypeRef<>() {});
+        private static final StateKey<String> LAST_UPDATED = StateKey.of("lastUpdated", String.class);
+
+        @Handler
+        public void add(String subscription) {
+          var state = Restate.state();
+
+          // Get current subscriptions
+          Set<String> subscriptions = state.get(SUBSCRIPTIONS).orElse(new HashSet<>());
+
+          // Add new subscription
+          subscriptions.add(subscription);
+          state.set(SUBSCRIPTIONS, subscriptions);
+
+          // Update metrics
+          state.set(LAST_UPDATED, Restate.instantNow().toString());
+        }
+
+        @Shared
+        public Set<String> getSubscriptions() {
+          return Restate.state().get(SUBSCRIPTIONS).orElse(Set.of());
+        }
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/objects/UserSubscriptions.java" />
+
+      Virtual Objects are ideal for implementing any entity with mutable state:
+
+      * **Long-lived state**: K/V state is stored permanently. It has no automatic expiry. Clear it via `ctx.clear()`.
+      * **Durable state changes**: State changes are logged with Durable Execution, so they survive failures and are consistent with code execution
+      * **State is queryable** via the state tab in the UI:
+
+      <Frame>
+        <img src="https://mintcdn.com/restate-6d46e1dc/0LGDWcCFfrGNze9u/img/tour/microservices/state.png?fit=max&auto=format&n=0LGDWcCFfrGNze9u&q=85&s=1350d24bf8db29b00b30e8178467856d" alt="State" width="2354" height="327" data-path="img/tour/microservices/state.png" />
+      </Frame>
+
+      * **Built-in concurrency control**: Restate’s Virtual Objects have built-in queuing and consistency guarantees per object key. Handlers either have read-write access (`ObjectContext`) or read-only access (shared object context).
+      * Only one handler with write access can run at a time per object key to prevent concurrent/lost writes or race conditions.
+      * Handlers with read-only access can run concurrently to the write-access handlers.
+
+      <img src="https://mintcdn.com/restate-6d46e1dc/ljjz_dSeR6PsMalr/img/tour/microservices/subscriptions_queue.png?fit=max&auto=format&n=ljjz_dSeR6PsMalr&q=85&s=4f896ee4e7942b9689f0f3e8889160de" alt="Queue" width="1944" height="916" data-path="img/tour/microservices/subscriptions_queue.png" />
+    </Tab>
+
+    <Tab title="Go">
+      ```go objects.go {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/go/tutorials/tour-of-orchestration-go/examples/objects.go?collapse_prequel"}  theme={null}
+      type UserSubscriptions struct{}
+
+      func (UserSubscriptions) Add(ctx restate.ObjectContext, subscription string) error {
+        // Get current subscriptions
+        subscriptions, err := restate.Get[[]string](ctx, "subscriptions")
+        if err != nil {
+          return err
+        }
+        if subscriptions == nil {
+          subscriptions = []string{}
+        }
+
+        // Add new subscription if not already present
+        found := false
+        for _, sub := range subscriptions {
+          if sub == subscription {
+            found = true
+            break
+          }
+        }
+        if !found {
+          subscriptions = append(subscriptions, subscription)
+        }
+
+        // Save subscriptions
+        restate.Set(ctx, "subscriptions", subscriptions)
+
+        // Update metrics
+        restate.Set(ctx, "lastUpdated", time.Now().Format(time.RFC3339))
+
+        return nil
+      }
+
+      func (UserSubscriptions) GetSubscriptions(ctx restate.ObjectSharedContext) ([]string, error) {
+        return restate.Get[[]string](ctx, "subscriptions")
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/go/tutorials/tour-of-orchestration-go/examples/objects.go" />
+
+      Virtual Objects are ideal for implementing any entity with mutable state:
+
+      * **Long-lived state**: K/V state is stored permanently. It has no automatic expiry. Clear it via `restate.Clear(ctx, "my-key")`.
+      * **Durable state changes**: State changes are logged with Durable Execution, so they survive failures and are consistent with code execution
+      * **State is queryable** via the state tab in the UI:
+
+      <Frame>
+        <img src="https://mintcdn.com/restate-6d46e1dc/0LGDWcCFfrGNze9u/img/tour/microservices/state.png?fit=max&auto=format&n=0LGDWcCFfrGNze9u&q=85&s=1350d24bf8db29b00b30e8178467856d" alt="State" width="2354" height="327" data-path="img/tour/microservices/state.png" />
+      </Frame>
+
+      * **Built-in concurrency control**: Restate’s Virtual Objects have built-in queuing and consistency guarantees per object key. Handlers either have read-write access (`ObjectContext`) or read-only access (shared object context).
+      * Only one handler with write access can run at a time per object key to prevent concurrent/lost writes or race conditions.
+      * Handlers with read-only access can run concurrently to the write-access handlers.
+
+      <img src="https://mintcdn.com/restate-6d46e1dc/ljjz_dSeR6PsMalr/img/tour/microservices/subscriptions_queue.png?fit=max&auto=format&n=ljjz_dSeR6PsMalr&q=85&s=4f896ee4e7942b9689f0f3e8889160de" alt="Queue" width="1944" height="916" data-path="img/tour/microservices/subscriptions_queue.png" />
+    </Tab>
+
+    <Tab title="Python">
+      ```python app/objects/service.py {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/python/tutorials/tour-of-orchestration-python/app/objects/service.py?collapse_prequel"}  theme={null}
+      user_subscriptions = restate.VirtualObject("UserSubscriptions")
+
+
+      @user_subscriptions.handler()
+      async def add(ctx: restate.ObjectContext, subscription: str) -> None:
+          # Get current subscriptions
+          subscriptions = await ctx.get("subscriptions", type_hint=List[str]) or []
+
+          # Add new subscription
+          if subscription not in subscriptions:
+              subscriptions.append(subscription)
+
+          ctx.set("subscriptions", subscriptions)
+
+          # Update metrics
+          ctx.set("lastUpdated", datetime.now().isoformat())
+
+
+      @user_subscriptions.handler("getSubscriptions")
+      async def get_subscriptions(ctx: restate.ObjectSharedContext) -> List[str]:
+          return await ctx.get("subscriptions", type_hint=List[str]) or []
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/python/tutorials/tour-of-orchestration-python/app/objects/service.py" />
+
+      Virtual Objects are ideal for implementing any entity with mutable state:
+
+      * **Long-lived state**: K/V state is stored permanently. It has no automatic expiry. Clear it via `ctx.clear()`.
+      * **Durable state changes**: State changes are logged with Durable Execution, so they survive failures and are consistent with code execution
+      * **State is queryable** via the state tab in the UI:
+
+      <Frame>
+        <img src="https://mintcdn.com/restate-6d46e1dc/0LGDWcCFfrGNze9u/img/tour/microservices/state.png?fit=max&auto=format&n=0LGDWcCFfrGNze9u&q=85&s=1350d24bf8db29b00b30e8178467856d" alt="State" width="2354" height="327" data-path="img/tour/microservices/state.png" />
+      </Frame>
+
+      * **Built-in concurrency control**: Restate’s Virtual Objects have built-in queuing and consistency guarantees per object key. Handlers either have read-write access (`ObjectContext`) or read-only access (shared object context).
+      * Only one handler with write access can run at a time per object key to prevent concurrent/lost writes or race conditions.
+      * Handlers with read-only access can run concurrently to the write-access handlers.
+
+      <img src="https://mintcdn.com/restate-6d46e1dc/ljjz_dSeR6PsMalr/img/tour/microservices/subscriptions_queue.png?fit=max&auto=format&n=ljjz_dSeR6PsMalr&q=85&s=4f896ee4e7942b9689f0f3e8889160de" alt="Queue" width="1944" height="916" data-path="img/tour/microservices/subscriptions_queue.png" />
+    </Tab>
+  </Tabs>
+</div>
+
+<Accordion title="Try out Virtual Objects" icon={"laptop"}>
+  Add a few subscriptions for some users.
+  To call a Virtual Object, you specify the object key in the URL (here `user-123` and `user-456`):
+
+  <div className="hidden-tabs">
+    <Tabs>
+      <Tab title="TypeScript">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/add --json '"Hulu"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/add --json '"Prime"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/add --json '"Disney"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-456/add --json '"Netflix"'
+        ```
+
+        Get the subscriptions for `user-123`:
+
+        ```bash theme={null}
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/getSubscriptions
+        ```
+      </Tab>
+
+      <Tab title="Java">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/add --json '"Hulu"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/add --json '"Prime"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/add --json '"Disney"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-456/add --json '"Netflix"'
+        ```
+
+        Get the subscriptions for `user-123`:
+
+        ```bash theme={null}
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/getSubscriptions
+        ```
+      </Tab>
+
+      <Tab title="Go">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/Add --json '"Hulu"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/Add --json '"Prime"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/Add --json '"Disney"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-456/Add --json '"Netflix"'
+        ```
+
+        Get the subscriptions for `user-123`:
+
+        ```bash theme={null}
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/GetSubscriptions
+        ```
+      </Tab>
+
+      <Tab title="Python">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/add --json '"Hulu"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/add --json '"Prime"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/add --json '"Disney"'
+        curl localhost:8080/restate/call/UserSubscriptions/user-456/add --json '"Netflix"'
+        ```
+
+        Get the subscriptions for `user-123`:
+
+        ```bash theme={null}
+        curl localhost:8080/restate/call/UserSubscriptions/user-123/getSubscriptions
+        ```
+      </Tab>
+    </Tabs>
+  </div>
+
+  Or use the UI's state tab to explore the object state.
+</Accordion>
+
+## Resilient Communication
+
+The Restate SDK includes clients to call other handlers reliably. You can call another handler in three ways:
+
+* **Request-Response**: Wait for a response
+* **One-Way Messages**: Fire-and-forget
+* **Delayed Messages**: Schedule for later
+
+When you call another handler, the Restate Server acts as a message broker.
+All communication is proxied via the Restate Server where it gets durably logged and retried till completion.
+
+Imagine a handler which processes a concert ticket purchase, and calls multiple services to handle payment, ticket delivery, and reminders:
+
+<div className="hidden-tabs">
+  <Tabs>
+    <Tab title="TypeScript">
+      ```ts src/communication/service.ts {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/typescript/tutorials/tour-of-orchestration-typescript/src/communication/service.ts?collapse_prequel"}  theme={null}
+      export const concertTicketingService = restate.service({
+        name: "ConcertTicketingService",
+        handlers: {
+          buy: async (ctx: Context, req: PurchaseTicketRequest) => {
+            // Request-response call - wait for payment to complete
+            const payRef = await ctx.serviceClient(paymentService).charge(req);
+
+            // One-way message - fire and forget ticket delivery
+            ctx.serviceSendClient(emailService).emailTicket(req);
+
+            // Delayed message - schedule reminder for day before concert
+            ctx
+              .serviceSendClient(emailService)
+              .sendReminder(req, sendOpts({ delay: dayBefore(req.concertDate) }));
+
+            return `Ticket purchased successfully with payment reference: ${payRef}`;
+          },
+        },
+      });
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/typescript/tutorials/tour-of-orchestration-typescript/src/communication/service.ts" />
+    </Tab>
+
+    <Tab title="Java">
+      ```java communication/ConcertTicketingService.java {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/communication/ConcertTicketingService.java?collapse_prequel"}  theme={null}
+      @Service
+      public class ConcertTicketingService {
+
+        @Handler
+        public String buy(PurchaseTicketRequest req) {
+          // Request-response call - wait for payment to complete
+          String payRef = Restate.service(PaymentService.class).charge(req);
+
+          // One-way message - fire and forget ticket delivery
+          Restate.serviceHandle(EmailService.class).send(EmailService::emailTicket, req);
+
+          // Delayed message - schedule reminder for day before concert
+          Restate.serviceHandle(EmailService.class)
+              .send(EmailService::sendReminder, req, req.dayBefore());
+
+          return "Ticket purchased successfully with payment reference: " + payRef;
+        }
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/communication/ConcertTicketingService.java" />
+    </Tab>
+
+    <Tab title="Go">
+      ```go communication.go {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/go/tutorials/tour-of-orchestration-go/examples/communication.go?collapse_prequel"}  theme={null}
+      type ConcertTicketingService struct{}
+
+      func (ConcertTicketingService) Buy(ctx restate.Context, req PurchaseTicketRequest) (string, error) {
+        // Request-response call - wait for payment to complete
+        payRef, err := restate.Service[string](ctx, "PaymentService", "Charge").Request(req)
+        if err != nil {
+          return "", err
+        }
+
+        // One-way message - fire and forget ticket delivery
+        restate.Service[restate.Void](ctx, "EmailService", "EmailTicket").Send(req)
+
+        // Delayed message - schedule reminder for day before concert
+        delay := DayBefore(req.ConcertDate)
+        restate.Service[restate.Void](ctx, "EmailService", "SendReminder").
+          Send(req, restate.WithDelay(delay))
+
+        return fmt.Sprintf("Ticket purchased successfully with payment reference: %s", payRef), nil
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/go/tutorials/tour-of-orchestration-go/examples/communication.go" />
+    </Tab>
+
+    <Tab title="Python">
+      ```python app/communication/service.py {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/python/tutorials/tour-of-orchestration-python/app/communication/service.py?collapse_prequel"}  theme={null}
+      concert_ticketing_service = restate.Service("ConcertTicketingService")
+
+
+      @concert_ticketing_service.handler()
+      async def buy(ctx: restate.Context, req: PurchaseTicketRequest) -> str:
+          # Request-response call - wait for payment to complete
+          pay_ref = await ctx.service_call(charge, req)
+
+          # One-way message - fire and forget ticket delivery
+          ctx.service_send(email_ticket, req)
+
+          # Delayed message - schedule reminder for day before concert
+          ctx.service_send(send_reminder_email, req, send_delay=day_before(req.concert_date))
+
+          return f"Ticket purchased successfully with payment reference: {pay_ref}"
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/python/tutorials/tour-of-orchestration-python/app/communication/service.py" />
+    </Tab>
+  </Tabs>
+</div>
+
+Each of these calls gets persisted in Restate's log and will be retried upon failures.
+The handler can finish execution without waiting for the ticket delivery or reminder to complete.
+
+You can use Restate's communication primitives to implement microservices that communicate reliably and scale independently.
+
+<Accordion title="Try out resilient communication" icon={"laptop"}>
+  Buy a concert ticket:
+
+  <div className="hidden-tabs">
+    <Tabs>
+      <Tab title="TypeScript">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/ConcertTicketingService/buy --json '{
+        "ticketId": "ticket-789",
+        "price": 100,
+        "customerEmail": "me@mail.com",
+        "concertDate": "2026-10-01T20:00:00Z"
+        }'
+        ```
+      </Tab>
+
+      <Tab title="Java">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/ConcertTicketingService/buy --json '{
+        "ticketId": "ticket-789",
+        "price": 100,
+        "customerEmail": "me@mail.com",
+        "concertDate": "2026-10-01T20:00:00Z"
+        }'
+        ```
+      </Tab>
+
+      <Tab title="Go">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/ConcertTicketingService/Buy --json '{
+        "ticketId": "ticket-789",
+        "price": 100,
+        "customerEmail": "me@mail.com",
+        "concertDate": "2026-10-01T20:00:00Z"
+        }'
+        ```
+      </Tab>
+
+      <Tab title="Python">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/ConcertTicketingService/buy --json '{
+        "ticketId": "ticket-789",
+        "price": 100,
+        "customerEmail": "me@mail.com",
+        "concertDate": "2026-10-01T20:00:00Z"
+        }'
+        ```
+      </Tab>
+    </Tabs>
+  </div>
+
+  See in the UI how the first call had the response logged, while the ticket delivery happened asynchronously and the reminder was scheduled for in 406 days:
+
+  <Frame>
+    <img src="https://mintcdn.com/restate-6d46e1dc/0LGDWcCFfrGNze9u/img/tour/microservices/communication.png?fit=max&auto=format&n=0LGDWcCFfrGNze9u&q=85&s=42806da1d8f5cf5d1b282dd29f20a157" alt="Communication" width="1484" height="396" data-path="img/tour/microservices/communication.png" />
+  </Frame>
+</Accordion>
+
+## Request Idempotency
+
+Restate allows adding an idempotency header to your requests. It will then deduplicate requests with the same idempotency key, ensuring that they only execute once.
+
+This can help us prevent duplicate calls the concert ticketing service if the user accidentally clicks "buy" multiple times.
+
+Add an idempotency header to your request:
+
+<div className="hidden-tabs">
+  <Tabs>
+    <Tab title="TypeScript">
+      ```shell theme={null}
+      curl -X POST localhost:8080/restate/call/ConcertTicketingService/buy \
+      -H 'Idempotency-Key: unique-key-123' \
+      --json '{"ticketId": "ticket-789", "price": 100, "customerEmail": "me@mail.com", "concertDate": "2023-10-01T20:00:00Z"}'
+      ```
+    </Tab>
+
+    <Tab title="Java">
+      ```shell theme={null}
+      curl -X POST localhost:8080/restate/call/ConcertTicketingService/buy \
+      -H 'Idempotency-Key: unique-key-123' \
+      --json '{"ticketId": "ticket-789", "price": 100, "customerEmail": "me@mail.com", "concertDate": "2023-10-01T20:00:00Z"}'
+      ```
+    </Tab>
+
+    <Tab title="Go">
+      ```shell theme={null}
+      curl -X POST localhost:8080/restate/call/ConcertTicketingService/Buy \
+      -H 'Idempotency-Key: unique-key-123' \
+      --json '{"ticketId": "ticket-789", "price": 100, "customerEmail": "me@mail.com", "concertDate": "2023-10-01T20:00:00Z"}'
+      ```
+    </Tab>
+
+    <Tab title="Python">
+      ```shell theme={null}
+      curl -X POST localhost:8080/restate/call/ConcertTicketingService/buy \
+      -H 'Idempotency-Key: unique-key-123' \
+      --json '{"ticketId": "ticket-789", "price": 100, "customerEmail": "me@mail.com", "concertDate": "2023-10-01T20:00:00Z"}'
+      ```
+    </Tab>
+  </Tabs>
+</div>
+
+Notice how doing the same request with the same idempotency key will print the same payment reference.
+Instead of executing the handler again, Restate returns the result of the first execution.
+
+## External Events
+
+Until now we showed either synchronous API calls via `run` or calls to other Restate services.
+
+Another common scenario is APIs that respond asynchronously via webhooks or callbacks.
+For this, you can create a durable promise with Restate's awakeable API.
+
+For example, some payment providers like Stripe require you to initiate a payment and then wait for their webhook to confirm the transaction.
+
+<div className="hidden-tabs">
+  <Tabs>
+    <Tab title="TypeScript">
+      ```ts src/events/service.ts {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/typescript/tutorials/tour-of-orchestration-typescript/src/events/service.ts?collapse_prequel"}  theme={null}
+      export const payments = restate.service({
+        name: "Payments",
+        handlers: {
+          process: async (ctx: Context, req: PaymentRequest) => {
+            // Create awakeable to wait for webhook payment confirmation
+            const confirmation = ctx.awakeable<PaymentResult>();
+
+            // Initiate payment with external provider (Stripe, PayPal, etc.)
+            const paymentId = ctx.rand.uuidv4();
+            await ctx.run("pay", () => initPayment(req, paymentId, confirmation.id));
+
+            // Wait for external payment provider to call our webhook
+            return confirmation.promise;
+          },
+
+          // Webhook handler called by external payment provider
+          confirm: async (
+            ctx: Context,
+            confirmation: { id: string; result: PaymentResult },
+          ) => {
+            // Resolve the awakeable to continue the payment flow
+            ctx.resolveAwakeable(confirmation.id, confirmation.result);
+          },
+        },
+      });
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/typescript/tutorials/tour-of-orchestration-typescript/src/events/service.ts" />
+    </Tab>
+
+    <Tab title="Java">
+      ```java events/Payments.java {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/events/Payments.java?collapse_prequel"}  theme={null}
+      @Service
+      public class Payments {
+
+        @Handler
+        public PaymentResult process(PaymentRequest req) {
+          // Create awakeable to wait for webhook payment confirmation
+          var confirmation = Restate.awakeable(PaymentResult.class);
+
+          // Initiate payment with external provider (Stripe, PayPal, etc.)
+          var paymentId = Restate.random().nextUUID().toString();
+          Restate.run("pay", () -> initPayment(req, paymentId, confirmation.id()));
+
+          // Wait for external payment provider to call our webhook
+          return confirmation.await();
+        }
+
+        // Webhook handler called by external payment provider
+        @Handler
+        public void confirm(ConfirmationRequest confirmation) {
+          // Resolve the awakeable to continue the payment flow
+          Restate.awakeableHandle(confirmation.id()).resolve(PaymentResult.class, confirmation.result());
+        }
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/events/Payments.java" />
+    </Tab>
+
+    <Tab title="Go">
+      ```go events.go {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/go/tutorials/tour-of-orchestration-go/examples/events.go?collapse_prequel"}  theme={null}
+      type Payments struct{}
+
+      func (Payments) Process(ctx restate.Context, req PaymentRequest) (PaymentResult, error) {
+        // Create awakeable to wait for webhook payment confirmation
+        confirmation := restate.Awakeable[PaymentResult](ctx)
+
+        // Initiate payment with external provider (Stripe, PayPal, etc.)
+        paymentId := restate.UUID(ctx).String()
+        _, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+          return InitPayment(req, paymentId, confirmation.Id())
+        }, restate.WithName("pay"))
+        if err != nil {
+          return PaymentResult{}, err
+        }
+
+        // Wait for external payment provider to call our webhook
+        return confirmation.Result()
+      }
+
+      // Webhook handler called by external payment provider
+      func (Payments) Confirm(ctx restate.Context, confirmation ConfirmationRequest) error {
+        // Resolve the awakeable to continue the payment flow
+        restate.ResolveAwakeable(ctx, confirmation.Id, confirmation.Result)
+        return nil
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/go/tutorials/tour-of-orchestration-go/examples/events.go" />
+    </Tab>
+
+    <Tab title="Python">
+      ```python app/events/service.py {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/python/tutorials/tour-of-orchestration-python/app/events/service.py?collapse_prequel"}  theme={null}
+      payments = restate.Service("Payments")
+
+
+      @payments.handler()
+      async def process(ctx: restate.Context, req: PaymentRequest) -> PaymentResult:
+
+          # Create awakeable to wait for webhook payment confirmation
+          confirmation_id, confirmation_promise = ctx.awakeable(type_hint=PaymentResult)
+
+          # Initiate payment with external provider (Stripe, PayPal, etc.)
+          payment_id = str(ctx.uuid())
+          await ctx.run_typed(
+              "pay",
+              init_payment,
+              req=req,
+              payment_id=payment_id,
+              confirmation_id=confirmation_id,
+          )
+
+          # Wait for external payment provider to call our webhook
+          return await confirmation_promise
+
+
+      @payments.handler()
+      async def confirm(ctx: restate.Context, confirmation: ConfirmationRequest) -> None:
+          # Resolve the awakeable to continue the payment flow
+          ctx.resolve_awakeable(confirmation.id, confirmation.result)
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/python/tutorials/tour-of-orchestration-python/app/events/service.py" />
+    </Tab>
+  </Tabs>
+</div>
+
+The awakeable API creates a durable promise or future that can be recovered after a crash.
+Restate persists it in its log and can recover it on another process when needed.
+
+There is no limit to how long you can wait, so external events may take hours or even months to arrive.
+
+You can also use this pattern for human-in-the-loop interactions, such as waiting for user input or approvals.
+
+<Accordion title="Try out external events" icon={"laptop"}>
+  Initiate a payment by calling the `process` handler. Use the `send` verb to call the handler without waiting for the response:
+
+  <div className="hidden-tabs">
+    <Tabs>
+      <Tab title="TypeScript">
+        ```bash theme={null}
+        curl localhost:8080/restate/send/Payments/process \
+        --json '{"amount": 100, "currency": "USD", "customerId": "cust-123", "orderId": "order-456"}'
+        ```
+      </Tab>
+
+      <Tab title="Java">
+        ```bash theme={null}
+        curl localhost:8080/restate/send/Payments/process \
+        --json '{"amount": 100, "currency": "USD", "customerId": "cust-123", "orderId": "order-456"}'
+        ```
+      </Tab>
+
+      <Tab title="Go">
+        ```bash theme={null}
+        curl localhost:8080/restate/send/Payments/Process \
+        --json '{"amount": 100, "currency": "USD", "customerId": "cust-123", "orderId": "order-456"}'
+        ```
+      </Tab>
+
+      <Tab title="Python">
+        ```bash theme={null}
+        curl localhost:8080/restate/send/Payments/process \
+        --json '{"amount": 100, "currency": "USD", "customerId": "cust-123", "orderId": "order-456"}'
+        ```
+      </Tab>
+    </Tabs>
+  </div>
+
+  In the UI, you can see that the payment is waiting for confirmation.
+
+  You can restart the service to see how Restate continues waiting for the payment confirmation.
+
+  Simulate approving the payment by executing the **curl request that was printed in the service logs**, similar to:
+
+  <div className="hidden-tabs">
+    <Tabs>
+      <Tab title="TypeScript">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/Payments/confirm \
+        --json '{"id": "sign_1PrDkbECjgdsBmMfEUQyCnioCP-csLbd2AAAAEQ", "result": {"success": true, "transactionId": "txn-123"}}'
+        ```
+      </Tab>
+
+      <Tab title="Java">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/Payments/confirm \
+        --json '{"id": "sign_1PrDkbECjgdsBmMfEUQyCnioCP-csLbd2AAAAEQ", "result": {"success": true, "transactionId": "txn-123"}}'
+        ```
+      </Tab>
+
+      <Tab title="Go">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/Payments/Confirm \
+        --json '{"id": "sign_1PrDkbECjgdsBmMfEUQyCnioCP-csLbd2AAAAEQ", "result": {"success": true, "transactionId": "txn-123"}}'
+        ```
+      </Tab>
+
+      <Tab title="Python">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/Payments/confirm \
+        --json '{"id": "sign_1PrDkbECjgdsBmMfEUQyCnioCP-csLbd2AAAAEQ", "result": {"success": true, "transactionId": "txn-123"}}'
+        ```
+      </Tab>
+    </Tabs>
+  </div>
+
+  You can see in the UI that the payment was processed successfully and the awakeable was resolved:
+
+  <Frame>
+    <img src="https://mintcdn.com/restate-6d46e1dc/0LGDWcCFfrGNze9u/img/tour/microservices/awakeables.png?fit=max&auto=format&n=0LGDWcCFfrGNze9u&q=85&s=6bef4da2810a37741b4c0bad655ef337" alt="Awakeables" width="1891" height="573" data-path="img/tour/microservices/awakeables.png" />
+  </Frame>
+</Accordion>
+
+## Durable Timers
+
+Waiting on external events might take a long time, and you might want to add timeouts to operations like this.
+
+The Restate SDK offers durable timer implementations that you can use to limit waiting for an action.
+Restate tracks these timers so they survive crashes and do not restart from the beginning.
+
+Let's extend our payment service to automatically cancel payments that don't complete within a reasonable time:
+
+<div className="hidden-tabs">
+  <Tabs>
+    <Tab title="TypeScript">
+      ```ts src/timers/service.ts {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/typescript/tutorials/tour-of-orchestration-typescript/src/timers/service.ts?collapse_prequel"}  theme={null}
+      export const paymentsWithTimeout = restate.service({
+        name: "PaymentsWithTimeout",
+        handlers: {
+          process: async (ctx: Context, req: PaymentRequest) => {
+            const confirmation = ctx.awakeable<PaymentResult>();
+
+            const paymentId = ctx.rand.uuidv4();
+            const payRef = await ctx.run("pay", () =>
+              initPayment(req, paymentId, confirmation.id),
+            );
+
+            // Race between payment confirmation and timeout
+            try {
+              return await confirmation.promise.orTimeout({ seconds: 30 });
+            } catch (e) {
+              if (e instanceof TimeoutError) {
+                // Cancel the payment with external provider
+                await ctx.run("cancel-payment", () => cancelPayment(payRef));
+                return {
+                  success: false,
+                  errorMessage: "Payment timeout",
+                };
+              }
+              throw e;
+            }
+          },
+
+          confirm: async (
+            ctx: Context,
+            confirmation: { id: string; result: PaymentResult },
+          ) => {
+            ctx.resolveAwakeable(confirmation.id, confirmation.result);
+          },
+        },
+      });
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/typescript/tutorials/tour-of-orchestration-typescript/src/timers/service.ts" />
+    </Tab>
+
+    <Tab title="Java">
+      ```java timers/PaymentsWithTimeout.java {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/timers/PaymentsWithTimeout.java?collapse_prequel"}  theme={null}
+      @Service
+      public class PaymentsWithTimeout {
+
+        @Handler
+        public PaymentResult process(PaymentRequest req) {
+          var confirmation = Restate.awakeable(PaymentResult.class);
+
+          var paymentId = Restate.random().nextUUID().toString();
+          String payRef =
+              Restate.run("pay", String.class, () -> initPayment(req, paymentId, confirmation.id()));
+
+          try {
+            return confirmation.await(Duration.ofSeconds(30));
+          } catch (TimeoutException e) {
+            Restate.run("cancel-payment", () -> cancelPayment(payRef));
+            return new PaymentResult(false, null, "Payment timeout");
+          }
+        }
+
+        @Handler
+        public void confirm(ConfirmationRequest confirmation) {
+          Restate.awakeableHandle(confirmation.id()).resolve(PaymentResult.class, confirmation.result());
+        }
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/timers/PaymentsWithTimeoutService.java" />
+    </Tab>
+
+    <Tab title="Go">
+      ```go timers.go {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/go/tutorials/tour-of-orchestration-go/examples/timers.go?collapse_prequel"}  theme={null}
+      type PaymentsWithTimeout struct{}
+
+      func (PaymentsWithTimeout) Process(ctx restate.Context, req PaymentRequest) (PaymentResult, error) {
+        confirmation := restate.Awakeable[PaymentResult](ctx)
+
+        paymentId := restate.UUID(ctx).String()
+        payRef, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+          return InitPayment(req, paymentId, confirmation.Id())
+        }, restate.WithName("pay"))
+        if err != nil {
+          return PaymentResult{}, err
+        }
+
+        // Race between payment confirmation and timeout
+        timeout := restate.After(ctx, 30*time.Second)
+        resFut, err := restate.WaitFirst(ctx, confirmation, timeout)
+        if err != nil {
+          return PaymentResult{}, err
+        }
+
+        switch resFut {
+        case confirmation:
+          return confirmation.Result()
+        default:
+          if err := timeout.Done(); err != nil {
+            return PaymentResult{}, err
+          }
+          // Cancel the payment with external provider
+          _, err := restate.Run(ctx, func(ctx restate.RunContext) (restate.Void, error) {
+            return CancelPayment(payRef)
+          }, restate.WithName("cancel-payment"))
+          if err != nil {
+            return PaymentResult{}, err
+          }
+
+          return PaymentResult{
+            Success:      false,
+            ErrorMessage: "Payment timeout",
+          }, nil
+        }
+      }
+
+      func (PaymentsWithTimeout) Confirm(ctx restate.Context, confirmation ConfirmationRequest) error {
+        restate.ResolveAwakeable(ctx, confirmation.Id, confirmation.Result)
+        return nil
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/go/tutorials/tour-of-orchestration-go/examples/timers.go" />
+    </Tab>
+
+    <Tab title="Python">
+      ```python app/timers/service.py {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/python/tutorials/tour-of-orchestration-python/app/timers/service.py?collapse_prequel"}  theme={null}
+      payments_with_timeout = restate.Service("PaymentsWithTimeout")
+
+
+      @payments_with_timeout.handler()
+      async def process(ctx: restate.Context, req: PaymentRequest) -> PaymentResult:
+          confirmation_id, confirmation_promise = ctx.awakeable(type_hint=PaymentResult)
+
+          payment_id = str(ctx.uuid())
+          pay_ref = await ctx.run_typed(
+              "pay",
+              init_payment,
+              req=req,
+              payment_id=payment_id,
+              confirmation_id=confirmation_id,
+          )
+
+          # Race between payment confirmation and timeout
+          match await restate.select(
+              confirmation=confirmation_promise, timeout=ctx.sleep(timedelta(seconds=30))
+          ):
+              case ["confirmation", result]:
+                  return result
+              case _:
+                  # Cancel the payment with external provider
+                  await ctx.run_typed("cancel-payment", cancel_payment, pay_ref=pay_ref)
+                  return PaymentResult(
+                      success=False, transaction_id=None, error_message="Payment timeout"
+                  )
+
+
+      @payments_with_timeout.handler()
+      async def confirm(ctx: restate.Context, confirmation: ConfirmationRequest) -> None:
+          ctx.resolve_awakeable(confirmation.id, confirmation.result)
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/python/tutorials/tour-of-orchestration-python/app/timers/service.py" />
+    </Tab>
+  </Tabs>
+</div>
+
+You can also set timeouts for RPC calls or other asynchronous operations with the Restate SDK.
+
+<Accordion title="Try out durable timers" icon={"laptop"}>
+  Initiate a payment by calling the `process` handler. Use the `send` verb to call the handler without waiting for the response:
+
+  <div className="hidden-tabs">
+    <Tabs>
+      <Tab title="TypeScript">
+        ```bash theme={null}
+        curl localhost:8080/restate/send/PaymentsWithTimeout/process \
+        --json '{"amount": 100, "currency": "USD", "customerId": "cust-123", "orderId": "order-456"}'
+        ```
+      </Tab>
+
+      <Tab title="Java">
+        ```bash theme={null}
+        curl localhost:8080/restate/send/PaymentsWithTimeout/process \
+        --json '{"amount": 100, "currency": "USD", "customerId": "cust-123", "orderId": "order-456"}'
+        ```
+      </Tab>
+
+      <Tab title="Go">
+        ```bash theme={null}
+        curl localhost:8080/restate/send/PaymentsWithTimeout/Process \
+        --json '{"amount": 100, "currency": "USD", "customerId": "cust-123", "orderId": "order-456"}'
+        ```
+      </Tab>
+
+      <Tab title="Python">
+        ```bash theme={null}
+        curl localhost:8080/restate/send/PaymentsWithTimeout/process \
+        --json '{"amount": 100, "currency": "USD", "customerId": "cust-123", "orderId": "order-456"}'
+        ```
+      </Tab>
+    </Tabs>
+  </div>
+
+  Wait for 30 seconds without confirming the payment.
+
+  Try restarting the service while the payment is waiting for confirmation to see how Restate continues waiting for the timer and the confirmation.
+
+  In the UI, you can see that the payment times out and cancels the payment:
+
+  <Frame>
+    <img src="https://mintcdn.com/restate-6d46e1dc/0LGDWcCFfrGNze9u/img/tour/microservices/timer.png?fit=max&auto=format&n=0LGDWcCFfrGNze9u&q=85&s=0bfefa9b69c7fa59153121479fd5feb5" alt="Timers" width="2189" height="979" data-path="img/tour/microservices/timer.png" />
+  </Frame>
+</Accordion>
+
+## Concurrent Tasks
+
+When you are waiting on an awakeable or a timer, you are effectively running concurrent tasks and waiting for one of them to complete.
+
+Restate allows more advanced concurrency patterns to run tasks in parallel and wait for their results.
+
+Let's extend our subscription service to process all subscriptions concurrently and handle failures gracefully:
+
+<div className="hidden-tabs">
+  <Tabs>
+    <Tab title="TypeScript">
+      ```ts src/concurrenttasks/service.ts {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/typescript/tutorials/tour-of-orchestration-typescript/src/concurrenttasks/service.ts?collapse_prequel"}  theme={null}
+      export const parallelSubscriptionService = restate.service({
+        name: "ParallelSubscriptionService",
+        handlers: {
+          add: async (ctx: Context, req: SubscriptionRequest) => {
+            const paymentId = ctx.rand.uuidv4();
+            const payRef = await ctx.run("pay", () =>
+              createRecurringPayment(req.creditCard, paymentId),
+            );
+
+            // Start all subscriptions in parallel
+            const subscriptionPromises = [];
+            for (const subscription of req.subscriptions) {
+              subscriptionPromises.push(
+                ctx.run(`add-${subscription}`, () =>
+                  createSubscription(req.userId, subscription, payRef),
+                ),
+              );
+            }
+
+            // Wait for all subscriptions to complete
+            await RestatePromise.all(subscriptionPromises);
+
+            return { success: true, paymentRef: payRef };
+          },
+        },
+      });
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/typescript/tutorials/tour-of-orchestration-typescript/src/concurrenttasks/service.ts" />
+    </Tab>
+
+    <Tab title="Java">
+      ```java concurrenttasks/ParallelSubscriptionService.java {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/concurrenttasks/ParallelSubscriptionService.java?collapse_prequel"}  theme={null}
+      @Service
+      public class ParallelSubscriptionService {
+
+        @Handler
+        public SubscriptionResult add(SubscriptionRequest req) {
+          var paymentId = Restate.random().nextUUID().toString();
+          var payRef =
+              Restate.run("pay", String.class, () -> createRecurringPayment(req.creditCard(), paymentId));
+
+          // Start all subscriptions in parallel
+          List<DurableFuture<?>> subscriptionFutures = new ArrayList<>();
+          for (String subscription : req.subscriptions()) {
+            subscriptionFutures.add(
+                Restate.runAsync(
+                    "add-" + subscription, () -> createSubscription(req.userId(), subscription, payRef)));
+          }
+
+          // Wait for all subscriptions to complete
+          DurableFuture.all(subscriptionFutures).await();
+
+          return new SubscriptionResult(true, payRef);
+        }
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/java/tutorials/tour-of-orchestration-java/src/main/java/my/example/concurrenttasks/ParallelSubscriptionService.java" />
+    </Tab>
+
+    <Tab title="Go">
+      ```go concurrenttasks.go {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/go/tutorials/tour-of-orchestration-go/examples/concurrenttasks.go?collapse_prequel"}  theme={null}
+      type ParallelSubscriptionService struct{}
+
+      func (ParallelSubscriptionService) Add(ctx restate.Context, req SubscriptionRequest) (SubscriptionResult, error) {
+        paymentId := restate.UUID(ctx).String()
+
+        payRef, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+          return CreateRecurringPayment(req.CreditCard, paymentId)
+        }, restate.WithName("pay"))
+        if err != nil {
+          return SubscriptionResult{}, err
+        }
+
+        // Process all subscriptions sequentially
+        var subscriptionFutures []restate.Future
+        for _, subscription := range req.Subscriptions {
+          future := restate.RunAsync(ctx, func(ctx restate.RunContext) (string, error) {
+            return CreateSubscription(req.UserId, subscription, payRef)
+          }, restate.WithName(fmt.Sprintf("add-%s", subscription)))
+          subscriptionFutures = append(subscriptionFutures, future)
+        }
+
+        for fut, err := range restate.Wait(ctx, subscriptionFutures...) {
+          if err != nil {
+            return SubscriptionResult{}, err
+          }
+          _, err := fut.(restate.RunAsyncFuture[string]).Result()
+          if err != nil {
+            return SubscriptionResult{}, err
+          }
+        }
+
+        return SubscriptionResult{
+          Success:    true,
+          PaymentRef: payRef,
+        }, nil
+      }
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/go/tutorials/tour-of-orchestration-go/examples/concurrenttasks.go" />
+    </Tab>
+
+    <Tab title="Python">
+      ```python app/concurrenttasks/service.py {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/python/tutorials/tour-of-orchestration-python/app/concurrenttasks/service.py?collapse_prequel"}  theme={null}
+      parallel_subscription_service = restate.Service("ParallelSubscriptionService")
+
+
+      @parallel_subscription_service.handler()
+      async def add(ctx: restate.Context, req: SubscriptionRequest) -> SubscriptionResult:
+          payment_id = str(ctx.uuid())
+          pay_ref = await ctx.run_typed(
+              "pay",
+              create_recurring_payment,
+              credit_card=req.credit_card,
+              payment_id=payment_id,
+          )
+
+          # Start all subscriptions in parallel
+          subscription_tasks = []
+          for subscription in req.subscriptions:
+              task = ctx.run_typed(
+                  f"add-{subscription}",
+                  create_subscription,
+                  user_id=req.user_id,
+                  subscription=subscription,
+                  payment_ref=pay_ref,
+              )
+              subscription_tasks.append(task)
+
+          # Wait for all subscriptions to complete
+          await restate.gather(*subscription_tasks)
+
+          return SubscriptionResult(success=True, payment_ref=pay_ref)
+      ```
+
+      <GitHubLink url="https://github.com/restatedev/examples/blob/main/python/tutorials/tour-of-orchestration-python/app/concurrenttasks/service.py" />
+    </Tab>
+  </Tabs>
+</div>
+
+Restate retries all parallel tasks until they all complete and can deterministically replay the order of completion.
+
+<Accordion title="Try out concurrent tasks" icon={"laptop"}>
+  Add a few subscriptions for some users.
+
+  <div className="hidden-tabs">
+    <Tabs>
+      <Tab title="TypeScript">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/ParallelSubscriptionService/add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "YouTube"]}'
+        ```
+      </Tab>
+
+      <Tab title="Java">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/ParallelSubscriptionService/add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "YouTube"]}'
+        ```
+      </Tab>
+
+      <Tab title="Go">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/ParallelSubscriptionService/Add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "YouTube"]}'
+        ```
+      </Tab>
+
+      <Tab title="Python">
+        ```bash theme={null}
+        curl localhost:8080/restate/call/ParallelSubscriptionService/add \
+        --json '{"userId": "user-123", "creditCard": "4111111111111111", "subscriptions": ["Hulu", "Prime", "YouTube"]}'
+        ```
+      </Tab>
+    </Tabs>
+  </div>
+
+  In the UI, you can see that all subscriptions are processed in parallel:
+
+  <Frame>
+    <img src="https://mintcdn.com/restate-6d46e1dc/0LGDWcCFfrGNze9u/img/tour/microservices/concurrent_tasks.png?fit=max&auto=format&n=0LGDWcCFfrGNze9u&q=85&s=eee30b6a3eab320f719d0c8cb41aefba" alt="Concurrent Tasks" width="2154" height="979" data-path="img/tour/microservices/concurrent_tasks.png" />
+  </Frame>
+</Accordion>
+
+You can extend this to include the saga pattern and run all compensations in parallel as well.
+
+Have a look at the Concurrent Tasks docs for your SDK to learn more ([TS](/develop/ts/concurrent-tasks) / [Java / Kotlin](/develop/java/concurrent-tasks) / [Python](/develop/python/concurrent-tasks) / [Go](/develop/go/concurrent-tasks)).
+
+## Summary
+
+Restate simplifies microservice orchestration with:
+
+* **Durable Execution**: Automatic failure recovery without complex retry logic
+* **Sagas**: Distributed transactions with resilient compensation
+* **Service Communication**: Reliable RPC and messaging between services
+* **Stateful Processing**: Consistent state management without external stores
+* **Advanced Patterns**: Fault-tolerant timers, awakeables, and parallel execution
+
+Build resilient distributed systems without the typical complexity.

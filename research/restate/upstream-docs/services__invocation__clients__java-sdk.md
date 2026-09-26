@@ -1,0 +1,406 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Java/Kotlin SDK Clients
+
+> Invoke services from any Java/Kotlin code.
+
+export const CustomVars = ({name}) => {
+  const RESTATE_VERSION = "1.7";
+  const TYPESCRIPT_SDK_VERSION = "1.17.2";
+  const JAVA_SDK_VERSION = "2.9.3";
+  const GO_SDK_VERSION = "1.1.0";
+  const PYTHON_SDK_VERSION = "1.0.5";
+  const RUST_SDK_VERSION = "0.12.1";
+  const mapping = {
+    RESTATE_VERSION,
+    TYPESCRIPT_SDK_VERSION,
+    JAVA_SDK_VERSION,
+    GO_SDK_VERSION,
+    PYTHON_SDK_VERSION,
+    RUST_SDK_VERSION,
+    JAVA_HTTP_DEPENDENCY: `dev.restate:sdk-java-http:${JAVA_SDK_VERSION}`,
+    KOTLIN_HTTP_DEPENDENCY: `dev.restate:sdk-kotlin-http:${JAVA_SDK_VERSION}`,
+    JAVA_LAMBDA_DEPENDENCY: `dev.restate:sdk-java-lambda:${JAVA_SDK_VERSION}`,
+    KOTLIN_LAMBDA_DEPENDENCY: `dev.restate:sdk-kotlin-lambda:${JAVA_SDK_VERSION}`,
+    JAVA_SDK_REQUEST_IDENTITY: `dev.restate:sdk-request-identity:${JAVA_SDK_VERSION}`,
+    JAVA_TESTING: `dev.restate:sdk-testing:${JAVA_SDK_VERSION}`,
+    JAVA_CLIENT: `dev.restate:client:${JAVA_SDK_VERSION}`,
+    KOTLIN_CLIENT: `dev.restate:client-kotlin:${JAVA_SDK_VERSION}`,
+    DENO_FETCH: `npm:@restatedev/restate-sdk@^${TYPESCRIPT_SDK_VERSION}/fetch`
+  };
+  return mapping[name];
+};
+
+An invocation is a request to execute a handler.
+The Restate SDK client library lets you invoke Restate handlers from anywhere in your application.
+Use this only in non-Restate services without access to the Restate Context.
+
+<Info>
+  Each invocation has its own unique ID and lifecycle.
+  Have a look at [managing invocations](/services/invocation/managing-invocations) to learn how to manage the lifecycle of an invocation.
+</Info>
+
+<Info>
+  Always [invoke handlers via the context](/develop/ts/service-communication), if you have access to it.
+  Restate then attaches information about the invocation to the parent invocation.
+</Info>
+
+## Installation
+
+First, add the dependency to your project
+
+* For Java: <code>{<CustomVars name="JAVA_CLIENT"/>}</code>
+* For Kotlin: <code>{<CustomVars name="KOTLIN_CLIENT"/>}</code>
+
+Then, [register the service](/services/versioning) you want to invoke.
+
+Finally, connect to Restate and invoke the handler with your preferred semantics.
+
+## Request-response invocations
+
+To wait on a response from the handler:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/IngressClient.java#rpc"}  theme={null}
+  Client restateClient = Client.connect("http://localhost:8080");
+
+  // To call a service
+  String svcResponse = restateClient.service(MyService.class).myHandler("Hi");
+
+  // To call a virtual object
+  String objResponse = restateClient.virtualObject(MyObject.class, "Mary").myHandler("Hi");
+
+  // To submit a workflow
+  String wfResponse =
+      restateClient
+          .workflowHandle(MyWorkflow.class, "Mary")
+          .send(MyWorkflow::run, "Hi")
+          .attach()
+          .response();
+  // To interact with a workflow
+  String status =
+      restateClient.workflow(MyWorkflow.class, "Mary").interactWithWorkflow("my signal");
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/IngressClient.kt#rpc"}  theme={null}
+  val restateClient = Client.connect("http://localhost:8080")
+
+  // To call a service
+  val svcResponse = restateClient.service<MyService>().myHandler("Hi")
+
+  // To call a virtual object
+  val objResponse = restateClient.virtualObject<MyObject>("Mary").myHandler("Hi")
+
+  // To submit a workflow
+  val wfResponse =
+      restateClient
+          .toWorkflow<MyWorkflow>("Mary")
+          .request { run("Hi") }
+          .send()
+          .attachSuspend()
+          .response()
+  // To interact with a workflow
+  val status = restateClient.workflow<MyWorkflow>("Mary").interactWithWorkflow("my signal")
+  ```
+</CodeGroup>
+
+## One-way invocations
+
+To send a message without waiting for a response:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/IngressClient.java#one_way_call"}  theme={null}
+  Client restateClient = Client.connect("http://localhost:8080");
+
+  // To message a service
+  restateClient.serviceHandle(MyService.class).send(MyService::myHandler, "Hi");
+
+  // To message a virtual object
+  restateClient.virtualObjectHandle(MyObject.class, "Mary").send(MyObject::myHandler, "Hi");
+
+  // To submit a workflow without waiting for the result
+  restateClient.workflowHandle(MyWorkflow.class, "Mary").send(MyWorkflow::run, "Hi");
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/IngressClient.kt#one_way_call"}  theme={null}
+  val restateClient = Client.connect("http://localhost:8080")
+
+  // To message a service
+  restateClient.toService<MyService>().request { myHandler("Hi") }.send()
+
+  // To message a virtual object
+  restateClient.toVirtualObject<MyObject>("Mary").request { myHandler("Hi") }.send()
+
+  // To submit a workflow without waiting for the result
+  restateClient.toWorkflow<MyWorkflow>("Mary").request { run("Hi") }.send()
+  ```
+</CodeGroup>
+
+## Delayed invocations
+
+To schedule an invocation for a later point in time:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/IngressClient.java#delayed_call"}  theme={null}
+  Client restateClient = Client.connect("http://localhost:8080");
+
+  // To message a service with a delay
+  restateClient
+      .serviceHandle(MyService.class)
+      .send(MyService::myHandler, "Hi", Duration.ofDays(5));
+
+  // To message a virtual object with a delay
+  restateClient
+      .virtualObjectHandle(MyObject.class, "Mary")
+      .send(MyObject::myHandler, "Hi", Duration.ofDays(5));
+
+  // To submit a workflow with a delay
+  restateClient
+      .workflowHandle(MyWorkflow.class, "Mary")
+      .send(MyWorkflow::run, "Hi", Duration.ofDays(5));
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/IngressClient.kt#delayed_call"}  theme={null}
+  val restateClient = Client.connect("http://localhost:8080")
+
+  // To message a service with a delay
+  restateClient.toService<MyService>().request { myHandler("Hi") }.send(5.days)
+
+  // To message a virtual object with a delay
+  restateClient.toVirtualObject<MyObject>("Mary").request { myHandler("Hi") }.send(5.days)
+  ```
+</CodeGroup>
+
+## Invoke a handler idempotently
+
+By using Restate and an idempotency key, you can make any service call idempotent, without any extra code or setup. This is a very powerful feature to ensure that your system stays consistent and doesn’t perform the same operation multiple times.
+
+To make a service call idempotent, you can use the idempotency key feature.
+Add the idempotency key [to the header](https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/) via:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/IngressClient.java#service_idempotent"}  theme={null}
+  Client restateClient = Client.connect("http://localhost:8080");
+  restateClient
+      .virtualObjectHandle(MyObject.class, "Mary")
+      .send(MyObject::myHandler, "Hi", InvocationOptions.idempotencyKey("abc"));
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/IngressClient.kt#service_idempotent"}  theme={null}
+  val restateClient = Client.connect("http://localhost:8080")
+  restateClient
+      .toService<MyService>()
+      .request { myHandler("Hi") }
+      .options { idempotencyKey = "abc" }
+      .send()
+  ```
+</CodeGroup>
+
+After the invocation completes, Restate persists the response for a retention period of one day (24 hours).
+If you re-invoke the service with the same idempotency key within 24 hours, Restate sends back the same response and doesn't re-execute the request to the service.
+
+The call options, with which we set the idempotency key, also let you add other headers to the request.
+
+<Info>
+  Check out the [service configuration docs](/services/configuration) to tune the retention time.
+</Info>
+
+## Flow control: scope and limit key
+
+<Note title="Preview feature">
+  Scope and limit key are a preview feature and require restate-server 1.7 with [flow control enabled](/services/flow-control#enabling-flow-control).
+</Note>
+
+[Flow control](/services/flow-control) caps how many invocations run concurrently within a **scope**, with optional hierarchical **limit keys**.
+Route a call into a scope with `.scope(...)` on the client, and add a limit key via `InvocationOptions.limitKey(...)` (Java) or `.options { limitKey = ... }` (Kotlin) for a finer, per subgroup limit within that scope:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/IngressClient.java#scope"}  theme={null}
+  Client restateClient = Client.connect("http://localhost:8080");
+
+  // Route a call into a named scope
+  String svcResponse = restateClient.scope("tenant-123").service(MyService.class).myHandler("Hi");
+
+  // Add a limit key for a hierarchical concurrency limit within the scope
+  String objResponse =
+      restateClient
+          .scope("tenant-123")
+          .virtualObjectHandle(MyObject.class, "Mary")
+          .call(MyObject::myHandler, "Hi", InvocationOptions.limitKey("premium/user42"))
+          .response();
+
+  // Fire-and-forget sends can be scoped too
+  restateClient
+      .scope("tenant-123")
+      .serviceHandle(MyService.class)
+      .send(MyService::myHandler, "Hi");
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/IngressClient.kt#scope"}  theme={null}
+  val restateClient = Client.connect("http://localhost:8080")
+
+  // Route a call into a named scope
+  val svcResponse = restateClient.scope("tenant-123").service<MyService>().myHandler("Hi")
+
+  // Add a limit key for a hierarchical concurrency limit within the scope
+  val objResponse =
+      restateClient
+          .scope("tenant-123")
+          .toVirtualObject<MyObject>("Mary")
+          .request { myHandler("Hi") }
+          .options { limitKey = "premium/user42" }
+          .call()
+          .response()
+
+  // Fire-and-forget sends can be scoped too
+  restateClient.scope("tenant-123").toService<MyService>().request { myHandler("Hi") }.send()
+  ```
+</CodeGroup>
+
+See [Flow control](/services/flow-control) for how scopes, limit keys, and the concurrency rule book work.
+
+## Retrieve result of invocations and workflows
+
+You can use the client library to retrieve the results of invocations **with an idempotency key** or workflows.
+
+### Attach to an invocation with an idempotency key
+
+For invocations with an idempotency key, you can attach to the invocation and wait for it to finish:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/IngressClient.java#service_attach"}  theme={null}
+  Client restateClient = Client.connect("http://localhost:8080");
+
+  // The call to which we want to attach later
+  var handle =
+      restateClient
+          .serviceHandle(MyService.class)
+          .send(
+              MyService::myHandler, "Hi", InvocationOptions.idempotencyKey("my-idempotency-key"));
+
+  // ... do something else ...
+
+  // ---------------------------------
+  // OPTION 1: With the handle returned by the call
+  // - Attach
+  String result1 = handle.attach().response();
+  // - Peek
+  Output<String> output = handle.getOutput().response();
+  if (output.isReady()) {
+    String result2 = output.getValue();
+  }
+
+  // ---------------------------------
+  // OPTION 2: With the Invocation ID
+  // Retrieve the invocation ID from the handle and send it to another process
+  String invocationId = handle.invocationId();
+
+  // Attach/peek later from the other process
+  var handle2 = restateClient.invocationHandle(invocationId, String.class);
+  // use it to attach or peek (see above)
+
+  // ---------------------------------
+  // OPTION 3: With the idempotency key
+  var myService = Target.service("MyService", "myHandler");
+  var handle3 =
+      restateClient.idempotentInvocationHandle(myService, "my-idempotency-key", String.class);
+  // use it to attach or peek (see above)
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/IngressClient.kt#service_attach"}  theme={null}
+  val restateClient = Client.connect("http://localhost:8080")
+
+  // The call to which we want to attach later
+  val handle =
+      restateClient
+          .toService<MyService>()
+          .request { myHandler("Hi") }
+          .options { idempotencyKey = "my-idempotency-key" }
+          .send()
+
+  // ... do something else ...
+
+  // ---------------------------------
+  // OPTION 1: With the handle returned by the call
+  // - Attach
+  val result1 = handle.attachSuspend().response()
+  // - Peek
+  val output = handle.getOutputSuspend().response()
+  if (output.isReady()) {
+    val result2 = output.getValue()
+  }
+
+  // ---------------------------------
+  // OPTION 2: With the Invocation ID
+  // Retrieve the invocation ID from the handle and send it to another process
+  val invocationId = handle.invocationId()
+
+  // Attach/peek later from the other process
+  val handle2 = restateClient.invocationHandle(invocationId, typeTag<String>())
+  // use it to attach or peek (see above)
+
+  // ---------------------------------
+  // OPTION 3: With the idempotency key
+  val target = Target.service("MyService", "myHandler")
+  val handle3 =
+      restateClient.idempotentInvocationHandle(target, "my-idempotency-key", typeTag<String>())
+  // use it to attach or peek (see above)
+  ```
+</CodeGroup>
+
+### Attach/peek at a workflow execution
+
+For workflows, you can attach to the workflow execution and wait for it to finish or peek at the output:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/IngressClient.java#workflow_attach"}  theme={null}
+  Client restateClient = Client.connect("http://localhost:8080");
+
+  // The workflow to which we want to attach later
+  var wfHandle =
+      restateClient.workflowHandle(MyWorkflow.class, "Mary").send(MyWorkflow::run, "Hi");
+
+  // ... do something else ...
+
+  // ---------------------------------
+  // OPTION 1: With the handle returned by the workflow submission
+  // - Attach
+  String result = wfHandle.attach().response();
+  // - Peek
+  Output<String> output = wfHandle.getOutput().response();
+  if (output.isReady()) {
+    String result2 = output.getValue();
+  }
+
+  // ---------------------------------
+  // OPTION 2: With the workflow ID
+  var wfHandle2 = restateClient.workflowHandle("MyWorkflow", "wf-id", String.class);
+  // use it to attach or peek (see above)
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/IngressClient.kt#workflow_attach"}  theme={null}
+  val restateClient = Client.connect("http://localhost:8080")
+
+  // The workflow to which we want to attach later
+  val wfHandle = restateClient.toWorkflow<MyWorkflow>("Mary").request { run("Hi") }.send()
+
+  // ... do something else ...
+
+  // ---------------------------------
+  // OPTION 1: With the handle returned by the workflow submission
+  // - Attach
+  val result = wfHandle.attachSuspend().response()
+  // - Peek
+  val output = wfHandle.getOutputSuspend().response()
+  if (output.isReady()) {
+    val result2 = output.getValue()
+  }
+
+  // ---------------------------------
+  // OPTION 2: With the workflow ID
+  val wfHandle2 = restateClient.workflowHandle("MyWorkflow", "wf-id", typeTag<String>())
+  // use it to attach or peek (see above)
+  ```
+</CodeGroup>

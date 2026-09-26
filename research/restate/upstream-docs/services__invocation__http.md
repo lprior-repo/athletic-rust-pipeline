@@ -1,0 +1,277 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# HTTP
+
+> Learn how to invoke Restate services over HTTP.
+
+An invocation is a request to execute a handler.
+You can invoke handlers over HTTP with or without waiting for a response, and with or without an idempotency key.
+
+Make sure to first [register the handler](/services/versioning) you want to invoke.
+
+The [UI](/installation#restate-ui) helps you with invoking your services.
+Open the UI at port 9070, register your service, click on the service, open the playground, and invoke your handlers from there.
+
+<Info>
+  Each invocation has its own unique ID and lifecycle.
+  Have a look at [managing invocations](/services/invocation/managing-invocations) to learn how to manage the lifecycle of an invocation.
+</Info>
+
+## Request-response calls
+
+You can invoke services over HTTP 1.1 or higher.
+Request/response bodies should be encoded as JSON.
+
+Invoke `myHandler` of `MyService` as follows:
+
+```shell theme={null}
+curl localhost:8080/restate/call/MyService/myHandler \
+  --json '{"name": "Mary", "age": 25}'
+```
+
+Invoke `myHandler` of `MyVirtualObject` for `myObjectKey` as follows:
+
+```shell theme={null}
+curl localhost:8080/restate/call/MyVirtualObject/myObjectKey/myHandler \
+  --json '{"name": "Mary", "age": 25}'
+```
+
+Call the `run` handler of the `MyWorkflow` as follows:
+
+```shell theme={null}
+curl localhost:8080/restate/call/MyWorkflow/myWorkflowId/run \
+  --json '{"name": "Mary", "age": 25}'
+```
+
+A workflow can be submitted only once. Resubmission of the same workflow will fail with "Previously accepted". The invocation ID can be found in the request header `x-restate-id`.
+
+Follow the same pattern for calling the other handlers of the workflow.
+
+<Note title="Restate as proxy">
+  Note that all invocations go first via the Restate Server. The server then forwards the request to the appropriate service.
+  Therefore, `localhost:8080` refers to ingress port of the Restate Server, not the service instance.
+</Note>
+
+<Info title="Restate <= 1.6">
+  Restate \<= 1.6: Use the path `/{service}/{handler}` or `/{service}/{key}/{handler}` instead.
+</Info>
+
+## Sending messages
+
+If you do not want to wait for the response, you can send a message by using `/restate/send/...` instead of `/restate/call/...`:
+
+```shell theme={null}
+curl localhost:8080/restate/send/MyService/myHandler \
+  --json '{"name": "Mary", "age": 25}'
+```
+
+Example output:
+
+```json theme={null}
+{"invocationId":"inv_1aiqX0vFEFNH1Umgre58JiCLgHfTtztYK5","status":"Accepted"}
+```
+
+The response contains the [Invocation ID](/services/invocation/managing-invocations#invocation-id).
+You can use this identifier [to cancel](/services/invocation/managing-invocations#cancel) or [kill the invocation](/services/invocation/managing-invocations#kill).
+
+<Info title="Restate <= 1.6">
+  Restate \<= 1.6: Use the path `/{service}/{handler}/send` or `/{service}/{key}/{handler}/send` instead.
+</Info>
+
+## Delayed messages
+
+You can **delay the message** by adding a delay request parameter in ISO8601 notation or using [humantime format](https://docs.rs/humantime/latest/humantime/):
+
+<CodeGroup>
+  ```shell humantime theme={null}
+  curl "localhost:8080/restate/send/MyService/myHandler?delay=10s" \
+      --json '{"name": "Mary", "age": 25}'
+  ```
+
+  ```shell ISO8601 theme={null}
+  curl "localhost:8080/restate/send/MyService/myHandler?delay=PT10S" \
+      --json '{"name": "Mary", "age": 25}'
+  ```
+</CodeGroup>
+
+<Info title="Restate <= 1.6">
+  Restate \<= 1.6: Use the path `/{service}/{handler}/send?delay=` or `/{service}/{key}/{handler}/send?delay=` instead.
+</Info>
+
+## Using an idempotency key
+
+You can send requests to Restate providing an idempotency key, through the [`Idempotency-Key` header](https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/):
+
+```shell theme={null}
+curl localhost:8080/restate/call/MyService/myHandler \
+  -H 'idempotency-key: ad5472esg4dsg525dssdfa5loi' \
+  --json '{"name": "Mary", "age": 25}'
+```
+
+After the invocation completes, Restate persists the response for a retention period of one day (24 hours).
+If you re-invoke the service with the same idempotency key within 24 hours, Restate sends back the same response and doesn't re-execute the request to the service.
+
+Check out the [service configuration docs](/services/configuration) to tune the retention time.
+
+<Tip title="Make any service call idempotent with Restate">
+  With Restate and an idempotency key, you can make any service call idempotent, without any extra code or setup.
+  This is a very powerful feature to ensure that your system stays consistent and doesn't perform the same operation multiple times.
+</Tip>
+
+<Note title="Automatic idempotency keys at the ingress">
+  From Restate 1.7, Restate injects automatically idempotency keys inside the ingress, to enable internal safe retries.
+  You can modify the behavior of this feature with the `controlled-idempotent-sharding` cluster feature.
+  These idempotency keys **will not** deduplicate actual requests from ingress, since each call gets a distinct key.
+  To achieve that, you still need to provide the idempotency key yourself in the ingress.
+</Note>
+
+## Retrying requests
+
+A client can safely retry the following requests:
+
+* A `call` or `send` that carries an [idempotency key](#using-an-idempotency-key).
+* An [`attach`](#attach-to-an-invocation) request.
+* An [`output`](#attach-to-an-invocation) request.
+
+On failure, Restate sets the `x-restate-error-source` header, to specify where the error comes from. Its value is one of:
+
+* `invocation`: the error comes from your handler, either by throwing or returning a `TerminalError`/`TerminalException`, or by killing or cancelling the invocation. You usually don't want to retry these errors.
+* `ingress` (or absent): the error comes from the Restate ingress, or from a proxy between Restate and your client. Retry only when the status code signals a transient condition: `408`, `425`, `429`, or any `5xx`. Treat any other `4xx` response, for example `404 Not Found` or `400 Bad Request`, as non-retryable.
+
+## Scopes
+
+<Note title="Experimental">
+  Scopes are part of the flow control feature.
+  Scoped invocations are rejected unless the server is started with the experimental `vqueues` feature enabled (`experimental-enable-vqueues = true`).
+</Note>
+
+A scope is an opaque key that assigns an invocation to scope, which Restate uses to apply flow control across invocations that share the same scope.
+Add a `scope/{scopeKey}` segment in front of the `call` or `send` verb:
+
+```
+curl localhost:8080/restate/scope/{scopeKey}/call/{service}/{handler}
+curl localhost:8080/restate/scope/{scopeKey}/call/{service}/{key}/{handler}
+curl localhost:8080/restate/scope/{scopeKey}/send/{service}/{handler}
+curl localhost:8080/restate/scope/{scopeKey}/send/{service}/{key}/{handler}
+```
+
+For example, to call `MyService/myHandler` within the scope `tenant-a`:
+
+```shell theme={null}
+curl localhost:8080/restate/scope/tenant-a/call/MyService/myHandler \
+  --json '{"name": "Mary", "age": 25}'
+```
+
+To subdivide a scope further, add a **limit key** with the `limit-key` query parameter or the `x-restate-limit-key` header.
+A limit key has one or two `/`-separated levels and always requires a scope:
+
+<CodeGroup>
+  ```shell Query parameter theme={null}
+  curl "localhost:8080/restate/scope/tenant-a/call/MyService/myHandler?limit-key=premium/user42" \
+    --json '{"name": "Mary", "age": 25}'
+  ```
+
+  ```shell Header theme={null}
+  curl localhost:8080/restate/scope/tenant-a/call/MyService/myHandler \
+    -H 'x-restate-limit-key: premium/user42' \
+    --json '{"name": "Mary", "age": 25}'
+  ```
+</CodeGroup>
+
+<Info>
+  See [flow control](/services/flow-control) to learn how to configure concurrency limits for a scope and its [limit keys](/services/flow-control#limit-keys).
+</Info>
+
+## Cancel
+
+You can cancel an invocation as follows:
+
+```shell curl theme={null}
+curl -X PATCH http://localhost:9070/invocations/inv_1gdJBtdVEcM942bjcDmb1c1khoaJe11Hbz/cancel
+```
+
+<Info>
+  [Read the detailed docs on cancelling invocations](/services/invocation/managing-invocations#cancel)
+</Info>
+
+## Attach to an invocation
+
+Restate allows you to retrieve the result of workflows and invocations that used an idempotency key.
+There are two options:
+
+* To **attach** to an invocation or workflow and wait for it to finish, use `attach`.
+* To **peek at the output** of an invocation or workflow, use `output`. This will return:
+  * `{"message":"not ready"}` for ongoing invocations
+  * The result for finished invocations
+  * `{"message":"not found"}` for non-existing invocations
+
+### By invocation ID
+
+If you already have the invocation ID, attach to it or read its output with a `GET` request:
+
+```shell theme={null}
+curl localhost:8080/restate/attach/myInvocationId
+curl localhost:8080/restate/output/myInvocationId
+```
+
+### By target
+
+If you don't have the invocation ID, send a `POST` request to `/restate/attach` or `/restate/output` with a JSON body describing the workflow or idempotency target. You can also address an invocation by its ID through the same body shape, as an alternative to the `GET` form above:
+
+<CodeGroup>
+  ```shell Workflow theme={null}
+  curl localhost:8080/restate/attach \
+    --json '{"target": "workflow", "workflowName": "MyWorkflow", "workflowKey": "myWorkflowId"}'
+  ```
+
+  ```shell Service theme={null}
+  curl localhost:8080/restate/attach \
+    --json '{"target": "idempotentInvocation", "service": "MyService", "handler": "myHandler", "idempotencyKey": "myIdempotencyKey"}'
+  ```
+
+  ```shell Virtual Object theme={null}
+  curl localhost:8080/restate/attach \
+    --json '{"target": "idempotentInvocation", "service": "MyVirtualObject", "key": "myKey", "handler": "myHandler", "idempotencyKey": "myIdempotencyKey"}'
+  ```
+
+  ```shell Invocation ID theme={null}
+  curl localhost:8080/restate/attach \
+    --json '{"target": "invocation", "invocationId": "myInvocationId"}'
+  ```
+</CodeGroup>
+
+Use the same body shape against `/restate/output` to peek at the result.
+If the target was invoked within a [scope](#scopes), add the optional `"scope"` field to the body.
+
+### Looking up the invocation ID
+
+To resolve a workflow or idempotency target into its invocation ID, send a `POST` request to `/restate/lookup` with the same body shape as above:
+
+```shell theme={null}
+curl localhost:8080/restate/lookup \
+  --json '{"target": "workflow", "workflowName": "MyWorkflow", "workflowKey": "myWorkflowId"}'
+```
+
+The response contains the invocation ID, which you can then pass to the `GET` attach and output endpoints:
+
+```json theme={null}
+{"invocationId": "inv_1aiqX0vFEFNH1Umgre58JiCLgHfTtztYK5"}
+```
+
+## OpenAPI support
+
+Restate exposes for every service an OpenAPI 3.1 definition, to get it:
+
+```shell theme={null}
+curl localhost:9070/services/MyService/openapi > MyService_openapi.json
+```
+
+You can use this definition with any OpenAPI 3.1 compliant tool to generate clients for your service, such as [openapi-generator](https://openapi-generator.tech/).
+
+Depending on the SDKs, the rich input/output JSON schemas are included as well. At the moment, rich schemas are supported for:
+
+* [TypeScript SDK with Zod schemas](/develop/ts/serialization#zod-schemas)
+* [Python SDK with Pydantic](/develop/python/serialization#pydantic) models
+* Java and Kotlin SDK

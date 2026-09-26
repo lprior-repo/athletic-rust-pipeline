@@ -1,0 +1,315 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Snapshots & Backups
+
+> Understanding and configuring snapshots and data backups in Restate clusters
+
+Restate provides two different mechanisms for data persistence and recovery, each serving distinct purposes: snapshots and backups.
+
+<Info title="Architectural overview">
+  To understand the terminology used on this page, it might be helpful to read through the [architecture reference](/references/architecture).
+</Info>
+
+## Overview
+
+A Restate cluster maintains three essential types of state:
+
+* **Metadata**: cluster membership as well as log and partition configuration
+* **Logs**: The Bifrost log disseminates all events and state changes to partition workers
+* **Partition store**: Stores ongoing invocations and their journals, persisted state, timers, deployments and more, for each partition
+
+A disaster recovery and backup strategy must address all three plus the configuration of the cluster nodes.
+
+### Snapshots
+
+Internal mechanism for cluster operations and state sharing between nodes:
+
+* **Goal**: Enable fast bootstrap of new nodes and support [log trimming](/server/snapshots#log-trimming-and-durability) in clusters
+* **Scope**: A snapshot of the most recent state of a specific partition, produced by a fully caught up partition processor
+* **When**: Essential for multi-node clusters; optional for single-node deployments
+
+### Data Backups
+
+Full copies of all data stored by Restate for disaster recovery:
+
+* **Goal**: Restore a Restate Server to a previous point in time
+* **Scope**: Complete copy of the `restate-data` directory or storage volumes
+* **When**: Currently only for single-node deployments due to timing coordination challenges
+
+<Accordion title="Multi-node backup challenges">
+  Coordinating simultaneous backups across multiple nodes presents significant timing precision requirements. Even millisecond differences in backup timing can result in one node capturing state that's progressed further than another, creating inconsistent snapshots across the cluster. This timing skew leads to data inconsistencies that prevent successful cluster restoration from backup.
+
+  While atomically snapshotting restate-data at the volume level is still very useful as part of a broader disaster recovery and backup strategy, some manual repair work may be required to restore from such backups. There will also be some expected data loss between the latest LSN/point in time captured by the snapshot and the latest accepted/processed transaction by the cluster before it lost availability.
+
+  Since tooling for automated cluster restoration is not yet available, cluster-wide full node snapshots would currently require manual intervention to repair the system back into a workable state.
+</Accordion>
+
+## When to Use Each
+
+### Use Snapshots When:
+
+* Operating a multi-node cluster (required)
+* Adding or removing nodes from a cluster
+* Enabling [log trimming](/server/snapshots#log-trimming-and-durability) to manage storage
+* Supporting fast partition processor failover (having warm standbys ready for near-instant takeover)
+* Growing the cluster or replacing completely failed nodes (newly added nodes can bootstrap from snapshots)
+
+### Use Backups When:
+
+* Doing point-in-time recovery of a single-node deployment
+
+## Snapshots
+
+Snapshots are essential for multi-node cluster operations, enabling efficient state sharing and log management. They support safe [log trimming](/server/snapshots#log-trimming-and-durability) and fast partition fail-over to a different cluster node. Snapshots are optional for single-node deployments and required for multi-node clusters.
+
+Restate Partition Processors can be configured to periodically publish snapshots of their partition state to a shared object store.
+
+Snapshots serve to allow nodes that do not have an up-to-date local copy of a partition's state to quickly start a processor for the given partition.
+Without snapshots, trimming the log could lead to data loss if all the nodes replicating a particular partition are lost. Additionally, starting new partition processors would require the full replay of that partition's log which might take a long time.
+
+When partition processors successfully publish a snapshot, this is reflected in the archived log sequence number (LSN). This value is the safe point up to which Restate can trim the Bifrost log.
+
+### Configuring Automatic Snapshotting
+
+Restate clusters should always be configured with a snapshot repository to allow nodes to efficiently share partition state, and for new nodes to be added to the cluster in the future.
+Restate supports Amazon S3 (or S3-compatible stores), Google Cloud Storage, and Azure Blob Storage as shared snapshot repositories.
+To set up a snapshot destination, update your [server configuration](/server/configuration) as follows:
+
+```toml theme={null}
+[worker.snapshots]
+destination = "s3://snapshots-bucket/cluster-prefix"
+snapshot-interval-num-records = 100000
+snapshot-interval = "60m"
+```
+
+When both options are set, snapshots are triggered when *both* conditions are met: the specified time has elapsed *and* at least the minimum number of records have been applied. You can also set only one:
+
+* `snapshot-interval` alone triggers time-based snapshots unconditionally
+* `snapshot-interval-num-records` alone triggers snapshots based on record count only
+
+Records correspond to persisted actions in Restate such as receiving an ingress request, appending to an invocation journal, or storing a state key-value pair. As these are variable in size, the exact amount of data accumulated between snapshots will vary depending on the workload. You should tune the snapshot frequency based on the observed partition processor catch-up times and your availability goals.
+
+You can also trigger snapshots manually using [`restatectl`](/installation#advanced-installing-restatectl):
+
+```shell theme={null}
+# A single partition, a range, or omit the argument for all partitions
+restatectl snapshots create-snapshot <PARTITION_ID>
+```
+
+We recommend testing the snapshot configuration by requesting a snapshot and examining the contents of the bucket.
+You should see a new prefix with each partition's id, and a `latest.json` file pointing to the most recent snapshot.
+
+No additional configuration is required to enable restoring snapshots.
+When partition processors first start up, and no local partition state is found, the processor will attempt to restore the latest snapshot from the repository.
+This allows for efficient bootstrapping of additional partition workers.
+
+<Info title="Local development with Azurite or fake-gcs-server">
+  For local development without cloud access, you can use emulators like [Azurite](https://github.com/Azure/Azurite) for Azure or [fake-gcs-server](https://github.com/fsouza/fake-gcs-server) for GCS. See the Minio example below for S3-compatible local development.
+</Info>
+
+### Object Store endpoint and access credentials
+
+Restate supports Amazon S3 (and S3-compatible stores), Google Cloud Storage, and Azure Blob Storage. Object store locations are specified as a URL where the scheme indicates the provider and the authority is the bucket name:
+
+| Provider             | URL Scheme | Example                 |
+| -------------------- | ---------- | ----------------------- |
+| Amazon S3            | `s3://`    | `s3://bucket/prefix`    |
+| Google Cloud Storage | `gs://`    | `gs://bucket/prefix`    |
+| Azure Blob Storage   | `az://`    | `az://container/prefix` |
+
+Optionally, you may supply an additional path within the bucket, which will be used as a common prefix for all operations.
+
+In typical cloud deployments, credentials are automatically discovered from the environment (instance metadata, workload identity, managed identity, etc.):
+
+* **Amazon S3**: Uses [AWS SDK credential discovery](https://docs.aws.amazon.com/sdkref/latest/guide/file-format.html). For S3-compatible stores, override the endpoint with `aws-endpoint-url`.
+* **Google Cloud Storage**: Uses [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials). Set `GOOGLE_SERVICE_ACCOUNT_PATH` to use a specific service account JSON file.
+* **Azure Blob Storage**: Uses the [Azure credential chain](https://docs.rs/object_store/latest/object_store/azure/index.html). Set `AZURE_STORAGE_ACCOUNT_NAME` and `AZURE_STORAGE_ACCESS_KEY` for explicit credentials.
+
+#### Local development with Minio
+
+Minio is a common target while developing locally. You can configure it as follows:
+
+```toml theme={null}
+[worker.snapshots]
+destination = "s3://bucket/cluster-name"
+snapshot-interval-num-records = 1000
+
+aws-region = "local"
+aws-access-key-id = "minioadmin"
+aws-secret-access-key = "minioadmin"
+aws-endpoint-url = "http://localhost:9000"
+aws-allow-http = true
+```
+
+#### Local development with S3
+
+Assuming you have a profile set up to assume a specific role granted access to your bucket, you can work with S3 directly using a configuration like:
+
+```toml theme={null}
+[worker.snapshots]
+destination = "s3://bucket/cluster-name"
+snapshot-interval-num-records = 1000
+aws-profile = "restate-dev"
+```
+
+This assumes that in your `~/.aws/config` you have a profile similar to:
+
+```
+[profile restate-dev]
+source_profile = ...
+region = us-east-1
+role_arn = arn:aws:iam::123456789012:role/restate-local-dev-role
+```
+
+### Log Trimming and Durability
+
+In a distributed environment, the Bifrost log is the mechanism for replicating partition state among nodes. Partition processors apply records from Bifrost to build and maintain their local **partition store** (a materialized view of the partition state in RocksDB). This partition store enables fast reads and efficient processing, but it's derived from the log and can always be rebuilt by replaying log records.
+
+The challenge is that all cluster members need access to the relevant log records, including newly added nodes that will join the cluster in the future. This requirement is at odds with an immutable log growing unboundedly. **Log trimming** is the process of removing older segments of the log that are no longer needed.
+
+#### Why Snapshots Matter for Log Trimming
+
+When the log is trimmed, any partition processor that hasn't yet applied those records loses the ability to catch up by replaying the log. Instead, it must:
+
+1. **Fetch a snapshot** from the object store that covers the trimmed records
+2. **Replay only the remaining log records** after the snapshot's LSN
+
+This is why configuring a snapshot repository is essential for multi-node clusters: without snapshots, trimmed log records are permanently lost, and any node that falls behind cannot recover.
+
+#### Understanding Durability Modes
+
+The **durability mode** defines the criteria that tell Restate when the partition store's state has been durably persisted elsewhere, making it safe to trim the corresponding log records. In other words, it controls when Restate considers the materialized view "backed up" enough that the original log records can be discarded.
+
+<Accordion title="Available durability modes">
+  | Mode                       | Description                                                                                                                                                                                                          |
+  | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `balanced`                 | Partition store is durable when covered by a snapshot **and** at least one replica has flushed to local storage. This is the **default when a snapshot repository is configured**.                                   |
+  | `snapshot-only`            | Partition store is durable only after a snapshot has been created, regardless of local replica state.                                                                                                                |
+  | `snapshot-and-replica-set` | Partition store is durable when **all** replicas have flushed locally **and** a snapshot exists.                                                                                                                     |
+  | `replica-set-only`         | Partition store is durable when all replicas have flushed locally, regardless of snapshot state. This is the **default when no snapshot repository is configured**. Often used in Single-node setups or for testing. |
+  | `none`                     | Disables automatic durability tracking and trimming entirely.                                                                                                                                                        |
+</Accordion>
+
+You can configure the durability mode in your server configuration:
+
+```toml theme={null}
+[worker]
+# Controls when partition store state is considered durable enough to trim the log
+# Values: "balanced", "snapshot-only", "snapshot-and-replica-set", "replica-set-only", "none"
+durability-mode = "balanced"
+```
+
+<Warning>
+  The `replica-set-only` mode should only be used for single-node deployments or testing. Without snapshots, if the entire cluster fails or a new node needs to bootstrap, there is no way to recover partition state for the trimmed portion of the log. This can result in permanent data loss.
+</Warning>
+
+#### Delayed Log Trimming
+
+In some scenarios, you may want to delay log trimming even after the durability condition is met. This is particularly useful for geo-replicated deployments where snapshots need time to replicate across regions (e.g., S3 Cross-Region Replication).
+
+```toml theme={null}
+[worker]
+# Delay trimming by 5 minutes after durability condition is met
+trim-delay-interval = "5m"
+```
+
+This gives the snapshot repository time to replicate snapshots to other regions before the log segments they depend on are trimmed. Check your object store's cross-region replication SLA to determine an appropriate delay.
+
+#### How Trimming Works
+
+Each partition leader runs a **durability tracker** that monitors:
+
+* **Durable LSN**: The log position that has been flushed to local storage on each replica (partition store flush)
+* **Archived LSN**: The log position of the latest published snapshot in the object store (or the oldest retained snapshot if `worker.snapshots.num-retained` is greater than 1)
+
+Based on the configured durability mode, the tracker calculates the **durability point**: the LSN up to which the partition store state is considered safely persisted. Once determined:
+
+1. The partition reports its durability point
+2. If `trim-delay-interval` is configured, the actual trim is delayed by that duration
+3. Log records up to the durability point are trimmed
+
+The presence of unreachable nodes in a cluster does not affect trimming, as long as the remaining nodes continue to produce snapshots. However, active partition processors that are behind the archived LSN will cause trimming to be delayed to allow them to catch up.
+
+Nodes that are temporarily down when the log is trimmed will fetch snapshots from the object store to fast-forward their local partition store state when they come back.
+
+<Info title="Handling log trim gap errors">
+  If you observe repeated `Shutting partition processor down because it encountered a trim gap in the log.` errors in the Restate server log, it indicates that a processor cannot start because log records it needs have been trimmed. This happens when the processor's local partition store is behind the log's trim point and no snapshot is available to bridge the gap.
+
+  To recover, ensure a snapshot repository is correctly configured and accessible from the node reporting errors. You can still recover even if no snapshots were taken previously, as long as there is at least one healthy node with a copy of the partition data. In that case, first configure the existing node(s) to publish snapshots for the affected partition(s) to a shared destination. See the [Handling missing snapshots](/server/clusters#handling-missing-snapshots) section for detailed recovery steps.
+</Info>
+
+### Observing processor persisted state
+
+You can use [`restatectl`](/server/clusters#controlling-clusters-with-restatectl) to see the progress of partition processors with the `list` subcommand:
+
+```shell theme={null}
+restatectl partitions list
+```
+
+This will produce output similar to the below:
+
+```
+Alive partition processors (nodes config v6, partition table v2)
+ ID  NODE  MODE    STATUS  EPOCH  APPLIED  DURABLE  ARCHIVED  LSN-LAG  UPDATED
+ 0   N1:4  Leader  Active  e4     121428   121343   115779    0        268 ms ago
+ 1   N1:4  Leader  Active  e4     120778   120735   116216    0        376 ms ago
+ 2   N1:4  Leader  Active  e4     121348   121303   117677    0        394 ms ago
+ 3   N1:4  Leader  Active  e4     120328   120328   117303    0        259 ms ago
+ 4   N1:4  Leader  Active  e4     121108   120989   119359    0        909 ms ago
+ 5   N1:4  Leader  Active  e4     121543   121481   119818    0        467 ms ago
+ 6   N1:4  Leader  Active  e4     121253   121194   119568    0        254 ms ago
+ 7   N1:4  Leader  Active  e4     120598   120550   118923    0        387 ms ago
+```
+
+There are three notable persistence-related attributes in `restatectl`'s partition list output:
+
+* **Applied LSN** - the latest log record record applied by this processor
+* **Durable LSN** - the log position of the latest partition store flushed to local node storage; by default processors optimize performance by relying on Bifrost for durability and only periodically flush partition store to disk
+* **Archived LSN** - if a snapshot repository is configured, this LSN represents the latest published snapshot (or the oldest retained snapshot if `worker.snapshots.num-retained` is greater than 1); this determines the log safe trim point in multi-node clusters
+
+### Snapshot retention
+
+Restate automatically prunes old snapshots so that snapshot storage does not grow unboundedly. The number of snapshots to retain per partition is controlled by `worker.snapshots.num-retained`, which defaults to `1`:
+
+```toml theme={null}
+[worker.snapshots]
+num-retained = 1
+```
+
+By default, Restate keeps exactly one snapshot per partition and deletes older snapshots once a newer one has been published. Set `num-retained` to a higher value for added resiliency against corrupted snapshots.
+
+<Warning>
+  Restate considers the archived LSN to be that of the *oldest* retained snapshot. When you retain multiple snapshots, you gain the ability to fall back to an older one in case the most recent is corrupted. However, be mindful that this causes an increase in storage usage on the log servers as log trimming will follow the oldest snapshot tracked by Restate. For most deployments, `num-retained = 1` (default) is recommended.
+</Warning>
+
+<Info title="Upgrading from Restate 1.6">
+  Snapshot retention was previously opt-in via the `experimental-num-retained` key. Any configuration that still sets `experimental-num-retained` must be renamed to `num-retained` before upgrading; Restate ignores the old key. No action is required for existing snapshot repositories: the first upload after the upgrade rewrites `latest.json` from V1 to V2 in place, and snapshot data files are unchanged. Rolling back to a Restate binary older than v1.6 is not supported once V2 pointers have been written; rolling back to v1.6.x remains safe.
+
+  Note that of the snapshots produced by the older version, only the most recent will be considered for pruning following the upgrade. Older snapshots must still be cleaned up by the user, just as they would have been under v1.6 and earlier.
+</Info>
+
+## Data Backups
+
+Data backups are primarily used for single-node Restate deployments.
+
+### What does a backup contain?
+
+The Restate server persists both metadata (such as the details of deployed services, in-flight invocations) and data (e.g., virtual object and workflow state keys) in its data store, which is located in its base directory (by default, the `restate-data` path relative to the startup working directory). Restate is configured to perform write-ahead logging with fsync enabled to ensure that effects are fully persisted before being acknowledged to participating services.
+
+Backing up the full contents of the Restate base directory will ensure that you can recover this state in the event of a server failure. We recommend placing the data directory on fast block storage that supports atomic snapshots, such as Amazon EBS volume snapshots. Alternatively, you can stop the restate-server process, archive the base directory contents, and then restart the process. This ensures that the backup contains an atomic view of the persisted state.
+
+In addition to the data store, you should also make sure you have a back up of the effective Restate server configuration. Be aware that this may be spread across command line arguments, environment variables, and the server configuration file.
+
+### Restoring Backups
+
+To restore from backup, ensure the following:
+
+* Use a Restate server release that is compatible with the version that produced the data store snapshot. See the [Upgrading](/server/upgrading) section.
+* Use an equivalent [Restate server configuration](/server/configuration). In particular, ensure that the `cluster-name` and `node-name` attributes match those of the previous Restate server operating on this data store.
+* Exclusive access to a data store restored from the most recent atomic snapshot of the previous Restate installation.
+
+<Warning title="Prevent multiple instances of the same node">
+  Restate cannot guarantee that it is the only instance of the given node. You must ensure that only one instance of any given Restate node is running when restoring the data store from a backup. Running multiple instances could lead to a "split-brain" scenario where different servers process invocations for the same set of services, causing state divergence.
+</Warning>

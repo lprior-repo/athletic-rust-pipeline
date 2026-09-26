@@ -1,0 +1,53 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# OSS Roadmap
+
+> Upcoming capabilities in Restate Open Source.
+
+<Note>
+  Roadmap items are directional and may change. See the [changelog](/changelog/server) for features that have shipped.
+
+  Contact us on [Discord](https://discord.restate.dev) or [Slack](https://slack.restate.dev) to request other features.
+</Note>
+
+## Near term
+
+### Additional flow control settings
+
+Scope based concurrency limits are available as an opt-in feature. See the [flow control documentation](/services/flow-control) to try them.
+
+Building on the same Virtual Queues scheduler, we plan to add more ways to shape how invocations are admitted and dispatched:
+
+* **Rate limits** to control how frequently work is dispatched
+* **Invocation priorities** to determine which eligible work runs first
+* **Capacity and backlog limits** to cap queued work and shed excess load
+
+These settings will support fine grained policies for scopes and limit keys, such as organizations, teams, users, tenants, or agents. We also plan to continue improving the visibility into why an invocation is waiting and which flow control rule is blocking it.
+
+### Further AI SDK Integrations
+
+Restate has integrated with multiple AI SDKs and is becoming a foundational durability layer for agents.
+
+We are continuing to add support for more SDKs.
+
+## Longer term
+
+### Native Streams
+
+Shareable and resumable streams are a primitive for communicating real-time intermediate progress, for example from LLM inference calls, or for building chat sessions with subscriptions.
+
+Today, this is possible through the [stream session pattern using Virtual Objects](/ai/patterns/streaming-responses). This feature adds a more efficient native implementation of the same underlying capability.
+
+This is a general platform feature, but it is especially important for AI use cases that need resumable, shareable streaming interactions.
+
+### Cron Schedules
+
+We are adding a simple way to define schedules for invocations, both in service, workflow, and agent definitions, and in the Restate UI.
+
+This is already possible today by manually scheduling invocations in code, but can be tedious. The cron feature makes recurring invocation schedules straightforward to define and manage.
+
+### Sticky Workers
+
+To improve tenant isolation and make caching more effective, we are adding a deployment mode that gives more control over where durable function invocations execute.

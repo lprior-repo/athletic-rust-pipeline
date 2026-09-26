@@ -1,0 +1,214 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Workflows
+
+> Build resilient, low-latency workflows with code.
+
+Restate lets you **write workflows as regular code** in your preferred programming language, with automatic resilience.
+
+## Workflows as code
+
+Write resilient workflows using familiar programming constructs:
+
+* **Automatically retry transient errors** like infrastructure crashes and network failures
+* Use **standard language constructs** (if/else, loops) and durable versions of familiar building blocks (e.g., timers, promises)
+* **Handle errors naturally** with try/catch blocks and automatic retries
+* **Test and debug** with your existing IDE and standard development tools
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/usecases/workflows/simple-signup.ts#here"}  theme={null}
+  export const userSignup = restate.workflow({
+    name: "user-signup",
+    handlers: {
+      run: async (ctx: WorkflowContext, user: User) => {
+        const userId = ctx.key; // unique workflow key
+
+        // Use regular if/else, loops, and functions
+        const success = await ctx.run("create", () => createUser(userId, user));
+        if (!success) return { success };
+
+        // Execute durable steps
+        await ctx.run("activate", () => activateUser(userId));
+        await ctx.run("welcome", () => sendWelcomeEmail(user));
+
+        return { success: true };
+      },
+    },
+  });
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/usecases/workflows/UserSignup.java#here"}  theme={null}
+  @Workflow
+  public class UserSignup {
+
+    @Workflow
+    public boolean run(User user) {
+      String userId = Restate.key(); // unique workflow key
+
+      // Use regular if/else, loops, and functions
+      boolean success = Restate.run("create", Boolean.class, () -> createUser(userId, user));
+      if (!success) {
+        return false;
+      }
+
+      // Execute durable steps
+      Restate.run("activate", () -> activateUser(userId));
+      Restate.run("welcome", () -> sendWelcomeEmail(user));
+
+      return true;
+    }
+  }
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/usecases/workflows/signup.py#here"}  theme={null}
+  user_signup = restate.Workflow("user-signup")
+
+
+  @user_signup.main()
+  async def run(ctx: restate.WorkflowContext, user: User) -> Dict[str, bool]:
+      # Unique workflow key
+      user_id = ctx.key()
+
+      # Use regular if/else, loops, and functions
+      success = await ctx.run_typed("create", create_user, user_id=user_id, user=user)
+      if not success:
+          return {"success": False}
+
+      # Execute durable steps
+      await ctx.run_typed("activate", activate_user, user_id=user_id)
+      await ctx.run_typed("welcome", send_welcome_email, user=user)
+
+      return {"success": True}
+  ```
+
+  ```go Go {"CODE_LOAD::go/usecases/workflows/signup.go#here"}  theme={null}
+  type UserSignup struct{}
+
+  func (UserSignup) Run(ctx restate.WorkflowContext, user User) (bool, error) {
+    // unique workflow key
+    userID := restate.Key(ctx)
+
+    // Use regular if/else, loops, and functions
+    success, err := restate.Run(ctx, func(ctx restate.RunContext) (bool, error) {
+      return CreateUser(userID, user)
+    })
+    if err != nil || !success {
+      return false, err
+    }
+
+    // Execute durable steps
+    _, err = restate.Run(ctx, func(ctx restate.RunContext) (restate.Void, error) {
+      return ActivateUser(userID)
+    })
+    if err != nil {
+      return false, err
+    }
+
+    _, err = restate.Run(ctx, func(ctx restate.RunContext) (restate.Void, error) {
+      return SendWelcomeEmail(user)
+    })
+    if err != nil {
+      return false, err
+    }
+
+    return true, nil
+  }
+  ```
+</CodeGroup>
+
+## Low-Latency Workflows
+
+Restate is built from the ground up for low-latency workflow execution. Restate workflows can be placed directly in the latency-sensitive path of user interactions:
+
+* **Lightweight execution**: Workflows run like regular functions with minimal overhead
+* **Event-driven foundation**: Built in Rust for high-performance, low-latency operations
+* **No coordination delays**: Immediate workflow execution via a push-based model
+
+<Info>
+  [Benchmark results Restate v1.2](https://restate.dev/blog/building-a-modern-durable-execution-engine-from-first-principles/#some-performance-numbers)
+</Info>
+
+## Simple Deployment Model
+
+<img src="https://mintcdn.com/restate-6d46e1dc/hzmRKOII4HJM8CFw/img/usecases/workflows/workflow-app-layout.png?fit=max&auto=format&n=hzmRKOII4HJM8CFw&q=85&s=34115c29432e9efa818d64fc29ea5a45" alt="Application Structure" width="2951" height="831" data-path="img/usecases/workflows/workflow-app-layout.png" />
+
+**Restate Server**: Restate is packaged as a single binary with built-in persistence and messaging. Run it as a single instance or in a high-availability cluster.
+
+**Service Deployment**: Deploy your workflows using your existing deployment pipeline: containers, Kubernetes, serverless functions, or any HTTP-capable platform.
+
+On FaaS, Restate suspends workflows while they are waiting (e.g. timer) to reduce costs.
+
+## Key Workflow Patterns
+
+<CardGroup cols={3}>
+  <Card title="Query Workflow State" icon="database" href={"/tour/workflows#querying-workflow-state"}>
+    Store workflow state that survives crashes and can be queried from external systems
+  </Card>
+
+  <Card title="Event-Driven Coordination" icon="bolt" href={"/tour/workflows#workflow-promises"}>
+    Handle external events and signals without complex event sourcing infrastructure
+  </Card>
+
+  <Card title="Durable Timers and Scheduling" icon="clock" href={"/tour/workflows#timers-and-scheduling"}>
+    Long-running processes with built-in timer management and timeout handling
+  </Card>
+
+  <Card title="Flexible Activity Execution" icon="code-branch" href={"/tour/workflows#in-line-steps-vs-separate-activities"}>
+    Execute steps inline within the workflow or split them out into separate services
+  </Card>
+
+  <Card title="Parallelize Work" icon="arrows-split-up-and-left" href="/guides/parallelizing-work">
+    Speed up multi-step workflows with recoverable parallel tasks
+  </Card>
+
+  <Card title="Resilient rollback" icon="backward" href="/guides/sagas">
+    Automatically undo previous actions when later steps fail
+  </Card>
+</CardGroup>
+
+## Comparison with Other Solutions
+
+| Feature                | Restate                                          | Traditional Orchestrators           |
+| ---------------------- | ------------------------------------------------ | ----------------------------------- |
+| **Performance**        | Low-latency, lightweight execution               | High overhead, poll-for-work delays |
+| **Language**           | Native code (TS, Python, Go, Java, Kotlin, Rust) | Native code, DSLs or YAML           |
+| **Development**        | Standard IDE, testing, debugging                 | Platform-specific tooling           |
+| **Infrastructure**     | Single binary, no dependencies                   | Separate databases and queues       |
+| **Service Deployment** | Any platform (containers, serverless, K8s)       | Worker-based deployment models      |
+| **State Management**   | Built-in K/V state store                         | External state stores required      |
+
+<Tip>
+  Also read [Restate vs Temporal](https://restate.dev/vs/temporal)
+</Tip>
+
+<Note>
+  Use the [Restate skills](https://github.com/restatedev/skills) to migrate your existing workflows to Restate.
+</Note>
+
+## Getting Started
+
+Ready to build workflows with Restate? Here are your next steps:
+
+<CardGroup cols={3}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Run your first Restate service
+  </Card>
+
+  <Card title="Hands-on Tutorial" icon="pen" href="/tour/workflows">
+    Explore the APIs to build workflows with Restate
+  </Card>
+
+  <Card title="Examples" icon="code" href="https://github.com/restatedev/examples">
+    Explore templates, patterns, and end-to-end applications
+  </Card>
+</CardGroup>
+
+<Note>
+  Use the [Restate skills](https://github.com/restatedev/skills) to migrate your existing workflows to Restate.
+</Note>
+
+<Info>
+  Evaluating Restate and missing a feature? Contact us on [Discord](https://discord.restate.dev) or [Slack](https://slack.restate.dev).
+</Info>

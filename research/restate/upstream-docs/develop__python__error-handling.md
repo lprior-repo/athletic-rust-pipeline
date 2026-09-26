@@ -1,0 +1,202 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Error Handling
+
+> Stop infinite retries with Terminal Errors.
+
+When your code fails, Restate automatically retries the invocation. Understanding when to stop retrying is critical to building reliable applications.
+
+<Info>
+  Check out the [Error Handling guide](/guides/error-handling) to learn more about how Restate handles transient errors, terminal errors, retries, and timeouts.
+</Info>
+
+## Understanding Retryable vs Terminal Errors
+
+**Retryable errors** are temporary problems that might succeed if retried:
+
+* Database connection timeout
+* Network issues
+* Temporary service unavailability
+
+**Terminal errors** are permanent failures that won't be fixed by retrying:
+
+* Invalid user input (wrong format, missing required fields)
+* Authorization failures (user doesn't have permission)
+* Business logic violations (insufficient balance, duplicate order)
+
+**By default, Restate retries ALL errors**, except `TerminalError`s.
+
+## Raising `TerminalError`
+
+Use `TerminalError` to signal permanent failures.
+
+When you raise `TerminalError` in your handler code, it stops the invocation and marks it as permanently failed. You can attach a status code and structured metadata to give callers machine-readable failure details:
+
+```python {"CODE_LOAD::python/src/develop/error_handling.py#terminal"}  theme={null}
+from restate.exceptions import TerminalError
+
+raise TerminalError(
+    "Payment declined.",
+    status_code=402,
+    metadata={
+        "reason": "insufficient_funds",
+        "payment_id": "payment-123",
+    },
+)
+```
+
+The message, status code, and metadata are recorded with the failure and propagated to callers. Catch `TerminalError` to inspect them:
+
+```python {"CODE_LOAD::python/src/develop/error_handling.py#terminal_metadata_caller"}  theme={null}
+async def checkout(ctx: Context, payment_id: str):
+    try:
+        await ctx.service_call(charge, arg=payment_id)
+        return {"status": "charged"}
+    except TerminalError as err:
+        return {
+            "status": "declined",
+            "code": err.status_code,
+            "reason": err.metadata.get("reason") if err.metadata else None,
+        }
+```
+
+<Note>
+  Terminal error metadata requires Restate Server 1.6 or newer. Metadata keys and values must be strings.
+</Note>
+
+When you raise `TerminalError` inside a `ctx.run` block, it fails that specific step, allowing your handler to continue and handle the error:
+
+```python {"CODE_LOAD::python/src/develop/error_handling.py#run"}  theme={null}
+try:
+    # Await a ctx.run_typed raising an error
+    def do_transaction():
+        raise TerminalError("Can't write")
+
+    await ctx.run_typed("do transaction", do_transaction)
+except TerminalError as err:
+    # Handle the terminal error raised by ctx.run_typed
+    # For example, undo previous actions...
+    await ctx.run_typed("undo transaction", undo_transaction)
+    # ...and propagate the error
+    raise err
+```
+
+Inside `ctx.run`, **all errors are retried** unless you `raise TerminalError` explicitly or set up a [run retry policy](/develop/python/durable-steps#run).
+
+Common use cases for terminal error are:
+
+* Input validation failures: `raise TerminalError("Invalid email format")`
+* Business rule violations: `raise TerminalError("Insufficient balance")`
+* Resource not found: `raise TerminalError("User ID not found")`
+
+<Info>
+  When you throw a terminal error, you may need to undo previous actions to keep your system consistent. Check out our [sagas guide](/guides/sagas) to learn about compensations.
+</Info>
+
+## Handling Errors
+
+Most of the time, you only need to catch `TerminalError` to handle permanent failures.
+
+<Warning>
+  **DO NOT** use bare `except:` or `except Exception:` in Restate handlers!
+  This will catch internal SDK exceptions that **you must not handle**, and which resulting action can lead to unexpected behavior.
+</Warning>
+
+❌ **Wrong** - This leads to unexpected behavior:
+
+```python theme={null}
+try:
+    # Do something with ctx
+except:  # BAD: Catches internal SDK exceptions!
+    # What happens here will not get recorded!
+```
+
+✅ **Correct** - Only catch what you need:
+
+```python theme={null}
+try:
+    # Do something with ctx
+except TerminalError:  # GOOD: Only catches terminal errors
+    # Handle permanent failures
+```
+
+<Accordion title="Advanced: using finally for resource cleanup">
+  <Note>
+    Only use `finally` blocks if you're managing resources (files, connections, locks) that must be released even when retries happen.
+  </Note>
+
+  When using `finally`, understand what goes where:
+
+  ```python theme={null}
+  try:
+      # Do something with ctx
+  except TerminalError as e:
+      # Handle permanent failures
+  finally:
+      # Release resources acquired during THIS invocation attempt
+      # This runs even if the invocation will be retried
+  ```
+
+  You can alternatively use `restate.is_internal_exception(e)` to identify whether an exception is a Restate SDK internal exception that should be ignored.
+
+  **Key principle:**
+
+  * `except TerminalError`: For compensations and business logic when the invocation permanently fails
+  * `finally`: For releasing resources (files, connections) acquired during the current attempt
+</Accordion>
+
+## Retryable errors with custom delay
+
+Use `RetryableError` to signal that Restate should retry the invocation with a specific delay.
+This is useful when you receive a `Retry-After` header from an external API or want to control the retry timing explicitly.
+
+```python {"CODE_LOAD::python/src/develop/error_handling.py#retryable"}  theme={null}
+from datetime import timedelta
+from restate.exceptions import RetryableError
+
+raise RetryableError(
+    "Service temporarily unavailable",
+    retry_after=timedelta(seconds=30),
+)
+```
+
+`RetryableError` accepts the following parameters:
+
+* `message`: The error message
+* `status_code`: HTTP status code (default: `500`)
+* `retry_after`: A `timedelta` specifying when Restate should retry (optional)
+
+Inside a `ctx.run` block, you can combine `RetryableError` with `RunOptions` to control both the retry delay and the maximum number of retries:
+
+```python {"CODE_LOAD::python/src/develop/error_handling.py#retryable_run"}  theme={null}
+from datetime import timedelta
+from restate.exceptions import RetryableError
+
+async def call_external_api():
+    response = await make_request()
+    if response.status == 429:
+        retry_after = int(response.headers.get("Retry-After", "30"))
+        raise RetryableError(
+            "Rate limited",
+            retry_after=timedelta(seconds=retry_after),
+        )
+    return response.data
+
+result = await ctx.run_typed(
+    "call API",
+    call_external_api,
+    restate.RunOptions(max_attempts=5),
+)
+```
+
+<Note>
+  Unlike `TerminalError` which stops retries permanently, `RetryableError` tells Restate to retry after the specified delay. If no `retry_after` is provided, Restate uses its default retry policy.
+</Note>
+
+## Retry strategies
+
+By default, Restate does infinite retries with an exponential backoff strategy.
+
+Check out the [error handling guide](/guides/error-handling) to learn how to customize this.

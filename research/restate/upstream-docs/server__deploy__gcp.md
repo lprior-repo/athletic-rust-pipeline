@@ -1,0 +1,35 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Deploying Restate on GCP
+
+> Deploy the Restate Server on Google Cloud Platform using GKE and persistent storage.
+
+## Compute
+
+The easiest way to manage Restate is via the [Kubernetes operator](/server/deploy/kubernetes).
+You can deploy Restate on [Google Kubernetes Engine (GKE)](https://cloud.google.com/kubernetes-engine) using the Restate Operator.
+
+## Persistent volumes
+
+For single node deployments, we recommend using GKE with persistent volumes backing Restate's state store.
+
+For clusters, using persistent volumes is still recommended to speed up failover, but not strictly required.
+
+## Object storage for snapshots
+
+Running a cluster without object storage snapshots is highly discouraged. Partition processors that move to other nodes might not be able to rebuild state and will get stuck.
+
+Restate supports Google Cloud Storage natively as a snapshot repository. Configure your snapshot destination using the `gs://` URL scheme:
+
+```toml theme={null}
+[worker.snapshots]
+destination = "gs://bucket/prefix"
+```
+
+Credentials are discovered automatically via [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials). You can also set `GOOGLE_SERVICE_ACCOUNT_PATH` to use a specific service account JSON file.
+
+For local development, you can use [fake-gcs-server](https://github.com/fsouza/fake-gcs-server) as an emulator.
+
+See the [Snapshots documentation](/server/snapshots) for more details on configuring snapshot intervals, retention, and log trimming.

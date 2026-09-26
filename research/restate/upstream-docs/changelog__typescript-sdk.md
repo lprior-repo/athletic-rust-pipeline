@@ -1,0 +1,1662 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# TypeScript SDK changelog
+
+> Releases of the TypeScript SDK.
+
+<Update label="2026-09-21" description="TypeScript SDK v1.17.2">
+  ### What's Changed
+
+  * feat(gen): add internal.adopt for RestatePromise by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/797](https://github.com/restatedev/sdk-typescript/pull/797)
+  * Description and metadata in interface by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/799](https://github.com/restatedev/sdk-typescript/pull/799)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.17.2)
+</Update>
+
+<Update label="2026-09-16" description="TypeScript SDK v1.17.1">
+  ### What's Changed
+
+  * Fix output type of JsonSerde by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/794](https://github.com/restatedev/sdk-typescript/pull/794)
+  * Accept forced-pause semantics in pause-during-run hooks tests by @AhmedSoliman in [https://github.com/restatedev/sdk-typescript/pull/795](https://github.com/restatedev/sdk-typescript/pull/795)
+  * Release 1.17.1 by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/796](https://github.com/restatedev/sdk-typescript/pull/796)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.17.1)
+</Update>
+
+<Update label="2026-08-31" description="TypeScript SDK v1.17.0">
+  ### `restate.iface`
+
+  The new `restate.iface` lets you declare service interfaces, including input/output serdes,
+  and use them to both **implement** the service and **call** it as a typed client.
+
+  It lives in `@restatedev/restate-sdk-core` and is re-exported in the SDK,
+  so in a multi-module setup the interface can sit in a shared package that both
+  the server and its callers import: **no implementation dependency required**.
+
+  ### Declare it
+
+  Use `restate.iface` to define the service:
+
+  ```ts theme={null}
+  import * as restate from "@restatedev/restate-sdk/node";
+  import { z } from "zod";
+
+  const Greeting = z.object({ name: z.string() });
+  const GreetingResponse = z.object({ result: z.string() });
+
+  export const greeterInterface = restate.iface.service("greeter", {
+    greet: restate.iface.schemas({ input: Greeting, output: GreetingResponse }),
+    ping: restate.iface.json<void, string>(),
+  });
+  ```
+
+  Virtual objects and workflows mark their read-only handlers with `iface.shared.*`:
+
+  ```ts theme={null}
+  export const counterObject = restate.iface.object("counter", {
+    add: restate.iface.json<number, number>(), // exclusive (read-write)
+    current: restate.iface.shared.json<void, number>(), // shared (read-only)
+  });
+  ```
+
+  ### Implement it
+
+  `restate.implement(iface, &#123; handlers &#125;)` binds your handlers to the contract and returns a
+  normal, bindable definition:
+
+  ```ts theme={null}
+  const greeter = restate.implement(greeterInterface, {
+    handlers: {
+      greet: async (_ctx, { name }) => ({ result: `Hello, ${name}!` }),
+      ping: async (_ctx) => "pong",
+    },
+  });
+
+  restate.serve({ services: [greeter /*, … */], port: 9080 });
+  ```
+
+  ### Call it
+
+  Use the `client` / `sendClient` factory to create the typed client:
+
+  ```ts theme={null}
+  // from another handler
+  const { result } = await ctx.client(greeterInterface).greet({ name });
+  ```
+
+  ```ts theme={null}
+  // from outside Restate (ingress)
+  const { result } = await ingress.client(greeterInterface).greet({ name: "Sam" });
+  ```
+
+  ### Multi-module project layout
+
+  Because the interface layer lives in `@restatedev/restate-sdk-core` and `@restatedev/restate-sdk-clients` depends only on core,
+  you can split a project so each module pulls in exactly what it needs:
+
+  | Module            | Depends on                                     | Role                                                         |
+  | ----------------- | ---------------------------------------------- | ------------------------------------------------------------ |
+  | `my-app-contract` | `@restatedev/restate-sdk-core`                 | declares the interfaces with `iface.*` and exports them      |
+  | `my-app-server`   | `@restatedev/restate-sdk` (+ contract)         | `implement()`s the interfaces and serves them                |
+  | `my-app-client`   | `@restatedev/restate-sdk-clients` (+ contract) | calls them via `connect().client(iface)` — no server/SDK dep |
+
+  **Contract**
+
+  ```ts theme={null}
+  // my-app-contract
+  import { iface } from "@restatedev/restate-sdk-core";
+
+  export const greeter = iface.service("greeter", {
+    greet: iface.schemas({ input: GreetReq, output: GreetRes }),
+    ping: iface.json<void, string>(),
+  });
+  ```
+
+  **Implementation**
+
+  ```ts theme={null}
+  // my-app-server
+  import { endpoint, implement } from "@restatedev/restate-sdk";
+  import { greeter } from "my-app-contract";
+
+  const greeterImpl =
+      implement(greeter, {
+        handlers: {
+          greet: async (ctx, req) => ({ result: `Hello, ${req.name}!` }),
+          ping: async (ctx) => "pong",
+        },
+      });
+  ```
+
+  **Client**
+
+  ```ts theme={null}
+  // my-app-client
+  import { connect } from "@restatedev/restate-sdk-clients";
+  import { greeter } from "my-app-contract";
+
+  const res = await connect({ url }).client(greeter).greet({ name: "Sam" });
+  ```
+
+  ### Deprecated: the ingress `clients` ingress adapter in `@restatedev/restate-sdk-gen`
+
+  The generator SDK's ingress adapter in `clients` namespace is now **deprecated**.
+
+  You can just use the `@restatedev/restate-sdk-clients` package:
+
+  ```ts theme={null}
+  // Before — gen ingress adapter
+  import { clients } from "@restatedev/restate-sdk-gen";
+
+  const ingress = clients.connect({ url });
+  await clients.client(ingress, greeter).greet(req);        // service
+  await clients.client(ingress, counter, "key").add(1);     // virtual object / workflow
+
+  // After — @restatedev/restate-sdk-clients
+  import { connect } from "@restatedev/restate-sdk-clients";
+
+  const ingress = connect({ url });
+  await ingress.client(greeter).greet(req);                 // service
+  await ingress.client(counter, "key").add(1);              // virtual object / workflow
+  ```
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.17.0)
+</Update>
+
+<Update label="2026-08-24" description="TypeScript SDK v1.16.9">
+  ### What's Changed
+
+  * Fix HTTP/1 attempt abort timing by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/787](https://github.com/restatedev/sdk-typescript/pull/787)
+  * Release 1.16.9 by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/788](https://github.com/restatedev/sdk-typescript/pull/788)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.16.9)
+</Update>
+
+<Update label="2026-08-21" description="TypeScript SDK v1.16.8">
+  ### What's Changed
+
+  * Improvements to ingress retries  by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/786](https://github.com/restatedev/sdk-typescript/pull/786)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.16.8)
+</Update>
+
+<Update label="2026-08-19" description="TypeScript SDK v1.16.7">
+  ### What's Changed
+
+  * Align retry logic following runtime changes by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/782](https://github.com/restatedev/sdk-typescript/pull/782)
+  * Fix flaky tests by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/784](https://github.com/restatedev/sdk-typescript/pull/784)
+  * Make memory leak test less flaky by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/785](https://github.com/restatedev/sdk-typescript/pull/785)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.16.7)
+</Update>
+
+<Update label="2026-08-14" description="TypeScript SDK v1.16.6">
+  ### What's Changed
+
+  * Bump shared core to 7.0.3. This includes a fix where cancellation may cancel also compensation calls in sagas by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/783](https://github.com/restatedev/sdk-typescript/pull/783)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.16.6)
+</Update>
+
+<Update label="2026-08-11" description="TypeScript SDK v1.16.5">
+  ### What's Changed
+
+  * Bump shared core to 7.0.2 by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/779](https://github.com/restatedev/sdk-typescript/pull/779)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.16.5)
+</Update>
+
+<Update label="2026-08-04" description="TypeScript SDK v1.16.4">
+  ### What's Changed
+
+  * Allow passing custom fetch implementation to client by @n-siddarth in [https://github.com/restatedev/sdk-typescript/pull/765](https://github.com/restatedev/sdk-typescript/pull/765)
+  * Retry workflow submission/attach by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/775](https://github.com/restatedev/sdk-typescript/pull/775)
+  * Add retry support to `workflowOutput` by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/777](https://github.com/restatedev/sdk-typescript/pull/777)
+  * Release 1.16.3 by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/776](https://github.com/restatedev/sdk-typescript/pull/776)
+  * Release 1.16.4 by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/778](https://github.com/restatedev/sdk-typescript/pull/778)
+
+  ### New Contributors
+
+  * @n-siddarth made their first contribution in [https://github.com/restatedev/sdk-typescript/pull/765](https://github.com/restatedev/sdk-typescript/pull/765)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.16.4)
+</Update>
+
+<Update label="2026-08-04" description="TypeScript SDK v1.16.3">
+  ### What's Changed
+
+  * Allow passing custom fetch implementation to client by @n-siddarth in [https://github.com/restatedev/sdk-typescript/pull/765](https://github.com/restatedev/sdk-typescript/pull/765)
+  * Retry workflow submission/attach by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/775](https://github.com/restatedev/sdk-typescript/pull/775)
+
+  ### New Contributors
+
+  * @n-siddarth made their first contribution in [https://github.com/restatedev/sdk-typescript/pull/765](https://github.com/restatedev/sdk-typescript/pull/765)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.16.3)
+</Update>
+
+<Update label="2026-07-22" description="Vercel AI Middleware v0.4.0">
+  ### What's Changed
+
+  * Migrate to AI SDK 7 by @gvdongen in [https://github.com/restatedev/vercel-ai-middleware/pull/29](https://github.com/restatedev/vercel-ai-middleware/pull/29)
+  * feat: added embed middleware by @nstandif in [https://github.com/restatedev/vercel-ai-middleware/pull/28](https://github.com/restatedev/vercel-ai-middleware/pull/28)
+
+  ### New Contributors
+
+  * @nstandif made their first contribution in [https://github.com/restatedev/vercel-ai-middleware/pull/28](https://github.com/restatedev/vercel-ai-middleware/pull/28)
+
+  [View on GitHub](https://github.com/restatedev/vercel-ai-middleware/releases/tag/v0.4.0)
+</Update>
+
+<Update label="2026-07-16" description="TypeScript SDK v1.16.2">
+  ### What's Changed
+
+  * Scope gen sdk by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/767](https://github.com/restatedev/sdk-typescript/pull/767)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.16.2)
+</Update>
+
+<Update label="2026-07-10" description="TypeScript SDK v1.16.1">
+  ### What's Changed
+
+  * Exit node process on shared core panic by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/762](https://github.com/restatedev/sdk-typescript/pull/762)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.16.1)
+</Update>
+
+<Update label="2026-07-08" description="TypeScript SDK v1.16.0">
+  ### New Features
+
+  In case you've missed it, check out the new features in [1.15](https://github.com/restatedev/sdk-typescript/releases#release-v1.15.0)!
+
+  ### Auto-retry for ingress calls
+
+  The ingress client (`@restatedev/restate-sdk-clients`, re-exported from `@restatedev/restate-sdk-gen`) can now retry ambiguous failures automatically: network errors, HTTP `429`, and HTTP `5xx` — with exponential backoff and full jitter.
+
+  Retries are **opt-in** and gated on an idempotency key: a retry only fires when the call carries an `idempotencyKey`. Restate dedupes on the key, so the retry safely attaches to the in-flight/completed invocation instead of starting a duplicate. Without a key, no retry is attempted.
+
+  ```typescript theme={null}
+  import { connect } from "@restatedev/restate-sdk-clients";
+
+  // `true` enables the built-in policy (network errors, HTTP 429, HTTP 5xx).
+  const ingress = connect({ url: "http://localhost:8080", retry: true });
+
+  // A retry fires only because the call carries an idempotency key.
+  await ingress
+    .serviceClient(MyService)
+    .process(payload, rpc.opts({ idempotencyKey: "req-1" }));
+  ```
+
+  Pass an object instead of `true` to tune the policy, and use `shouldRetry` to fully replace the built-in network/`429`/`5xx` rule (compose with the exported `defaultShouldRetry` rather than reimplementing it):
+
+  ```typescript theme={null}
+  import { connect, defaultShouldRetry } from "@restatedev/restate-sdk-clients";
+
+  const ingress = connect({
+    url: "http://localhost:8080",
+    retry: {
+      maxAttempts: 4,                 // initial attempt + up to 3 retries (default 6)
+      initialInterval: 200,           // Duration or milliseconds (default 100ms)
+      maxInterval: { seconds: 5 },    // Duration or milliseconds (default 2000ms)
+      exponentiationFactor: 2,        // default 2
+      // Response failures carry status, headers, and the body text (when non-empty).
+      shouldRetry: (failure, attempt) =>
+        defaultShouldRetry(failure) ||
+        (failure.kind === "response" && failure.status === 409),
+    },
+  });
+  ```
+
+  `RetryPolicy`, `RetryFailure`, `defaultShouldRetry`, and `HttpCallError` are also re-exported from `@restatedev/restate-sdk-gen`, so generator-based apps can configure and inspect ingress retries without reaching into `@restatedev/restate-sdk-clients` directly.
+
+  ### Scoped virtual-object clients
+
+  Scoped requests now expose `objectClient` / `objectSendClient` for virtual objects, so `ctx.scope(...)` (in handlers) and `ingress.scope(...)` (from the ingress client) can route calls and sends to a virtual object. The object key is part of the scoped identity.
+
+  ```typescript theme={null}
+  // From a handler — the object key is part of the scoped identity
+  await ctx.scope("tenant-123").objectClient(MyObject, "obj-key").update(payload);
+
+  // Fire-and-forget from the ingress client
+  ingress.scope("tenant-123").objectSendClient(MyObject, "obj-key").update(payload);
+  ```
+
+  To use these, the runtime **MUST** have configured `RESTATE_EXPERIMENTAL_ENABLE_SCOPED_VIRTUAL_OBJECTS=true`.
+
+  ### Other changes
+
+  * **Aligned retry-policy terminology across packages** (#760): the `run` retry policy in `@restatedev/restate-sdk-gen` (preview) gains an `exponentiationFactor` field; the previous `intervalFactor` is deprecated but still honored as a fallback.
+  * **`@restatedev/restate-sdk-tunnel` (preview): reconnect backoff options renamed.** The flat `reconnectInitialMs` / `reconnectMaxMs` / `reconnectFactor` options are replaced by a nested `reconnectRetryPolicy`, aligning the field names with the invocation and ingress retry policies. `initialInterval` / `maxInterval` accept either a `Duration` or a number of milliseconds.
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.16.0)
+</Update>
+
+<Update label="2026-06-26" description="TypeScript SDK v1.15.1">
+  ### What's Changed
+
+  * Fix memory leak for ctx.run for long running invocation by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/755](https://github.com/restatedev/sdk-typescript/pull/755)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.15.1)
+</Update>
+
+<Update label="2026-06-22" description="TypeScript SDK v1.15.0">
+  ### New Features
+
+  ### (Preview) Scope and limit key to enable flow control
+
+  This release adds the SDK API for [flow control](https://docs.restate.dev/services/flow-control), the new Restate 1.7 feature to cap how many invocations run concurrently within a **scope**, with optional hierarchical **limit keys**. Use it to bound cost (especially for AI agents, where every concurrent invocation is real model/API spend), shield downstream systems from bursts, and share capacity fairly across tenants.
+
+  To use scope and limit keys in service to service communication:
+
+  ```typescript theme={null}
+  // Route a call into a named scope
+  await ctx.scope("tenant-123").serviceClient(MyService).process(payload);
+
+  // Add a limit key for hierarchical concurrency limits within the scope
+  await ctx.scope("tenant-123").workflowClient(MyWorkflow, "wf-key")
+    .run(input, rpc.opts({ limitKey: "api-key/user42" }));
+  ```
+
+  Check out the docs [Flow control documentation](https://docs.restate.dev/services/flow-control) for more details on how concurrency limits work and how to set them up.
+
+  > **NOTE:** This API is in preview and is not enabled by default. To use it in restate-server 1.7, enable the flow control and protocol v7 experimental features via `RESTATE_EXPERIMENTAL_ENABLE_PROTOCOL_V7=true` and `RESTATE_EXPERIMENTAL_ENABLE_VQUEUES=true` (new clusters only). See [https://docs.restate.dev/services/flow-control](https://docs.restate.dev/services/flow-control) for details.
+
+  ### Signals and the `InvocationReference` API
+
+  Signals graduate from the experimental `ContextInternal` to the main `Context`, alongside a new `InvocationReference` API.
+
+  Signals let invocations communicate directly with each other: one invocation waits for a signal, and any other handler can resolve or reject it by referencing the target invocation's ID.
+
+  ```typescript theme={null}
+  // Inside the invocation that wants to wait:
+  const approved = await ctx.signal<boolean>("approved");
+
+  // Inside another handler that knows the target invocation's ID:
+  const target = ctx.invocation(targetInvocationId);
+  target.signal<boolean>("approved").resolve(true);
+  // or, to wake the waiter with a terminal error:
+  target.signal("approved").reject("Request denied");
+  ```
+
+  `ctx.invocation(invocationId)` returns an `InvocationReference`, which you can also use to `cancel()` the target invocation or `attach()` to wait for its result.
+
+  ### Pausing invocations: `PauseError` and journal-mismatch handling
+
+  Building on the existing `retryPolicy.onMaxAttempts: "pause"`, this release adds two more ways to **pause** an invocation instead of failing or endlessly retrying it.
+
+  **1. Pause on demand with `PauseError`.** A new `PauseError` lets you explicitly pause an invocation from within a `ctx.run` closure.
+
+  ```typescript theme={null}
+  await ctx.run("charge-card", async () => {
+    if (!serviceReady()) {
+      throw new restate.PauseError("Payment provider not configured yet");
+    }
+    // ...
+  });
+  ```
+
+  **2. Pause on non-determinism.** A new `onJournalMismatchErrors` option (service or handler level) allows you to control how the SDK reacts to journal mismatch (non-determinism) errors:
+
+  * `"retry"` (default): the invocation follows the normal retry policy when a journal mismatch is detected.
+  * `"pause"`: the invocation is paused instead of being retried.
+  * `"fail"`: the invocation fails terminally instead of being retried.
+
+  ```typescript theme={null}
+  const myService = restate.service({
+    name: "MyService",
+    handlers: { /* ... */ },
+    options: {
+      onJournalMismatchErrors: "pause",
+    },
+  });
+  ```
+
+  > **NOTE:** These new features require restate-server 1.7 with `RESTATE_EXPERIMENTAL_ENABLE_PROTOCOL_V7=true` enabled.
+
+  ### Breaking changes
+
+  * **Node 22 is now the minimum supported version** (previously Node 20).
+
+  ### General improvements
+
+  * **New cooperative suspensions behavior when awaiting `RestatePromise`s** (#700): The SDK now propagates the full tree of pending futures to the shared core to decide when and how to suspend, resulting in less concurrency quotas trashing when fanning out many requests from one handler to others.
+  * **Cheaper `ctx.run` round-trips**: Instead of echoing the full completion message back to the SDK after storing a `ctx.run` result, the runtime replies with an ack message. This noticeably cuts network cost for handlers with many or large `ctx.run` entries.
+  * **Stability fixes**:
+    * Fixed some corner cases where awaiting a `RestatePromise` could result in the invocation being incorrectly aborted (#724).
+    * Fixed case where an `AbortController` wouldn't fire if the signal had already been sent (#726).
+  * **Fixed incorrect memory growth on replay** with handlers that perform many `ctx.run` calls (#734).
+
+  > **NOTE:** The cooperative suspensions and run-acks improvements above are enabled in restate-server 1.7 with `RESTATE_EXPERIMENTAL_ENABLE_PROTOCOL_V7=true` set up.
+
+  ### Preview packages
+
+  This release ships two new packages, both in **preview**.
+
+  ### `@restatedev/restate-sdk-gen`
+
+  A composable, generator-based API for authoring Restate functions.
+
+  It builds on the classic Restate TypeScript SDK and adds a few notable capabilities:
+
+  * **Concurrent durable tasks within a single handler**, via the `spawn` API.
+  * **Fewer non-determinism pitfalls**, thanks to a generator-based model rather than promises.
+  * **No `Context` to thread around**: every Restate operation is a function exported from `@restatedev/restate-sdk-gen`, so there's nothing to pass down through your call stack.
+  * **Richer service interfaces** for defining shareable, type-safe contracts between services, while preserving `serde` runtime information (for example, how to serialize a `Date` behind a Zod schema).
+
+  ```typescript theme={null}
+  import * as restate from "@restatedev/restate-sdk";
+  import { service, gen, spawn, run, sleep, client, type Operation } from "@restatedev/restate-sdk-gen";
+
+  export const checkout = service({
+    name: "checkout",
+    handlers: {
+      *order(orderId: string): Operation<string> {
+        // Spawn a durable routine that itself does several Restate durable steps.
+        const fulfillment = spawn(
+                gen(function* () {
+                  // run is the equivalent of ctx.run, and accepts a closure returning a promise.
+                  const paymentId = yield* run(() => chargeCard(orderId), { name: "charge" });
+                  yield* sleep({ seconds: 5 }); // durable timer
+                  yield* client(warehouse).ship(orderId); // call another service
+                  return paymentId;
+                })
+        );
+
+        // Meanwhile execute a run on the main handler routine, concurrently...
+        yield* run(() => sendConfirmationEmail(orderId), { name: "email" });
+
+        // ...then join the spawned routine.
+        return `order ${orderId} fulfilled with payment ${yield* fulfillment}`;
+      },
+    },
+  });
+
+  restate.serve({ services: [checkout] });
+  ```
+
+  Check the [package README](https://github.com/restatedev/sdk-typescript/tree/main/packages/libs/restate-sdk-gen) for the full tour. We're going to reveal more details about this package in the upcoming weeks.
+
+  ### `@restatedev/restate-sdk-tunnel`
+
+  A reverse-tunnel client that serves a Restate SDK deployment over an **outbound** connection to Restate Cloud: no inbound HTTP listener and no public ingress into your network.
+
+  It's a drop-in alternative to binding a listener with `restate.serve(...)` for deployments running in private networks.
+
+  ```typescript theme={null}
+  import * as restate from "@restatedev/restate-sdk";
+  import { connectTunnel } from "@restatedev/restate-sdk-tunnel";
+
+  const greeter = restate.service({
+    name: "greeter",
+    handlers: { greet: async (_ctx, name: string) => `Hello ${name}!` },
+  });
+
+  const connection = connectTunnel({
+    region: "us",                                  // Restate Cloud region
+    environmentId: "env_...",                       // your environment ID
+    authToken: process.env.RESTATE_AUTH_TOKEN!,     // Cloud API key with the Full role
+    signingPublicKey: "publickeyv1_...",            // your environment's request-identity key
+    tunnelName: "greeter-v1",                       // the deployment's identity
+    services: [greeter],
+  });
+
+  await connection.ready;
+  ```
+
+  Check the [package README](https://github.com/restatedev/sdk-typescript/tree/main/packages/libs/restate-sdk-tunnel) for registration details and zero-config setup on Kubernetes. We're going to reveal more details about this package in the upcoming weeks.
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.15.0)
+</Update>
+
+<Update label="2026-06-04" description="TypeScript SDK v1.14.5">
+  ### What's Changed
+
+  * Lock deno version (1.14) by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/733](https://github.com/restatedev/sdk-typescript/pull/733)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.14.5)
+</Update>
+
+<Update label="2026-05-20" description="TypeScript SDK v1.14.4">
+  * Fix issue where in some cases, running multiple `ctx.run` in parallel caused the invocation attempt to be waiting unnecessarily.
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.14.4)
+</Update>
+
+<Update label="2026-05-12" description="TypeScript SDK v1.14.3">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.14.3)
+</Update>
+
+<Update label="2026-05-05" description="TypeScript SDK v1.14.2">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.14.2)
+</Update>
+
+<Update label="2026-04-30" description="TypeScript SDK v1.14.1">
+  ### What's Changed
+
+  * Add default serde to ingress client by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/703](https://github.com/restatedev/sdk-typescript/pull/703)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.14.1)
+</Update>
+
+<Update label="2026-04-29" description="TypeScript SDK v1.14.0">
+  ### What's Changed
+
+  * Fix await loop by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/689](https://github.com/restatedev/sdk-typescript/pull/689)
+  * More tests around signals by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/692](https://github.com/restatedev/sdk-typescript/pull/692)
+  * Move response-head commit inside process() by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/695](https://github.com/restatedev/sdk-typescript/pull/695)
+  * Fix flaky CI tasks by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/697](https://github.com/restatedev/sdk-typescript/pull/697)
+  * Serde Preview by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/698](https://github.com/restatedev/sdk-typescript/pull/698)
+  * Add testcontainer networking and storage options by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/701](https://github.com/restatedev/sdk-typescript/pull/701)
+  * fix: update workflowSubmit to use optsFromArgs so it can handle opts … by @Nez21 in [https://github.com/restatedev/sdk-typescript/pull/691](https://github.com/restatedev/sdk-typescript/pull/691)
+  * Release 1.14.0 by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/702](https://github.com/restatedev/sdk-typescript/pull/702)
+
+  ### New Contributors
+
+  * @Nez21 made their first contribution in [https://github.com/restatedev/sdk-typescript/pull/691](https://github.com/restatedev/sdk-typescript/pull/691)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.14.0)
+</Update>
+
+<Update label="2026-04-13" description="TypeScript SDK v1.13.0">
+  ### Changes
+
+  **Check [release 1.12.0](https://github.com/restatedev/sdk-typescript/releases/tag/v1.12.0) in case you missed it!**
+
+  * a296aa5: Fixes to `RestatePromise.map`:
+    * **Bug fix:** for promises created via `RestatePromise.resolve()` / `RestatePromise.reject()`, `.map()` is now correctly executed.
+    * **Bug fix/Behavioral breaking change:** for all other promises, the mapper closure now runs **exactly once**, regardless of how many times the resulting promise is awaited. Previously it ran on every await.
+
+  * a296aa5: Add `setOutputContentTypeIfEmpty` handler option, allowing handlers to configure the response `content-type` header when the output body is empty.
+    This is needed when using Protobuf, where an empty body is still a valid message and the `content-type` must be set accordingly.
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.13.0)
+</Update>
+
+<Update label="2026-04-10" description="TypeScript SDK v1.12.0">
+  ### New Features
+
+  ### Hooks and OpenTelemetry
+
+  A new hooks system lets you intercept handler execution and `ctx.run()` closures at the endpoint, service, or handler level.
+
+  Use it to integrate with your favourite observability libraries:
+
+  ```typescript theme={null}
+  const myHookProvider: HooksProvider = (ctx) => ({
+    interceptor: {
+      handler: async (next) => {
+        console.log(`before ${ctx.request.target}`);
+        try {
+          await next();
+        } finally {
+          console.log(`after ${ctx.request.target}`);
+        }
+      },
+      run: async (name, next) => {
+        console.log(`  run "${name}" executing`);
+        await next();
+      },
+    },
+  });
+
+  // Then in the service configuration:
+
+  const myService = restate.service({
+      name: "MyService",
+      handlers: { ... },
+      options: {
+          hooks: [myHookProvider],
+      },
+  });
+  ```
+
+  Together with the hooks interface, the new `@restatedev/restate-sdk-opentelemetry` package provides a ready-made OpenTelemetry integration.
+
+  It automatically propagates trace context from Restate and creates spans with standard Restate attributes (`restate.invocation.id`, `restate.invocation.target`):
+
+  ```typescript theme={null}
+  import {openTelemetryHook} from "@restatedev/restate-sdk-opentelemetry";
+  import {trace} from "@opentelemetry/api";
+
+  const greeter = restate.service({
+      name: "Greeter",
+      options: {
+          // Set up the openTelemetryHook
+          hooks: [openTelemetryHook({tracer: trace.getTracer("greeter-service")})],
+      },
+      handlers: {
+          greet: async (ctx: Context, name: string) => {
+              // Add an event using trace.getActiveSpan().addEvent()
+              trace.getActiveSpan()?.addEvent("my.event", {name});
+
+              // ctx.runs get automatically their span, child of the handler attempt span.
+              const greeting = await ctx.run("compute-greet", async () => {
+                  // You can get the ctx.run span here for downstream propagation
+                  const span = trace.getActiveSpan();
+                  return `Hello ${name}!`
+              });
+
+              return greeting;
+          },
+      },
+  });
+  ```
+
+  For more complete examples, check out:
+
+  * OpenTelemetry integration example: [https://github.com/restatedev/examples/tree/main/typescript/integrations/opentelemetry](https://github.com/restatedev/examples/tree/main/typescript/integrations/opentelemetry)
+
+  ### HTTP/1.1 Handler for Node.js
+
+  `restate.createEndpointHandler()` now returns a handler that works with both HTTP/2 and HTTP/1.1. It auto-detects the HTTP version per request:
+
+  ```typescript theme={null}
+  import * as http from "node:http";
+
+  const restateSDKHandler = restate.createEndpointHandler({ services: [myService] });
+  const server = http.createServer(restateSDKHandler);
+  server.listen(9080);
+  ```
+
+  ### `RestatePromise` improvements
+
+  New factory methods to create already-completed Restate promises, mirroring `Promise.resolve`/`Promise.reject`:
+
+  ```typescript theme={null}
+  RestatePromise.resolve(myValue);
+  RestatePromise.reject(new restate.TerminalError("Access denied"));
+  ```
+
+  We also expose `isRestatePromise` to reliably detect whether a promise is a `RestatePromise`.
+
+  ### Testcontainer options
+
+  `alwaysReplay` and `disableRetries` options added to the Restate testcontainer, to simplify testing edge cases in your code.
+
+  Check [`RestateContainer`](https://restatedev.github.io/sdk-typescript/classes/_restatedev_restate-sdk-testcontainers.RestateContainer.html) documentation for more details.
+
+  ### Experimental APIs
+
+  We're releasing two new experimental APIs:
+
+  * Explicit cancellation, to manually handle Restate's cancellation, instead of relying on `RestatePromise` failing with `CancelledError` when cancellation is received.
+  * Signals, a way for invocations to communicate between each other.
+
+  For more info on these features, refer to the [`ContextInternal`](https://restatedev.github.io/sdk-typescript/interfaces/_restatedev_restate-sdk.internal.ContextInternal.html) documentation.
+  The API of these features is experimental and might change in future releases.
+
+  ### Improvements and bug fixes
+
+  * `Awakeable.reject()` now accepts a `TerminalError`, propagating error message, code, and metadata.
+  * Added `asTerminalError` and default `serde` handler option. These take precedence over the already existing service/endpoint level configuration.
+  * `RestatePromise` combinators now correctly handle empty input arrays (#611).
+  * `Request.id` is now an `InvocationId`.
+  * Added `Request.target` to get the full invocation target.
+  * Removed deprecated `SendOpts` (use `SendOptions`).
+  * Removed deprecated `*millis` fields in retry policy.
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.12.0)
+</Update>
+
+<Update label="2026-03-17" description="TypeScript SDK v1.11.1">
+  ### What's Changed
+
+  * Test TerminalError.metadata by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/658](https://github.com/restatedev/sdk-typescript/pull/658)
+  * Bump testcontainers and wrangler dependency by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/660](https://github.com/restatedev/sdk-typescript/pull/660)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.11.1)
+</Update>
+
+<Update label="2026-03-12" description="TypeScript SDK v1.11.0">
+  ### What's Changed
+
+  * Re-designed the GenericHandler interface. by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/655](https://github.com/restatedev/sdk-typescript/pull/655)
+  * Add support for metadata in TerminalError by @PfisterFactor in [https://github.com/restatedev/sdk-typescript/pull/646](https://github.com/restatedev/sdk-typescript/pull/646)
+
+  ### New Contributors
+
+  * @PfisterFactor made their first contribution in [https://github.com/restatedev/sdk-typescript/pull/646](https://github.com/restatedev/sdk-typescript/pull/646)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.11.0)
+</Update>
+
+<Update label="2026-02-25" description="TypeScript SDK v1.10.4">
+  ### What's Changed
+
+  * Upgrade restate-sdk-shared-core to 0.9.0 (jsonwebtoken v10) by @tillrohrmann in [https://github.com/restatedev/sdk-typescript/pull/649](https://github.com/restatedev/sdk-typescript/pull/649)
+  * Handle correctly closing the request stream by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/651](https://github.com/restatedev/sdk-typescript/pull/651)
+  * Context internal by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/652](https://github.com/restatedev/sdk-typescript/pull/652)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.10.4)
+</Update>
+
+<Update label="2026-02-19" description="TypeScript SDK v1.10.3">
+  ### What's Changed
+
+  * New shared core assertion by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/638](https://github.com/restatedev/sdk-typescript/pull/638)
+  * Wait for all partitions are up before testcontainer is ready by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/640](https://github.com/restatedev/sdk-typescript/pull/640)
+  * Use npm trusted publishing by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/639](https://github.com/restatedev/sdk-typescript/pull/639)
+  * Set publish.yml as the only non-reuseable publisher by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/641](https://github.com/restatedev/sdk-typescript/pull/641)
+  * Do npm publishing in release.yml by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/642](https://github.com/restatedev/sdk-typescript/pull/642)
+  * Add `rpc.opts(&#123;name&#125;)`/`rpc.sendOpts(&#123;name&#125;)` to propagate entry name for call/send. by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/644](https://github.com/restatedev/sdk-typescript/pull/644)
+  * Add request signing tests to multi-runtime compatibility CI by @tillrohrmann in [https://github.com/restatedev/sdk-typescript/pull/645](https://github.com/restatedev/sdk-typescript/pull/645)
+  * Bump Cloudflare Worker compatibility\_date to 2026-02-19 by @tillrohrmann in [https://github.com/restatedev/sdk-typescript/pull/647](https://github.com/restatedev/sdk-typescript/pull/647)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.10.3)
+</Update>
+
+<Update label="2026-01-27" description="Vercel AI Middleware v0.3.1">
+  ### What's Changed
+
+  * Add Restate MCP Client by @gvdongen in [https://github.com/restatedev/vercel-ai-middleware/pull/23](https://github.com/restatedev/vercel-ai-middleware/pull/23)
+  * Extarct types for MCPClient by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/24](https://github.com/restatedev/vercel-ai-middleware/pull/24)
+  * release 0.3.1 by @gvdongen in [https://github.com/restatedev/vercel-ai-middleware/pull/25](https://github.com/restatedev/vercel-ai-middleware/pull/25)
+
+  [View on GitHub](https://github.com/restatedev/vercel-ai-middleware/releases/tag/v0.3.1)
+</Update>
+
+<Update label="2026-01-19" description="Vercel AI Middleware v0.3.0">
+  ### What's Changed
+
+  * update to AI SDK 6 by @gvdongen in [https://github.com/restatedev/vercel-ai-middleware/pull/21](https://github.com/restatedev/vercel-ai-middleware/pull/21)
+  * release 0.3.0 by @gvdongen in [https://github.com/restatedev/vercel-ai-middleware/pull/22](https://github.com/restatedev/vercel-ai-middleware/pull/22)
+
+  [View on GitHub](https://github.com/restatedev/vercel-ai-middleware/releases/tag/v0.3.0)
+</Update>
+
+<Update label="2026-01-15" description="TypeScript SDK v1.10.2">
+  ### What's Changed
+
+  * Update sdk-shared-core to 0.7.0 by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/636](https://github.com/restatedev/sdk-typescript/pull/636)
+  * Fix StandardSchemaSerde constructor by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/637](https://github.com/restatedev/sdk-typescript/pull/637)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.10.2)
+</Update>
+
+<Update label="2026-01-05" description="TypeScript SDK v1.10.1">
+  ### StandardSchema support
+
+  Introduced `serde.schema` API, allowing you to use any StandardSchema compliant library together with the Restate SDK:
+
+  ```ts theme={null}
+  import * as restate from "@restatedev/restate-sdk";
+
+  import { z } from "zod";
+
+  const Greeting = z.object({
+    name: z.string(),
+  });
+  const GreetingResponse = z.object({
+    result: z.string(),
+  });
+
+  const greeter = restate.service({
+    name: "Greeter",
+    handlers: {
+      greet: restate.createServiceHandler(
+        { 
+            // New serde.schema API
+            input: restate.serde.schema(Greeting), 
+            output: restate.serde.schema(GreetingResponse)
+        },
+        handler
+      ),
+    },
+  });
+  ```
+
+  **Note for zod users**:  You can use this API **with Zod 4.2+** already, removing the need to use the `restate-sdk-zod` package. If you're using Zod \< 4.2, either update zod or keep using the `restate-sdk-zod` package, we will continue to support it for a while.
+
+  ### What's Changed
+
+  * Test SDK against different templates (runtimes/bundler/...) by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/602](https://github.com/restatedev/sdk-typescript/pull/602)
+  * Only publish packages inside `./packages` by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/603](https://github.com/restatedev/sdk-typescript/pull/603)
+  * Better error message for `AbortError` by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/604](https://github.com/restatedev/sdk-typescript/pull/604)
+  * Add `DO_NOT_TRACK` to restate CI jobs by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/606](https://github.com/restatedev/sdk-typescript/pull/606)
+  * Introduce the defaultSerde option by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/605](https://github.com/restatedev/sdk-typescript/pull/605)
+  * Little fix by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/608](https://github.com/restatedev/sdk-typescript/pull/608)
+  * Test suite 3.2 upgrade by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/609](https://github.com/restatedev/sdk-typescript/pull/609)
+  * Skip building docker image when service image is provided by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/610](https://github.com/restatedev/sdk-typescript/pull/610)
+  * Use unrepresentable with zod toJSONSchema by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/613](https://github.com/restatedev/sdk-typescript/pull/613)
+  * Run CI on release branches by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/614](https://github.com/restatedev/sdk-typescript/pull/614)
+  * Update Eslint and Typescript with stricter type checking by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/612](https://github.com/restatedev/sdk-typescript/pull/612)
+  * Add better error description for negative duration by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/617](https://github.com/restatedev/sdk-typescript/pull/617)
+  * Switch to using `tsdown` by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/618](https://github.com/restatedev/sdk-typescript/pull/618)
+  * Update `crazy-max/ghaction-setup-docker` to v4 by @muhamadazmy in [https://github.com/restatedev/sdk-typescript/pull/621](https://github.com/restatedev/sdk-typescript/pull/621)
+  * Reorg monorepo by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/619](https://github.com/restatedev/sdk-typescript/pull/619)
+  * Add Standard Schema support with `restate.serde.schema` by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/631](https://github.com/restatedev/sdk-typescript/pull/631)
+  * Improve validation error message by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/632](https://github.com/restatedev/sdk-typescript/pull/632)
+  * Re-export standard schema instead of importing the package by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/633](https://github.com/restatedev/sdk-typescript/pull/633)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.10.1)
+</Update>
+
+<Update label="2025-12-15" description="Vercel AI Middleware v0.2.1">
+  ### What's Changed
+
+  * Fix rethrowTerminalToolError for cloudflare-workers package by @slinkydeveloper in [https://github.com/restatedev/vercel-ai-middleware/pull/19](https://github.com/restatedev/vercel-ai-middleware/pull/19)
+
+  ### New Contributors
+
+  * @slinkydeveloper made their first contribution in [https://github.com/restatedev/vercel-ai-middleware/pull/19](https://github.com/restatedev/vercel-ai-middleware/pull/19)
+
+  [View on GitHub](https://github.com/restatedev/vercel-ai-middleware/releases/tag/v0.2.1)
+</Update>
+
+<Update label="2025-10-27" description="TypeScript SDK v1.9.1">
+  * Run CI on release branches (9359989)
+  * Use unrepresentable with zod toJSONSchema (#613) (86679aa)
+  * Pull the services docker image in advance (e722738)
+  * Skip building docker image when service image is provided (#610) (31dac34)
+  * Test suite 3.2 upgrade (#609) (55966d7)
+  * Better error message for `AbortError` (#604) (87dd8ee)
+  * Typo in release-docs.yml (fb0c752)
+  * Add github workflow for releasing tsdocs (163d2b3)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.9.1)
+</Update>
+
+<Update label="2025-09-16" description="Vercel AI Middleware v0.2.0">
+  ### What's Changed
+
+  * Upgrade to Vercel AI SDK 5 by @gvdongen in [https://github.com/restatedev/vercel-ai-middleware/pull/18](https://github.com/restatedev/vercel-ai-middleware/pull/18)
+
+  ### New Contributors
+
+  * @gvdongen made their first contribution in [https://github.com/restatedev/vercel-ai-middleware/pull/18](https://github.com/restatedev/vercel-ai-middleware/pull/18)
+
+  [View on GitHub](https://github.com/restatedev/vercel-ai-middleware/releases/tag/v0.2.0)
+</Update>
+
+<Update label="2025-09-16" description="TypeScript SDK v1.9.0">
+  ### Zod v4
+
+  Our integration module with zod now supports Zod v4.
+
+  If you're a Zod v3 users, we suggest to continue using `@restatedev/restate-sdk-zod` version 1.8.3, which is fully compatible with the SDK 1.9
+
+  ### Invocation retry policy
+
+  When used with Restate 1.5, you can now configure the invocation retry policy from the SDK directly. See [https://github.com/restatedev/restate/releases/tag/v1.5.0](https://github.com/restatedev/restate/releases/tag/v1.5.0) for more details on the new invocation retry policy configuration.
+
+  ### AWS Lambda compression
+
+  Restate server will now compress requests before sending them to AWS Lambda, when approaching the [invocation payload limit](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html#function-configuration-deployment-and-execution). This allows for larger replays without hitting the PAYLOAD\_TOO\_LARGE error from Lambda.
+
+  Requires Restate 1.5 and re-registering the deployment. See [https://github.com/restatedev/restate/releases/tag/v1.5.0](https://github.com/restatedev/restate/releases/tag/v1.5.0) for more details.
+
+  ### Changes to `ctx.rand`
+
+  We have updated how the `ctx.rand` seed is generated. As usual with minor SDK releases, make sure to register a new deployment to register the new service revisions. Refer to the [versioning documentation](https://docs.restate.dev/operate/versioning) for more details.
+
+  ### Full changelog
+
+  * Update shared core (#599) (d0b5bc9)
+  * Update versions (77d9c53)
+  * Zod v4 support (#598) (bed4b23)
+  * Deprecate endpoint() API (7bf6c68)
+  * Clarification on max attempts meaning (#596) (84b6b85)
+  * Test suite 3.1 (#595) (258feec)
+  * Service Protocol V6 + random seed (#593) (6a62407)
+  * \[CI] support env vars and test artifact output parameters in integration.yaml (14cf983)
+  * Add retry policy configuration for service/handlers (#592) (a4c4d74)
+  * Revert "Flush early context run (#591)" (198f2d0)
+  * Flush early context run (#591) (51f2578)
+  * Bump CI to Node 20 (#589) (8122a0b)
+  * Fix localCompare usage in LambdaHandler (#588) (6e8c5ca)
+  * Lambda Compression (#586) (62ef7ab)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.9.0)
+</Update>
+
+<Update label="2025-08-27" description="TypeScript SDK v1.8.4">
+  * Flush early context run (#591) (f589220)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.8.4)
+</Update>
+
+<Update label="2025-08-18" description="TypeScript SDK v1.8.3">
+  * Fix error handling when writing output (#584) (f11bc16)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.8.3)
+</Update>
+
+<Update label="2025-08-14" description="TypeScript SDK v1.8.2">
+  * Make sure we pass through the serde stack and codec when sending requests with empty payload (#583) (e688685)
+  * Allow passing journal value codec provider, rather than built codec directly. (#582) (620625b)
+  * Introduce JournalValueCodec API (#581) (d756bb0)
+  * Export cancelled error (#579) (8b51ed1)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.8.2)
+</Update>
+
+<Update label="2025-08-07" description="TypeScript SDK v1.8.1">
+  * Update readmes (781631a)
+  * Don't set contentType for zod void/undefined types (#578) (c05a765)
+  * Create handler Alias (#577) (22c6738)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.8.1)
+</Update>
+
+<Update label="2025-07-31" description="TypeScript SDK v1.8.0">
+  * Replace chained `endpoint` API with unified `createEndpointHandler` (#574) (31cb885)
+  * Introduce DefaultServiceOptions, that are applied to every service bind to the endpoint. (#572) (f29ca9d)
+  * Improve a bit the readmes, to make them look nicer. (#571) (2e5b1dc)
+  * Typedocs configuration (#570) (0825d05)
+  * Introduce RetryableError (#569) (40d129c)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.8.0)
+</Update>
+
+<Update label="2025-07-17" description="Vercel AI Middleware v0.1.2">
+  ### What's Changed
+
+  * Unwrap TerminalError from ToolExecutionError by @igalshilman in [https://github.com/restatedev/vercel-ai-middleware/pull/14](https://github.com/restatedev/vercel-ai-middleware/pull/14)
+  * Release 0.1.2 by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/15](https://github.com/restatedev/vercel-ai-middleware/pull/15)
+
+  [View on GitHub](https://github.com/restatedev/vercel-ai-middleware/releases/tag/v0.1.2)
+</Update>
+
+<Update label="2025-07-17" description="Vercel AI Middleware v0.1.1">
+  ### What's Changed
+
+  * Fix toolErrorAsTerminalError export by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/12](https://github.com/restatedev/vercel-ai-middleware/pull/12)
+  * Release 0.1.1 by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/13](https://github.com/restatedev/vercel-ai-middleware/pull/13)
+
+  [View on GitHub](https://github.com/restatedev/vercel-ai-middleware/releases/tag/v0.1.1)
+</Update>
+
+<Update label="2025-07-16" description="Vercel AI Middleware v0.1.0">
+  ### What's Changed
+
+  * Add `durableCalls` by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/1](https://github.com/restatedev/vercel-ai-middleware/pull/1)
+  * Rename github token name by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/2](https://github.com/restatedev/vercel-ai-middleware/pull/2)
+  * Release 0.0.2 by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/5](https://github.com/restatedev/vercel-ai-middleware/pull/5)
+  * Fix release by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/6](https://github.com/restatedev/vercel-ai-middleware/pull/6)
+  * Fix release by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/7](https://github.com/restatedev/vercel-ai-middleware/pull/7)
+  * Fix release by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/9](https://github.com/restatedev/vercel-ai-middleware/pull/9)
+  * Use the latest SDK version and add asTerminalError by @igalshilman in [https://github.com/restatedev/vercel-ai-middleware/pull/10](https://github.com/restatedev/vercel-ai-middleware/pull/10)
+  * Release 0.1.0 by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/11](https://github.com/restatedev/vercel-ai-middleware/pull/11)
+
+  ### New Contributors
+
+  * @igalshilman made their first contribution in [https://github.com/restatedev/vercel-ai-middleware/pull/10](https://github.com/restatedev/vercel-ai-middleware/pull/10)
+
+  [View on GitHub](https://github.com/restatedev/vercel-ai-middleware/releases/tag/v0.1.0)
+</Update>
+
+<Update label="2025-07-07" description="TypeScript SDK v1.7.3">
+  * update .gitignore (46ebfaa)
+  * `asTerminalError` to provide an easy mapping between domain model errors and Restate `TerminalError` (#562) (a2ee88b)
+  * \[types] Align VODefinition with Service and Workflow (#568) (4fbdae7)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.7.3)
+</Update>
+
+<Update label="2025-07-03" description="Vercel AI Middleware v0.0.2">
+  ### What's Changed
+
+  * Add `durableCalls` by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/1](https://github.com/restatedev/vercel-ai-middleware/pull/1)
+  * Rename github token name by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/2](https://github.com/restatedev/vercel-ai-middleware/pull/2)
+  * Release 0.0.2 by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/5](https://github.com/restatedev/vercel-ai-middleware/pull/5)
+  * Fix release by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/6](https://github.com/restatedev/vercel-ai-middleware/pull/6)
+  * Fix release by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/7](https://github.com/restatedev/vercel-ai-middleware/pull/7)
+  * Fix release by @nikrooz in [https://github.com/restatedev/vercel-ai-middleware/pull/8](https://github.com/restatedev/vercel-ai-middleware/pull/8)
+
+  [View on GitHub](https://github.com/restatedev/vercel-ai-middleware/releases/tag/v0.0.2)
+</Update>
+
+<Update label="2025-07-02" description="TypeScript SDK v1.7.2">
+  * Patch for cloudflare workers (b95f741)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.7.2)
+</Update>
+
+<Update label="2025-07-02" description="TypeScript SDK v1.7.1">
+  * Update all the READMEs (1eaba7c)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.7.1)
+</Update>
+
+<Update label="2025-07-02" description="TypeScript SDK v1.7.0">
+  * You can now configure options of the services/objects/workflows directly in code. Similarly, it's possible to configure specific overrides of the same options on the handlers level. For example:
+
+  ```ts theme={null}
+  const greeter = service({
+    name: "greeter",
+    options: {
+      // Requests to greeter will retain the journal for two days
+      journalRetention: { days: 2 },
+    },
+    handlers: {
+      greet: async (ctx: Context, name: string) => {
+        return `Hello ${name}`;
+      },
+      anotherGreet: handlers.handler(
+          {
+            // Requests to this specific handler will retain the journal only for one day
+            journalRetention: { days: 1 },
+          },
+          async (ctx: Context, name: string) => {
+            return `Hello ${name}`;
+          }
+      ),
+    }
+  });
+  ```
+
+  **NOTE**: this feature is available only when the SDK is used in combination with Restate 1.4, trying to use it with Restate 1.3 will result in an error at discovery time.
+
+  * Introduced a new `Duration` type, used in all the APIs requiring time:
+
+  ```ts theme={null}
+  await ctx.sleep({ hours: 5, minutes: 30 });
+  ```
+
+  * Improved the error reporting.
+
+  ### Changelog
+
+  * Update matrix (c8ded2a)
+  * Revert "Release 1.7.0" (caec26d)
+  * Release 1.7.0 (31e1945)
+  * Update start string of the SDK (#565) (017d5c8)
+  * Bump sdk-shared-core to 0.4.0 (#564) (c1fd578)
+  * Resolve leak on aborted invocation (#561) (8e8b54b)
+  * Replace setTimeout with setImmediate (#560) (bed96e5)
+  * Rebuild shared core, now update to use the new journal mismatch errors (#559) (2cd1da5)
+  * \[tests] Remove the "catch" usages (#557) (68850ee)
+  * Add name to ctx.sleep (#556) (cf963e5)
+  * More handling of errors. This now improves a bit more the error handling situation (#555) (e50b7c5)
+  * Overhaul error handling/reporting (#554) (f81e7d9)
+  * Improve error handling (#552) (022894b)
+  * Handle case when delay is either 0 or undefined. (#553) (9453c8e)
+  * Endpoint manifest v3 (#551) (2b0bc2a)
+  * Duration data type (#550) (1bfce60)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.7.0)
+</Update>
+
+<Update label="2025-06-12" description="TypeScript SDK v1.6.1">
+  * \[e2e] Support unlimited concurrent streams (#546) (3374c7d)
+  * delete logger from map on error (#548) (13e896f)
+  * Typo in discovery when using the service documentation field. (#544) (fbb8197)
+  * \[E2E-Services]: Add Env `MAX_CONCURRENT_STREAMS` (#543) (9cc49c9)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.6.1)
+</Update>
+
+<Update label="2025-05-20" description="TypeScript SDK v1.6.0">
+  ### Renamed  `CombineablePromise` to `RestatePromise`
+
+  `CombineablePromise` was renamed to `RestatePromise`, and the `CombineablePromise` is now a deprecated type alias, it will be removed in the upcoming releases.
+
+  ### What's Changed
+
+  * Support omitting content type for void handlers by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/532](https://github.com/restatedev/sdk-typescript/pull/532)
+  * Fix tests by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/533](https://github.com/restatedev/sdk-typescript/pull/533)
+  * Fix `this` type by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/534](https://github.com/restatedev/sdk-typescript/pull/534)
+  * Small fixes by @mupperton in [https://github.com/restatedev/sdk-typescript/pull/538](https://github.com/restatedev/sdk-typescript/pull/538)
+  * Validate sleep duration is non-negative. by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/537](https://github.com/restatedev/sdk-typescript/pull/537)
+  * Add missing exported by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/540](https://github.com/restatedev/sdk-typescript/pull/540)
+  * Add missing exports by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/542](https://github.com/restatedev/sdk-typescript/pull/542)
+  * Add `api-extractor` check to catch missing exports by @nikrooz in [https://github.com/restatedev/sdk-typescript/pull/541](https://github.com/restatedev/sdk-typescript/pull/541)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.6.0)
+</Update>
+
+<Update label="2025-04-29" description="TypeScript SDK v1.5.4">
+  * Improve type mismatching for handlers (#531) (a1d92bf)
+  * add const to combinablepromise types (#530) (29dc906)
+  * Fix docs (#527) (03bf4e2)
+  * Bump outdated dependencies (#519) (abeea26)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.5.4)
+</Update>
+
+<Update label="2025-04-09" description="TypeScript SDK v1.5.3">
+  We are pleased to announce the release of the TypeScript SDK, in combination with Restate 1.3.
+  Check out the announcement blog post for more details about Restate 1.3 and the new SDK features: [https://restate.dev/blog/announcing-restate-1.3/](https://restate.dev/blog/announcing-restate-1.3/)
+
+  * Fix docker image name and version. (#521) (663b7e6)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.5.3)
+</Update>
+
+<Update label="2025-04-09" description="TypeScript SDK v1.5.2">
+  ### What's Changed
+
+  * Update `node:timers/promises` import for CF workers/bun/deno by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/520](https://github.com/restatedev/sdk-typescript/pull/520)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.5.2)
+</Update>
+
+<Update label="2025-04-09" description="TypeScript SDK v1.5.1">
+  * Update shared core (#518) (b76fbc1)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.5.1)
+</Update>
+
+<Update label="2025-04-09" description="TypeScript SDK v1.5.0">
+  We are pleased to announce the release of the TypeScript SDK, in combination with Restate 1.3.
+  Check out the announcement blog post for more details about Restate 1.3 and the new SDK features: [https://restate.dev/blog/announcing-restate-1.3/](https://restate.dev/blog/announcing-restate-1.3/)
+
+  Checkout the docs and examples to learn about the latest SDK features:
+  [https://docs.restate.dev/category/typescript-sdk/](https://docs.restate.dev/category/typescript-sdk/)
+
+  Changelog:
+
+  * Update versions matrix (f2758f5)
+  * Fix propagation of error when creating the VM. This prevents the runtime from detecting a protocol version violation, thus not showing the nice error message. (#516) (4392b59)
+  * Fix messy logging with context.run (#515) (fe3aa20)
+  * Failing to deserialize should return 400 error (#514) (b333438)
+  * Remove restate-sdk-zod from the examples (#513) (9519add)
+  * Empty input still parsed by zod in ZodSerde (#512) (bdce768)
+  * Add zod dependency to the examples (#511) (6d30a56)
+  * Use the host AbortSignal if provided (#509) (016dc59)
+  * Add abort controller signal for efficient resource cleanup (#507) (bde4ffc)
+  * Add CombineablePromise.map (#506) (ca12811)
+  * Add CLA automation (#505) (ac215af)
+  * Support TState in handler annotations (#504) (8f27716)
+  * Simplify the type inference around rpc handlers (9c16132)
+  * Add zod module (#502) (5cacb0e)
+  * Enforce type checks when specifying serde (#501) (267a23b)
+  * Add optional jsonSchema field to Serde (#500) (f717281)
+  * Add an optional input/output json schema for handlers (#499) (6295e8e)
+  * Add documentations and metadata to discovery (#498) (423190a)
+  * Expose invocation id of a call (#496) (cdd2a32)
+  * Make sure identity is checked before /discovery and /invoke, but after /health (#497) (1f40f4f)
+  * Update test suite to 3.0 (#495) (a863d64)
+  * Bump to protocol V5 (#494) (82d62cb)
+  * Remove usages of Uint8Array for input parameters and replace them with Vec\<u8> (#493) (383cb1b)
+  * Update README.md (9012e8f)
+  * Handle logging strange behaviours (#492) (87b9539)
+  * Remove ServiceBundle API, old custom logger API, old lambda handler API, old input/output serializer/deserializers (#491) (b6991c9)
+  * Add /health endpoint (#490) (81a409f)
+  * Update compat matrix (6ed4cef)
+  * Bump shared core and use new rust version (#488) (3f12bc4)
+  * \[verification] Remove the verification GHA from this repo (#487) (637842b)
+  * \[tests] Publish a test-services docker image (#486) (7e7f904)
+  * \[verification] Limit the number of concurrent invocations (#485) (7acf752)
+  * Service Protocol V4 (#477) (c3a94f1)
+  * \[verification] Align to the latest configuration layout (#484) (57a595a)
+  * \[verification] Add additional nightly verification test (#483) (6631f5e)
+  * \[verification] Update the env parameters to the latest runtime version (#482) (e5b8959)
+  * \[verification] Reduce the number of the generated tests (#481) (72c1b78)
+  * Configure embedded metadata store on all Restate nodes (38f4995)
+  * \[tests] Use the correct advertised\_address (#480) (85cac82)
+  * Set the correct env variable for the verification test (#479) (fbc3487)
+  * Use the latest verification runner (#478) (14a85f5)
+  * Use test suite 2.4 (#476) (fd7f318)
+  * Logging fixes (#475) (56ec4eb)
+  * add names to custom error classes (#471) (0eff045)
+  * \[example] Revert to a simple greeter (#474) (93eebb6)
+  * Add AbortSignal to the workflow attach/get output methods (#470) (0d00515)
+  * replace commands to run examples with working ones (#473) (eb4eb9f)
+  * Include request struct in logger context (#472) (29e808b)
+  * Add headers to CallOpts and SendOpts (c65f341)
+  * Re-think the logger API and internal propagation between shared core and SDK (#465) (189153b)
+  * Add support for headers for service-to-service calls (#467) (759b32b)
+  * Use only the first docker image name from load (c266c69)
+  * Set host in setup docker action (3573343)
+  * Enable containerd snapshotter (c7964fb)
+  * Fix testcontainers readme link (again) (#464) (0be1e26)
+  * Add testcontainers to the snapshot set step (764cbd9)
+  * Fix testcontainers readme link again (#463) (9a1763b)
+  * Fix testcontainers readme link (#462) (ad49711)
+  * Add testcontainers to package-lock.json (cac66ad)
+  * Add @restate/restate-sdk-testcontainers (#460) (58b69f6)
+  * Bring back logging for start/end invocation (#461) (4a74bb5)
+  * Add key to LoggerContext (#455) (f5a35da)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.5.0)
+</Update>
+
+<Update label="2024-10-21" description="TypeScript SDK v1.4.0">
+  **Important for existing users**: Upgrading to `1.4.0` requires re-discovery of the service, due to the updated service protocol. For more details, check out [https://docs.restate.dev/operate/registration](https://docs.restate.dev/operate/registration) and [https://docs.restate.dev/operate/upgrading#service-compatibility](https://docs.restate.dev/operate/upgrading#service-compatibility)
+
+  ### New features
+
+  * [`ctx.run` retry policy](https://restate.dev/blog/restate-1.1.0-and-multiple-sdks-released/#run-retry-policy) is now supported:
+
+  ```typescript theme={null}
+  await ctx.run("make a payment", async () => {
+    // Do payment
+  }, {
+    // Bound the run to be retried for a max number of attempts
+    maxRetryAttempts: 10
+  });
+  ```
+
+  * Add options in ingress client to accept `timeout` or `signal` (#451)
+
+  ### Notable changes
+
+  * Minimum Restate version is `>= 1.1`
+  * **Breaking:** Cloudflare workers now MUST use the module `restate-sdk-cloudflare-workers`, rather than `restate-sdk`. The module is identical to `restate-sdk`, except some patches required to use the SDK on cloudflare workers.
+
+  ### Full changelog
+
+  * Add options in ingress client to accept `timeout` or `signal` (#451) (3e7e7f5)
+  * Add 1.4 in compatibility matrix (#450) (d59dba7)
+  * Add run retry feature (#448) (ebcf898)
+  * Remove e2e repo tests (#449) (677d892)
+  * Require triple equals via eslint (#447) (5451ca5)
+  * Avoid null coercion to undefined (#446) (0cac0a2)
+  * Build test services Docker image (#444) (fd92190)
+  * \[e2e] Add verification runner (#443) (2492321)
+  * Add nightly verification test GHA workflow (#442) (adb64d9)
+  * Add the implementation of the e2e interpreter/helper services (#441) (1c88738)
+  * Improve errors, propagating the error code (#440) (9d9254a)
+  * Bump to test suite 2.1 (#439) (61e60c1)
+  * Use request identity verification from shared core (#438) (e4fe954)
+  * Fix cloudflare workers (#437) (1b13f15)
+  * New core (#435) (df7f511)
+  * Normalise incoming paths before checking them against signature (#434) (9c73979)
+  * Added release note for SDK typescript and latest runtime release. (#433) (479936f)
+  * Improve type inference for workflows defied from an interface (#432) (e7d271c)
+  * Update compatibility matrix (e931fd8)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.4.0)
+</Update>
+
+<Update label="2024-10-14" description="TypeScript SDK v1.3.3">
+  * Avoid null coercion to undefined in serde implementation [https://github.com/restatedev/sdk-typescript/pull/446](https://github.com/restatedev/sdk-typescript/pull/446)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.3.3)
+</Update>
+
+<Update label="2024-10-04" description="TypeScript SDK v1.3.2">
+  * Normalise incoming paths before checking them against signature (#434) (9c73979)
+  * Added release note for SDK typescript and latest runtime release. (#433) (479936f)
+  * Improve type inference for workflows defied from an interface (#432) (e7d271c)
+  * Update compatibility matrix (e931fd8)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.3.2)
+</Update>
+
+<Update label="2024-09-09" description="TypeScript SDK v1.3.1">
+  * Request body that fail de-serialization cause TerminalError (#429) (29f56a3)
+  * Fix required node version (#426) (492ce1e)
+  * Fix CI building (#425) (0e5126f)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.3.1)
+</Update>
+
+<Update label="2024-08-28" description="TypeScript SDK v1.3.0">
+  ### New features
+
+  * It is now possible to plug custom ser/de in many places, by implementing the `Serde` interface. The `Serde` interface is accepted in all the APIs where the SDK needs to perform serialization/deserializaiton, including the handlers input/output, the clients, state access methods, `run`, `awakeables` and `promises`. For more details on the usage, see [https://docs.restate.dev/develop/ts/serialization/](https://docs.restate.dev/develop/ts/serialization/)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.3.0)
+</Update>
+
+<Update label="2024-08-09" description="TypeScript SDK v1.2.1">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.2.1)
+</Update>
+
+<Update label="2024-08-08" description="TypeScript SDK v1.2.0">
+  ### What's Changed
+
+  * Make it possible to get extra args provided to functional handlers by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/409](https://github.com/restatedev/sdk-typescript/pull/409)
+  * Fix replaying detection in logger.ts by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/411](https://github.com/restatedev/sdk-typescript/pull/411)
+  * Move the e2e tests to a separate package by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/413](https://github.com/restatedev/sdk-typescript/pull/413)
+  * Add KillTest e2e by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/414](https://github.com/restatedev/sdk-typescript/pull/414)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.2.0)
+</Update>
+
+<Update label="2024-07-19" description="TypeScript SDK v1.1.2">
+  Bug fix:
+
+  * \[workflow] Pass JSON deserializer in workflowClient() (#408) (4d25f6c)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.1.2)
+</Update>
+
+<Update label="2024-07-16" description="TypeScript SDK v1.1.1">
+  * Fix service handler options propagation (#405) (f89e2f7)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.1.1)
+</Update>
+
+<Update label="2024-07-15" description="TypeScript SDK v1.1.0">
+  **New features:**
+
+  * \[client] Add 'raw' opt/sendOpt to skip JSON serde (#404) (3a866f9)
+  * Custom logger support (#400) (abdd44d)
+  * It is now possible to provide some type information when accessing Object/Workflow state (#401) (59b2047)
+
+  **Other changes:**
+
+  * ctx.invoke/invokeOneWay now accept a serialization and deserialization function. (#402) (dc5d77a)
+  * Remove remaining usages of lambdaHandler() by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/392](https://github.com/restatedev/sdk-typescript/pull/392)
+  * Avoid double warn re request signatures by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/393](https://github.com/restatedev/sdk-typescript/pull/393)
+  * Expose HttpCallError in restate-sdk-clients by @mupperton in [https://github.com/restatedev/sdk-typescript/pull/395](https://github.com/restatedev/sdk-typescript/pull/395)
+  * Unify everything under GenericHandler using web-streams by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/394](https://github.com/restatedev/sdk-typescript/pull/394)
+  * Unify bidi and request response code paths by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/397](https://github.com/restatedev/sdk-typescript/pull/397)
+  * Use tsx in examples repo by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/398](https://github.com/restatedev/sdk-typescript/pull/398)
+
+  Thanks to everyone providing feedback and contributing to the project! We're very grateful for that and we look forward to more!
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.1.0)
+</Update>
+
+<Update label="2024-06-21" description="TypeScript SDK v1.0.1">
+  This release adds ESM support, as well as a new importable component `fetch` (`import * as restate from "@restatedev/restate-sdk/fetch"`) which enable usage from FaaS platforms like Cloudflare without having http2 in the import tree. There is also a new `lambda` component, but the old way of calling `lambdaHandler()` continues to work (but is deprecated).
+
+  * Update package-lock.json (f25a587)
+  * Ensure that we resolve completepromise messages on replay (#391) (7baefdb)
+  * Update, don't upsert, snapshot version (#390) (af04789)
+  * Replace the Cloudflare specific APIs with a generic handler (#389) (6420002)
+  * Use typesVersions workaround to support node10 resolution (#388) (db490de)
+  * Fix cloudflare worker exported types (#387) (825672f)
+  * Bump braces from 3.0.2 to 3.0.3 (#377) (92fd192)
+  * Convert to ESM modules (#386) (5841ebe)
+  * Add import linter (#385) (6c24f48)
+  * Update typescript (#384) (d80a1a6)
+  * Use .js extensions everywhere (#383) (3ef2418)
+  * Remove erroneous sdk-ingress dir (995483e)
+  * Use eslint to require import and export type statements (#382) (1308750)
+  * Use type-aware eslint (#381) (dfb1b82)
+  * Revert "Use eslint to require import and export type statements (#379)" (#380) (a0381c2)
+  * Use eslint to require import and export type statements (#379) (d46f4dd)
+  * Move to vitest (#378) (568d942)
+  * Run prettier (bf40623)
+  * Add seperate Lambda component and deprecate lambdaHandler() (#376) (042625a)
+  * Refactor endpoint/handlers (#374) (514a167)
+  * Denodeify (#375) (dcb7dba)
+  * Prepare for a quarantined http2 module (#373) (7f93b65)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.0.1)
+</Update>
+
+<Update label="2024-06-07" description="TypeScript SDK v1.0.0">
+  We're happy to announce that Restate has reached the 1.0 milestone!
+
+  Check the [Restate 1.0](https://github.com/restatedev/restate/releases/tag/v1.0.0) release for more details.
+
+  ### Workflow API
+
+  We have introduced a new API to simplify building workflows, check out the documentation: [https://docs.restate.dev/develop/ts/workflows](https://docs.restate.dev/develop/ts/workflows)
+
+  ### Shared handlers for Virtual Objects
+
+  You can now define shared handlers on virtual objects, check out the documentation: [https://docs.restate.dev/develop/ts/overview#virtual-objects](https://docs.restate.dev/develop/ts/overview#virtual-objects)
+
+  ### What's Changed
+
+  * \[api] Add shared handlers by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/344](https://github.com/restatedev/sdk-typescript/pull/344)
+  * Support custom/raw input output serializers by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/345](https://github.com/restatedev/sdk-typescript/pull/345)
+  * \[workflow] Various adjustments to the workflow overly impl by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/346](https://github.com/restatedev/sdk-typescript/pull/346)
+  * Extract core common types into restate-sdk-core package by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/347](https://github.com/restatedev/sdk-typescript/pull/347)
+  * \[ci] Add restate-core into the GH by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/348](https://github.com/restatedev/sdk-typescript/pull/348)
+  * Add restate-sdk-core to tsconfig by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/349](https://github.com/restatedev/sdk-typescript/pull/349)
+  * Fix ObjectSharedHandler definition by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/350](https://github.com/restatedev/sdk-typescript/pull/350)
+  * Ensure restate.handler methods return functions by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/351](https://github.com/restatedev/sdk-typescript/pull/351)
+  * Ensure more restate.handler methods return functions by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/352](https://github.com/restatedev/sdk-typescript/pull/352)
+  * \[context] Add attemptHeaders to ctx.request() by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/354](https://github.com/restatedev/sdk-typescript/pull/354)
+  * Add service discovery and service protocol checks  by @tillrohrmann in [https://github.com/restatedev/sdk-typescript/pull/357](https://github.com/restatedev/sdk-typescript/pull/357)
+  * WIP workflow v2 by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/355](https://github.com/restatedev/sdk-typescript/pull/355)
+  * \[workflow] Support resolving durable promises during recovery by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/358](https://github.com/restatedev/sdk-typescript/pull/358)
+  * \[examples] Restructure the examples by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/359](https://github.com/restatedev/sdk-typescript/pull/359)
+  * \[clients] Use the new delay ingress format by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/360](https://github.com/restatedev/sdk-typescript/pull/360)
+  * \[clients] Add status field for /send by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/361](https://github.com/restatedev/sdk-typescript/pull/361)
+  * Simplify definitions by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/362](https://github.com/restatedev/sdk-typescript/pull/362)
+  * \[workflow] Adapt DurablePromise type by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/363](https://github.com/restatedev/sdk-typescript/pull/363)
+  * \[client] Implement .result(sendResponse) by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/364](https://github.com/restatedev/sdk-typescript/pull/364)
+  * \[clients] A Send is only attachable when an idempotencyKey is used by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/365](https://github.com/restatedev/sdk-typescript/pull/365)
+  * \[ingress] Don't set content Type for empty body by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/366](https://github.com/restatedev/sdk-typescript/pull/366)
+  * \[workflow] add a context workflowSendClient by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/367](https://github.com/restatedev/sdk-typescript/pull/367)
+  * \[logging] Use INFO for lifecycle events by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/368](https://github.com/restatedev/sdk-typescript/pull/368)
+  * Make failure to serialize/deserialize JSON a TerminalError by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/369](https://github.com/restatedev/sdk-typescript/pull/369)
+  * Add basic TSDocs by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/370](https://github.com/restatedev/sdk-typescript/pull/370)
+  * READMEs for 1.0 release by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/372](https://github.com/restatedev/sdk-typescript/pull/372)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v1.0.0)
+</Update>
+
+<Update label="2024-05-03" description="TypeScript SDK v0.9.2">
+  * Avoid transform after invoke, which appears to break CombineablePromise (#340) (81888ce)
+  * Fix a warning about ?? (#341) (46d2ec9)
+  * \[clients] Add an example of calling via an interface (#342) (ddc01a7)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.9.2)
+</Update>
+
+<Update label="2024-04-29" description="TypeScript SDK v0.9.1">
+  * Trying out release-it plugins (5d00392)
+  * Log errors on warning level (#338) (32a2c67)
+  * Update workflow dependencies (7b61ed4)
+  * Add README for each package (#336) (63c013b)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.9.1)
+</Update>
+
+<Update label="2024-04-25" description="TypeScript SDK v0.9.0">
+  This release features a completely overhauled development experience. We suggest checking out the [new documentation](https://docs.restate.dev/develop/ts/overview) for more details and the [new examples](https://github.com/restatedev/examples).
+
+  ### What's Changed
+
+  * Fix lambda context propagation by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/269](https://github.com/restatedev/sdk-typescript/pull/269)
+  * Remove gRPC from the public API by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/270](https://github.com/restatedev/sdk-typescript/pull/270)
+  * Allow type narrowing on the service/object path when redeclared by @mupperton in [https://github.com/restatedev/sdk-typescript/pull/272](https://github.com/restatedev/sdk-typescript/pull/272)
+  * Catch send/send delayed failed promises by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/273](https://github.com/restatedev/sdk-typescript/pull/273)
+  * Add a .catch() for the dangling promises by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/274](https://github.com/restatedev/sdk-typescript/pull/274)
+  * Remove the ServiceApi and ObjectApi abstractions by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/275](https://github.com/restatedev/sdk-typescript/pull/275)
+  * Changes in input/output messages by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/279](https://github.com/restatedev/sdk-typescript/pull/279)
+  * Switch to HTTP based error codes by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/281](https://github.com/restatedev/sdk-typescript/pull/281)
+  * Add ingress client  by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/282](https://github.com/restatedev/sdk-typescript/pull/282)
+  * Expose the original Request by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/283](https://github.com/restatedev/sdk-typescript/pull/283)
+  * \[ingress] Add resolve/reject awakeables by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/284](https://github.com/restatedev/sdk-typescript/pull/284)
+  * \[protocol] Use protobuf-es by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/285](https://github.com/restatedev/sdk-typescript/pull/285)
+  * Add context.date  by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/288](https://github.com/restatedev/sdk-typescript/pull/288)
+  * Remove the retry policy in sideEffect by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/287](https://github.com/restatedev/sdk-typescript/pull/287)
+  * Update to the latest service-protocol version by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/289](https://github.com/restatedev/sdk-typescript/pull/289)
+  * Make sure to bind the handler function to the handlers object by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/291](https://github.com/restatedev/sdk-typescript/pull/291)
+  * API iteration by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/290](https://github.com/restatedev/sdk-typescript/pull/290)
+  * Fix definition typo by @mupperton in [https://github.com/restatedev/sdk-typescript/pull/294](https://github.com/restatedev/sdk-typescript/pull/294)
+  * Return unawaited promises - minor perf improvement by @mupperton in [https://github.com/restatedev/sdk-typescript/pull/295](https://github.com/restatedev/sdk-typescript/pull/295)
+  * \[endpoint] Return a promise that resolves/reject on listen(). by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/296](https://github.com/restatedev/sdk-typescript/pull/296)
+  * Align side effects by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/297](https://github.com/restatedev/sdk-typescript/pull/297)
+  * Unify send and send-delayed by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/298](https://github.com/restatedev/sdk-typescript/pull/298)
+  * \[ingress] SendClient now returns a Promise of an invocationId by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/299](https://github.com/restatedev/sdk-typescript/pull/299)
+  * \[ingress] Remove retention header by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/300](https://github.com/restatedev/sdk-typescript/pull/300)
+  * Rename sideEffect to run() by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/301](https://github.com/restatedev/sdk-typescript/pull/301)
+  * \[context] Use function overloading for ctx.run() by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/304](https://github.com/restatedev/sdk-typescript/pull/304)
+  * Request identity v1 implementation by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/303](https://github.com/restatedev/sdk-typescript/pull/303)
+  * \[ingress] Support the new delay ingress format by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/305](https://github.com/restatedev/sdk-typescript/pull/305)
+  * \[workspaces] Move to workspaces by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/306](https://github.com/restatedev/sdk-typescript/pull/306)
+  * Update restate-sdk tsconfig.json to use the root tsconfig by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/307](https://github.com/restatedev/sdk-typescript/pull/307)
+  * Add RESTATE\_LOGGING env variable to control the amount of logging by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/310](https://github.com/restatedev/sdk-typescript/pull/310)
+  * Move ingress into it's own module by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/311](https://github.com/restatedev/sdk-typescript/pull/311)
+  * \[ingress] Remove unnecessary dependency by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/312](https://github.com/restatedev/sdk-typescript/pull/312)
+  * \[context] Make ctx.key a property instead of a function by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/313](https://github.com/restatedev/sdk-typescript/pull/313)
+  * \[protocol] Use the SideEffectMessage from the protocol by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/317](https://github.com/restatedev/sdk-typescript/pull/317)
+  * Augment the protocol ErrorMessage with additional journal context by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/318](https://github.com/restatedev/sdk-typescript/pull/318)
+  * \[protocol] Add x-restate-server header by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/319](https://github.com/restatedev/sdk-typescript/pull/319)
+  * Denodeify by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/321](https://github.com/restatedev/sdk-typescript/pull/321)
+  * \[context] Remove the internal marker from the API surface by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/322](https://github.com/restatedev/sdk-typescript/pull/322)
+  * \[ingress] Rename restate-sdk-ingress -> restate-sdk-clients by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/323](https://github.com/restatedev/sdk-typescript/pull/323)
+  * \[examples] Remove examples by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/324](https://github.com/restatedev/sdk-typescript/pull/324)
+  * \[examples] Add back the examples by @igalshilman in [https://github.com/restatedev/sdk-typescript/pull/325](https://github.com/restatedev/sdk-typescript/pull/325)
+  * Renamings by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/326](https://github.com/restatedev/sdk-typescript/pull/326)
+  * Fix dev snapshots release process by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/327](https://github.com/restatedev/sdk-typescript/pull/327)
+  * Fix TSDocs and README by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/330](https://github.com/restatedev/sdk-typescript/pull/330)
+  * Fix debug level by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/333](https://github.com/restatedev/sdk-typescript/pull/333)
+
+  ### New Contributors
+
+  * @mupperton made their first contribution in [https://github.com/restatedev/sdk-typescript/pull/272](https://github.com/restatedev/sdk-typescript/pull/272)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.9.0)
+</Update>
+
+<Update label="2024-03-04" description="TypeScript SDK v0.8.1">
+  * Fix lambda context propagation (#269) (2d91a6a)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.8.1)
+</Update>
+
+<Update label="2024-03-01" description="TypeScript SDK v0.8.0">
+  * DurablePromise#reject and Export TimeoutError (#268) (59dff97)
+  * Add src/ directory to the restate-sdk package (1a5e235)
+  * Some feedback about workflow api (#261) (04dd951)
+  * Use .endpoint() in the examples/ (ac43e6c)
+  * Remove old API (ffce6ee)
+  * Introduce new endpoint() API (8b48e49)
+  * Bump protocol version (dde607a)
+  * Context interface rework (#257) (d17655b)
+  * Add new ctx methods (5a69ec6)
+  * Add a temporary comment about running the workflow example (ad1f1fd)
+  * Clean up workflows and simplify some names (eb4bd4f)
+  * Set retention to one week for now (09412fd)
+  * Restructure external clients and add comments (b67fcac)
+  * Use ServiceBundle for nicer registration. (877e66d)
+  * Export workflows in pubic API (a41d78b)
+  * Temporarily remove methods for message subscription (01ab378)
+  * Rename client to workflow\_client (21d1d01)
+  * Add license headers to new files (a3ab41a)
+  * First draft of workflow API (c1aaa6f)
+  * Add `ctx.stateKeys()` (#256) (9aab80d)
+  * Add `ctx.clearAll()` (#253) (d2494af)
+  * Check protocol version (#250) (a0d271d)
+  * Some sanity checking for service names. Rejects empty strings and strings containing a slash '/'. (7651249)
+  * Make service registration extensible. (6cdb3fd)
+  * Update copyright header for 2024 (c48f9bf)
+  * Adjust example scripts in package.json to   - use less verbose logging by default   - avoid respawn, since they don't exit (9bd4a07)
+  * Structure package.json by nodejs property ordering conventions. (c44372b)
+  * Upgrade minimum node version and node types (78b1a78)
+  * Add ability to pass cause to TerminalError (b33a8dd)
+  * Clean up utility examples in the SDK (e858218)
+  * Fix .vscode profile files (1a110cb)
+  * Fix format checking and linting during builds (#241) (e4f6e95)
+  * Fix bug wrt suspension in CombineablePromise (#247) (9844cad)
+  * Properly export 'Rand' and 'RestateGrpcChannel' in the public API. (36d9bc3)
+  * Export CombineablePromise in the public api (#246) (caeefcf)
+  * `Client` returns `CombineablePromise` (#237) (33ad948)
+  * Introduce orTimeout(millis) API, to easily combine a CombineablePromise with a sleep to implement timeouts. (#234) (56a00bf)
+  * Deterministic promise combinators (#231) (309ccc9)
+  * Remove redundant buf setup action. (9e0be25)
+  * Properly pass RetrySettings parameter in the functional rpc API. (a747319)
+  * Introduce ctx.console to provide logging utilities (#233) (63017c8)
+  * Awakeable identifiers following the new ID scheme (#238) (5245539)
+  * Update README.md (766a642)
+  * Add guard for RestateContext.sideEffect await (#227) (66e82fe)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.8.0)
+</Update>
+
+<Update label="2024-01-12" description="TypeScript SDK v0.7.0">
+  * Service endpoint -> Deployment (#212) (bd64480)
+  * \[WIP] Allow printing stacktrace when invocations finish with an error (#226) (0d4d58a)
+  * Server API ergonomics (#221) (31e2c9e)
+  * Minor logging changes (#225) (799761a)
+  * Remove cause from TerminalError, as it's not supported by the protocol (#224) (68f58bf)
+  * Fix missing undefined check (#223) (50f1e5e)
+  * Introduce EndMessage (#216) (a5c8aaf)
+  * Add failure variant for GetState, PollInputStream and SleepEntryMessage (1785bd4)
+  * Convert rpc handler responses into a JSON-safe 'any' type (#203) (a687a91)
+  * Use the new REQUIRES\_ACK flag and the EntryAckMessage (#195) (ae50697)
+  * Use BufferedConnection in the http\_connection (a18b44c)
+  * Add documentation to update buf.lock (c3d84ac)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.7.0)
+</Update>
+
+<Update label="2023-12-13" description="TypeScript SDK v0.6.0">
+  ### What's Changed
+
+  * Update buf mod by @slinkydeveloper in [https://github.com/restatedev/sdk-typescript/pull/205](https://github.com/restatedev/sdk-typescript/pull/205)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.6.0)
+</Update>
+
+<Update label="2023-12-12" description="TypeScript SDK v0.5.2">
+  ### What's Changed
+
+  * fix: readme typo by @transitive-bullshit in [https://github.com/restatedev/sdk-typescript/pull/194](https://github.com/restatedev/sdk-typescript/pull/194)
+  * Ship all grpc error codes by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/200](https://github.com/restatedev/sdk-typescript/pull/200)
+
+  ### New Contributors
+
+  * @transitive-bullshit made their first contribution in [https://github.com/restatedev/sdk-typescript/pull/194](https://github.com/restatedev/sdk-typescript/pull/194)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.5.2)
+</Update>
+
+<Update label="2023-11-28" description="TypeScript SDK v0.5.1">
+  * Ensure retryable Lambda errors are correctly sent to the runtime (#191) (2a71c75)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.5.1)
+</Update>
+
+<Update label="2023-11-21" description="TypeScript SDK v0.5.0">
+  ### What's Changed
+
+  * Bump @babel/traverse from 7.21.5 to 7.23.3 by @dependabot in [https://github.com/restatedev/sdk-typescript/pull/185](https://github.com/restatedev/sdk-typescript/pull/185)
+  * Add deterministic random functions by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/181](https://github.com/restatedev/sdk-typescript/pull/181)
+  * Support already completed journals in lambda handlers by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/189](https://github.com/restatedev/sdk-typescript/pull/189)
+  * Move to xorshiro for rand generation by @jackkleeman in [https://github.com/restatedev/sdk-typescript/pull/190](https://github.com/restatedev/sdk-typescript/pull/190)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.5.0)
+</Update>
+
+<Update label="2023-11-18" description="TypeScript SDK v0.4.1">
+  * Avoid global dyn rpc descriptor (#178) (d7d5949)
+  * Expose the ability to invoke grpc services from handler services, and viceversa. (#176) (7e505d9)
+  * Refactor APIs to be a bit more explicit. (#174) (011c802)
+  * Disable suspensions in Embedded handler (#172) (a477be4)
+  * Move to npm public package (19c0979)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.4.1)
+</Update>
+
+<Update label="2023-10-24" description="TypeScript SDK v0.4.0">
+  ### Breaking changes
+
+  * Now when using `listen()` the default port is `9080` instead of `8080`. Check [https://github.com/restatedev/restate-dist/releases/tag/v0.4.0](https://github.com/restatedev/restate-dist/releases/tag/v0.4.0) for more details.
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.4.0)
+</Update>
+
+<Update label="2023-09-26" description="TypeScript SDK v0.3.2">
+  * Schedule suspensions only when the promises are awaited (then-ed) (6af64b9)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.3.2)
+</Update>
+
+<Update label="2023-09-22" description="TypeScript SDK v0.3.1">
+  * Fix type inference of KeyedEventHandler wrongly identifies keyed handlers (67019c5)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.3.1)
+</Update>
+
+<Update label="2023-09-21" description="TypeScript SDK v0.3.0">
+  * Support for Kafka event handlers (0b19442)
+  * Support binding gRPC services that are defined as object literals. (08458c0)
+  * Partial state flag (#160) (bee23ae)
+  * Fix typos in in-code docs (#163) (411be14)
+  * Update release instructions (75961af)
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.3.0)
+</Update>
+
+<Update label="2023-08-23" description="TypeScript SDK v0.2.0">
+  * **Important**: We have changed the **versioning scheme** to align it with the Restate runtime. Old releases should be considered "yanked" and we will soon **remove them** from the package registry.
+  * **Important**: This release is not compatible with Restate runtime \< 0.2.0
+  * **Breaking**: Redesigned the awakeable APIs
+  * **New feature**: Now you can send awakeable rejections
+  * Slight changes to the logging format
+  * We now publish development versions of the SDK. You can install them with `npm install @restatedev/restate-sdk@dev`, but please note that we don't provide any compatibility guarantees for those.
+
+  [View on GitHub](https://github.com/restatedev/sdk-typescript/releases/tag/v0.2.0)
+</Update>

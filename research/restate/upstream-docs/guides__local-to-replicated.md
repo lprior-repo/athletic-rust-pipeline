@@ -1,0 +1,148 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Scaling to Multi-Node Deployments
+
+> Migrate a single node to a multi-node cluster.
+
+This guide shows how to scale an existing single-node deployment to a multi-node cluster. It assumes you have a running single-node Restate server that is running the replicated loglet and replicated metadata server, which are enabled by default in Restate >= v1.4.0.
+
+Older versions of Restate ({'<='} v1.3.2) use the local loglet and local metadata server by default. The local loglet and local metadata server are suitable for development and single-node deployments. We recommend using the replicated loglet and replicated metadata server to ensure high availability and durability. They are also required for multi-node clusters. Starting with version v1.4.0, existing logs and metadata will be automatically migrated to the replicated equivalents.
+
+<Steps>
+  <Step title="Upgrade to latest Restate version">
+    Make sure to [upgrade](/server/upgrading) your single-node deployment to the latest Restate version before adding more nodes.
+  </Step>
+
+  <Step title="Verify that node is running the replicated metadata server">
+    Check that the metadata service is running using the [`restatectl`](/server/clusters#controlling-clusters-with-restatectl) tool.
+
+    ```shell theme={null}
+    restatectl metadata-server list-servers
+    ```
+
+    You should see a single member node providing metadata service:
+
+    ```
+    Metadata service
+    NODE  STATUS  VERSION  LEADER  MEMBERS  APPLIED  COMMITTED  TERM  LOG-LENGTH  SNAP-INDEX  SNAP-SIZE
+    N1    Member  v1       N1      [N1]     2        2          2     1           1           6.7 KiB
+    ```
+
+    If you see the node as unreachable with an error reason of "Unimplemented", verify that you are running the latest version. The older local metadata server is no longer supported in Restate v1.4.0 and newer.
+  </Step>
+
+  <Step title="Verify that node is running the replicated loglet">
+    The default configuration is cluster-ready. However, if you have explicitly specified server roles in configuration, you should make sure these include the `log-server` role. Similarly, if you have explicitly set the loglet provider to be `local`, you should remove this. While the local loglet is still supported, the default type is `replicated` starting from v1.4.0. If you have a configuration file and would like to make these settings explicit, it should contain the following:
+
+    ```toml restate.toml theme={null}
+    roles = [
+    "worker",
+    "admin",
+    "metadata-server",
+    "log-server",                # needed for replicated loglet
+    "http-ingress",
+    ]
+
+    [bifrost]
+    default-provider = "replicated"  # default
+    ```
+
+    Confirm that cluster configuration uses the replicated loglet as the default log provider.
+
+    ```shell theme={null}
+    restatectl config get
+    ```
+
+    In the default configuration you should expect to see:
+
+    ```
+    ⚙️ Cluster Configuration
+    ├ Number of partitions: 24
+    ├ Partition replication: {node: 1}
+    └ Logs Provider: replicated
+    ├ Log replication: {node: 1}
+    └ Nodeset size: 1
+    ```
+
+    You can confirm that the type of logs in use by the server using the command:
+
+    ```shell theme={null}
+    restatectl logs list
+    ```
+
+    If you have enabled the `log-server` role and left the default provider unset (or set it to `replicated`), and still do not see the cluster configuration you can change the cluster log configuration using:
+
+    ```shell theme={null}
+    restatectl config set --log-provider replicated --log-replication 1
+    ```
+
+    This command sets the default log provider to `replicated` with a default replication of `1`.
+    As long as you have a single-node deployment, you must set the replication to `1`.
+    Otherwise, the server will become unavailable because it cannot provision the new log segments.
+  </Step>
+
+  <Step title="Configure snapshot repository">
+    If you plan to extend your single-node deployment to a multi-node deployment, you also need to [configure the snapshot repository](/server/snapshots#configuring-automatic-snapshotting).
+    This allows new nodes to join the cluster by restoring the latest snapshot.
+
+    ```toml restate.toml theme={null}
+    [worker.snapshots]
+    destination = "s3://snapshots-bucket/cluster-prefix"
+    ```
+  </Step>
+
+  <Step title="Create snapshots to allow other nodes to join">
+    For other nodes to join, you need to snapshot every partition because the local loglet is not accessible from other nodes.
+    Run the following command to create a snapshot for each partition.
+
+    ```shell theme={null}
+    restatectl snapshots create --trim-log
+    ```
+
+    Note that this also instructs Restate to trim the logs after partition state has been successfully published to the snapshot repository. This ensures that the logs no longer reference historic local loglets that may have existed on the original node.
+  </Step>
+
+  <Step title="Turn a single-node into a multi-node deployment">
+    To add more nodes to your cluster, you need to start new Restate servers with the same `cluster-name` and configure the metadata client with the address of at least one existing node running the metadata-server role.
+
+    ```toml restate.toml theme={null}
+    cluster-name = "my-cluster"
+    auto-provision = false
+
+    [metadata-client]
+    # Point to at least one peer running metadata-server role
+    addresses = ["http://metadata-node.cluster:5122"]
+    ```
+
+    <Info>
+      Nodes automatically include themselves if they run the metadata-server role, so you only need to list peer addresses.
+    </Info>
+
+    <Warning>
+      Newly added nodes must set `auto-provision = false` to prevent them from starting a new cluster instead of joining the existing one.
+    </Warning>
+
+    Metadata is critical to the operation of your cluster and we recommend that you run the `metadata-server` role on additional nodes. Make the cluster metadata service resilient to node failures by specifying the full list of metadata servers on all cluster nodes.
+
+    ```toml restate.toml theme={null}
+    [metadata-client]
+    addresses = ["http://node1.cluster:5122", "http://node2.cluster:5122", "http://node3.cluster:5122"]
+    ```
+  </Step>
+
+  <Step title="Verify that your cluster consists of multiple nodes">
+    If everything is set up correctly, you should see the new nodes in the cluster status.
+
+    ```shell theme={null}
+    restatectl status
+    ```
+  </Step>
+
+  <Step title="🎉 Congratulations, you migrated your single-node deployment to a multi-node deployment!" />
+</Steps>
+
+## See also
+
+* Try [growing your cluster](/server/clusters#growing-clusters) to tolerate node failures

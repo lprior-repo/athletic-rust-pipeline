@@ -1,0 +1,3501 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Restate Server Configuration
+
+> Reference of the configuration options for Restate Server.
+
+## Default configuration
+
+The following is the default configuration. It does not include all possible configuration options, since some can be conflicting. Take a look at the configuration reference below for a full list of options.
+
+Note that configuration defaults might change across server releases, if you want to make sure you use stable values, use an explicit configuration file and pass the path via `--config-path=<PATH>` as described above.
+
+**Important changes in recent versions:**
+
+* Restate now listens on both TCP and Unix sockets by default (`listen-mode = "all"`). Unix sockets are created under `restate-data/*.sock`.
+* Advertised addresses are automatically detected based on your network configuration. You no longer need to explicitly set `advertised-address` for most deployments.
+* The `metadata-client.addresses` field is now optional for single-node setups.
+
+```toml restate.toml expandable {"CODE_LOAD::../docs/schemas/restate.toml"}  theme={null}
+roles = [
+    "http-ingress",
+    "admin",
+    "worker",
+    "log-server",
+    "metadata-server",
+]
+cluster-name = "localcluster"
+auto-provision = true
+default-num-partitions = 24
+default-replication = 1
+shutdown-timeout = "1m"
+tracing-filter = "info"
+log-filter = "warn,restate=info"
+log-format = "pretty"
+log-disable-ansi-codes = false
+disable-prometheus = false
+rocksdb-max-write-rate-per-second = "7.0 GiB"
+rocksdb-total-memory-size = "2.0 GiB"
+rocksdb-total-memtables-ratio = 0.85
+rocksdb-perf-level = "enable-count"
+metadata-update-interval = "10s"
+metadata-fetch-from-peer-timeout = "3s"
+initialization-timeout = "5m"
+disable-telemetry = false
+gossip-tick-interval = "100ms"
+gossip-failure-threshold = 10
+gossip-num-peers = 2
+gossip-fd-stability-threshold = 3
+gossip-suspect-interval = "5s"
+gossip-loneliness-threshold = 30
+gossip-extras-exchange-frequency = 10
+gossip-time-skew-threshold = "1s"
+hlc-max-drift = "5s"
+default-journal-retention = "1d"
+default-idempotency-retention = "1d"
+default-workflow-completion-retention = "1d"
+
+[metadata-client]
+type = "replicated"
+addresses = []
+connect-timeout = "3s"
+keep-alive-interval = "5s"
+keep-alive-timeout = "5s"
+
+[metadata-client.backoff-policy]
+type = "exponential"
+initial-interval = "100ms"
+factor = 1.4
+max-attempts = 10
+max-interval = "1s"
+
+[network-error-retry-policy]
+type = "exponential"
+initial-interval = "10ms"
+factor = 2.0
+max-attempts = 15
+max-interval = "5s"
+
+[default-retry-policy]
+initial-interval = "500ms"
+exponentiation-factor = 2.0
+max-attempts = 70
+on-max-attempts = "pause"
+max-interval = "1m"
+
+[worker]
+internal-queue-length = 1000
+cleanup-interval = "1h"
+max-command-batch-size = 32
+max-command-batch-bytes = "1.0 MiB"
+trim-delay-interval = "10m"
+data-service-memory-limit = "256.0 MiB"
+rule-book-poll-interval = "30s"
+self-proposal-queue-memory-limit = "64.0 MiB"
+
+[worker.storage]
+rocksdb-memory-ratio = 0.49
+rocksdb-disable-auto-memory-reclaimer = false
+rocksdb-max-sub-compactions = 1
+rocksdb-max-file-size = "64.0 MiB"
+rocksdb-writable-file-max-buffer-size = "1.0 MiB"
+rocksdb-l0-num-compaction-trigger = 2
+
+[worker.invoker]
+inactivity-timeout = "1m"
+abort-timeout = "10m"
+message-size-warning = "10.0 MiB"
+in-memory-queue-length-limit = 66049
+concurrent-invocations-limit = 1000
+memory-limit = "1.5 GiB"
+per-invocation-initial-memory = "32.0 KiB"
+http2-keep-alive-interval = "40s"
+http2-keep-alive-timeout = "20s"
+http2-keep-alive-jitter = 0.2
+connect-timeout = "10s"
+http2-streams-per-connection-limit = 128
+http2-idle-connection-timeout = "5m"
+http2-initial-stream-window-size = "2.0 MiB"
+http2-initial-connection-window-size = "5.0 MiB"
+http2-max-frame-size = "16.0 KiB"
+request-compression-threshold = "4.0 MiB"
+request-identity-expiration = "1m"
+max-awaited-future-depth = 1000
+
+[worker.snapshots]
+num-retained = 1
+enable-cleanup = true
+
+[worker.snapshots.object-store-retry-policy]
+type = "exponential"
+initial-interval = "100ms"
+factor = 2.0
+max-attempts = 10
+max-interval = "10s"
+
+[worker.shuffle]
+inflight-memory-budget = "10.0 MiB"
+request-batch-size = "50.0 KiB"
+
+[worker.shuffle.connection-retry-policy]
+type = "exponential"
+initial-interval = "250ms"
+factor = 2.0
+max-interval = "3s"
+
+[admin]
+heartbeat-interval = "1s 500ms"
+disable-web-ui = false
+disable-cluster-controller = false
+
+[admin.query-engine]
+memory-size = "1.0 GiB"
+
+[ingress]
+kafka-clusters = []
+
+[ingress.ingestion]
+inflight-memory-budget = "1.0 MiB"
+request-batch-size = "50.0 KiB"
+
+[ingress.ingestion.connection-retry-policy]
+type = "exponential"
+initial-interval = "250ms"
+factor = 2.0
+max-interval = "3s"
+
+[bifrost]
+default-provider = "replicated"
+seal-retry-interval = "2s"
+auto-recovery-interval = "15s"
+append-retry-min-interval = "10ms"
+append-retry-max-interval = "1s"
+record-cache-memory-size = "250.0 MiB"
+disable-auto-improvement = false
+
+[bifrost.local]
+rocksdb-memory-ratio = 0.5
+rocksdb-disable-wal = false
+rocksdb-disable-wal-fsync = false
+writer-batch-commit-count = 5000
+writer-batch-commit-duration = "0s"
+
+[bifrost.replicated-loglet]
+maximum-inflight-records = 1000
+rpc-timeout = "250ms..1m"
+store-timeout = "2s..1m"
+sequencer-inactivity-timeout = "15s"
+readahead-records = 20
+read-batch-size = "32.0 KiB"
+readahead-trigger-ratio = 0.5
+
+[bifrost.read-retry-policy]
+type = "exponential"
+initial-interval = "50ms"
+factor = 2.0
+max-attempts = 50
+max-interval = "1s"
+
+[metadata-server]
+request-queue-length = 32
+rocksdb-memory-ratio = 0.01
+raft-election-tick = 10
+raft-heartbeat-tick = 2
+raft-tick-interval = "100ms"
+status-update-interval = "5s"
+log-trim-threshold = 1000
+auto-join = true
+
+[networking]
+connect-timeout = "3s"
+handshake-timeout = "3s"
+http2-keep-alive-interval = "1s"
+http2-keep-alive-timeout = "3s"
+http2-adaptive-window = true
+disable-compression = false
+data-stream-window-size = "2.0 MiB"
+
+[networking.connect-retry-policy]
+type = "exponential"
+initial-interval = "250ms"
+factor = 2.0
+max-attempts = 10
+max-interval = "3s"
+
+[log-server]
+rocksdb-memory-ratio = 0.5
+rocksdb-disable-wal-fsync = false
+rocksdb-max-sub-compactions = 1
+rocksdb-enable-blob-separation = false
+rocksdb-max-file-size = "128.0 MiB"
+rocksdb-writable-file-max-buffer-size = "1.0 MiB"
+rocksdb-l0-num-compaction-trigger = 8
+rocksdb-partition-sst-by-log = true
+rocksdb-partition-sst-by-loglet = false
+```
+
+## Configuration Reference
+
+Each option shows its `toml:` key, the full path to write in your configuration file, and, for every option that has one, the `env:` [environment variable](/server/configuration#environment-variables) that overrides it.
+
+## General options
+
+Options set at the root of the configuration file, above any `[section]` header.
+
+<ResponseField name="advertised-address" type="string | null" post={['toml: advertised-address','env: RESTATE_ADVERTISED_ADDRESS']}>
+  Address that other nodes will use to connect to this service.
+
+  The full prefix that will be used to advertise this service publicly.
+  For example, if this is set to `https://my-host` then others will use this
+  as base URL to connect to this service.
+
+  If unset, the advertised address will be inferred from public address of this node
+  or it'll use the value supplied in `advertised-host` if set.
+
+  advertised address: An externally accessible URI address for tokio-console-server. This can be set to unix:restate-data/tokio.sock to advertise the automatically created unix-socket instead of using tcp if needed
+
+  Examples:
+  "http//127.0.0.1:6669/" or "[https://my-host/](https://my-host/)" or "unix:/data/restate-data/tokio.sock"
+</ResponseField>
+
+<ResponseField name="advertised-host" type="string | null" post={['toml: advertised-host','env: RESTATE_ADVERTISED_HOST']}>
+  Hostname to advertise for this service
+</ResponseField>
+
+<ResponseField name="auto-provision" type="boolean" post={['toml: auto-provision','env: RESTATE_AUTO_PROVISION']} default="true">
+  Auto cluster provisioning: If true, then this node is allowed to automatically provision as a new cluster.
+  This node *must* have an admin role and a new nodes configuration will be created that includes this node.
+
+  auto-provision is allowed by default in development mode and is disabled if restate-server runs with `--production` flag
+  to prevent cluster nodes from forming their own clusters, rather than forming a single cluster.
+
+  Use `restatectl` to provision the cluster/node if automatic provisioning is disabled.
+
+  This can also be explicitly disabled by setting this value to false.
+
+  Default: true
+</ResponseField>
+
+<ResponseField name="base-dir" type="string | null" post={['toml: base-dir','env: RESTATE_BASE_DIR']} default="null">
+  The working directory which this Restate node should use for relative paths. The default is
+  `restate-data` under the current working directory.
+</ResponseField>
+
+<ResponseField name="bind-address" type="string | null" post={['toml: bind-address','env: RESTATE_BIND_ADDRESS']}>
+  The combination of `bind-ip` and `bind-port` that will be used to bind
+
+  This has precedence over `bind-ip` and `bind-port`
+
+  Bind address: The local network address to bind on for tokio-console-server. This service uses default port 6669 and will create a unix-socket file at the data directory under the name `tokio.sock`
+
+  Examples:
+  "\[::]:6669" or "0.0.0.0:6669" or "127.0.0.1:6669"
+</ResponseField>
+
+<ResponseField name="bind-ip" type="string | null" post={['format: ip','toml: bind-ip','env: RESTATE_BIND_IP']}>
+  Local interface IP address to listen on
+</ResponseField>
+
+<ResponseField name="bind-port" type="integer | null" post={['format: uint16','maximum: 65535','toml: bind-port','env: RESTATE_BIND_PORT']}>
+  Network port to listen on
+</ResponseField>
+
+<ResponseField name="cluster-name" type="string" post={['toml: cluster-name','env: RESTATE_CLUSTER_NAME']} default="localcluster">
+  Cluster name: A unique identifier for the cluster. All nodes in the same cluster should
+  have the same.
+</ResponseField>
+
+<ResponseField name="default-idempotency-retention" type="string" post={['minLength: 1','toml: default-idempotency-retention','env: RESTATE_DEFAULT_IDEMPOTENCY_RETENTION']}>
+  Default idempotency retention for all invocations carrying an idempotency key.
+
+  This default is used when neither the service nor the handler configures an idempotency retention,
+  and can be overridden per service/handler using the respective SDK APIs.
+
+  Since v1.7.0
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="default-journal-retention" type="string" post={['minLength: 1','toml: default-journal-retention','env: RESTATE_DEFAULT_JOURNAL_RETENTION']}>
+  Default journal retention for all invocations. A value of `0` means no retention by default.
+
+  In production setups, it is advisable to disable default journal retention,
+  and configure journal retention per service using the respective SDK APIs.
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="default-num-partitions" type="integer" post={['format: uint16','maximum: 65535','toml: default-num-partitions','env: RESTATE_DEFAULT_NUM_PARTITIONS']} default="24">
+  Partitions: Number of partitions that will be provisioned during initial cluster provisioning.
+  partitions are the logical shards used to process messages.
+
+  Cannot be higher than `65535` (You should almost never need as many partitions anyway)
+
+  NOTE 1: This config entry only impacts the initial number of partitions, the
+  value of this entry is ignored for provisioned nodes/clusters.
+
+  Default: 24
+</ResponseField>
+
+<ResponseField name="default-replication" type="string" post={['toml: default-replication','env: RESTATE_DEFAULT_REPLICATION']} default="1">
+  Default replication factor: Configures the global default replication factor to be used by the the system.
+
+  Note that this value only impacts the cluster initial provisioning and will not be respected after
+  the cluster has been provisioned.
+
+  To update existing clusters use the `restatectl` utility.
+</ResponseField>
+
+<ResponseField name="default-thread-pool-size" type="integer | null" post={['format: uint32','toml: default-thread-pool-size','env: RESTATE_DEFAULT_THREAD_POOL_SIZE']} default="null">
+  Default async runtime thread pool: Size of the default thread pool used to perform internal tasks.
+  If not set, it defaults to the number of CPU cores.
+</ResponseField>
+
+<ResponseField name="default-thread-stack-size" type="string | null" post={['toml: default-thread-stack-size','env: RESTATE_DEFAULT_THREAD_STACK_SIZE']}>
+  Default async runtime thread stack size: Stack size of the worker threads of the default async runtime.
+  If not set, it defaults to tokio's default stack size.
+
+  Since v1.7.1
+</ResponseField>
+
+<ResponseField name="default-workflow-completion-retention" type="string" post={['minLength: 1','toml: default-workflow-completion-retention','env: RESTATE_DEFAULT_WORKFLOW_COMPLETION_RETENTION']}>
+  Default workflow completion retention for all workflow invocations.
+
+  This default is used when neither the workflow service nor the handler configures a workflow completion retention,
+  and can be overridden per service/handler using the respective SDK APIs.
+
+  Since v1.7.0
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="disable-config-sql-table" type="boolean" post={['toml: disable-config-sql-table','env: RESTATE_DISABLE_CONFIG_SQL_TABLE']}>
+  Disable the config table: Disables the `config` SQL table, which exposes the node's running
+  configuration via SQL queries.
+
+  Since v1.7.1
+</ResponseField>
+
+<ResponseField name="disable-prometheus" type="boolean" post={['toml: disable-prometheus','env: RESTATE_DISABLE_PROMETHEUS']} default="false">
+  Disable prometheus metric recording and reporting. Default is `false`.
+</ResponseField>
+
+<ResponseField name="disable-telemetry" type="boolean" post={['toml: disable-telemetry','env: RESTATE_DISABLE_TELEMETRY']} default="false">
+  Disable telemetry: Restate uses Scarf to collect anonymous usage data to help us understand how the software is being used.
+  You can set this flag to true to disable this collection. It can also be set with the environment variable DO\_NOT\_TRACK=1.
+</ResponseField>
+
+<ResponseField name="force-node-id" type="integer | null" post={['format: uint32','toml: force-node-id','env: RESTATE_FORCE_NODE_ID']} default="null">
+  If set, the node insists on acquiring this node ID.
+</ResponseField>
+
+<ResponseField name="gossip-extras-exchange-frequency" type="integer" post={['format: uint32','minimum: 1','toml: gossip-extras-exchange-frequency','env: RESTATE_GOSSIP_EXTRAS_EXCHANGE_FREQUENCY']} default="10">
+  Gossip extras exchange frequency: In addition to basic health/liveness information, the gossip protocol is used to exchange
+  extra information about the roles hosted by this node. For instance, which partitions are
+  currently running, their configuration versions, and the durable LSN of the corresponding
+  partition databases. This information is sent every Nth gossip message. This setting
+  controls the frequency of this exchange. For instance, `10` means that every 10th gossip
+  message will contain the extra information about.
+</ResponseField>
+
+<ResponseField name="gossip-failure-threshold" type="integer" post={['format: uint32','minimum: 1','toml: gossip-failure-threshold','env: RESTATE_GOSSIP_FAILURE_THRESHOLD']} default="10">
+  Gossip failure threshold: Specifies how many gossip intervals of inactivity need to pass before
+  considering a node as dead.
+</ResponseField>
+
+<ResponseField name="gossip-fd-stability-threshold" type="integer" post={['format: uint32','minimum: 1','toml: gossip-fd-stability-threshold','env: RESTATE_GOSSIP_FD_STABILITY_THRESHOLD']} default="3">
+  Gossips before failure detector is stable
+</ResponseField>
+
+<ResponseField name="gossip-loneliness-threshold" type="integer" post={['format: uint32','minimum: 1','toml: gossip-loneliness-threshold','env: RESTATE_GOSSIP_LONELINESS_THRESHOLD']} default="30">
+  Gossip loneliness threshold: How many intervals need to pass without receiving any gossip messages before considering
+  this node as potentially isolated/dead. This threshold is used in the case where the node
+  can still send gossip messages but did not receive any. This can rarely happen in
+  asymmetric network partitions.
+
+  In this case, the node will advertise itself as dead in the gossip messages it sends out.
+
+  Note: this threshold does not apply to a cluster that's configured with a single node.
+</ResponseField>
+
+<ResponseField name="gossip-num-peers" type="integer" post={['format: uint32','minimum: 1','toml: gossip-num-peers','env: RESTATE_GOSSIP_NUM_PEERS']} default="2">
+  Number of peers to gossip: On every gossip interval, how many peers each node attempts to gossip with. The default is
+  optimized for small clusters (less than 5 nodes). On larger clusters, if gossip overhead is noticeable,
+  consider reducing this value to 1.
+</ResponseField>
+
+<ResponseField name="gossip-suspect-interval" type="string" post={['minLength: 1','toml: gossip-suspect-interval','env: RESTATE_GOSSIP_SUSPECT_INTERVAL']} default="5s">
+  Suspect duration: How long to keep a node in a transient state (suspect) before marking it as available.
+  Larger values mean that the cluster is less prone to flaky nodes but extends the
+  time it takes for a node to participate.
+
+  A node becomes a suspect if it has been previously marked as dead for a given generation
+  number. If the node incremented its generation number, it will not be impacted by this
+  threshold.
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="gossip-tick-interval" type="string" post={['minLength: 1','toml: gossip-tick-interval','env: RESTATE_GOSSIP_TICK_INTERVAL']} default="100ms">
+  Gossip tick interval: The interval at which the failure detector will tick. Decrease this value for faster reaction
+  to node failures. Note, that every tick comes with an overhead.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="gossip-time-skew-threshold" type="string" post={['minLength: 1','toml: gossip-time-skew-threshold','env: RESTATE_GOSSIP_TIME_SKEW_THRESHOLD']} default="1s">
+  Gossips time skew threshold: The time skew is the maximum acceptable time difference between the local node and the time
+  reported by peers via gossip messages. The time skew is also used to ignore gossip messages
+  that are too old.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="hlc-max-drift" type="string" post={['minLength: 1','toml: hlc-max-drift','env: RESTATE_HLC_MAX_DRIFT']} default="0s">
+  HLC maximum drift: Restate uses an internal hybrid-logical-clock (HLC) to track causality between
+  different nodes in the cluster. This requires that the wall clock of all nodes
+  of the cluster to be synchronized (i.e. with NTP/PTP). This configuration option
+  allows you to configure the maximum allowed drift between nodes before the node
+  starts rejecting requests. The default value is `5000ms` which is sufficiently
+  large to cover the majority of cases.
+
+  However, cluster operators may prefer to reduce this value (e.g. to `1000ms`) if
+  they trust the clock synchronization between nodes to be reliable.
+
+  Setting this value to `0` disables the drift check entirely. This is not recommended
+  unless you are trying to recover a cluster from previous synchronization-related issues.
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="initialization-timeout" type="string" post={['minLength: 1','toml: initialization-timeout','env: RESTATE_INITIALIZATION_TIMEOUT']} default="5m">
+  Initialization timeout: The timeout until the node gives up joining a cluster and initializing itself.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="listen-mode" type="oneOf | null" post={['toml: listen-mode','env: RESTATE_LISTEN_MODE']}>
+  Listen on unix-sockets, TCP sockets, or both.
+
+  The default is to listen on both.
+
+  * `"unix"` : Exclusively listen on unix domain sockets
+
+  If set, all services will listen exclusively on unix sockets, each service
+  will create a socket file under the data directory.
+
+  * `"tcp"` : Exclusively listen on TCP sockets
+  * `"all"` : \[default] Listen on both Unix and TCP sockets
+</ResponseField>
+
+<ResponseField name="location" type="string" post={['toml: location','env: RESTATE_LOCATION']}>
+  Node Location: Setting the location allows Restate to form a tree-like cluster topology.
+  The value is written in the format of "region\[.zone]" to assign this node
+  to a specific region, or to a zone within a region.
+
+  The value of region and zone is arbitrary but whitespace and `.` are disallowed.
+
+  NOTE: It's *strongly* recommended to not change the node's location string after
+  its initial registration. Changing the location may result in data loss or data
+  inconsistency if `log-server` is enabled on this node.
+
+  When this value is not set, the node is considered to be in the *default* location.
+  The *default* location means that the node is not assigned to any specific region or zone.
+
+  Examples
+
+  * `us-west` -- the node is in the `us-west` region.
+  * `us-west.a1` -- the node is in the `us-west` region and in the `a1` zone.
+  * \`\` -- \[default] the node is in the default location
+</ResponseField>
+
+<ResponseField name="log-disable-ansi-codes" type="boolean" post={['toml: log-disable-ansi-codes','env: RESTATE_LOG_DISABLE_ANSI_CODES']} default="false">
+  Disable ANSI in log output: Disable ANSI terminal codes for logs. This is useful when the log collector doesn't support processing ANSI terminal codes.
+</ResponseField>
+
+<ResponseField name="log-filter" type="string" post={['toml: log-filter','env: RESTATE_LOG_FILTER']} default="warn,restate=info">
+  Logging Filter: Log filter configuration. Can be overridden by the `RUST_LOG` environment variable.
+  Check the [`RUST_LOG` documentation](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html) for more details how to configure it.
+</ResponseField>
+
+<ResponseField name="log-format" type="string" post={['toml: log-format','env: RESTATE_LOG_FORMAT']} default="pretty">
+  Logging format: Format to use when logging.
+
+  * `"pretty"` : Enables verbose logging. Not recommended in production.
+  * `"compact"` : Enables compact logging.
+  * `"json"` : Enables json logging. You can use a json log collector to ingest these logs and further process them.
+</ResponseField>
+
+<ResponseField name="max-idempotency-retention" type="string | null" post={['toml: max-idempotency-retention','env: RESTATE_MAX_IDEMPOTENCY_RETENTION']}>
+  Maximum idempotency retention duration that can be configured.
+  Applied when ingesting the invocation: values higher than this limit are clamped down to it.
+
+  Unset means no limit.
+
+  Since v1.7.0
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="max-journal-retention" type="string | null" post={['toml: max-journal-retention','env: RESTATE_MAX_JOURNAL_RETENTION']}>
+  Maximum journal retention duration that can be configured.
+  Applied when ingesting the invocation: values higher than this limit are clamped down to it.
+
+  Unset means no limit.
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="max-retry-policy-max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: max-retry-policy-max-attempts','env: RESTATE_MAX_RETRY_POLICY_MAX_ATTEMPTS']}>
+  Max configurable value for retry policy max attempts: Maximum max attempts configurable in an invocation retry policy.
+  When discovering a service deployment with configured retry policies, or when modifying the invocation retry policy using the Admin API, the given value will be clamped.
+
+  `None` means no limit, that is infinite retries is enabled.
+</ResponseField>
+
+<ResponseField name="max-workflow-completion-retention" type="string | null" post={['toml: max-workflow-completion-retention','env: RESTATE_MAX_WORKFLOW_COMPLETION_RETENTION']}>
+  Maximum workflow completion retention duration that can be configured.
+  Applied when ingesting the invocation: values higher than this limit are clamped down to it.
+
+  Unset means no limit.
+
+  Since v1.7.0
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="metadata-fetch-from-peer-timeout" type="string" post={['minLength: 1','toml: metadata-fetch-from-peer-timeout','env: RESTATE_METADATA_FETCH_FROM_PEER_TIMEOUT']} default="3s">
+  Timeout for metadata peer-to-peer fetching: When a node detects that a new metadata version exists, it'll attempt to fetch it from
+  its peers. After this timeout duration has passed, the node will attempt to fetch the
+  metadata from metadata store as well. This is to ensure that the nodes converge quickly
+  while reducing the load on the metadata store.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="metadata-update-interval" type="string" post={['minLength: 1','toml: metadata-update-interval','env: RESTATE_METADATA_UPDATE_INTERVAL']} default="10s">
+  Metadata update interval: The idle time after which the node will check for metadata updates from metadata store.
+  This helps the node detect if it has been operating with stale metadata for extended period
+  of time, primarily because it didn't interact with other peers in the cluster during that
+  period.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="node-name" type="string | null" post={['toml: node-name','env: RESTATE_NODE_NAME']} default="null">
+  Node Name: Unique name for this node in the cluster. The node must not change unless
+  it's started with empty local store. It defaults to the node's hostname.
+</ResponseField>
+
+<ResponseField name="rocksdb-block-size" type="string | null" post={['toml: rocksdb-block-size','env: RESTATE_ROCKSDB_BLOCK_SIZE']}>
+  RocksDB block size: Uncompressed block size
+
+  Default: 64KiB
+</ResponseField>
+
+<ResponseField name="rocksdb-compaction-readahead-size" type="string | null" post={['toml: rocksdb-compaction-readahead-size','env: RESTATE_ROCKSDB_COMPACTION_READAHEAD_SIZE']}>
+  RocksDB compaction readahead size in bytes: If non-zero, we perform bigger reads when doing compaction. If you're
+  running RocksDB on spinning disks, you should set this to at least 2MB.
+  That way RocksDB's compaction is doing sequential instead of random reads.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-direct-io-for-flush-and-compactions" type="boolean | null" post={['toml: rocksdb-disable-direct-io-for-flush-and-compactions','env: RESTATE_ROCKSDB_DISABLE_DIRECT_IO_FOR_FLUSH_AND_COMPACTIONS']}>
+  Disable Direct IO for flush and compactions: Use O\_DIRECT for writes in background flush and compactions.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-direct-io-for-reads" type="boolean | null" post={['toml: rocksdb-disable-direct-io-for-reads','env: RESTATE_ROCKSDB_DISABLE_DIRECT_IO_FOR_READS']}>
+  Disable Direct IO for reads: Files will be opened in "direct I/O" mode
+  which means that data r/w from the disk will not be cached or
+  buffered. The hardware buffer of the devices may however still
+  be used. Memory mapped files are not impacted by these parameters.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-l0-l1-compression" type="boolean | null" post={['toml: rocksdb-disable-l0-l1-compression','env: RESTATE_ROCKSDB_DISABLE_L0_L1_COMPRESSION']}>
+  Disable L0/L1 SST compression: When false (the default), L0 and L1 SST files are compressed with Lz4.
+  Higher levels (L2+) always use Zstd regardless of this setting.
+  Set to true to disable compression for L0/L1, which can improve write
+  throughput at the cost of higher disk usage since these files are
+  short-lived and frequently compacted.
+
+  Default: false (L0/L1 compression enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-statistics" type="boolean | null" post={['toml: rocksdb-disable-statistics','env: RESTATE_ROCKSDB_DISABLE_STATISTICS']}>
+  Disable rocksdb statistics collection
+
+  Default: False (statistics enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-wal-compression" type="boolean | null" post={['toml: rocksdb-disable-wal-compression','env: RESTATE_ROCKSDB_DISABLE_WAL_COMPRESSION']}>
+  Disable WAL compression: When false (the default), the Write-Ahead Log is compressed with Zstd.
+  Set to true to disable WAL compression. Only applies when WAL is enabled.
+
+  Default: false (WAL compression enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-high-priority-threads" type="integer | null" post={['format: uint32','minimum: 1','toml: rocksdb-high-priority-threads','env: RESTATE_ROCKSDB_HIGH_PRIORITY_THREADS']}>
+  Rocksdb High Priority Background Threads: The number of threads to reserve to high priority Rocksdb background tasks.
+
+  Defaults to 1/4 of the number of CPU cores.
+
+  Since v1.7.0 (renamed from `rocksdb-high-priority-bg-threads`)
+</ResponseField>
+
+<ResponseField name="rocksdb-log-keep-file-num" type="integer | null" post={['format: uint','toml: rocksdb-log-keep-file-num','env: RESTATE_ROCKSDB_LOG_KEEP_FILE_NUM']} default="null">
+  RocksDB log keep file num: Number of info LOG files to keep
+
+  Default: 1
+</ResponseField>
+
+<ResponseField name="rocksdb-log-level" type="string | null" post={['toml: rocksdb-log-level','env: RESTATE_ROCKSDB_LOG_LEVEL']} default="null">
+  RocksDB log level: Verbosity of the LOG.
+
+  Default: "error"
+</ResponseField>
+
+<ResponseField name="rocksdb-log-max-file-size" type="string | null" post={['toml: rocksdb-log-max-file-size','env: RESTATE_ROCKSDB_LOG_MAX_FILE_SIZE']} default="null">
+  RocksDB log max file size: Max size of info LOG file
+
+  Default: 64MB
+</ResponseField>
+
+<ResponseField name="rocksdb-low-priority-threads" type="integer | null" post={['format: uint32','minimum: 1','toml: rocksdb-low-priority-threads','env: RESTATE_ROCKSDB_LOW_PRIORITY_THREADS']}>
+  Rocksdb Low Priority Background Threads: The number of threads to reserve to lower priority Rocksdb background tasks.
+
+  Defaults to the remaining CPU cores not used by high-priority rocksdb threads
+
+  Since v1.7.0 (renamed from `rocksdb-bg-threads`)
+</ResponseField>
+
+<ResponseField name="rocksdb-max-write-rate-per-second" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: rocksdb-max-write-rate-per-second','env: RESTATE_ROCKSDB_MAX_WRITE_RATE_PER_SECOND']} default="7.0 GiB">
+  Rocksdb global disk write rate limiter: This lets Rocksdb calibrates its IO operations to make the best use out of
+  the available IO bandwidth of the underlying storage device. Rocksdb will
+  auto-tune the rate according to the actual background IO workload and will
+  use this value as an upper bound.
+
+  You can use a tool like `fio` to measure the actual IO bandwidth of your storage
+  device (use block size of 64k, direct IO, and iodepth of 32 across 4 jobs to get a
+  reasonable estimate).
+
+  For instance, consider the output of the following command:
+
+  ```text theme={null}
+  fio --name=c --directory=/restate-data --rw=write --bs=1m --size=8g --numjobs=4 --direct=1 --group_reporting
+  ...
+    WRITE: bw=601MiB/s (630MB/s), 601MiB/s-601MiB/s (630MB/s-630MB/s), io=32.0GiB (34.4GB), run=54560-54560msec
+  ```
+
+  The default value assumes a fast NVMe with bandwidth of 7GiB (per second).
+</ResponseField>
+
+<ResponseField name="rocksdb-perf-level" type="string" post={['toml: rocksdb-perf-level','env: RESTATE_ROCKSDB_PERF_LEVEL']} default="enable-count">
+  Rocksdb performance statistics level: Defines the level of PerfContext used internally by rocksdb. Default is `enable-count`
+  which should be sufficient for most users. Note that higher levels incur a CPU cost and
+  might slow down the critical path.
+
+  * `"disable"` : Disable perf stats
+  * `"enable-count"` : Enables only count stats
+  * `"enable-time-except-for-mutex"` : Count stats and enable time stats except for mutexes
+  * `"enable-time-and-c-p-u-time-except-for-mutex"` : Other than time, also measure CPU time counters. Still don't measure
+    time (neither wall time nor CPU time) for mutexes
+  * `"enable-time"` : Enables count and time stats
+</ResponseField>
+
+<ResponseField name="rocksdb-statistics-level" type="oneOf | null" post={['toml: rocksdb-statistics-level','env: RESTATE_ROCKSDB_STATISTICS_LEVEL']}>
+  RocksDB statistics level: StatsLevel can be used to reduce statistics overhead by skipping certain
+  types of stats in the stats collection process.
+
+  Default: "except-detailed-timers"
+
+  * `"disable-all"` : Disable all metrics
+  * `"except-histogram-or-timers"` : Disable timer stats, and skip histogram stats
+  * `"except-timers"` : Skip timer stats
+  * `"except-detailed-timers"` : Collect all stats except time inside mutex lock AND time spent on
+    compression.
+  * `"except-time-for-mutex"` : Collect all stats except the counters requiring to get time inside the
+    mutex lock.
+  * `"all"` : Collect all stats, including measuring duration of mutex operations.
+    If getting time is expensive on the platform to run, it can
+    reduce scalability to more threads, especially for writes.
+</ResponseField>
+
+<ResponseField name="rocksdb-total-memory-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: rocksdb-total-memory-size','env: RESTATE_ROCKSDB_TOTAL_MEMORY_SIZE']} default="2.0 GiB">
+  Total memory limit for rocksdb caches and memtables.: This includes memory for uncompressed block cache and all memtables by all open databases.
+
+  The minimum supported is 256 MiB. Any value below this will be sanitized automatically to 256 MiB.
+</ResponseField>
+
+<ResponseField name="rocksdb-total-memtables-ratio" type="number" post={['format: float','toml: rocksdb-total-memtables-ratio','env: RESTATE_ROCKSDB_TOTAL_MEMTABLES_RATIO']} default="0.8500000238418579">
+  Rocksdb total memtable size ratio: The memory size used across all memtables (ratio between 0.1 to 1.0). This
+  limits how much memory memtables can eat up from the value in rocksdb-total-memory-limit.
+
+  The remaining memory will be dedicated to the block cache.
+
+  This value will be sanitized to 1.0 if outside the valid bounds.
+</ResponseField>
+
+<ResponseField name="roles" type="array" post={['toml: roles','env: RESTATE_ROLES']} default="[&#x22;http-ingress&#x22;,&#x22;admin&#x22;,&#x22;worker&#x22;,&#x22;log-server&#x22;,&#x22;metadata-server&#x22;]">
+  Defines the roles which this Restate node should run, by default the node
+  starts with all roles.
+
+  * `"http-ingress"` : Serves HTTP ingress requests
+  * `"admin"` : Admin runs cluster controller and user-facing admin APIs
+  * `"worker"` : A worker runs partition processor (journal, state, and drives invocations)
+  * `"log-server"` : Serves a log-server for replicated loglets
+  * `"metadata-server"` : Serves the metadata store
+</ResponseField>
+
+<ResponseField name="shutdown-timeout" type="string" post={['minLength: 1','toml: shutdown-timeout','env: RESTATE_SHUTDOWN_TIMEOUT']} default="1m">
+  Shutdown grace timeout: This timeout is used when shutting down the various Restate components to drain all the internal queues.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="storage-high-priority-bg-threads" type="integer | null" post={['format: uint','minimum: 1','toml: storage-high-priority-bg-threads','env: RESTATE_STORAGE_HIGH_PRIORITY_BG_THREADS']}>
+  Storage high priority thread pool
+
+  This configures the restate-managed storage thread pool for performing
+  high-priority or latency-sensitive storage tasks when the IO operation cannot
+  be performed on in-memory caches.
+</ResponseField>
+
+<ResponseField name="storage-low-priority-bg-threads" type="integer | null" post={['format: uint','minimum: 1','toml: storage-low-priority-bg-threads','env: RESTATE_STORAGE_LOW_PRIORITY_BG_THREADS']}>
+  Storage low priority thread pool
+
+  This configures the restate-managed storage thread pool for performing
+  low-priority or latency-insensitive storage tasks.
+</ResponseField>
+
+<ResponseField name="tokio-console-bind-address" type="string" post={['toml: tokio-console-bind-address','env: RESTATE_TOKIO_CONSOLE_BIND_ADDRESS']}>
+  Address to bind for the tokio-console tracing subscriber. If unset and restate-server is
+  built with tokio-console support, it'll listen on `[::]:6669`.
+</ResponseField>
+
+<ResponseField name="tracing-endpoint" type="string | null" post={['toml: tracing-endpoint','env: RESTATE_TRACING_ENDPOINT']}>
+  Tracing Endpoint: This is a shortcut to set both \[`Self::tracing_runtime_endpoint`], and \[`Self::tracing_services_endpoint`].
+
+  Specify the tracing endpoint to send runtime traces to.
+  Traces will be exported using [OTLP gRPC](https://opentelemetry.io/docs/specs/otlp/#otlpgrpc)
+  through [opentelemetry\_otlp](https://docs.rs/opentelemetry-otlp/0.12.0/opentelemetry_otlp/).
+
+  To configure the sampling, please refer to the [opentelemetry autoconfigure docs](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md#sampler).
+</ResponseField>
+
+<ResponseField name="tracing-filter" type="string" required post={['toml: tracing-filter','env: RESTATE_TRACING_FILTER']}>
+  Tracing Filter: Distributed tracing exporter filter.
+  Check the [`RUST_LOG` documentation](https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html) for more details how to configure it.
+</ResponseField>
+
+<ResponseField name="tracing-headers" type="object" post={['toml: tracing-headers','env: RESTATE_TRACING_HEADERS']}>
+  Additional tracing headers: Specify additional headers you want the system to send to the tracing endpoint (e.g.
+  authentication headers).
+</ResponseField>
+
+<ResponseField name="tracing-json-path" type="string | null" post={['toml: tracing-json-path','env: RESTATE_TRACING_JSON_PATH']}>
+  Distributed Tracing JSON Export Path: If set, an exporter will be configured to write traces to files using the Jaeger JSON format.
+  Each trace file will start with the `trace` prefix.
+
+  If unset, no traces will be written to file.
+
+  It can be used to export traces in a structured format without configuring a Jaeger agent.
+
+  To inspect the traces, open the Jaeger UI and use the Upload JSON feature to load and inspect them.
+</ResponseField>
+
+<ResponseField name="tracing-runtime-endpoint" type="string | null" post={['toml: tracing-runtime-endpoint','env: RESTATE_TRACING_RUNTIME_ENDPOINT']}>
+  Runtime Tracing Endpoint: Overrides \[`Self::tracing_endpoint`] for runtime traces
+
+  Specify the tracing endpoint to send runtime traces to.
+  Traces will be exported using [OTLP gRPC](https://opentelemetry.io/docs/specs/otlp/#otlpgrpc)
+  through [opentelemetry\_otlp](https://docs.rs/opentelemetry-otlp/0.12.0/opentelemetry_otlp/).
+
+  To configure the sampling, please refer to the [opentelemetry autoconfigure docs](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md#sampler).
+</ResponseField>
+
+<ResponseField name="tracing-services-endpoint" type="string | null" post={['toml: tracing-services-endpoint','env: RESTATE_TRACING_SERVICES_ENDPOINT']}>
+  Services Tracing Endpoint: Overrides \[`Self::tracing_endpoint`] for services traces
+
+  Specify the tracing endpoint to send services traces to.
+  Traces will be exported using [OTLP gRPC](https://opentelemetry.io/docs/specs/otlp/#otlpgrpc)
+  through [opentelemetry\_otlp](https://docs.rs/opentelemetry-otlp/0.12.0/opentelemetry_otlp/).
+
+  To configure the sampling, please refer to the [opentelemetry autoconfigure docs](https://github.com/open-telemetry/opentelemetry-java/blob/main/sdk-extensions/autoconfigure/README.md#sampler).
+</ResponseField>
+
+<ResponseField name="use-random-ports" type="boolean | null" post={['toml: use-random-ports','env: RESTATE_USE_RANDOM_PORTS']}>
+  Use random ports instead of the default port
+</ResponseField>
+
+## admin
+
+Admin server options
+
+Configuration file section `[admin]`, environment variable prefix `RESTATE_ADMIN__`.
+
+<ResponseField name="advertised-address" type="string | null" post={['toml: admin.advertised-address','env: RESTATE_ADMIN__ADVERTISED_ADDRESS']}>
+  Address that other nodes will use to connect to this service.
+
+  The full prefix that will be used to advertise this service publicly.
+  For example, if this is set to `https://my-host` then others will use this
+  as base URL to connect to this service.
+
+  If unset, the advertised address will be inferred from public address of this node
+  or it'll use the value supplied in `advertised-host` if set.
+
+  advertised address: An externally accessible URI address for admin-api-server. This can be set to unix:restate-data/admin.sock to advertise the automatically created unix-socket instead of using tcp if needed
+
+  Examples:
+  "http//127.0.0.1:9070/" or "[https://my-host/](https://my-host/)" or "unix:/data/restate-data/admin.sock"
+</ResponseField>
+
+<ResponseField name="advertised-admin-endpoint" type="string | null" post={['toml: admin.advertised-admin-endpoint','env: RESTATE_ADMIN__ADVERTISED_ADMIN_ENDPOINT']}>
+  Advertised Admin endpoint: Optional advertised Admin API endpoint.
+  \[Deprecated] Use `advertised-address` instead.
+
+  advertised address: An externally accessible URI address for admin-api-server. This can be set to unix:restate-data/admin.sock to advertise the automatically created unix-socket instead of using tcp if needed
+
+  Examples:
+  "http//127.0.0.1:9070/" or "[https://my-host/](https://my-host/)" or "unix:/data/restate-data/admin.sock"
+</ResponseField>
+
+<ResponseField name="advertised-host" type="string | null" post={['toml: admin.advertised-host','env: RESTATE_ADMIN__ADVERTISED_HOST']}>
+  Hostname to advertise for this service
+</ResponseField>
+
+<ResponseField name="bind-address" type="string | null" post={['toml: admin.bind-address','env: RESTATE_ADMIN__BIND_ADDRESS']}>
+  The combination of `bind-ip` and `bind-port` that will be used to bind
+
+  This has precedence over `bind-ip` and `bind-port`
+
+  Bind address: The local network address to bind on for admin-api-server. This service uses default port 9070 and will create a unix-socket file at the data directory under the name `admin.sock`
+
+  Examples:
+  "\[::]:9070" or "0.0.0.0:9070" or "127.0.0.1:9070"
+</ResponseField>
+
+<ResponseField name="bind-ip" type="string | null" post={['format: ip','toml: admin.bind-ip','env: RESTATE_ADMIN__BIND_IP']}>
+  Local interface IP address to listen on
+</ResponseField>
+
+<ResponseField name="bind-port" type="integer | null" post={['format: uint16','maximum: 65535','toml: admin.bind-port','env: RESTATE_ADMIN__BIND_PORT']}>
+  Network port to listen on
+</ResponseField>
+
+<ResponseField name="concurrent-api-requests-limit" type="integer | null" post={['format: uint','minimum: 1','toml: admin.concurrent-api-requests-limit','env: RESTATE_ADMIN__CONCURRENT_API_REQUESTS_LIMIT']} default="null">
+  Concurrency limit for the Admin APIs. Default is unlimited.
+</ResponseField>
+
+<ResponseField name="deployment-routing-headers" type="array" post={['toml: admin.deployment-routing-headers','env: RESTATE_ADMIN__DEPLOYMENT_ROUTING_HEADERS']}>
+  Deployment routing headers: List of header names considered routing headers.
+
+  These will be used during deployment creation to distinguish between an already existing deployment and a new deployment.
+</ResponseField>
+
+<ResponseField name="disable-cluster-controller" type="boolean" post={['toml: admin.disable-cluster-controller','env: RESTATE_ADMIN__DISABLE_CLUSTER_CONTROLLER']} default="false" />
+
+<ResponseField name="disable-web-ui" type="boolean" post={['toml: admin.disable-web-ui','env: RESTATE_ADMIN__DISABLE_WEB_UI']} default="false">
+  Disable serving the Restate Web UI on the admin port. Default is `false`.
+</ResponseField>
+
+<ResponseField name="heartbeat-interval" type="string" post={['minLength: 1','toml: admin.heartbeat-interval','env: RESTATE_ADMIN__HEARTBEAT_INTERVAL']} default="1s 500ms">
+  Controller heartbeats: Controls the interval at which cluster controller polls nodes of the cluster.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="listen-mode" type="oneOf | null" post={['toml: admin.listen-mode','env: RESTATE_ADMIN__LISTEN_MODE']}>
+  Listen on unix-sockets, TCP sockets, or both.
+
+  The default is to listen on both.
+
+  * `"unix"` : Exclusively listen on unix domain sockets
+
+  If set, all services will listen exclusively on unix sockets, each service
+  will create a socket file under the data directory.
+
+  * `"tcp"` : Exclusively listen on TCP sockets
+  * `"all"` : \[default] Listen on both Unix and TCP sockets
+</ResponseField>
+
+<ResponseField name="use-random-ports" type="boolean | null" post={['toml: admin.use-random-ports','env: RESTATE_ADMIN__USE_RANDOM_PORTS']}>
+  Use random ports instead of the default port
+</ResponseField>
+
+### admin.query-engine
+
+Storage query engine options
+
+Configuration file section `[admin.query-engine]`, environment variable prefix `RESTATE_ADMIN__QUERY_ENGINE__`.
+
+<ResponseField name="memory-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: admin.query-engine.memory-size','env: RESTATE_ADMIN__QUERY_ENGINE__MEMORY_SIZE']} default="1.0 GiB">
+  Memory size limit: The total memory in bytes that can be used to preform sql queries
+</ResponseField>
+
+<ResponseField name="query-parallelism" type="integer | null" post={['format: uint','minimum: 1','toml: admin.query-engine.query-parallelism','env: RESTATE_ADMIN__QUERY_ENGINE__QUERY_PARALLELISM']} default="null">
+  Default query parallelism: The degree of parallelism to use for query execution (Defaults to the number of available cores).
+</ResponseField>
+
+<ResponseField name="tmp-dir" type="string | null" post={['toml: admin.query-engine.tmp-dir','env: RESTATE_ADMIN__QUERY_ENGINE__TMP_DIR']} default="null">
+  Temp folder to use for spill: The path to spill to
+</ResponseField>
+
+#### admin.query-engine.rate-limiting
+
+Query rate limiting: Per-node rate limiting options for datafusion query execution. When exceeded,
+the query will fail with TOO\_MANY\_REQUESTS. If unset, no rate limiting is applied.
+
+Since v1.7.1
+
+Configuration file section `[admin.query-engine.rate-limiting]`, environment variable prefix `RESTATE_ADMIN__QUERY_ENGINE__RATE_LIMITING__`.
+
+<ResponseField name="capacity" type="integer | null" post={['format: uint32','minimum: 1','toml: admin.query-engine.rate-limiting.capacity','env: RESTATE_ADMIN__QUERY_ENGINE__RATE_LIMITING__CAPACITY']}>
+  Burst capacity: The maximum number of tokens the bucket can hold.
+  Default to the rate value if not specified.
+</ResponseField>
+
+<ResponseField name="rate" type="string" required post={['toml: admin.query-engine.rate-limiting.rate','env: RESTATE_ADMIN__QUERY_ENGINE__RATE_LIMITING__RATE']}>
+  Refill rate: The rate at which the tokens are replenished.
+
+  Syntax: `&lt;rate&gt;/&lt;unit&gt;` where `&lt;unit&gt;` is `s|sec|second`, `m|min|minute`, or `h|hr|hour`.
+  unit defaults to per second if not specified.
+</ResponseField>
+
+## bifrost
+
+Bifrost options
+
+Configuration file section `[bifrost]`, environment variable prefix `RESTATE_BIFROST__`.
+
+<ResponseField name="append-retry-max-interval" type="string" post={['minLength: 1','toml: bifrost.append-retry-max-interval','env: RESTATE_BIFROST__APPEND_RETRY_MAX_INTERVAL']} default="1s">
+  Append retry maximum interval: Maximum retry duration used by the exponential backoff mechanism for bifrost appends.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="append-retry-min-interval" type="string" post={['minLength: 1','toml: bifrost.append-retry-min-interval','env: RESTATE_BIFROST__APPEND_RETRY_MIN_INTERVAL']} default="10ms">
+  Append retry minimum interval: Minimum retry duration used by the exponential backoff mechanism for bifrost appends.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="auto-recovery-interval" type="string" post={['minLength: 1','toml: bifrost.auto-recovery-interval','env: RESTATE_BIFROST__AUTO_RECOVERY_INTERVAL']} default="15s">
+  Auto recovery threshold: Time interval after which bifrost's auto-recovery mechanism will kick in. This
+  is triggered in scenarios where the control plane took too long to complete loglet
+  reconfigurations.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="default-provider" type="string" post={['toml: bifrost.default-provider','env: RESTATE_BIFROST__DEFAULT_PROVIDER']} default="replicated">
+  The default kind of loglet to be used: Default: Replicated
+
+  An enum with the list of supported loglet providers.
+
+  * `"local"` : A local rocksdb-backed loglet.
+  * `"replicated"` : Replicated loglets are restate's native log replication system. This requires
+    `log-server` role to run on enough nodes in the cluster.
+</ResponseField>
+
+<ResponseField name="disable-auto-improvement" type="string" post={['toml: bifrost.disable-auto-improvement','env: RESTATE_BIFROST__DISABLE_AUTO_IMPROVEMENT']} default="false">
+  Disable Automatic Improvement: When enabled, automatic improvement periodically checks with the loglet provider
+  if the loglet configuration can be improved by performing a reconfiguration.
+
+  This allows the log to pick up replication property changes, apply better placement
+  of replicas, or for other reasons.
+</ResponseField>
+
+<ResponseField name="local" type="string" post={['toml: bifrost.local','env: RESTATE_BIFROST__LOCAL']}>
+  Configuration of local loglet provider
+</ResponseField>
+
+<ResponseField name="record-cache-memory-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: bifrost.record-cache-memory-size','env: RESTATE_BIFROST__RECORD_CACHE_MEMORY_SIZE']} default="250.0 MiB">
+  In-memory RecordCache memory limit: Optional size of record cache in bytes.
+  If set to 0, record cache will be disabled.
+  Defaults: 250MB
+</ResponseField>
+
+<ResponseField name="seal-retry-interval" type="string" post={['minLength: 1','toml: bifrost.seal-retry-interval','env: RESTATE_BIFROST__SEAL_RETRY_INTERVAL']} default="2s">
+  Seal retry interval: Interval to wait between retries of loglet seal failures
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+### bifrost.read-retry-policy
+
+Read retry policy: Retry policy to use when bifrost waits for reconfiguration to complete during
+read operations
+
+Configuration file section `[bifrost.read-retry-policy]`, environment variable prefix `RESTATE_BIFROST__READ_RETRY_POLICY__`.
+
+<ResponseField name="type" type="string" required post={['toml: bifrost.read-retry-policy.type','env: RESTATE_BIFROST__READ_RETRY_POLICY__TYPE']}>
+  Selects which shape this section takes. Each value accepts its own
+  additional options, listed under it below.
+
+  * `"none"` : No retry strategy.
+  * `"fixed-delay"` : Retry with a fixed delay strategy.
+  * `"exponential"` : Retry with an exponential strategy. The next retry is computed as `min(last_retry_interval * factor, max_interval)`.
+</ResponseField>
+
+Additional options for each `type`:
+
+<Tabs>
+  <Tab title="type = &#x22;fixed-delay&#x22;">
+    <ResponseField name="interval" type="string" required post={['minLength: 1','toml: bifrost.read-retry-policy.interval','env: RESTATE_BIFROST__READ_RETRY_POLICY__INTERVAL']}>
+      Interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: bifrost.read-retry-policy.max-attempts','env: RESTATE_BIFROST__READ_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+  </Tab>
+
+  <Tab title="type = &#x22;exponential&#x22;">
+    <ResponseField name="factor" type="number" required post={['format: float','toml: bifrost.read-retry-policy.factor','env: RESTATE_BIFROST__READ_RETRY_POLICY__FACTOR']}>
+      Factor: The factor to use to compute the next retry attempt.
+    </ResponseField>
+
+    <ResponseField name="initial-interval" type="string" required post={['minLength: 1','toml: bifrost.read-retry-policy.initial-interval','env: RESTATE_BIFROST__READ_RETRY_POLICY__INITIAL_INTERVAL']}>
+      Initial Interval: Initial interval for the first retry attempt.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: bifrost.read-retry-policy.max-attempts','env: RESTATE_BIFROST__READ_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+
+    <ResponseField name="max-interval" type="string | null" post={['toml: bifrost.read-retry-policy.max-interval','env: RESTATE_BIFROST__READ_RETRY_POLICY__MAX_INTERVAL']}>
+      Max interval: Maximum interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+  </Tab>
+</Tabs>
+
+### bifrost.replicated-loglet
+
+Configuration of replicated loglet provider
+
+Configuration file section `[bifrost.replicated-loglet]`, environment variable prefix `RESTATE_BIFROST__REPLICATED_LOGLET__`.
+
+<ResponseField name="log-server-rpc-timeout" type="string | null" post={['toml: bifrost.replicated-loglet.log-server-rpc-timeout','env: RESTATE_BIFROST__REPLICATED_LOGLET__LOG_SERVER_RPC_TIMEOUT']}>
+  Log Server RPC timeout
+
+  Timeout waiting on log server response
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="maximum-inflight-records" type="integer" post={['format: uint','minimum: 1','toml: bifrost.replicated-loglet.maximum-inflight-records','env: RESTATE_BIFROST__REPLICATED_LOGLET__MAXIMUM_INFLIGHT_RECORDS']} default="1000">
+  Maximum number of inflight records sequencer can accept
+
+  Once this maximum is hit, sequencer will induce back pressure
+  on clients. This controls the total number of records regardless of how many batches.
+
+  Note that this will be increased to fit the biggest batch of records being enqueued.
+</ResponseField>
+
+<ResponseField name="read-batch-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: bifrost.replicated-loglet.read-batch-size','env: RESTATE_BIFROST__REPLICATED_LOGLET__READ_BATCH_SIZE']} default="32.0 KiB">
+  Limits memory per remote batch read: When reading from a log-server, the server stops reading if the next record will tip over the
+  total number of bytes allowed in this configuration option.
+
+  Note the limit is not strict and the server will always allow at least a single record to be
+  read even if that record exceeds the stated budget.
+</ResponseField>
+
+<ResponseField name="readahead-records" type="integer" post={['format: uint16','minimum: 1','maximum: 65535','toml: bifrost.replicated-loglet.readahead-records','env: RESTATE_BIFROST__REPLICATED_LOGLET__READAHEAD_RECORDS']} default="20">
+  Maximum number of records to prefetch from log servers
+
+  The number of records bifrost will attempt to prefetch from replicated loglet's log-servers
+  for every loglet reader (e.g. partition processor). Note that this mainly impacts readers
+  that are not co-located with the loglet sequencer (i.e. partition processor followers).
+</ResponseField>
+
+<ResponseField name="readahead-trigger-ratio" type="number" post={['format: float','toml: bifrost.replicated-loglet.readahead-trigger-ratio','env: RESTATE_BIFROST__REPLICATED_LOGLET__READAHEAD_TRIGGER_RATIO']} default="0.5">
+  Trigger to prefetch more records
+
+  When read-ahead is used (readahead-records), this value (percentage in float) will determine when
+  readers should trigger a prefetch for another batch to fill up the buffer. For instance, if
+  this value is 0.3, then bifrost will trigger a prefetch when 30% or more of the read-ahead
+  slots become available (e.g. partition processor consumed records and freed up enough slots).
+
+  The higher the value is, the longer bifrost will wait before it triggers the next fetch, potentially
+  fetching more records as a result.
+
+  To illustrate, if readahead-records is set to 100 and readahead-trigger-ratio is 1.0. Then
+  bifrost will prefetch up to 100 records from log-servers and will not trigger the next
+  prefetch unless the consumer consumes 100% of this buffer. This means that bifrost will
+  read in batches but will not do while the consumer is still reading the previous batch.
+
+  Value must be between 0 and 1. It will be clamped at `1.0`.
+</ResponseField>
+
+<ResponseField name="rpc-timeout" type="string" post={['pattern: ^\\d+(\\.\\d+)?\\s*(ns|us|ms|s|m|h|d|nanoseconds?|microseconds?|milliseconds?|seconds?|minutes?|hours?|days?)\\s*\\.\\.\\s*\\d+(\\.\\d+)?\\s*(ns|us|ms|s|m|h|d|nanoseconds?|microseconds?|milliseconds?|seconds?|minutes?|hours?|days?)$','toml: bifrost.replicated-loglet.rpc-timeout','env: RESTATE_BIFROST__REPLICATED_LOGLET__RPC_TIMEOUT']} default="250ms..1m">
+  Adaptive timeout for LogServer RPC
+
+  This configures the adaptive timeout range for RPC operations from this node to log servers.
+  The timeout range is also used to determine the appropriate retry delay between retry attempts.
+
+  Examples:
+  "250ms..1m" or "10ms..60s" or "0.5s..5m" or "1s..1h"
+</ResponseField>
+
+<ResponseField name="sequencer-inactivity-timeout" type="string" post={['minLength: 1','toml: bifrost.replicated-loglet.sequencer-inactivity-timeout','env: RESTATE_BIFROST__REPLICATED_LOGLET__SEQUENCER_INACTIVITY_TIMEOUT']} default="15s">
+  Sequencer inactivity timeout
+
+  The sequencer is allowed to consider itself quiescent if it did not commit records for this period of time.
+  It may use this to sends pre-emptive release/seal check requests to log-servers.
+
+  The sequencer is also allowed to use this value as interval to send seal/release checks even if it's not quiescent.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="store-timeout" type="string" post={['pattern: ^\\d+(\\.\\d+)?\\s*(ns|us|ms|s|m|h|d|nanoseconds?|microseconds?|milliseconds?|seconds?|minutes?|hours?|days?)\\s*\\.\\.\\s*\\d+(\\.\\d+)?\\s*(ns|us|ms|s|m|h|d|nanoseconds?|microseconds?|milliseconds?|seconds?|minutes?|hours?|days?)$','toml: bifrost.replicated-loglet.store-timeout','env: RESTATE_BIFROST__REPLICATED_LOGLET__STORE_TIMEOUT']} default="2s..1m">
+  Adaptive timeout for LogServer Store Messages
+
+  This configures the adaptive timeout range for Store operations from this node to log servers.
+
+  Since v1.7.0
+
+  Examples:
+  "250ms..1m" or "10ms..60s" or "0.5s..5m" or "1s..1h"
+</ResponseField>
+
+#### bifrost.replicated-loglet.log-server-retry-policy
+
+Log Server RPC retry policy
+
+Retry policy for log server RPCs
+
+Configuration file section `[bifrost.replicated-loglet.log-server-retry-policy]`, environment variable prefix `RESTATE_BIFROST__REPLICATED_LOGLET__LOG_SERVER_RETRY_POLICY__`.
+
+<ResponseField name="type" type="string" required post={['toml: bifrost.replicated-loglet.log-server-retry-policy.type','env: RESTATE_BIFROST__REPLICATED_LOGLET__LOG_SERVER_RETRY_POLICY__TYPE']}>
+  Selects which shape this section takes. Each value accepts its own
+  additional options, listed under it below.
+
+  * `"none"` : No retry strategy.
+  * `"fixed-delay"` : Retry with a fixed delay strategy.
+  * `"exponential"` : Retry with an exponential strategy. The next retry is computed as `min(last_retry_interval * factor, max_interval)`.
+</ResponseField>
+
+Additional options for each `type`:
+
+<Tabs>
+  <Tab title="type = &#x22;fixed-delay&#x22;">
+    <ResponseField name="interval" type="string" required post={['minLength: 1','toml: bifrost.replicated-loglet.log-server-retry-policy.interval','env: RESTATE_BIFROST__REPLICATED_LOGLET__LOG_SERVER_RETRY_POLICY__INTERVAL']}>
+      Interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: bifrost.replicated-loglet.log-server-retry-policy.max-attempts','env: RESTATE_BIFROST__REPLICATED_LOGLET__LOG_SERVER_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+  </Tab>
+
+  <Tab title="type = &#x22;exponential&#x22;">
+    <ResponseField name="factor" type="number" required post={['format: float','toml: bifrost.replicated-loglet.log-server-retry-policy.factor','env: RESTATE_BIFROST__REPLICATED_LOGLET__LOG_SERVER_RETRY_POLICY__FACTOR']}>
+      Factor: The factor to use to compute the next retry attempt.
+    </ResponseField>
+
+    <ResponseField name="initial-interval" type="string" required post={['minLength: 1','toml: bifrost.replicated-loglet.log-server-retry-policy.initial-interval','env: RESTATE_BIFROST__REPLICATED_LOGLET__LOG_SERVER_RETRY_POLICY__INITIAL_INTERVAL']}>
+      Initial Interval: Initial interval for the first retry attempt.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: bifrost.replicated-loglet.log-server-retry-policy.max-attempts','env: RESTATE_BIFROST__REPLICATED_LOGLET__LOG_SERVER_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+
+    <ResponseField name="max-interval" type="string | null" post={['toml: bifrost.replicated-loglet.log-server-retry-policy.max-interval','env: RESTATE_BIFROST__REPLICATED_LOGLET__LOG_SERVER_RETRY_POLICY__MAX_INTERVAL']}>
+      Max interval: Maximum interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+  </Tab>
+</Tabs>
+
+#### bifrost.replicated-loglet.sequencer-retry-policy
+
+Retry policy: Sequencer retry policy
+
+Backoff introduced when sequencer fail to find a suitable spread of log servers
+
+Configuration file section `[bifrost.replicated-loglet.sequencer-retry-policy]`, environment variable prefix `RESTATE_BIFROST__REPLICATED_LOGLET__SEQUENCER_RETRY_POLICY__`.
+
+<ResponseField name="type" type="string" required post={['toml: bifrost.replicated-loglet.sequencer-retry-policy.type','env: RESTATE_BIFROST__REPLICATED_LOGLET__SEQUENCER_RETRY_POLICY__TYPE']}>
+  Selects which shape this section takes. Each value accepts its own
+  additional options, listed under it below.
+
+  * `"none"` : No retry strategy.
+  * `"fixed-delay"` : Retry with a fixed delay strategy.
+  * `"exponential"` : Retry with an exponential strategy. The next retry is computed as `min(last_retry_interval * factor, max_interval)`.
+</ResponseField>
+
+Additional options for each `type`:
+
+<Tabs>
+  <Tab title="type = &#x22;fixed-delay&#x22;">
+    <ResponseField name="interval" type="string" required post={['minLength: 1','toml: bifrost.replicated-loglet.sequencer-retry-policy.interval','env: RESTATE_BIFROST__REPLICATED_LOGLET__SEQUENCER_RETRY_POLICY__INTERVAL']}>
+      Interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: bifrost.replicated-loglet.sequencer-retry-policy.max-attempts','env: RESTATE_BIFROST__REPLICATED_LOGLET__SEQUENCER_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+  </Tab>
+
+  <Tab title="type = &#x22;exponential&#x22;">
+    <ResponseField name="factor" type="number" required post={['format: float','toml: bifrost.replicated-loglet.sequencer-retry-policy.factor','env: RESTATE_BIFROST__REPLICATED_LOGLET__SEQUENCER_RETRY_POLICY__FACTOR']}>
+      Factor: The factor to use to compute the next retry attempt.
+    </ResponseField>
+
+    <ResponseField name="initial-interval" type="string" required post={['minLength: 1','toml: bifrost.replicated-loglet.sequencer-retry-policy.initial-interval','env: RESTATE_BIFROST__REPLICATED_LOGLET__SEQUENCER_RETRY_POLICY__INITIAL_INTERVAL']}>
+      Initial Interval: Initial interval for the first retry attempt.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: bifrost.replicated-loglet.sequencer-retry-policy.max-attempts','env: RESTATE_BIFROST__REPLICATED_LOGLET__SEQUENCER_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+
+    <ResponseField name="max-interval" type="string | null" post={['toml: bifrost.replicated-loglet.sequencer-retry-policy.max-interval','env: RESTATE_BIFROST__REPLICATED_LOGLET__SEQUENCER_RETRY_POLICY__MAX_INTERVAL']}>
+      Max interval: Maximum interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+  </Tab>
+</Tabs>
+
+## default-retry-policy
+
+Default retry policy: The default retry policy to use for invocations.
+
+The retry policy can be customized on a service/handler basis, using the respective SDK APIs.
+Check [https://docs.restate.dev/services/configuration#retries](https://docs.restate.dev/services/configuration#retries) for more details.
+
+Configuration file section `[default-retry-policy]`, environment variable prefix `RESTATE_DEFAULT_RETRY_POLICY__`.
+
+<ResponseField name="exponentiation-factor" type="number" post={['format: float','toml: default-retry-policy.exponentiation-factor','env: RESTATE_DEFAULT_RETRY_POLICY__EXPONENTIATION_FACTOR']} default="2">
+  Factor: The factor to use to compute the next retry attempt. Default: `2.0`.
+</ResponseField>
+
+<ResponseField name="initial-interval" type="string" post={['minLength: 1','toml: default-retry-policy.initial-interval','env: RESTATE_DEFAULT_RETRY_POLICY__INITIAL_INTERVAL']} default="500ms">
+  Initial Interval: Initial interval for the first retry attempt.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="max-attempts" type="anyOf" post={['toml: default-retry-policy.max-attempts','env: RESTATE_DEFAULT_RETRY_POLICY__MAX_ATTEMPTS']} default="70">
+  Max attempts: Number of maximum attempts (including the initial) before giving up.
+  No retries if set to 1.
+
+  * `"unlimited"` : Unlimited retries.
+  * `integer` : Bounded number of retries.
+</ResponseField>
+
+<ResponseField name="max-interval" type="string" post={['minLength: 1','toml: default-retry-policy.max-interval','env: RESTATE_DEFAULT_RETRY_POLICY__MAX_INTERVAL']} default="1m">
+  Max interval: Maximum interval between retries.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="on-max-attempts" type="string" post={['toml: default-retry-policy.on-max-attempts','env: RESTATE_DEFAULT_RETRY_POLICY__ON_MAX_ATTEMPTS']} default="pause">
+  On max attempts: Behavior when max attempts are reached.
+
+  Set to `pause` to pause invocations when max attempts are reached.
+  Set to `kill` to kill the invocation when max attempts are reached.
+
+  For more details about the invocation lifecycle, check [https://docs.restate.dev/services/invocation/managing-invocations](https://docs.restate.dev/services/invocation/managing-invocations)
+
+  * `"pause"` : Pause the invocation when max attempts are reached.
+  * `"kill"` : Kill the invocation when max attempts are reached.
+</ResponseField>
+
+## ingress
+
+Ingress options
+
+Configuration file section `[ingress]`, environment variable prefix `RESTATE_INGRESS__`.
+
+<ResponseField name="advertised-address" type="string | null" post={['toml: ingress.advertised-address','env: RESTATE_INGRESS__ADVERTISED_ADDRESS']}>
+  Address that other nodes will use to connect to this service.
+
+  The full prefix that will be used to advertise this service publicly.
+  For example, if this is set to `https://my-host` then others will use this
+  as base URL to connect to this service.
+
+  If unset, the advertised address will be inferred from public address of this node
+  or it'll use the value supplied in `advertised-host` if set.
+
+  advertised address: An externally accessible URI address for http-ingress-server. This can be set to unix:restate-data/ingress.sock to advertise the automatically created unix-socket instead of using tcp if needed
+
+  Examples:
+  "http//127.0.0.1:8080/" or "[https://my-host/](https://my-host/)" or "unix:/data/restate-data/ingress.sock"
+</ResponseField>
+
+<ResponseField name="advertised-host" type="string | null" post={['toml: ingress.advertised-host','env: RESTATE_INGRESS__ADVERTISED_HOST']}>
+  Hostname to advertise for this service
+</ResponseField>
+
+<ResponseField name="advertised-ingress-endpoint" type="string | null" post={['toml: ingress.advertised-ingress-endpoint','env: RESTATE_INGRESS__ADVERTISED_INGRESS_ENDPOINT']}>
+  \[Deprecated] Use `advertised-address` instead.
+  Ingress endpoint that the Web UI should use to interact with.
+
+  advertised address: An externally accessible URI address for http-ingress-server. This can be set to unix:restate-data/ingress.sock to advertise the automatically created unix-socket instead of using tcp if needed
+
+  Examples:
+  "http//127.0.0.1:8080/" or "[https://my-host/](https://my-host/)" or "unix:/data/restate-data/ingress.sock"
+</ResponseField>
+
+<ResponseField name="bind-address" type="string | null" post={['toml: ingress.bind-address','env: RESTATE_INGRESS__BIND_ADDRESS']}>
+  The combination of `bind-ip` and `bind-port` that will be used to bind
+
+  This has precedence over `bind-ip` and `bind-port`
+
+  Bind address: The local network address to bind on for http-ingress-server. This service uses default port 8080 and will create a unix-socket file at the data directory under the name `ingress.sock`
+
+  Examples:
+  "\[::]:8080" or "0.0.0.0:8080" or "127.0.0.1:8080"
+</ResponseField>
+
+<ResponseField name="bind-ip" type="string | null" post={['format: ip','toml: ingress.bind-ip','env: RESTATE_INGRESS__BIND_IP']}>
+  Local interface IP address to listen on
+</ResponseField>
+
+<ResponseField name="bind-port" type="integer | null" post={['format: uint16','maximum: 65535','toml: ingress.bind-port','env: RESTATE_INGRESS__BIND_PORT']}>
+  Network port to listen on
+</ResponseField>
+
+<ResponseField name="concurrent-api-requests-limit" type="integer | null" post={['format: uint','minimum: 1','toml: ingress.concurrent-api-requests-limit','env: RESTATE_INGRESS__CONCURRENT_API_REQUESTS_LIMIT']} default="null">
+  Concurrency limit: Local concurrency limit to use to limit the amount of concurrent requests. If exceeded,
+  the ingress will reply immediately with an appropriate status code. Default is unlimited.
+</ResponseField>
+
+<ResponseField name="http2-max-concurrent-streams" type="integer | null" post={['format: uint32','minimum: 1','toml: ingress.http2-max-concurrent-streams','env: RESTATE_INGRESS__HTTP2_MAX_CONCURRENT_STREAMS']}>
+  HTTP/2 max concurrent streams: Caps the number of concurrent HTTP/2 streams accepted per inbound ingress connection.
+  If unset, Restate does not configure this limit and leaves it at hyper's runtime default.
+  With the current hyper version, that default is 200 streams.
+  Service-mesh clients such as Linkerd honor the advertised value as a hard per-connection
+  concurrency limit, so high-concurrency or long-poll deployments may need to raise it.
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="kafka-clusters" type="array" post={['toml: [[ingress.kafka-clusters]]']} default="[]">
+  **Deprecated in 1.7**: Kafka clusters should now be configured through the UI/Admin API
+
+  <Expandable title="Array Items">
+    <ResponseField name="item" type="object" post={[]}>
+      Kafka cluster options: Configuration options to connect to a Kafka cluster.
+      **Deprecated in 1.7**: Kafka clusters should now be configured through the UI/Admin API
+
+      <Expandable title="Properties">
+        <ResponseField name="brokers" type="array" required post={['toml: brokers']}>
+          Servers: Initial list of brokers (host or host:port).
+        </ResponseField>
+
+        <ResponseField name="name" type="string" required post={['toml: name']}>
+          Cluster name (Used to identify subscriptions).
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="listen-mode" type="oneOf | null" post={['toml: ingress.listen-mode','env: RESTATE_INGRESS__LISTEN_MODE']}>
+  Listen on unix-sockets, TCP sockets, or both.
+
+  The default is to listen on both.
+
+  * `"unix"` : Exclusively listen on unix domain sockets
+
+  If set, all services will listen exclusively on unix sockets, each service
+  will create a socket file under the data directory.
+
+  * `"tcp"` : Exclusively listen on TCP sockets
+  * `"all"` : \[default] Listen on both Unix and TCP sockets
+</ResponseField>
+
+<ResponseField name="request-size-limit" type="string | null" post={['toml: ingress.request-size-limit','env: RESTATE_INGRESS__REQUEST_SIZE_LIMIT']}>
+  Request size limit: Maximum size of request that can be received over ingress. If a request size is
+  larger than this limit, the request will fail.
+
+  If unset, defaults to `networking.message-size-limit`. If set, it will be clamped at
+  the value of `networking.message-size-limit` since larger requests cannot be transmitted
+  over the cluster internal network.
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="use-random-ports" type="boolean | null" post={['toml: ingress.use-random-ports','env: RESTATE_INGRESS__USE_RANDOM_PORTS']}>
+  Use random ports instead of the default port
+</ResponseField>
+
+### ingress.ingestion
+
+Ingestion Options: Settings for the ingestion client
+Currently only used by the Kafka ingress and the admin API.
+
+Configuration file section `[ingress.ingestion]`, environment variable prefix `RESTATE_INGRESS__INGESTION__`.
+
+<ResponseField name="inflight-memory-budget" type="string" required post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: ingress.ingestion.inflight-memory-budget','env: RESTATE_INGRESS__INGESTION__INFLIGHT_MEMORY_BUDGET']}>
+  Inflight Memory Budget: Maximum total size of in-flight ingestion requests in bytes.
+  Tune this to your workload so there are enough unpersisted
+  requests for efficient batching without exhausting memory.
+
+  Defaults to 1 MiB.
+</ResponseField>
+
+<ResponseField name="request-batch-size" type="string" required post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: ingress.ingestion.request-batch-size','env: RESTATE_INGRESS__INGESTION__REQUEST_BATCH_SIZE']}>
+  Request Batch Size: Maximum size of a single ingestion request batch.
+  Tune to keep enough requests per batch for
+  throughput; overly large batches can increase tail latency.
+
+  Defaults to 50 KiB.
+</ResponseField>
+
+#### ingress.ingestion.connection-retry-policy
+
+Connection retry policy: Retry policy for the ingestion client. It must allow unlimited
+retries; if configured with a cap, the client falls back to
+retrying every 2 seconds.
+
+Configuration file section `[ingress.ingestion.connection-retry-policy]`, environment variable prefix `RESTATE_INGRESS__INGESTION__CONNECTION_RETRY_POLICY__`.
+
+<ResponseField name="type" type="string" required post={['toml: ingress.ingestion.connection-retry-policy.type','env: RESTATE_INGRESS__INGESTION__CONNECTION_RETRY_POLICY__TYPE']}>
+  Selects which shape this section takes. Each value accepts its own
+  additional options, listed under it below.
+
+  * `"none"` : No retry strategy.
+  * `"fixed-delay"` : Retry with a fixed delay strategy.
+  * `"exponential"` : Retry with an exponential strategy. The next retry is computed as `min(last_retry_interval * factor, max_interval)`.
+</ResponseField>
+
+Additional options for each `type`:
+
+<Tabs>
+  <Tab title="type = &#x22;fixed-delay&#x22;">
+    <ResponseField name="interval" type="string" required post={['minLength: 1','toml: ingress.ingestion.connection-retry-policy.interval','env: RESTATE_INGRESS__INGESTION__CONNECTION_RETRY_POLICY__INTERVAL']}>
+      Interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: ingress.ingestion.connection-retry-policy.max-attempts','env: RESTATE_INGRESS__INGESTION__CONNECTION_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+  </Tab>
+
+  <Tab title="type = &#x22;exponential&#x22;">
+    <ResponseField name="factor" type="number" required post={['format: float','toml: ingress.ingestion.connection-retry-policy.factor','env: RESTATE_INGRESS__INGESTION__CONNECTION_RETRY_POLICY__FACTOR']}>
+      Factor: The factor to use to compute the next retry attempt.
+    </ResponseField>
+
+    <ResponseField name="initial-interval" type="string" required post={['minLength: 1','toml: ingress.ingestion.connection-retry-policy.initial-interval','env: RESTATE_INGRESS__INGESTION__CONNECTION_RETRY_POLICY__INITIAL_INTERVAL']}>
+      Initial Interval: Initial interval for the first retry attempt.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: ingress.ingestion.connection-retry-policy.max-attempts','env: RESTATE_INGRESS__INGESTION__CONNECTION_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+
+    <ResponseField name="max-interval" type="string | null" post={['toml: ingress.ingestion.connection-retry-policy.max-interval','env: RESTATE_INGRESS__INGESTION__CONNECTION_RETRY_POLICY__MAX_INTERVAL']}>
+      Max interval: Maximum interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+  </Tab>
+</Tabs>
+
+## log-server
+
+Log server options: Configuration is only used on nodes running with `log-server` role.
+
+Configuration file section `[log-server]`, environment variable prefix `RESTATE_LOG_SERVER__`.
+
+<ResponseField name="incoming-network-queue-length" type="integer | null" post={['format: uint','minimum: 1','toml: log-server.incoming-network-queue-length','env: RESTATE_LOG_SERVER__INCOMING_NETWORK_QUEUE_LENGTH']}>
+  The number of messages that can queue up on input network stream while request processor is busy.
+</ResponseField>
+
+<ResponseField name="rocksdb-blob-min-size" type="string | null" post={['toml: log-server.rocksdb-blob-min-size','env: RESTATE_LOG_SERVER__ROCKSDB_BLOB_MIN_SIZE']}>
+  Minimum value size for blob file separation
+
+  Values at or above this threshold are stored in separate blob files when
+  blob separation is enabled. Smaller values remain inline in SST files.
+  Lower thresholds reduce write amplification (compactions only rewrite small
+  BlobIndex pointers) at the cost of an extra read indirection on cache misses.
+
+  Only takes effect when `rocksdb-enable-blob-separation` is true.
+
+  \[default] is 512 KiB
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="rocksdb-block-size" type="string | null" post={['toml: log-server.rocksdb-block-size','env: RESTATE_LOG_SERVER__ROCKSDB_BLOCK_SIZE']}>
+  RocksDB block size: Uncompressed block size
+
+  Default: 64KiB
+</ResponseField>
+
+<ResponseField name="rocksdb-compaction-readahead-size" type="string | null" post={['toml: log-server.rocksdb-compaction-readahead-size','env: RESTATE_LOG_SERVER__ROCKSDB_COMPACTION_READAHEAD_SIZE']}>
+  RocksDB compaction readahead size in bytes: If non-zero, we perform bigger reads when doing compaction. If you're
+  running RocksDB on spinning disks, you should set this to at least 2MB.
+  That way RocksDB's compaction is doing sequential instead of random reads.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-blob-compression" type="boolean" post={['toml: log-server.rocksdb-disable-blob-compression','env: RESTATE_LOG_SERVER__ROCKSDB_DISABLE_BLOB_COMPRESSION']}>
+  Disable compression for blob files
+
+  When false (default), blob files are compressed with Zstd. Set to true to
+  store blobs uncompressed, trading higher disk usage for reduced CPU overhead
+  on writes and blob-GC reads.
+
+  Only takes effect when `rocksdb-enable-blob-separation` is true.
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-direct-io-for-flush-and-compactions" type="boolean | null" post={['toml: log-server.rocksdb-disable-direct-io-for-flush-and-compactions','env: RESTATE_LOG_SERVER__ROCKSDB_DISABLE_DIRECT_IO_FOR_FLUSH_AND_COMPACTIONS']}>
+  Disable Direct IO for flush and compactions: Use O\_DIRECT for writes in background flush and compactions.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-direct-io-for-reads" type="boolean | null" post={['toml: log-server.rocksdb-disable-direct-io-for-reads','env: RESTATE_LOG_SERVER__ROCKSDB_DISABLE_DIRECT_IO_FOR_READS']}>
+  Disable Direct IO for reads: Files will be opened in "direct I/O" mode
+  which means that data r/w from the disk will not be cached or
+  buffered. The hardware buffer of the devices may however still
+  be used. Memory mapped files are not impacted by these parameters.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-l0-l1-compression" type="boolean | null" post={['toml: log-server.rocksdb-disable-l0-l1-compression','env: RESTATE_LOG_SERVER__ROCKSDB_DISABLE_L0_L1_COMPRESSION']}>
+  Disable L0/L1 SST compression: When false (the default), L0 and L1 SST files are compressed with Lz4.
+  Higher levels (L2+) always use Zstd regardless of this setting.
+  Set to true to disable compression for L0/L1, which can improve write
+  throughput at the cost of higher disk usage since these files are
+  short-lived and frequently compacted.
+
+  Default: false (L0/L1 compression enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-statistics" type="boolean | null" post={['toml: log-server.rocksdb-disable-statistics','env: RESTATE_LOG_SERVER__ROCKSDB_DISABLE_STATISTICS']}>
+  Disable rocksdb statistics collection
+
+  Default: False (statistics enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-wal-compression" type="boolean | null" post={['toml: log-server.rocksdb-disable-wal-compression','env: RESTATE_LOG_SERVER__ROCKSDB_DISABLE_WAL_COMPRESSION']}>
+  Disable WAL compression: When false (the default), the Write-Ahead Log is compressed with Zstd.
+  Set to true to disable WAL compression. Only applies when WAL is enabled.
+
+  Default: false (WAL compression enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-wal-fsync" type="boolean" post={['toml: log-server.rocksdb-disable-wal-fsync','env: RESTATE_LOG_SERVER__ROCKSDB_DISABLE_WAL_FSYNC']} default="false">
+  Disable fsync of WAL on every batch
+</ResponseField>
+
+<ResponseField name="rocksdb-enable-blob-separation" type="boolean" post={['toml: log-server.rocksdb-enable-blob-separation','env: RESTATE_LOG_SERVER__ROCKSDB_ENABLE_BLOB_SEPARATION']} default="false">
+  Enable storing large values in separate blob files
+
+  \[Experimental]
+  Enables BlobDB key-value separation for the data column family. Values at or
+  above `rocksdb-blob-min-size` are written to dedicated blob files, leaving only
+  small pointers in the LSM tree. This dramatically reduces write amplification
+  during compaction at the cost of some space amplification from unreferenced blobs
+  awaiting garbage collection.
+
+  This is safe to enable/disable at any time.
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="rocksdb-l0-num-compaction-trigger" type="integer" post={['format: uint32','minimum: 1','toml: log-server.rocksdb-l0-num-compaction-trigger','env: RESTATE_LOG_SERVER__ROCKSDB_L0_NUM_COMPACTION_TRIGGER']} default="8">
+  Number of L0 files to trigger compaction: Sets the number of files to trigger level-0 compaction.
+
+  \[default] is 8
+
+  Since v1.7.7
+</ResponseField>
+
+<ResponseField name="rocksdb-log-keep-file-num" type="integer | null" post={['format: uint','toml: log-server.rocksdb-log-keep-file-num','env: RESTATE_LOG_SERVER__ROCKSDB_LOG_KEEP_FILE_NUM']} default="null">
+  RocksDB log keep file num: Number of info LOG files to keep
+
+  Default: 1
+</ResponseField>
+
+<ResponseField name="rocksdb-log-level" type="string | null" post={['toml: log-server.rocksdb-log-level','env: RESTATE_LOG_SERVER__ROCKSDB_LOG_LEVEL']} default="null">
+  RocksDB log level: Verbosity of the LOG.
+
+  Default: "error"
+</ResponseField>
+
+<ResponseField name="rocksdb-log-max-file-size" type="string | null" post={['toml: log-server.rocksdb-log-max-file-size','env: RESTATE_LOG_SERVER__ROCKSDB_LOG_MAX_FILE_SIZE']} default="null">
+  RocksDB log max file size: Max size of info LOG file
+
+  Default: 64MB
+</ResponseField>
+
+<ResponseField name="rocksdb-max-background-compactions" type="integer | null" post={['format: uint32','minimum: 1','toml: log-server.rocksdb-max-background-compactions','env: RESTATE_LOG_SERVER__ROCKSDB_MAX_BACKGROUND_COMPACTIONS']}>
+  Max background compactions: Maximum number of concurrent compaction operations for this database.
+
+  If unset, defaults are computed based on CPU count and active node roles.
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="rocksdb-max-file-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: log-server.rocksdb-max-file-size','env: RESTATE_LOG_SERVER__ROCKSDB_MAX_FILE_SIZE']} default="128.0 MiB">
+  Target size for SST files: The target size for sst files. Restate uses this value to internally determine
+  the number of memtables to keep in memory and how much to merge before flushing.
+
+  The value is automatically sanitized to 8 MiB if set to a smaller value.
+  When blob separation is enabled, non-L0 SST files instead target 8 MiB.
+
+  \[default] is 128 MiB
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="rocksdb-max-open-files" type="integer | null" post={['format: uint32','minimum: 1','toml: log-server.rocksdb-max-open-files','env: RESTATE_LOG_SERVER__ROCKSDB_MAX_OPEN_FILES']}>
+  Max open files: Sets the number of open files that can be used by the DB. You may need to
+  increase this if your database has a large working set. Unset means
+  files opened are always kept open.
+
+  \[default] is unset
+
+  Since v1.7.7
+</ResponseField>
+
+<ResponseField name="rocksdb-max-sub-compactions" type="integer" post={['format: uint32','toml: log-server.rocksdb-max-sub-compactions','env: RESTATE_LOG_SERVER__ROCKSDB_MAX_SUB_COMPACTIONS']} default="1">
+  The maximum number of subcompactions to run in parallel.
+
+  Setting this to 1 means no sub-compactions are allowed.
+
+  Default is 1
+</ResponseField>
+
+<ResponseField name="rocksdb-memory-budget" type="string | null" post={['toml: log-server.rocksdb-memory-budget','env: RESTATE_LOG_SERVER__ROCKSDB_MEMORY_BUDGET']}>
+  The memory budget for rocksdb memtables in bytes
+
+  If this value is set, it overrides the ratio defined in `rocksdb-memory-ratio`.
+
+  The memory budget is automatically sanitized to the minimum of 32 MiB if set to
+  a smaller value.
+</ResponseField>
+
+<ResponseField name="rocksdb-memory-ratio" type="number" post={['format: float','toml: log-server.rocksdb-memory-ratio','env: RESTATE_LOG_SERVER__ROCKSDB_MEMORY_RATIO']} default="0.5">
+  The memory budget for rocksdb memtables as ratio
+
+  This defines the total memory for rocksdb as a ratio of the node's total budget
+  for rocksdb memtables.
+
+  (See `rocksdb-total-memtables-ratio` in common).
+</ResponseField>
+
+<ResponseField name="rocksdb-partition-sst-by-log" type="boolean" post={['toml: log-server.rocksdb-partition-sst-by-log','env: RESTATE_LOG_SERVER__ROCKSDB_PARTITION_SST_BY_LOG']} default="true">
+  Partition SST files by log ID: Splits SST files by the log ID.
+
+  \[default] is true
+
+  Since v1.7.7
+</ResponseField>
+
+<ResponseField name="rocksdb-partition-sst-by-loglet" type="boolean" post={['toml: log-server.rocksdb-partition-sst-by-loglet','env: RESTATE_LOG_SERVER__ROCKSDB_PARTITION_SST_BY_LOGLET']} default="false">
+  Partition SST files by loglet ID: Splits SST files by the loglet ID. Enabling this option may reduce the cost of compaction
+  and trimming but may increase the number of SST files. If the number of SST files became a
+  concern, consider setting `rocksdb-max-open-files` to a reasonable value.
+
+  This overrides `rocksdb-partition-sst-by-log` if both are enabled.
+
+  \[default] is false
+
+  Since v1.7.7
+</ResponseField>
+
+<ResponseField name="rocksdb-statistics-level" type="oneOf | null" post={['toml: log-server.rocksdb-statistics-level','env: RESTATE_LOG_SERVER__ROCKSDB_STATISTICS_LEVEL']}>
+  RocksDB statistics level: StatsLevel can be used to reduce statistics overhead by skipping certain
+  types of stats in the stats collection process.
+
+  Default: "except-detailed-timers"
+
+  * `"disable-all"` : Disable all metrics
+  * `"except-histogram-or-timers"` : Disable timer stats, and skip histogram stats
+  * `"except-timers"` : Skip timer stats
+  * `"except-detailed-timers"` : Collect all stats except time inside mutex lock AND time spent on
+    compression.
+  * `"except-time-for-mutex"` : Collect all stats except the counters requiring to get time inside the
+    mutex lock.
+  * `"all"` : Collect all stats, including measuring duration of mutex operations.
+    If getting time is expensive on the platform to run, it can
+    reduce scalability to more threads, especially for writes.
+</ResponseField>
+
+<ResponseField name="rocksdb-wal-dir" type="string | null" post={['toml: log-server.rocksdb-wal-dir','env: RESTATE_LOG_SERVER__ROCKSDB_WAL_DIR']}>
+  Custom Path for WAL files
+
+  If unset, the default data directory is used for WAL files. If set, the path
+  must point to a directory that exists and is writable. The directory will be
+  used to store WAL files.
+
+  The recommendation is to use low-latency NVMe SSD for the WAL directory with
+  sufficient IOPS capacity and bandwidth to your sustained workload. The `fdatasync`
+  latency of the storage device is a significant factor in the WAL performance if
+  `rocksdb-disable-wal-fsync` is set to `false`.
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="rocksdb-writable-file-max-buffer-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: log-server.rocksdb-writable-file-max-buffer-size','env: RESTATE_LOG_SERVER__ROCKSDB_WRITABLE_FILE_MAX_BUFFER_SIZE']} default="1.0 MiB">
+  Buffer size used for writing to SST files: Sets the maximum buffer size that is used to write SST files to disk.
+  Larger values translate to larger IO operations which can be helpful
+  for slow or network-attached storage devices.
+
+  \[default] is 1 MiB
+
+  Since v1.7.7
+</ResponseField>
+
+<ResponseField name="write-batch-commit-bytes" type="string | null" post={['toml: log-server.write-batch-commit-bytes','env: RESTATE_LOG_SERVER__WRITE_BATCH_COMMIT_BYTES']}>
+  Write Batch (in bytes): If unset, a reasonable value is automatically derived from the memory budget
+  available for memtables of the log-server.
+
+  If `write-batch-commit-count` is set, the write batch will be limited to whichever
+  of the two is reached first. The value is clamped to the size of a single memtable
+  which is derived from rocksdb-memory-budget.
+</ResponseField>
+
+<ResponseField name="write-batch-commit-count" type="integer | null" post={['format: uint','minimum: 1','toml: log-server.write-batch-commit-count','env: RESTATE_LOG_SERVER__WRITE_BATCH_COMMIT_COUNT']}>
+  Write Batch (count): The number of records to batch in a single write batch. This is a (soft) upper bound
+  and the actual number of records may be lower in low-throughput scenarios or if
+  the write batch size (in bytes) is reached first.
+
+  If unset, the write batch will only be limited by its size in bytes.
+</ResponseField>
+
+## metadata-client
+
+Metadata client options: The metadata client type to store metadata
+
+Configuration file section `[metadata-client]`, environment variable prefix `RESTATE_METADATA_CLIENT__`.
+
+<ResponseField name="connect-timeout" type="string" post={['minLength: 1','toml: metadata-client.connect-timeout','env: RESTATE_METADATA_CLIENT__CONNECT_TIMEOUT']} default="3s">
+  Connect timeout: TCP connection timeout for connecting to the metadata store.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="keep-alive-interval" type="string" post={['minLength: 1','toml: metadata-client.keep-alive-interval','env: RESTATE_METADATA_CLIENT__KEEP_ALIVE_INTERVAL']} default="5s">
+  Metadata Store Keep Alive Interval: Interval at which keep-alive probes are sent on the connection to the
+  metadata store, to keep it alive and to detect a store that has become
+  unreachable.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="keep-alive-timeout" type="string" post={['minLength: 1','toml: metadata-client.keep-alive-timeout','env: RESTATE_METADATA_CLIENT__KEEP_ALIVE_TIMEOUT']} default="5s">
+  Metadata Store Keep Alive Timeout: How long to wait for a keep-alive probe to be acknowledged by the
+  metadata store before treating the connection as dead and closing it.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="message-size-limit" type="string | null" post={['toml: metadata-client.message-size-limit','env: RESTATE_METADATA_CLIENT__MESSAGE_SIZE_LIMIT']}>
+  Metadata Network Message Size: Maximum size of network messages that metadata client can receive from a metadata server.
+
+  If unset, defaults to `networking.message-size-limit`. If set, it will be clamped at
+  the value of `networking.message-size-limit` since larger messages cannot be transmitted
+  over the cluster internal network.
+</ResponseField>
+
+<ResponseField name="type" type="string" required post={['toml: metadata-client.type','env: RESTATE_METADATA_CLIENT__TYPE']}>
+  Selects which shape this section takes. Each value accepts its own
+  additional options, listed under it below.
+
+  * `"replicated"` : Store metadata on the replicated metadata store that runs on nodes with the metadata-server role.
+  * `"etcd"` : Store metadata on an external etcd cluster. The addresses are formatted as `host:port`
+  * `"object-store"` : Store metadata on an external object store.
+</ResponseField>
+
+Additional options for each `type`:
+
+<Tabs>
+  <Tab title="type = &#x22;replicated&#x22;">
+    <ResponseField name="addresses" type="array" required post={['toml: metadata-client.addresses','env: RESTATE_METADATA_CLIENT__ADDRESSES']}>
+      Restate metadata server address list
+    </ResponseField>
+  </Tab>
+
+  <Tab title="type = &#x22;etcd&#x22;">
+    <ResponseField name="addresses" type="string" required post={['toml: metadata-client.addresses','env: RESTATE_METADATA_CLIENT__ADDRESSES']}>
+      Etcd cluster node address list
+    </ResponseField>
+  </Tab>
+
+  <Tab title="type = &#x22;object-store&#x22;">
+    <ResponseField name="aws-access-key-id" type="string | null" post={['toml: metadata-client.aws-access-key-id','env: RESTATE_METADATA_CLIENT__AWS_ACCESS_KEY_ID']}>
+      AWS access key: Username for Minio, or consult the service documentation for other S3-compatible stores.
+    </ResponseField>
+
+    <ResponseField name="aws-allow-http" type="boolean | null" post={['toml: metadata-client.aws-allow-http','env: RESTATE_METADATA_CLIENT__AWS_ALLOW_HTTP']}>
+      Allow insecure HTTP: Allow plain HTTP to be used with the object store endpoint. Required when the endpoint URL
+      that isn't using HTTPS.
+    </ResponseField>
+
+    <ResponseField name="aws-endpoint-url" type="string | null" post={['toml: metadata-client.aws-endpoint-url','env: RESTATE_METADATA_CLIENT__AWS_ENDPOINT_URL']}>
+      Object store API endpoint URL override: When you use Amazon S3, this is typically inferred from the region and there is no need to
+      set it. With other object stores, you will have to provide an appropriate HTTP(S) endpoint.
+      If *not* using HTTPS, also set `aws-allow-http` to `true`.
+    </ResponseField>
+
+    <ResponseField name="aws-profile" type="string | null" post={['toml: metadata-client.aws-profile','env: RESTATE_METADATA_CLIENT__AWS_PROFILE']}>
+      AWS profile: The AWS configuration profile to use for S3 object store destinations. If you use
+      named profiles in your AWS configuration, you can replace all the other settings with
+      a single profile reference. See the \[AWS documentation on profiles]
+      ([https://docs.aws.amazon.com/sdkref/latest/guide/file-format.html](https://docs.aws.amazon.com/sdkref/latest/guide/file-format.html)) for more.
+    </ResponseField>
+
+    <ResponseField name="aws-region" type="string | null" post={['toml: metadata-client.aws-region','env: RESTATE_METADATA_CLIENT__AWS_REGION']}>
+      AWS region to use with S3 object store destinations. This may be inferred from the
+      environment, for example the current region when running in EC2. Because of the
+      request signing algorithm this must have a value. For Minio, you can generally
+      set this to any string, such as `us-east-1`.
+    </ResponseField>
+
+    <ResponseField name="aws-secret-access-key" type="string | null" post={['toml: metadata-client.aws-secret-access-key','env: RESTATE_METADATA_CLIENT__AWS_SECRET_ACCESS_KEY']}>
+      AWS secret key: Password for Minio, or consult the service documentation for other S3-compatible stores.
+    </ResponseField>
+
+    <ResponseField name="aws-session-token" type="string | null" post={['toml: metadata-client.aws-session-token','env: RESTATE_METADATA_CLIENT__AWS_SESSION_TOKEN']}>
+      AWS session token: This is only needed with short-term STS session credentials.
+    </ResponseField>
+
+    <ResponseField name="object-store-retry-policy" type="object" post={['toml: [metadata-client.object-store-retry-policy]']}>
+      Error retry policy: Retry policy for the object store requests the metadata client
+      makes, covering both reads of the current metadata version and the
+      conditional writes used to update it.
+
+      Retries here absorb the transient errors and throttling responses
+      object stores return under load, so a short or non-retrying policy
+      can surface those as metadata operation failures.
+
+      <ResponseField name="type" type="string" required post={['toml: metadata-client.object-store-retry-policy.type','env: RESTATE_METADATA_CLIENT__OBJECT_STORE_RETRY_POLICY__TYPE']}>
+        Selects which shape this section takes. Each value accepts its own
+        additional options, listed under it below.
+
+        * `"none"` : No retry strategy.
+        * `"fixed-delay"` : Retry with a fixed delay strategy.
+        * `"exponential"` : Retry with an exponential strategy. The next retry is computed as `min(last_retry_interval * factor, max_interval)`.
+      </ResponseField>
+
+      Additional options for each `type`:
+
+      <Tabs>
+        <Tab title="type = &#x22;fixed-delay&#x22;">
+          <ResponseField name="interval" type="string" required post={['minLength: 1','toml: metadata-client.object-store-retry-policy.interval','env: RESTATE_METADATA_CLIENT__OBJECT_STORE_RETRY_POLICY__INTERVAL']}>
+            Interval between retries.
+
+            Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+            Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+            Examples:
+            "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+          </ResponseField>
+
+          <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: metadata-client.object-store-retry-policy.max-attempts','env: RESTATE_METADATA_CLIENT__OBJECT_STORE_RETRY_POLICY__MAX_ATTEMPTS']}>
+            Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+          </ResponseField>
+        </Tab>
+
+        <Tab title="type = &#x22;exponential&#x22;">
+          <ResponseField name="factor" type="number" required post={['format: float','toml: metadata-client.object-store-retry-policy.factor','env: RESTATE_METADATA_CLIENT__OBJECT_STORE_RETRY_POLICY__FACTOR']}>
+            Factor: The factor to use to compute the next retry attempt.
+          </ResponseField>
+
+          <ResponseField name="initial-interval" type="string" required post={['minLength: 1','toml: metadata-client.object-store-retry-policy.initial-interval','env: RESTATE_METADATA_CLIENT__OBJECT_STORE_RETRY_POLICY__INITIAL_INTERVAL']}>
+            Initial Interval: Initial interval for the first retry attempt.
+
+            Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+            Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+            Examples:
+            "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+          </ResponseField>
+
+          <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: metadata-client.object-store-retry-policy.max-attempts','env: RESTATE_METADATA_CLIENT__OBJECT_STORE_RETRY_POLICY__MAX_ATTEMPTS']}>
+            Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+          </ResponseField>
+
+          <ResponseField name="max-interval" type="string | null" post={['toml: metadata-client.object-store-retry-policy.max-interval','env: RESTATE_METADATA_CLIENT__OBJECT_STORE_RETRY_POLICY__MAX_INTERVAL']}>
+            Max interval: Maximum interval between retries.
+
+            Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+            Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+            Examples:
+            "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+          </ResponseField>
+        </Tab>
+      </Tabs>
+    </ResponseField>
+
+    <ResponseField name="path" type="string" required post={['toml: metadata-client.path','env: RESTATE_METADATA_CLIENT__PATH']}>
+      Object store path for metadata storage: This location will be used to persist cluster metadata. Takes the form of a URL
+      with `s3://` as the protocol and bucket name as the authority, plus an optional
+      prefix specified as the path component.
+
+      Example: `s3://bucket/prefix`
+    </ResponseField>
+  </Tab>
+</Tabs>
+
+### metadata-client.backoff-policy
+
+Backoff policy used by the metadata client when it encounters concurrent modifications.
+
+Configuration file section `[metadata-client.backoff-policy]`, environment variable prefix `RESTATE_METADATA_CLIENT__BACKOFF_POLICY__`.
+
+<ResponseField name="type" type="string" required post={['toml: metadata-client.backoff-policy.type','env: RESTATE_METADATA_CLIENT__BACKOFF_POLICY__TYPE']}>
+  Selects which shape this section takes. Each value accepts its own
+  additional options, listed under it below.
+
+  * `"none"` : No retry strategy.
+  * `"fixed-delay"` : Retry with a fixed delay strategy.
+  * `"exponential"` : Retry with an exponential strategy. The next retry is computed as `min(last_retry_interval * factor, max_interval)`.
+</ResponseField>
+
+Additional options for each `type`:
+
+<Tabs>
+  <Tab title="type = &#x22;fixed-delay&#x22;">
+    <ResponseField name="interval" type="string" required post={['minLength: 1','toml: metadata-client.backoff-policy.interval','env: RESTATE_METADATA_CLIENT__BACKOFF_POLICY__INTERVAL']}>
+      Interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: metadata-client.backoff-policy.max-attempts','env: RESTATE_METADATA_CLIENT__BACKOFF_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+  </Tab>
+
+  <Tab title="type = &#x22;exponential&#x22;">
+    <ResponseField name="factor" type="number" required post={['format: float','toml: metadata-client.backoff-policy.factor','env: RESTATE_METADATA_CLIENT__BACKOFF_POLICY__FACTOR']}>
+      Factor: The factor to use to compute the next retry attempt.
+    </ResponseField>
+
+    <ResponseField name="initial-interval" type="string" required post={['minLength: 1','toml: metadata-client.backoff-policy.initial-interval','env: RESTATE_METADATA_CLIENT__BACKOFF_POLICY__INITIAL_INTERVAL']}>
+      Initial Interval: Initial interval for the first retry attempt.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: metadata-client.backoff-policy.max-attempts','env: RESTATE_METADATA_CLIENT__BACKOFF_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+
+    <ResponseField name="max-interval" type="string | null" post={['toml: metadata-client.backoff-policy.max-interval','env: RESTATE_METADATA_CLIENT__BACKOFF_POLICY__MAX_INTERVAL']}>
+      Max interval: Maximum interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+  </Tab>
+</Tabs>
+
+## metadata-server
+
+Metadata store options
+
+Configuration file section `[metadata-server]`, environment variable prefix `RESTATE_METADATA_SERVER__`.
+
+<ResponseField name="auto-join" type="boolean" post={['toml: metadata-server.auto-join','env: RESTATE_METADATA_SERVER__AUTO_JOIN']} default="true">
+  Auto join the metadata cluster when being started
+
+  Defines whether this node should auto join the metadata store cluster when being started
+  for the first time.
+</ResponseField>
+
+<ResponseField name="log-trim-threshold" type="integer | null" post={['format: uint64','toml: metadata-server.log-trim-threshold','env: RESTATE_METADATA_SERVER__LOG_TRIM_THRESHOLD']} default="1000">
+  The raft log trim threshold: The threshold for trimming the raft log. The log will be trimmed if the number of apply entries
+  exceeds this threshold. The default value is `1000`.
+</ResponseField>
+
+<ResponseField name="raft-election-tick" type="integer" post={['format: uint','minimum: 1','toml: metadata-server.raft-election-tick','env: RESTATE_METADATA_SERVER__RAFT_ELECTION_TICK']} default="10">
+  The number of ticks before triggering an election
+
+  The number of ticks before triggering an election. The value must be larger than
+  `raft_heartbeat_tick`. It's recommended to set `raft_election_tick = 10 * raft_heartbeat_tick`.
+  Decrease this value if you want to react faster to failed leaders. Note, decreasing this
+  value too much can lead to cluster instabilities due to falsely detecting dead leaders.
+</ResponseField>
+
+<ResponseField name="raft-heartbeat-tick" type="integer" post={['format: uint','minimum: 1','toml: metadata-server.raft-heartbeat-tick','env: RESTATE_METADATA_SERVER__RAFT_HEARTBEAT_TICK']} default="2">
+  The number of ticks before sending a heartbeat
+
+  A leader sends heartbeat messages to maintain its leadership every heartbeat ticks.
+  Decrease this value to send heartbeats more often.
+</ResponseField>
+
+<ResponseField name="raft-tick-interval" type="string" post={['minLength: 1','toml: metadata-server.raft-tick-interval','env: RESTATE_METADATA_SERVER__RAFT_TICK_INTERVAL']} default="100ms">
+  The raft tick interval
+
+  The interval at which the raft node will tick. Decrease this value in order to let the Raft
+  node react more quickly to changes. Note, that every tick comes with an overhead. Moreover,
+  the tick interval directly affects the election timeout. If the election timeout becomes too
+  small, then this can cause cluster instabilities due to frequent leader changes.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="request-queue-length" type="integer" post={['format: uint','minimum: 1','toml: metadata-server.request-queue-length','env: RESTATE_METADATA_SERVER__REQUEST_QUEUE_LENGTH']} default="32">
+  Limit number of in-flight requests
+
+  Number of in-flight metadata store requests.
+</ResponseField>
+
+<ResponseField name="rocksdb-block-size" type="string | null" post={['toml: metadata-server.rocksdb-block-size','env: RESTATE_METADATA_SERVER__ROCKSDB_BLOCK_SIZE']}>
+  RocksDB block size: Uncompressed block size
+
+  Default: 64KiB
+</ResponseField>
+
+<ResponseField name="rocksdb-compaction-readahead-size" type="string | null" post={['toml: metadata-server.rocksdb-compaction-readahead-size','env: RESTATE_METADATA_SERVER__ROCKSDB_COMPACTION_READAHEAD_SIZE']}>
+  RocksDB compaction readahead size in bytes: If non-zero, we perform bigger reads when doing compaction. If you're
+  running RocksDB on spinning disks, you should set this to at least 2MB.
+  That way RocksDB's compaction is doing sequential instead of random reads.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-direct-io-for-flush-and-compactions" type="boolean | null" post={['toml: metadata-server.rocksdb-disable-direct-io-for-flush-and-compactions','env: RESTATE_METADATA_SERVER__ROCKSDB_DISABLE_DIRECT_IO_FOR_FLUSH_AND_COMPACTIONS']}>
+  Disable Direct IO for flush and compactions: Use O\_DIRECT for writes in background flush and compactions.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-direct-io-for-reads" type="boolean | null" post={['toml: metadata-server.rocksdb-disable-direct-io-for-reads','env: RESTATE_METADATA_SERVER__ROCKSDB_DISABLE_DIRECT_IO_FOR_READS']}>
+  Disable Direct IO for reads: Files will be opened in "direct I/O" mode
+  which means that data r/w from the disk will not be cached or
+  buffered. The hardware buffer of the devices may however still
+  be used. Memory mapped files are not impacted by these parameters.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-l0-l1-compression" type="boolean | null" post={['toml: metadata-server.rocksdb-disable-l0-l1-compression','env: RESTATE_METADATA_SERVER__ROCKSDB_DISABLE_L0_L1_COMPRESSION']}>
+  Disable L0/L1 SST compression: When false (the default), L0 and L1 SST files are compressed with Lz4.
+  Higher levels (L2+) always use Zstd regardless of this setting.
+  Set to true to disable compression for L0/L1, which can improve write
+  throughput at the cost of higher disk usage since these files are
+  short-lived and frequently compacted.
+
+  Default: false (L0/L1 compression enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-statistics" type="boolean | null" post={['toml: metadata-server.rocksdb-disable-statistics','env: RESTATE_METADATA_SERVER__ROCKSDB_DISABLE_STATISTICS']}>
+  Disable rocksdb statistics collection
+
+  Default: False (statistics enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-wal-compression" type="boolean | null" post={['toml: metadata-server.rocksdb-disable-wal-compression','env: RESTATE_METADATA_SERVER__ROCKSDB_DISABLE_WAL_COMPRESSION']}>
+  Disable WAL compression: When false (the default), the Write-Ahead Log is compressed with Zstd.
+  Set to true to disable WAL compression. Only applies when WAL is enabled.
+
+  Default: false (WAL compression enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-log-keep-file-num" type="integer | null" post={['format: uint','toml: metadata-server.rocksdb-log-keep-file-num','env: RESTATE_METADATA_SERVER__ROCKSDB_LOG_KEEP_FILE_NUM']} default="null">
+  RocksDB log keep file num: Number of info LOG files to keep
+
+  Default: 1
+</ResponseField>
+
+<ResponseField name="rocksdb-log-level" type="string | null" post={['toml: metadata-server.rocksdb-log-level','env: RESTATE_METADATA_SERVER__ROCKSDB_LOG_LEVEL']} default="null">
+  RocksDB log level: Verbosity of the LOG.
+
+  Default: "error"
+</ResponseField>
+
+<ResponseField name="rocksdb-log-max-file-size" type="string | null" post={['toml: metadata-server.rocksdb-log-max-file-size','env: RESTATE_METADATA_SERVER__ROCKSDB_LOG_MAX_FILE_SIZE']} default="null">
+  RocksDB log max file size: Max size of info LOG file
+
+  Default: 64MB
+</ResponseField>
+
+<ResponseField name="rocksdb-memory-budget" type="string | null" post={['toml: metadata-server.rocksdb-memory-budget','env: RESTATE_METADATA_SERVER__ROCKSDB_MEMORY_BUDGET']}>
+  The memory budget for rocksdb memtables in bytes
+
+  If this value is set, it overrides the ratio defined in `rocksdb-memory-ratio`.
+</ResponseField>
+
+<ResponseField name="rocksdb-memory-ratio" type="number" post={['format: float','toml: metadata-server.rocksdb-memory-ratio','env: RESTATE_METADATA_SERVER__ROCKSDB_MEMORY_RATIO']} default="0.009999999776482582">
+  The memory budget for rocksdb memtables as ratio
+
+  This defines the total memory for rocksdb as a ratio of all memory available to memtables
+  (See `rocksdb-total-memtables-ratio` in common).
+</ResponseField>
+
+<ResponseField name="rocksdb-statistics-level" type="oneOf | null" post={['toml: metadata-server.rocksdb-statistics-level','env: RESTATE_METADATA_SERVER__ROCKSDB_STATISTICS_LEVEL']}>
+  RocksDB statistics level: StatsLevel can be used to reduce statistics overhead by skipping certain
+  types of stats in the stats collection process.
+
+  Default: "except-detailed-timers"
+
+  * `"disable-all"` : Disable all metrics
+  * `"except-histogram-or-timers"` : Disable timer stats, and skip histogram stats
+  * `"except-timers"` : Skip timer stats
+  * `"except-detailed-timers"` : Collect all stats except time inside mutex lock AND time spent on
+    compression.
+  * `"except-time-for-mutex"` : Collect all stats except the counters requiring to get time inside the
+    mutex lock.
+  * `"all"` : Collect all stats, including measuring duration of mutex operations.
+    If getting time is expensive on the platform to run, it can
+    reduce scalability to more threads, especially for writes.
+</ResponseField>
+
+<ResponseField name="status-update-interval" type="string" post={['minLength: 1','toml: metadata-server.status-update-interval','env: RESTATE_METADATA_SERVER__STATUS_UPDATE_INTERVAL']} default="5s">
+  The status update interval
+
+  The interval at which the raft node will update its status. Decrease this value in order to
+  see more recent status updates.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+## network-error-retry-policy
+
+Network error retry policy: The retry policy for network related errors
+
+Configuration file section `[network-error-retry-policy]`, environment variable prefix `RESTATE_NETWORK_ERROR_RETRY_POLICY__`.
+
+<ResponseField name="type" type="string" required post={['toml: network-error-retry-policy.type','env: RESTATE_NETWORK_ERROR_RETRY_POLICY__TYPE']}>
+  Selects which shape this section takes. Each value accepts its own
+  additional options, listed under it below.
+
+  * `"none"` : No retry strategy.
+  * `"fixed-delay"` : Retry with a fixed delay strategy.
+  * `"exponential"` : Retry with an exponential strategy. The next retry is computed as `min(last_retry_interval * factor, max_interval)`.
+</ResponseField>
+
+Additional options for each `type`:
+
+<Tabs>
+  <Tab title="type = &#x22;fixed-delay&#x22;">
+    <ResponseField name="interval" type="string" required post={['minLength: 1','toml: network-error-retry-policy.interval','env: RESTATE_NETWORK_ERROR_RETRY_POLICY__INTERVAL']}>
+      Interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: network-error-retry-policy.max-attempts','env: RESTATE_NETWORK_ERROR_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+  </Tab>
+
+  <Tab title="type = &#x22;exponential&#x22;">
+    <ResponseField name="factor" type="number" required post={['format: float','toml: network-error-retry-policy.factor','env: RESTATE_NETWORK_ERROR_RETRY_POLICY__FACTOR']}>
+      Factor: The factor to use to compute the next retry attempt.
+    </ResponseField>
+
+    <ResponseField name="initial-interval" type="string" required post={['minLength: 1','toml: network-error-retry-policy.initial-interval','env: RESTATE_NETWORK_ERROR_RETRY_POLICY__INITIAL_INTERVAL']}>
+      Initial Interval: Initial interval for the first retry attempt.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: network-error-retry-policy.max-attempts','env: RESTATE_NETWORK_ERROR_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+
+    <ResponseField name="max-interval" type="string | null" post={['toml: network-error-retry-policy.max-interval','env: RESTATE_NETWORK_ERROR_RETRY_POLICY__MAX_INTERVAL']}>
+      Max interval: Maximum interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+  </Tab>
+</Tabs>
+
+## networking
+
+Networking options: Common network configuration options for communicating with Restate cluster nodes. Note that
+similar keys are present in other config sections, such as in Service Client options.
+
+Configuration file section `[networking]`, environment variable prefix `RESTATE_NETWORKING__`.
+
+<ResponseField name="connect-timeout" type="string" post={['minLength: 1','toml: networking.connect-timeout','env: RESTATE_NETWORKING__CONNECT_TIMEOUT']} default="3s">
+  Connect timeout: TCP connection timeout for Restate cluster node-to-node network connections.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="data-stream-window-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: networking.data-stream-window-size','env: RESTATE_NETWORKING__DATA_STREAM_WINDOW_SIZE']} default="2.0 MiB">
+  Data Stream Window Size: Controls the number of bytes the can be sent on every data stream before inducing
+  back pressure. Data streams are used for sending messages between nodes.
+
+  The value should is often derived from BDP (Bandwidth Delay Product) of the network. For
+  instance, if the network has a bandwidth of 10 Gbps with a round-trip time of 5 ms, the BDP
+  is 10 Gbps \* 0.005 s = 6.25 MB. This means that the window size should be at least 6.25 MB
+  to fully utilize the network bandwidth assuming the latency is constant. Our recommendation
+  is to set the window size to 2x the BDP to account for any variations in latency.
+
+  If network latency is high, it's recommended to set this to a higher value.
+  Maximum theoretical value is 2^31-1 (2 GiB - 1), but we will sanitize this value to 500 MiB.
+</ResponseField>
+
+<ResponseField name="disable-compression" type="boolean" post={['toml: networking.disable-compression','env: RESTATE_NETWORKING__DISABLE_COMPRESSION']} default="false">
+  Disable Compression: Disables Zstd compression for internal gRPC network connections
+</ResponseField>
+
+<ResponseField name="fabric-memory-limit" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: networking.fabric-memory-limit','env: RESTATE_NETWORKING__FABRIC_MEMORY_LIMIT']}>
+  Global Fabric Memory Limit: This sets the memory limit for all in-flight fabric services that don't own dedicated
+  memory pools. The memory limit will be sanitized to the configured `message-size-limit`
+  if smaller.
+
+  Default: `64MiB`
+</ResponseField>
+
+<ResponseField name="handshake-timeout" type="string" post={['minLength: 1','toml: networking.handshake-timeout','env: RESTATE_NETWORKING__HANDSHAKE_TIMEOUT']} default="3s">
+  Handshake timeout: Timeout for receiving a handshake response from Restate cluster peers.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="http2-adaptive-window" type="boolean" post={['toml: networking.http2-adaptive-window','env: RESTATE_NETWORKING__HTTP2_ADAPTIVE_WINDOW']} default="true">
+  HTTP/2 Adaptive Window
+</ResponseField>
+
+<ResponseField name="http2-keep-alive-interval" type="string" post={['minLength: 1','toml: networking.http2-keep-alive-interval','env: RESTATE_NETWORKING__HTTP2_KEEP_ALIVE_INTERVAL']} default="1s">
+  HTTP/2 Keep Alive Interval: Interval at which HTTP/2 PING frames are sent on node-to-node
+  connections, to keep them alive and to detect peers that have become
+  unreachable.
+
+  Applies both to the gRPC channels a node opens to its peers and to the
+  connections it accepts from them.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="http2-keep-alive-timeout" type="string" post={['minLength: 1','toml: networking.http2-keep-alive-timeout','env: RESTATE_NETWORKING__HTTP2_KEEP_ALIVE_TIMEOUT']} default="3s">
+  HTTP/2 Keep Alive Timeout: How long to wait for a peer to acknowledge a keep-alive PING on a
+  node-to-node connection. If the acknowledgement does not arrive within
+  this timeout, the connection is closed and re-established.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="message-size-limit" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: networking.message-size-limit','env: RESTATE_NETWORKING__MESSAGE_SIZE_LIMIT']}>
+  Networking Message Size Limit: Maximum size of a message that can be sent or received over the network.
+  This applies to communication between Restate cluster nodes, as well as
+  between Restate servers and external tools such as CLI and management APIs.
+
+  Default: `32MiB`
+</ResponseField>
+
+### networking.connect-retry-policy
+
+Connect retry policy: Retry policy to use for internal node-to-node networking.
+
+Configuration file section `[networking.connect-retry-policy]`, environment variable prefix `RESTATE_NETWORKING__CONNECT_RETRY_POLICY__`.
+
+<ResponseField name="type" type="string" required post={['toml: networking.connect-retry-policy.type','env: RESTATE_NETWORKING__CONNECT_RETRY_POLICY__TYPE']}>
+  Selects which shape this section takes. Each value accepts its own
+  additional options, listed under it below.
+
+  * `"none"` : No retry strategy.
+  * `"fixed-delay"` : Retry with a fixed delay strategy.
+  * `"exponential"` : Retry with an exponential strategy. The next retry is computed as `min(last_retry_interval * factor, max_interval)`.
+</ResponseField>
+
+Additional options for each `type`:
+
+<Tabs>
+  <Tab title="type = &#x22;fixed-delay&#x22;">
+    <ResponseField name="interval" type="string" required post={['minLength: 1','toml: networking.connect-retry-policy.interval','env: RESTATE_NETWORKING__CONNECT_RETRY_POLICY__INTERVAL']}>
+      Interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: networking.connect-retry-policy.max-attempts','env: RESTATE_NETWORKING__CONNECT_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+  </Tab>
+
+  <Tab title="type = &#x22;exponential&#x22;">
+    <ResponseField name="factor" type="number" required post={['format: float','toml: networking.connect-retry-policy.factor','env: RESTATE_NETWORKING__CONNECT_RETRY_POLICY__FACTOR']}>
+      Factor: The factor to use to compute the next retry attempt.
+    </ResponseField>
+
+    <ResponseField name="initial-interval" type="string" required post={['minLength: 1','toml: networking.connect-retry-policy.initial-interval','env: RESTATE_NETWORKING__CONNECT_RETRY_POLICY__INITIAL_INTERVAL']}>
+      Initial Interval: Initial interval for the first retry attempt.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: networking.connect-retry-policy.max-attempts','env: RESTATE_NETWORKING__CONNECT_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+
+    <ResponseField name="max-interval" type="string | null" post={['toml: networking.connect-retry-policy.max-interval','env: RESTATE_NETWORKING__CONNECT_RETRY_POLICY__MAX_INTERVAL']}>
+      Max interval: Maximum interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+  </Tab>
+</Tabs>
+
+## worker
+
+Worker options
+
+Configuration file section `[worker]`, environment variable prefix `RESTATE_WORKER__`.
+
+<ResponseField name="cleanup-interval" type="string" post={['minLength: 1','toml: worker.cleanup-interval','env: RESTATE_WORKER__CLEANUP_INTERVAL']} default="1h">
+  Cleanup interval: In order to clean up completed invocations, that is invocations invoked with an idempotency id, or workflows,
+  Restate periodically scans among the completed invocations to check whether they need to be removed or not.
+  This interval sets the scan interval of the cleanup procedure. Default: 1 hour.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="data-service-memory-limit" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.data-service-memory-limit','env: RESTATE_WORKER__DATA_SERVICE_MEMORY_LIMIT']} default="256.0 MiB">
+  Memory limit for incoming partition data service messages (Ingestion).
+
+  Default is 256 MiB.
+</ResponseField>
+
+<ResponseField name="durability-mode" type="oneOf | null" post={['toml: worker.durability-mode','env: RESTATE_WORKER__DURABILITY_MODE']}>
+  Durability mode: Every partition store is backed up by a durable log that is used to recover the state of
+  the partition on restart or failover. The durability mode defines the criteria used
+  to determine whether a partition is considered fully durable or not at a given point in the
+  log history. Once a partition is fully durable, its backing log is allowed to be trimmed to
+  the durability point.
+
+  This helps keeping the log's disk usage under control but it forces nodes that need to restore
+  the state of the partition to fetch a snapshot of that partition that covers the changes up to
+  and including the "durability point".
+
+  Since v1.4.2 (not compatible with earlier versions)
+
+  * `"none"` : This disables durability tracking and trimming completely.
+
+  Trims and snapshots are still possible if performed manually or by an external
+  component.
+
+  * `"snapshot-and-replica-set"` : In this mode, a partition is considered durable when its state can be restored from
+    any of members of the replica-set as well as the latest snapshot.
+
+  In other words, do not trim unless **all** replicas cover this Lsn, **and** the snapshot.
+
+  \[requires snapshot repository]
+  DurabilityPoint = Min(Min(ReplicaSetDurablePoints), SnapshotDurablePoint)
+
+  * `"balanced"` : In this mode, a partition is considered durable when its state can be restored from
+    the snapshot and at least a single replica.
+
+  Do not trim unless the Lsn is covered (durably) by *any* of the replicas **and** by
+  the snapshot. Gives weight to snapshots over the durability of the replica-set but
+  without ignoring the replica-set completely.
+
+  In practice, this means that after a snapshot has been created on the leader, the
+  system will wait for the nearest memtable flush that cover this Lsn before considering
+  this Lsn for trimming. If the leader crashes before the memtable flush, we are confident
+  that the leader will be able to replay the log without any trim-gaps. This is under the
+  condition that the leader didn't move to another node. In the latter case, the system will
+  fetch the snapshot as usual.
+
+  \[requires snapshot repository]
+  \[default] if restate-server is in cluster mode.
+  DurabilityPoint = Min(Max(ReplicaSetDurablePoints), SnapshotDurablePoint)
+
+  * `"replica-set-only"` : A partition is considered durable once all nodes in the replica-set are durable, regardless
+    of the state of snapshots.
+
+  Do not trim unless all replicas durably include this Lsn.
+
+  default in standalone-mode with no snapshot repository configured
+
+  \[default] if restate-server is in single-node mode.
+  DurabilityPoint = Min(ReplicaSetDurablePoints)
+
+  * `"snapshot-only"` : A partition is durable ONLY after a snapshot has been created.
+    \[requires snapshot repository]
+
+  Do not trim unless the Lsn is covered by the snapshot with no regard to the
+  state of durability of the replica-set members.
+
+  DurabilityPoint = SnapshotDurablePoint
+</ResponseField>
+
+<ResponseField name="internal-queue-length" type="integer" post={['format: uint','minimum: 1','toml: worker.internal-queue-length','env: RESTATE_WORKER__INTERNAL_QUEUE_LENGTH']} default="1000">
+  Internal queue for partition processor communication
+</ResponseField>
+
+<ResponseField name="max-command-batch-bytes" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.max-command-batch-bytes','env: RESTATE_WORKER__MAX_COMMAND_BATCH_BYTES']} default="1.0 MiB">
+  Maximum command batch size (in bytes) for partition processors: Caps the total bytes of Bifrost log records processed opportunistically by the partition processor in
+  a single iteration. This works in conjunction with `max-command-batch-size` which caps the
+  number of records. The processor will process the batch when whichever limit is hit first.
+
+  Default: 1 MiB
+
+  Since v1.7.1
+</ResponseField>
+
+<ResponseField name="max-command-batch-size" type="integer" post={['format: uint','minimum: 1','toml: worker.max-command-batch-size','env: RESTATE_WORKER__MAX_COMMAND_BATCH_SIZE']} default="32">
+  Maximum command batch size (count) for partition processors: The maximum number of Bifrost log records a partition processor will process opportunistically
+  in a single batch. The larger this value is, the higher the throughput and latency are.
+</ResponseField>
+
+<ResponseField name="num-timers-in-memory-limit" type="integer | null" post={['format: uint','minimum: 1','toml: worker.num-timers-in-memory-limit','env: RESTATE_WORKER__NUM_TIMERS_IN_MEMORY_LIMIT']} default="null">
+  Num timers in memory limit: The number of timers in memory limit is used to bound the amount of timers loaded in memory. If this limit is set, when exceeding it, the timers farther in the future will be spilled to disk.
+</ResponseField>
+
+<ResponseField name="rule-book-poll-interval" type="string" post={['minLength: 1','toml: worker.rule-book-poll-interval','env: RESTATE_WORKER__RULE_BOOK_POLL_INTERVAL']} default="30s">
+  Rule book poll interval: How often each node's `RuleBookCache` polls the metadata store
+  for rule-book updates. The cache also receives push-style
+  notifications when partition processors apply
+  `Command::UpsertRuleBook` from Bifrost, so this poll interval
+  is mainly a fallback for cross-node propagation when no
+  partition leader has yet observed the change. Default: 30 s.
+  *Since v1.7.0*
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="trim-delay-interval" type="string" post={['minLength: 1','toml: worker.trim-delay-interval','env: RESTATE_WORKER__TRIM_DELAY_INTERVAL']}>
+  Delayed log trimming: Log trimming normally happens immediately after the partition becomes fully durable. A
+  partition is considered fully durable when one of the following conditions is met:
+
+  1. The partition has been fully replicated and flushed to all nodes in its replica-set.
+  2. The partition has been snapshotted into the snapshot repository.
+
+  The delay interval is the time that Restate will wait before trimming the log *after* the
+  durability condition is met. It's useful to set this to a non-zero duration if you want to
+  cover the time needed for the snapshot repository (i.e. S3) to replicate the snapshot
+  across regions (typically a few seconds, but can be longer. Check S3's guidelines and
+  cross-region replication SLA for more information).
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+### worker.invoker
+
+Invoker options: Configuration for the HTTP/2 keep-alive mechanism, using PING frames.
+
+Please note: most gateways don't propagate the HTTP/2 keep-alive between downstream and upstream hosts.
+In those environments, you need to make sure the gateway can detect a broken connection to the upstream deployment(s).
+
+Configuration file section `[worker.invoker]`, environment variable prefix `RESTATE_WORKER__INVOKER__`.
+
+<ResponseField name="abort-timeout" type="string" post={['minLength: 1','toml: worker.invoker.abort-timeout','env: RESTATE_WORKER__INVOKER__ABORT_TIMEOUT']} default="10m">
+  Abort timeout: This timer guards against stalled service/handler invocations that are supposed to
+  terminate. The abort timeout is started after the 'inactivity timeout' has expired
+  and the service/handler invocation has been asked to gracefully terminate. Once the
+  timer expires, it will abort the service/handler invocation.
+
+  This timer potentially **interrupts** user code. If the user code needs longer to
+  gracefully terminate, then this value needs to be set accordingly.
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="additional-request-headers" type="object | null" post={['toml: worker.invoker.additional-request-headers','env: RESTATE_WORKER__INVOKER__ADDITIONAL_REQUEST_HEADERS']}>
+  Additional request headers: Headers that should be applied to all outgoing requests (HTTP and Lambda).
+  Defaults to `x-restate-cluster-name: &lt;cluster name&gt;`.
+</ResponseField>
+
+<ResponseField name="aws-assume-role-external-id" type="string | null" post={['toml: worker.invoker.aws-assume-role-external-id','env: RESTATE_WORKER__INVOKER__AWS_ASSUME_ROLE_EXTERNAL_ID']} default="null">
+  AssumeRole external ID: An external ID to apply to any AssumeRole operations taken by this client.
+  [https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_roles\_create\_for-user\_externalid.html](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html)
+  Can be overridden by the `AWS_EXTERNAL_ID` environment variable.
+</ResponseField>
+
+<ResponseField name="aws-profile" type="string | null" post={['toml: worker.invoker.aws-profile','env: RESTATE_WORKER__INVOKER__AWS_PROFILE']} default="null">
+  AWS Profile: Name of the AWS profile to select. Defaults to 'AWS\_PROFILE' env var, or otherwise
+  the `default` profile.
+</ResponseField>
+
+<ResponseField name="concurrent-invocations-limit" type="integer | null" post={['format: uint','minimum: 1','toml: worker.invoker.concurrent-invocations-limit','env: RESTATE_WORKER__INVOKER__CONCURRENT_INVOCATIONS_LIMIT']} default="1000">
+  Limit number of concurrent invocations from this node: Number of concurrent invocations that can be processed by the invoker.
+</ResponseField>
+
+<ResponseField name="connect-timeout" type="string" post={['minLength: 1','toml: worker.invoker.connect-timeout','env: RESTATE_WORKER__INVOKER__CONNECT_TIMEOUT']} default="10s">
+  Connect timeout: How long to wait for a TCP connection to be established before considering
+  it a failed attempt.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="eager-state-size-limit" type="string | null" post={['toml: worker.invoker.eager-state-size-limit','env: RESTATE_WORKER__INVOKER__EAGER_STATE_SIZE_LIMIT']}>
+  Eager state size limit (since v1.7.0): Maximum total size (in bytes) of state entries to send eagerly in the StartMessage.
+  When the total size of state entries exceeds this limit, only a partial state is sent
+  and the service will fetch remaining state lazily using GetEagerState commands.
+
+  Set to `0` to disable eager state entirely (equivalent to enabling lazy state).
+
+  This helps reduce memory pressure on deployments for services with large state.
+  If unset, defaults to `message-size-limit` (clamped to that value if set higher).
+</ResponseField>
+
+<ResponseField name="http-proxy" type="string | null" post={['toml: worker.invoker.http-proxy','env: RESTATE_WORKER__INVOKER__HTTP_PROXY']} default="null">
+  Proxy URI: A URI, such as `http://127.0.0.1:10001`, of a server to which all invocations should be sent, with the `Host` header set to the deployment URI.
+  HTTPS proxy URIs are supported, but only HTTP endpoint traffic will be proxied currently.
+  Can be overridden by the `HTTP_PROXY` environment variable.
+</ResponseField>
+
+<ResponseField name="http2-idle-connection-timeout" type="string" post={['minLength: 1','toml: worker.invoker.http2-idle-connection-timeout','env: RESTATE_WORKER__INVOKER__HTTP2_IDLE_CONNECTION_TIMEOUT']} default="5m">
+  HTTP/2 Idle Connection Timeout: How long a connection can be idle before it is evicted
+  and closed. Set to `0` to disable eviction.
+
+  Since: v1.7.0
+
+  Default: 5 minutes
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="http2-initial-connection-window-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.invoker.http2-initial-connection-window-size','env: RESTATE_WORKER__INVOKER__HTTP2_INITIAL_CONNECTION_WINDOW_SIZE']} default="5.0 MiB">
+  HTTP/2 initial connection window size: Initial connection-level flow-control window (in bytes) for received
+  data. Should be >= the per-stream window. Valid range: 65535 B .. 2 GiB.
+
+  Since: v1.7.0
+
+  Default: 5 MiB
+</ResponseField>
+
+<ResponseField name="http2-initial-max-send-streams" type="integer | null" post={['format: uint32','minimum: 1','toml: worker.invoker.http2-initial-max-send-streams','env: RESTATE_WORKER__INVOKER__HTTP2_INITIAL_MAX_SEND_STREAMS']} default="null">
+  HTTP/2 Initial Max Send Streams: Sets the initial maximum of locally initiated (send) streams.
+
+  This value will be overwritten by the value included in the initial
+  SETTINGS frame received from the peer as part of a \[connection preface].
+
+  Note: This value is capped by \[`Self::streams_per_connection_limit`]
+
+  Default: None
+
+  **NOTE**: Setting this value to None (default) users the default
+  recommended value from HTTP2 specs
+</ResponseField>
+
+<ResponseField name="http2-initial-stream-window-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.invoker.http2-initial-stream-window-size','env: RESTATE_WORKER__INVOKER__HTTP2_INITIAL_STREAM_WINDOW_SIZE']} default="2.0 MiB">
+  HTTP/2 initial stream window size: Initial flow-control window (in bytes) for received data on each HTTP/2
+  stream in the connection pool. Valid range: 65535 B .. 2 GiB.
+
+  Since: v1.7.0
+
+  Default: 2 MiB
+</ResponseField>
+
+<ResponseField name="http2-keep-alive-interval" type="string" post={['minLength: 1','toml: worker.invoker.http2-keep-alive-interval','env: RESTATE_WORKER__INVOKER__HTTP2_KEEP_ALIVE_INTERVAL']} default="40s">
+  HTTP/2 Keep-alive interval: Sets an interval for HTTP/2 PING frames should be sent to keep a
+  connection alive. This governs connections to HTTP deployments as well as
+  to the AWS Lambda API.
+
+  `0` disables keep-alive pings entirely. Defaults to `40s`.
+
+  You should set this timeout with a value lower than the `abort_timeout`.
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="http2-keep-alive-jitter" type="number" post={['format: float','toml: worker.invoker.http2-keep-alive-jitter','env: RESTATE_WORKER__INVOKER__HTTP2_KEEP_ALIVE_JITTER']} default="0.20000000298023224">
+  HTTP/2 Keep-Alive Jitter: Fractional jitter added to `http2-keep-alive-interval`, expressed as a fraction
+  of the interval (e.g. 0.1 = up to +10%, 1.0 = up to +100%).
+
+  Applies only to connections to HTTP deployments; pings to the AWS Lambda
+  API use the exact interval.
+
+  Default 0.2 (20% of http2-keep-alive-interval)
+</ResponseField>
+
+<ResponseField name="http2-keep-alive-timeout" type="string" post={['minLength: 1','toml: worker.invoker.http2-keep-alive-timeout','env: RESTATE_WORKER__INVOKER__HTTP2_KEEP_ALIVE_TIMEOUT']} default="20s">
+  HTTP/2 Keep-Alive Timeout: Sets a timeout for receiving an acknowledgement of the keep-alive ping.
+  This governs connections to HTTP deployments as well as to the AWS Lambda API.
+
+  If the ping is not acknowledged within the timeout, the connection will
+  be closed.
+
+  Only meaningful when `http2-keep-alive-interval` is not zero. Defaults to 20 s.
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="http2-max-frame-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.invoker.http2-max-frame-size','env: RESTATE_WORKER__INVOKER__HTTP2_MAX_FRAME_SIZE']} default="16.0 KiB">
+  HTTP/2 max frame size: Largest HTTP/2 DATA frame payload (in bytes) this client will accept.
+  Must be within 16 KiB .. 16 MiB (h2 protocol limits).
+
+  Since: v1.7.0
+
+  Default: 16 KiB
+</ResponseField>
+
+<ResponseField name="http2-streams-per-connection-limit" type="integer" post={['format: uint','minimum: 1','toml: worker.invoker.http2-streams-per-connection-limit','env: RESTATE_WORKER__INVOKER__HTTP2_STREAMS_PER_CONNECTION_LIMIT']} default="128">
+  Upper bound on the per-connection max-send-streams.
+
+  Caps the remote server's advertised `max_concurrent_streams`.
+
+  A high number of concurrent streams per connection works
+  poorly with L4 load balancers because streams are not balanced across
+  backends.
+
+  Since v1.7.0
+
+  Default: 128
+</ResponseField>
+
+<ResponseField name="in-memory-queue-length-limit" type="integer" post={['format: uint','minimum: 1','toml: worker.invoker.in-memory-queue-length-limit','env: RESTATE_WORKER__INVOKER__IN_MEMORY_QUEUE_LENGTH_LIMIT']} default="66049">
+  Spill invocations to disk: Defines the threshold after which queues invocations will spill to disk at
+  the path defined in `tmp-dir`. In other words, this is the number of invocations
+  that can be kept in memory before spilling to disk. This is a per-partition limit.
+</ResponseField>
+
+<ResponseField name="inactivity-timeout" type="string" post={['minLength: 1','toml: worker.invoker.inactivity-timeout','env: RESTATE_WORKER__INVOKER__INACTIVITY_TIMEOUT']} default="1m">
+  Inactivity timeout: This timer guards against stalled service/handler invocations. Once it expires,
+  Restate triggers a graceful termination by asking the service invocation to
+  suspend (which preserves intermediate progress).
+
+  The 'abort timeout' is used to abort the invocation, in case it doesn't react to
+  the request to suspend.
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="max-awaited-future-depth" type="integer" post={['format: uint','toml: worker.invoker.max-awaited-future-depth','env: RESTATE_WORKER__INVOKER__MAX_AWAITED_FUTURE_DEPTH']} default="1000">
+  Maximum awaited future nesting depth: The maximum nesting depth allowed for the futures (promises) an invocation
+  awaits on. Restate futures can be composed with combinators (e.g. `all`,
+  `race`), and each level of composition adds one level of nesting. This limit
+  bounds how deeply such futures may be nested, guarding against unbounded or
+  runaway recursion in service code.
+
+  When an invocation awaits on (or suspends on) a future whose nesting depth
+  exceeds this limit, the attempt fails with a "maximum promise recursion
+  reached" error, and the invocation is then handled according to
+  `on-future-recursion-limit`.
+
+  Default: `1000`.
+
+  Since v1.7.3
+</ResponseField>
+
+<ResponseField name="memory-limit" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.invoker.memory-limit','env: RESTATE_WORKER__INVOKER__MEMORY_LIMIT']} default="1.5 GiB">
+  Memory limit: Global memory budget for the invoker, shared across all partitions on this node.
+  This controls how much memory can be used for in-flight journal entries, state,
+  and protocol messages between the invoker and service deployments.
+
+  To effectively disable memory limiting, set this to a very large value.
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="message-size-limit" type="string | null" post={['toml: worker.invoker.message-size-limit','env: RESTATE_WORKER__INVOKER__MESSAGE_SIZE_LIMIT']}>
+  Message size limit: Maximum size of journal messages that can be received from a service. If a service sends a message
+  larger than this limit, the invocation will fail.
+
+  If unset, defaults to `networking.message-size-limit`. If set, it will be clamped at
+  the value of `networking.message-size-limit` since larger messages cannot be transmitted
+  over the cluster internal network.
+</ResponseField>
+
+<ResponseField name="message-size-warning" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.invoker.message-size-warning','env: RESTATE_WORKER__INVOKER__MESSAGE_SIZE_WARNING']} default="10.0 MiB">
+  Message size warning: Threshold to log a warning in case protocol messages coming from a service are larger than the specified amount.
+</ResponseField>
+
+<ResponseField name="no-proxy" type="string | null" post={['toml: worker.invoker.no-proxy','env: RESTATE_WORKER__INVOKER__NO_PROXY']} default="null">
+  No proxy: IP subnets, addresses, and domain names eg `localhost,restate.dev,127.0.0.1,::1,192.168.1.0/24` that should not be proxied by the http\_proxy.
+  IP addresses must not have ports, and IPv6 addresses must not be wrapped in '\[]'.
+  Subdomains are also matched. An entry “\*” matches all hostnames.
+  Can be overridden by the `NO_PROXY` environment variable, which supports comma separated values.
+</ResponseField>
+
+<ResponseField name="per-invocation-initial-memory" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.invoker.per-invocation-initial-memory','env: RESTATE_WORKER__INVOKER__PER_INVOCATION_INITIAL_MEMORY']} default="32.0 KiB">
+  Per-invocation initial memory: Memory (in bytes) reserved from the global memory pool before an invocation
+  starts. Used for the outbound budget and acts as the minimum reserved floor.
+
+  Smaller values allow more concurrent invocations but may cause frequent
+  round-trips to the global pool. Larger values reduce contention but limit
+  maximum concurrency.
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="per-invocation-memory-limit" type="string | null" post={['toml: worker.invoker.per-invocation-memory-limit','env: RESTATE_WORKER__INVOKER__PER_INVOCATION_MEMORY_LIMIT']}>
+  Per-invocation memory limit: Maximum memory (in bytes) a single invocation may use per direction (inbound and
+  outbound). Once an invocation's directional budget reaches this ceiling it must
+  wait for in-flight data to be consumed or yield back to the scheduler.
+
+  If unset, defaults to `message-size-limit`. If set, it will be clamped at
+  the value of `message-size-limit`.
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="request-compression-threshold" type="string | null" post={['toml: worker.invoker.request-compression-threshold','env: RESTATE_WORKER__INVOKER__REQUEST_COMPRESSION_THRESHOLD']} default="4.0 MiB">
+  Request Compression threshold: Request minimum size to enable compression.
+  The request size includes the total of the journal replay and its framing using Restate service protocol, without accounting for the json envelope and the base 64 encoding.
+
+  Default: 4MB (The default AWS Lambda Limit is 6MB, 4MB roughly accounts for +33% of Base64 and the json envelope).
+</ResponseField>
+
+<ResponseField name="request-identity-expiration" type="string" post={['minLength: 1','toml: worker.invoker.request-identity-expiration','env: RESTATE_WORKER__INVOKER__REQUEST_IDENTITY_EXPIRATION']} default="1m">
+  Request identity expiration leeway: The validity window of the JWTs attached to outgoing requests when a request identity key is
+  configured. The token's `exp` (expiry) is set to `now + leeway` and its `nbf` (not-before) to
+  `now - leeway`, so this value bounds both how long a token remains valid and how much clock
+  skew between this client and the receiving SDK is tolerated.
+
+  The minimum expiration leeway is 1s and lower values will be automatically clamped.
+  Default: 60s.
+
+  Since v1.7.0
+
+  Non-zero human-readable duration: Non-zero duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D"
+</ResponseField>
+
+<ResponseField name="request-identity-private-key-pem-file" type="string | null" post={['toml: worker.invoker.request-identity-private-key-pem-file','env: RESTATE_WORKER__INVOKER__REQUEST_IDENTITY_PRIVATE_KEY_PEM_FILE']} default="null">
+  Request identity private key PEM file: A path to a file, such as "/var/secrets/key.pem", which contains exactly one ed25519 private
+  key in PEM format. Such a file can be generated with `openssl genpkey -algorithm ed25519`.
+  If provided, this key will be used to attach JWTs to requests from this client which
+  SDKs may optionally verify, proving that the caller is a particular Restate instance.
+
+  This file is currently only read on client creation, but this may change in future.
+  Parsed public keys will be logged at INFO level in the same format that SDKs expect.
+</ResponseField>
+
+<ResponseField name="tmp-dir" type="string | null" post={['toml: worker.invoker.tmp-dir','env: RESTATE_WORKER__INVOKER__TMP_DIR']} default="null">
+  Temporary directory to use for the invoker temporary files.
+  If empty, the system temporary directory will be used instead.
+</ResponseField>
+
+#### worker.invoker.action-throttling
+
+Action throttling: Configures rate limiting for service actions at the node level.
+This throttling mechanism uses a token bucket algorithm to control the rate
+at which actions can be processed, helping to prevent resource exhaustion
+and maintain system stability under high load.
+
+The throttling limit is shared across all partitions running on this node,
+providing a global rate limit for the entire node rather than per-partition limits.
+When `unset`, no throttling is applied and actions are processed
+without throttling.
+
+Configuration file section `[worker.invoker.action-throttling]`, environment variable prefix `RESTATE_WORKER__INVOKER__ACTION_THROTTLING__`.
+
+<ResponseField name="capacity" type="integer | null" post={['format: uint32','minimum: 1','toml: worker.invoker.action-throttling.capacity','env: RESTATE_WORKER__INVOKER__ACTION_THROTTLING__CAPACITY']}>
+  Burst capacity: The maximum number of tokens the bucket can hold.
+  Default to the rate value if not specified.
+</ResponseField>
+
+<ResponseField name="rate" type="string" required post={['toml: worker.invoker.action-throttling.rate','env: RESTATE_WORKER__INVOKER__ACTION_THROTTLING__RATE']}>
+  Refill rate: The rate at which the tokens are replenished.
+
+  Syntax: `&lt;rate&gt;/&lt;unit&gt;` where `&lt;unit&gt;` is `s|sec|second`, `m|min|minute`, or `h|hr|hour`.
+  unit defaults to per second if not specified.
+</ResponseField>
+
+#### worker.invoker.invocation-throttling
+
+Invocation throttling: Configures throttling for service invocations at the node level.
+This throttling mechanism uses a token bucket algorithm to control the rate
+at which invocations can be processed, helping to prevent resource exhaustion
+and maintain system stability under high load.
+
+The throttling limit is shared across all partitions running on this node,
+providing a global rate limit for the entire node rather than per-partition limits.
+When `unset`, no throttling is applied and invocations are processed
+without throttling.
+
+Configuration file section `[worker.invoker.invocation-throttling]`, environment variable prefix `RESTATE_WORKER__INVOKER__INVOCATION_THROTTLING__`.
+
+<ResponseField name="capacity" type="integer | null" post={['format: uint32','minimum: 1','toml: worker.invoker.invocation-throttling.capacity','env: RESTATE_WORKER__INVOKER__INVOCATION_THROTTLING__CAPACITY']}>
+  Burst capacity: The maximum number of tokens the bucket can hold.
+  Default to the rate value if not specified.
+</ResponseField>
+
+<ResponseField name="rate" type="string" required post={['toml: worker.invoker.invocation-throttling.rate','env: RESTATE_WORKER__INVOKER__INVOCATION_THROTTLING__RATE']}>
+  Refill rate: The rate at which the tokens are replenished.
+
+  Syntax: `&lt;rate&gt;/&lt;unit&gt;` where `&lt;unit&gt;` is `s|sec|second`, `m|min|minute`, or `h|hr|hour`.
+  unit defaults to per second if not specified.
+</ResponseField>
+
+### worker.shuffle
+
+Worker Shuffle Options: Settings for the shared ingestion client used by all workers to
+manage record ingestion across partitions (shuffle).
+
+Configuration file section `[worker.shuffle]`, environment variable prefix `RESTATE_WORKER__SHUFFLE__`.
+
+<ResponseField name="inflight-memory-budget" type="string" required post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.shuffle.inflight-memory-budget','env: RESTATE_WORKER__SHUFFLE__INFLIGHT_MEMORY_BUDGET']}>
+  Inflight Memory Budget: Maximum total size of in-flight ingestion requests in bytes.
+  Tune this to your workload so there are enough unpersisted
+  requests for efficient batching without exhausting memory.
+
+  Defaults to 1 MiB.
+</ResponseField>
+
+<ResponseField name="request-batch-size" type="string" required post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.shuffle.request-batch-size','env: RESTATE_WORKER__SHUFFLE__REQUEST_BATCH_SIZE']}>
+  Request Batch Size: Maximum size of a single ingestion request batch.
+  Tune to keep enough requests per batch for
+  throughput; overly large batches can increase tail latency.
+
+  Defaults to 50 KiB.
+</ResponseField>
+
+#### worker.shuffle.connection-retry-policy
+
+Connection retry policy: Retry policy for the ingestion client. It must allow unlimited
+retries; if configured with a cap, the client falls back to
+retrying every 2 seconds.
+
+Configuration file section `[worker.shuffle.connection-retry-policy]`, environment variable prefix `RESTATE_WORKER__SHUFFLE__CONNECTION_RETRY_POLICY__`.
+
+<ResponseField name="type" type="string" required post={['toml: worker.shuffle.connection-retry-policy.type','env: RESTATE_WORKER__SHUFFLE__CONNECTION_RETRY_POLICY__TYPE']}>
+  Selects which shape this section takes. Each value accepts its own
+  additional options, listed under it below.
+
+  * `"none"` : No retry strategy.
+  * `"fixed-delay"` : Retry with a fixed delay strategy.
+  * `"exponential"` : Retry with an exponential strategy. The next retry is computed as `min(last_retry_interval * factor, max_interval)`.
+</ResponseField>
+
+Additional options for each `type`:
+
+<Tabs>
+  <Tab title="type = &#x22;fixed-delay&#x22;">
+    <ResponseField name="interval" type="string" required post={['minLength: 1','toml: worker.shuffle.connection-retry-policy.interval','env: RESTATE_WORKER__SHUFFLE__CONNECTION_RETRY_POLICY__INTERVAL']}>
+      Interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: worker.shuffle.connection-retry-policy.max-attempts','env: RESTATE_WORKER__SHUFFLE__CONNECTION_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+  </Tab>
+
+  <Tab title="type = &#x22;exponential&#x22;">
+    <ResponseField name="factor" type="number" required post={['format: float','toml: worker.shuffle.connection-retry-policy.factor','env: RESTATE_WORKER__SHUFFLE__CONNECTION_RETRY_POLICY__FACTOR']}>
+      Factor: The factor to use to compute the next retry attempt.
+    </ResponseField>
+
+    <ResponseField name="initial-interval" type="string" required post={['minLength: 1','toml: worker.shuffle.connection-retry-policy.initial-interval','env: RESTATE_WORKER__SHUFFLE__CONNECTION_RETRY_POLICY__INITIAL_INTERVAL']}>
+      Initial Interval: Initial interval for the first retry attempt.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: worker.shuffle.connection-retry-policy.max-attempts','env: RESTATE_WORKER__SHUFFLE__CONNECTION_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+
+    <ResponseField name="max-interval" type="string | null" post={['toml: worker.shuffle.connection-retry-policy.max-interval','env: RESTATE_WORKER__SHUFFLE__CONNECTION_RETRY_POLICY__MAX_INTERVAL']}>
+      Max interval: Maximum interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+  </Tab>
+</Tabs>
+
+### worker.snapshots
+
+Snapshots provide a mechanism for safely trimming the log and efficient bootstrapping of new
+worker nodes.
+
+Configuration file section `[worker.snapshots]`, environment variable prefix `RESTATE_WORKER__SNAPSHOTS__`.
+
+<ResponseField name="aws-access-key-id" type="string | null" post={['toml: worker.snapshots.aws-access-key-id','env: RESTATE_WORKER__SNAPSHOTS__AWS_ACCESS_KEY_ID']}>
+  AWS access key: Username for Minio, or consult the service documentation for other S3-compatible stores.
+</ResponseField>
+
+<ResponseField name="aws-allow-http" type="boolean | null" post={['toml: worker.snapshots.aws-allow-http','env: RESTATE_WORKER__SNAPSHOTS__AWS_ALLOW_HTTP']}>
+  Allow insecure HTTP: Allow plain HTTP to be used with the object store endpoint. Required when the endpoint URL
+  that isn't using HTTPS.
+</ResponseField>
+
+<ResponseField name="aws-endpoint-url" type="string | null" post={['toml: worker.snapshots.aws-endpoint-url','env: RESTATE_WORKER__SNAPSHOTS__AWS_ENDPOINT_URL']}>
+  Object store API endpoint URL override: When you use Amazon S3, this is typically inferred from the region and there is no need to
+  set it. With other object stores, you will have to provide an appropriate HTTP(S) endpoint.
+  If *not* using HTTPS, also set `aws-allow-http` to `true`.
+</ResponseField>
+
+<ResponseField name="aws-profile" type="string | null" post={['toml: worker.snapshots.aws-profile','env: RESTATE_WORKER__SNAPSHOTS__AWS_PROFILE']}>
+  AWS profile: The AWS configuration profile to use for S3 object store destinations. If you use
+  named profiles in your AWS configuration, you can replace all the other settings with
+  a single profile reference. See the \[AWS documentation on profiles]
+  ([https://docs.aws.amazon.com/sdkref/latest/guide/file-format.html](https://docs.aws.amazon.com/sdkref/latest/guide/file-format.html)) for more.
+</ResponseField>
+
+<ResponseField name="aws-region" type="string | null" post={['toml: worker.snapshots.aws-region','env: RESTATE_WORKER__SNAPSHOTS__AWS_REGION']}>
+  AWS region to use with S3 object store destinations. This may be inferred from the
+  environment, for example the current region when running in EC2. Because of the
+  request signing algorithm this must have a value. For Minio, you can generally
+  set this to any string, such as `us-east-1`.
+</ResponseField>
+
+<ResponseField name="aws-secret-access-key" type="string | null" post={['toml: worker.snapshots.aws-secret-access-key','env: RESTATE_WORKER__SNAPSHOTS__AWS_SECRET_ACCESS_KEY']}>
+  AWS secret key: Password for Minio, or consult the service documentation for other S3-compatible stores.
+</ResponseField>
+
+<ResponseField name="aws-session-token" type="string | null" post={['toml: worker.snapshots.aws-session-token','env: RESTATE_WORKER__SNAPSHOTS__AWS_SESSION_TOKEN']}>
+  AWS session token: This is only needed with short-term STS session credentials.
+</ResponseField>
+
+<ResponseField name="destination" type="string | null" post={['toml: worker.snapshots.destination','env: RESTATE_WORKER__SNAPSHOTS__DESTINATION']} default="null">
+  Snapshot destination URL: Base URL for cluster snapshots. Currently only supports the `s3://` protocol scheme.
+  S3-compatible object stores must support ETag-based conditional writes.
+
+  Default: `None`
+</ResponseField>
+
+<ResponseField name="enable-cleanup" type="boolean" post={['toml: worker.snapshots.enable-cleanup','env: RESTATE_WORKER__SNAPSHOTS__ENABLE_CLEANUP']} default="true" />
+
+<ResponseField name="export-concurrency-limit" type="integer | null" post={['format: uint32','minimum: 1','toml: worker.snapshots.export-concurrency-limit','env: RESTATE_WORKER__SNAPSHOTS__EXPORT_CONCURRENCY_LIMIT']}>
+  Export concurrency limit: Maximum number of concurrent partition snapshot exports. This controls how
+  many partition stores can simultaneously export snapshots to the snapshot
+  repository.
+
+  Default: 4
+</ResponseField>
+
+<ResponseField name="num-retained" type="integer" post={['format: uint8','minimum: 1','maximum: 255','toml: worker.snapshots.num-retained','env: RESTATE_WORKER__SNAPSHOTS__NUM_RETAINED']} default="1">
+  Snapshot retention count: Number of most recent snapshots to retain. Older snapshots will be
+  deleted automatically. Only snapshots created after this setting is enabled will
+  be considered for pruning.
+
+  Retaining multiple snapshots causes the partition archived LSN to be reported as that of the
+  oldest retained snapshot. Therefore, retaining multiple snapshots will cause increased disk
+  usage on log-server nodes.
+
+  Default: `1`
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="snapshot-interval" type="string | null" post={['toml: worker.snapshots.snapshot-interval','env: RESTATE_WORKER__SNAPSHOTS__SNAPSHOT_INTERVAL']}>
+  Automatic snapshot time interval: A time interval at which partition snapshots will be created. If
+  `snapshot-interval-num-records` is also set, it will be treated as an additional requirement
+  before a snapshot is taken. Use both time-based and record-based intervals to reduce the
+  number of snapshots created during times of low activity.
+
+  Snapshot intervals are calculated based on the wall clock timestamps reported by cluster
+  nodes, assuming a basic level of clock synchronization within the cluster.
+
+  This setting does not influence explicitly requested snapshots triggered using `restatectl`.
+
+  Default: `None` - automatic snapshots are disabled
+
+  Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+  Examples:
+  "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+</ResponseField>
+
+<ResponseField name="snapshot-interval-num-records" type="integer | null" post={['format: uint64','minimum: 1','toml: worker.snapshots.snapshot-interval-num-records','env: RESTATE_WORKER__SNAPSHOTS__SNAPSHOT_INTERVAL_NUM_RECORDS']} default="null">
+  Automatic snapshot minimum records: Number of log records that trigger a snapshot to be created.
+
+  As snapshots are created asynchronously, the actual number of new records that will trigger
+  a snapshot will vary. The counter for the subsequent snapshot begins from the LSN at which
+  the previous snapshot export was initiated.
+
+  This setting does not influence explicitly requested snapshots triggered using `restatectl`.
+
+  Default: `None` - automatic snapshots are disabled
+</ResponseField>
+
+#### worker.snapshots.object-store-retry-policy
+
+Error retry policy: A retry policy for dealing with retryable object store errors.
+
+Configuration file section `[worker.snapshots.object-store-retry-policy]`, environment variable prefix `RESTATE_WORKER__SNAPSHOTS__OBJECT_STORE_RETRY_POLICY__`.
+
+<ResponseField name="type" type="string" required post={['toml: worker.snapshots.object-store-retry-policy.type','env: RESTATE_WORKER__SNAPSHOTS__OBJECT_STORE_RETRY_POLICY__TYPE']}>
+  Selects which shape this section takes. Each value accepts its own
+  additional options, listed under it below.
+
+  * `"none"` : No retry strategy.
+  * `"fixed-delay"` : Retry with a fixed delay strategy.
+  * `"exponential"` : Retry with an exponential strategy. The next retry is computed as `min(last_retry_interval * factor, max_interval)`.
+</ResponseField>
+
+Additional options for each `type`:
+
+<Tabs>
+  <Tab title="type = &#x22;fixed-delay&#x22;">
+    <ResponseField name="interval" type="string" required post={['minLength: 1','toml: worker.snapshots.object-store-retry-policy.interval','env: RESTATE_WORKER__SNAPSHOTS__OBJECT_STORE_RETRY_POLICY__INTERVAL']}>
+      Interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: worker.snapshots.object-store-retry-policy.max-attempts','env: RESTATE_WORKER__SNAPSHOTS__OBJECT_STORE_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+  </Tab>
+
+  <Tab title="type = &#x22;exponential&#x22;">
+    <ResponseField name="factor" type="number" required post={['format: float','toml: worker.snapshots.object-store-retry-policy.factor','env: RESTATE_WORKER__SNAPSHOTS__OBJECT_STORE_RETRY_POLICY__FACTOR']}>
+      Factor: The factor to use to compute the next retry attempt.
+    </ResponseField>
+
+    <ResponseField name="initial-interval" type="string" required post={['minLength: 1','toml: worker.snapshots.object-store-retry-policy.initial-interval','env: RESTATE_WORKER__SNAPSHOTS__OBJECT_STORE_RETRY_POLICY__INITIAL_INTERVAL']}>
+      Initial Interval: Initial interval for the first retry attempt.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+
+    <ResponseField name="max-attempts" type="integer | null" post={['format: uint','minimum: 1','toml: worker.snapshots.object-store-retry-policy.max-attempts','env: RESTATE_WORKER__SNAPSHOTS__OBJECT_STORE_RETRY_POLICY__MAX_ATTEMPTS']}>
+      Max attempts: Number of maximum attempts before giving up. Infinite retries if unset.
+    </ResponseField>
+
+    <ResponseField name="max-interval" type="string | null" post={['toml: worker.snapshots.object-store-retry-policy.max-interval','env: RESTATE_WORKER__SNAPSHOTS__OBJECT_STORE_RETRY_POLICY__MAX_INTERVAL']}>
+      Max interval: Maximum interval between retries.
+
+      Can be configured using the [`jiff::fmt::friendly`](https://docs.rs/jiff/latest/jiff/fmt/friendly/index.html) format or ISO8601, for example `5 hours`.
+
+      Human-readable duration: Duration string in either jiff human friendly or ISO8601 format. Check [https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing](https://docs.rs/jiff/latest/jiff/struct.Span.html#parsing-and-printing) for more details.
+
+      Examples:
+      "10 hours" or "5 days" or "5d" or "1h 4m" or "P40D" or "0"
+    </ResponseField>
+  </Tab>
+</Tabs>
+
+### worker.storage
+
+Storage options
+
+Configuration file section `[worker.storage]`, environment variable prefix `RESTATE_WORKER__STORAGE__`.
+
+<ResponseField name="rocksdb-block-size" type="string | null" post={['toml: worker.storage.rocksdb-block-size','env: RESTATE_WORKER__STORAGE__ROCKSDB_BLOCK_SIZE']}>
+  RocksDB block size: Uncompressed block size
+
+  Default: 64KiB
+</ResponseField>
+
+<ResponseField name="rocksdb-compaction-readahead-size" type="string | null" post={['toml: worker.storage.rocksdb-compaction-readahead-size','env: RESTATE_WORKER__STORAGE__ROCKSDB_COMPACTION_READAHEAD_SIZE']}>
+  RocksDB compaction readahead size in bytes: If non-zero, we perform bigger reads when doing compaction. If you're
+  running RocksDB on spinning disks, you should set this to at least 2MB.
+  That way RocksDB's compaction is doing sequential instead of random reads.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-auto-memory-reclaimer" type="boolean" post={['toml: worker.storage.rocksdb-disable-auto-memory-reclaimer','env: RESTATE_WORKER__STORAGE__ROCKSDB_DISABLE_AUTO_MEMORY_RECLAIMER']} default="false">
+  Disable automatic rocksdb memory reclaimer: When set to `true`, disables RocksDB's memory reclaimer for partition stores.
+  The reclaimer automatically reclaims memory from memtables when they are no longer
+  needed, or when the total memtable budget is exceeded. Disabling this will cause
+  rocksdb to exceed the specific budget under extreme conditions and when flushes
+  are falling behind. The benefit of disabling the reclaimer is reduce the chances
+  of rocksdb write stalls under heavy load.
+
+  \[Supports configuration hot-reloading]
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-compact-on-deletion" type="boolean" post={['toml: worker.storage.rocksdb-disable-compact-on-deletion','env: RESTATE_WORKER__STORAGE__ROCKSDB_DISABLE_COMPACT_ON_DELETION']}>
+  Disable compact-on-deletion collector: When set to `true`, disables RocksDB's CompactOnDeletionCollector for partition stores.
+  The collector automatically triggers compaction when SST files accumulate a high density
+  of tombstones (deletion markers), helping reclaim disk space after bulk deletions.
+
+  This helps control space amplification when invocation journal retention expires and
+  the cleaner purges completed invocations.
+
+  Consider disabling this if you observe frequent unnecessary compactions triggered by
+  the collector causing performance issues.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-direct-io-for-flush-and-compactions" type="boolean | null" post={['toml: worker.storage.rocksdb-disable-direct-io-for-flush-and-compactions','env: RESTATE_WORKER__STORAGE__ROCKSDB_DISABLE_DIRECT_IO_FOR_FLUSH_AND_COMPACTIONS']}>
+  Disable Direct IO for flush and compactions: Use O\_DIRECT for writes in background flush and compactions.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-direct-io-for-reads" type="boolean | null" post={['toml: worker.storage.rocksdb-disable-direct-io-for-reads','env: RESTATE_WORKER__STORAGE__ROCKSDB_DISABLE_DIRECT_IO_FOR_READS']}>
+  Disable Direct IO for reads: Files will be opened in "direct I/O" mode
+  which means that data r/w from the disk will not be cached or
+  buffered. The hardware buffer of the devices may however still
+  be used. Memory mapped files are not impacted by these parameters.
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-l0-l1-compression" type="boolean | null" post={['toml: worker.storage.rocksdb-disable-l0-l1-compression','env: RESTATE_WORKER__STORAGE__ROCKSDB_DISABLE_L0_L1_COMPRESSION']}>
+  Disable L0/L1 SST compression: When false (the default), L0 and L1 SST files are compressed with Lz4.
+  Higher levels (L2+) always use Zstd regardless of this setting.
+  Set to true to disable compression for L0/L1, which can improve write
+  throughput at the cost of higher disk usage since these files are
+  short-lived and frequently compacted.
+
+  Default: false (L0/L1 compression enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-statistics" type="boolean | null" post={['toml: worker.storage.rocksdb-disable-statistics','env: RESTATE_WORKER__STORAGE__ROCKSDB_DISABLE_STATISTICS']}>
+  Disable rocksdb statistics collection
+
+  Default: False (statistics enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-disable-wal-compression" type="boolean | null" post={['toml: worker.storage.rocksdb-disable-wal-compression','env: RESTATE_WORKER__STORAGE__ROCKSDB_DISABLE_WAL_COMPRESSION']}>
+  Disable WAL compression: When false (the default), the Write-Ahead Log is compressed with Zstd.
+  Set to true to disable WAL compression. Only applies when WAL is enabled.
+
+  Default: false (WAL compression enabled)
+</ResponseField>
+
+<ResponseField name="rocksdb-l0-num-compaction-trigger" type="integer" post={['format: uint32','minimum: 1','toml: worker.storage.rocksdb-l0-num-compaction-trigger','env: RESTATE_WORKER__STORAGE__ROCKSDB_L0_NUM_COMPACTION_TRIGGER']} default="2">
+  Number of L0 files to trigger compaction: Sets the number of files to trigger level-0 compaction.
+
+  \[default] is 2
+
+  Since v1.7.7
+</ResponseField>
+
+<ResponseField name="rocksdb-log-keep-file-num" type="integer | null" post={['format: uint','toml: worker.storage.rocksdb-log-keep-file-num','env: RESTATE_WORKER__STORAGE__ROCKSDB_LOG_KEEP_FILE_NUM']} default="null">
+  RocksDB log keep file num: Number of info LOG files to keep
+
+  Default: 1
+</ResponseField>
+
+<ResponseField name="rocksdb-log-level" type="string | null" post={['toml: worker.storage.rocksdb-log-level','env: RESTATE_WORKER__STORAGE__ROCKSDB_LOG_LEVEL']} default="null">
+  RocksDB log level: Verbosity of the LOG.
+
+  Default: "error"
+</ResponseField>
+
+<ResponseField name="rocksdb-log-max-file-size" type="string | null" post={['toml: worker.storage.rocksdb-log-max-file-size','env: RESTATE_WORKER__STORAGE__ROCKSDB_LOG_MAX_FILE_SIZE']} default="null">
+  RocksDB log max file size: Max size of info LOG file
+
+  Default: 64MB
+</ResponseField>
+
+<ResponseField name="rocksdb-max-file-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.storage.rocksdb-max-file-size','env: RESTATE_WORKER__STORAGE__ROCKSDB_MAX_FILE_SIZE']} default="64.0 MiB">
+  Target size for SST files: The target size for sst files. Restate uses this value to internally determine
+  the number of memtables to keep in memory and how much to merge before flushing.
+
+  The value is automatically sanitized to 8 MiB if set to a smaller value.
+
+  \[default] is 64 MiB
+
+  Since v1.7.0
+</ResponseField>
+
+<ResponseField name="rocksdb-max-open-files" type="integer | null" post={['format: uint32','minimum: 1','toml: worker.storage.rocksdb-max-open-files','env: RESTATE_WORKER__STORAGE__ROCKSDB_MAX_OPEN_FILES']}>
+  Max open files: Sets the number of open files that can be used by the DB. You may need to
+  increase this if your database has a large working set. Unset means
+  files opened are always kept open.
+
+  \[default] is unset
+
+  Since v1.7.7
+</ResponseField>
+
+<ResponseField name="rocksdb-max-sub-compactions" type="integer" post={['format: uint32','toml: worker.storage.rocksdb-max-sub-compactions','env: RESTATE_WORKER__STORAGE__ROCKSDB_MAX_SUB_COMPACTIONS']} default="1">
+  The maximum number of subcompactions to run in parallel.
+
+  Setting this to 1 means no sub-compactions are allowed.
+
+  Default is 1
+
+  Since v1.7.5
+</ResponseField>
+
+<ResponseField name="rocksdb-memory-budget" type="string | null" post={['toml: worker.storage.rocksdb-memory-budget','env: RESTATE_WORKER__STORAGE__ROCKSDB_MEMORY_BUDGET']}>
+  The memory budget for rocksdb memtables in bytes
+
+  The total is divided evenly across partitions. The server will rebalance the memory budget
+  periodically depending on the number of running partitions on this node.
+
+  If this value is set, it overrides the ratio defined in `rocksdb-memory-ratio`.
+</ResponseField>
+
+<ResponseField name="rocksdb-memory-ratio" type="number" post={['format: float','toml: worker.storage.rocksdb-memory-ratio','env: RESTATE_WORKER__STORAGE__ROCKSDB_MEMORY_RATIO']} default="0.49000000953674316">
+  The memory budget for rocksdb memtables as ratio
+
+  This defines the total memory for rocksdb as a ratio of all memory available to memtables
+  (See `rocksdb-total-memtables-ratio` in common). The budget is then divided evenly across
+  partitions.
+</ResponseField>
+
+<ResponseField name="rocksdb-statistics-level" type="oneOf | null" post={['toml: worker.storage.rocksdb-statistics-level','env: RESTATE_WORKER__STORAGE__ROCKSDB_STATISTICS_LEVEL']}>
+  RocksDB statistics level: StatsLevel can be used to reduce statistics overhead by skipping certain
+  types of stats in the stats collection process.
+
+  Default: "except-detailed-timers"
+
+  * `"disable-all"` : Disable all metrics
+  * `"except-histogram-or-timers"` : Disable timer stats, and skip histogram stats
+  * `"except-timers"` : Skip timer stats
+  * `"except-detailed-timers"` : Collect all stats except time inside mutex lock AND time spent on
+    compression.
+  * `"except-time-for-mutex"` : Collect all stats except the counters requiring to get time inside the
+    mutex lock.
+  * `"all"` : Collect all stats, including measuring duration of mutex operations.
+    If getting time is expensive on the platform to run, it can
+    reduce scalability to more threads, especially for writes.
+</ResponseField>
+
+<ResponseField name="rocksdb-writable-file-max-buffer-size" type="string" post={['pattern: ^\\d+(\\.\\d+)? ?[KMG]B$','minLength: 1','toml: worker.storage.rocksdb-writable-file-max-buffer-size','env: RESTATE_WORKER__STORAGE__ROCKSDB_WRITABLE_FILE_MAX_BUFFER_SIZE']} default="1.0 MiB">
+  Buffer size used for writing to SST files: Sets the maximum buffer size that is used to write SST files to disk.
+  Larger values translate to larger IO operations which can be helpful
+  for slow or network-attached storage devices.
+
+  \[default] is 1 MiB
+
+  Since v1.7.7
+</ResponseField>

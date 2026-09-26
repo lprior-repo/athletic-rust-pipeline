@@ -1,0 +1,783 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Go SDK changelog
+
+> Releases of the Go SDK.
+
+<Update label="2026-09-22" description="Go SDK v1.1.0">
+  ### What's Changed
+
+  * Introduce [ingress.Error](https://pkg.go.dev/github.com/restatedev/sdk-go/ingress#Error) to improve handling of errors from ingress by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/167](https://github.com/restatedev/sdk-go/pull/167)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v1.1.0)
+</Update>
+
+<Update label="2026-08-21" description="Go SDK v1.0.4">
+  ### What's Changed
+
+  * Stop pollProgress from spinning after the input stream closes by @Flo4604 in [https://github.com/restatedev/sdk-go/pull/165](https://github.com/restatedev/sdk-go/pull/165)
+
+  ### New Contributors
+
+  * @Flo4604 made their first contribution in [https://github.com/restatedev/sdk-go/pull/165](https://github.com/restatedev/sdk-go/pull/165)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v1.0.4)
+</Update>
+
+<Update label="2026-08-14" description="Go SDK v1.0.3">
+  In case you've missed it, check out [1.0 release notes](https://github.com/restatedev/sdk-go/releases/tag/v1.0.0)
+
+  ### What's Changed
+
+  * Update shared core to 7.0.3, includes a fix for compensations execution in sagas by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/164](https://github.com/restatedev/sdk-go/pull/164)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v1.0.3)
+</Update>
+
+<Update label="2026-07-14" description="Go SDK x/tunnel/v0.1.1">
+  See [https://github.com/restatedev/sdk-go/releases/tag/x%2Ftunnel%2Fv0.1.0](https://github.com/restatedev/sdk-go/releases/tag/x%2Ftunnel%2Fv0.1.0) for the tunnel release!
+
+  ### What's Changed
+
+  * Tunnel followups by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/163](https://github.com/restatedev/sdk-go/pull/163)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/x/tunnel/v0.1.1)
+</Update>
+
+<Update label="2026-07-14" description="Go SDK v1.0.2">
+  In case you've missed it, check out [1.0 release notes](https://github.com/restatedev/sdk-go/releases/tag/v1.0.0)
+
+  ### What's Changed
+
+  * Fix data race between stream Drain and concurrent Read by @somaz94 in [https://github.com/restatedev/sdk-go/pull/161](https://github.com/restatedev/sdk-go/pull/161)
+
+  ### New Contributors
+
+  * @somaz94 made their first contribution in [https://github.com/restatedev/sdk-go/pull/161](https://github.com/restatedev/sdk-go/pull/161)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v1.0.2)
+</Update>
+
+<Update label="2026-07-13" description="Go SDK x/tunnel/v0.1.0">
+  First release of `github.com/restatedev/sdk-go/x/tunnel` — a module that serves a Restate SDK deployment over an **outbound** connection to Restate Cloud's tunnel servers, so a deployment in a private network needs no inbound HTTP listener and no public ingress. It's the Go equivalent of TypeScript's [`@restatedev/restate-sdk-tunnel`](https://github.com/restatedev/sdk-typescript/tree/main/packages/libs/restate-sdk-tunnel) and interoperates with the [restate-operator](https://github.com/restatedev/restate-operator)'s in-process tunnel mode.
+
+  ### Install
+
+  ```sh theme={null}
+  go get github.com/restatedev/sdk-go/x/tunnel@v0.1.0
+  ```
+
+  Requires `github.com/restatedev/sdk-go` v1.0.1+.
+
+  ### Usage
+
+  Instead of `server.Restate.Start` (which *listens*), you build a `*server.Restate`, wrap it with `NewTunnel`, and call `Start`:
+
+  ```go theme={null}
+  package main
+
+  import (
+  	"context"
+  	"log/slog"
+  	"os"
+  	"os/signal"
+  	"syscall"
+
+  	restate "github.com/restatedev/sdk-go"
+  	"github.com/restatedev/sdk-go/server"
+  	"github.com/restatedev/sdk-go/x/tunnel"
+  )
+
+  type Greeter struct{}
+
+  func (Greeter) Greet(ctx restate.Context, name string) (string, error) {
+  	return "You said hi to " + name + "!", nil
+  }
+
+  func main() {
+  	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+  	defer stop()
+
+  	srv := server.NewRestate().
+  		Bind(restate.Reflect(Greeter{}))
+
+  	err := tunnel.NewTunnel(srv,
+  		// Config can either be in-code via options, or via env variables (see godoc for all details)
+  		tunnel.WithRegion("us"),
+  		tunnel.WithEnvironment("env_...", "publickeyv1_..."),
+  		tunnel.WithAuthToken(os.Getenv("RESTATE_AUTH_TOKEN")),
+  		tunnel.WithTunnelName("greeter-v1"),
+  	).Start(ctx) // blocks until ctx is cancelled, then drains + closes
+
+  	if err != nil {
+  		slog.Error("tunnel exited with error", "err", err.Error())
+  		os.Exit(1)
+  	}
+  }
+  ```
+
+  Once started, the tunnel client connects to Restate cloud and allows to use this process as service deployment.
+
+  `Start` logs the deployment URL on connect; register it (the operator does this for you on Kubernetes):
+
+  ```sh theme={null}
+  restate deployments register <deployment-url>
+  ```
+
+  Check [https://pkg.go.dev/github.com/restatedev/sdk-go/x/tunnel](https://pkg.go.dev/github.com/restatedev/sdk-go/x/tunnel) for the full API documentation
+
+  ### Zero-config under the operator
+
+  With `tunnelMode: in-process` the operator injects the `RESTATE_INPROC_*` env vars, which setups all the necessary configuration entries. The code just needs:
+
+  ```go theme={null}
+  err := tunnel.NewTunnel(srv).Start(ctx)
+  ```
+
+  ### How it works
+
+  Dial out (TLS, ALPN `h2`) → **role-flip**: Restate Cloud drives the connection as the HTTP/2 *client* while the SDK serves as the HTTP/2 *server* (`http2.Server.ServeConn`) → `GET /_/start-tunnel` handshake completed via HTTP/2 trailers → each invocation is one stream whose `/&lt;scheme&gt;/&lt;host&gt;/&lt;port&gt;` prefix is stripped before the request is handed to the reused `server.Restate` handler (discovery, invoke, and request-identity verification against the signing key).
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/x/tunnel/v0.1.0)
+</Update>
+
+<Update label="2026-07-13" description="Go SDK v1.0.1">
+  In case you've missed it, check out [1.0 release notes](https://github.com/restatedev/sdk-go/releases/tag/v1.0.0)
+
+  ### What's Changed
+
+  * Support E2E\_REQUEST\_SIGNING by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/155](https://github.com/restatedev/sdk-go/pull/155)
+  * Bump shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/157](https://github.com/restatedev/sdk-go/pull/157)
+  * Fix waiting on already completed futures. by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/158](https://github.com/restatedev/sdk-go/pull/158)
+  * Write out awaiting on message correctly by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/159](https://github.com/restatedev/sdk-go/pull/159)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v1.0.1)
+</Update>
+
+<Update label="2026-06-30" description="Go SDK v1.0.0">
+  ### Restate Go SDK 1.0
+
+  We're pleased to announce the release of Restate Go SDK **1.0** 🎉
+
+  ### Migration guide
+
+  If you're upgrading from 0.x, follow this **migration guide**, or point your coding agent at it: [MIGRATION.md](https://github.com/restatedev/sdk-go/blob/main/MIGRATION.md).
+
+  ### Changes to the SDK modules
+
+  The SDK is now split into several **independently versioned** Go modules. In particular:
+
+  * **SDK** remains `github.com/restatedev/sdk-go`
+  * **Testing** now needs to be pulled separately using `go get github.com/restatedev/sdk-go/testing@v1.0.0`, to avoid dependency pollution
+
+  We're committing to **1.x semver guarantees for SDK and testing module** and submodules, except `internal` and `x` submodules.
+
+  We keep as experimental modules:
+
+  * **Mocks**: `go get github.com/restatedev/sdk-go/x/mocks@v0.26.0`
+  * **Protoc plugin**: `go get github.com/restatedev/sdk-go/x/protoc-gen-go-restate@v0.26.0`
+
+  ### Revamped error interfaces
+
+  We've overhauled the error interfaces used in the SDK APIs to be more explicit and to make them easier to use and evolve:
+
+  * **`TerminalError`** completes the invocation (or a `Run`) with a failure, with optional status code and metadata. You can build terminal errors using `restate.ToTerminalError` or `restate.TerminalErrorf`.
+  * **`RetryableError`** is a non-terminal failure that gets retried (a status code). We will evolve this type in the future to support customizing the retry behavior.
+
+  > **BREAKING**: Because `TerminalError` is now a **type**, the old `TerminalError(...)` *constructor* was
+  > renamed to **`ToTerminalError`**:
+
+  Context operations such as `Get`, `Run`, `Call` and `Wait` now return a `TerminalError` directly instead of a generic `error`.
+  This makes the SDK's error-handling model explicit right in the signatures: return a `TerminalError` for failures that are recorded in the Restate journal, and `panic` on any other error to let Restate retry.
+
+  ### Randomness uses `math/rand/v2`
+
+  `Rand(ctx)` now returns a standard-library `*math/rand/v2.Rand` instead of a custom
+  interface, so the full stdlib API is available. It's still seeded deterministically (same
+  sequence on every replay) and must not be used inside `Run`. UUIDs moved to their own
+  helper:
+
+  ```go theme={null}
+  id := restate.Rand(ctx).UUID().String()   // 0.x
+  id := restate.UUID(ctx).String()          // 1.0
+
+  // the whole math/rand/v2 surface now works (deterministic, replay-safe):
+  r := restate.Rand(ctx)
+  roll := r.IntN(6) + 1
+  ```
+
+  ### Solidified options
+
+  We've cleaned up the option vocabulary across the SDK so it's consistent and easier to evolve:
+
+  * **Retry policy options** are now a single shared vocabulary: the same builders work for `Run`/`RunAsync`/`RunVoid` and for the invocation retry policy (`WithInvocationRetryPolicy`), with consistent names and types.
+  * **Codecs are simplified**: a single `encoding.Codec` is used everywhere (handlers, services, ingress, value operations), set with `WithCodec`, and input/output codecs can now be configured independently via `WithInputCodec`/`WithOutputCodec`.
+
+  See [MIGRATION.md](https://github.com/restatedev/sdk-go/blob/main/MIGRATION.md) for the exact renames.
+
+  ### (Preview) Scope and limit key to enable flow control
+
+  This release adds the SDK API for [flow control](https://docs.restate.dev/services/flow-control), the new Restate 1.7 feature to cap how many invocations run concurrently within a **scope**, with optional hierarchical **limit keys**. Use it to bound cost (especially for AI agents, where every concurrent invocation is real model/API spend), shield downstream systems from bursts, and share capacity fairly across tenants.
+
+  To use scope and limit keys in service to service communication:
+
+  ```go theme={null}
+  // Route every call made through this client into a named scope.
+  out, err := restate.Service[Output](ctx, "MyService", "Process",
+      restate.WithScope("tenant-123")).
+      Request(input)
+
+  // Add a hierarchical limit key for finer-grained concurrency limits.
+  out, err := restate.Service[Output](ctx, "MyService", "Process",
+      restate.WithScope("tenant-123")).
+      Request(input, restate.WithLimitKey("api-key/user42"))
+  ```
+
+  `WithScope` works on `Service`, `Object` and `Workflow` clients (and their `…Send`
+  variants); `WithLimitKey` works on both in-context calls and ingress requests/sends.
+
+  > **NOTE:** This API is in preview and is not enabled by default. To use it in restate-server 1.7, enable the flow control and protocol v7 experimental features via `RESTATE_EXPERIMENTAL_ENABLE_PROTOCOL_V7=true` and `RESTATE_EXPERIMENTAL_ENABLE_VQUEUES=true` (new clusters only). See [https://docs.restate.dev/services/flow-control](https://docs.restate.dev/services/flow-control) for details.
+
+  ### New Signals API
+
+  Signals are a first-class way for one invocation to communicate with another: an
+  invocation waits on a named signal, and any other handler resolves or rejects it by
+  referencing the target invocation's ID.
+
+  ```go theme={null}
+  // Inside the waiting invocation — block until the signal arrives:
+  approved, err := restate.Signal[bool](ctx, "approved").Result()
+
+  // A SignalFuture can also be combined with others via Context.Select,
+  // exactly like awakeables, calls and timers.
+  ```
+
+  ```go theme={null}
+  // Inside another handler — resolve or reject by target invocation ID:
+  restate.ResolveSignal(ctx, targetInvocationID, "approved", true)
+  restate.RejectSignal(ctx, targetInvocationID, "approved", restate.TerminalErrorf("denied"))
+  ```
+
+  ### Noteworthy bumps
+
+  * **Minimum Go version: 1.24 → 1.25.**
+  * **`testcontainers-go` removed from the core module.** It now lives only in the `testing`
+    module (bumped to `v0.43.0` there), so consumers of the SDK no longer inherit Docker and
+    its dependency tree.
+  * **`go.opentelemetry.io/otel`** `v1.38.0 → v1.44.0`
+  * **`google.golang.org/protobuf`** `v1.36.10 → v1.36.11`
+  * **`github.com/invopop/jsonschema`** `v0.13.0 → v0.14.0`
+
+  ### What's Changed
+
+  * Update shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/137](https://github.com/restatedev/sdk-go/pull/137)
+  * Bump sdk test suite by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/138](https://github.com/restatedev/sdk-go/pull/138)
+  * Update shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/140](https://github.com/restatedev/sdk-go/pull/140)
+  * Refactor connection handling in ExecuteInvocation and IO helpers #132  by @neerajvipparla in [https://github.com/restatedev/sdk-go/pull/143](https://github.com/restatedev/sdk-go/pull/143)
+  * Update shared core, remove take output EOF case by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/145](https://github.com/restatedev/sdk-go/pull/145)
+  * Move stream draining to request handler by @muhamadazmy in [https://github.com/restatedev/sdk-go/pull/146](https://github.com/restatedev/sdk-go/pull/146)
+  * Add/go license #134 by @neerajvipparla in [https://github.com/restatedev/sdk-go/pull/144](https://github.com/restatedev/sdk-go/pull/144)
+  * Fix license check CI step: match Go version to go.mod by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/147](https://github.com/restatedev/sdk-go/pull/147)
+  * Scopes and signals by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/148](https://github.com/restatedev/sdk-go/pull/148)
+  * Pre 1.0 changes by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/149](https://github.com/restatedev/sdk-go/pull/149)
+  * Dep bumps by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/150](https://github.com/restatedev/sdk-go/pull/150)
+  * Bump jsonschema dependency by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/151](https://github.com/restatedev/sdk-go/pull/151)
+  * Bump testcontainers dependency by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/152](https://github.com/restatedev/sdk-go/pull/152)
+  * Fix API change with testcontainers by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/153](https://github.com/restatedev/sdk-go/pull/153)
+  * Remove exclusions we dont need by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/154](https://github.com/restatedev/sdk-go/pull/154)
+
+  ### New Contributors
+
+  * @neerajvipparla made their first contribution in [https://github.com/restatedev/sdk-go/pull/143](https://github.com/restatedev/sdk-go/pull/143)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v1.0.0)
+</Update>
+
+<Update label="2026-06-30" description="Go SDK testing/v1.0.0">
+  Check [https://github.com/restatedev/sdk-go/releases/tag/v1.0.0](https://github.com/restatedev/sdk-go/releases/tag/v1.0.0) for more details.
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/testing/v1.0.0)
+</Update>
+
+<Update label="2026-04-02" description="Go SDK v0.24.0">
+  ### What's Changed
+
+  * Support non-deterministic codecs via PayloadOptions by @ciricc in [https://github.com/restatedev/sdk-go/pull/122](https://github.com/restatedev/sdk-go/pull/122)
+  * Improve Run docs by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/129](https://github.com/restatedev/sdk-go/pull/129)
+  * Docs about otel client setup by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/130](https://github.com/restatedev/sdk-go/pull/130)
+  * Add require\_service\_type flag to protoc-gen-go-restate by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/131](https://github.com/restatedev/sdk-go/pull/131)
+  * Use WarpBuild runners for CI workflows by @tillrohrmann in [https://github.com/restatedev/sdk-go/pull/136](https://github.com/restatedev/sdk-go/pull/136)
+
+  ### New Contributors
+
+  * @ciricc made their first contribution in [https://github.com/restatedev/sdk-go/pull/122](https://github.com/restatedev/sdk-go/pull/122)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.24.0)
+</Update>
+
+<Update label="2026-01-05" description="Go SDK v0.23.0">
+  ### What's Changed
+
+  ### Better integration with go's `Context`
+
+  We have improved the interoperability with go's `Context`, you can now wrap any context inside `restate.Context` using `restate.WrapContext`:
+
+  ```go theme={null}
+  func TracingExample(ctx restate.Context) error {
+  	// Create a span
+  	traceCtx, exampleSpan := otelTracer.Start(ctx, "Example")
+  	// Wrap the traceCtx created by otel in the restate context.
+  	ctx = restate.WrapContext(ctx, traceCtx)
+  	defer exampleSpan.End()
+
+  	return restate.RunVoid(ctx, func(ctx restate.RunContext) error {
+  		// RunContext will propagate correctly the wrapped otel context too. 
+  		_, innerExampleSpan := otelTracer.Start(ctx, "InnerExample")
+  		defer innerExampleSpan.End()
+
+  		// Do something
+  		return nil
+  	})
+  }
+  ```
+
+  You can also propagate values manually in the usual way using `restate.WithValue`:
+
+  ```go theme={null}
+  // Wrap using restate.WithValue
+  ctx = restate.WithValue(ctx, "tenant", tenant)
+
+  restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+    // Extract using context APIs
+    tenant := ctx.Value("tenant").(string)
+  })
+  ```
+
+  ### Other changes
+
+  * Fix to opentelemetry library integration: now you don't need to set the tracecontext propagator anymore. by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/124](https://github.com/restatedev/sdk-go/pull/124)
+  * Change logging level to WARN for invocation failure. by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/127](https://github.com/restatedev/sdk-go/pull/127)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.23.0)
+</Update>
+
+<Update label="2025-12-16" description="Go SDK v0.22.1">
+  ### What's Changed
+
+  * **Memory leak fix**: Close wasm module when \*Core is gc'd by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/125](https://github.com/restatedev/sdk-go/pull/125)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.22.1)
+</Update>
+
+<Update label="2025-11-20" description="Go SDK v0.22.0">
+  ### New features:
+
+  * Added `restate.RunVoid` as shortcut method to execute runs that return no value:
+
+  ```golang theme={null}
+  err = restate.RunVoid(ctx, func(stepCtx restate.RunContext) error {
+    return DoStuff()  
+  })
+  ```
+
+  Thanks @chronark for the contribution!
+
+  * Added test environment using testcontainers:
+
+  ```golang theme={null}
+  import (
+  	"testing"
+
+  	restatetest "github.com/restatedev/sdk-go/testing"
+  	"github.com/restatedev/sdk-go/ingress"
+  )
+
+  func TestWithTestcontainers(t *testing.T) {
+  	// Setup test environment
+  	tEnv := restatetest.Start(t, restate.Reflect(Greeter{}))
+  	// Client to do requests
+  	client := tEnv.Ingress()
+
+  	// Do request to greeter, and assert response
+  	out, err := ingress.Service[string, string](client, "Greeter", "Greet").Request(t.Context(), "Francesco")
+  	require.NoError(t, err)
+  	require.Equal(t, "You said hi to Francesco!", out)
+  }
+  ```
+
+  ### New Contributors
+
+  * @chronark made their first contribution in [https://github.com/restatedev/sdk-go/pull/118](https://github.com/restatedev/sdk-go/pull/118)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.22.0)
+</Update>
+
+<Update label="2025-10-29" description="Go SDK v0.21.1">
+  ### What's Changed
+
+  * Use the correct logger by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/115](https://github.com/restatedev/sdk-go/pull/115)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.21.1)
+</Update>
+
+<Update label="2025-10-20" description="Go SDK v0.21.0">
+  ### New features
+
+  * `protoc-restate-go` now generates ingress clients
+
+  ```go theme={null}
+  counterClient := helloworld.NewCounterIngressClient(client, "my-counter-key")
+
+  addRes, err := counterClient.Add().Request(ctx, &helloworld.AddRequest{Delta: 1}, restate.WithDelay(10*time.Second))
+  ```
+
+  * New API to concurrently wait Restate Futures:
+    * `WaitFirst` to wait the first of the given futures to complete
+
+  ```go theme={null}
+  fut1 := restate.Service[string](ctx, "service1", "method1").RequestFuture(input)
+  fut2 := restate.After(ctx, 5 * time.Second)
+
+  firstCompleted, err := restate.WaitFirst(ctx, fut1, fut2, fut3)
+  if err != nil {
+  	return "", err
+  }
+  // Handle the first completed future
+  switch firstCompleted {
+  case fut1:
+  	return fut1.Response()
+  case fut2:
+  	return "", fmt.Errorf("timeout")
+  }
+  ```
+
+  * `Wait` to create an iterator (usable in `for range`) to await futures as soon as they're completed
+
+  ```go theme={null}
+  fut1 := restate.Service[string](ctx, "service1", "method1").RequestFuture(input)
+  fut2 := restate.Service[string](ctx, "service2", "method2").RequestFuture(input)
+  fut3 := restate.Service[string](ctx, "service3", "method3").RequestFuture(input)
+
+  results := []string{}
+  for fut, err := range restate.Wait(ctx, fut1, fut2, fut3) {
+  	if err != nil {
+  		return nil, err
+  	}
+  	result, err := fut.(restate.ResponseFuture[string]).Response()
+  	if err != nil {
+  		return nil, err
+  	}
+  	results = append(results, result)
+  }
+  ```
+
+  * `WaitIter`, like `Wait`, but with a "traditional iterator" API
+  * All the new selector API now correctly support Restate cancellation feature.
+
+  ### Deprecations
+
+  * `restate.Rand(ctx).UUID()` -> `restate.UUID(ctx)`
+  * `restate.Rand(ctx).Source()` -> `restate.RandSource(ctx)`
+  * In subsequent releases, `restate.Rand(ctx)` will return `math/rand/v2` `Rand` object instead of the internal interface.
+  * Few changes to the Ingress API, including renaming the `Attach*` API:
+    * `AttachInvocation` -> `InvocationById`
+    * `AttachService` -> `ServiceInvocationByIdempotencyKey`
+    * `AttachObject` -> `ObjectInvocationByIdempotencyKey`
+    * `AttachWorkflow` -> `WorkflowHandle`
+  * `Select` API is deprecated, replace it with `WaitFirst`, `Wait` or `WaitIter`
+
+  ### Breaking changes
+
+  * Ingress API
+    * `Send` return type changed, now it returns `SendResponse`/`SimpleSendResponse` and splits result type to error type.
+    * Return type of `Service`/`Object`/`Workflow` now doesn't implement anymore `SendRequester`, but was replaced with an ad-hoc interface to carry on the generic information
+
+  ### Fixes
+
+  * Ingress API deserialized incorrectly send and attach responses, when used in combination with a Codec different from the default one.
+
+  ### Full changelog
+
+  * Generate Ingress client when using protoc-restate-go by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/109](https://github.com/restatedev/sdk-go/pull/109)
+  * Few changes in the Rand API by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/106](https://github.com/restatedev/sdk-go/pull/106)
+  * New concurrency API by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/108](https://github.com/restatedev/sdk-go/pull/108)
+  * Protocol version 6 is supported by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/111](https://github.com/restatedev/sdk-go/pull/111)
+  * Rename RandUUID to just UUID by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/112](https://github.com/restatedev/sdk-go/pull/112)
+  * Changes to the Ingress API by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/110](https://github.com/restatedev/sdk-go/pull/110)
+  * Test suite 3.2 upgrade by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/113](https://github.com/restatedev/sdk-go/pull/113)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.21.0)
+</Update>
+
+<Update label="2025-10-07" description="Go SDK v0.20.2">
+  ### What's Changed
+
+  * Also catch schema generation panic for non proto schem by @muhamadazmy in [https://github.com/restatedev/sdk-go/pull/105](https://github.com/restatedev/sdk-go/pull/105)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.20.2)
+</Update>
+
+<Update label="2025-10-07" description="Go SDK v0.20.1">
+  ### What's Changed
+
+  * Catch schema generation panic by @muhamadazmy in [https://github.com/restatedev/sdk-go/pull/104](https://github.com/restatedev/sdk-go/pull/104)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.20.1)
+</Update>
+
+<Update label="2025-09-17" description="Go SDK v0.20.0">
+  ### Invocation retry policy
+
+  When used with Restate 1.5, you can now configure the invocation retry policy from the SDK directly. See [https://github.com/restatedev/restate/releases/tag/v1.5.0](https://github.com/restatedev/restate/releases/tag/v1.5.0) for more details on the new invocation retry policy configuration.
+
+  ### More configuration
+
+  Allow to configure per-handler options in the reflection API through `ConfigureHandler`.
+
+  ### What's Changed
+
+  * Add retry policy options by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/92](https://github.com/restatedev/sdk-go/pull/92)
+  * Clarify meaning of withMaxRetryAttempts by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/95](https://github.com/restatedev/sdk-go/pull/95)
+  * Allow to configure per handler options when using the Reflect API by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/96](https://github.com/restatedev/sdk-go/pull/96)
+  * Better workflow retention by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/97](https://github.com/restatedev/sdk-go/pull/97)
+  * WithCodec should implement PromiseOption by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/99](https://github.com/restatedev/sdk-go/pull/99)
+  * Grab seed from shared-core by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/101](https://github.com/restatedev/sdk-go/pull/101)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.20.0)
+</Update>
+
+<Update label="2025-08-18" description="Go SDK v0.19.0">
+  ### What's Changed
+
+  * Bumped Go minimum version to 1.24, Use native Go HTTP/2 server setup and graceful shutdown by @khatibomar in [https://github.com/restatedev/sdk-go/pull/59](https://github.com/restatedev/sdk-go/pull/59)
+  * Add health endpoint by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/84](https://github.com/restatedev/sdk-go/pull/84)
+  * Fix read channel issue by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/86](https://github.com/restatedev/sdk-go/pull/86)
+  * Dependency bumps by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/88](https://github.com/restatedev/sdk-go/pull/88)
+  * Re-export options types by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/89](https://github.com/restatedev/sdk-go/pull/89)
+  * Re-export Request struct so it can be mocked by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/90](https://github.com/restatedev/sdk-go/pull/90)
+  * Fix ingress client `Invocation.Id` and `Attach`/`Output` functions by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/91](https://github.com/restatedev/sdk-go/pull/91)
+
+  ### New Contributors
+
+  * @khatibomar made their first contribution in [https://github.com/restatedev/sdk-go/pull/59](https://github.com/restatedev/sdk-go/pull/59)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.19.0)
+</Update>
+
+<Update label="2025-07-21" description="Go SDK v0.18.1">
+  Fix goroutine leak in read path, see [https://github.com/restatedev/sdk-go/pull/86](https://github.com/restatedev/sdk-go/pull/86) for more details.
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.18.1)
+</Update>
+
+<Update label="2025-07-02" description="Go SDK v0.18.0">
+  * Added new options for services and handlers `WithAbortTimeout`, `WithEnableLazyState`, `WithIdempotencyRetention`, `WithInactivityTimeout`, `WithIngressPrivate`, `WithJournalRetention` and `WithWorkflowRetention`. Please note, these will work only from Restate 1.4 onward. Check the in-code documentation for more details.
+  * Introduce new ingress client, thanks @strobus for the contribution!
+  * Several improvements to error messages
+  * Fix bug with protojson and schema generation
+
+  ### Changelog
+
+  * Improve error message when reflect skips methods by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/70](https://github.com/restatedev/sdk-go/pull/70)
+  * Add discovery manifest v3 support by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/72](https://github.com/restatedev/sdk-go/pull/72)
+  * Ensure input bytes are handled even if they come with an io.EOF by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/73](https://github.com/restatedev/sdk-go/pull/73)
+  * More easy to identify Restate SDK started listening by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/75](https://github.com/restatedev/sdk-go/pull/75)
+  * Improve error message around bad service/handlers by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/77](https://github.com/restatedev/sdk-go/pull/77)
+  * Bump shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/78](https://github.com/restatedev/sdk-go/pull/78)
+  * Update shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/81](https://github.com/restatedev/sdk-go/pull/81)
+  * Fix protojsonschema ids issue by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/76](https://github.com/restatedev/sdk-go/pull/76)
+  * Ingress sdk by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/82](https://github.com/restatedev/sdk-go/pull/82)
+  * Bump shared core to 0.4.0 by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/83](https://github.com/restatedev/sdk-go/pull/83)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.18.0)
+</Update>
+
+<Update label="2025-06-17" description="Go SDK v0.17.1">
+  ### What's changed
+
+  [https://github.com/restatedev/sdk-go/pull/73](https://github.com/restatedev/sdk-go/pull/73) - fix a bug related to HTTP1.1 servers
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.17.1)
+</Update>
+
+<Update label="2025-04-29" description="Go SDK v0.17.0">
+  ### What's Changed
+
+  * Introduce `restate.RunAsync` to execute a side effect returning a future, allowing to combine it within a `restate.Selector` by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/68](https://github.com/restatedev/sdk-go/pull/68)
+  * Improved JSON Schema support, and introduced schema derivation for `protojson` encoding by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/69](https://github.com/restatedev/sdk-go/pull/69)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.17.0)
+</Update>
+
+<Update label="2025-04-09" description="Go SDK v0.16.0">
+  We're pleased to announce the release of Golang SDK 0.16, in combination with Restate 1.3.
+  Check out the announcement blog post for more details about Restate 1.3 and the new SDK features: [https://restate.dev/blog/announcing-restate-1.3/](https://restate.dev/blog/announcing-restate-1.3/)
+
+  This SDK introduces the following new APIs:
+
+  * Support for `Run` retry policies, through [`RunOption`s](https://pkg.go.dev/github.com/restatedev/sdk-go@v0.16.0/internal/options#RunOption). For example by using [`WithMaxRetryAttempts`](https://pkg.go.dev/github.com/restatedev/sdk-go#WithMaxRetryAttempts) you can limit the amount of retry attempts before giving up.
+  * Support the new features of Restate 1.3, including [`GetInvocationId`](https://pkg.go.dev/github.com/restatedev/sdk-go#GetInvocationId), [`AttachInvocation`](https://pkg.go.dev/github.com/restatedev/sdk-go#AttachInvocation) and [`CancelInvocation`](https://pkg.go.dev/github.com/restatedev/sdk-go#CancelInvocation) and [metadata](https://pkg.go.dev/github.com/restatedev/sdk-go#WithMetadata)
+  * The SDK now publishes auto-generated json schemas for the input/output handler types. This can be overriden using [`JSONCodecWithCustomSchemaGenerator`](https://pkg.go.dev/github.com/restatedev/sdk-go@v0.16.0/encoding#JSONCodecWithCustomSchemaGenerator)
+  * Add ability to provide a name to `Sleep`, for observability purposes, using [`WithName`](https://pkg.go.dev/github.com/restatedev/sdk-go#WithName)
+
+  Golang SDK 0.16 can be used in combination with Restate 1.3 onward.
+
+  ### Full changelog
+
+  * Protocol V4 support by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/54](https://github.com/restatedev/sdk-go/pull/54)
+  * SDK test suite 3.0 by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/55](https://github.com/restatedev/sdk-go/pull/55)
+  * Fix KillTest by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/56](https://github.com/restatedev/sdk-go/pull/56)
+  * Bump to protocol V5 by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/57](https://github.com/restatedev/sdk-go/pull/57)
+  * Json schema & metadata by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/60](https://github.com/restatedev/sdk-go/pull/60)
+  * Add GetInvocationId/AttachInvocation/CancelInvocation by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/61](https://github.com/restatedev/sdk-go/pull/61)
+  * Add documentation field by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/62](https://github.com/restatedev/sdk-go/pull/62)
+  * Add named sleep by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/63](https://github.com/restatedev/sdk-go/pull/63)
+  * Add CLA automation by @tillrohrmann in [https://github.com/restatedev/sdk-go/pull/65](https://github.com/restatedev/sdk-go/pull/65)
+  * Fix error propagation of errors from VM when starting. by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/66](https://github.com/restatedev/sdk-go/pull/66)
+  * Regenerate mocks by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/64](https://github.com/restatedev/sdk-go/pull/64)
+  * Update shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/67](https://github.com/restatedev/sdk-go/pull/67)
+
+  ### New Contributors
+
+  * @tillrohrmann made their first contribution in [https://github.com/restatedev/sdk-go/pull/65](https://github.com/restatedev/sdk-go/pull/65)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.16.0)
+</Update>
+
+<Update label="2025-02-12" description="Go SDK v0.15.0">
+  ### What's Changed
+
+  * Add comment about deterministic marshaling by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/52](https://github.com/restatedev/sdk-go/pull/52)
+  * Experimental: Add mocking integration by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/53](https://github.com/restatedev/sdk-go/pull/53)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.15.0)
+</Update>
+
+<Update label="2025-01-20" description="Go SDK v0.14.0">
+  ### What's Changed
+
+  * WorkflowSend does not need a type parameter
+  * Use fully qualified proto service names by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/48](https://github.com/restatedev/sdk-go/pull/48)
+  * Update to suite 2.3 by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/49](https://github.com/restatedev/sdk-go/pull/49)
+  * Use test suite 2.4 by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/50](https://github.com/restatedev/sdk-go/pull/50)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.14.0)
+</Update>
+
+<Update label="2024-12-11" description="Go SDK v0.13.2">
+  Fix go.mod to allow go install to work
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.13.2)
+</Update>
+
+<Update label="2024-11-26" description="Go SDK v0.13.1">
+  ### What's Changed
+
+  * Lambda support without httpadapter by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/47](https://github.com/restatedev/sdk-go/pull/47)
+  * fix: usage of `a deprecated Node.js version` in CI by @hamirmahal in [https://github.com/restatedev/sdk-go/pull/46](https://github.com/restatedev/sdk-go/pull/46)
+
+  ### New Contributors
+
+  * @hamirmahal made their first contribution in [https://github.com/restatedev/sdk-go/pull/46](https://github.com/restatedev/sdk-go/pull/46)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.13.1)
+</Update>
+
+<Update label="2024-11-08" description="Go SDK v0.12.0">
+  ### What's Changed
+
+  * Parse otel headers automatically + create otel example by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/39](https://github.com/restatedev/sdk-go/pull/39)
+  * Use 1.6 test suite by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/41](https://github.com/restatedev/sdk-go/pull/41)
+  * Implement workflows and durable promises by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/40](https://github.com/restatedev/sdk-go/pull/40)
+  * Update test suite by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/44](https://github.com/restatedev/sdk-go/pull/44)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.12.0)
+</Update>
+
+<Update label="2024-08-23" description="Go SDK v0.11.0">
+  This PR breaks essentially the entire API, as methods have been moved from `Context.Run` et all to `restate.Run(ctx)` et all, which is much more pleasant.
+
+  Serialisation issues will now always panic - this allows us to take error return values out of various api calls that don't need them.
+
+  The semantics of .Get() have changed - the zero value is now always returned if the key isn't found. You can check explicitly for this case by providing a pointer type eg \*string. Get will now only return errors in the case of cancellation, which will also only happen if eager state is disabled, which is not the default. As such, errors from gets are now very unlikely and you can just return them without another thought.
+
+  It is also notable that you can now provide many more method signatures to .Reflect().
+
+  ### What's Changed
+
+  * Ensure servicemethod is logged by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/28](https://github.com/restatedev/sdk-go/pull/28)
+  * Use panics for serialisation errors by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/32](https://github.com/restatedev/sdk-go/pull/32)
+  * Add TerminalErrorf by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/30](https://github.com/restatedev/sdk-go/pull/30)
+  * Move headers and delays into requestoption/ send option by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/34](https://github.com/restatedev/sdk-go/pull/34)
+  * Always interact with ctx through facilitator functions by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/35](https://github.com/restatedev/sdk-go/pull/35)
+  * Allow more method signatures in .Reflect() by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/33](https://github.com/restatedev/sdk-go/pull/33)
+  * Remove err key not found by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/36](https://github.com/restatedev/sdk-go/pull/36)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.11.0)
+</Update>
+
+<Update label="2024-08-16" description="Go SDK v0.10.0">
+  There are several breaking changes in this release:
+
+  1. NewServiceRouter et al -> NewService
+  2. restate.Service and restate.Object -> restate.Reflect
+  3. Sleep now returns an error, which is returned in the case of invocation cancellation
+
+  There is also a significant new feature; code generation. For other changes, see below
+
+  ### What's Changed
+
+  * Bump google.golang.org/protobuf from 1.32.0 to 1.33.0 by @dependabot in [https://github.com/restatedev/sdk-go/pull/15](https://github.com/restatedev/sdk-go/pull/15)
+  * Bump golang.org/x/net from 0.21.0 to 0.23.0 by @dependabot in [https://github.com/restatedev/sdk-go/pull/16](https://github.com/restatedev/sdk-go/pull/16)
+  * Enable go sdk to use the new restate-sdk-test-tool by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/19](https://github.com/restatedev/sdk-go/pull/19)
+  * Prepare integration.yaml for embedding in runtime repo by @slinkydeveloper in [https://github.com/restatedev/sdk-go/pull/22](https://github.com/restatedev/sdk-go/pull/22)
+  * Add the rest of the test services by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/23](https://github.com/restatedev/sdk-go/pull/23)
+  * Avoid 'router' terminology by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/25](https://github.com/restatedev/sdk-go/pull/25)
+  * Support passing headers in calls by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/17](https://github.com/restatedev/sdk-go/pull/17)
+  * Add protoc-gen-go-restate by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/18](https://github.com/restatedev/sdk-go/pull/18)
+  * Add awakeable example by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/26](https://github.com/restatedev/sdk-go/pull/26)
+  * Test various cancellation behaviour by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/24](https://github.com/restatedev/sdk-go/pull/24)
+  * Unify restate.Service and restate.Object into restate.Reflect by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/27](https://github.com/restatedev/sdk-go/pull/27)
+
+  ### New Contributors
+
+  * @dependabot made their first contribution in [https://github.com/restatedev/sdk-go/pull/15](https://github.com/restatedev/sdk-go/pull/15)
+  * @slinkydeveloper made their first contribution in [https://github.com/restatedev/sdk-go/pull/19](https://github.com/restatedev/sdk-go/pull/19)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.10.0)
+</Update>
+
+<Update label="2024-07-19" description="Go SDK v0.9.1">
+  ### What's Changed
+
+  * Add doc comments everywhere by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/13](https://github.com/restatedev/sdk-go/pull/13)
+  * Add a mechanism to obtain immutable request parameters by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/14](https://github.com/restatedev/sdk-go/pull/14)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.9.1)
+</Update>
+
+<Update label="2024-07-17" description="Go SDK v0.9.0">
+  With v0.9.0, this repository is compatible with Restate v1, and is much closer to feature complete with other repos. Correctness has been validated using the Restate verification tests in restatedev/e2e. A 1.0 release will come when we have API stability, which will not come until we have some feedback from users.
+
+  ### What's Changed
+
+  * Update for 1.0 and implement basic awakeables by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/2](https://github.com/restatedev/sdk-go/pull/2)
+  * Async completions by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/3](https://github.com/restatedev/sdk-go/pull/3)
+  * Use panics where possible, implement selector by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/4](https://github.com/restatedev/sdk-go/pull/4)
+  * Bring handler registration closer in line to TS by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/5](https://github.com/restatedev/sdk-go/pull/5)
+  * Move logs to slog by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/6](https://github.com/restatedev/sdk-go/pull/6)
+  * Add rand implementation by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/7](https://github.com/restatedev/sdk-go/pull/7)
+  * Add identity implementation by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/8](https://github.com/restatedev/sdk-go/pull/8)
+  * Custom encoders by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/9](https://github.com/restatedev/sdk-go/pull/9)
+  * Move to Go 1.21.x by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/10](https://github.com/restatedev/sdk-go/pull/10)
+  * Implement shared context & various improvements by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/11](https://github.com/restatedev/sdk-go/pull/11)
+  * Verif fixes, simplify void by @jackkleeman in [https://github.com/restatedev/sdk-go/pull/12](https://github.com/restatedev/sdk-go/pull/12)
+
+  ### New Contributors
+
+  * @jackkleeman made their first contribution in [https://github.com/restatedev/sdk-go/pull/2](https://github.com/restatedev/sdk-go/pull/2)
+
+  [View on GitHub](https://github.com/restatedev/sdk-go/releases/tag/v0.9.0)
+</Update>

@@ -1,0 +1,161 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Serialization
+
+> Customize serialization for SDK actions.
+
+Restate sends data over the network for storing state, journaling actions, awakeables, etc.
+Therefore, Restate needs to serialize and deserialize the journal entries.
+
+## Default Serialization
+
+By default, the SDK serializes the journal entry with the [`json`](https://docs.python.org/3/library/json.html#) library.
+If this does not work for your data type, then you need to specify a custom serializer, as shown below.
+
+## Pydantic
+
+[Pydantic](https://docs.pydantic.dev/latest/) is a data validation and parsing library for Python.
+You can use Pydantic models to define the structure of your data: handler input/output, state, etc.
+
+### Using Pydantic
+
+Make sure to install the optional `serde` dependency of the Restate SDK: `restate-sdk[serde]`.
+
+Then do the following:
+
+```python {"CODE_LOAD::python/src/develop/serialization.py#using_pydantic"}  theme={null}
+class Delivery(BaseModel):
+    timestamp: datetime
+    dimensions: tuple[int, int]
+
+
+class CompletedDelivery(BaseModel):
+    status: str
+    timestamp: datetime
+
+
+# For the input/output serialization of your handlers
+@my_object.handler()
+async def deliver(ctx: ObjectContext, delivery: Delivery) -> CompletedDelivery:
+
+    # To get state
+    await ctx.get("delivery", type_hint=Delivery)
+
+    # To serialize awakeable payloads
+    ctx.awakeable(type_hint=Delivery)
+
+    # To serialize the results of actions
+    await ctx.run_typed(
+        "some-task", do_something, restate.RunOptions(type_hint=Delivery)
+    )
+
+    return CompletedDelivery(status="delivered", timestamp=datetime.now())
+```
+
+### Pydantic & OpenAPI
+
+Pydantic integrates well with [OpenAPI](https://www.openapis.org/). Restate generates the OpenAPI specifications for you.
+If you use Pydantic, you can use the OpenAPI-generated clients to interact with your services.
+You can find example clients in the UI playground (click on your service in the overview and then on playground).
+
+## msgspec
+
+[msgspec](https://jcristharif.com/msgspec/) is a fast serialization and validation library, with builtin support for JSON, MessagePack, YAML, and TOML.
+You can use msgspec Structs to define the structure of your data: handler input/output, state, etc.
+
+### Using msgspec
+
+Make sure to install the optional `serde` dependency of the Restate SDK: `restate-sdk[serde]`.
+
+Then do the following:
+
+```python {"CODE_LOAD::python/src/develop/serialization.py#using_msgspec"}  theme={null}
+class Package(msgspec.Struct):
+    timestamp: datetime
+    dimensions: tuple[int, int]
+
+
+class CompletedPackage(msgspec.Struct):
+    status: str
+    timestamp: datetime
+
+
+# For the input/output serialization of your handlers
+@my_object.handler()
+async def ship(ctx: ObjectContext, package: Package) -> CompletedPackage:
+
+    # To get state
+    await ctx.get("package", type_hint=Package)
+
+    # To serialize awakeable payloads
+    ctx.awakeable(type_hint=Package)
+
+    # To serialize the results of actions
+    await ctx.run_typed(
+        "some-task", do_package_task, restate.RunOptions(type_hint=Package)
+    )
+
+    return CompletedPackage(status="shipped", timestamp=datetime.now())
+```
+
+### msgspec & OpenAPI
+
+msgspec integrates well with [OpenAPI](https://www.openapis.org/). Restate generates the OpenAPI specifications for you.
+If you use msgspec, you can use the OpenAPI-generated clients to interact with your services.
+You can find example clients in the UI playground (click on your service in the overview and then on playground).
+
+## Dataclasses
+
+You can also use Python's built-in `dataclasses` to define the structure of your data.
+Make sure to install the optional `serde` dependency of the Restate SDK `restate-sdk[serde]`.
+
+Then add a type hint in a similar way as you would with Pydantic.
+
+## Custom Serialization
+
+To write a custom serializer, you implement the `Serde` interface.
+
+For example a custom JSON serializer could look like this:
+
+```python {"CODE_LOAD::python/src/develop/serialization.py#custom"}  theme={null}
+class MyData(typing.TypedDict):
+    """Represents a response from the GPT model."""
+
+    some_value: str
+    my_number: int
+
+
+class MySerde(Serde[MyData]):
+    def deserialize(self, buf: bytes) -> typing.Optional[MyData]:
+        if not buf:
+            return None
+        data = json.loads(buf)
+        return MyData(some_value=data["some_value"], my_number=data["some_number"])
+
+    def serialize(self, obj: typing.Optional[MyData]) -> bytes:
+        if obj is None:
+            return bytes()
+        data = {"some_value": obj["some_value"], "some_number": obj["my_number"]}
+        return bytes(json.dumps(data), "utf-8")
+```
+
+You then use this serializer in your handlers, as follows:
+
+```python {"CODE_LOAD::python/src/develop/serialization.py#using_custom_serde"}  theme={null}
+# For the input/output serialization of your handlers
+@my_object.handler(input_serde=MySerde(), output_serde=MySerde())
+async def my_handler(ctx: ObjectContext, greeting: str) -> str:
+
+    # To serialize state
+    await ctx.get("my_state", serde=MySerde())
+    ctx.set("my_state", MyData(some_value="Hi", my_number=15), serde=MySerde())
+
+    # To serialize awakeable payloads
+    ctx.awakeable(serde=MySerde())
+
+    # etc.
+
+    return "some-output"
+```

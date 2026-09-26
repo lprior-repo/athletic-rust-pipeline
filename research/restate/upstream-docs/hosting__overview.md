@@ -1,0 +1,59 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Choose how to run Restate
+
+> Compare Restate Cloud, Restate BYOC, and self-hosted Restate.
+
+Your Restate services run as applications on your preferred compute platform. Separately, you need a Restate environment to coordinate their execution.
+
+You can use Restate Cloud, run a managed Restate region in your cloud account with Restate BYOC, or operate Restate yourself.
+
+<img src="https://mintcdn.com/restate-6d46e1dc/hzmRKOII4HJM8CFw/img/usecases/microservices/microservice-app-layout.png?fit=max&auto=format&n=hzmRKOII4HJM8CFw&q=85&s=62be8a289607b9a9243a59084fff4dc8" alt="Restate services running separately from the Restate environment" width="2949" height="831" data-path="img/usecases/microservices/microservice-app-layout.png" />
+
+<Info>
+  To run Restate locally for development, follow the [installation guide](/installation).
+</Info>
+
+## Compare the options
+
+|                                       | Restate Cloud                                                                     | Restate BYOC                                                                                | Self-hosted Restate                                            |
+| :------------------------------------ | :-------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------ | :------------------------------------------------------------- |
+| **Best for**                          | Getting started quickly with minimal infrastructure management                    | Keeping infrastructure and application data in your cloud account without operating Restate | Taking full control of deployment and operations               |
+| **Operated by**                       | Restate                                                                           | Restate                                                                                     | You                                                            |
+| **Runs in**                           | Restate managed cloud regions                                                     | Your cloud account and VPC                                                                  | Infrastructure you choose                                      |
+| **Infrastructure owner**              | Restate                                                                           | You                                                                                         | You                                                            |
+| **Data and network boundary**         | Restate manages the environment, with secure options for connecting your services | Application data remains in your infrastructure, with private connectivity to your services | You define and manage the network, security, and data boundary |
+| **Setup**                             | Self service                                                                      | Set up with the Restate team                                                                | Install and configure Restate yourself                         |
+| **Scaling, upgrades, and monitoring** | Managed by Restate                                                                | Managed by Restate                                                                          | Managed by you                                                 |
+| **Pricing**                           | [See pricing](https://restate.dev/pricing)                                        | [See pricing](https://restate.dev/pricing)                                                  | Your infrastructure and operational costs                      |
+| **Get started**                       | [Sign up for the free tier](/cloud/getting-started)                               | [Contact Restate](https://cal.com/team/restate/team)                                        | [Read the self hosting guide](/server/overview)                |
+
+<Info>
+  Need a multi region or multi cloud deployment? Contact us on [Discord](https://discord.restate.dev) or [Slack](https://slack.restate.dev) to discuss your requirements.
+</Info>
+
+## Learn more about each option
+
+<CardGroup cols={3}>
+  <Card title="Restate Cloud" icon="https://mintcdn.com/restate-6d46e1dc/lEvEZWx1JHeaL3uX/logo/restate-cloud-mini-primary.svg?fit=max&auto=format&n=lEvEZWx1JHeaL3uX&q=85&s=ac7c603bb17386580099ba9483f259b2" href="/cloud/getting-started" width="100" height="100" data-path="logo/restate-cloud-mini-primary.svg">
+    Choose Restate Cloud when you want the fastest path to production and do not need the Restate environment to run in your cloud account.
+  </Card>
+
+  <Card title="Restate BYOC" icon="https://mintcdn.com/restate-6d46e1dc/lEvEZWx1JHeaL3uX/logo/restate-cloud-mini-primary.svg?fit=max&auto=format&n=lEvEZWx1JHeaL3uX&q=85&s=ac7c603bb17386580099ba9483f259b2" href="/byoc/overview" width="100" height="100" data-path="logo/restate-cloud-mini-primary.svg">
+    Choose Restate BYOC when you need data sovereignty, private networking, dedicated capacity, or existing cloud commitments without operating Restate yourself.
+  </Card>
+
+  <Card title="Self-hosted Restate" icon="https://mintcdn.com/restate-6d46e1dc/lEvEZWx1JHeaL3uX/logo/restate-mini-primary.svg?fit=max&auto=format&n=lEvEZWx1JHeaL3uX&q=85&s=4c8adc5ebca470f93ac06a427e4b41b0" href="/server/overview" width="200" height="200" data-path="logo/restate-mini-primary.svg">
+    Choose self-hosted Restate when you want to manage and operate the Restate environment yourself.
+  </Card>
+</CardGroup>
+
+<Info>
+  Your hosting choice does not change how you implement Restate services and handlers. It determines where the Restate environment runs and who operates it.
+</Info>
+
+<Info>
+  Need a multi-region or multi-cloud deployment? Contact us on [Discord](https://discord.restate.dev) or [Slack](https://slack.restate.dev) to discuss your requirements.
+</Info>

@@ -1,0 +1,273 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+> Deploy the Restate Server on Kubernetes.
+
+# Kubernetes
+
+There are two main ways to deploy the Restate Server on [Kubernetes](https://kubernetes.io/):
+
+1. Using the [Restate Operator](#restate-kubernetes-operator) (recommended): a Kubernetes operator that simplifies deploying and managing Restate clusters and services, with advanced features like automatic service versioning and cloud environment integration.
+2. Using the [Helm Chart](#helm-chart): a more bare-bone deployment method that requires more manual operational tasks.
+
+## Restate Kubernetes Operator
+
+We recommend running Restate with the Restate Operator.
+The operator simplifies deploying and managing Restate clusters and services on Kubernetes.
+
+**We recommend using the Restate Operator in combination with a managed Kubernetes provider, such as AWS EKS, Azure's AKS, or Google's GKE.**
+This eases the management of compute instances and persistent volumes. See the deployment guides for [AWS](/server/deploy/aws), [GCP](/server/deploy/gcp), and [Azure](/server/deploy/azure).
+
+<Card title="Restate Operator GitHub" href="https://github.com/restatedev/restate-operator" icon="github" horizontal={true} />
+
+### Features
+
+* Resource types to deploy, manage, and configure Restate clusters and services
+* Connect Restate deployments running on Kubernetes to Restate Cloud Environments
+* [Automatic service versioning](/services/versioning#automatic-versioning-with-kubernetes-operator) and scaling down old versions
+* Set up network security via `NetworkPolicy`
+* Sign requests using private keys from Secrets or [CSI Secret Store](https://secrets-store-csi-driver.sigs.k8s.io/)
+* Online volume expansion: dynamically increase the size of persistent volumes used by Restate clusters
+* [Custom pod annotations and labels](#custom-pod-annotations-and-labels) for GKE ComputeClass, Vault injection, Prometheus scraping, and more
+* For AWS EKS: Manage credentials using [EKS Pod Identity](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html) and security groups using [Security Groups for Pods](https://docs.aws.amazon.com/eks/latest/userguide/security-groups-for-pods.html)
+
+### Custom Resource Definitions
+
+The Restate Operator introduces Custom Resource Definitions (CRDs) to Kubernetes to deploy Restate clusters and services.
+
+It includes the following CRDs:
+
+* `RestateCluster`: defines a Restate cluster deployment, including storage, networking, and configuration options.
+* `RestateDeployment`: defines a Restate service deployment, including container image, resource requirements, and registration options ([learn more](/services/deploy/kubernetes)).
+* `RestateCloudEnvironment`: defines a connection between a Kubernetes service deployment and a Restate Cloud Environment ([learn more](/services/deploy/kubernetes)).
+
+### Operator deployment
+
+Install the Restate Operator via Helm:
+
+```bash theme={null} theme={null}
+helm install restate-operator \
+  oci://ghcr.io/restatedev/restate-operator-helm \
+  --namespace restate-operator \
+  --create-namespace
+```
+
+To install the operator, you need permission to create namespaces and CRDs.
+
+<Accordion title="Manage Operator CRDs separately">
+  The chart installs the `RestateCluster`, `RestateDeployment`, and `RestateCloudEnvironment` CRDs by default. If you manage CRDs separately with a GitOps tool, add `--set installCrds=false` to the Helm command.
+</Accordion>
+
+### Single-node deployment
+
+The `RestateCluster` CRD defines a Restate cluster. The operator watches for these objects and creates the necessary Kubernetes resources, such as `StatefulSet`, `Service`, and `NetworkPolicy` objects in a new namespace that matches the `RestateCluster` name.
+
+```yaml restate-server.yaml theme={null}
+apiVersion: restate.dev/v1
+kind: RestateCluster
+metadata:
+  name: restate-test
+spec:
+  compute:
+    image: restatedev/restate:1.5
+  storage:
+    storageRequestBytes: 2147483648 # 2 GiB
+```
+
+Apply the manifest via `kubectl`:
+
+```bash theme={null}
+kubectl apply -f restate-server.yaml
+```
+
+This will deploy the Restate cluster in its own namespace, called `restate-test`.
+
+To learn more about the `RestateCluster` spec options, see the [`RestateCluster` pkl definition](https://github.com/restatedev/restate-operator/blob/main/crd/RestateCluster.pkl) (or the less-readable [yaml version](https://github.com/restatedev/restate-operator/blob/main/crd/restateclusters.yaml)).
+
+### Replicated cluster deployment
+
+Deploy a multi-node Restate cluster by:
+
+1. Setting the `replicas` field in the `compute` section
+2. Providing [Restate cluster configuration](/server/clusters) via the `config` field
+
+```yaml restate-cluster.yaml theme={null}
+apiVersion: restate.dev/v1
+kind: RestateCluster
+metadata:
+  name: restate-test
+spec:
+  compute:
+    replicas: 3
+    image: restatedev/restate:1.5
+  storage:
+    storageRequestBytes: 2147483648 # 2 GiB
+  security:
+    # this kind of annotation can be used to give your cluster an IAM role in EKS
+    serviceAccountAnnotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::111122223333:role/my-role-that-can-read-write-to-the-bucket
+  config: |
+    roles = [
+        "worker",
+        "admin",
+        "log-server",
+        "http-ingress",
+    ]
+    auto-provision = true
+    default-num-partitions = 128
+    default-replication = 2
+
+    [metadata-client]
+    type = "object-store"
+    path = "s3://some-bucket/metadata"
+    # the same aws-* parameters as below are supported here
+
+    [bifrost]
+    default-provider = "replicated"
+
+    [worker.snapshots]
+    destination = "s3://some-bucket/snapshots"
+    snapshot-interval-num-records = 10000
+    # you can also provide parameters here for non-S3 stores eg:
+    # aws-region = "local"
+    # aws-access-key-id = "minioadmin"
+    # aws-secret-access-key = "minioadmin"
+    # aws-endpoint-url = "http://localhost:9000"
+    # aws-allow-http = true
+```
+
+This example deploys a 3-node Restate cluster with snapshots and metadata stored in S3.
+
+Restate uses RocksDB to store state.
+In the Restate Server settings, set the RocksDB memory limit to align with pod memory request and limit. Typically, the RocksDB memory limit should be 75% of pod requests. For example, add to your `restate-config.toml` the following line: `rocksdb-total-memory-size = "3 GiB"`.
+
+S3 is the only supported object store for metadata storage. Other S3-compatible stores (such as MinIO) can be used for snapshots, but not for metadata storage.
+You can find more information about configuring MinIO with your Restate cluster [here](https://github.com/restatedev/restate-operator/blob/main/docs/minio.md).
+
+<Warning>
+  Running a distributed cluster without snapshots is not recommended for production use.
+</Warning>
+
+Apply the manifest:
+
+```bash theme={null}
+kubectl apply -f restate-cluster.yaml
+```
+
+<Tip>
+  Have a look at the [cluster documentation](/server/clusters) to learn how to operate your clusters.
+</Tip>
+
+### Rolling updates
+
+Use the [rolling-update procedure](/server/upgrading#rolling-updates) when changing the
+server version or restarting pods for configuration changes. Wait for every assigned
+partition on the returning node to finish startup catch-up before replacing the next pod.
+A process or HTTP readiness check alone does not establish partition recovery.
+
+### Custom pod annotations and labels
+
+You can attach custom annotations and labels to the Restate pods managed by the operator using `spec.compute.annotations` and `spec.compute.labels` on `RestateCluster`.
+
+Both fields are propagated to the `StatefulSet` pod template and are merged with any annotations or labels the operator manages internally. If there is a conflict, operator-managed values take precedence.
+
+This is useful for integrations that rely on pod-level metadata, such as GKE ComputeClass scheduling (cloud.google.com/compute-class), Vault agent injection, Datadog, Prometheus scraping, and custom scheduling constraints.
+
+## Helm Chart
+
+For a more bare-bone deployment of a Restate cluster, you can use the Helm chart.
+This will require you to do more manual operational tasks, such as registration and versioning of services.
+
+<Card title="Restate Helm Chart GitHub" href="https://github.com/restatedev/restate/tree/main/charts/restate-helm" icon="github" horizontal={true} />
+
+The Helm chart does not require anything besides standard Kubernetes functionality: the ability to deploy containers and attach volumes to them.
+Any changes to the deployment need to be done manually by updating the Helm chart values and redeploying.
+
+### Single-node deployment
+
+By default, the Helm chart deploys Restate as a single-replica StatefulSet:
+
+```shell theme={null}
+helm install restate oci://ghcr.io/restatedev/restate-helm --namespace restate --create-namespace
+```
+
+[View the default values.yaml](https://github.com/restatedev/restate/blob/main/charts/restate-helm/values.yaml)
+
+### Replicated cluster deployment
+
+For a multi-node cluster, use the provided replicated configuration:
+
+```shell theme={null}
+helm install restate oci://ghcr.io/restatedev/restate-helm \
+  --namespace restate \
+  --create-namespace \
+  -f https://raw.githubusercontent.com/restatedev/restate/main/charts/restate-helm/replicated-values.yaml
+```
+
+[View the replicated-values.yaml](https://github.com/restatedev/restate/blob/main/charts/restate-helm/replicated-values.yaml)
+
+After deployment, you must manually provision the cluster:
+
+```shell theme={null}
+kubectl exec -n restate -it restate-0 -- restatectl provision --replication 2 --yes
+```
+
+<Warning>
+  Make sure to use the `replicated-values.yaml` file that matches your Helm chart version.
+</Warning>
+
+### Configuration options
+
+Key values you can customize in your own `values.yaml`:
+
+* **Resources**: Configure CPU/memory limits and requests
+  ```yaml values.yaml theme={null}
+  resources:
+    limits:
+      cpu: 1
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  ```
+
+In the Restate Server settings, set the RocksDB memory limit to align with pod memory request and limit. Typically, the RocksDB memory limit should be 75% of pod requests. For example, add to your `restate-config.toml` the following line: `rocksdb-total-memory-size = "3 GiB"`.
+
+* **Storage**: Set persistent volume size and storage class
+  ```yaml values.yaml theme={null}
+  storage:
+    size: 64Gi
+    storageClassName: fast-ssd
+  ```
+
+* **Replica count**: Number of nodes in the cluster
+  ```yaml replicated-values.yaml theme={null}
+  replicaCount: 3
+  ```
+
+## MinIO object storage
+
+To configure a RestateCluster to send snapshots to self-hosted S3-compatible object store like MinIO, you can point the server to your MinIO instance. As a security best practice, create a dedicated role with access scoped only to the buckets Restate needs. You can assign this role to a dedicated service account or use an AWS-specific feature like [EKS Pod Identity](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html).
+
+To deploy MinIO on your Kubernetes cluster, follow the instructions in the [MinIO documentation](https://docs.min.io/enterprise/aistor-object-store/installation/kubernetes/).
+
+<Warning>
+  MinIO should **only** be used for snapshots, not for metadata storage. MinIO's consistency model may corrupt metadata when read quorum is lost, breaking your Restate cluster. Always use the default Raft metadata store for cluster metadata when using MinIO.
+</Warning>
+
+Run your MinIO instance with at least 4 replicas to avoid data loss, as [recommended by MinIO](https://docs.min.io/enterprise/aistor-object-store/operations/core-concepts/#minio-architecture).
+
+For more information on configuring MinIO with your Restate cluster, see [here](https://github.com/restatedev/restate-operator/blob/main/docs/minio.md).
+
+## Load balancing
+
+When Restate is deployed as a multi-node cluster, requests can be sent to any node running the [`http-ingress` role](/references/architecture#ingress-2). Restate automatically forwards each request to the node responsible for the target partition.
+
+Although a load balancer is not strictly required, having a single entry point is recommended. The simplest option is a DNS record with multiple A entries for round-robin resolution across all `http-ingress` nodes.
+
+On Kubernetes, you can create a `Service` object for this purpose. The Restate operator creates these services automatically for you.
+
+Adding a load balancer can further improve your setup by performing health checks and routing traffic only to ready nodes.
+
+The specific Kubernetes provider to which you deploy will likely support binding to specific native load-balancer services, for example, AWS ELB in AWS EKS.

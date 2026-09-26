@@ -1,0 +1,209 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Service Communication
+
+> Call other services from your handler.
+
+Your Restate handler can call other handlers in three ways:
+
+* **[Request-response calls](#request-response-calls)**: Call and wait for a response
+* **[One-way messages](#sending-messages)**: Send a message and continue
+* **[Delayed messages](#delayed-messages)**: Send a message after a delay
+
+<Info>
+  To call a service from an external application, see the [HTTP](/services/invocation/http), [Kafka](/services/invocation/kafka), or [SDK Clients](/services/invocation/clients/typescript-sdk) documentation.
+</Info>
+
+<Info>[Learn how Restate how it works](/foundations/key-concepts#resilient-communication)</Info>
+
+## Request-response calls
+
+To call a Restate handler and wait for its result:
+
+```go {"CODE_LOAD::go/develop/servicecommunication.go#request_response"}  theme={null}
+// To call a Service:
+svcResponse, err := restate.Service[string](ctx, "MyService", "MyHandler").
+  Request("Hi")
+
+// To call a Virtual Object:
+objResponse, err := restate.Object[string](ctx, "MyObject", "Mary", "MyHandler").
+  Request("Hi")
+
+// To call a Workflow:
+// `run` handler — can only be called once per workflow ID
+wfResponse, err := restate.Workflow[bool](ctx, "MyWorkflow", "my-workflow-id", "Run").
+  Request("Hi")
+// Other handlers can be called anytime within workflow retention
+status, err := restate.Workflow[restate.Void](ctx, "MyWorkflow", "my-workflow-id", "GetStatus").
+  Request("Hi again")
+```
+
+<Accordion title="Workflow retention">
+  After a workflow's run handler completes, other handlers can still be called for up to 24 hours (default).
+  Update this via the [service configuration](/services/configuration).
+</Accordion>
+
+<Info>
+  Request-response calls between [exclusive handlers](/foundations/handlers#handler-behavior) of Virtual Objects may lead to deadlocks:
+
+  * Cross deadlock: A → B and B → A (same keys).
+  * Cycle deadlock: A → B → C → A.
+
+  Use the UI or CLI to [cancel](/services/invocation/managing-invocations#cancel) and unblock deadlocked invocations.
+</Info>
+
+## Sending messages
+
+To send a message to another Restate handler without waiting for a response:
+
+```go {"CODE_LOAD::go/develop/servicecommunication.go#one_way"}  theme={null}
+// To message a Service:
+restate.ServiceSend(ctx, "MyService", "MyHandler").Send("Hi")
+
+// To message a Virtual Object:
+restate.ObjectSend(ctx, "MyObject", "Mary", "MyHandler").Send("Hi")
+
+// To message a Workflow:
+// `run` handler — can only be called once per workflow ID
+restate.WorkflowSend(ctx, "MyWorkflow", "my-workflow-id", "Run").
+  Send("Hi")
+// Other handlers can be called anytime within workflow retention
+restate.WorkflowSend(ctx, "MyWorkflow", "my-workflow-id", "InteractWithWorkflow").
+  Send("Hi again")
+```
+
+Restate handles message delivery and retries, so the handler can complete and return without waiting for the message to be processed.
+
+<Info>
+  Calls to a Virtual Object execute in order of arrival, serially.
+  Example:
+
+  ```go {"CODE_LOAD::go/develop/servicecommunication.go#ordering"}  theme={null}
+  restate.ObjectSend(ctx, "MyService", "Mary", "MyHandler").Send("I'm call A")
+  restate.ObjectSend(ctx, "MyService", "Mary", "MyHandler").Send("I'm call B")
+  ```
+
+  Call A is guaranteed to execute before B. However, other invocations may interleave between A and B.
+</Info>
+
+## Delayed messages
+
+To send a message after a delay:
+
+```go {"CODE_LOAD::go/develop/servicecommunication.go#delayed"}  theme={null}
+// To message a Service with a delay:
+restate.ServiceSend(ctx, "MyService", "MyHandler").
+  Send("Hi", restate.WithDelay(5*time.Hour))
+
+// To message a Virtual Object with a delay:
+restate.ObjectSend(ctx, "MyObject", "Mary", "MyHandler").
+  Send("Hi", restate.WithDelay(5*time.Hour))
+
+// To message a Workflow with a delay:
+restate.WorkflowSend(ctx, "MyWorkflow", "my-workflow-id", "Run").
+  Send("Hi", restate.WithDelay(5*time.Hour))
+```
+
+<Info>
+  Learn [how this is different](/develop/ts/durable-timers#scheduling-async-tasks) from sleeping and then sending a message.
+</Info>
+
+## Using an idempotency key
+
+To prevent duplicate executions of the same call, add an idempotency key:
+
+```go {"CODE_LOAD::go/develop/servicecommunication.go#idempotency_key"}  theme={null}
+restate.
+  ServiceSend(ctx, "MyService", "MyHandler").
+  // Send attaching idempotency key
+  Send("Hi", restate.WithIdempotencyKey("my-idempotency-key"))
+```
+
+Restate automatically deduplicates calls made during the same handler execution, so there's no need to provide an idempotency key in that case.
+However, if multiple handlers might call the same service independently, you can use an idempotency key to ensure deduplication across those calls.
+
+## Flow control: scope and limit key
+
+<Note title="Preview feature">
+  Scope and limit key are a preview feature and require restate-server 1.7 with [flow control enabled](/services/flow-control#enabling-flow-control).
+</Note>
+
+[Flow control](/services/flow-control) caps how many invocations run concurrently within a **scope**, with optional hierarchical **limit keys**.
+Route a call into a scope with the `restate.WithScope(...)` client option, and add a `restate.WithLimitKey(...)` request option for a finer, per subgroup limit within that scope:
+
+```go {"CODE_LOAD::go/develop/servicecommunication.go#scope"}  theme={null}
+// Route a call into a named scope with WithScope (a client option)
+svcResponse, err := restate.Service[string](ctx, "MyService", "MyHandler", restate.WithScope("tenant-123")).
+  Request("Hi")
+
+// Add a limit key for hierarchical concurrency limits within the scope
+wfResponse, err := restate.Workflow[bool](ctx, "MyWorkflow", "my-workflow-id", "Run", restate.WithScope("tenant-123")).
+  Request("Hi", restate.WithLimitKey("premium/user42"))
+
+// Scoped Virtual Object calls need
+// RESTATE_EXPERIMENTAL_ENABLE_SCOPED_VIRTUAL_OBJECTS=true on the server
+objResponse, err := restate.Object[string](ctx, "MyObject", "Mary", "MyHandler", restate.WithScope("tenant-123")).
+  Request("Hi")
+
+// Fire-and-forget sends can be scoped too
+restate.ServiceSend(ctx, "MyService", "MyHandler", restate.WithScope("tenant-123")).Send("Hi")
+```
+
+You can read the scope and limit key an invocation was submitted with from the request:
+
+```go {"CODE_LOAD::go/develop/servicecommunication.go#scope_request"}  theme={null}
+// The scope and limit key the invocation was submitted with
+scope := ctx.Request().Scope
+limitKey := ctx.Request().LimitKey
+```
+
+See [Flow control](/services/flow-control) for how scopes, limit keys, and the concurrency rule book work.
+
+## Attach to an invocation
+
+To wait for or get the result of a previously sent message:
+
+```go {"CODE_LOAD::go/develop/servicecommunication.go#attach"}  theme={null}
+// Execute the request and retrieve the invocation id
+invocationId := restate.
+  ServiceSend(ctx, "MyService", "MyHandler").
+  // Optional: send attaching idempotency key
+  Send("Hi", restate.WithIdempotencyKey("my-idempotency-key")).
+  GetInvocationId()
+
+// Later re-attach to the request
+response, err := restate.AttachInvocation[string](ctx, invocationId).Response()
+```
+
+* With an idempotency key: Wait for completion and retrieve the result.
+* Without an idempotency key: Can only wait, not retrieve the result.
+
+## Cancel an invocation
+
+To cancel a running handler:
+
+```go {"CODE_LOAD::go/develop/servicecommunication.go#cancel"}  theme={null}
+// Execute the request and retrieve the invocation id
+invocationId := restate.
+  ServiceSend(ctx, "MyService", "MyHandler").
+  Send("Hi").
+  GetInvocationId()
+
+// I don't need this invocation anymore, let me just cancel it
+restate.CancelInvocation(ctx, invocationId)
+```
+
+## Signal an invocation
+
+A signal is a durable notification addressed by invocation ID and signal name. Resolving a signal interacts with the existing invocation instead of starting a new one, and the same named signal can be resolved multiple times.
+
+See [Signals and external events](/develop/go/external-events) for examples and the differences between signals, awakeables, and workflow promises.
+
+## See also
+
+* **[SDK Clients](/develop/go/service-communication)**: Call Restate services from external applications
+* **[Error Handling](/develop/go/error-handling)**: Handle failures and terminal errors in service calls
+* **[Durable Timers](/develop/go/durable-timers)**: Implement timeouts for your service calls
+* **[Sagas](/guides/sagas)**: Roll back or compensate for canceled service calls.

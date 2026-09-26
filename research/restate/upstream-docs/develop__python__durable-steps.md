@@ -1,0 +1,119 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Durable Steps
+
+> Persist results of operations.
+
+Restate uses an execution log to replay operations after failures and suspensions. Non-deterministic operations (database calls, HTTP requests, UUID generation) must be wrapped to ensure deterministic replay.
+
+## Run
+
+Use `ctx.run` to safely wrap any non-deterministic operation, like HTTP calls or database responses, and have Restate store its result in the execution log.
+
+```python {"CODE_LOAD::python/src/develop/journaling_results.py#side_effect"}  theme={null}
+async def call_llm(prompt: str) -> str:
+    # ... implement ...
+    return "llm response"
+
+# specify the (async) function to call and its arguments
+result = await ctx.run_typed("LLM call", call_llm, prompt="What is the weather?")
+
+# or use a lambda to capture a single value
+my_number = await ctx.run_typed("generate number", lambda: random.randint(0, 10))
+```
+
+Note that inside `ctx.run`, you cannot use the Restate context (e.g., `ctx.get`, `ctx.sleep`, or nested `ctx.run`).
+
+<AccordionGroup>
+  <Accordion title="Serialization">
+    By default, the SDK serializes the journal entry with the [`json`](https://docs.python.org/3/library/json.html#) library.
+    Alternatively, you can specify a [Pydantic model](/develop/python/serialization#pydantic) or [custom serializer](/develop/python/serialization#custom-serialization).
+  </Accordion>
+
+  <Accordion title="Error handling and retry policies">
+    Failures in `ctx.run` are treated the same as any other handler error. Restate will retry it unless configured otherwise or unless a [`TerminalError`](/develop/python/error-handling) is thrown.
+
+    You can customize how `ctx.run` retries via:
+
+    ```py {"CODE_LOAD::python/src/develop/retries.py#here"}  theme={null}
+    try:
+        await ctx.run_typed(
+            "write",
+            write_to_other_system,
+            restate.RunOptions(
+                # Initial retry interval
+                initial_retry_interval=timedelta(milliseconds=100),
+                # Retry policies are exponential, the retry interval will double on each attempt
+                retry_interval_factor=2.0,
+                # Maximum retry interval
+                max_retry_interval=timedelta(seconds=10),
+                # Max duration of retries before giving up
+                max_duration=timedelta(minutes=5),
+                # Max attempts (including the initial) before giving up
+                max_attempts=10,
+            ),
+        )
+    except TerminalError as err:
+        # Handle the terminal error after retries exhausted
+        # For example, undo previous actions (see sagas guide) and
+        # propagate the error back to the caller
+        raise err
+    ```
+
+    * You can limit retries by time or count
+    * When the policy is exhausted, a `TerminalError` is thrown
+    * See the [Error Handling Guide](/guides/error-handling) and the [Sagas Guide](/guides/sagas) for patterns like compensation
+  </Accordion>
+
+  <Accordion title="Increasing timeouts">
+    If Restate doesn't receive new journal entries from a service for more than one minute (by default), it will automatically suspend the invocation and retry it.
+
+    However, some business logic can take longer to complete—for example, an LLM call that takes up to 3 minutes to respond.
+
+    In such cases, you can adjust the service’s [inactivity timeout and abort timeout](/services/configuration) settings to accommodate longer execution times.
+
+    For more information, see the [error handling guide](/guides/error-handling).
+  </Accordion>
+</AccordionGroup>
+
+## Deterministic randoms
+
+When you do non-deterministic operations, like generating UUIDs or random numbers, you must ensure that the results are deterministic on replay.
+
+For example, to generate stable UUIDs for things like idempotency keys:
+
+```python {"CODE_LOAD::python/src/develop/journaling_results.py#uuid"}  theme={null}
+my_uuid = ctx.uuid()
+```
+
+The SDK provides deterministic helpers for random values — seeded by the invocation ID — so they return the **same result on retries**.
+
+### UUIDs
+
+To generate stable UUIDs for things like idempotency keys:
+
+```python {"CODE_LOAD::python/src/develop/journaling_results.py#uuid"}  theme={null}
+my_uuid = ctx.uuid()
+```
+
+Do not use this in cryptographic contexts.
+
+### Random numbers
+
+To generate a deterministic float between `0` and `1`:
+
+```python {"CODE_LOAD::python/src/develop/journaling_results.py#random_nb"}  theme={null}
+ctx.random().random()
+```
+
+This behaves like `Math.random()` but is deterministically replayable.
+
+### Deterministic time
+
+To get the current millis since midnight, January 1, 1970, that is consistent across retries:
+
+```python {"CODE_LOAD::python/src/develop/journaling_results.py#time"}  theme={null}
+current_time = await ctx.time()
+```

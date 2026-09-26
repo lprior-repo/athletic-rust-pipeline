@@ -1,0 +1,64 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Handlers
+
+> Learn how to create, invoke and manage handlers in Restate services
+
+Handlers are the core building blocks of Restate services. Each service has a list of handlers: durable functions that can be invoked over HTTP, Kafka, or using typed clients.
+
+## Writing handlers
+
+Handlers receive a Restate context object (`ctx`) and a single, optional input:
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/functions/functions.ts#here"}  theme={null}
+  async function myHandler(ctx: restate.Context, input: MyInput) {
+    const result = await ctx.run("process", () => processData(input));
+    return { success: true, result };
+  }
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/functions/Functions.java#here"}  theme={null}
+  @Handler
+  public ProcessingResult myHandler(MyInput myInput) {
+    return Restate.run("processData", ProcessingResult.class, () -> processData(myInput));
+  }
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/functions/functions.py#here"}  theme={null}
+  async def my_handler(ctx: Context, req: MyInput) -> ProcessingResult:
+      return await ctx.run_typed("process", process_data, req=req)
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/functions/functions.go#here"}  theme={null}
+  func MyHandler(ctx restate.Context, input MyInput) (ProcessingResult, error) {
+    return restate.Run(ctx, func(ctx restate.RunContext) (ProcessingResult, error) {
+      return processData(input)
+    })
+  }
+  ```
+</CodeGroup>
+
+<Info>
+  The input and output can be any JSON-serializable type. For other types, consult the serialization documentation of your SDK.
+</Info>
+
+## Context types
+
+The context type you use depends on your service type:
+
+* **`Context`** - Basic Services (stateless handlers)
+* **`ObjectContext`** - Virtual Objects (exclusive handlers with state access)
+* **`ObjectSharedContext`** - Virtual Objects (concurrent read-only handlers)
+* **`WorkflowContext`** - Workflows (main run handler)
+* **`WorkflowSharedContext`** - Workflows (concurrent handlers to interact with the workflow)
+
+## Handler behavior
+
+Virtual Objects and Workflows support two handler types:
+
+**Exclusive handlers** (`ObjectContext`, `WorkflowContext`) can read and write state but only one runs at a time per key to prevent conflicts.
+
+**Shared handlers** (`ObjectSharedContext`, `WorkflowSharedContext`) can only read state but run concurrently without blocking—useful for querying status during long-running operations.

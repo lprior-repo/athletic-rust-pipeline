@@ -1,0 +1,327 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Service Communication
+
+> Call other services from your handler.
+
+Your Restate handler can call other handlers in three ways:
+
+* **[Request-response calls](#request-response-calls)**: Call and wait for a response
+* **[One-way messages](#sending-messages)**: Send a message and continue
+* **[Delayed messages](#delayed-messages)**: Send a message after a delay
+
+<Info>
+  To call a service from an external application, see the [HTTP](/services/invocation/http), [Kafka](/services/invocation/kafka), or [SDK Clients](/services/invocation/clients/java-sdk) documentation.
+</Info>
+
+<Tip>[Why use Restate for service communication?](/foundations/key-concepts#resilient-communication)</Tip>
+
+## Request-response calls
+
+To call a Restate handler and wait for its result, use one of two client styles:
+
+* **Simple client** (`Restate.service(...)` / `Restate.virtualObject(...)` / `Restate.workflow(...)` in Java; `service<T>()` / `virtualObject<T>(key)` / `workflow<T>(key)` in Kotlin): the call is awaited inline and returns the result directly. Use it for straightforward request-response.
+* **Handle-based client** (`Restate.serviceHandle(...)` etc. in Java; `toService<T>()` etc. in Kotlin, called with a method reference): returns a `DurableFuture` you await explicitly. Use it for invocation options (e.g. idempotency keys), timeouts, or concurrency.
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#request_response"}  theme={null}
+  // --- Simple client: awaits inline and returns the result directly ---
+  // To call a Service:
+  String svcResponse = Restate.service(MyService.class).myHandler(request);
+  // To call a Virtual Object:
+  String objResponse = Restate.virtualObject(MyObject.class, objectKey).myHandler(request);
+  // To call a Workflow:
+  String wfResponse = Restate.workflow(MyWorkflow.class, workflowId).run(request);
+
+  // --- Handle-based client: returns a DurableFuture to await explicitly ---
+  // Use it for invocation options (e.g. an idempotency key), timeouts, or concurrency.
+  String svcResult =
+      Restate.serviceHandle(MyService.class).call(MyService::myHandler, request).await();
+  String objResult =
+      Restate.virtualObjectHandle(MyObject.class, objectKey)
+          .call(MyObject::myHandler, request)
+          .await();
+  String wfResult =
+      Restate.workflowHandle(MyWorkflow.class, workflowId).call(MyWorkflow::run, request).await();
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/ServiceCommunication.kt#request_response"}  theme={null}
+  // --- Simple client: awaits inline and returns the result directly ---
+  // To call a Service:
+  val svcResponse = service<MyService>().myHandler(request)
+  // To call a Virtual Object:
+  val objResponse = virtualObject<MyObject>(objectKey).myHandler(request)
+  // To call a Workflow:
+  val wfResponse = workflow<MyWorkflow>(workflowId).run(request)
+
+  // --- Handle-based client: returns a DurableFuture to await explicitly ---
+  // Use it for invocation options (e.g. an idempotency key), timeouts, or concurrency.
+  val svcResult = toService<MyService>().request { myHandler(request) }.call().await()
+  val objResult =
+      toVirtualObject<MyObject>(objectKey).request { myHandler(request) }.call().await()
+  val wfResult = toWorkflow<MyWorkflow>(workflowId).request { run(request) }.call().await()
+  ```
+</CodeGroup>
+
+Use a generic call when you don't have the typed interface, or need dynamic service/handler names:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#request_response_generic"}  theme={null}
+  Target target = Target.service("MyService", "myHandler"); // or virtualObject or workflow
+  String response =
+      Restate.call(
+              Request.of(target, TypeTag.of(String.class), TypeTag.of(String.class), request))
+          .await();
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/ServiceCommunication.kt#request_response_generic"}  theme={null}
+  val target = Target.service("MyService", "myHandler")
+  val response =
+      prepareRequest(Request.of(target, typeTag<String>(), typeTag<String>(), request))
+          .call()
+          .await()
+  ```
+</CodeGroup>
+
+<Accordion title="Workflow retention">
+  After a workflow's run handler completes, other handlers can still be called for up to 24 hours (default).
+  Update this via the [service configuration](/services/configuration).
+</Accordion>
+
+<Info>
+  Request-response calls between [exclusive handlers](/foundations/handlers#handler-behavior) of Virtual Objects may lead to deadlocks:
+
+  * Cross deadlock: A → B and B → A (same keys).
+  * Cycle deadlock: A → B → C → A.
+
+  Use the UI or CLI to [cancel](/services/invocation/managing-invocations#cancel) and unblock deadlocked invocations.
+</Info>
+
+## Sending messages
+
+To send a message to another Restate handler without waiting for a response:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#one_way"}  theme={null}
+  Restate.serviceHandle(MyService.class).send(MyService::myHandler, request);
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/ServiceCommunication.kt#one_way"}  theme={null}
+  toService<MyService>().request { myHandler(request) }.send()
+  ```
+</CodeGroup>
+
+Restate handles message delivery and retries, so the handler can complete and return without waiting for the message to be processed.
+
+Use a generic send when you don't have the typed interface:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#one_way_generic"}  theme={null}
+  Target target = Target.service("MyService", "myHandler"); // or virtualObject or workflow
+  Restate.send(Request.of(target, TypeTag.of(String.class), TypeTag.of(String.class), request));
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/ServiceCommunication.kt#one_way_generic"}  theme={null}
+  val target = Target.service("MyService", "myHandler")
+  prepareRequest(Request.of(target, typeTag<String>(), typeTag<String>(), request)).send()
+  ```
+</CodeGroup>
+
+<Info>
+  Calls to a Virtual Object execute in order of arrival, serially.
+  Example:
+
+  ```java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#ordering"}  theme={null}
+  Restate.virtualObjectHandle(MyObject.class, objectKey).send(MyObject::myHandler, "I'm call A");
+  Restate.virtualObjectHandle(MyObject.class, objectKey).send(MyObject::myHandler, "I'm call B");
+  ```
+
+  Call A is guaranteed to execute before B. However, other invocations may interleave between A and B.
+</Info>
+
+## Delayed messages
+
+To send a message after a delay, use `.send()` with the `Duration` as an additional parameter:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#delayed"}  theme={null}
+  Restate.serviceHandle(MyService.class).send(MyService::myHandler, request, Duration.ofDays(5));
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/ServiceCommunication.kt#delayed"}  theme={null}
+  toService<MyService>().request { myHandler(request) }.send(5.days)
+  ```
+</CodeGroup>
+
+Or with a generic send:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#delayed_generic"}  theme={null}
+  Target target = Target.service("MyService", "myHandler"); // or virtualObject or workflow
+  Restate.send(
+      Request.of(target, TypeTag.of(String.class), TypeTag.of(String.class), request),
+      Duration.ofDays(5));
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/ServiceCommunication.kt#delayed_generic"}  theme={null}
+  val target = Target.service("MyService", "myHandler")
+  prepareRequest(Request.of(target, typeTag<String>(), typeTag<String>(), request))
+      .send(delay = 5.days)
+  ```
+</CodeGroup>
+
+<Info>
+  Learn [how this is different](/develop/java/durable-timers#scheduling-async-tasks) from sleeping and then sending a message.
+</Info>
+
+## Using an idempotency key
+
+To prevent duplicate executions of the same call, add an idempotency key:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#idempotency_key"}  theme={null}
+  // For a request-response call
+  Restate.serviceHandle(MyService.class)
+      .call(MyService::myHandler, request, InvocationOptions.idempotencyKey("abc123"));
+  // For a message
+  Restate.serviceHandle(MyService.class)
+      .send(MyService::myHandler, request, InvocationOptions.idempotencyKey("abc123"));
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/ServiceCommunication.kt#idempotency_key"}  theme={null}
+  // For a regular call
+  toService<MyService>()
+      .request { myHandler(request) }
+      .options { idempotencyKey = "abc123" }
+      .call()
+  // For a one way call
+  toService<MyService>()
+      .request { myHandler(request) }
+      .options { idempotencyKey = "abc123" }
+      .send()
+  ```
+</CodeGroup>
+
+Restate automatically deduplicates calls made during the same handler execution, so there's no need to provide an idempotency key in that case.
+However, if multiple handlers might call the same service independently, you can use an idempotency key to ensure deduplication across those calls.
+
+## Flow control: scope and limit key
+
+<Note title="Preview feature">
+  Scope and limit key are a preview feature and require restate-server 1.7 with [flow control enabled](/services/flow-control#enabling-flow-control).
+</Note>
+
+[Flow control](/services/flow-control) caps how many invocations run concurrently within a **scope**, with optional hierarchical **limit keys**.
+Route a call into a scope with `Restate.scope(...)` (Java) or `scope(...)` (Kotlin), and add a limit key for a finer, per subgroup limit within that scope:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#scope"}  theme={null}
+  // Route a call into a named scope
+  String svcResponse = Restate.scope("tenant-123").service(MyService.class).myHandler(request);
+
+  // Add a limit key for hierarchical concurrency limits within the scope
+  String wfResponse =
+      Restate.scope("tenant-123")
+          .workflowHandle(MyWorkflow.class, workflowId)
+          .call(MyWorkflow::run, request, InvocationOptions.limitKey("premium/user42"))
+          .await();
+
+  // Scoped Virtual Object calls need
+  // RESTATE_EXPERIMENTAL_ENABLE_SCOPED_VIRTUAL_OBJECTS=true on the server
+  String objResponse =
+      Restate.scope("tenant-123").virtualObject(MyObject.class, objectKey).myHandler(request);
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/ServiceCommunication.kt#scope"}  theme={null}
+  // Route a call into a named scope
+  val svcResponse = scope("tenant-123").service<MyService>().myHandler(request)
+
+  // Add a limit key for hierarchical concurrency limits within the scope
+  val wfResponse =
+      scope("tenant-123")
+          .toWorkflow<MyWorkflow>(workflowId)
+          .request { run(request) }
+          .options { limitKey = "premium/user42" }
+          .call()
+          .await()
+
+  // Scoped Virtual Object calls need
+  // RESTATE_EXPERIMENTAL_ENABLE_SCOPED_VIRTUAL_OBJECTS=true on the server
+  val objResponse = scope("tenant-123").virtualObject<MyObject>(objectKey).myHandler(request)
+  ```
+</CodeGroup>
+
+You can read the scope and limit key an invocation was submitted with from the request:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#scope_request"}  theme={null}
+  // The scope and limit key the invocation was submitted with
+  String scope = Restate.request().scope();
+  String limitKey = Restate.request().limitKey();
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/ServiceCommunication.kt#scope_request"}  theme={null}
+  // The scope and limit key the invocation was submitted with
+  val invocationScope = request().scope
+  val invocationLimitKey = request().limitKey
+  ```
+</CodeGroup>
+
+See [Flow control](/services/flow-control) for how scopes, limit keys, and the concurrency rule book work.
+
+## Attach to an invocation
+
+To wait for or get the result of a previously sent message:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#attach"}  theme={null}
+  var handle =
+      Restate.serviceHandle(MyService.class)
+          .send(MyService::myHandler, request, InvocationOptions.idempotencyKey("abc123"));
+  var response = handle.attach().await();
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/ServiceCommunication.kt#attach"}  theme={null}
+  val handle =
+      toService<MyService>()
+          .request { myHandler(request) }
+          .options { idempotencyKey = "abc123" }
+          .send()
+  val response = handle.attach().await()
+  ```
+</CodeGroup>
+
+* With an idempotency key: Wait for completion and retrieve the result.
+* Without an idempotency key: Can only wait, not retrieve the result.
+
+## Cancel an invocation
+
+To cancel a running handler:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/ServiceCommunication.java#cancel"}  theme={null}
+  var handle = Restate.serviceHandle(MyService.class).send(MyService::myHandler, request);
+  handle.cancel();
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/ServiceCommunication.kt#cancel"}  theme={null}
+  val handle = toService<MyService>().request { myHandler(request) }.send()
+  handle.cancel()
+  ```
+</CodeGroup>
+
+## Signal an invocation
+
+A signal is a durable notification addressed by invocation ID and signal name. Resolving a signal interacts with the existing invocation instead of starting a new one, and the same named signal can be resolved multiple times.
+
+See [Signals and external events](/develop/java/external-events) for examples and the differences between signals, awakeables, and workflow promises.
+
+## See also
+
+* **[SDK Clients](/develop/java/service-communication)**: Call Restate services from external applications
+* **[Error Handling](/develop/java/error-handling)**: Handle failures and terminal errors in service calls
+* **[Durable Timers](/develop/java/durable-timers)**: Implement timeouts for your service calls
+* **[Serialization](/develop/java/serialization)**: Customize how data is serialized between services
+* **[Sagas](/guides/sagas)**: Roll back or compensate for canceled service calls.

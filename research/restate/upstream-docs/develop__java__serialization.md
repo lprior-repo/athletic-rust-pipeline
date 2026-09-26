@@ -1,0 +1,115 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Serialization
+
+> Customize serialization for SDK actions.
+
+Restate sends data over the network for storing state, journaling actions, awakeables, etc.
+Therefore, Restate needs to serialize and deserialize the journal entries.
+
+## Default serialization
+
+The SDK uses by default [Jackson Databind](https://github.com/FasterXML/jackson) for the Java API, and [Kotlinx serialization](https://kotlinlang.org/docs/serialization.html) for the Kotlin API.
+For example, for state keys:
+
+<CodeGroup>
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/SerializationExample.java#state_keys"}  theme={null}
+  // Primitive types
+  var myString = StateKey.of("myString", String.class);
+  // Generic types need TypeRef (similar to Jackson's TypeReference)
+  var myMap = StateKey.of("myMap", TypeTag.of(new TypeRef<Map<String, String>>() {}));
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/SerializationExample.kt#state_keys"}  theme={null}
+  // These imports provide extension methods with reified generics
+  import dev.restate.sdk.kotlin.*
+
+  // Primitive types
+  val myString = stateKey<String>("my-string")
+  // Generic types
+  val myMap = stateKey<Map<String, String>>("my-map")
+  // Custom generic type
+  val myPerson = stateKey<Person<String>>("my-person")
+  ```
+</CodeGroup>
+
+The same applies to journaling actions, awakeables, etc.
+
+## Customizing serialization
+
+There are different entrypoints in the SDK to customize (de)serialization, depending on your needs.
+
+### Custom Jackson `ObjectMapper`
+
+You can customize the Jackson's [`ObjectMapper`](https://javadoc.io/doc/com.fasterxml.jackson.core/jackson-databind/latest/com/fasterxml/jackson/databind/ObjectMapper.html) by subclassing the [`JacksonSerdeFactory`](https://restatedev.github.io/sdk-java/javadocs/dev/restate/sdk/serde/jackson/JacksonSerdeFactory) class:
+
+```java {"CODE_LOAD::java/src/main/java/develop/SerializationExample.java#custom_jackson"}  theme={null}
+class MyJacksonSerdeFactory extends JacksonSerdeFactory {
+  public MyJacksonSerdeFactory() {
+    super(new ObjectMapper().configure(SerializationFeature.INDENT_OUTPUT, true));
+  }
+}
+```
+
+And annotating your services with [`@CustomSerdeFactory`](https://restatedev.github.io/sdk-java/javadocs/dev/restate/sdk/annotation/CustomSerdeFactory):
+
+```java {"CODE_LOAD::java/src/main/java/develop/SerializationExample.java#custom_jackson_service"}  theme={null}
+@CustomSerdeFactory(MyJacksonSerdeFactory.class)
+@Service
+class ServiceWithCustomJacksonObjectMapper {
+  @Handler
+  public String greet() {
+    return "Hello world";
+  }
+}
+```
+
+### Custom Kotlinx Serialization `Json`
+
+You can customize the Kotlinx Serialization [`Json`](https://kotlinlang.org/api/kotlinx.serialization/kotlinx-serialization-json/kotlinx.serialization.json/-json/) by subclassing the [`KotlinSerializationSerdeFactory`](https://restatedev.github.io/sdk-java/ktdocs/sdk-api-kotlin/dev.restate.sdk.kotlin.serialization/-kotlin-serialization-serde-factory/) class:
+
+```kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/CustomSerializationExample.kt#custom"}  theme={null}
+class MyJsonSerdeFactory : KotlinSerializationSerdeFactory(json = Json { prettyPrint = true })
+```
+
+And annotating your services with [`@CustomSerdeFactory`](https://restatedev.github.io/sdk-java/ktdocs/sdk-common/dev.restate.sdk.annotation/-custom-serde-factory/):
+
+```kotlin {"CODE_LOAD::kotlin/src/main/kotlin/develop/CustomSerializationExample.kt#custom_service"}  theme={null}
+@CustomSerdeFactory(MyJsonSerdeFactory::class)
+@Service
+class ServiceWithCustomSerdeFactory {
+  @Handler suspend fun greet() = "Hello world!"
+}
+```
+
+### Use custom serializer for a specific operation
+
+If you need for a specific operation (e.g. for `Restate.run` or `Restate.awakeable`) a custom (de)serializer, you can implement one using the interface [`Serde`](https://restatedev.github.io/sdk-java/javadocs/dev/restate/serde/Serde):
+
+```java {"CODE_LOAD::java/src/main/java/develop/SerializationExample.java#customserdes"}  theme={null}
+class MyPersonSerde implements Serde<Person> {
+  @Override
+  public Slice serialize(Person person) {
+    // convert value to a byte array, then wrap in a Slice
+    return Slice.wrap(person.toBytes());
+  }
+
+  @Override
+  public Person deserialize(Slice slice) {
+    // convert value to Person
+    return Person.fromBytes(slice.toByteArray());
+  }
+}
+```
+
+And then use it, for example, in combination with `Restate.run`:
+
+```java {"CODE_LOAD::java/src/main/java/develop/SerializationExample.java#use_person_serde"}  theme={null}
+Restate.run("create-person", new MyPersonSerde(), () -> new Person());
+```
+
+### Use another serialization library
+
+If you want to use a different serialization library throughout your service, we suggest implementing [`SerdeFactory`](https://restatedev.github.io/sdk-java/javadocs/dev/restate/serde/SerdeFactory) and annotating the service class with [`@CustomSerdeFactory`](https://restatedev.github.io/sdk-java/javadocs/dev/restate/sdk/annotation/CustomSerdeFactory). Refer to the Javadocs for more details.

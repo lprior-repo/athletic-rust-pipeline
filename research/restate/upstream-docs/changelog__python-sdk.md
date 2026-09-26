@@ -1,0 +1,625 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Python SDK changelog
+
+> Releases of the Python SDK.
+
+<Update label="2026-09-02" description="Python SDK v1.0.5">
+  ### What's Changed
+
+  * fix: Preserve explicit zero timedelta values in discovery manifests by @hnicke in [https://github.com/restatedev/sdk-python/pull/230](https://github.com/restatedev/sdk-python/pull/230)
+
+  ### New Contributors
+
+  * @hnicke made their first contribution in [https://github.com/restatedev/sdk-python/pull/230](https://github.com/restatedev/sdk-python/pull/230)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v1.0.5)
+</Update>
+
+<Update label="2026-08-14" description="Python SDK v1.0.4">
+  ### What's Changed
+
+  * Bump shared core to 7.0.3. This includes a fix where cancellation may cancel also compensation calls in sagas by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/228](https://github.com/restatedev/sdk-python/pull/228)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v1.0.4)
+</Update>
+
+<Update label="2026-07-24" description="Python SDK v1.0.3">
+  ### What's Changed
+
+  * Pydantic AI Integration: Upgrade to Pydantic AI 2.x by @gvdongen in [https://github.com/restatedev/sdk-python/pull/215](https://github.com/restatedev/sdk-python/pull/215)
+  * Fix: Handle signal registration outside the main thread by @brightsparc in [https://github.com/restatedev/sdk-python/pull/218](https://github.com/restatedev/sdk-python/pull/218)
+  * Harness: Fix outdated env var for disabling retries by @gvdongen in [https://github.com/restatedev/sdk-python/pull/213](https://github.com/restatedev/sdk-python/pull/213)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v1.0.3)
+</Update>
+
+<Update label="2026-07-16" description="Python SDK v1.0.2">
+  ### What's Changed
+
+  * Scope API for virtual objects by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/212](https://github.com/restatedev/sdk-python/pull/212)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v1.0.2)
+</Update>
+
+<Update label="2026-07-01" description="Python SDK v1.0.1">
+  ### What's Changed
+
+  * Fix request identity by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/210](https://github.com/restatedev/sdk-python/pull/210)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v1.0.1)
+</Update>
+
+<Update label="2026-06-23" description="Python SDK v1.0.0">
+  The Restate Python SDK reaches **1.0**! 🎉
+
+  This release brings many new features to the SDK to use together with Restate 1.7: scope and limit keys for flow control, signals for direct invocation-to-invocation communication, terminal error metadata, and several other improvements.
+
+  ### New Features
+
+  ### (Preview) Scope and limit key to enable flow control
+
+  This release adds the SDK API for [flow control](https://docs.restate.dev/services/flow-control), the new Restate 1.7 feature to cap how many invocations run concurrently within a **scope**, with optional hierarchical **limit keys**. Use it to bound cost (especially for AI agents, where every concurrent invocation is real model/API spend), shield downstream systems from bursts, and share capacity fairly across tenants.
+
+  To use scope and limit keys in service to service communication:
+
+  ```python theme={null}
+  # Route a call into a named scope
+  await ctx.scope("tenant-123").service_call(MyService.process, payload)
+
+  # Add a limit key for hierarchical concurrency limits within the scope
+  await ctx.scope("tenant-123").workflow_call(
+      MyWorkflow.run, "wf-key", payload, limit_key="api-key/user42"
+  )
+  ```
+
+  The scope also becomes part of the invocation's identity and is exposed back on `ctx.request().scope` / `ctx.request().limit_key`.
+
+  Check out the [Flow control documentation](https://docs.restate.dev/services/flow-control) for more details on how concurrency limits work and how to set them up.
+
+  > **NOTE:** This API is in preview and is not enabled by default. To use it in restate-server 1.7, enable the flow control and protocol v7 experimental features via `RESTATE_EXPERIMENTAL_ENABLE_PROTOCOL_V7=true` and `RESTATE_EXPERIMENTAL_ENABLE_VQUEUES=true` (new clusters only). See [https://docs.restate.dev/services/flow-control](https://docs.restate.dev/services/flow-control) for details.
+
+  ### Signals
+
+  Signals let invocations communicate directly with each other: one invocation waits for a named signal, and any other handler can resolve or reject it by referencing the target invocation's ID.
+
+  ```python theme={null}
+  # Inside the invocation that wants to wait:
+  approved = await ctx.signal("approved", type_hint=bool)
+
+  # Inside another handler that knows the target invocation's ID:
+  ctx.resolve_signal(target_invocation_id, "approved", True)
+  # or, to wake the waiter with a terminal error:
+  ctx.reject_signal(target_invocation_id, "approved", "Request denied")
+  ```
+
+  > **NOTE:** Signals require restate-server 1.7 with `RESTATE_EXPERIMENTAL_ENABLE_PROTOCOL_V7=true` enabled.
+
+  ### `TerminalError` metadata
+
+  `TerminalError` now carries an optional `metadata` dictionary, propagated alongside the error message and status code. Use it to attach structured, machine-readable context to terminal failures.
+
+  ```python theme={null}
+  raise TerminalError(
+      "Payment declined",
+      status_code=402,
+      metadata={"reason": "insufficient_funds"},
+  )
+  ```
+
+  ### General improvements
+
+  * **New cooperative suspensions behavior when awaiting futures** (#192): the SDK now propagates the full tree of pending futures to the shared core to decide when and how to suspend, resulting in less concurrency-quota thrashing when fanning out many requests from one handler to others.
+  * **Cheaper `ctx.run` round-trips**: instead of echoing the full completion message back to the SDK after storing a `ctx.run` result, the runtime replies with an ack message. This noticeably cuts network cost for handlers with many or large `ctx.run` entries.
+  * **zstd response compression on AWS Lambda** (#206): on Python 3.13 or older, install the optional dependency with `pip install restate_sdk[zstd]` to enable it.
+  * Fixed a race condition in the LangChain turnstile (#198).
+  * Require tool calls to carry an ID in the LangChain extension (#199).
+  * Journal the tool message ID (#200).
+  * `pydantic`: use `current_context()` in `RestateModelWrapper.request_stream`, fixing an `AttributeError` on streaming / `event_stream_handler` (#201).
+
+  > **NOTE:** The cooperative suspensions and run-acks improvements above are enabled in restate-server 1.7 with `RESTATE_EXPERIMENTAL_ENABLE_PROTOCOL_V7=true` set up.
+
+  ### What's Changed
+
+  * Cooperative suspensions by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/192](https://github.com/restatedev/sdk-python/pull/192)
+  * Add TerminalError.metadata by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/196](https://github.com/restatedev/sdk-python/pull/196)
+  * Bump shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/197](https://github.com/restatedev/sdk-python/pull/197)
+  * Fix race condition langchain turnstile by @gvdongen in [https://github.com/restatedev/sdk-python/pull/198](https://github.com/restatedev/sdk-python/pull/198)
+  * Require tool calls with ID in  langchain ext by @gvdongen in [https://github.com/restatedev/sdk-python/pull/199](https://github.com/restatedev/sdk-python/pull/199)
+  * Bump shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/202](https://github.com/restatedev/sdk-python/pull/202)
+  * Journal tool message ID by @gvdongen in [https://github.com/restatedev/sdk-python/pull/200](https://github.com/restatedev/sdk-python/pull/200)
+  * Support zstd compression for py \< 3.14 by @aelci in [https://github.com/restatedev/sdk-python/pull/206](https://github.com/restatedev/sdk-python/pull/206)
+  * feat: Add scopes, flow-control limit keys and signals by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/207](https://github.com/restatedev/sdk-python/pull/207)
+  * fix(pydantic): use current\_context() in RestateModelWrapper.request\_stream (AttributeError on streaming / event\_stream\_handler) by @selimacerbas in [https://github.com/restatedev/sdk-python/pull/201](https://github.com/restatedev/sdk-python/pull/201)
+
+  ### New Contributors
+
+  * @aelci made their first contribution in [https://github.com/restatedev/sdk-python/pull/206](https://github.com/restatedev/sdk-python/pull/206)
+  * @selimacerbas made their first contribution in [https://github.com/restatedev/sdk-python/pull/201](https://github.com/restatedev/sdk-python/pull/201)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v1.0.0)
+</Update>
+
+<Update label="2026-05-22" description="Python SDK v0.18.1">
+  * [PR 198](https://github.com/restatedev/sdk-python/pull/198) Fixed race condition in LangChain integration
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.18.1)
+</Update>
+
+<Update label="2026-05-13" description="Python SDK v0.18.0">
+  ### What's Changed
+
+  * Agent integrations: remove default retries by @gvdongen in [https://github.com/restatedev/sdk-python/pull/190](https://github.com/restatedev/sdk-python/pull/190)
+  * Add Langchain integration by @gvdongen in [https://github.com/restatedev/sdk-python/pull/194](https://github.com/restatedev/sdk-python/pull/194)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.18.0)
+</Update>
+
+<Update label="2026-04-08" description="Python SDK v0.17.1">
+  ### What's Changed
+
+  * Logfire Tracing: fix default arguments for Tracer.start\_as\_current\_span by @gvdongen in [https://github.com/restatedev/sdk-python/pull/188](https://github.com/restatedev/sdk-python/pull/188)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.17.1)
+</Update>
+
+<Update label="2026-04-07" description="Python SDK v0.17.0">
+  ### What's Changed
+
+  * Use WarpBuild runners for CI workflows by @tillrohrmann in [https://github.com/restatedev/sdk-python/pull/185](https://github.com/restatedev/sdk-python/pull/185)
+  * Introduce RetryableError by @hatstand in [https://github.com/restatedev/sdk-python/pull/184](https://github.com/restatedev/sdk-python/pull/184)
+  * Add a RestateTracer and RestateTracerProvider for AI observability by @gvdongen in [https://github.com/restatedev/sdk-python/pull/187](https://github.com/restatedev/sdk-python/pull/187)
+
+  ### New Contributors
+
+  * @hatstand made their first contribution in [https://github.com/restatedev/sdk-python/pull/184](https://github.com/restatedev/sdk-python/pull/184)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.17.0)
+</Update>
+
+<Update label="2026-03-17" description="Python SDK v0.16.0">
+  ### What's Changed
+
+  * Pydantic AI integration: upgrade pydantic ai library to 1.68.0. Disable autowrapping tools in ctx.run. Default retry strategy for LLM calls is now 10 attemps with 1 second minimum interval.
+  * Google ADK integration: Added RestateEventsSummarizer to wrap LLM summarization calls in durable steps and added flushing compaction events in append\_event to Restate.
+
+  ### Bug fixes
+
+  * fix: #175 BidiStream SIGTERM causes CPU hot loop and pod stuck in Terminating by @brightsparc in [https://github.com/restatedev/sdk-python/pull/176](https://github.com/restatedev/sdk-python/pull/176)
+  * Bump shared core, bump max protocol version, update feature matrix by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/183](https://github.com/restatedev/sdk-python/pull/183)
+
+  ### New Contributors
+
+  * @brightsparc made their first contribution in [https://github.com/restatedev/sdk-python/pull/176](https://github.com/restatedev/sdk-python/pull/176)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.16.0)
+</Update>
+
+<Update label="2026-02-20" description="Python SDK v0.15.0">
+  ### What's Changed
+
+  * Support zstd compression in python 3.14+ by @jackkleeman in [https://github.com/restatedev/sdk-python/pull/174](https://github.com/restatedev/sdk-python/pull/174)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.15.0)
+</Update>
+
+<Update label="2026-01-15" description="Python SDK v0.14.2">
+  ### What's Changed
+
+  * Update shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/170](https://github.com/restatedev/sdk-python/pull/170)
+  * Fix stacktrace propagation inside ctx.run by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/171](https://github.com/restatedev/sdk-python/pull/171)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.14.2)
+</Update>
+
+<Update label="2026-01-08" description="Python SDK v0.14.0">
+  ### What's Changed
+
+  * doc: fix various typos by @didier-durand in [https://github.com/restatedev/sdk-python/pull/168](https://github.com/restatedev/sdk-python/pull/168)
+  * Add pydantic ai by @igalshilman in [https://github.com/restatedev/sdk-python/pull/167](https://github.com/restatedev/sdk-python/pull/167)
+  * \[extensions] Avoid global state in the ADK plugin by @igalshilman in [https://github.com/restatedev/sdk-python/pull/169](https://github.com/restatedev/sdk-python/pull/169)
+
+  ### New Contributors
+
+  * @didier-durand made their first contribution in [https://github.com/restatedev/sdk-python/pull/168](https://github.com/restatedev/sdk-python/pull/168)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.14.0)
+</Update>
+
+<Update label="2025-12-17" description="Python SDK v0.13.2">
+  ### What's Changed
+
+  * OpenAI integration: DurableRunner with LLM retry opts and lazy session flushing by @gvdongen in [https://github.com/restatedev/sdk-python/pull/164](https://github.com/restatedev/sdk-python/pull/164)
+  * Add explicit tool execution synchronization by @igalshilman in [https://github.com/restatedev/sdk-python/pull/165](https://github.com/restatedev/sdk-python/pull/165)
+  * Cancel subsequent tools by @igalshilman in [https://github.com/restatedev/sdk-python/pull/166](https://github.com/restatedev/sdk-python/pull/166)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.13.2)
+</Update>
+
+<Update label="2025-12-11" description="Python SDK v0.13.1">
+  ### What's Changed
+
+  * Update Google ADK extension by @gvdongen in [https://github.com/restatedev/sdk-python/pull/163](https://github.com/restatedev/sdk-python/pull/163)
+
+  ### New Contributors
+
+  * @gvdongen made their first contribution in [https://github.com/restatedev/sdk-python/pull/163](https://github.com/restatedev/sdk-python/pull/163)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.13.1)
+</Update>
+
+<Update label="2025-12-09" description="Python SDK v0.13.0">
+  ### New features :tada:
+
+  * Use context manager together with service handlers:
+
+  ```python theme={null}
+  @contextvar
+  @asynccontextmanager
+  async def my_resource_manager():
+      yield "hello"
+
+
+  @greeter.handler(invocation_context_managers=[my_resource_manager])
+  async def greet_with_cm(ctx: Context, name: str) -> str:
+      return my_resource_manager.value
+  ```
+
+  * Add `msgspec` support, works out of the box when adding `restate_sdk[serde]` dependency:
+
+  ```python theme={null}
+  # models
+  class GreetingRequest(msgspec.Struct):
+      name: str
+
+  class Greeting(msgspec.Struct):
+      message: str
+
+  msgspec_greeter = Service("msgspec_greeter")
+
+  @msgspec_greeter.handler()
+  async def greet(ctx: Context, req: GreetingRequest) -> Greeting:
+      return Greeting(message=f"Hello {req.name}!")
+  ```
+
+  * Add extension modules for Google ADK and OpenAI, more info soon!
+
+  ### What's Changed
+
+  * Add current\_context() extension point by @igalshilman in [https://github.com/restatedev/sdk-python/pull/148](https://github.com/restatedev/sdk-python/pull/148)
+  * Add context manager support by @igalshilman in [https://github.com/restatedev/sdk-python/pull/149](https://github.com/restatedev/sdk-python/pull/149)
+  * Rename to invocation\_context\_managers by @igalshilman in [https://github.com/restatedev/sdk-python/pull/150](https://github.com/restatedev/sdk-python/pull/150)
+  * Rethrow TerminalError/SdkBaseException accidentally wrapped by @igalshilman in [https://github.com/restatedev/sdk-python/pull/151](https://github.com/restatedev/sdk-python/pull/151)
+  * feat: add msgspec support by @v1gnesh in [https://github.com/restatedev/sdk-python/pull/154](https://github.com/restatedev/sdk-python/pull/154)
+  * Consolidate msgspec conditional imports into a single place by @igalshilman in [https://github.com/restatedev/sdk-python/pull/155](https://github.com/restatedev/sdk-python/pull/155)
+  * Use DefaultSerde instead of JsonSerde for promise() default parameter by @Gustavo-Hagenbeck in [https://github.com/restatedev/sdk-python/pull/157](https://github.com/restatedev/sdk-python/pull/157)
+  * Support `union | None` return types by @igalshilman in [https://github.com/restatedev/sdk-python/pull/158](https://github.com/restatedev/sdk-python/pull/158)
+  * Use HttpError for the typed ingress client by @igalshilman in [https://github.com/restatedev/sdk-python/pull/159](https://github.com/restatedev/sdk-python/pull/159)
+  * Replace traceback.print\_exc() with logger.exception() for proper logging by @Gustavo-Hagenbeck in [https://github.com/restatedev/sdk-python/pull/160](https://github.com/restatedev/sdk-python/pull/160)
+  * Add an optional extension module for Google ADK integration by @igalshilman in [https://github.com/restatedev/sdk-python/pull/161](https://github.com/restatedev/sdk-python/pull/161)
+  * Add an optional ext module for openai by @igalshilman in [https://github.com/restatedev/sdk-python/pull/162](https://github.com/restatedev/sdk-python/pull/162)
+
+  ### New Contributors
+
+  * @v1gnesh made their first contribution in [https://github.com/restatedev/sdk-python/pull/154](https://github.com/restatedev/sdk-python/pull/154)
+  * @Gustavo-Hagenbeck made their first contribution in [https://github.com/restatedev/sdk-python/pull/157](https://github.com/restatedev/sdk-python/pull/157)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.13.0)
+</Update>
+
+<Update label="2025-11-18" description="Python SDK v0.12.0">
+  ### New features :tada:
+
+  * Added ingress client to send requests from your python applications to restate services:
+
+  ```python theme={null}
+  async with restate.create_client("http://localhost:8080") as client:
+    await client.object_call(increment, key="a", arg=5)
+    await client.object_send(increment, key="a", arg=5)
+
+    current_count = await client.object_call(count, key="a", arg=None)
+  ```
+
+  * Added new test harness constructor to be used in combination with `@pytest.fixture`:
+
+  ```python theme={null}
+  # Your fixture
+  @pytest.fixture(scope="session")
+  async def restate_test_harness():
+    app = restate.app([greeter])
+    async with restate.create_test_harness(app) as harness:
+          yield harness
+          
+  # A test example, using the client
+  async def test_greeter(restate_test_harness: HarnessEnvironment):
+      greeting = await restate_test_harness.client.service_call(greet, arg="Pippo")
+      assert greeting == "Hello Pippo!"
+  ```
+
+  * Various type hints improvements, such as [https://github.com/restatedev/sdk-python/issues/112](https://github.com/restatedev/sdk-python/issues/112)
+
+  ### What's Changed
+
+  * Revert usage of asyncio cancellation mechanism by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/142](https://github.com/restatedev/sdk-python/pull/142)
+  * Update `crazy-max/ghaction-setup-docker` to v4 by @muhamadazmy in [https://github.com/restatedev/sdk-python/pull/144](https://github.com/restatedev/sdk-python/pull/144)
+  * Use modern lints, tools and type checkers by @igalshilman in [https://github.com/restatedev/sdk-python/pull/143](https://github.com/restatedev/sdk-python/pull/143)
+  * Add typed client by @igalshilman in [https://github.com/restatedev/sdk-python/pull/145](https://github.com/restatedev/sdk-python/pull/145)
+  * Add test for harness and typed client. Fix name of TestHarnessEnvironment so it doesn't get mixed up in pytest. Fix imports in **init** by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/147](https://github.com/restatedev/sdk-python/pull/147)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.12.0)
+</Update>
+
+<Update label="2025-10-21" description="Python SDK v0.11.0">
+  ### New features
+
+  * You can configure more retry options for `ctx.run_typed`:
+
+  ```python theme={null}
+  ctx.run_typed("payment", payment, RunOptions(
+      # Initial retry interval
+      initial_retry_interval=timedelta(milliseconds=100),
+      # Retry policies are exponential, the retry interval will double on each attempt
+      retry_interval_factor=2.0,
+      # Maximum retry interval
+      max_retry_interval=timedelta(seconds=10),
+      # Max duration of retries before giving up
+      max_duration=timedelta(minutes=5),
+      # Max attempts (including the initial) before giving up
+      max_attempts=10,
+  ))
+  ```
+
+  * You can now provide a name to `sleep`, you'll be able to see this name in the UI.
+
+  ### Notable changes
+
+  * When [suspending](https://docs.restate.dev/foundations/key-concepts#suspensions-on-faas), the SDK will now throw an [`asyncio.CancelledError`](https://docs.python.org/3/library/asyncio-task.html#task-cancellation), instead of the previously thrown custom error. Catch this exception **only** if you need to cleanup some external resources between execution attempts.
+
+  ### What's Changed
+
+  * Use task cancellation instead of custom suspension exception by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/132](https://github.com/restatedev/sdk-python/pull/132)
+  * Remove typing\_extensions dependency by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/133](https://github.com/restatedev/sdk-python/pull/133)
+  * Copy RunOptions when mutating them by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/135](https://github.com/restatedev/sdk-python/pull/135)
+  * Add name parameter to sleep by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/136](https://github.com/restatedev/sdk-python/pull/136)
+  * Fix ctx.time()  by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/138](https://github.com/restatedev/sdk-python/pull/138)
+  * Expose all run retry options by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/137](https://github.com/restatedev/sdk-python/pull/137)
+  * Test suite 3.2 upgrade by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/139](https://github.com/restatedev/sdk-python/pull/139)
+  * Use service image by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/140](https://github.com/restatedev/sdk-python/pull/140)
+  * Fix lint warning by @igalshilman in [https://github.com/restatedev/sdk-python/pull/141](https://github.com/restatedev/sdk-python/pull/141)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.11.0)
+</Update>
+
+<Update label="2025-09-22" description="Python SDK v0.10.2">
+  Removed `typing_extensions` dependency.
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.10.2)
+</Update>
+
+<Update label="2025-09-22" description="Python SDK v0.10.1">
+  ### What's Changed
+
+  * Add better closed error by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/131](https://github.com/restatedev/sdk-python/pull/131)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.10.1)
+</Update>
+
+<Update label="2025-09-16" description="Python SDK v0.10.0">
+  ### Invocation retry policy
+
+  When used with Restate 1.5, you can now configure the invocation retry policy from the SDK directly. See [https://github.com/restatedev/restate/releases/tag/v1.5.0](https://github.com/restatedev/restate/releases/tag/v1.5.0) for more details on the new invocation retry policy configuration.
+
+  ### What's Changed
+
+  * Retry Policy by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/126](https://github.com/restatedev/sdk-python/pull/126)
+  * Clarify ctx.run max attempts by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/127](https://github.com/restatedev/sdk-python/pull/127)
+  * Bring back Python 3.10 support by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/129](https://github.com/restatedev/sdk-python/pull/129)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.10.0)
+</Update>
+
+<Update label="2025-08-29" description="Python SDK v0.9.1">
+  ### What's Changed
+
+  * Add `always_replay` flag to test harness by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/124](https://github.com/restatedev/sdk-python/pull/124)
+  * Add `disable_retries` flag to test harness by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/125](https://github.com/restatedev/sdk-python/pull/125)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.9.1)
+</Update>
+
+<Update label="2025-08-28" description="Python SDK v0.9.0">
+  ### New features :sparkles:
+
+  * `ctx.random()` and `ctx.uuid()` for deterministic random and uuid. by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/120](https://github.com/restatedev/sdk-python/pull/120)
+  * Add `ctx.time()` as wrapper around `ctx.run(time.time)` by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/121](https://github.com/restatedev/sdk-python/pull/121)
+  * Integration with standard library `logging` module: replay aware logging filter `restate.RestateLoggingFilter` and log factory `restate.getLogger()` by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/122](https://github.com/restatedev/sdk-python/pull/122)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.9.0)
+</Update>
+
+<Update label="2025-07-17" description="Python SDK v0.8.1">
+  ### What's Changed
+
+  * enhancement: Add support for function args & kwargs type hints in ctx.run. by @objecthuman in [https://github.com/restatedev/sdk-python/pull/109](https://github.com/restatedev/sdk-python/pull/109)
+  * Bump PyO3 version, this required few changes by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/110](https://github.com/restatedev/sdk-python/pull/110)
+  * Update pyproject.toml to include correct license metadata by @tillrohrmann in [https://github.com/restatedev/sdk-python/pull/111](https://github.com/restatedev/sdk-python/pull/111)
+
+  ### New Contributors
+
+  * @objecthuman made their first contribution in [https://github.com/restatedev/sdk-python/pull/109](https://github.com/restatedev/sdk-python/pull/109)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.8.1)
+</Update>
+
+<Update label="2025-07-02" description="Python SDK v0.8.0">
+  * Introduce new Service/Object/Workflow constructor fields and the decorator fields `inactivity_timeout`, `abort_timeout`, `journal_retention`, `idempotency_retention`, `ingress_private`, `workflow_retention`. Please note these work only from Restate 1.4 onward. Check the in-code documentation for more details.
+  * Improved error messages
+
+  ### What's Changed
+
+  * Discovery manifest V3 by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/103](https://github.com/restatedev/sdk-python/pull/103)
+  * Bump shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/106](https://github.com/restatedev/sdk-python/pull/106)
+  * Use shared core 0.4 by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/107](https://github.com/restatedev/sdk-python/pull/107)
+
+  ### New Contributors
+
+  * @muhamadazmy made their first contribution in [https://github.com/restatedev/sdk-python/pull/101](https://github.com/restatedev/sdk-python/pull/101)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.8.0)
+</Update>
+
+<Update label="2025-05-19" description="Python SDK v0.7.2">
+  ### What's Changed
+
+  * Minor type hint improvments by @igalshilman in [https://github.com/restatedev/sdk-python/pull/95](https://github.com/restatedev/sdk-python/pull/95)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.7.2)
+</Update>
+
+<Update label="2025-05-05" description="Python SDK v0.7.1">
+  ### What's Changed
+
+  * Trigger building docker by @igalshilman in [https://github.com/restatedev/sdk-python/pull/92](https://github.com/restatedev/sdk-python/pull/92)
+  * Asgi recv() on lambda should hang when there are no more events by @igalshilman in [https://github.com/restatedev/sdk-python/pull/93](https://github.com/restatedev/sdk-python/pull/93)
+  * Add an explicit HTTP input closed event by @igalshilman in [https://github.com/restatedev/sdk-python/pull/94](https://github.com/restatedev/sdk-python/pull/94)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.7.1)
+</Update>
+
+<Update label="2025-04-29" description="Python SDK v0.7.0">
+  ### What's Changed
+
+  * Fix DefaultSerde with\_type\_hint by @igalshilman in [https://github.com/restatedev/sdk-python/pull/79](https://github.com/restatedev/sdk-python/pull/79)
+  * Make the restate app mountable by @igalshilman in [https://github.com/restatedev/sdk-python/pull/80](https://github.com/restatedev/sdk-python/pull/80)
+  * \[test] Use single element tuples by @igalshilman in [https://github.com/restatedev/sdk-python/pull/81](https://github.com/restatedev/sdk-python/pull/81)
+  * Rename created Docker image into test-services-python by @tillrohrmann in [https://github.com/restatedev/sdk-python/pull/77](https://github.com/restatedev/sdk-python/pull/77)
+  * \[docs] Add types to the attributes section by @igalshilman in [https://github.com/restatedev/sdk-python/pull/82](https://github.com/restatedev/sdk-python/pull/82)
+  * Introduce attempt completion event by @igalshilman in [https://github.com/restatedev/sdk-python/pull/83](https://github.com/restatedev/sdk-python/pull/83)
+  * Auto cancel tasks when an attempt is over  by @igalshilman in [https://github.com/restatedev/sdk-python/pull/84](https://github.com/restatedev/sdk-python/pull/84)
+  * Support concurrent side effects more robustly  by @igalshilman in [https://github.com/restatedev/sdk-python/pull/86](https://github.com/restatedev/sdk-python/pull/86)
+  * Fix task error is ignored by @igalshilman in [https://github.com/restatedev/sdk-python/pull/87](https://github.com/restatedev/sdk-python/pull/87)
+  * Catch asyncio.CancelledError during attempt tear down by @igalshilman in [https://github.com/restatedev/sdk-python/pull/88](https://github.com/restatedev/sdk-python/pull/88)
+  * Wait for the side effect to complete by @igalshilman in [https://github.com/restatedev/sdk-python/pull/89](https://github.com/restatedev/sdk-python/pull/89)
+  * Use stable rust in rust-toolchain.toml by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/91](https://github.com/restatedev/sdk-python/pull/91)
+  * Separate the ASGI types from the restate types by @igalshilman in [https://github.com/restatedev/sdk-python/pull/90](https://github.com/restatedev/sdk-python/pull/90)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.7.0)
+</Update>
+
+<Update label="2025-04-09" description="Python SDK v0.6.0">
+  We are pleased to announce the release of the Python SDK 0.6.0, in combination with Restate 1.3.
+  Check out the announcement blog post for more details about Restate 1.3 and the new SDK features: [https://restate.dev/blog/announcing-restate-1.3/](https://restate.dev/blog/announcing-restate-1.3/)
+
+  Check out the docs and examples to learn about the latest features:
+  [https://docs.restate.dev/category/python-sdk/](https://docs.restate.dev/category/python-sdk/)
+
+  ### What's Changed
+
+  * Service Protocol V4 by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/33](https://github.com/restatedev/sdk-python/pull/33)
+  * \[tests] Add Docker GHA for test-services by @igalshilman in [https://github.com/restatedev/sdk-python/pull/42](https://github.com/restatedev/sdk-python/pull/42)
+  * \[verification] Move the interpreter to test-services/ by @igalshilman in [https://github.com/restatedev/sdk-python/pull/43](https://github.com/restatedev/sdk-python/pull/43)
+  * Protocol V5 by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/44](https://github.com/restatedev/sdk-python/pull/44)
+  * Offload synchronous actions in ctx.run via asyncio.to\_thread to prevent event loop blocking by @ouatu-ro in [https://github.com/restatedev/sdk-python/pull/47](https://github.com/restatedev/sdk-python/pull/47)
+  * Export Public API via **all** in **init**.py by @ouatu-ro in [https://github.com/restatedev/sdk-python/pull/49](https://github.com/restatedev/sdk-python/pull/49)
+  * Add CLA automation by @tillrohrmann in [https://github.com/restatedev/sdk-python/pull/50](https://github.com/restatedev/sdk-python/pull/50)
+  * Expose new SDK features by @igalshilman in [https://github.com/restatedev/sdk-python/pull/51](https://github.com/restatedev/sdk-python/pull/51)
+  * Pass call headers in call/send by @igalshilman in [https://github.com/restatedev/sdk-python/pull/52](https://github.com/restatedev/sdk-python/pull/52)
+  * Use a custom future by @igalshilman in [https://github.com/restatedev/sdk-python/pull/53](https://github.com/restatedev/sdk-python/pull/53)
+  * Feature/general serde by @ouatu-ro in [https://github.com/restatedev/sdk-python/pull/48](https://github.com/restatedev/sdk-python/pull/48)
+  * Add invocation\_id to a call promise by @igalshilman in [https://github.com/restatedev/sdk-python/pull/54](https://github.com/restatedev/sdk-python/pull/54)
+  * Lazy create the run() coroutine by @igalshilman in [https://github.com/restatedev/sdk-python/pull/55](https://github.com/restatedev/sdk-python/pull/55)
+  * Add additional features by @igalshilman in [https://github.com/restatedev/sdk-python/pull/56](https://github.com/restatedev/sdk-python/pull/56)
+  * Support ctx.run combinators by @igalshilman in [https://github.com/restatedev/sdk-python/pull/58](https://github.com/restatedev/sdk-python/pull/58)
+  * Rename combinators to asyncio by @igalshilman in [https://github.com/restatedev/sdk-python/pull/59](https://github.com/restatedev/sdk-python/pull/59)
+  * Add sleep future by @igalshilman in [https://github.com/restatedev/sdk-python/pull/60](https://github.com/restatedev/sdk-python/pull/60)
+  * Use RestateDurableFuture in workflow methods by @igalshilman in [https://github.com/restatedev/sdk-python/pull/61](https://github.com/restatedev/sdk-python/pull/61)
+  * Add `select` future combinator by @igalshilman in [https://github.com/restatedev/sdk-python/pull/62](https://github.com/restatedev/sdk-python/pull/62)
+  * Chore/fix type hints and general clarity by @ouatu-ro in [https://github.com/restatedev/sdk-python/pull/57](https://github.com/restatedev/sdk-python/pull/57)
+  * Try to auto deduce the types provided for ctx.run() by @igalshilman in [https://github.com/restatedev/sdk-python/pull/63](https://github.com/restatedev/sdk-python/pull/63)
+  * Use DefaultSerde in more places by @igalshilman in [https://github.com/restatedev/sdk-python/pull/64](https://github.com/restatedev/sdk-python/pull/64)
+  * Add optional args= param to ctx.run by @igalshilman in [https://github.com/restatedev/sdk-python/pull/65](https://github.com/restatedev/sdk-python/pull/65)
+  * Notify the VM about a transient error by @igalshilman in [https://github.com/restatedev/sdk-python/pull/66](https://github.com/restatedev/sdk-python/pull/66)
+  * Update test suite to 3.0 by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/68](https://github.com/restatedev/sdk-python/pull/68)
+  * Rename cancel\_invocation by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/69](https://github.com/restatedev/sdk-python/pull/69)
+  * Add health check by @igalshilman in [https://github.com/restatedev/sdk-python/pull/70](https://github.com/restatedev/sdk-python/pull/70)
+  * Fix discovery information for void args by @igalshilman in [https://github.com/restatedev/sdk-python/pull/71](https://github.com/restatedev/sdk-python/pull/71)
+  * Fix type inference in PyCharm for ctx.run(). by @igalshilman in [https://github.com/restatedev/sdk-python/pull/72](https://github.com/restatedev/sdk-python/pull/72)
+  * Add a shortcut f.cancel\_invocation() by @igalshilman in [https://github.com/restatedev/sdk-python/pull/73](https://github.com/restatedev/sdk-python/pull/73)
+  * Support dataclasses serde by @igalshilman in [https://github.com/restatedev/sdk-python/pull/74](https://github.com/restatedev/sdk-python/pull/74)
+  * Cleanup the concurrent example by @igalshilman in [https://github.com/restatedev/sdk-python/pull/75](https://github.com/restatedev/sdk-python/pull/75)
+  * Bump shared core by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/76](https://github.com/restatedev/sdk-python/pull/76)
+
+  ### New Contributors
+
+  * @ouatu-ro made their first contribution in [https://github.com/restatedev/sdk-python/pull/47](https://github.com/restatedev/sdk-python/pull/47)
+  * @tillrohrmann made their first contribution in [https://github.com/restatedev/sdk-python/pull/50](https://github.com/restatedev/sdk-python/pull/50)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.6.0)
+</Update>
+
+<Update label="2025-02-18" description="Python SDK v0.5.1">
+  ### What's Changed
+
+  * Infer basic json schema by @igalshilman in [https://github.com/restatedev/sdk-python/pull/28](https://github.com/restatedev/sdk-python/pull/28)
+  * Use test suite 2.4 by @jackkleeman in [https://github.com/restatedev/sdk-python/pull/31](https://github.com/restatedev/sdk-python/pull/31)
+  * Add test harness by @igalshilman in [https://github.com/restatedev/sdk-python/pull/36](https://github.com/restatedev/sdk-python/pull/36)
+  * Make test\_harness a conditional import by @igalshilman in [https://github.com/restatedev/sdk-python/pull/37](https://github.com/restatedev/sdk-python/pull/37)
+  * Bumped shared core and bumped pyo3 by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/38](https://github.com/restatedev/sdk-python/pull/38)
+  * Fix delay by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/41](https://github.com/restatedev/sdk-python/pull/41)
+
+  ### New Contributors
+
+  * @jackkleeman made their first contribution in [https://github.com/restatedev/sdk-python/pull/31](https://github.com/restatedev/sdk-python/pull/31)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.5.1)
+</Update>
+
+<Update label="2024-10-24" description="Python SDK v0.4.1">
+  ### What's Changed
+
+  * Convert stringized annotations to real types by @igalshilman in [https://github.com/restatedev/sdk-python/pull/27](https://github.com/restatedev/sdk-python/pull/27)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.4.1)
+</Update>
+
+<Update label="2024-10-23" description="Python SDK v0.4.0">
+  ### What's Changed
+
+  * Add support for pydantic by @igalshilman in [https://github.com/restatedev/sdk-python/pull/26](https://github.com/restatedev/sdk-python/pull/26)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.4.0)
+</Update>
+
+<Update label="2024-09-10" description="Python SDK v0.3.0">
+  ### Breaking changes
+
+  This SDK is compatible only with Restate >= 1.1
+
+  ### New features
+
+  * It is now possible to configure the max number of retry attempts/max duration of retries for `ctx.run`
+
+  ### What's Changed
+
+  * Add x-restate-server to the response headers by @igalshilman in [https://github.com/restatedev/sdk-python/pull/20](https://github.com/restatedev/sdk-python/pull/20)
+  * Add side effect retry by @igalshilman in [https://github.com/restatedev/sdk-python/pull/21](https://github.com/restatedev/sdk-python/pull/21)
+  * Run retry e2e tests by @slinkydeveloper in [https://github.com/restatedev/sdk-python/pull/22](https://github.com/restatedev/sdk-python/pull/22)
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.3.0)
+</Update>
+
+<Update label="2024-08-09" description="Python SDK v0.2.0">
+  ### New features
+
+  * AWS Lambda support. Develop your service as usual and when deploying on AWS Lambda [set the handler name](https://docs.aws.amazon.com/lambda/latest/dg/python-handler.html) to the variable containing `restate.app`.
+  * Implement request verification, to secure your service when interacting with Restate cloud: [https://docs.restate.dev/deploy/cloud#http](https://docs.restate.dev/deploy/cloud#http)
+  * Implement `ctx.state_keys()` and `ctx.clear_all()`
+
+  ### What's Changed
+
+  * We now test the SDK with the new SDK test tool
+
+  [View on GitHub](https://github.com/restatedev/sdk-python/releases/tag/v0.2.0)
+</Update>

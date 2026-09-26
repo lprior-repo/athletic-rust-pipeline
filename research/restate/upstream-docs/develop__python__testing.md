@@ -1,0 +1,76 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Testing
+
+> Utilities to test your handler logic.
+
+The Python SDK has an asynchronous testing harness for testing Restate handlers against a real Restate Server.
+
+This uses [Testcontainers](https://testcontainers.com/) to run a Restate Server in a Docker container and provides a client to let you test your Restate handlers.
+
+## Setup
+
+You need Python 3.10 or newer and a running Docker environment.
+
+Install the package:
+
+```bash theme={null}
+pip install restate_sdk[harness]
+```
+
+## Testing handlers
+
+If you have a service as follows:
+
+```python {"CODE_LOAD::python/src/develop/testing.py#service"}  theme={null}
+import restate
+
+greeter = restate.Service("greeter")
+
+
+@greeter.handler()
+async def greet(ctx: restate.Context, name: str) -> str:
+    return f"Hello {name}!"
+
+
+app = restate.app(services=[greeter])
+```
+
+Then test it with `create_test_harness` and the typed asynchronous ingress client:
+
+```python {"CODE_LOAD::python/src/develop/testing.py#testing"}  theme={null}
+import asyncio
+
+import restate
+
+
+async def test_greet() -> None:
+    async with restate.create_test_harness(app, always_replay=True) as harness:
+        result = await harness.client.service_call(greet, arg="Alice")
+        assert result == "Hello Alice!"
+
+
+if __name__ == "__main__":
+    asyncio.run(test_greet())
+```
+
+`create_test_harness` starts the application and Restate Server, registers the application, and stops both when the context exits. The returned harness provides:
+
+* `harness.client`: A typed asynchronous client for invoking Services, Virtual Objects, and Workflows
+* `harness.ingress_url`: The HTTP ingress URL for raw HTTP tests
+* `harness.admin_api_url`: The Admin API URL for deployment and introspection assertions
+
+## Testing options
+
+Use the harness options to exercise failure and replay behavior:
+
+| Option                                               | Use it to                                                                         |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `always_replay=True`                                 | Force replay at suspension points so tests expose non-deterministic handler logic |
+| `disable_retries=True`                               | Make retryable failures return immediately so tests do not wait for backoff       |
+| `follow_logs=True`                                   | Stream Restate Server logs while diagnosing a failing test                        |
+| `restate_image="docker.io/restatedev/restate:1.7.2"` | Pin the server version for reproducible compatibility tests                       |
+
+Use `always_replay=True` for tests to find non-determinism bugs. Use `disable_retries=True` in focused failure tests where you need the first retryable failure to be observable immediately.

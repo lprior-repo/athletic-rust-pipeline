@@ -1,0 +1,4079 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Restate Server changelog
+
+> Releases of the Restate Server.
+
+<Update label="2026-09-22" description="Restate Server v1.7.12">
+  ### Restate v1.7.12
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.12
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.12
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.12
+  npm install @restatedev/restate@1.7.12
+  npm install @restatedev/restatectl@1.7.12
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                          | Platform            | Checksum                                                                                                                            |
+  | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.12/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.12/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.12)
+</Update>
+
+<Update label="2026-09-22" description="Restate Server v1.7.11">
+  ### Restate v1.7.11
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.11
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.11
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.11
+  npm install @restatedev/restate@1.7.11
+  npm install @restatedev/restatectl@1.7.11
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                          | Platform            | Checksum                                                                                                                            |
+  | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.11/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.11/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.11)
+</Update>
+
+<Update label="2026-09-14" description="Restate Server v1.7.10">
+  ### Restate 1.7.10
+
+  Restate 1.7.10 automatically cleans up obsolete VQueue metadata, adds opt-in cleanup for metadata accumulated by earlier versions, and improves VQueue metadata write efficiency.
+
+  ### 🧹 Automatic VQueue Metadata Cleanup
+
+  Restate now removes a VQueue’s metadata when an update leaves the queue unpaused and fully empty, including its finished-entry stage.
+
+  This prevents workloads with many short-lived queues from accumulating obsolete metadata, limiting partition-store growth and avoiding increasingly expensive metadata scans.
+
+  After cleanup:
+
+  * Fully empty, unpaused queues disappear from `sys_vqueue_meta` and the VQueue CLI.
+  * Historical timestamps and exponential moving averages stored in deleted metadata are discarded. If the same queue is created again, its statistics restart.
+  * Empty paused queues retain their metadata and pause state.
+
+  Automatic cleanup during queue updates requires no configuration.
+
+  ### 💾 Clean Up Historical Metadata
+
+  A new, one-time local storage migration removes obsolete VQueue metadata accumulated by earlier versions.
+
+  After upgrading all cluster nodes to Restate 1.7.10 or newer, enable the migration on each node:
+
+  ```toml theme={null}
+  [common]
+  experimental-enable-vqueue-obsolete-cleanup = true
+  ```
+
+  Each local partition-store replica scans its metadata in bounded, low-priority chunks and records completion to avoid repeating the scan.
+
+  The first startup with cleanup enabled may take longer, and deleting a large backlog can temporarily increase RocksDB compaction and disk I/O. For large backlogs, roll out the setting gradually across replicas, allowing cleanup and subsequent compaction to settle before restarting additional replicas.
+
+  **A partition store that has completed this migration requires Restate 1.7.10 or newer. Do not downgrade it to an earlier version.**
+
+  The migration is opt-in for Restate 1.7.10 and 1.8, and enabled unconditionally from Restate 1.9.
+
+  ### ⚡ More Efficient VQueue Metadata Writes
+
+  Restate now periodically writes complete VQueue metadata instead of appending another RocksDB merge operation. These full writes shorten metadata merge chains, reducing the work needed to reconstruct metadata during reads, flushes, and compactions.
+
+  Alongside this change, the default `worker.storage.rocksdb-max-successive-merges` changes from `5000` to `0`. This avoids repeated merge-chain counting and threshold-triggered value reconstruction on the write path.
+
+  Existing explicit settings remain effective. To retain the previous threshold:
+
+  ```toml theme={null}
+  [worker.storage]
+  rocksdb-max-successive-merges = 5000
+  ```
+
+  📖 [Full Release Notes](https://github.com/restatedev/restate/blob/release/1.7/release-notes/v1.7.10.md)
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.10
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.10
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.10
+  npm install @restatedev/restate@1.7.10
+  npm install @restatedev/restatectl@1.7.10
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                          | Platform            | Checksum                                                                                                                            |
+  | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.10/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.10/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.10)
+</Update>
+
+<Update label="2026-09-04" description="Restate Server v1.7.9">
+  ### Restate 1.7.9
+
+  Restate 1.7.9 strengthens storage reliability, detects stalled AWS Lambda connections sooner, and bundles Restate UI 1.0.25.
+
+  ### 🛡️ Stronger Storage Reliability
+
+  RocksDB iterator failures are now propagated instead of being mistaken for missing data or the normal end of a scan. This covers partition-store scans, journal-index consumers, metadata-server Raft index discovery, and log-server local-tail recovery.
+
+  Partition-store direct writes also now use the same crash-recovery semantics as transaction and migration writes. This prevents later metadata from surviving a crash while preceding data changes are lost, preserving the ordering assumptions used by storage migrations.
+
+  No configuration or migration changes are required.
+
+  ### ⏱️ Faster Detection of Stalled AWS Lambda Connections
+
+  Restate now enables HTTP/2 keep-alive pings for AWS Lambda invocations.
+
+  The existing `worker.invoker.http2-keep-alive-interval` and `worker.invoker.http2-keep-alive-timeout` options now also apply to Lambda, retaining their defaults of `40s` and `20s`.
+
+  With these defaults, Restate detects silently dropped connections within about one minute instead of waiting for the kernel’s TCP retransmission timeout, which can take around 15 minutes. Idle connections are also pinged so dead pooled connections can be discarded before another invocation uses them.
+
+  Set `worker.invoker.http2-keep-alive-interval` to `0` to disable pings. Endpoint overrides that negotiate HTTP/1.1 retain the previous behavior.
+
+  ### ⚙️ Synchronous VQueue Refills by Default
+
+  VQueue storage refills now run synchronously by default, avoiding scheduling refill reads on Tokio’s blocking thread pool.
+
+  Existing deployments adopt this behavior automatically after upgrading. To retain asynchronous refills:
+
+  ```toml theme={null}
+  [common]
+  experimental-enable-vqueues-async-refill = true
+  ```
+
+  Be aware that asynchronous refills are currently not fully stable yet. No configuration changes are required unless you want to retain the previous behavior.
+
+  ### 💾 Historical Journal Index Cleanup Deferred
+
+  The one-time cleanup of historical orphaned journal completion-ID index entries is disabled in this release and deferred until Restate 1.8.
+
+  The existing cleanup marker cannot account for new orphaned entries created after a rollback to Restate 1.6. Deferring cleanup allows the revised migration to handle this scenario correctly.
+
+  Normal journal deletion continues to remove its completion-ID index entries. No configuration or user action is required for this release. To reclaim historical orphaned entries, upgrade to Restate 1.8 once its revised cleanup is available.
+
+  ### 🖥️ Restate UI 1.0.25
+
+  The bundled Restate UI has been updated from v1.0.22 to v1.0.25, incorporating the fixes and improvements from the v1.0.23, v1.0.24, and v1.0.25 UI releases.
+
+  📖 [Full Release Notes](https://github.com/restatedev/restate/blob/release/1.7/release-notes/v1.7.9.md)
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.9
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.9
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.9
+  npm install @restatedev/restate@1.7.9
+  npm install @restatedev/restatectl@1.7.9
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.9/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.9/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.9)
+</Update>
+
+<Update label="2026-08-27" description="Restate Server v1.7.8">
+  ### Restate 1.7.8
+
+  Restate 1.7.8 improves partition-store reliability, adds opt-in retention for queued and delayed invocation termination, reduces partition-processor memory usage, corrects RocksDB observability, and bundles Restate UI 1.0.22.
+
+  ### 🛡️ Partition-Store Reliability
+
+  Orphaned journal completion-index cleanup now stops and reports storage errors instead of treating them as normal scan completion or an absent journal.
+
+  This prevents incorrect cleanup and avoids marking an incomplete scan as complete. Restate now also correctly decodes persisted VQueue lock names for Virtual Objects with an empty key. Previously, encountering one of these lock names could disrupt the partition.
+
+  No configuration or migration changes are required.
+
+  ### ⏱️ Consistent Retention for Pre-flight Invocations
+
+  Restate can now apply configured completion and journal retention when an invocation is killed or cancelled before it starts running. This includes invocations waiting for a Virtual Object or Workflow key, waiting for a concurrency slot, or scheduled for later execution.
+
+  Enable the behavior with:
+
+  ```toml theme={null}
+  [common]
+  experimental-enable-preflight-invocation-termination-retention = true
+  ```
+
+  With the option enabled:
+
+  * Idempotent invocations retain their `KILLED` or `CANCELED` result for the configured completion-retention period.
+  * Cancelled Workflow submissions retain their Workflow key for the configured retention period.
+  * Terminated pre-flight invocations remain available through introspection until their retention expires.
+
+  The option is disabled by default. Enabling it applies a persistent partition feature requiring Restate Server 1.7.8 or newer. After the feature barrier has been applied, do not downgrade the cluster to an earlier version.
+
+  ### 🧠 Lower Memory Usage and Correct RocksDB Metrics
+
+  Partition processors now reuse the global in-memory schema when its version matches their persisted schema. This best-effort deduplication reduces steady-state memory usage from duplicate schema objects across partitions.
+
+  This release also corrects the following RocksDB memtable metrics so they report memory only for the database identified by their labels:
+
+  * `rocksdb_memory_approx_memtable_bytes`
+  * `rocksdb_memory_approx_memtable_unflushed_bytes`
+  * `rocksdb_memory_approx_memtable_readers`
+
+  Dashboards and alerts may observe lower, correctly scoped values after upgrading.
+
+  ### 💾 Advanced RocksDB Merge Tuning
+
+  Worker storage adds the advanced `rocksdb-max-successive-merges` option for workloads with a single very hot VQueue:
+
+  ```toml theme={null}
+  [worker.storage]
+  rocksdb-max-successive-merges = 5000
+  ```
+
+  The default of `5000` preserves the previous behavior. Most deployments should retain the default.
+
+  ### 🛡️ Safer Runtime Diagnostics
+
+  Shipped `restate-server` binaries no longer produce Tokio task backtraces when they receive `SIGUSR2`.
+
+  Task dumping re-polls live futures and could crash Restate's current-thread runtimes. The server now logs that task dumping is unavailable instead. `SIGUSR1` configuration dumps and `SIGHUP` RocksDB flush and compaction are unaffected.
+
+  ### 🔧 CLI and UI Fixes
+
+  Batch invocation commands now correctly interpret keyed targets such as `MyObject/myKey`. This fixes keyed target selection for `cancel`, `kill`, `pause`, `resume`, `purge`, and `restart-as-new`.
+
+  The bundled Restate UI has also been updated from v1.0.21 to v1.0.22, fixing invocation query planning when VQueues are not enabled.
+
+  📖 Full Release Notes → [https://github.com/restatedev/restate/blob/main/release-notes/v1.7.8.md](https://github.com/restatedev/restate/blob/main/release-notes/v1.7.8.md)
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.8
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.8
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.8
+  npm install @restatedev/restate@1.7.8
+  npm install @restatedev/restatectl@1.7.8
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.8/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.8/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.8)
+</Update>
+
+<Update label="2026-08-26" description="Restate Server v1.7.7">
+  ### Restate 1.7.7
+
+  Restate 1.7.7 adds VQueue inspection commands to the Restate CLI, expands RocksDB storage tuning, fixes a VQueue refill issue that could leave invocations pending, and bundles Restate UI 1.0.21.
+
+  ### 🔍 VQueue CLI Introspection
+
+  The Restate CLI now provides commands for inspecting virtual queues:
+
+  ```sh theme={null}
+  restate vqueues list
+  restate vqueues describe <VQUEUE_ID>
+  ```
+
+  `restate vqueues list` displays virtual queues and their entry counts. `restate vqueues describe` shows metadata, entry counts, and individual entries for a selected queue.
+
+  No configuration or migration changes are required.
+
+  ### 💾 Configurable RocksDB Storage Tuning
+
+  Log-server and partition-store RocksDB configurations now expose additional controls for storage devices and workload-specific tuning:
+
+  * `rocksdb-writable-file-max-buffer-size`
+  * `rocksdb-l0-num-compaction-trigger`
+  * `rocksdb-max-open-files`
+  * `rocksdb-partition-sst-by-log`
+  * `rocksdb-partition-sst-by-loglet`
+
+  Restate now derives each database's memtable count and write-buffer size from its memory budget and target SST size. Increasing the log-server memtable budget can add more memtables without continuing to increase the size of each write buffer.
+
+  Log-server compaction output is partitioned by log by default, preventing compacted SST files from spanning logs. Existing SST files adopt these boundaries through normal compaction.
+
+  To retain SST boundaries based only on the configured target file size:
+
+  ```toml theme={null}
+  [log-server]
+  rocksdb-partition-sst-by-log = false
+  ```
+
+  Existing configurations remain accepted and no configuration migration is required. Operators with workload-specific RocksDB settings should review and benchmark their existing `rocksdb-memory-budget` and `rocksdb-max-file-size` values after upgrading.
+
+  ### 🛡️ Reliable VQueue Refills
+
+  This release fixes an asynchronous VQueue refill issue involving concurrent invocation cancellation.
+
+  Cancelling an invocation later in a VQueue could previously move the refill cursor past queued invocations that had not yet been read from storage. Those invocations could remain pending until the partition scheduler restarted.
+
+  VQueue refills now advance only through the storage range known to be fully covered. No configuration or data migration is required.
+
+  ### 🖥️ Restate UI 1.0.21
+
+  The bundled Restate UI has been updated from v1.0.19 to v1.0.21, incorporating the minor fixes from the v1.0.20 and v1.0.21 UI releases.
+
+  📖 Full Release Notes → [https://github.com/restatedev/restate/blob/main/release-notes/v1.7.7.md](https://github.com/restatedev/restate/blob/main/release-notes/v1.7.7.md)
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.7
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.7
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.7
+  npm install @restatedev/restate@1.7.7
+  npm install @restatedev/restatectl@1.7.7
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.7/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.7/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.7)
+</Update>
+
+<Update label="2026-08-21" description="Restate Server v1.7.6">
+  ### Restate 1.7.6
+
+  Restate 1.7.6 is a small patch release that speeds up RocksDB disk-space reclamation and bundles Restate UI 1.0.19.
+
+  ### 💾 Faster RocksDB Space Reclamation
+
+  Bottom-most RocksDB compactions for partition stores and log servers now run on the normal low-priority compaction pool instead of a dedicated single-thread pool.
+
+  Space reclamation mostly happens at the bottom-most levels, and the dedicated pool — which RocksDB never auto-expands — was limiting how quickly that space could be returned. Sharing the low-priority pool lets disk space be reclaimed faster while staying within the existing background-compaction budget.
+
+  No configuration or migration changes are required.
+
+  ### 🖥️ Restate UI 1.0.19
+
+  The bundled Restate UI has been updated to v1.0.19 with:
+
+  * A query inspector for diagnosing the SQL issued by UI pages
+  * Refined page layouts
+  * Fixes for race conditions in query and filter controls
+
+  📖 Full Release Notes → [https://github.com/restatedev/restate/blob/main/release-notes/v1.7.6.md](https://github.com/restatedev/restate/blob/main/release-notes/v1.7.6.md)
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.6
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.6
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.6
+  npm install @restatedev/restate@1.7.6
+  npm install @restatedev/restatectl@1.7.6
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.6/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.6/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.6)
+</Update>
+
+<Update label="2026-08-20" description="Restate Server v1.7.5">
+  ### Restate 1.7.5
+
+  Restate 1.7.5 improves HTTP/2 security and workload handling, makes VQueue migrations faster and safer, strengthens partition-store reliability, and bundles expanded VQueue observability in Restate UI 1.0.18.
+
+  ### 🛡️ HTTP/2 Security and Workload Protection
+
+  The `h2` and `hyper` dependencies have been updated to address [RUSTSEC-2026-0258](https://rustsec.org/advisories/RUSTSEC-2026-0258.html). The vulnerability allowed a peer to cause excessive memory use or a panic by sending a large number of empty HTTP/2 DATA frames.
+
+  Outbound service connections now also use a connection-level budget for HTTP/2 DATA framing overhead. The budget defaults to 1 MiB and can be increased for workloads that legitimately send many small frames:
+
+  ```toml theme={null}
+  [worker.invoker]
+  http2-data-frame-budget = "2 MiB"
+  ```
+
+  Values below 25,600 bytes are raised to 25,600 bytes. Most deployments do not need to change the default.
+
+  ### 🚀 Faster VQueue Migrations
+
+  VQueue migrations can now skip completed invocations. This can significantly reduce migration time for partition stores with a large completion-retention backlog:
+
+  ```toml theme={null}
+  experimental_enable_vqueues = true
+  experimental_enable_vqueues_migration_skip_completed = true
+  ```
+
+  Completed invocations retain their existing status and continue to be removed by their cleanup timers, but they do not appear in VQueue introspection after the migration.
+
+  Restate persists whether completed invocations were skipped. Setting `experimental_enable_vqueues_migration_skip_completed` back to `false` later migrates the remaining completed invocations and marks the partition as fully migrated.
+
+  Upgrade every Restate server in the cluster to v1.7.5 before enabling this option.
+
+  ### 💾 Partition-Store Reliability
+
+  This release fixes a race between partition-processor cancellation and opening its RocksDB partition store.
+
+  A replacement processor could previously start while an abandoned open operation was still completing, causing database lock errors or shutdown crashes. Once an open begins, Restate now waits for it to complete before honoring processor cancellation.
+
+  The relaxed pending-compaction limits announced in v1.7.4 are also now applied to every partition-store column family, where RocksDB enforces them:
+
+  * Soft pending-compaction limit: 512 GiB
+  * Hard pending-compaction limit: 2 TiB
+
+  These limits favor continued writes and flushes at the cost of potentially higher temporary disk usage while compaction falls behind.
+
+  Operators can also configure the maximum number of RocksDB subcompactions:
+
+  ```toml theme={null}
+  [worker.storage]
+  rocksdb-max-sub-compactions = 4
+  ```
+
+  The default is `1`, which disables subcompactions.
+
+  ### 🖥️ Restate UI 1.0.18
+
+  The bundled Restate UI has been updated to v1.0.18 with:
+
+  * Dedicated Virtual Object and Workflow views
+  * VQueue and flow-control pages
+  * Flow-control rule inspection and filtering
+  * Invocation statistics
+  * Improved navigation between related resources
+  * A fix for the transient-error selection control
+
+  For complete configuration guidance and operational details, see the [full release notes](https://github.com/restatedev/restate/blob/main/release-notes/v1.7.5.md).
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.5
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.5
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.5
+  npm install @restatedev/restate@1.7.5
+  npm install @restatedev/restatectl@1.7.5
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.5/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.5/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.5)
+</Update>
+
+<Update label="2026-08-18" description="Restate Server v1.7.4">
+  ### Restate 1.7.4
+
+  Restate 1.7.4 is a focused patch release with important fixes for VQueue scheduling, failure detection, partition-store write availability, and HTTP ingress error handling.
+
+  ### 🛡️ VQueue Reliability Fixes
+
+  This release fixes a race during asynchronous VQueue refills. Concurrent updates could previously move an entry beyond an in-progress refill's overlay horizon, causing the scheduler to incorrectly consider the queue empty and miss the remaining invocation.
+
+  VQueue entries now also retain their pinned deployment when invocations are migrated or restarted as new. The `sys_invocation_status`, `sys_vqueues`, and `sys_vqueue_entry_status` tables now consistently report deployment usage, improving deployment draining checks.
+
+  No configuration or migration changes are required.
+
+  ### 🌐 Safer HTTP Error Handling
+
+  HTTP ingress error responses now identify whether an error was generated by Restate's ingress or is the durable terminal outcome of an invocation.
+
+  Clients can inspect:
+
+  * The new `x-restate-error-source` response header
+  * The matching `source` field in the JSON error body
+  * The numeric HTTP status in the new `code` field for ingress-generated errors
+
+  The source is either `ingress` or `invocation`, allowing clients to distinguish transient Restate failures from durable invocation failures and make safer retry decisions.
+
+  Several ingress-generated status codes have also been aligned with HTTP semantics:
+
+  * Internal dispatcher failures now return `503 Service Unavailable`.
+  * Unsupported invocation output requests now return `400 Bad Request`.
+  * The unavailable OpenAPI route now returns `404 Not Found`.
+
+  ### 🚦 Stable Failure Detection During Startup
+
+  The failure detector now resets its gossip timing when a node becomes ready.
+
+  Time spent starting node roles is no longer counted as missed gossip intervals. This prevents starting nodes from incorrectly considering healthy peers dead or reporting themselves as isolated.
+
+  No configuration changes are required.
+
+  ### 💾 Fewer Partition-Store Write Stalls
+
+  Partition stores now tolerate more RocksDB compaction debt before slowing or stopping writes.
+
+  This improves write availability for deployments with large partitions when compaction falls behind. It may allow greater temporary disk usage and reduced read performance until compaction catches up.
+
+  ### 🛠️ Additional Improvements
+
+  The restate invocations pause command now selects suspended invocations in addition to running and backing-off invocations.
+
+  📖 Full Release Notes → ([https://github.com/restatedev/restate/blob/main/release-notes/v1.7.4.md](https://github.com/restatedev/restate/blob/main/release-notes/v1.7.4.md))
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.4
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.4
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.4
+  npm install @restatedev/restate@1.7.4
+  npm install @restatedev/restatectl@1.7.4
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.4/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.4/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.4)
+</Update>
+
+<Update label="2026-08-07" description="Restate Server v1.7.3">
+  ### Restate 1.7.3
+
+  Restate 1.7.3 makes the flow-control capabilities introduced in v1.7 available to existing clusters. It also includes important fixes for memory retention, Prometheus compatibility, SQL correctness, and partition reliability.
+
+  ### 🚀 Migrate Existing Clusters to VQueues
+
+  Existing clusters can now enable VQueues without provisioning a fresh cluster or first draining all in-flight invocations.
+
+  The migration covers inboxed, running, scheduled, suspended, paused, and completed invocations. Each invocation is migrated atomically, and interrupted migrations safely resume when the partition processor restarts.
+
+  To enable VQueues:
+
+  1. Upgrade every Restate server in the cluster to v1.7.3.
+  2. Enable VQueues on every node:
+
+  ```toml theme={null}
+  experimental_enable_vqueues = true
+  ```
+
+  3. Restart the nodes with the updated configuration.
+  4. Monitor the logs for `[VQueues Migration Progress]` and `[VQueues Migration Completed]`.
+
+  The `enabled_features` column in the `partition_state` SQL table includes `vqueues` after migration completes for a partition.
+
+  ### Migration Considerations
+
+  * Enabling VQueues is one-way. Disabling the configuration option does not migrate partitions back to the legacy execution path.
+  * A partition is temporarily unavailable while its migration runs and does not become an effective leader until migration completes.
+  * Migration duration depends on the amount of retained invocation data.
+  * Queued external state mutations cannot be migrated. Restate logs a warning identifying the affected virtual object, and the mutation must be submitted again after migration.
+
+  ### 🧠 Memory-Retention Fix
+
+  The record cache previously allowed a small cached record to retain the complete backing allocation from a much larger input buffer.
+
+  Cached raw records are now detached from those allocations. This makes the configured cache budget more accurately reflect retained memory and reduces the risk of unexpected memory growth and OOM failures under sustained traffic.
+
+  No configuration changes are required.
+
+  ### 🔄 Improved Ingress Observability
+
+  A new `restate.invocation_client.requests.total` counter records partition-processor RPC attempts by `partition_id` and outcome.
+
+  The `status` label on `restate.ingress.requests.total` now distinguishes:
+
+  * `completed`
+  * `request_error`
+  * `invocation_error`
+  * `ingress_error`
+
+  Ingress request duration is now also recorded for unsuccessful requests. Review Prometheus queries that previously counted only `status="completed"`.
+
+  ### 📊 Metrics Changes
+
+  Partition metrics are now aggregated by node rather than exported as high-cardinality per-partition series. This prevents stale series from remaining after partitions move between nodes.
+
+  Custom dashboards and alerts may require updates:
+
+  * Replace `restate_partition_is_effective_leader` with `restate_num_active_partition_leaders`.
+  * Query `restate_partition_applied_lsn_lag` and `restate_partition_snapshot_age_seconds` as quantile gauges without the `partition` label.
+  * Replace `restate_partition_time_since_last_status_update` with `restate_partition_time_since_last_status_update_seconds`.
+  * Use `restate_partition_num_unknown_applied_lsn_lag` to monitor partitions whose lag is unknown.
+
+  The bundled Grafana dashboards have already been updated and can be re-imported.
+
+  This release also fixes invalid Prometheus exposition that could cause strict parsers, including Vector's `prometheus_scrape` source, to reject the complete metrics payload:
+
+  | Previous metric                            | Replacement                               |
+  | ------------------------------------------ | ----------------------------------------- |
+  | `restate_partition_shuffle_inflight_count` | `restate_partition_shuffle_inflight`      |
+  | `restate_partition_shuffle_message_count`  | `restate_partition_shuffle_message_total` |
+
+  The new in-flight metric is a gauge and no longer produces summary `_sum`, `_count`, or `quantile` series.
+
+  ### 🛡️ Clearer Reporting for Irrecoverable Partitions
+
+  A partition processor whose local store is ahead of the log tail can no longer recover by retrying. Restate now parks the processor and reports it as broken instead of retrying indefinitely.
+
+  The condition is visible through:
+
+  * `restatectl partition list`
+  * `restatectl status`
+  * The `partition_state.broken_reason` SQL column
+  * The `restate.partition.blocked_flare&#123;reason="ahead_of_log"&#125;` metric
+
+  Recovery requires replacing the local store from a safe snapshot.
+
+  ### 🛠️ Additional Operator Tooling
+
+  This release also adds controls for freezing or explicitly setting partition placement and expands `restatectl storage compact` with bottommost-level compaction, level recalculation, and configurable timeout options.
+
+  For complete migration guidance and operational details, see the [full release notes](https://github.com/restatedev/restate/blob/main/release-notes/v1.7.3.md).
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.3
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.3
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.3
+  npm install @restatedev/restate@1.7.3
+  npm install @restatedev/restatectl@1.7.3
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.3/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.3/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.3)
+</Update>
+
+<Update label="2026-07-06" description="Restate Server v1.7.2">
+  ### Restate v1.7.2
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.2
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.2
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.2
+  npm install @restatedev/restate@1.7.2
+  npm install @restatedev/restatectl@1.7.2
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.2/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.2/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.2)
+</Update>
+
+<Update label="2026-06-18" description="Restate Server v1.7.0">
+  ### Restate v1.7.0 🎉
+
+  ### ✨ Release Highlights
+
+  ### 🚦 Flow Control
+
+  Restate begins shipping its **flow-control** primitives! v1.7 introduces the first building block — **concurrency limits** driven by a request *scope*, exposed through new `/restate/` ingress endpoints and managed with the new `restate rules` commands. Cap how much expensive work runs at once — especially valuable for AI agents (each concurrent invocation can mean real model/API spend) and for protecting downstream services from bursts. More flow-control capabilities will follow.
+
+  ```toml theme={null}
+  experimental_enable_vqueues = true
+  ```
+
+  ```bash theme={null}
+  # Default of 1000 concurrent invocations per scope, tighter 50-cap for "checkout"
+  restate rules set "*" --concurrency 1000 --description "scope default"
+  restate rules set "checkout" --concurrency 50
+  ```
+
+  ### ☁️ Native Google Cloud Run Authentication
+
+  HTTP deployments can now opt into native Google OIDC ID-token authentication. Restate mints short-lived, audience-scoped, Google-signed tokens for every discovery and invocation request; replacing the pattern of embedding long-lived bearer tokens in deployment headers (no rotation, no audit story).
+
+  ```bash theme={null}
+  restate dp register https://svc-abc-uc.a.run.app --gcp-id-token
+  ```
+
+  ### 🐝 Dynamic Kafka Cluster Management
+
+  Configure `KafkaCluster`s dynamically through the Admin API and CLI instead of baking them into static `restate.toml` configuration. Both clusters and subscriptions are now manageable from the `restate` CLI.
+
+  ```bash theme={null}
+  restate kc create my-cluster bootstrap.servers=broker:9092 security.protocol=SASL_SSL
+  restate sub create kafka://my-cluster/orders service://Counter/count group.id=g1
+  ```
+
+  ### 🧠 Bounded Invoker Memory Pool
+
+  The invoker now runs under a **bounded memory pool** (default **1.5 GiB**) that limits in-flight data flowing from the server to deployments. This adds backpressure and protects nodes from out-of-memory conditions under bursts of large payloads or state.
+  This makes the system more predictable under load, with no configuration required.
+
+  ### 🎨 Restate UI 1.0
+
+  The bundled Restate web UI graduates from `0.x` to **v1.0** — a complete new layout, better observability features, and much more. The UI ships with every server release, so the upgrade lands automatically with no configuration.
+
+  ### 🆕 More New Features
+
+  * **Service Protocol v7** — opt-in wire protocol with richer failure handling (pause / fail) and better suspension visibility 🧪
+  * **HTTP/2 connection pool** for service invocations — concurrency to a deployment is no longer capped by a single connection's `max_concurrent_streams` 🔗
+  * **Partition leadership control** — pin or freeze partition leaders via `restatectl partition leader` 📌
+  * **Configurable idempotency & workflow retention** — new `default-*` / `max-*` retention knobs ⏱️
+  * **Manual RocksDB compaction** — `restatectl storage compact` to reclaim disk space 🧹
+
+  ***
+
+  ### ⚠️ Important Breaking Changes
+
+  ### Snapshot Retention Graduated Out of Experimental
+
+  `worker.snapshots.experimental-num-retained` is replaced by `num-retained` (now non-optional, default `1`). Rename the key before upgrading. `latest.json` is now always written in V2 format. [See migration guidance →](https://github.com/restatedev/restate/blob/main/release-notes/v1.7.0.md#snapshot-retention-graduated-out-of-experimental)
+
+  ### Ingress Request Size Limit Enforced
+
+  The HTTP ingress now rejects request bodies larger than `networking.message-size-limit` (32 MiB by default) with `413 Payload Too Large` before reaching the handler. Raise the cap via the new `ingress.request-size-limit` if needed. [See migration guidance →](https://github.com/restatedev/restate/blob/main/release-notes/v1.7.0.md#ingress-request-size-limit-enforced)
+
+  ### Per-Database RocksDB Background Work Budgets
+
+  `rocksdb-max-background-jobs` is removed from the shared `rocksdb` block. Background work is now controlled per-database (separate flush/compaction limits, auto-computed from CPU count and active roles). The global `rocksdb-bg-threads` / `rocksdb-high-priority-bg-threads` options were also renamed. [See migration guidance →](https://github.com/restatedev/restate/blob/main/release-notes/v1.7.0.md#per-database-rocksdb-background-work-budgets)
+
+  > **Also deprecated this release:** `disable_eager_state` (use `eager-state-size-limit = "0"`) and the root-level service-client options (moved under `worker.invoker`; the root location still works but is removed in v1.8).
+
+  ***
+
+  📖 **[Full Release Notes →](https://github.com/restatedev/restate/blob/main/release-notes/v1.7.0.md)**
+
+  ***
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.7.0
+  docker pull docker.restate.dev/restatedev/restate-cli:1.7.0
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.7.0
+  npm install @restatedev/restate@1.7.0
+  npm install @restatedev/restatectl@1.7.0
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.7.0/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.7.0/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.7.0)
+</Update>
+
+<Update label="2026-02-13" description="Restate Server v1.6.2">
+  ### Restate v1.6.2
+
+  This patch release fixes a **critical bug affecting lazy state users** and includes several other bug fixes and improvements.
+
+  ### 🐛 Critical Bug Fix: Lazy State Keys Encoding
+
+  If you are using **lazy state** (`enableLazyState: true`) and your handler calls `ctx.stateKeys()`, invocations could get stuck in a retry loop with a journal mismatch error (code `570`) after suspending and resuming. The server was incorrectly storing `GetLazyStateKeys` commands as `GetLazyState` commands in the journal.
+
+  **Note:** This only affects handlers with lazy state enabled that call `ctx.stateKeys()`. Handlers using eager state or only `ctx.get(key)` are not affected. The Java SDK is also not affected.
+
+  **After upgrading**, new invocations work correctly. Existing stuck invocations have a corrupted journal and need to be resolved manually:
+
+  1. **Kill and re-invoke**: `restate invocations cancel --kill <INVOCATION_ID>`
+  2. **Or apply an SDK-side fix** ([sdk-shared-core#60](https://github.com/restatedev/sdk-shared-core/pull/60)) that tolerates the mismatch during replay
+
+  ### 🔧 Other Bug Fixes
+
+  * **SQL query predicate tolerance** — Fixed a crash when DataFusion generated predicates with incorrect column indices for introspection table queries ([#4389](https://github.com/restatedev/restate/pull/4389))
+  * **Fix `clamp_max` return value** — Fixed incorrect reporting that a value was clamped when it was within the allowed range, which could cause spurious warnings during metadata schema processing
+
+  ### ⚙️ Helm Chart: `image.tag` and `image.digest`
+
+  The `version` field in Helm chart values is now **deprecated** in favor of `image.tag`. A new `image.digest` field enables pinning images by SHA digest for reproducible deployments.
+
+  ```yaml theme={null}
+  # New approach (replaces deprecated "version" field):
+  image:
+    tag: "1.6.2"
+  # Or pin by digest:
+  image:
+    digest: "sha256:abc123..."
+  ```
+
+  Precedence: `image.digest` > `image.tag` > `version`. The `version` field continues to work for backward compatibility.
+
+  ### 🖥️ Web UI Updates (v0.1.49)
+
+  * Added support for displaying lazy state entries
+  * Fixed display of lazy state keys entries
+  * Minor UI improvements
+
+  ***
+
+  📖 **[Full Release Notes →](https://github.com/restatedev/restate/blob/main/release-notes/v1.6.2.md)**
+
+  ***
+
+  ### Install
+
+  ### Pull the Docker images
+
+  \`\`\`sh
+  docker pull docker.restate.dev/restatedev/restate:1.6.2
+  docker pull docker.restate.dev/restatedev/restate-cli:1.6.2
+  \`\`\`
+
+  ### Install prebuilt binaries via Homebrew
+
+  \`\`\`sh
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  \`\`\`
+
+  ### Install prebuilt binaries into your npm project
+
+  \`\`\`sh
+  npm install @restatedev/restate-server\@1.6.2
+  npm install @restatedev/restate\@1.6.2
+  npm install @restatedev/restatectl\@1.6.2
+  \`\`\`
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.2/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.2/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.6.2)
+</Update>
+
+<Update label="2026-02-10" description="Restate Server v1.6.1">
+  ### Restate v1.6.1
+
+  This is a **strongly recommended** patch release for all v1.6.0 users, addressing critical stability and memory issues.
+
+  ### 🔧 Critical Stability Fixes
+
+  ### Leadership Thrashing Resolved
+
+  In v1.6.0, RocksDB memory rebalancing could block the async runtime for 50–200ms, starving heartbeats and causing nodes to be falsely reported as down — leading to leadership loss and cluster instability. Memory rebalancing is now offloaded to background threads. If you experienced leadership thrashing on v1.6.0, this upgrade should resolve it.
+
+  ### Memory Leak in Networking Layer
+
+  Internal RPC callers that timed out could leave stale entries in the reply tracker, causing unbounded memory growth under sustained load. A periodic garbage collection mechanism now cleans these up automatically.
+
+  ### ⚠️ Behavioral Change
+
+  The default `worker.trim-delay-interval` changed from `0s` to `10m`. This gives follower replicas time to catch up before log segments are trimmed, reducing unnecessary re-snapshotting. To restore the old behavior, set `worker.trim-delay-interval = "0s"` in your config.
+
+  ### 🧠 Memory Improvements
+
+  * **Eliminated high-water-mark buffer retention** — Per-invocation protocol encoders no longer retain buffers sized to the largest message ever encoded, reducing memory overhead for clusters with many concurrent long-lived invocations.
+  * **Lazy journal & state reading during replay** — Journal entries and state are now read on demand from RocksDB instead of being fully materialized upfront, reducing peak memory during replay of invocations with large journals or state.
+
+  ### ✨ New Features
+
+  * **`OTEL_RESOURCE_ATTRIBUTES` support** — Attach deployment-specific metadata (environment, region, pod name) to all exported traces via the standard environment variable 🔍
+  * **`services` column in `sys_deployment`** — Query which services belong to which deployment directly via SQL 🗃️
+  * **Weekly Docker image security refreshes** — Images are now automatically rebuilt weekly with the latest OS security patches. Use date-suffixed tags (e.g., `1.6.1-20260210`) to pin specific builds 🐳
+
+  ### ⚡ Performance Improvements
+
+  * More efficient invocation cleanup scans
+  * SQL query push-down filters for faster introspection queries on large tables
+  * Faster ID encoding (Base62)
+
+  ### 🖥️ Web UI Updates (v0.1.46)
+
+  * Invocation duration column in the list view
+  * Paused invocations now show their error/reason directly
+  * Multiple bug fixes for journal ordering, transient error display, and state page refresh
+
+  ### 🔒 Security
+
+  * Patched DoS vulnerability in `time` crate (RUSTSEC-2026-0009)
+  * Updated `bytes` crate to address security advisory
+
+  ***
+
+  📖 **[Full Release Notes →](https://github.com/restatedev/restate/blob/main/release-notes/v1.6.1.md)**
+
+  ***
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.6.1
+  docker pull docker.restate.dev/restatedev/restate-cli:1.6.1
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.6.1
+  npm install @restatedev/restate@1.6.1
+  npm install @restatedev/restatectl@1.6.1
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.1/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.1/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.6.1)
+</Update>
+
+<Update label="2026-01-30" description="Restate Server v1.6.0">
+  ### Restate v1.6.0 🎉
+
+  ### ✨ Release Highlights
+
+  ### ⏸️ Pause and Resume for Invocations
+
+  Gain explicit control over invocation execution! You can now manually **pause** running invocations and **resume** them later — even on a different deployment. Invocations now **pause by default** when max retries are exhausted, giving you time to investigate issues before deciding to resume, restart, or kill.
+
+  ```bash theme={null}
+  # Pause a stuck invocation
+  restate invocations pause <invocation_id>
+
+  # Resume when ready (optionally on a different deployment)
+  restate invocations resume <invocation_id> --deployment latest
+  ```
+
+  ### 🔄 Restart Invocation from Journal Prefix
+
+  Preserve your expensive work when restarting invocations! Keep completed calls, sleeps, and side effects instead of re-executing everything from the beginning. Perfect for recovering from issues without losing progress.
+
+  ### 🚀 Deployment Registration Improvements
+
+  Safer and more robust deployment workflows:
+
+  * **Idempotent registration** — re-registering the same deployment returns HTTP 200 ✅
+  * **Default `force=false`** — better protection against accidental overwrites
+  * **New `breaking` flag** — allow breaking changes while still protecting against accidents
+  * **Update Deployment API** — fix tokens or rotate credentials without re-deploying
+
+  ### 🧠 Memory Management Improvements
+
+  Better performance with a lower memory footprint out of the box:
+
+  * Automatic partition store memory balancing across all active partitions
+  * Optimized RocksDB defaults (2 GiB total, 85% memtables)
+  * Reduced query engine memory usage
+
+  ### 🔍 Error Events Enabled by Default
+
+  Better observability for debugging invocations! When invocations encounter transient failures, Restate now automatically records detailed error information in the journal — visible in the UI invocation timeline and queryable via SQL. See exactly why invocations are failing during retries, including error codes, messages, stacktraces, and the related command that caused the failure.
+
+  ### ☁️ Expanded Cloud Provider Support
+
+  Simpler cloud deployments with native integrations for AWS, Azure, and GCP:
+
+  * **Azure Blob Storage & Google Cloud Storage snapshots** — store partition snapshots natively in Azure (`az://`) or GCS (`gs://`), in addition to Amazon S3
+
+  ### 🆕 More New Features
+
+  * **`restate up` command** — spin up a local Restate server for development with a single command! 🚀
+  * **Kafka SASL OAUTHBEARER/OIDC** — connect to Confluent Cloud, Amazon MSK, and Azure Event Hubs 🔐
+  * **Unix Domain Sockets** — the server now listens on both TCP and Unix sockets by default 🔌
+  * **Batch invocation operations** — operate on hundreds of invocations at once with progress bars 📊
+
+  ***
+
+  ### ⚠️ Important Breaking Changes
+
+  ### Deprecated SDK Versions Now Rejected
+
+  New invocations will be **rejected** for services using deprecated SDK versions:
+
+  * Java/Kotlin \< 2.0
+  * TypeScript \<= 1.4
+  * Go \< 0.16
+  * Python \< 0.6
+  * Rust \< 0.4
+
+  Existing in-flight invocations continue normally. [See migration guidance →](https://github.com/restatedev/restate/blob/main/release-notes/v1.6.0.md#deprecated-sdk-versions-now-rejected)
+
+  ### Retry Policy Configuration Migration
+
+  The deprecated `worker.invoker.retry-policy` has been removed. Migrate to `invocation.default-retry-policy`. Invocations now **pause** by default when max attempts are reached.
+
+  ### Helm Chart Resource Limits Increased
+
+  Default resource limits increased to 8Gi memory / 4 CPU. A default value of 3Gi is now specified for `RESTATE_ROCKSDB_TOTAL_MEMORY_SIZE`. Check your cluster has sufficient resources before upgrading.
+
+  ### `restate cloud env tunnel` changes
+
+  The Cloud Tunnel now operates as a reverse proxy, instead of routing to a specific local port:
+
+  ```
+  restate cloud env tunnel --tunnel-name my-tunnel
+  restate dp register --tunnel-name my-tunnel http://localhost:9080
+  # you can even proxy to external urls
+  restate dp register --tunnel-name my-tunnel https://my-worker.workers.dev
+  ```
+
+  ***
+
+  📖 **[Full Release Notes →](https://github.com/restatedev/restate/blob/main/release-notes/v1.6.0.md)**
+
+  ***
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.6.0
+  docker pull docker.restate.dev/restatedev/restate-cli:1.6.0
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.6.0
+  npm install @restatedev/restate@1.6.0
+  npm install @restatedev/restatectl@1.6.0
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.6.0/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.6.0/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.6.0)
+</Update>
+
+<Update label="2025-12-11" description="Restate Server v1.5.6">
+  ### Restate v1.5.6
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.5.6
+  docker pull docker.restate.dev/restatedev/restate-cli:1.5.6
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.5.6
+  npm install @restatedev/restate@1.5.6
+  npm install @restatedev/restatectl@1.5.6
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.6/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.6/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### What's changed:
+
+  * Minor bug fix [https://github.com/restatedev/restate/commit/7d055063f324cd7b4466452b517d31b04bd12b57](https://github.com/restatedev/restate/commit/7d055063f324cd7b4466452b517d31b04bd12b57)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.5.6)
+</Update>
+
+<Update label="2025-11-27" description="Restate Server v1.5.5">
+  ### Restate v1.5.5
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.5.5
+  docker pull docker.restate.dev/restatedev/restate-cli:1.5.5
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.5.5
+  npm install @restatedev/restate@1.5.5
+  npm install @restatedev/restatectl@1.5.5
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.5/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.5/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### What's Changed
+
+  * Support migration to `DynamoDB` metadata store from replicated store [https://github.com/restatedev/restate/pull/4062](https://github.com/restatedev/restate/pull/4062)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.5.5)
+</Update>
+
+<Update label="2025-11-25" description="Restate Server v1.5.4">
+  ### Restate v1.5.4
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.5.4
+  docker pull docker.restate.dev/restatedev/restate-cli:1.5.4
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.5.4
+  npm install @restatedev/restate@1.5.4
+  npm install @restatedev/restatectl@1.5.4
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.4/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.4/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### What's Changed
+
+  * Add support  to `DynamoDB` metadata store provider [https://github.com/restatedev/restate/pull/3951](https://github.com/restatedev/restate/pull/3951)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.5.4)
+</Update>
+
+<Update label="2025-10-21" description="Restate Server v1.5.3">
+  ### Restate v1.5.3
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.5.3
+  docker pull docker.restate.dev/restatedev/restate-cli:1.5.3
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.5.3
+  npm install @restatedev/restate@1.5.3
+  npm install @restatedev/restatectl@1.5.3
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.3/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.3/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### What's Changed
+
+  * Fix old retry policy setup by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3912](https://github.com/restatedev/restate/pull/3912)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.5.3)
+</Update>
+
+<Update label="2025-10-08" description="Restate Server v1.5.2">
+  ### Restate v1.5.2
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.5.2
+  docker pull docker.restate.dev/restatedev/restate-cli:1.5.2
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.5.2
+  npm install @restatedev/restate@1.5.2
+  npm install @restatedev/restatectl@1.5.2
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.2/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.2/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### What's Changed
+
+  * Add services routing header support  by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3865](https://github.com/restatedev/restate/pull/3865)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.5.2)
+</Update>
+
+<Update label="2025-10-01" description="Restate Server v1.5.1">
+  ### Restate v1.5.1
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.5.1
+  docker pull docker.restate.dev/restatedev/restate-cli:1.5.1
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.5.1
+  npm install @restatedev/restate@1.5.1
+  npm install @restatedev/restatectl@1.5.1
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.1/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.1/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### What's Changed
+
+  * Fixed removing the latest deployment for a service will correctly set the latest service revision to the previous deployment: by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3838](https://github.com/restatedev/restate/pull/3838)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.5.1)
+</Update>
+
+<Update label="2025-09-16" description="Restate Server v1.5.0">
+  ### v1.5.0 Release notes
+
+  ### \[NOTICE] `http-ingress` server role
+
+  In v1.4.x you might have seen this warning:
+
+  > 💡
+  > !!! This node has a `worker` role and no explicit `http-ingress` role. `http-ingress` will be started anyway in this version. In v1.5, running ingress will require the role `http-ingress` to be set.
+
+  It’s now the time to ask you to add `http-ingress` to the list of roles you pass down to restate-server. This is *only* required if you use a configuration file, or if you pass roles as an argument `restate-server --roles` .
+
+  Starting from Restate v1.5.0, HTTP Ingress is started on nodes with `http-ingress` role. In previous version, http ingress was part of the `worker` role. The separation of roles enables users to scale-out ingress nodes independently from `log-server`s or `worker` .
+
+  You don’t need to change anything if you have not set the `roles` explicitly before.
+
+  ### Invocation progress retained by default
+
+  You’ll be able to inspect the invocation progress after the invocation completed for 24 hours, without additional configuration.
+
+  As in the previous release, you can tune this configuration using the *journal retention* knob on a service or handler basis. Check out the docs for [service configuration](http://docs.restate.dev/services/configuration). You can also set up a maximum journal retention value for your cluster using the configuration option `max-journal-retention`, by default disabled. This can be used in production setups to clamp the journal retention advertised by service configurations to an acceptable value of your choice.
+
+  ### New invocation retry policy
+
+  Based on your feedback, we have revamped the invocation retry policy experience. Restate v1.5.0 includes few new bits:
+
+  * The new configuration option `default-retry-policy`, which will replace `worker.invoker.retry-policy` in the upcoming releases.
+  * The new retry policy will now, by default, **pause** an invocation when **max-attempts** is reached. This avoids unnecessary retries, that incur in wasteful costs for FaaS users. You can inspect paused invocations, check the failure reason, and resume them simply clicking the *Resume* button in the UI (or CLI).
+  * You can now override the invocation retry policy on a service/handler basis, similar to other configuration options. Check out the docs for [service configuration](http://docs.restate.dev/services/configuration).
+
+  To opt-in the new invocation retry policy experience, you need to set the new `default-retry-policy` in the restate-server configuration, e.g.:
+
+  ```toml theme={null}
+  [default-retry-policy]
+  initial-interval = "10s"
+  max-attempts = 100
+  ```
+
+  In order to obtain the old behavior where invocations get killed once they reach the maximum attempts, you have to configure:
+
+  ```toml theme={null}
+  [default-retry-policy]
+  initial-interval = "10s"
+  max-attempts = 100
+  on-max-attempts = "kill"
+  ```
+
+  When opting-in `default-retry-policy`, you can’t rollback to Restate v1.4.x, therefore, it’s safe to use this configuration only after upgrading all cluster nodes to v1.5.0.
+
+  ### SQL query engine performance
+
+  The SQL introspection query engine that powers the UI and CLI has received a major performance boost. Queries now run **5x to** **20x** faster making the UI/CLI experience **snappier in high data volume environments.**
+
+  We also solved several cases where queries led to the exhaustion of query engine memory.
+
+  *For best results make sure you upgrade the CLI to the latest version along with your restate server.*
+
+  ### Lambda compression
+
+  Restate server will now compress requests before sending them to AWS Lambda, when approaching the [invocation payload limit](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html#function-configuration-deployment-and-execution). This allows for larger replays without hitting the `PAYLOAD_TOO_LARGE` error from Lambda.
+
+  Currently, this feature is only supported with services built with `sdk-typescript ≥ 1.9`, and doesn’t require any explicit activation.
+
+  ### Restart as new
+
+  You can now restart failed or succeeded invocations from the UI (or CLI) reusing the same request input. When restarting, a new invocation with a new invocation ID will be created.
+
+  This is a useful shortcut when you need to re-process the same request, without having the input at hand. No need to build your own dead letter queue logic anymore, just restart the failed invocations when you need to.
+
+  ### Retry now
+
+  Sometimes a back-off retry timer might be way too long, and you need to retry an invocation immediately. To do that, you can now simply click *Retry now* for an invocation in the UI.
+
+  ### Access log
+
+  Ingress and Admin API now have an access log feature, that logs all accesses to the APIs.
+
+  To enable it, enable the log filters `restate_ingress_http::api` and `restate_admin::api`. For example, to enable the default INFO logging plus the access log of ingress and Admin API: `RUST_LOG=restate_admin::api,restate_ingress_http::api,info`
+
+  ### Changes to service configuration
+
+  Starting from Restate v1.5.0, changes to the service configuration made through UI, CLI or Admin API will apply until a new revision of that service is registered. Check out the docs for [service configuration](http://docs.restate.dev/services/configuration) for more details.
+
+  ### Deprecated old SDKs
+
+  In Restate v1.5.0 you won’t be able to register service deployments that use the following SDK versions:
+
+  * Java SDK \< 2.0
+  * Typescript SDK \< 1.5
+  * Python SDK \< 0.6
+  * Go SDK \< 0.16
+  * Rust SDK \< 0.4
+
+  In-flight invocations will continue to work fine. We strongly suggest to update to the latest SDKs to profit from all the new features!
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.5.0
+  docker pull docker.restate.dev/restatedev/restate-cli:1.5.0
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.5.0
+  npm install @restatedev/restate@1.5.0
+  npm install @restatedev/restatectl@1.5.0
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.5.0/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.5.0/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.5.0)
+</Update>
+
+<Update label="2025-08-08" description="Restate Server v1.4.4">
+  ### Restate v1.4.4
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.4.4
+  docker pull docker.restate.dev/restatedev/restate-cli:1.4.4
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.4.4
+  npm install @restatedev/restate@1.4.4
+  npm install @restatedev/restatectl@1.4.4
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.4/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.4/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### What's Changed
+
+  ### Stability, Consistency & Data Integrity
+
+  * **Metadata Server Reliability**: The replicated metadata server now ensures the latest `NodesConfiguration` is effectively tracked and used.
+  * **Bifrost Log Chain Resilience**: Multiple enhancements to Bifrost components improve log chain consistency:
+    * Eager chain sealing on `find_tail` when consistency is required.
+    * Clear diagnostics on why chain markers are created.
+    * Automatic sealing of read streams upon detection of partial seals.
+    * Watchdog-driven management of `LogChainExtender`, plus unified chain operations via `LogChainWriter` and a configurable read batch limit.
+  * **Crash Safety**: On panic, RocksDB’s WAL is guaranteed to be flushed, minimizing data loss risk.
+
+  ### Operational Hygiene & Reliability
+
+  * **Worker Task Cleanup**: Streamlined task management removes stale processes and avoids unintended pinning of the partition store manager.
+  * **Snapshotting Improvements**: Partition snapshot tasks are now smoother and more efficient.
+  * **Ingress Runtime Simplification**: Removed dedicated ingress runtime to simplify deployment architecture.
+  * **Histogram & Metrics Tweaks**:
+    * Idle histogram timeouts disabled by default.
+    * Configuration option for histogram timeout removed entirely.
+    * Reduced metrics cardinality, benchmarked to debug builds only.
+  * **Test Stability**: Auto-improvement features are disabled in replicated-loglet integration tests for more predictable outcomes.
+  * **Fix in Cluster State Logic**: Corrected an issue where failing-over nodes could be falsely marked as alive.
+  * **Config Reload Enhancements**: Live updates after config reload now correctly reflect in applied DB settings.
+
+  ### Ecosystem & Interface Updates
+
+  * **Observability Improvements**: The object store now emits richer telemetry, helping operators better monitor key storage operations.
+  * **CLI Enhancements**: Added "single-address mode" to `restatectl` for more flexible node targeting.
+  * **Admin/API UX Tweaks**:
+    * Workflow retention now correctly reflects in Admin API.
+    * Added `completion_retention` and `journal_retention` fields to the SQL interface.
+  * **Restate UI Refresh**: Updated UI to versions **v0.0.93** and **v0.0.94** for interface polish. Plus, users are now prompted to choose where example assets are downloaded.
+  * **SDK Telemetry**: The Admin API now captures and reports information about used SDKs.
+
+  ### New Contributors
+
+  * @TristanBlackwell made their first contribution in [https://github.com/restatedev/restate/pull/3623](https://github.com/restatedev/restate/pull/3623)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.4.4)
+</Update>
+
+<Update label="2025-07-29" description="Restate Server v1.4.3">
+  ### 🎉 Restate v1.4.3: Multi-region Restate cluster
+
+  We are pleased to announce the release of Restate v1.4.3! This release brings several improvements, new features, bug fixes, and enhancements across the platform. 🚀
+
+  ### ✨ Highlights
+
+  ### **🛠️ CLI/Tool Enhancements**
+
+  * **🔧 Shell Completions for `restatectl` and `restate` CLI:** Both CLI tools now support shell completions for bash, zsh, fish, and PowerShell, with automatic shell detection and installation commands. This significantly improves the developer experience when working with Restate from the command line! 💻
+  * **📍 Location Display in `restatectl node ls`:** The `restatectl node ls` command now includes location information in its output, providing better visibility into node placement.
+
+  ### **📊 Observability & Tracing**
+
+  * **🔗 OTLP+HTTP Support:** Added support for OTLP+HTTP in the tracing endpoint, expanding observability integration options.
+  * **🎨 Updated Web UI:** Restate UI has been updated to v0.0.92 with various improvements.
+
+  ### **⛵ Helm Chart Improvements**
+
+  * **🔄 Flexible Environment Variable Configuration:** The Helm chart now allows avoiding setting `nodeName` or `advertisedAddress`, enabling more flexible environment variable management and preventing duplicate env var issues that can cause problems with Helm.
+  * **⚙️ Custom Command and Args Support:** Added support for specifying custom command and arguments in the Helm chart, allowing advanced entrypoint scripting (e.g., fetching availability zones from AWS). ☁️
+  * **📦 Stateful Set Fix:** The version is no longer set in stateful sets, resolving potential upgrade issues.
+
+  ### **🌊 Bifrost & Log Management**
+
+  * **🔐 Experimental Chain Sealing:** Added experimental support for chain sealing markers, allowing log chains to be sealed with a special marker in metadata without requiring reconfiguration. This feature includes:
+    * A new `restatectl log seal &lt;LOG-IDs&gt;` command for manual chain sealing 🔨
+    * Support for empty logs and advanced snapshot/reconfiguration scenarios 📸
+    * Foundation for seamless cluster restoration with initial LSN offsets 🔄
+  * **✂️ Experimental Partition-driven Log Trimming:** Introduced experimental feature `worker.experimental-partition-driven-log-trimming` that replaces cluster-controller-driven trimming with partition leader-based durability tracking.
+
+  ### **💾 Storage & Partition Management**
+
+  * **🔒 Fine-grained Partition Store Locking:** Implemented a new locking model for partition stores with improved ownership patterns and lifecycle management.
+  * **📈 Durable LSN Tracking Improvements:** Enhanced durable LSN loading from persistent storage on partition store open, with new watch mechanisms for better state tracking.
+  * **🗃️ RocksDB Management Refactoring:** Improved RocksDB manager with better ownership model, background operation handling, and cleaner shutdown procedures.
+
+  ### **🏗️ Metadata & Cluster Management**
+
+  * **🤝 Metadata Server Auto-join Control:** Added `MetadataServerOptions::auto_join` to control whether nodes automatically join the metadata cluster on startup.
+  * **🔄 Improved Node Removal Handling:** Enhanced handling of node removal scenarios, including better reconfiguration completion when all current workers are disabled.
+
+  ### 🐛 Bug Fixes
+
+  * **⚡ Scheduler Reconfiguration Bug:** Fixed a bug in `Scheduler::complete_reconfiguration` where wrong version comparison could lead to premature reconfiguration completion.
+  * **✅ Reconfiguration Logic Fixes:** Corrected `Scheduler::requires_reconfiguration` checks that could cause false positives.
+  * **🔄 Service Type Change Handling:** Fixed issues when overwriting services and changing their type.
+  * **🌐 HTTP Protocol Detection:** Improved error detection when mixing HTTP/1.1 and HTTP/2 protocols.
+  * **🔍 Loglet Index Management:** Fixed bugs in lookup index management for replicated loglets.
+  * **📝 Sequencer Write Availability:** Fixed issues where SequencerAppender can now reconfigure logs that become write unavailable due to read-only node marking.
+
+  ### 📈 Upgrade Notes
+
+  You can safely upgrade from Restate `x.y` to `x.(y+1)` releases without manual data migration, as Restate performs automatic data migration for you. 🔄
+
+  For detailed technical information about the changes, refer to the commit history in the release: [https://github.com/restatedev/restate/compare/v1.4.2...v1.4.3](https://github.com/restatedev/restate/compare/v1.4.2...v1.4.3)
+
+  ***
+
+  This release represents significant improvements in developer experience, operational capabilities, and system reliability! 💪 The new shell completions and Helm chart enhancements make Restate easier to deploy and manage, while the experimental features pave the way for advanced log management capabilities. 🎯
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.4.3
+  docker pull docker.restate.dev/restatedev/restate-cli:1.4.3
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.4.3
+  npm install @restatedev/restate@1.4.3
+  npm install @restatedev/restatectl@1.4.3
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.3/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.3/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.4.3)
+</Update>
+
+<Update label="2025-07-07" description="Restate Server v1.4.2">
+  ### Restate v1.4.2
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.4.2
+  docker pull docker.restate.dev/restatedev/restate-cli:1.4.2
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.4.2
+  npm install @restatedev/restate@1.4.2
+  npm install @restatedev/restatectl@1.4.2
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.2/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.2/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.4.2)
+</Update>
+
+<Update label="2025-06-25" description="Restate Server v1.4.1">
+  ### Restate v1.4.1
+
+  ### What's Changed
+
+  * \[fix] Default journal\_retention to zero when reading old invoker effects by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3451](https://github.com/restatedev/restate/pull/3451)
+  * \[fix] Add default serialization for CallRequest::journal\_retention\_duration by @tillrohrmann in [https://github.com/restatedev/restate/pull/3453](https://github.com/restatedev/restate/pull/3453)
+  * \[Restate UI] Update to v0.0.79 by @nikrooz in [https://github.com/restatedev/restate/pull/3448](https://github.com/restatedev/restate/pull/3448)
+  * Decorate the PAYLOAD\_TOO\_LARGE error by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3446](https://github.com/restatedev/restate/pull/3446)
+  * feat(3284): remove partition-store dependency from wal-protocol by @lsytj0413 in [https://github.com/restatedev/restate/pull/3435](https://github.com/restatedev/restate/pull/3435)
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.4.1
+  docker pull docker.restate.dev/restatedev/restate-cli:1.4.1
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.4.1
+  npm install @restatedev/restate@1.4.1
+  npm install @restatedev/restatectl@1.4.1
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.1/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.1/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.4.1)
+</Update>
+
+<Update label="2025-06-23" description="Restate Server v1.4.0">
+  ### Restate v1.4.0
+
+  \[NOTICE] Expect a short period of leader unavailability during rolling upgrades from v1.3.2 to v1.4.0 due to changes in cluster controller and gossip protocol. The availability is transient and the cluster will quickly fix all partition leaders once all cluster nodes have been upgraded.
+
+  ### Release Highlights
+
+  * Restate clusters will automatically perform partition rebalancing across configured nodes. This delivers even space and compute utilization across the board.
+  * A new gossip-based failure detector and partition leader placement sub-systems which deliver up to 10x faster detection of network partitions or node failures. Gossip is also used to disseminate partition leadership state for faster reaction to partition reconfigurations.
+  * The Replicated Loglet is the default in v1.4. Existing loglets backed by the Local Loglet provider will be automatically migrated on first run. Replicated Loglet delivers better performance even for single-node deployments and is the recommended provider in all cases. The Local Loglet continues to be available and automatic migration will not be performed if it is explicitly configured as the default provider. Downgrading to Restate v1.3 is safe regardless of which loglet provider is used.
+  * The previously deprecated local metadata backend for single-node deployments is removed in v1.4.0. The default is the replicated metadata server, nodes will perform automatic migration on start.
+  * Restate server role `http-ingress` is enabled by default, new setups will automatically have this role turned on.
+  * Query engine optimizations and fixes that improve responsiveness and system reliability under severe load and slow storage backends.
+  * Default invoker concurrent invocation node defaults to `1000` instead of `100`.
+  * *Zstd* compression is promoted to default for the message fabric in restate clusters.
+  * Partition Processors now track the locally-persisted LSN automatically. This is now reported by `restatectl` as Durable LSN (from Persisted LSN). The configuration properties `worker.storage.persist-lsn-interval` and `worker.storage.persist-lsn-threshold` are no longer required and will be ignored. If you previously used these to tune single-node log trimming, you can safely remove them.
+  * `admin.query-engine.pgsql-bind-address` has been deprecated and its default value was set to None ([https://github.com/restatedev/restate/issues/3088](https://github.com/restatedev/restate/issues/3088))
+  * Various previously deprecated configuration properties have been removed (`admin.log-trim-threshold` , `metadata-store-client.address`)
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.4.0
+  docker pull docker.restate.dev/restatedev/restate-cli:1.4.0
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.4.0
+  npm install @restatedev/restate@1.4.0
+  npm install @restatedev/restatectl@1.4.0
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.4.0/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.4.0/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### What's Changed
+
+  * \[Core] New global metadata synchronization infrastructure by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3159](https://github.com/restatedev/restate/pull/3159)
+  * \[Bifrost] Improves appender behaviour when detecting seals by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3162](https://github.com/restatedev/restate/pull/3162)
+  * \[Core] Tuning failover config defaults by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3165](https://github.com/restatedev/restate/pull/3165)
+  * Don't fail cloud login if we cannot open the browser by @tillrohrmann in [https://github.com/restatedev/restate/pull/3180](https://github.com/restatedev/restate/pull/3180)
+  * feat: add metadata-server raft log trim threshold option by @lsytj0413 in [https://github.com/restatedev/restate/pull/3171](https://github.com/restatedev/restate/pull/3171)
+  * Fix issue with incorrect command count by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3185](https://github.com/restatedev/restate/pull/3185)
+  * Introduction of Message Fabric V2 by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3183](https://github.com/restatedev/restate/pull/3183)
+  * \[minor] Move partition processor rpc client to ingress-http crate by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3191](https://github.com/restatedev/restate/pull/3191)
+  * \[Core] Introducing network swimlanes by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3193](https://github.com/restatedev/restate/pull/3193)
+  * \[Core] Read-modify-write for global metadata by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3164](https://github.com/restatedev/restate/pull/3164)
+  * Deprecation notice for old protocol by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3189](https://github.com/restatedev/restate/pull/3189)
+  * Introduce ReadIsolation for Storage transactions by @tillrohrmann in [https://github.com/restatedev/restate/pull/3198](https://github.com/restatedev/restate/pull/3198)
+  * Use global metadata wrapper when writing metadata for provisioning the cluster by @tillrohrmann in [https://github.com/restatedev/restate/pull/3174](https://github.com/restatedev/restate/pull/3174)
+  * Add support for protocol version Bilrost (v2) by @muhamadazmy in [https://github.com/restatedev/restate/pull/3190](https://github.com/restatedev/restate/pull/3190)
+  * Using Bilrost for GetNodeStatus messages by @muhamadazmy in [https://github.com/restatedev/restate/pull/3172](https://github.com/restatedev/restate/pull/3172)
+  * Add support for removing/adding metadata server nodes by @tillrohrmann in [https://github.com/restatedev/restate/pull/3138](https://github.com/restatedev/restate/pull/3138)
+  * Invocation epoch by @slinkydeveloper in [https://github.com/restatedev/restate/pull/2904](https://github.com/restatedev/restate/pull/2904)
+  * Efficiently pack metadata versions in network structs by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3196](https://github.com/restatedev/restate/pull/3196)
+  * \[Core] Enable failure detector to start earlier by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3199](https://github.com/restatedev/restate/pull/3199)
+  * \[mechanical] Rename BaseRole into FailureDetector by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3200](https://github.com/restatedev/restate/pull/3200)
+  * Bilrost only wire codec macro by @muhamadazmy in [https://github.com/restatedev/restate/pull/3206](https://github.com/restatedev/restate/pull/3206)
+  * fix(1585): enable query parallelism with 1 by @lsytj0413 in [https://github.com/restatedev/restate/pull/3203](https://github.com/restatedev/restate/pull/3203)
+  * \[Core] Fix occasional shutdown lock-up due to incomplete connections being managed tasks by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3209](https://github.com/restatedev/restate/pull/3209)
+  * \[Core] WireEncode accepts a reference instead of an owned value by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3214](https://github.com/restatedev/restate/pull/3214)
+  * introduce BilrostAs derive macro by @muhamadazmy in [https://github.com/restatedev/restate/pull/3208](https://github.com/restatedev/restate/pull/3208)
+  * Fix building docker by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3218](https://github.com/restatedev/restate/pull/3218)
+  * Move `PartitionProcessorRpcClient` in `restate_types`, and rename it `InvocationClient`. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3211](https://github.com/restatedev/restate/pull/3211)
+  * \[invoker] Stop retrying when the invocation is not there anymore. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3221](https://github.com/restatedev/restate/pull/3221)
+  * \[Admin API] Add deployment sdk version and min/max protocol versions. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3220](https://github.com/restatedev/restate/pull/3220)
+  * \[Core] Support for sent notification for unary messages by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3213](https://github.com/restatedev/restate/pull/3213)
+  * \[Core] New LazyConnection with background auto-reconnect by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3215](https://github.com/restatedev/restate/pull/3215)
+  * LogServer Bilrost (v2) message types by @muhamadazmy in [https://github.com/restatedev/restate/pull/3176](https://github.com/restatedev/restate/pull/3176)
+  * \[Restate UI] Update to v0.0.66 by @nikrooz in [https://github.com/restatedev/restate/pull/3231](https://github.com/restatedev/restate/pull/3231)
+  * \[Restate UI] Update to v0.0.67 by @nikrooz in [https://github.com/restatedev/restate/pull/3232](https://github.com/restatedev/restate/pull/3232)
+  * Upgrade tokio and metrics by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3234](https://github.com/restatedev/restate/pull/3234)
+  * Leave member state when removing yourself from Raft configuration by @tillrohrmann in [https://github.com/restatedev/restate/pull/3207](https://github.com/restatedev/restate/pull/3207)
+  * Bilrost fast encoding + more common helper types by @muhamadazmy in [https://github.com/restatedev/restate/pull/3222](https://github.com/restatedev/restate/pull/3222)
+  * fix(1074): Do not panic in CLI example command if interrupted by @lsytj0413 in [https://github.com/restatedev/restate/pull/3202](https://github.com/restatedev/restate/pull/3202)
+  * Support zone spread in helm chart by @jackkleeman in [https://github.com/restatedev/restate/pull/3225](https://github.com/restatedev/restate/pull/3225)
+  * \[Core] Introducing global ClusterState view by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3226](https://github.com/restatedev/restate/pull/3226)
+  * \[minor] Misc cleanups by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3229](https://github.com/restatedev/restate/pull/3229)
+  * \[FailureDetector] Gossip Configuration and Network Messages by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3228](https://github.com/restatedev/restate/pull/3228)
+  * \[FailureDetector] Gossip-based failure detection system by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3230](https://github.com/restatedev/restate/pull/3230)
+  * \[minor] Improve PartitionTable naming and style by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3243](https://github.com/restatedev/restate/pull/3243)
+  * Removes SuspectNode from old ClusterState by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3241](https://github.com/restatedev/restate/pull/3241)
+  * \[Restate UI] Update to v0.0.68 by @nikrooz in [https://github.com/restatedev/restate/pull/3245](https://github.com/restatedev/restate/pull/3245)
+  * Add event-driven persisted LSN tracking support to PartitionStoreManager by @pcholakov in [https://github.com/restatedev/restate/pull/3210](https://github.com/restatedev/restate/pull/3210)
+  * \[org] Splitting metadata-server and overhaul of metadata-related crates by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3253](https://github.com/restatedev/restate/pull/3253)
+  * fix(3205): upload test logs when failed by @lsytj0413 in [https://github.com/restatedev/restate/pull/3236](https://github.com/restatedev/restate/pull/3236)
+  * \[FailureDetector] PartitionReplicaSetStates in FailureDetector by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3244](https://github.com/restatedev/restate/pull/3244)
+  * Introduce WorkerState by @tillrohrmann in [https://github.com/restatedev/restate/pull/3262](https://github.com/restatedev/restate/pull/3262)
+  * \[Restate UI] Update to v0.0.69 by @nikrooz in [https://github.com/restatedev/restate/pull/3269](https://github.com/restatedev/restate/pull/3269)
+  * \[Restate UI] Update to v0.0.70 by @nikrooz in [https://github.com/restatedev/restate/pull/3270](https://github.com/restatedev/restate/pull/3270)
+  * Enable concurrent PartitionStore snapshot creation by @pcholakov in [https://github.com/restatedev/restate/pull/3271](https://github.com/restatedev/restate/pull/3271)
+  * Support `#[net_serde(skip)]` attribute by @muhamadazmy in [https://github.com/restatedev/restate/pull/3242](https://github.com/restatedev/restate/pull/3242)
+  * Harden three\_logserver\_append\_after\_seal\_concurrent by @tillrohrmann in [https://github.com/restatedev/restate/pull/3266](https://github.com/restatedev/restate/pull/3266)
+  * Set RESTATE\_NODE\_NAME in helm charts by @tillrohrmann in [https://github.com/restatedev/restate/pull/3273](https://github.com/restatedev/restate/pull/3273)
+  * Run SequencerAppender tasks in default runtime by @tillrohrmann in [https://github.com/restatedev/restate/pull/3279](https://github.com/restatedev/restate/pull/3279)
+  * Fix first\_attempt detection when updating the Storage- and WorkerState by @tillrohrmann in [https://github.com/restatedev/restate/pull/3281](https://github.com/restatedev/restate/pull/3281)
+  * Improve trace logging of various components by @tillrohrmann in [https://github.com/restatedev/restate/pull/3282](https://github.com/restatedev/restate/pull/3282)
+  * Only transition node's MetadataServerState from Member to Standby if node was member before by @tillrohrmann in [https://github.com/restatedev/restate/pull/3276](https://github.com/restatedev/restate/pull/3276)
+  * \[core] Enable protocol-version gating when sending messages by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3286](https://github.com/restatedev/restate/pull/3286)
+  * Integrate restate\_core::cluster\_state::ClusterState into the ClusterController by @tillrohrmann in [https://github.com/restatedev/restate/pull/3268](https://github.com/restatedev/restate/pull/3268)
+  * WAL: Custom Encoding for `Envelope` by @muhamadazmy in [https://github.com/restatedev/restate/pull/3261](https://github.com/restatedev/restate/pull/3261)
+  * Batch bifrost watchdog trim operations by @jackkleeman in [https://github.com/restatedev/restate/pull/3264](https://github.com/restatedev/restate/pull/3264)
+  * \[Restate UI] Update to v0.0.72 by @nikrooz in [https://github.com/restatedev/restate/pull/3288](https://github.com/restatedev/restate/pull/3288)
+  * \[Restate UI] Update to v0.0.73 by @nikrooz in [https://github.com/restatedev/restate/pull/3289](https://github.com/restatedev/restate/pull/3289)
+  * Metadata sync messages to use normal connection abstractions by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3287](https://github.com/restatedev/restate/pull/3287)
+  * Move some long-running ClusterContoller select arms to background tasks by @pcholakov in [https://github.com/restatedev/restate/pull/3272](https://github.com/restatedev/restate/pull/3272)
+  * \[invoker] Validate when user incorrectly provides key by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3248](https://github.com/restatedev/restate/pull/3248)
+  * EntryLite data model to avoid sending entry payloads around when rendering the invocation timeline by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3299](https://github.com/restatedev/restate/pull/3299)
+  * Snapshot errors cleanup by @pcholakov in [https://github.com/restatedev/restate/pull/3254](https://github.com/restatedev/restate/pull/3254)
+  * chore: add hach clippy with each feature by @lsytj0413 in [https://github.com/restatedev/restate/pull/3166](https://github.com/restatedev/restate/pull/3166)
+  * Enable missing feature needed by restate-encoding by @muhamadazmy in [https://github.com/restatedev/restate/pull/3304](https://github.com/restatedev/restate/pull/3304)
+  * BalancedSpreadSelector initial implementation by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3283](https://github.com/restatedev/restate/pull/3283)
+  * \[Restate UI] Update to v0.0.74 by @nikrooz in [https://github.com/restatedev/restate/pull/3310](https://github.com/restatedev/restate/pull/3310)
+  * \[Restate UI] Update to v0.0.75 by @nikrooz in [https://github.com/restatedev/restate/pull/3312](https://github.com/restatedev/restate/pull/3312)
+  * Extend EpochMetadata to support current and next PartitionConfiguration by @tillrohrmann in [https://github.com/restatedev/restate/pull/3235](https://github.com/restatedev/restate/pull/3235)
+  * Flag to always retain journal by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3296](https://github.com/restatedev/restate/pull/3296)
+  * Add `sys_invocation.scheduled_start_at` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3308](https://github.com/restatedev/restate/pull/3308)
+  * Add just docker-local-fedora as temporary solution to iterate fast locally on e2e tests by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3316](https://github.com/restatedev/restate/pull/3316)
+  * \[Restate UI] Update to v0.0.76 by @nikrooz in [https://github.com/restatedev/restate/pull/3317](https://github.com/restatedev/restate/pull/3317)
+  * Remove invoker concurrency limit by @muhamadazmy in [https://github.com/restatedev/restate/pull/3305](https://github.com/restatedev/restate/pull/3305)
+  * bilrost 1013 by @mumbleskates in [https://github.com/restatedev/restate/pull/3302](https://github.com/restatedev/restate/pull/3302)
+  * Let scheduler populate the PartitionReplicaSetStates by @tillrohrmann in [https://github.com/restatedev/restate/pull/3315](https://github.com/restatedev/restate/pull/3315)
+  * Bump MAX\_SERVICE\_DISCOVERY\_PROTOCOL\_VERSION to V3 by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3320](https://github.com/restatedev/restate/pull/3320)
+  * \[FailureDetector] Seed FD with cluster-state from peer on startup by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3313](https://github.com/restatedev/restate/pull/3313)
+  * \[chore] Set the features for tonic used in grpc crates by @tillrohrmann in [https://github.com/restatedev/restate/pull/3314](https://github.com/restatedev/restate/pull/3314)
+  * \[Bifrost] Fixes and improvements to check-seal/find-tail and read-stream by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3307](https://github.com/restatedev/restate/pull/3307)
+  * \[Bifrost] Self-initiated replicated loglet reconfiguration by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3309](https://github.com/restatedev/restate/pull/3309)
+  * \[Admin] Remove log controller as it's not needed anymore by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3318](https://github.com/restatedev/restate/pull/3318)
+  * Improve restatectl\_smoke\_test resilience by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3326](https://github.com/restatedev/restate/pull/3326)
+  * \[Bifrost] Auto-improvement of logs on preferred writer nodes by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3325](https://github.com/restatedev/restate/pull/3325)
+  * Properly handle PartitionReplication::Everywhere by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3327](https://github.com/restatedev/restate/pull/3327)
+  * Prefer worker nodes that are caught up when selecting leaders by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3328](https://github.com/restatedev/restate/pull/3328)
+  * Remove periodic find-tail config key by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3329](https://github.com/restatedev/restate/pull/3329)
+  * \[Gossip] Nodes delay their own suspect->alive transition slightly by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3331](https://github.com/restatedev/restate/pull/3331)
+  * \[Worker] Notify bifrost of being preferred writer only after successful leadership by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3332](https://github.com/restatedev/restate/pull/3332)
+  * Rename Persisted LSN to Durable LSN by @pcholakov in [https://github.com/restatedev/restate/pull/3277](https://github.com/restatedev/restate/pull/3277)
+  * Fix: restate invocations cancel should not consider completed invocat… by @pcholakov in [https://github.com/restatedev/restate/pull/3334](https://github.com/restatedev/restate/pull/3334)
+  * Fix local-loglet params generation by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3335](https://github.com/restatedev/restate/pull/3335)
+  * Update to latest rust-rocksdb 0.41.0 + Checkpoint flush fix by @pcholakov in [https://github.com/restatedev/restate/pull/3338](https://github.com/restatedev/restate/pull/3338)
+  * \[EntryLite] Add result to GetEagerStateLite by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3343](https://github.com/restatedev/restate/pull/3343)
+  * Report the correct planned mode based on the last observed leader epoch  by @tillrohrmann in [https://github.com/restatedev/restate/pull/3340](https://github.com/restatedev/restate/pull/3340)
+  * \[Admin] Ensure balanced replica-set selection for partitions by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3330](https://github.com/restatedev/restate/pull/3330)
+  * \[FailureDetector] Exchange partition leadership state by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3339](https://github.com/restatedev/restate/pull/3339)
+  * \[Admin] More graceful polls of epoch metadata by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3342](https://github.com/restatedev/restate/pull/3342)
+  * \[Metadata] Minor improvements to trace logging by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3344](https://github.com/restatedev/restate/pull/3344)
+  * \[Worker] minor metrics changes by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3345](https://github.com/restatedev/restate/pull/3345)
+  * \[restatectl] Support --replication by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3346](https://github.com/restatedev/restate/pull/3346)
+  * Provide configuration knob in the deployment manifest to `enable_lazy_state` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3319](https://github.com/restatedev/restate/pull/3319)
+  * Improvements to ClusterTables by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3351](https://github.com/restatedev/restate/pull/3351)
+  * bilrost 0.1013 is released 😌 by @mumbleskates in [https://github.com/restatedev/restate/pull/3358](https://github.com/restatedev/restate/pull/3358)
+  * Update PartitionRouting to rely in PartitionReplicaSetStates and ClusterState by @tillrohrmann in [https://github.com/restatedev/restate/pull/3353](https://github.com/restatedev/restate/pull/3353)
+  * Adds support for partition\_replica\_set cluster table by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3356](https://github.com/restatedev/restate/pull/3356)
+  * \[restatectl] nodes list shows StorageState and WorkerState by @pcholakov in [https://github.com/restatedev/restate/pull/3354](https://github.com/restatedev/restate/pull/3354)
+  * Split ClusterController reponsibilities into separate tasks by @tillrohrmann in [https://github.com/restatedev/restate/pull/3357](https://github.com/restatedev/restate/pull/3357)
+  * Add restate\_version in ServiceInvocation by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3224](https://github.com/restatedev/restate/pull/3224)
+  * Add stale (wrong epoch) journal read check in invoker. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3362](https://github.com/restatedev/restate/pull/3362)
+  * Use InvocationClient in admin API, introduce new API endpoints for cancel/kill/purge by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3227](https://github.com/restatedev/restate/pull/3227)
+  * fix(3239): migrate replicated loglet message to bilrost by @lsytj0413 in [https://github.com/restatedev/restate/pull/3274](https://github.com/restatedev/restate/pull/3274)
+  * Switch to jiff for parsing for human-friendly durations by @pcholakov in [https://github.com/restatedev/restate/pull/2917](https://github.com/restatedev/restate/pull/2917)
+  * \[restatectl] Add json output support to sql subcommand by @pcholakov in [https://github.com/restatedev/restate/pull/3367](https://github.com/restatedev/restate/pull/3367)
+  * \[CLI] Add a `state patch` subcommand by @pcholakov in [https://github.com/restatedev/restate/pull/3255](https://github.com/restatedev/restate/pull/3255)
+  * Implement a custom encoder for 3rd party types by @muhamadazmy in [https://github.com/restatedev/restate/pull/3359](https://github.com/restatedev/restate/pull/3359)
+  * fix panic when receiving ControlProcessors from older version by @pcholakov in [https://github.com/restatedev/restate/pull/3366](https://github.com/restatedev/restate/pull/3366)
+  * Changes to the ingress private feature by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3374](https://github.com/restatedev/restate/pull/3374)
+  * Reduce the size of some service-client enums by @jackkleeman in [https://github.com/restatedev/restate/pull/3375](https://github.com/restatedev/restate/pull/3375)
+  * Document debuginfod by @jackkleeman in [https://github.com/restatedev/restate/pull/3376](https://github.com/restatedev/restate/pull/3376)
+  * Clarify definition of application platform service in additional usage grant by @tillrohrmann in [https://github.com/restatedev/restate/pull/3373](https://github.com/restatedev/restate/pull/3373)
+  * \[Restate UI] Update to v0.0.77 by @nikrooz in [https://github.com/restatedev/restate/pull/3379](https://github.com/restatedev/restate/pull/3379)
+  * Reducing Clones in journal\_v2 encode path by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3368](https://github.com/restatedev/restate/pull/3368)
+  * \[chore] Rust toolchain update to 1.87.0 by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3361](https://github.com/restatedev/restate/pull/3361)
+  * \[cleanup] remove unused proxy types by @muhamadazmy in [https://github.com/restatedev/restate/pull/3377](https://github.com/restatedev/restate/pull/3377)
+  * Re-design of the `Schema` data structure by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3311](https://github.com/restatedev/restate/pull/3311)
+  * Replace snapshot implicit log ids with partition table lookup by @pcholakov in [https://github.com/restatedev/restate/pull/3349](https://github.com/restatedev/restate/pull/3349)
+  * Update object\_store crate to 0.12.2 by @pcholakov in [https://github.com/restatedev/restate/pull/3383](https://github.com/restatedev/restate/pull/3383)
+  * Fix bug in cleaner with overflows by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3378](https://github.com/restatedev/restate/pull/3378)
+  * \[Bifrost] Find tail will seal if the sequencer is gone or long dead by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3385](https://github.com/restatedev/restate/pull/3385)
+  * Return errors when datafusion runs out of memory by @jackkleeman in [https://github.com/restatedev/restate/pull/3381](https://github.com/restatedev/restate/pull/3381)
+  * Store Transient errors in journal events by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3301](https://github.com/restatedev/restate/pull/3301)
+  * Remove deprecated Local metadata server and config options by @pcholakov in [https://github.com/restatedev/restate/pull/3350](https://github.com/restatedev/restate/pull/3350)
+  * Ensure local df scanner is always used by @jackkleeman in [https://github.com/restatedev/restate/pull/3393](https://github.com/restatedev/restate/pull/3393)
+  * fix(3088): disable pgsql endpoint by default by @lsytj0413 in [https://github.com/restatedev/restate/pull/3094](https://github.com/restatedev/restate/pull/3094)
+  * \[minor] PartitionRouting to pin task-center for more portability by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3397](https://github.com/restatedev/restate/pull/3397)
+  * SequencerStatus refactor by @muhamadazmy in [https://github.com/restatedev/restate/pull/3391](https://github.com/restatedev/restate/pull/3391)
+  * Set the initial current partition configuration version to be equal to the EpochMetadata's version by @tillrohrmann in [https://github.com/restatedev/restate/pull/3386](https://github.com/restatedev/restate/pull/3386)
+  * flexbuffers backward compatibility for replicated\_loglet messages by @muhamadazmy in [https://github.com/restatedev/restate/pull/3390](https://github.com/restatedev/restate/pull/3390)
+  * \[datafusion] reduce default sizes by @igalshilman in [https://github.com/restatedev/restate/pull/3398](https://github.com/restatedev/restate/pull/3398)
+  * \[tracing] improve http client errors by @muhamadazmy in [https://github.com/restatedev/restate/pull/3394](https://github.com/restatedev/restate/pull/3394)
+  * \[bilrost] migrate remote scanner types to bilrost by @muhamadazmy in [https://github.com/restatedev/restate/pull/3396](https://github.com/restatedev/restate/pull/3396)
+  * Support pushed-down limits in datafusion by @jackkleeman in [https://github.com/restatedev/restate/pull/3399](https://github.com/restatedev/restate/pull/3399)
+  * fix: restore PartitionProcessorRpcError::Busy variant by @pcholakov in [https://github.com/restatedev/restate/pull/3400](https://github.com/restatedev/restate/pull/3400)
+  * Improve snapshot download error messages by @pcholakov in [https://github.com/restatedev/restate/pull/3382](https://github.com/restatedev/restate/pull/3382)
+  * Don't try and load region from AWS sdk if its been provided by @jackkleeman in [https://github.com/restatedev/restate/pull/3403](https://github.com/restatedev/restate/pull/3403)
+  * Simplify lambda restatectl command and add it to cli by @jackkleeman in [https://github.com/restatedev/restate/pull/3267](https://github.com/restatedev/restate/pull/3267)
+  * Enable http2 adaptive window and upgrade h2 by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3406](https://github.com/restatedev/restate/pull/3406)
+  * \[StateMachine] Semantic version barrier support by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3401](https://github.com/restatedev/restate/pull/3401)
+  * Use normal hash join, just ensure that the big table is second by @jackkleeman in [https://github.com/restatedev/restate/pull/3402](https://github.com/restatedev/restate/pull/3402)
+  * \[Restate UI] Update to v0.0.78 by @nikrooz in [https://github.com/restatedev/restate/pull/3408](https://github.com/restatedev/restate/pull/3408)
+  * Make datafusion configurable at runtime by @jackkleeman in [https://github.com/restatedev/restate/pull/3409](https://github.com/restatedev/restate/pull/3409)
+  * Configurable HTTP2 inital max send streams by @muhamadazmy in [https://github.com/restatedev/restate/pull/3411](https://github.com/restatedev/restate/pull/3411)
+  * \[CI] pin install-action nextest to 0.9.98 by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3413](https://github.com/restatedev/restate/pull/3413)
+  * Use ReplicatedLoglet by default by @pcholakov in [https://github.com/restatedev/restate/pull/3410](https://github.com/restatedev/restate/pull/3410)
+  * \[chore] Key dependencies update by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3412](https://github.com/restatedev/restate/pull/3412)
+  * Always re-resolve and re-connect initial raft addresses when using them by @jackkleeman in [https://github.com/restatedev/restate/pull/3407](https://github.com/restatedev/restate/pull/3407)
+  * \[datafusion] Update to 48.0 by @igalshilman in [https://github.com/restatedev/restate/pull/3419](https://github.com/restatedev/restate/pull/3419)
+  * Set default grpc compression to Zstd by @muhamadazmy in [https://github.com/restatedev/restate/pull/3414](https://github.com/restatedev/restate/pull/3414)
+  * Remove deprecated configuration options by @muhamadazmy in [https://github.com/restatedev/restate/pull/3416](https://github.com/restatedev/restate/pull/3416)
+  * Cluster fingerprint in network and snapshots (passive support) by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3415](https://github.com/restatedev/restate/pull/3415)
+  * Print version notice on restate-server releases by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3420](https://github.com/restatedev/restate/pull/3420)
+  * \[Release Prep] Setting min supported to be 1.3.0 by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3421](https://github.com/restatedev/restate/pull/3421)
+  * fix deprecated into\_path in dump-log command by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3423](https://github.com/restatedev/restate/pull/3423)
+  * Set default concurrent invocation limit to 1000 by @muhamadazmy in [https://github.com/restatedev/restate/pull/3422](https://github.com/restatedev/restate/pull/3422)
+  * Fix `append_time` of the `InputCommand` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3430](https://github.com/restatedev/restate/pull/3430)
+  * \[RocksDB] Introducing background iterators for data fusion by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3428](https://github.com/restatedev/restate/pull/3428)
+  * \[DataFusion] Move VO status table to use background iterator by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3433](https://github.com/restatedev/restate/pull/3433)
+  * \[DataFusion] Move journal and idempotency tables to background iterators by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3429](https://github.com/restatedev/restate/pull/3429)
+  * \[DataFusion] Move promise and inbox tables to background iterators by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3431](https://github.com/restatedev/restate/pull/3431)
+  * \[DataFusion] Move invocation\_status table to use background iterators by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3432](https://github.com/restatedev/restate/pull/3432)
+  * Set histogram quantiles to \[50, 90, 99, and 100%] by @muhamadazmy in [https://github.com/restatedev/restate/pull/3425](https://github.com/restatedev/restate/pull/3425)
+  * Disable debug assertions in release builds by @tillrohrmann in [https://github.com/restatedev/restate/pull/3387](https://github.com/restatedev/restate/pull/3387)
+  * fix: make clippy works by @lsytj0413 in [https://github.com/restatedev/restate/pull/3437](https://github.com/restatedev/restate/pull/3437)
+  * \[restatectl] compacting partition list/logs tables by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3436](https://github.com/restatedev/restate/pull/3436)
+  * Show `metadata-server remove-node` errors by @muhamadazmy in [https://github.com/restatedev/restate/pull/3434](https://github.com/restatedev/restate/pull/3434)
+  * \[datafusion] Decouples the physical/logical partition scanners by @igalshilman in [https://github.com/restatedev/restate/pull/3427](https://github.com/restatedev/restate/pull/3427)
+  * fix(3157): remove deprecated options by @lsytj0413 in [https://github.com/restatedev/restate/pull/3169](https://github.com/restatedev/restate/pull/3169)
+  * \[Telemetry] Sets default for histogram cleanup to 3 minutes by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3440](https://github.com/restatedev/restate/pull/3440)
+  * \[Telemetry] Cleaning up low-signal and unused metrics by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3442](https://github.com/restatedev/restate/pull/3442)
+  * Enable http-ingress role by default by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3443](https://github.com/restatedev/restate/pull/3443)
+  * \[helm] Add namespace to metadata of remaining resources by @avilaton in [https://github.com/restatedev/restate/pull/3336](https://github.com/restatedev/restate/pull/3336)
+  * Set version to v1.4.0 prior to release by @AhmedSoliman in [https://github.com/restatedev/restate/pull/3445](https://github.com/restatedev/restate/pull/3445)
+  * Always seal local metadata store on startup by @pcholakov in [https://github.com/restatedev/restate/pull/3444](https://github.com/restatedev/restate/pull/3444)
+
+  ### New Contributors
+
+  * @mumbleskates made their first contribution in [https://github.com/restatedev/restate/pull/3302](https://github.com/restatedev/restate/pull/3302)
+  * @avilaton made their first contribution in [https://github.com/restatedev/restate/pull/3336](https://github.com/restatedev/restate/pull/3336)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.4.0)
+</Update>
+
+<Update label="2025-04-18" description="Restate Server v1.3.2">
+  ### Restate v1.3.2
+
+  * Fixed a bug where some invocations might remain stuck in "Retrying". [https://github.com/restatedev/restate/pull/3177](https://github.com/restatedev/restate/pull/3177)
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.3.2
+  docker pull docker.restate.dev/restatedev/restate-cli:1.3.2
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.3.2
+  npm install @restatedev/restate@1.3.2
+  npm install @restatedev/restatectl@1.3.2
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.2/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.2/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.3.2)
+</Update>
+
+<Update label="2025-04-16" description="Restate Server v1.2.3">
+  ### Restate v1.2.3
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.2.3
+  docker pull docker.restate.dev/restatedev/restate-cli:1.2.3
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.2.3
+  npm install @restatedev/restate@1.2.3
+  npm install @restatedev/restatectl@1.2.3
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.3/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.3/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.2.3)
+</Update>
+
+<Update label="2025-04-15" description="Restate Server v1.3.1">
+  ### Restate v1.3.1
+
+  ### Release highlights 🌟
+
+  * Improved Admin API OpenAPI specification for better integrations with external tools.
+  * Use latest RocksDB table format which provides stricter checksum validation and thereby better protection against file corruptions.
+  * Improved protection against accidentally starting Restate from the wrong working directory. If `restate-data` contains multiple directories, then it is now required to specify the node name via `--node-name` or in the config via `node-name`, to select the right node working directory.
+
+  ### Fixes 🔨
+
+  * Use the proper default configuration values when specifying the deprecated config option `metadata-store`. Before, it could happen that a local metadata server configured via this option would disable the WAL and thereby have weaker durability guarantees.
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.3.1
+  docker pull docker.restate.dev/restatedev/restate-cli:1.3.1
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.3.1
+  npm install @restatedev/restate@1.3.1
+  npm install @restatedev/restatectl@1.3.1
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.1/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.1/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### What's Changed
+
+  * Improve forward compatibility for protocol version negotiation by @muhamadazmy in [https://github.com/restatedev/restate/pull/3126](https://github.com/restatedev/restate/pull/3126)
+  * Don't log details and metadata when logging Status error by @zhaohaidao in [https://github.com/restatedev/restate/pull/3015](https://github.com/restatedev/restate/pull/3015)
+  * \[Chore] Remove replicated loglet feature by @tillrohrmann in [https://github.com/restatedev/restate/pull/3120](https://github.com/restatedev/restate/pull/3120)
+  * feat(1461): use working directory to validate nodename by @lsytj0413 in [https://github.com/restatedev/restate/pull/2977](https://github.com/restatedev/restate/pull/2977)
+  * Move restate-web-ui crate to a separate repo by @nikrooz in [https://github.com/restatedev/restate/pull/3125](https://github.com/restatedev/restate/pull/3125)
+  * fix: make bifrost compile with all features by @lsytj0413 in [https://github.com/restatedev/restate/pull/3065](https://github.com/restatedev/restate/pull/3065)
+  * fix: make invoker-impl compile with all-features by @lsytj0413 in [https://github.com/restatedev/restate/pull/3035](https://github.com/restatedev/restate/pull/3035)
+  * fix: make tracing-instrumentation compile with features prometheus by @lsytj0413 in [https://github.com/restatedev/restate/pull/3034](https://github.com/restatedev/restate/pull/3034)
+  * fix: make service-protocol compile with --all-features by @lsytj0413 in [https://github.com/restatedev/restate/pull/3033](https://github.com/restatedev/restate/pull/3033)
+  * Move cluster controller proto to core by @jackkleeman in [https://github.com/restatedev/restate/pull/3121](https://github.com/restatedev/restate/pull/3121)
+  * fix(3004): use scope for async function by @lsytj0413 in [https://github.com/restatedev/restate/pull/3010](https://github.com/restatedev/restate/pull/3010)
+  * fix: make wal-protocol compile with feature options\_schema by @lsytj0413 in [https://github.com/restatedev/restate/pull/3039](https://github.com/restatedev/restate/pull/3039)
+  * \[chore] Bump Rust version to 1.86.0 by @tillrohrmann in [https://github.com/restatedev/restate/pull/3134](https://github.com/restatedev/restate/pull/3134)
+  * \[CLI] Re-order examples download to have hello world at the top. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3145](https://github.com/restatedev/restate/pull/3145)
+  * feat: add admin cluster controller sync interval opt by @lsytj0413 in [https://github.com/restatedev/restate/pull/3095](https://github.com/restatedev/restate/pull/3095)
+  * \[chore] Use latest RocksDB table format version by @pcholakov in [https://github.com/restatedev/restate/pull/3141](https://github.com/restatedev/restate/pull/3141)
+  * chore: remove unused features options\_schema in partition-store by @lsytj0413 in [https://github.com/restatedev/restate/pull/3155](https://github.com/restatedev/restate/pull/3155)
+  * fix: make restatectl compile with feature no-tracing-logging by @lsytj0413 in [https://github.com/restatedev/restate/pull/3160](https://github.com/restatedev/restate/pull/3160)
+  * Improve Admin API OpenAPI by @slinkydeveloper in [https://github.com/restatedev/restate/pull/3146](https://github.com/restatedev/restate/pull/3146)
+  * Set default values for deprecated options  by @tillrohrmann in [https://github.com/restatedev/restate/pull/3153](https://github.com/restatedev/restate/pull/3153)
+  * Don't enforce DBRecoveryMode::AbsoluteConsistency for the metadata server by @tillrohrmann in [https://github.com/restatedev/restate/pull/3161](https://github.com/restatedev/restate/pull/3161)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.3.1)
+</Update>
+
+<Update label="2025-04-09" description="Restate Server v1.3.0">
+  ### Restate v1.3.0
+
+  Check out the announcement blog post for more details about Restate 1.3 and the new SDK features: [https://restate.dev/blog/announcing-restate-1.3/](https://restate.dev/blog/announcing-restate-1.3/)
+
+  ### Deprecations 💡
+
+  * Some config options have been replaced. The original options are still respected but will be removed in future Restate versions.
+    * The config options `bifrost.replicated-loglet.default-log-replication` and `admin.default-partition-replication` have been deprecated. It is now recommended to configure `default-replication` instead. If you need to configure differing log and partition replication, then it is possible to do it via `restatectl config set --log-replication 3 --partition-replication 2`.
+    * The config value `admin.default-partition-replication = "everywhere"` has been deprecated. When starting a new cluster with this value, then it will default to a replication of `1`.
+    * The config value `metadata-server.type = "local"` has been deprecated. In future version of Restate we are going to remove the local metadata server type. It is recommended to unset this value or configure `metadata-server.type = "replicated"`. Restate will automatically migrate your metadata when switching from `"local"` to `"replicated"`.
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.3.0
+  docker pull docker.restate.dev/restatedev/restate-cli:1.3.0
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.3.0
+  npm install @restatedev/restate@1.3.0
+  npm install @restatedev/restatectl@1.3.0
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.3.0/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.3.0/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.3.0)
+</Update>
+
+<Update label="2025-03-12" description="Restate Server v1.2.2">
+  ### Restate v1.2.2
+
+  ### Release highlights 🌟
+
+  * Improved partition processor and invoker observability (lag between applied index and log tail)
+  * Restatectl improvements
+    * Creating snapshots if minimum LSN is reached
+    * Trim the log after creating snapshots
+    * Safety checks to set log server state to read-only
+  * Various UI improvements and fixes
+  * Automatic log chain trimming to prevent unbounded growth
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.2.2
+  docker pull docker.restate.dev/restatedev/restate-cli:1.2.2
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.2.2
+  npm install @restatedev/restate@1.2.2
+  npm install @restatedev/restatectl@1.2.2
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.2/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.2/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### What's Changed
+
+  * Fix condition when to push a Restate docker container image by @tillrohrmann in [https://github.com/restatedev/restate/pull/2801](https://github.com/restatedev/restate/pull/2801)
+  * Task-center uses shared strings by @AhmedSoliman in [https://github.com/restatedev/restate/pull/2793](https://github.com/restatedev/restate/pull/2793)
+  * Also generate dockerhub tags in release pipeline by @jackkleeman in [https://github.com/restatedev/restate/pull/2803](https://github.com/restatedev/restate/pull/2803)
+  * \[chore] Upgrade Rust to 1.85.0 and edition 2024 by @tillrohrmann in [https://github.com/restatedev/restate/pull/2767](https://github.com/restatedev/restate/pull/2767)
+  * \[Restate UI] Update to v0.0.43 by @nikrooz in [https://github.com/restatedev/restate/pull/2805](https://github.com/restatedev/restate/pull/2805)
+  * Auto chain trimming by @AhmedSoliman in [https://github.com/restatedev/restate/pull/2804](https://github.com/restatedev/restate/pull/2804)
+  * \[Restate UI] Update to v0.0.45 by @nikrooz in [https://github.com/restatedev/restate/pull/2813](https://github.com/restatedev/restate/pull/2813)
+  * \[restatectl] set-storage-state supports multiple nodes and safety checking by @AhmedSoliman in [https://github.com/restatedev/restate/pull/2811](https://github.com/restatedev/restate/pull/2811)
+  * Update snapshots and object store credentials docs by @pcholakov in [https://github.com/restatedev/restate/pull/2807](https://github.com/restatedev/restate/pull/2807)
+  * \[sql] Add sort information to the table schemas by @igalshilman in [https://github.com/restatedev/restate/pull/2815](https://github.com/restatedev/restate/pull/2815)
+  * Support metadata-store-client.address configuration w/o specifying the type by @tillrohrmann in [https://github.com/restatedev/restate/pull/2810](https://github.com/restatedev/restate/pull/2810)
+  * Add remove node command and DisableNodeChecker by @tillrohrmann in [https://github.com/restatedev/restate/pull/2806](https://github.com/restatedev/restate/pull/2806)
+  * \[Restate UI] Update to v0.0.46 by @nikrooz in [https://github.com/restatedev/restate/pull/2819](https://github.com/restatedev/restate/pull/2819)
+  * \[CI] Upgrade cargo-deny-action to fix rustup by @AhmedSoliman in [https://github.com/restatedev/restate/pull/2822](https://github.com/restatedev/restate/pull/2822)
+  * Move NodeSvcHandle into core networking by @AhmedSoliman in [https://github.com/restatedev/restate/pull/2817](https://github.com/restatedev/restate/pull/2817)
+  * Install metrics recorder as early as possible by @AhmedSoliman in [https://github.com/restatedev/restate/pull/2818](https://github.com/restatedev/restate/pull/2818)
+  * Add FindTailAttr for configurable find\_tail behavior by @muhamadazmy in [https://github.com/restatedev/restate/pull/2781](https://github.com/restatedev/restate/pull/2781)
+  * PP \<-> Bifrost lag observability by @muhamadazmy in [https://github.com/restatedev/restate/pull/2755](https://github.com/restatedev/restate/pull/2755)
+  * Improve invoker observability by @muhamadazmy in [https://github.com/restatedev/restate/pull/2779](https://github.com/restatedev/restate/pull/2779)
+  * \[Core] connection manager without TransportConnect by @AhmedSoliman in [https://github.com/restatedev/restate/pull/2820](https://github.com/restatedev/restate/pull/2820)
+  * Use AWS conventions and defaults for configuring object-store metadata access by @pcholakov in [https://github.com/restatedev/restate/pull/2796](https://github.com/restatedev/restate/pull/2796)
+  * \[Restate UI] Update to v0.0.47 by @nikrooz in [https://github.com/restatedev/restate/pull/2831](https://github.com/restatedev/restate/pull/2831)
+  * Move metadata common (protobuf) types to restate\_types by @muhamadazmy in [https://github.com/restatedev/restate/pull/2823](https://github.com/restatedev/restate/pull/2823)
+  * Implement the Metadata proxy API by @muhamadazmy in [https://github.com/restatedev/restate/pull/2824](https://github.com/restatedev/restate/pull/2824)
+  * Log error if df queries fail by @tillrohrmann in [https://github.com/restatedev/restate/pull/2827](https://github.com/restatedev/restate/pull/2827)
+  * Fix typo in logs by @slinkydeveloper in [https://github.com/restatedev/restate/pull/2836](https://github.com/restatedev/restate/pull/2836)
+  * Add /health handler to node server by @tillrohrmann in [https://github.com/restatedev/restate/pull/2462](https://github.com/restatedev/restate/pull/2462)
+  * \[sql] Reduce the number of in-flight RecordBatches by @igalshilman in [https://github.com/restatedev/restate/pull/2841](https://github.com/restatedev/restate/pull/2841)
+  * Fix issue when removing a node while still alive by @muhamadazmy in [https://github.com/restatedev/restate/pull/2833](https://github.com/restatedev/restate/pull/2833)
+  * \[Restate UI] Update to v0.0.48 by @nikrooz in [https://github.com/restatedev/restate/pull/2844](https://github.com/restatedev/restate/pull/2844)
+  * Update benchmarks by @tillrohrmann in [https://github.com/restatedev/restate/pull/2829](https://github.com/restatedev/restate/pull/2829)
+  * \[sql] Reduce the number of in flight record batches for invocation state by @igalshilman in [https://github.com/restatedev/restate/pull/2849](https://github.com/restatedev/restate/pull/2849)
+  * Fix cancellation in protocol v4 from context by @slinkydeveloper in [https://github.com/restatedev/restate/pull/2837](https://github.com/restatedev/restate/pull/2837)
+  * \[sql] Respect `target_partition` configuration value in PartitionedExecutionPlan by @igalshilman in [https://github.com/restatedev/restate/pull/2838](https://github.com/restatedev/restate/pull/2838)
+  * MetadataStoreProxy implementation by @muhamadazmy in [https://github.com/restatedev/restate/pull/2848](https://github.com/restatedev/restate/pull/2848)
+  * Bump to Service Protocol V5 by @slinkydeveloper in [https://github.com/restatedev/restate/pull/2847](https://github.com/restatedev/restate/pull/2847)
+  * \[Restate UI] Update to v0.0.49 by @nikrooz in [https://github.com/restatedev/restate/pull/2851](https://github.com/restatedev/restate/pull/2851)
+  * Use the metadata proxy in restatectl by @muhamadazmy in [https://github.com/restatedev/restate/pull/2825](https://github.com/restatedev/restate/pull/2825)
+  * Add helm example for replicated cluster by @jackkleeman in [https://github.com/restatedev/restate/pull/2850](https://github.com/restatedev/restate/pull/2850)
+  * Update ring by @pcholakov in [https://github.com/restatedev/restate/pull/2855](https://github.com/restatedev/restate/pull/2855)
+  * fix(todo): as issues-96 is done, remove associated todo items by @lsytj0413 in [https://github.com/restatedev/restate/pull/2853](https://github.com/restatedev/restate/pull/2853)
+  * Make three\_nodes example to accept configuration overrides by @tillrohrmann in [https://github.com/restatedev/restate/pull/2792](https://github.com/restatedev/restate/pull/2792)
+  * chore(\*): elided an explicit lifetimes to make clippy happy by @lsytj0413 in [https://github.com/restatedev/restate/pull/2845](https://github.com/restatedev/restate/pull/2845)
+  * Extend CreatePartitionSnapshot operation to support target LSN + trim by @pcholakov in [https://github.com/restatedev/restate/pull/2835](https://github.com/restatedev/restate/pull/2835)
+  * fix(typo): correct some wrongly written words by @lsytj0413 in [https://github.com/restatedev/restate/pull/2866](https://github.com/restatedev/restate/pull/2866)
+  * fix(typo): correct some wrongly written words by @lsytj0413 in [https://github.com/restatedev/restate/pull/2869](https://github.com/restatedev/restate/pull/2869)
+  * CI to disable protobuf-rs on cargo deny by @AhmedSoliman in [https://github.com/restatedev/restate/pull/2868](https://github.com/restatedev/restate/pull/2868)
+  * Flush config file to disk before starting Restate process by @tillrohrmann in [https://github.com/restatedev/restate/pull/2863](https://github.com/restatedev/restate/pull/2863)
+  * Set an upper bound of 180s for the runtime tests to complete by @tillrohrmann in [https://github.com/restatedev/restate/pull/2864](https://github.com/restatedev/restate/pull/2864)
+  * Harden three\_logserver\_seal\_empty by retrying on retryable seal error by @tillrohrmann in [https://github.com/restatedev/restate/pull/2873](https://github.com/restatedev/restate/pull/2873)
+  * Reduce noise level of state\_machine by @tillrohrmann in [https://github.com/restatedev/restate/pull/2881](https://github.com/restatedev/restate/pull/2881)
+  * Fix GenerationalNodeId should still be written. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/2872](https://github.com/restatedev/restate/pull/2872)
+  * Treat invalid HTTP S3 endpoint overrides as a startup configuration error by @pcholakov in [https://github.com/restatedev/restate/pull/2858](https://github.com/restatedev/restate/pull/2858)
+  * Fix bifrost\_append\_and\_seal\_concurrent test instability by @tillrohrmann in [https://github.com/restatedev/restate/pull/2887](https://github.com/restatedev/restate/pull/2887)
+  * Fix allow-HTTP logic by @pcholakov in [https://github.com/restatedev/restate/pull/2889](https://github.com/restatedev/restate/pull/2889)
+  * Don't panic if we cannot obtain connection attemp result by @tillrohrmann in [https://github.com/restatedev/restate/pull/2880](https://github.com/restatedev/restate/pull/2880)
+
+  ### New Contributors
+
+  * @lsytj0413 made their first contribution in [https://github.com/restatedev/restate/pull/2853](https://github.com/restatedev/restate/pull/2853)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.2.2)
+</Update>
+
+<Update label="2025-02-27" description="Restate Server v1.2.1">
+  ### Restate v1.2.1
+
+  ### Release highlights 🌟
+
+  ### Patching state from the UI 🖌️
+
+  The UI now supports patching state.
+
+  ### Fixes
+
+  * `RESTATE_ADMIN_URL` takes now precedence of `RESTATE_HOST` when using `restate` [https://github.com/restatedev/restate/pull/2766](https://github.com/restatedev/restate/pull/2766)
+  * Make the psql endpoint properly work [https://github.com/restatedev/restate/pull/2768](https://github.com/restatedev/restate/pull/2768)
+  * Prevent runtime from panicking when timeout duration overflows [https://github.com/restatedev/restate/pull/2797](https://github.com/restatedev/restate/pull/2797)
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.2.1
+  docker pull docker.restate.dev/restatedev/restate-cli:1.2.1
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.2.1
+  npm install @restatedev/restate@1.2.1
+  npm install @restatedev/restatectl@1.2.1
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.1/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.1/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### What's Changed
+
+  * Separate release workflow docker build from docker push by @jackkleeman in [https://github.com/restatedev/restate/pull/2737](https://github.com/restatedev/restate/pull/2737)
+  * \[restatectl] Improve performance and information display with unprovisioned clusters or under partial node connectivity by @pcholakov in [https://github.com/restatedev/restate/pull/2748](https://github.com/restatedev/restate/pull/2748)
+  * Trim gap encountered errors include LSN by @pcholakov in [https://github.com/restatedev/restate/pull/2744](https://github.com/restatedev/restate/pull/2744)
+  * CreateSnapshot RPC returns min applied LSN by @pcholakov in [https://github.com/restatedev/restate/pull/2743](https://github.com/restatedev/restate/pull/2743)
+  * Compact cluster status by @muhamadazmy in [https://github.com/restatedev/restate/pull/2714](https://github.com/restatedev/restate/pull/2714)
+  * Return explicit log id in CreatePartitionSnapshotResponse by @pcholakov in [https://github.com/restatedev/restate/pull/2750](https://github.com/restatedev/restate/pull/2750)
+  * \[restatectl] Improve status display during cluster provisioning by @pcholakov in [https://github.com/restatedev/restate/pull/2753](https://github.com/restatedev/restate/pull/2753)
+  * Harden `restatectl reconfigure` and avoid sending full LogletParams by @muhamadazmy in [https://github.com/restatedev/restate/pull/2740](https://github.com/restatedev/restate/pull/2740)
+  * Fix a typo in set\_storage\_state error text by @pcholakov in [https://github.com/restatedev/restate/pull/2754](https://github.com/restatedev/restate/pull/2754)
+  * \[storage] Make the storage API fail-able by @igalshilman in [https://github.com/restatedev/restate/pull/2747](https://github.com/restatedev/restate/pull/2747)
+  * PSQL fix + deprecation by @jackkleeman in [https://github.com/restatedev/restate/pull/2768](https://github.com/restatedev/restate/pull/2768)
+  * Give precedence to RESTATE\_INGRESS\_URL and RESTATE\_ADMIN\_URL over RESTATE\_HOST by @tillrohrmann in [https://github.com/restatedev/restate/pull/2766](https://github.com/restatedev/restate/pull/2766)
+  * \[Restate UI] Update to v0.0.35 by @nikrooz in [https://github.com/restatedev/restate/pull/2772](https://github.com/restatedev/restate/pull/2772)
+  * Cache AWS credentials in the snapshot uploader by @jackkleeman in [https://github.com/restatedev/restate/pull/2771](https://github.com/restatedev/restate/pull/2771)
+  * \[Restate UI] Update to v0.0.36 by @nikrooz in [https://github.com/restatedev/restate/pull/2777](https://github.com/restatedev/restate/pull/2777)
+  * Run hakari disable only if there is a hakari by @jackkleeman in [https://github.com/restatedev/restate/pull/2780](https://github.com/restatedev/restate/pull/2780)
+  * Create object-store-util by @jackkleeman in [https://github.com/restatedev/restate/pull/2776](https://github.com/restatedev/restate/pull/2776)
+  * \[Restate UI] Update to v0.0.38 by @nikrooz in [https://github.com/restatedev/restate/pull/2784](https://github.com/restatedev/restate/pull/2784)
+  * Simplify wireshark package lua features by @slinkydeveloper in [https://github.com/restatedev/restate/pull/2775](https://github.com/restatedev/restate/pull/2775)
+  * \[Restate UI] Update to v0.0.39 by @nikrooz in [https://github.com/restatedev/restate/pull/2785](https://github.com/restatedev/restate/pull/2785)
+  * \[Restate UI] Update to v0.0.40 by @nikrooz in [https://github.com/restatedev/restate/pull/2788](https://github.com/restatedev/restate/pull/2788)
+  * \[Restate UI] Update to v0.0.42 by @nikrooz in [https://github.com/restatedev/restate/pull/2791](https://github.com/restatedev/restate/pull/2791)
+  * Revert "Set the default concurrent\_invocations\_limit to None" by @tillrohrmann in [https://github.com/restatedev/restate/pull/2789](https://github.com/restatedev/restate/pull/2789)
+  * Prevent overflowing durations when calculating remaining time by @tillrohrmann in [https://github.com/restatedev/restate/pull/2797](https://github.com/restatedev/restate/pull/2797)
+  * Remove mention of non-existent `restatectl cluster status` subcommand by @pcholakov in [https://github.com/restatedev/restate/pull/2798](https://github.com/restatedev/restate/pull/2798)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.2.1)
+</Update>
+
+<Update label="2025-02-14" description="Restate Server v1.2.0">
+  ### Restate v1.2.0: A distributed durable execution engine, built from first principles
+
+  ### Release Highlights 🌟
+
+  ### High-availability and fast fail-overs 💪
+
+  This release allows you to scale out your Restate Servers and run them in a highly-available, distributed setup. Restate runs active-active deployments, with data getting copied instantly for fast, consistent fail-over. [Try deploying a multi-node cluster yourself](https://docs.restate.dev/guides/cluster).
+
+  The single Restate server binary comes with all-batteries-included and no required external dependencies. You can start with a single node deployment and then seamlessly turn your deployment into a multi-node cluster by starting new Restate server processes. [Grow the cluster yourself](https://docs.restate.dev/deploy/server/cluster/growing-cluster).
+
+  ### Graphical UI: Insights beyond your usual queue 🔬
+
+  This release adds a graphical UI to add an easy and intuitive way to manage, navigate, and debug your Restate applications. You can now access and query all the useful data that Restate collects about your application and answer questions like:
+
+  * What function execution is blocking my invocation from getting executed?
+  * Where in my chain of calls did my handler or workflow get stuck?
+  * How many times was this function retried and which step is failing with what error?
+
+  and many more. The UI is bundled with Restate Server and accessible at the admin port `http://localhost:9070`.
+
+  ### Operational tooling 🔧
+
+  We have created a new cluster administration tool to operate a multi-node Restate deployment.  With `restatectl`, you can check the status of your cluster, view the partitioning layout, change the configuration of your cluster, and take snapshots.
+
+  ### Snapshotting to object store 💾
+
+  To keep your data safe and freeing Restate from storing older data, Restate now supports creating partition store snapshots and to upload these snapshots to an object store. Check out [how to configure snapshotting](https://docs.restate.dev/operate/data-backup#snapshotting).
+
+  ### Performance improvements 🚀
+
+  This release further improves the latency and throughput of the system. Here are some latency measurements for a 3-way replicated cluster of 3 nodes under low and high load:
+
+  |                 | load                  | **p50**   | p75   | **p90**   | p99   |
+  | --------------- | --------------------- | --------- | ----- | --------- | ----- |
+  | 3-step workflow | 549 rps (**low**)     | **15ms**  | 30ms  | **42ms**  | 69ms  |
+  | 9-step workflow | 303 rps (**low**)     | **31ms**  | 45ms  | **57ms**  | 93ms  |
+  |                 |                       |           |       |           |       |
+  | 1-step workflow | 23 131 rps (**high**) | **16ms**  | 20ms  | **25ms**  | 40ms  |
+  | 3-step workflow | 16 844 rps (**high**) | **58ms**  | 67ms  | **76ms**  | 98ms  |
+  | 9-step workflow | 8 571 rps (**high**)  | **116ms** | 126ms | **138ms** | 163ms |
+
+  At low load, the 3-step workflow had a median latency of 15ms.
+  Load can be pushed to 17 000 requests per second (84 000 actions per second) with a p90 latency of 76ms.
+
+  You can [run this benchmark yourself](https://github.com/restatedev/restate/tree/main/scripts/loadtest-environment).
+
+  ### Backward compatibility 🔙
+
+  The 1.2 release is fully backward compatible with previous Restate releases starting from version 1.1. If you have a single node deployment that you would like to turn into a multi-node deployment without losing any data, then follow [the multi-node migration guide](https://docs.restate.dev/guides/local-to-replicated).
+
+  ### Managing scheduled invocations 🕐
+
+  The Restate CLI and UI show you scheduled invocations. Restate allows you to cancel and kill these invocations now.
+
+  ### Deprecations 💡
+
+  * This release removes the need for a dedicated port for the metadata store. In previous releases, Restate used port 5123 for it. Now, the metadata store listens on port 5122 by default. Consequently, the config option `metadata-store.bind-address` has been removed.
+  * The :9071 Postgres protocol port is now deprecated and will be removed in a future release. You can make queries with the cli or over http to :9070/query, which can now return JSON in addition to arrow format data.
+  * Some config flags have been renamed. The old values will be accepted, but will be removed in a later version:
+    * `admin.log-trim-interval` has been renamed to `admin.log-trim-check-interval`
+    * `allow-bootstrap` has been renamed to `auto-provision`
+    * `bootstrap-num-partitions` has been renamed to `default-num-partitions`
+    * `metadata-store-client` has been renamed to `metadata-client`
+    * `metadata-store` has been renamed to `metadata-server` and `metadata-store.rocksdb` has been flattened into `metadata-server`
+
+  ### Install
+
+  ### Pull the Docker images
+
+  ```sh theme={null}
+  docker pull docker.restate.dev/restatedev/restate:1.2.0
+  docker pull docker.restate.dev/restatedev/restate-cli:1.2.0
+  ```
+
+  ### Install prebuilt binaries via Homebrew
+
+  ```sh theme={null}
+  brew install restatedev/tap/restate-server
+  brew install restatedev/tap/restate
+  brew install restatedev/tap/restatectl
+  ```
+
+  ### Install prebuilt binaries into your npm project
+
+  ```sh theme={null}
+  npm install @restatedev/restate-server@1.2.0
+  npm install @restatedev/restate@1.2.0
+  npm install @restatedev/restatectl@1.2.0
+  ```
+
+  ### Download binary archives
+
+  | File                                                                                                                                         | Platform            | Checksum                                                                                                                           |
+  | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+  | [restate-server-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restate-server-aarch64-apple-darwin.tar.xz)             | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restate-server-aarch64-apple-darwin.tar.xz.sha256)       |
+  | [restate-server-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restate-server-x86_64-apple-darwin.tar.xz)              | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restate-server-x86_64-apple-darwin.tar.xz.sha256)        |
+  | [restate-server-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restate-server-aarch64-unknown-linux-musl.tar.xz) | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restate-server-aarch64-unknown-linux-musl.tar.xz.sha256) |
+  | [restate-server-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restate-server-x86_64-unknown-linux-musl.tar.xz)  | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restate-server-x86_64-unknown-linux-musl.tar.xz.sha256)  |
+  | [restate-cli-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restate-cli-aarch64-apple-darwin.tar.xz)                   | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restate-cli-aarch64-apple-darwin.tar.xz.sha256)          |
+  | [restate-cli-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restate-cli-x86_64-apple-darwin.tar.xz)                    | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restate-cli-x86_64-apple-darwin.tar.xz.sha256)           |
+  | [restate-cli-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restate-cli-aarch64-unknown-linux-musl.tar.xz)       | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restate-cli-aarch64-unknown-linux-musl.tar.xz.sha256)    |
+  | [restate-cli-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restate-cli-x86_64-unknown-linux-musl.tar.xz)        | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restate-cli-x86_64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-aarch64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restatectl-aarch64-apple-darwin.tar.xz)                     | Apple Silicon macOS | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restatectl-aarch64-apple-darwin.tar.xz.sha256)           |
+  | [restatectl-x86\_64-apple-darwin.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restatectl-x86_64-apple-darwin.tar.xz)                      | Intel macOS         | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restatectl-x86_64-apple-darwin.tar.xz.sha256)            |
+  | [restatectl-aarch64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restatectl-aarch64-unknown-linux-musl.tar.xz)         | ARM64 MUSL Linux    | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restatectl-aarch64-unknown-linux-musl.tar.xz.sha256)     |
+  | [restatectl-x86\_64-unknown-linux-musl.tar.xz](https://restate.gateway.scarf.sh/v1.2.0/restatectl-x86_64-unknown-linux-musl.tar.xz)          | x64 MUSL Linux      | [checksum](https://github.com/restatedev/restate/releases/download/v1.2.0/restatectl-x86_64-unknown-linux-musl.tar.xz.sha256)      |
+
+  ### New Contributors
+
+  * @sunng87 made their first contribution in [https://github.com/restatedev/restate/pull/1634](https://github.com/restatedev/restate/pull/1634)
+  * @aradwann made their first contribution in [https://github.com/restatedev/restate/pull/1728](https://github.com/restatedev/restate/pull/1728)
+  * @muhamadazmy made their first contribution in [https://github.com/restatedev/restate/pull/1779](https://github.com/restatedev/restate/pull/1779)
+  * @nikrooz made their first contribution in [https://github.com/restatedev/restate/pull/2077](https://github.com/restatedev/restate/pull/2077)
+  * @hamirmahal made their first contribution in [https://github.com/restatedev/restate/pull/2371](https://github.com/restatedev/restate/pull/2371)
+  * @iMezemz made their first contribution in [https://github.com/restatedev/restate/pull/2372](https://github.com/restatedev/restate/pull/2372)
+  * @myypo made their first contribution in [https://github.com/restatedev/restate/pull/2454](https://github.com/restatedev/restate/pull/2454)
+  * @edmondop made their first contribution in [https://github.com/restatedev/restate/pull/2493](https://github.com/restatedev/restate/pull/2493)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.2.0)
+</Update>
+
+<Update label="2024-12-25" description="Restate Server v1.1.6">
+  ### Restate 1.1.6
+
+  **IMPORTANT for SDK-Typescript users**: *Only* when upgrading from 1.0.x to 1.1.x you MUST rediscover all the existing deployments using `restate dp register <address> --force`. You don't need to update the SDK, nor change the code.
+
+  **IMPORTANT:** If you upgraded a 1.0.x installation to version 1.1.1, please *first* upgrade to 1.1.2 or 1.1.3 before attempting a downgrade back to 1.0.2.
+
+  This version fixes an issue with the Kafka consumer where it could drop messages when starting to consume after the server starts, and an issue of growing memory usage over time due to oversized invoker in memory queues.
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.1.6)
+</Update>
+
+<Update label="2024-12-11" description="Restate Server v1.1.5">
+  ### Restate 1.1.5
+
+  **IMPORTANT for SDK-Typescript users**: *Only* when upgrading from 1.0.x to 1.1.x you MUST rediscover all the existing deployments using `restate dp register <address> --force`. You don't need to update the SDK, nor change the code.
+
+  **IMPORTANT:** If you upgraded a 1.0.x installation to version 1.1.1, please *first* upgrade to 1.1.2 or 1.1.3 before attempting a downgrade back to 1.0.2.
+
+  This release fixes a memory leak issue related to Prometheus Histograms - memory would grow unboundedly when metrics are not scraped
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.1.5)
+</Update>
+
+<Update label="2024-12-09" description="Restate Server v1.1.4">
+  ### Restate 1.1.4
+
+  **IMPORTANT for SDK-Typescript users**: *Only* when upgrading from 1.0.x to 1.1.x you MUST rediscover all the existing deployments using `restate dp register <address> --force`. You don't need to update the SDK, nor change the code.
+
+  **IMPORTANT:** If you upgraded a 1.0.x installation to version 1.1.1, please *first* upgrade to 1.1.2 or 1.1.3 before attempting a downgrade back to 1.0.2.
+
+  This release contains a small quality of life improvement from `main` while we work on the next minor release.
+
+  ### What's Changed
+
+  * You may now provide Accept: application/json to the :9070/query endpoint to receive rows in JSON format.
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.1.4)
+</Update>
+
+<Update label="2024-11-19" description="Restate Server v1.1.3">
+  ### Restate 1.1.3
+
+  **IMPORTANT for SDK-Typescript users**: *Only* when upgrading from 1.0.x to 1.1.x you MUST rediscover all the existing deployments using `restate dp register <address> --force`. You don't need to update the SDK, nor change the code.
+
+  **IMPORTANT:** If you upgraded a 1.0.x installation to version 1.1.1, please *first* upgrade to 1.1.2 or 1.1.3 before attempting a downgrade back to 1.0.2.
+
+  This release contains various cherry picked fixes and quality of life improvements from `main` while we work on the next minor release.
+
+  ### What's Changed
+
+  * Docker images now contain curl for easier health checking (#2006)
+  * The admin role no longer assumes that the node svc port is 5122 (#2038)
+  * Various otel improvements including exporting spans for ctx.run operations (#2291)
+  * HTTP ingress path information including query string is now available as a special header (#2315)
+  * Kafka ingress now supports talking to brokers over TLS, via a statically linked openssl library (#2292)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.1.3)
+</Update>
+
+<Update label="2024-09-18" description="Restate Server v1.1.2">
+  ### Restate 1.1.2
+
+  **IMPORTANT for SDK-Typescript users**: *Only* when upgrading from 1.0.x to 1.1.x you MUST rediscover all the existing deployments using `restate dp register <address> --force`. You don't need to update the SDK, nor change the code.
+
+  **IMPORTANT:** If you upgraded a 1.0.x installation to version 1.1.1, please *first* upgrade to 1.1.2 before attempting a downgrade back to 1.0.2.
+
+  This release contains an important compatibility update for anyone running Restate 1.1.1. Our versioning policy is to maintain rollback ability to the last minor version; Restate 1.1.1 broke this promise by shipping an upcoming feature called called log-server by default.
+
+  Please see the new Upgrading section on the Restate website for more information about version updates in general: [https://docs.restate.dev/operate/upgrading](https://docs.restate.dev/operate/upgrading).
+
+  ### If you are running Restate 1.0.x
+
+  We recommend that you upgrade directly to 1.1.2 (or the latest available patch release), and specifically to avoid 1.1.1.
+
+  ### If you are already running  Restate 1.1.1
+
+  Please upgrade to 1.1.2 and delete the directory `$&#123;base_dir&#125;/$&#123;node_name&#125;/log-store ` to avoid issues with future upgrades. To avoid a crash on startup, please upgrade to 1.1.2 before attempting a downgrade back to 1.0.2.
+
+  ### What's Changed
+
+  * \[Security] Bump quinn crate version by @pcholakov in [https://github.com/restatedev/restate/pull/1965](https://github.com/restatedev/restate/pull/1965)
+  * \[Networking Add ability to register raw handlers in message router by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1957](https://github.com/restatedev/restate/pull/1957)
+  * Kafka perf improvements by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1964](https://github.com/restatedev/restate/pull/1964)
+  * Make sure we don't send the awakeable completion twice by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1973](https://github.com/restatedev/restate/pull/1973)
+  * Disable log-server role by default to fix v1.0.x compatibility by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1974](https://github.com/restatedev/restate/pull/1974)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.1.2)
+</Update>
+
+<Update label="2024-09-16" description="Restate Server v1.1.1">
+  ### Restate 1.1.1
+
+  **IMPORTANT for SDK-Typescript users**: *Only* when upgrading from 1.0.x to 1.1.x you MUST rediscover all the existing deployments using `restate dp register <address> --force`. You don't need to update the SDK, nor change the code.
+
+  This is a bug fix release which corrects an issue making the `sys_invocation_state` introspection table inaccessible ([https://github.com/restatedev/restate/issues/1961](https://github.com/restatedev/restate/issues/1961)).
+
+  ### What's Changed
+
+  * \[Bifrost] Moves LogletOffset to restate-types by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1927](https://github.com/restatedev/restate/pull/1927)
+  * \[Networking] Allow sending messages through Outgoing\<M> by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1928](https://github.com/restatedev/restate/pull/1928)
+  * \[Bifrost] Move Record to restate-types by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1929](https://github.com/restatedev/restate/pull/1929)
+  * use opentelemetry to separate services from runtime traces by @muhamadazmy in [https://github.com/restatedev/restate/pull/1922](https://github.com/restatedev/restate/pull/1922)
+  * Fix state\_machine teardown in tests by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1941](https://github.com/restatedev/restate/pull/1941)
+  * Update release checklist doc by @pcholakov in [https://github.com/restatedev/restate/pull/1930](https://github.com/restatedev/restate/pull/1930)
+  * \[Bifrost] Move TailState to restate-types by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1933](https://github.com/restatedev/restate/pull/1933)
+  * PolyBytes serde by proxy by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1935](https://github.com/restatedev/restate/pull/1935)
+  * Testing helpers for networking by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1936](https://github.com/restatedev/restate/pull/1936)
+  * Report roles and address on startup by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1937](https://github.com/restatedev/restate/pull/1937)
+  * \[LogServer] Initial implementation for store path by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1938](https://github.com/restatedev/restate/pull/1938)
+  * \[LogServer] Support for seal by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1939](https://github.com/restatedev/restate/pull/1939)
+  * \[LogServer] GetTailInfo message by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1942](https://github.com/restatedev/restate/pull/1942)
+  * Add loadtest environment CDK stack by @pcholakov in [https://github.com/restatedev/restate/pull/1946](https://github.com/restatedev/restate/pull/1946)
+  * \[TestEnv] supporting routing responses back to callers by @muhamadazmy in [https://github.com/restatedev/restate/pull/1947](https://github.com/restatedev/restate/pull/1947)
+  * \[LogServer] GetRecords basic implementation by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1944](https://github.com/restatedev/restate/pull/1944)
+  * \[LogServer] Reject stores with no records by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1945](https://github.com/restatedev/restate/pull/1945)
+  * \[LogServer] Support for trimming loglets by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1951](https://github.com/restatedev/restate/pull/1951)
+  * \[LogServer] GetLogInfo replaces GetTailInfo by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1952](https://github.com/restatedev/restate/pull/1952)
+  * \[ReplicatedLoglet] Define Append Messages by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1956](https://github.com/restatedev/restate/pull/1956)
+  * \[ReplicatedLoglet] ReplicationProperty is failure-domain-aware by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1959](https://github.com/restatedev/restate/pull/1959)
+  * Let MultiplexedInvokerStatusReader share state by @tillrohrmann in [https://github.com/restatedev/restate/pull/1962](https://github.com/restatedev/restate/pull/1962)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.1.1)
+</Update>
+
+<Update label="2024-09-09" description="Restate Server v1.1.0">
+  ### Restate 1.1.0
+
+  **IMPORTANT for SDK-Typescript users**: *Only* when upgrading from 1.0.x to 1.1.x you MUST rediscover all the existing deployments using `restate dp register <address> --force`. You don't need to update the SDK, nor change the code.
+
+  Notable changes:
+
+  * Restate now sets the `x-restate-invocation-id` header when making service invocations to support load balancers implementing "sticky" routing
+  * Improved forward- and backward-compatibility checks with data store on service startup
+  * When discovering `https` service deployments, now both HTTP/1.1 and HTTP/2 are supported, with negotiation performed using ALPN. When discovering `http` deployments, HTTP/2 prior knowledge is assumed, but you can override it to use HTTP/1.1 by passing the `--use-http1.1` flag to `restate deployments register`.
+  * We now publish a Docker image `restatedev/restate-cli` containing the `restate` CLI tool ([https://github.com/restatedev/restate/issues/1758](https://github.com/restatedev/restate/issues/1758))
+  * Restate CLI and SQL interface now contain several additional fields to improve debugging your service invocations.
+
+  Notable bug fixes:
+
+  * Service-to-service invocations will now correctly propagate headers
+  * Tracing context header injection at the Restate ingress endpoint works as expected
+
+  Infrastructure updates:
+
+  * Forward compatibility with the upcoming Service Invocation Protocol V2, enabling granular retry policies
+  * Introduces the `restatectl` administrative tool which helps operators manage Restate cluster configuration
+  * Foundational work on the Restate distributed log and data partitioning for upcoming distributed deployment support
+
+  ### What's Changed
+
+  * Fix pinned\_deployment\_id is printed incorrectly in SQL by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1612](https://github.com/restatedev/restate/pull/1612)
+  * \[RocksDb] Fixing RocksDbPerfGuard's semantics and performance by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1606](https://github.com/restatedev/restate/pull/1606)
+  * Use GET for service discovery by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1613](https://github.com/restatedev/restate/pull/1613)
+  * Fix panics datafusion by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1618](https://github.com/restatedev/restate/pull/1618)
+  * Update compatibility map to include 1.0.0 as a new breaking version by @tillrohrmann in [https://github.com/restatedev/restate/pull/1616](https://github.com/restatedev/restate/pull/1616)
+  * Check for backward compatibility when validating the cluster marker  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1619](https://github.com/restatedev/restate/pull/1619)
+  * \[config] Adds invoker segment queue limit to configuration file by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1622](https://github.com/restatedev/restate/pull/1622)
+  * Unify mocks and test-util feature in crates by @tillrohrmann in [https://github.com/restatedev/restate/pull/1627](https://github.com/restatedev/restate/pull/1627)
+  * Use different directories for cluster marker tests by @tillrohrmann in [https://github.com/restatedev/restate/pull/1628](https://github.com/restatedev/restate/pull/1628)
+  * \[CLI] Bootstrapping restatectl admin command line by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1625](https://github.com/restatedev/restate/pull/1625)
+  * Lazily calculate value when using StyledTable::add\_kv\_row\_if and predicate is true by @tillrohrmann in [https://github.com/restatedev/restate/pull/1632](https://github.com/restatedev/restate/pull/1632)
+  * feat: update pgwire to latest release by @sunng87 in [https://github.com/restatedev/restate/pull/1634](https://github.com/restatedev/restate/pull/1634)
+  * Generate documentation of SQL tables by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1623](https://github.com/restatedev/restate/pull/1623)
+  * Delete the node dir when wiping all by @tillrohrmann in [https://github.com/restatedev/restate/pull/1630](https://github.com/restatedev/restate/pull/1630)
+  * Let shuffle always use get\_next\_message to support holey outboxes by @tillrohrmann in [https://github.com/restatedev/restate/pull/1640](https://github.com/restatedev/restate/pull/1640)
+  * Support http1 for request-response protocol deployments by @jackkleeman in [https://github.com/restatedev/restate/pull/1232](https://github.com/restatedev/restate/pull/1232)
+  * \[restatectl] dump cluster-state by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1638](https://github.com/restatedev/restate/pull/1638)
+  * Update rocksdb dependency by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1653](https://github.com/restatedev/restate/pull/1653)
+  * CLI should respect that not just virtual objects are stateful by @jackkleeman in [https://github.com/restatedev/restate/pull/1656](https://github.com/restatedev/restate/pull/1656)
+  * \[reorg] Stage 1 by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1643](https://github.com/restatedev/restate/pull/1643)
+  * \[reorg] Stage 2 by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1644](https://github.com/restatedev/restate/pull/1644)
+  * \[Housekeeping] Upgrade toolchain and deps by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1645](https://github.com/restatedev/restate/pull/1645)
+  * Fix erroneous enable of test-util by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1647](https://github.com/restatedev/restate/pull/1647)
+  * \[LogServer] Stub log server service by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1652](https://github.com/restatedev/restate/pull/1652)
+  * Replace clean-runner with jlumbroso/free-disk-space by @tillrohrmann in [https://github.com/restatedev/restate/pull/1657](https://github.com/restatedev/restate/pull/1657)
+  * Remove empty line which breaks the help message description by @tillrohrmann in [https://github.com/restatedev/restate/pull/1658](https://github.com/restatedev/restate/pull/1658)
+  * Only emit admin API incompatibility warning if cluster is running  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1659](https://github.com/restatedev/restate/pull/1659)
+  * Fix underflow in Millis/Nanos SinceEpoch elapsed by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1663](https://github.com/restatedev/restate/pull/1663)
+  * \[invoker] Add x-restate-invocation-id header by @igalshilman in [https://github.com/restatedev/restate/pull/1670](https://github.com/restatedev/restate/pull/1670)
+  * \[Bifrost] minor cleanups by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1664](https://github.com/restatedev/restate/pull/1664)
+  * MetadataBuilder to untangle shared metadata construction by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1665](https://github.com/restatedev/restate/pull/1665)
+  * Updateable is now Live\<T> by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1668](https://github.com/restatedev/restate/pull/1668)
+  * Schemas -> Live\<Schema> by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1671](https://github.com/restatedev/restate/pull/1671)
+  * Support http2 request-response endpoints (forwardport) by @jackkleeman in [https://github.com/restatedev/restate/pull/1674](https://github.com/restatedev/restate/pull/1674)
+  * Remove two default imports from datafusion dependency by @jackkleeman in [https://github.com/restatedev/restate/pull/1679](https://github.com/restatedev/restate/pull/1679)
+  * \[Bifrost] Eager providers initialization by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1681](https://github.com/restatedev/restate/pull/1681)
+  * OpenDB is async and BoxedLiveLoad by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1682](https://github.com/restatedev/restate/pull/1682)
+  * \[Bifrost] ReplicatedLoglet bifrost stubs by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1683](https://github.com/restatedev/restate/pull/1683)
+  * Start ingress only after all partitions have a leader by @tillrohrmann in [https://github.com/restatedev/restate/pull/1686](https://github.com/restatedev/restate/pull/1686)
+  * \[CLI] Emit correct row count from CLI sql subcommand JSON mode by @pcholakov in [https://github.com/restatedev/restate/pull/1685](https://github.com/restatedev/restate/pull/1685)
+  * \[Bifrost] Tail semantics change by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1689](https://github.com/restatedev/restate/pull/1689)
+  * \[Bifrost] Chain and Log metadata improvements by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1691](https://github.com/restatedev/restate/pull/1691)
+  * \[Bifrost] Logs metadata builder and multi-segment finder by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1693](https://github.com/restatedev/restate/pull/1693)
+  * Update leader election protocol  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1694](https://github.com/restatedev/restate/pull/1694)
+  * Port invoker and a couple of other modules to Hyper 1.0/HTTP 1.0  by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1716](https://github.com/restatedev/restate/pull/1716)
+  * Add missing fedora local dev env protobuf dependency by @aradwann in [https://github.com/restatedev/restate/pull/1728](https://github.com/restatedev/restate/pull/1728)
+  * Sync nodes configuration if node from the future connects by @tillrohrmann in [https://github.com/restatedev/restate/pull/1699](https://github.com/restatedev/restate/pull/1699)
+  * Show invocation completion in CLI by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1719](https://github.com/restatedev/restate/pull/1719)
+  * Update aws deps in service-client by @jackkleeman in [https://github.com/restatedev/restate/pull/1734](https://github.com/restatedev/restate/pull/1734)
+  * Use http 1.x/hyper 1.x in admin API and part of CLI by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1733](https://github.com/restatedev/restate/pull/1733)
+  * Fix bug in `IdempotencyId::combine` that prevented correct storing of idempotency key in idempotency table by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1723](https://github.com/restatedev/restate/pull/1723)
+  * \[Bifrost] Decouples loglet dependencies from bifrost by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1704](https://github.com/restatedev/restate/pull/1704)
+  * \[Bifrost] Decouple loglet errors from bifrost errors by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1705](https://github.com/restatedev/restate/pull/1705)
+  * \[Bifrost] Base seal tests and implements seal() on memory loglet by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1717](https://github.com/restatedev/restate/pull/1717)
+  * \[Bifrost] Implements seal() for LocalLoglet by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1718](https://github.com/restatedev/restate/pull/1718)
+  * \[Bifrost] Init single-node loglets with random loglet ids by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1720](https://github.com/restatedev/restate/pull/1720)
+  * \[Bifrost] rename bifrost read functions by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1722](https://github.com/restatedev/restate/pull/1722)
+  * \[Bifrost] read correctly handles seal and tail instability by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1725](https://github.com/restatedev/restate/pull/1725)
+  * \[Bifrost] Improve merge operator performance by coalescing metadata updates by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1726](https://github.com/restatedev/restate/pull/1726)
+  * Update workspace file by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1738](https://github.com/restatedev/restate/pull/1738)
+  * Pass through headers in service to service calls by @jackkleeman in [https://github.com/restatedev/restate/pull/1741](https://github.com/restatedev/restate/pull/1741)
+  * Bump datafusion dependency to 35.0.0-object-store by @tillrohrmann in [https://github.com/restatedev/restate/pull/1750](https://github.com/restatedev/restate/pull/1750)
+  * Replace hyper 0.14 with reqwest and http 1.1 in benchmarks by @tillrohrmann in [https://github.com/restatedev/restate/pull/1740](https://github.com/restatedev/restate/pull/1740)
+  * Update metadata-store crate to use prost 0.13, tonic 0.12 and hyper 1.4  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1746](https://github.com/restatedev/restate/pull/1746)
+  * Bump prost and tonic dependency to 0.13.1 and 0.12.1 respectively by @tillrohrmann in [https://github.com/restatedev/restate/pull/1748](https://github.com/restatedev/restate/pull/1748)
+  * Request metadata updates from peers by @tillrohrmann in [https://github.com/restatedev/restate/pull/1700](https://github.com/restatedev/restate/pull/1700)
+  * Update CLI hyper/http dependencies by @jackkleeman in [https://github.com/restatedev/restate/pull/1739](https://github.com/restatedev/restate/pull/1739)
+  * \[Bifrost] Watch tail updates by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1743](https://github.com/restatedev/restate/pull/1743)
+  * \[Bifrost] Read stream support multi-segment logs by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1744](https://github.com/restatedev/restate/pull/1744)
+  * \[Bifrost] Introduces SegmentIndex to identify segments in the log chain by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1747](https://github.com/restatedev/restate/pull/1747)
+  * \[Bifrost] Basic BifrostAdmin interface by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1753](https://github.com/restatedev/restate/pull/1753)
+  * \[Bifrost] Remove pin projection from loglet impls by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1757](https://github.com/restatedev/restate/pull/1757)
+  * \[Bifrost] Loglet read stream with known tail lsn by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1742](https://github.com/restatedev/restate/pull/1742)
+  * Push a basic docker image containing the CLI in binary build step by @jackkleeman in [https://github.com/restatedev/restate/pull/1760](https://github.com/restatedev/restate/pull/1760)
+  * Fixes for Docker CLI build by @jackkleeman in [https://github.com/restatedev/restate/pull/1770](https://github.com/restatedev/restate/pull/1770)
+  * Truncate outbox using an explicit range of sequence ids by @pcholakov in [https://github.com/restatedev/restate/pull/1762](https://github.com/restatedev/restate/pull/1762)
+  * \[datafusion] Update to the latest version by @igalshilman in [https://github.com/restatedev/restate/pull/1673](https://github.com/restatedev/restate/pull/1673)
+  * Fixs SIGSEGV due to missing rocksdb shutdown in leader stepdown test by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1774](https://github.com/restatedev/restate/pull/1774)
+  * Run doctests using cargo test by @pcholakov in [https://github.com/restatedev/restate/pull/1771](https://github.com/restatedev/restate/pull/1771)
+  * Update otel libraries by @jackkleeman in [https://github.com/restatedev/restate/pull/1735](https://github.com/restatedev/restate/pull/1735)
+  * \[Bifrost] Bifrost appends will wait for reconfiguration by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1772](https://github.com/restatedev/restate/pull/1772)
+  * \[Bifrost] DRY loglet tests setup by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1775](https://github.com/restatedev/restate/pull/1775)
+  * \[Bifrost] handle prefix-trimmed log chains in reads by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1776](https://github.com/restatedev/restate/pull/1776)
+  * Make backoff policy in metadata store client configurable by @tillrohrmann in [https://github.com/restatedev/restate/pull/1761](https://github.com/restatedev/restate/pull/1761)
+  * Hide the `--wipe` flag by @muhamadazmy in [https://github.com/restatedev/restate/pull/1779](https://github.com/restatedev/restate/pull/1779)
+  * Use configurable retry policy for node networking by @pcholakov in [https://github.com/restatedev/restate/pull/1773](https://github.com/restatedev/restate/pull/1773)
+  * Add commands to view and edit/patch service configuration by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1736](https://github.com/restatedev/restate/pull/1736)
+  * Configurable network error retry policy by @muhamadazmy in [https://github.com/restatedev/restate/pull/1782](https://github.com/restatedev/restate/pull/1782)
+  * Make sure Cargo.lock is updated when committing by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1787](https://github.com/restatedev/restate/pull/1787)
+  * Enable SDK-Java/Python/Golang integration tests running by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1786](https://github.com/restatedev/restate/pull/1786)
+  * Add PartitionTable  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1702](https://github.com/restatedev/restate/pull/1702)
+  * Check if all nodes have reported a persisted lsn before trimming the log by @tillrohrmann in [https://github.com/restatedev/restate/pull/1783](https://github.com/restatedev/restate/pull/1783)
+  * Make networking handshake timeout configurable by @muhamadazmy in [https://github.com/restatedev/restate/pull/1796](https://github.com/restatedev/restate/pull/1796)
+  * \[Bifrost] New Appender with Keys support by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1788](https://github.com/restatedev/restate/pull/1788)
+  * \[Bifrost] BackgroundAppender implementation by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1789](https://github.com/restatedev/restate/pull/1789)
+  * \[Bifrost] Moving Payload to be an internal bifrost type by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1792](https://github.com/restatedev/restate/pull/1792)
+  * \[Bifrost] read() now uses LogReadStream internally by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1794](https://github.com/restatedev/restate/pull/1794)
+  * \[Bifrost] Remove read/read\_opt from loglet contract by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1797](https://github.com/restatedev/restate/pull/1797)
+  * \[Bifrost] Introduce KeyFilter to the read API by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1798](https://github.com/restatedev/restate/pull/1798)
+  * Correctly handle gateway errors by @muhamadazmy in [https://github.com/restatedev/restate/pull/1802](https://github.com/restatedev/restate/pull/1802)
+  * Implement simple scheduler that watches for leadership and replication  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1780](https://github.com/restatedev/restate/pull/1780)
+  * \[Bifrost] Add WithKeys and BodyWithKeys helper types by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1808](https://github.com/restatedev/restate/pull/1808)
+  * \[Bifrost] Make StorageEncode object safe by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1809](https://github.com/restatedev/restate/pull/1809)
+  * \[Bifrost] Mechanical rename to prepare for new payload types by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1813](https://github.com/restatedev/restate/pull/1813)
+  * Add SDK-Typescript tests by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1814](https://github.com/restatedev/restate/pull/1814)
+  * Perform "just verify" on PRs in CI by @pcholakov in [https://github.com/restatedev/restate/pull/1824](https://github.com/restatedev/restate/pull/1824)
+  * Extend restatectl with basic log and node operations by @pcholakov in [https://github.com/restatedev/restate/pull/1795](https://github.com/restatedev/restate/pull/1795)
+  * \[Bifrost] Major Bifrost write path refactoring by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1816](https://github.com/restatedev/restate/pull/1816)
+  * \[Bifrost] High-level filtering by keys by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1817](https://github.com/restatedev/restate/pull/1817)
+  * \[Chore] Remove derive-getters by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1818](https://github.com/restatedev/restate/pull/1818)
+  * \[Chore] Upgrade derive\_more and use it where possible by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1819](https://github.com/restatedev/restate/pull/1819)
+  * \[Chore] Upgrade dashmap to v6 by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1820](https://github.com/restatedev/restate/pull/1820)
+  * \[Bifrost] LocalLoglet push-down filtering and new record format by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1826](https://github.com/restatedev/restate/pull/1826)
+  * Remove in-memory loglet type from non-test-mode builds by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1832](https://github.com/restatedev/restate/pull/1832)
+  * Fix trace HTTP header injection by @jackkleeman in [https://github.com/restatedev/restate/pull/1836](https://github.com/restatedev/restate/pull/1836)
+  * Neo invocation status and the Scheduled variant by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1828](https://github.com/restatedev/restate/pull/1828)
+  * Flatten effects by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1837](https://github.com/restatedev/restate/pull/1837)
+  * Add NeoInvocationStatus integration test run by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1840](https://github.com/restatedev/restate/pull/1840)
+  * Allow state to be deleted from non-existent services by @jackkleeman in [https://github.com/restatedev/restate/pull/1839](https://github.com/restatedev/restate/pull/1839)
+  * Use net\_util::run\_hyper\_server to run admin http server by @tillrohrmann in [https://github.com/restatedev/restate/pull/1842](https://github.com/restatedev/restate/pull/1842)
+  * Fix idempotent send with delay by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1843](https://github.com/restatedev/restate/pull/1843)
+  * External metadata store by @muhamadazmy in [https://github.com/restatedev/restate/pull/1838](https://github.com/restatedev/restate/pull/1838)
+  * Fix TimerKey by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1851](https://github.com/restatedev/restate/pull/1851)
+  * Add Cleaner task to clean completed invocations by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1845](https://github.com/restatedev/restate/pull/1845)
+  * Parse the scheduled invocation variant in CLI by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1848](https://github.com/restatedev/restate/pull/1848)
+  * Propagate the SpanContext in the Completed status by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1849](https://github.com/restatedev/restate/pull/1849)
+  * Update read\_pointer when filtering out record by @tillrohrmann in [https://github.com/restatedev/restate/pull/1860](https://github.com/restatedev/restate/pull/1860)
+  * Enable SDK-Rust integration tests by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1865](https://github.com/restatedev/restate/pull/1865)
+  * Few improvements to state machine module by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1858](https://github.com/restatedev/restate/pull/1858)
+  * Expose new state transitions timestamps in SQL by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1857](https://github.com/restatedev/restate/pull/1857)
+  * Fix rocksdb stall-detector sleep bug by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1856](https://github.com/restatedev/restate/pull/1856)
+  * \[Bifrost] Let loglet API support pipelining natively by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1862](https://github.com/restatedev/restate/pull/1862)
+  * \[TaskCenter] Cleanup of task-center and introduces unmanaged tasks by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1850](https://github.com/restatedev/restate/pull/1850)
+  * \[Bifrost] Benchpress minor improvements by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1855](https://github.com/restatedev/restate/pull/1855)
+  * \[Bifrost] Decouple LogletWrapper by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1861](https://github.com/restatedev/restate/pull/1861)
+  * Minor tweaks for perf purposes by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1863](https://github.com/restatedev/restate/pull/1863)
+  * Control memory-loglet with dedicated feature flag by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1864](https://github.com/restatedev/restate/pull/1864)
+  * Fix shutdown warning in partition-store tests by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1875](https://github.com/restatedev/restate/pull/1875)
+  * \[TaskCenter] PP runtimes with localset support by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1867](https://github.com/restatedev/restate/pull/1867)
+  * Update InvocationStatus v2 to use "iS" key prefix by @pcholakov in [https://github.com/restatedev/restate/pull/1877](https://github.com/restatedev/restate/pull/1877)
+  * Invoker per PP by @muhamadazmy in [https://github.com/restatedev/restate/pull/1881](https://github.com/restatedev/restate/pull/1881)
+  * remove un-necessary clone by @muhamadazmy in [https://github.com/restatedev/restate/pull/1884](https://github.com/restatedev/restate/pull/1884)
+  * A few performance improvements by @tillrohrmann in [https://github.com/restatedev/restate/pull/1874](https://github.com/restatedev/restate/pull/1874)
+  * Remove the PartitionStorage, StateStorage and StateReader abstraction by @tillrohrmann in [https://github.com/restatedev/restate/pull/1878](https://github.com/restatedev/restate/pull/1878)
+  * Resizing PartitionId and LogId and types by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1879](https://github.com/restatedev/restate/pull/1879)
+  * \[Bifrost] LogletOffset is now u32 by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1880](https://github.com/restatedev/restate/pull/1880)
+  * \[Bifrost] Replicated loglet params by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1883](https://github.com/restatedev/restate/pull/1883)
+  * Replace rocksdb with rust-rocksdb dependency by @tillrohrmann in [https://github.com/restatedev/restate/pull/1886](https://github.com/restatedev/restate/pull/1886)
+  * Replace OptimisticTransactionDB with DB and WriteBatchWithIndex  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1887](https://github.com/restatedev/restate/pull/1887)
+  * Remove `CodedErrorResultExt` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1897](https://github.com/restatedev/restate/pull/1897)
+  * \[Bifrost] Backward-friendly log-server role by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1895](https://github.com/restatedev/restate/pull/1895)
+  * MaybeRetryableError as common utility by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1896](https://github.com/restatedev/restate/pull/1896)
+  * Side effect retry mechanism by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1893](https://github.com/restatedev/restate/pull/1893)
+  * HTTP 1.1 now works with ALPN by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1900](https://github.com/restatedev/restate/pull/1900)
+  * \[Bifrost] Initial log-server scaffolding by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1905](https://github.com/restatedev/restate/pull/1905)
+  * \[Bifrost] Replace ErasedInputRecord with Record by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1906](https://github.com/restatedev/restate/pull/1906)
+  * \[Networking] Introduce top-level message id to correlate messages by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1912](https://github.com/restatedev/restate/pull/1912)
+  * \[Compat] Fixes for a variety of backward compatibility issues by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1920](https://github.com/restatedev/restate/pull/1920)
+  * Upgrade rust version by @aradwann in [https://github.com/restatedev/restate/pull/1915](https://github.com/restatedev/restate/pull/1915)
+  * Fix bug wrt cancellation and promise-related entries by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1921](https://github.com/restatedev/restate/pull/1921)
+  * Show GetPromise in CLI, together with promise name by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1919](https://github.com/restatedev/restate/pull/1919)
+  * Make sure filling datafusion rows won't panic the runtime by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1923](https://github.com/restatedev/restate/pull/1923)
+  * \[restatectl] Adds simple logs dump for bifrost by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1917](https://github.com/restatedev/restate/pull/1917)
+  * Upgrade tokio by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1926](https://github.com/restatedev/restate/pull/1926)
+  * Fix bug when filling StartMessage.duration\_since\_last\_stored\_entry by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1931](https://github.com/restatedev/restate/pull/1931)
+  * Update ClusterMarker doc strings to clarify versioning requirements by @pcholakov in [https://github.com/restatedev/restate/pull/1925](https://github.com/restatedev/restate/pull/1925)
+  * Classify Metadata Store failed precondition as successful by @pcholakov in [https://github.com/restatedev/restate/pull/1932](https://github.com/restatedev/restate/pull/1932)
+  * Address proc-macro-error advisory RUSTSEC-2024-0370 by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1934](https://github.com/restatedev/restate/pull/1934)
+  * \[Bifrost] Moves LogletOffset to restate-types by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1927](https://github.com/restatedev/restate/pull/1927)
+  * \[Networking] Allow sending messages through Outgoing\<M> by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1928](https://github.com/restatedev/restate/pull/1928)
+  * \[Bifrost] Move Record to restate-types by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1929](https://github.com/restatedev/restate/pull/1929)
+
+  ### New Contributors
+
+  * @muhamadazmy made their first contribution in [https://github.com/restatedev/restate/pull/1779](https://github.com/restatedev/restate/pull/1779) - welcome to the team!
+  * @sunng87 made their first contribution in [https://github.com/restatedev/restate/pull/1634](https://github.com/restatedev/restate/pull/1634)
+  * @aradwann made their first contribution in [https://github.com/restatedev/restate/pull/1728](https://github.com/restatedev/restate/pull/1728)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.1.0)
+</Update>
+
+<Update label="2024-06-21" description="Restate Server v1.0.2">
+  ### What's Changed
+
+  * We have identified a problem where Restate can get stuck after a restart. The problem can be solved by upgrading to this version w/o loss of data.
+
+  ### Details
+
+  * \[BP] Lazily calculate value when using StyledTable::add\_kv\_row\_if and predicate is true by @tillrohrmann in [https://github.com/restatedev/restate/pull/1633](https://github.com/restatedev/restate/pull/1633)
+  * \[BP] feat: update pgwire to latest release by @tillrohrmann in [https://github.com/restatedev/restate/pull/1636](https://github.com/restatedev/restate/pull/1636)
+  * \[BP] Add documentation generation for datafusion tables. by @tillrohrmann in [https://github.com/restatedev/restate/pull/1637](https://github.com/restatedev/restate/pull/1637)
+  * \[BP] Delete the node dir when wiping all by @tillrohrmann in [https://github.com/restatedev/restate/pull/1648](https://github.com/restatedev/restate/pull/1648)
+  * \[BP] Let shuffle always use get\_next\_message to support holey outboxes by @tillrohrmann in [https://github.com/restatedev/restate/pull/1649](https://github.com/restatedev/restate/pull/1649)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.0.2)
+</Update>
+
+<Update label="2024-06-11" description="Restate Server v1.0.1">
+  ### What's Changed
+
+  * Give user a tip if they run cloud login but they don't have an account by @jackkleeman in [https://github.com/restatedev/restate/pull/1607](https://github.com/restatedev/restate/pull/1607)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.0.1)
+</Update>
+
+<Update label="2024-06-07" description="Restate Server v1.0.0">
+  We're happy to announce that Restate has reached the 1.0 milestone!
+
+  ### Storage compatibility
+
+  From this release onward, we guarantee storage compatibility when updating your Restate deployment. Check the [versions documentation](https://github.com/restatedev/restate?tab=readme-ov-file#versions) for more details.
+
+  From now on the SDK and Restate server releases are *decoupled*, meaning you will be able to run a service built with an old SDK version on newer server releases. More info on that to follow.
+
+  ### Workflow API
+
+  We have introduced a new API to simplify building workflows, check out the documentation: [https://docs.restate.dev/develop/java/workflows](https://docs.restate.dev/develop/java/workflows)
+
+  ### CLI
+
+  We have a bunch of new commands on the CLI to help you develop your application locally, check them out: [https://docs.restate.dev/develop/local\_dev](https://docs.restate.dev/develop/local_dev)
+
+  ### Metrics
+
+  The server now exports a lot of useful metrics to observe the system, check the documentation to configure them:[https://docs.restate.dev/operate/monitoring/metrics](https://docs.restate.dev/operate/monitoring/metrics)
+
+  ### Full list of changes
+
+  * Update the softprops/action-gh-release and appany/helm-oci-chart-releaser actions by @tillrohrmann in [https://github.com/restatedev/restate/pull/1470](https://github.com/restatedev/restate/pull/1470)
+  * Remove RocksDb writer thread and disable WAL by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1456](https://github.com/restatedev/restate/pull/1456)
+  * Add invocation target to invoker events by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1472](https://github.com/restatedev/restate/pull/1472)
+  * Removing unnecessary chdir by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1473](https://github.com/restatedev/restate/pull/1473)
+  * \[RocksDb] Tables consolidation by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1466](https://github.com/restatedev/restate/pull/1466)
+  * Partition-scoped storage reader in invoker by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1474](https://github.com/restatedev/restate/pull/1474)
+  * Fix for state mutation through CLI by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1485](https://github.com/restatedev/restate/pull/1485)
+  * Introducing per-partition PartitionStore by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1475](https://github.com/restatedev/restate/pull/1475)
+  * Rename storage-rocksdb to partition-store by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1476](https://github.com/restatedev/restate/pull/1476)
+  * PartitionProcessorManager as long-living service by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1481](https://github.com/restatedev/restate/pull/1481)
+  * Unbreak datafusion by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1482](https://github.com/restatedev/restate/pull/1482)
+  * PartitionId as NewType by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1483](https://github.com/restatedev/restate/pull/1483)
+  * Betters shutdown logging by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1484](https://github.com/restatedev/restate/pull/1484)
+  * use correct WriteOptions by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1487](https://github.com/restatedev/restate/pull/1487)
+  * tx\_batch and move sync db behind inner by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1488](https://github.com/restatedev/restate/pull/1488)
+  * Introduce TimerKind to support different types of timers by @tillrohrmann in [https://github.com/restatedev/restate/pull/1480](https://github.com/restatedev/restate/pull/1480)
+  * Tune rocksdb for multi-cf setup by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1490](https://github.com/restatedev/restate/pull/1490)
+  * Export task-center task names to tokio by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1491](https://github.com/restatedev/restate/pull/1491)
+  * \[ingress] Parse the value of delaySec query param by @igalshilman in [https://github.com/restatedev/restate/pull/1498](https://github.com/restatedev/restate/pull/1498)
+  * Tuning and combined improvements for perf and observability by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1493](https://github.com/restatedev/restate/pull/1493)
+  * More metrics on PP loop. by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1497](https://github.com/restatedev/restate/pull/1497)
+  * Fix the license headers by @jackkleeman in [https://github.com/restatedev/restate/pull/1518](https://github.com/restatedev/restate/pull/1518)
+  * Add Workflow service type and handler type by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1506](https://github.com/restatedev/restate/pull/1506)
+  * Unify RpcStyle message routing by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1511](https://github.com/restatedev/restate/pull/1511)
+  * Persist min/max supported protocol versions by a service endpoint  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1508](https://github.com/restatedev/restate/pull/1508)
+  * Fix content type checks on input when passing content type arguments by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1516](https://github.com/restatedev/restate/pull/1516)
+  * Shorten URL Extract base URL from Google redirect by @khatibomar in [https://github.com/restatedev/restate/pull/1522](https://github.com/restatedev/restate/pull/1522)
+  * Workflow API integration part 1 by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1525](https://github.com/restatedev/restate/pull/1525)
+  * Record service protocol version and send to service endpoint by @tillrohrmann in [https://github.com/restatedev/restate/pull/1517](https://github.com/restatedev/restate/pull/1517)
+  * Set and validate supported service discovery protocol version by @tillrohrmann in [https://github.com/restatedev/restate/pull/1526](https://github.com/restatedev/restate/pull/1526)
+  * Add promises support by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1515](https://github.com/restatedev/restate/pull/1515)
+  * Implement /restate/invocation/\{id}/attach and /restate/invocation/\{id}/output by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1503](https://github.com/restatedev/restate/pull/1503)
+  * Add sys\_promise table by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1533](https://github.com/restatedev/restate/pull/1533)
+  * Cloud CLI integration by @jackkleeman in [https://github.com/restatedev/restate/pull/1519](https://github.com/restatedev/restate/pull/1519)
+  * Attach to cluster controller through Networking by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1500](https://github.com/restatedev/restate/pull/1500)
+  * Partial progress on ClusterState by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1514](https://github.com/restatedev/restate/pull/1514)
+  * Adds header to bifrost payloads by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1520](https://github.com/restatedev/restate/pull/1520)
+  * Remove unused deps by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1521](https://github.com/restatedev/restate/pull/1521)
+  * Export tokio runtime metrics via prometheus by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1524](https://github.com/restatedev/restate/pull/1524)
+  * Fix short extra\_headers clap arg in CLI by @jackkleeman in [https://github.com/restatedev/restate/pull/1537](https://github.com/restatedev/restate/pull/1537)
+  * Fix issue with submit notification for virtual objects by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1539](https://github.com/restatedev/restate/pull/1539)
+  * Add cancel/kill all invocations to a service or service instance by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1529](https://github.com/restatedev/restate/pull/1529)
+  * Prevent race condition in ResponseTracker by using entry which holds the lock by @tillrohrmann in [https://github.com/restatedev/restate/pull/1532](https://github.com/restatedev/restate/pull/1532)
+  * Significantly reduce retry duration of service discovery by @jackkleeman in [https://github.com/restatedev/restate/pull/1541](https://github.com/restatedev/restate/pull/1541)
+  * Workflow key should be url encoded by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1543](https://github.com/restatedev/restate/pull/1543)
+  * \[Bifrost] Support append\_batch by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1536](https://github.com/restatedev/restate/pull/1536)
+  * Send x-restate-id header back on each request by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1542](https://github.com/restatedev/restate/pull/1542)
+  * Introduce Admin API version and verify by CLI  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1538](https://github.com/restatedev/restate/pull/1538)
+  * Add CLI command to clear state of a specific instance or of all instances by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1530](https://github.com/restatedev/restate/pull/1530)
+  * Unify duration parsing in admin api and ingress by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1547](https://github.com/restatedev/restate/pull/1547)
+  * Record nanos instead of millis for bifrost record creation time by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1544](https://github.com/restatedev/restate/pull/1544)
+  * Introduce bifrost benchpress by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1545](https://github.com/restatedev/restate/pull/1545)
+  * Default to low-latency local loglet configuration by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1546](https://github.com/restatedev/restate/pull/1546)
+  * Add cloud CLI proxy command by @jackkleeman in [https://github.com/restatedev/restate/pull/1534](https://github.com/restatedev/restate/pull/1534)
+  * Remove delaysec by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1553](https://github.com/restatedev/restate/pull/1553)
+  * Fix ingress by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1559](https://github.com/restatedev/restate/pull/1559)
+  * mock service endpoint by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1556](https://github.com/restatedev/restate/pull/1556)
+  * Minor config tuning by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1557](https://github.com/restatedev/restate/pull/1557)
+  * \[Bifrost] bifrost loglet tailing read streams by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1558](https://github.com/restatedev/restate/pull/1558)
+  * Reduce cost of TaskCenter atomics by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1563](https://github.com/restatedev/restate/pull/1563)
+  * Attempt the non-blocking write in bg by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1565](https://github.com/restatedev/restate/pull/1565)
+  * fix tests by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1566](https://github.com/restatedev/restate/pull/1566)
+  * Add `restate invocation purge` to remove the workflow state by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1555](https://github.com/restatedev/restate/pull/1555)
+  * Fix invocation\_id returned in case we return the completed result of an already existing invocation by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1562](https://github.com/restatedev/restate/pull/1562)
+  * Issues/ingress attach idempotency by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1567](https://github.com/restatedev/restate/pull/1567)
+  * Add json output to sql queries by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1561](https://github.com/restatedev/restate/pull/1561)
+  * Instrumentation and separate pp, ingress, and default runtimes by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1568](https://github.com/restatedev/restate/pull/1568)
+  * Disable metric label extraction from tracing due to high cpu cost by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1569](https://github.com/restatedev/restate/pull/1569)
+  * Disallow ddl and dml in datafusion by @jackkleeman in [https://github.com/restatedev/restate/pull/1570](https://github.com/restatedev/restate/pull/1570)
+  * Create directories in CLI config/env writes by @jackkleeman in [https://github.com/restatedev/restate/pull/1571](https://github.com/restatedev/restate/pull/1571)
+  * Use lossy string to log signing key path, as debug would add quotes/escapes by @jackkleeman in [https://github.com/restatedev/restate/pull/1469](https://github.com/restatedev/restate/pull/1469)
+  * \[Perf] Rocksdb performance tuning by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1572](https://github.com/restatedev/restate/pull/1572)
+  * Metadata store uses new memory budgeting by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1573](https://github.com/restatedev/restate/pull/1573)
+  * Sql fixes by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1574](https://github.com/restatedev/restate/pull/1574)
+  * Fix the sys\_inbox table by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1577](https://github.com/restatedev/restate/pull/1577)
+  * Fix total order seek for transaction iterators by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1578](https://github.com/restatedev/restate/pull/1578)
+  * Update the lua dissector to work with the latest changes by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1580](https://github.com/restatedev/restate/pull/1580)
+  * reduce logging level of task center by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1579](https://github.com/restatedev/restate/pull/1579)
+  * increase nofile limit on startup by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1575](https://github.com/restatedev/restate/pull/1575)
+  * Do not fail iterator on range deletion tombstones by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1576](https://github.com/restatedev/restate/pull/1576)
+  * Remove Built in service effects by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1582](https://github.com/restatedev/restate/pull/1582)
+  * \[introspection] Set the minimal query parallelism to 2 by @igalshilman in [https://github.com/restatedev/restate/pull/1586](https://github.com/restatedev/restate/pull/1586)
+  * Fix Restate Cloud auth URL by @jackkleeman in [https://github.com/restatedev/restate/pull/1587](https://github.com/restatedev/restate/pull/1587)
+  * Validate that incoming requests to mutate state are sent to keyed services only (virtual objects or workflows) by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1581](https://github.com/restatedev/restate/pull/1581)
+  * Add check for output/attach on invocations created without idempotency id or workflow runs by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1583](https://github.com/restatedev/restate/pull/1583)
+  * Add a HTTP connect timeout - default 10s by @jackkleeman in [https://github.com/restatedev/restate/pull/1584](https://github.com/restatedev/restate/pull/1584)
+  * \[rocksdb] Change default statistics level by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1588](https://github.com/restatedev/restate/pull/1588)
+  * \[rocksdb] Make perf level configurable by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1591](https://github.com/restatedev/restate/pull/1591)
+  * Allow bifrost wal fsync to be disabled by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1592](https://github.com/restatedev/restate/pull/1592)
+  * Shorten thread names by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1593](https://github.com/restatedev/restate/pull/1593)
+  * \[experiment] Try threadpool instead of rayon for io pool by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1594](https://github.com/restatedev/restate/pull/1594)
+  * allow changing io-mode for writes via hidden config by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1595](https://github.com/restatedev/restate/pull/1595)
+  * Invoker task duration histogram by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1596](https://github.com/restatedev/restate/pull/1596)
+  * tune defaults with new bench results by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1598](https://github.com/restatedev/restate/pull/1598)
+  * Add cloud CLI tunnel command by @jackkleeman in [https://github.com/restatedev/restate/pull/1552](https://github.com/restatedev/restate/pull/1552)
+  * Add io-uring as feature by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1597](https://github.com/restatedev/restate/pull/1597)
+  * Telemetry for PP health by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1602](https://github.com/restatedev/restate/pull/1602)
+  * Disable workflow request/response calls from ingress, and invoke them only once from context client by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1603](https://github.com/restatedev/restate/pull/1603)
+  * Update release documentation by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1604](https://github.com/restatedev/restate/pull/1604)
+  * Bump 1.0 by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1605](https://github.com/restatedev/restate/pull/1605)
+
+  ### New Contributors
+
+  * @khatibomar made their first contribution in [https://github.com/restatedev/restate/pull/1522](https://github.com/restatedev/restate/pull/1522)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v1.0.0)
+</Update>
+
+<Update label="2024-05-02" description="Restate Server v0.9.2">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.9.2)
+</Update>
+
+<Update label="2024-04-30" description="Restate Server v0.9.1">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.9.1)
+</Update>
+
+<Update label="2024-04-25" description="Restate Server v0.9.0">
+  ### Restate 0.9.0 is here 🎉
+
+  The latest Restate release comes with a ton of new useful features for you. This release focuses on improving the developer experience and we highly recommend looking at our [new documentation](https://docs.restate.dev/) and [new examples](https://github.com/restatedev/examples).
+
+  Enjoy the release and give us feedback on [discord](https://discord.gg/skW3AZ6uGd) to further improve Restate!
+
+  ### Notable improvements
+
+  * Restate is now configured using the TOML format and allowing hot reloads to change Restate's behavior w/o restarting it. Check out the [configuration documentation](https://docs.restate.dev/operate/configuration) for more details.
+  * Restate now exposes many more metrics telling you what is going on under the hood.
+  * Restate's internals have been reworked to support a distributed execution very soon.
+
+  ### Breaking changes
+
+  The new release contains a few breaking changes that require you to start the server with a clean storage directory.
+
+  ### What's Changed
+
+  * Move admin and meta component into cluster controller role by @tillrohrmann in [https://github.com/restatedev/restate/pull/1180](https://github.com/restatedev/restate/pull/1180)
+  * Eks pod identity implementation by @jackkleeman in [https://github.com/restatedev/restate/pull/1197](https://github.com/restatedev/restate/pull/1197)
+  * Task Center init by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1181](https://github.com/restatedev/restate/pull/1181)
+  * TaskCenter all the things by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1194](https://github.com/restatedev/restate/pull/1194)
+  * Typo fix by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1195](https://github.com/restatedev/restate/pull/1195)
+  * Move Rocksdb back to upstream by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1196](https://github.com/restatedev/restate/pull/1196)
+  * Rename cluster controller role into admin role by @tillrohrmann in [https://github.com/restatedev/restate/pull/1198](https://github.com/restatedev/restate/pull/1198)
+  * Unify metadata version type and remove nodes config singleton by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1200](https://github.com/restatedev/restate/pull/1200)
+  * MetadataManager init by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1202](https://github.com/restatedev/restate/pull/1202)
+  * Consolidate Services by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1203](https://github.com/restatedev/restate/pull/1203)
+  * Let PartitionProcessor and Consensus module use restate\_wal\_protocol::Envelope by @tillrohrmann in [https://github.com/restatedev/restate/pull/1204](https://github.com/restatedev/restate/pull/1204)
+  * Move common to node-services by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1211](https://github.com/restatedev/restate/pull/1211)
+  * move restate-task-center to restate-core by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1212](https://github.com/restatedev/restate/pull/1212)
+  * Move metadata to restate-core by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1213](https://github.com/restatedev/restate/pull/1213)
+  * metadata() for global metadata access by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1214](https://github.com/restatedev/restate/pull/1214)
+  * Send ingress responses directly to ingress by @tillrohrmann in [https://github.com/restatedev/restate/pull/1215](https://github.com/restatedev/restate/pull/1215)
+  * Support adding tracing metadata via env var by @jackkleeman in [https://github.com/restatedev/restate/pull/1206](https://github.com/restatedev/restate/pull/1206)
+  * Split invocation status in invocation status/service status, Change keying of journal to invocation id by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1169](https://github.com/restatedev/restate/pull/1169)
+  * Bump service protocol repo by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1238](https://github.com/restatedev/restate/pull/1238)
+  * Update pinned tikv-jemallocator to fix CI by @jackkleeman in [https://github.com/restatedev/restate/pull/1234](https://github.com/restatedev/restate/pull/1234)
+  * Introduce new API to resolve `ComponentMetadata` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1229](https://github.com/restatedev/restate/pull/1229)
+  * New Ingress by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1236](https://github.com/restatedev/restate/pull/1236)
+  * Support the new Component data model in the schema registry by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1241](https://github.com/restatedev/restate/pull/1241)
+  * Propagate key in StartMessage by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1247](https://github.com/restatedev/restate/pull/1247)
+  * Add tokio feature to hyper-util by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1252](https://github.com/restatedev/restate/pull/1252)
+  * \[2/n] Introduce node-protocol by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1242](https://github.com/restatedev/restate/pull/1242)
+  * \[3/n] Stub networking and network sender by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1243](https://github.com/restatedev/restate/pull/1243)
+  * \[4/n] TestCoreEnv helper for testing with restate-core by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1244](https://github.com/restatedev/restate/pull/1244)
+  * \[5/n] Streaming node-to-node networking infrastructure by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1245](https://github.com/restatedev/restate/pull/1245)
+  * Add PartitionTable metadata by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1256](https://github.com/restatedev/restate/pull/1256)
+  * Replaces the consensus module with Bifrost by @tillrohrmann in [https://github.com/restatedev/restate/pull/1253](https://github.com/restatedev/restate/pull/1253)
+  * Add helm chart by @jackkleeman in [https://github.com/restatedev/restate/pull/1267](https://github.com/restatedev/restate/pull/1267)
+  * Helm chart should use 0.8.1 image by @jackkleeman in [https://github.com/restatedev/restate/pull/1270](https://github.com/restatedev/restate/pull/1270)
+  * Add charts to dockerignore by @jackkleeman in [https://github.com/restatedev/restate/pull/1271](https://github.com/restatedev/restate/pull/1271)
+  * Interface refactor by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1248](https://github.com/restatedev/restate/pull/1248)
+  * TestEnv support for mock networking by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1264](https://github.com/restatedev/restate/pull/1264)
+  * Networking metrics by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1268](https://github.com/restatedev/restate/pull/1268)
+  * Ingress dispatcher is concurrent and integrated with bifrost by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1269](https://github.com/restatedev/restate/pull/1269)
+  * Add jitter to retries by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1274](https://github.com/restatedev/restate/pull/1274)
+  * Cleanup Protobuf bits of schema registry  by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1273](https://github.com/restatedev/restate/pull/1273)
+  * More terminology changes in tables by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1283](https://github.com/restatedev/restate/pull/1283)
+  * Remove Virtual journal by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1287](https://github.com/restatedev/restate/pull/1287)
+  * Simplify Input and output entries by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1282](https://github.com/restatedev/restate/pull/1282)
+  * Headers passthrough by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1286](https://github.com/restatedev/restate/pull/1286)
+  * Fix Response error code data model by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1290](https://github.com/restatedev/restate/pull/1290)
+  * Initial metadata store trait specification by @tillrohrmann in [https://github.com/restatedev/restate/pull/1288](https://github.com/restatedev/restate/pull/1288)
+  * Replace target with restate-data as the default storage directory by @tillrohrmann in [https://github.com/restatedev/restate/pull/1277](https://github.com/restatedev/restate/pull/1277)
+  * Update links in errors wrt new documentation structure by @tillrohrmann in [https://github.com/restatedev/restate/pull/1293](https://github.com/restatedev/restate/pull/1293)
+  * Improve Admin API by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1289](https://github.com/restatedev/restate/pull/1289)
+  * Misc Improvements by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1301](https://github.com/restatedev/restate/pull/1301)
+  * Add single node MetadataStore implementation  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1291](https://github.com/restatedev/restate/pull/1291)
+  * Initial local loglet implementation by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1302](https://github.com/restatedev/restate/pull/1302)
+  * Integrate local metadata store into the Node by @tillrohrmann in [https://github.com/restatedev/restate/pull/1307](https://github.com/restatedev/restate/pull/1307)
+  * Fetch or insert fixed partition table by @tillrohrmann in [https://github.com/restatedev/restate/pull/1309](https://github.com/restatedev/restate/pull/1309)
+  * Move scheduling of delayed ServiceInvocations from caller PP to callee PP. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1306](https://github.com/restatedev/restate/pull/1306)
+  * Enables toml configs by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1320](https://github.com/restatedev/restate/pull/1320)
+  * \[1/n] Use snake\_case for all configuration enums by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1321](https://github.com/restatedev/restate/pull/1321)
+  * \[2/n] Bifrost provider configuration improvements pt1 by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1322](https://github.com/restatedev/restate/pull/1322)
+  * \[3/n]\[Config] Flatten top-level options into CommonOptions by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1325](https://github.com/restatedev/restate/pull/1325)
+  * \[4/n] Partial refactor of worker and admin role configs by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1328](https://github.com/restatedev/restate/pull/1328)
+  * Remove FullInvocationId as dependency to send invocation responses by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1331](https://github.com/restatedev/restate/pull/1331)
+  * Remove built in service registration by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1304](https://github.com/restatedev/restate/pull/1304)
+  * Add IdempotencyTable and modify InvocationStatus table by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1326](https://github.com/restatedev/restate/pull/1326)
+  * Send output on `InvokerEffectKind::End` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1335](https://github.com/restatedev/restate/pull/1335)
+  * Merge worker-api with worker crate by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1330](https://github.com/restatedev/restate/pull/1330)
+  * SIGUSR1 dumps the current config to logs by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1346](https://github.com/restatedev/restate/pull/1346)
+  * Remove serde feature from restate-types by @tillrohrmann in [https://github.com/restatedev/restate/pull/1340](https://github.com/restatedev/restate/pull/1340)
+  * Store logs configuration in metadata store  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1338](https://github.com/restatedev/restate/pull/1338)
+  * Add EpochTable and integrate with existing code by @tillrohrmann in [https://github.com/restatedev/restate/pull/1332](https://github.com/restatedev/restate/pull/1332)
+  * New config types in restate-types by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1350](https://github.com/restatedev/restate/pull/1350)
+  * A new config loader that can monitor config changes by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1351](https://github.com/restatedev/restate/pull/1351)
+  * Invoker StatusReader now uses a different channel for status propagation by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1360](https://github.com/restatedev/restate/pull/1360)
+  * Request identity v1 implementation by @jackkleeman in [https://github.com/restatedev/restate/pull/1349](https://github.com/restatedev/restate/pull/1349)
+  * task\_center now owns the runtime and uses new config by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1352](https://github.com/restatedev/restate/pull/1352)
+  * Tracing using new configuration with filter hot-reload support by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1353](https://github.com/restatedev/restate/pull/1353)
+  * Bifrost to hold on to metadata by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1356](https://github.com/restatedev/restate/pull/1356)
+  * arc-util non-blanket impl by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1358](https://github.com/restatedev/restate/pull/1358)
+  * migrate bifrost to new config by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1359](https://github.com/restatedev/restate/pull/1359)
+  * Migration to the new configuration by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1362](https://github.com/restatedev/restate/pull/1362)
+  * InvocationStatus::Inboxed by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1334](https://github.com/restatedev/restate/pull/1334)
+  * Update AWS dependencies by @jackkleeman in [https://github.com/restatedev/restate/pull/1364](https://github.com/restatedev/restate/pull/1364)
+  * Remove duplicate AWS\_EXTERNAL\_ID by @jackkleeman in [https://github.com/restatedev/restate/pull/1363](https://github.com/restatedev/restate/pull/1363)
+  * Implement business logic of idempotent invocations by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1348](https://github.com/restatedev/restate/pull/1348)
+  * Refactor kafka config by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1366](https://github.com/restatedev/restate/pull/1366)
+  * Store schema information in metadata store by @tillrohrmann in [https://github.com/restatedev/restate/pull/1361](https://github.com/restatedev/restate/pull/1361)
+  * Wire up the new idempotency implementation with ingress by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1354](https://github.com/restatedev/restate/pull/1354)
+  * Remove old idempotency implementation by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1355](https://github.com/restatedev/restate/pull/1355)
+  * Allow to configure the idempotency retention time on a component basis by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1357](https://github.com/restatedev/restate/pull/1357)
+  * Idempotency retention should be a string by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1375](https://github.com/restatedev/restate/pull/1375)
+  * Remove unnecessary SchemaView indirection by @tillrohrmann in [https://github.com/restatedev/restate/pull/1368](https://github.com/restatedev/restate/pull/1368)
+  * Support adding delay to send requests through the ingress by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1374](https://github.com/restatedev/restate/pull/1374)
+  * Add request identity v1 to lambda calls by @jackkleeman in [https://github.com/restatedev/restate/pull/1365](https://github.com/restatedev/restate/pull/1365)
+  * Only insert NodesConfiguration, PartitionTable and Logs configuration if bootstrapping by @tillrohrmann in [https://github.com/restatedev/restate/pull/1373](https://github.com/restatedev/restate/pull/1373)
+  * Add `sys_idempotency` Datafusion table by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1381](https://github.com/restatedev/restate/pull/1381)
+  * Introduction of RocksDbManager by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1380](https://github.com/restatedev/restate/pull/1380)
+  * Better rocksdb shutdown by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1383](https://github.com/restatedev/restate/pull/1383)
+  * Bifrost integration with rocksdb manager by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1382](https://github.com/restatedev/restate/pull/1382)
+  * PP storage integration with rocksdb manager by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1385](https://github.com/restatedev/restate/pull/1385)
+  * Enable nextest everywhere by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1386](https://github.com/restatedev/restate/pull/1386)
+  * GHA updates and improvements by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1387](https://github.com/restatedev/restate/pull/1387)
+  * Update benchmark code to work against new http ingress by @tillrohrmann in [https://github.com/restatedev/restate/pull/1369](https://github.com/restatedev/restate/pull/1369)
+  * Fix CLI inbox queries by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1379](https://github.com/restatedev/restate/pull/1379)
+  * Invoker doesn't use FullInvocationId anymore by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1390](https://github.com/restatedev/restate/pull/1390)
+  * Benchmark update by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1395](https://github.com/restatedev/restate/pull/1395)
+  * Quick patch latency issues by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1396](https://github.com/restatedev/restate/pull/1396)
+  * Remove `MaybeFullInvocationId` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1392](https://github.com/restatedev/restate/pull/1392)
+  * Introduce `InvocationTarget` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1397](https://github.com/restatedev/restate/pull/1397)
+  * Remove ServiceId usage in timers by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1398](https://github.com/restatedev/restate/pull/1398)
+  * Support `HandlerType::Shared` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1399](https://github.com/restatedev/restate/pull/1399)
+  * Update opentelemetry libraries by @jackkleeman in [https://github.com/restatedev/restate/pull/1406](https://github.com/restatedev/restate/pull/1406)
+  * \[Bifrost] local loglet append benchmark by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1401](https://github.com/restatedev/restate/pull/1401)
+  * \[Bifrost] Better chunked batching for bifrost by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1402](https://github.com/restatedev/restate/pull/1402)
+  * Propagate `x-restate-server` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1414](https://github.com/restatedev/restate/pull/1414)
+  * Introduce StorageCodec which helps with encoding/decoding of (codec, value) pairs by @tillrohrmann in [https://github.com/restatedev/restate/pull/1389](https://github.com/restatedev/restate/pull/1389)
+  * More removal of old IDs by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1405](https://github.com/restatedev/restate/pull/1405)
+  * Check whether the state entry types are valid for the given InvocationTarget by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1408](https://github.com/restatedev/restate/pull/1408)
+  * Complete the id refactoring by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1409](https://github.com/restatedev/restate/pull/1409)
+  * Propagate `EndMessage` related entry info in datafusion interface by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1415](https://github.com/restatedev/restate/pull/1415)
+  * Improve the journal table by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1425](https://github.com/restatedev/restate/pull/1425)
+  * More improvements to CLI by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1426](https://github.com/restatedev/restate/pull/1426)
+  * Add mapping to rust structs for sql queries by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1430](https://github.com/restatedev/restate/pull/1430)
+  * \[RocksDb] shared env and config updates by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1424](https://github.com/restatedev/restate/pull/1424)
+  * \[RocksDb] Support for CF name pattern matching by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1427](https://github.com/restatedev/restate/pull/1427)
+  * More CLI improvements by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1434](https://github.com/restatedev/restate/pull/1434)
+  * Invoke,BackgroundInvoke -> Call,Send by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1436](https://github.com/restatedev/restate/pull/1436)
+  * Use multi-threaded-cf rocksdb by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1431](https://github.com/restatedev/restate/pull/1431)
+  * Use restate's rust-rocksdb writebatch by ref by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1432](https://github.com/restatedev/restate/pull/1432)
+  * Support dynamic opening of cfs in rocksdb manager by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1433](https://github.com/restatedev/restate/pull/1433)
+  * \[RocksDb] Maintain storage bg thread pools by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1435](https://github.com/restatedev/restate/pull/1435)
+  * Renamings by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1439](https://github.com/restatedev/restate/pull/1439)
+  * Remove my fork of arrow\_convert by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1440](https://github.com/restatedev/restate/pull/1440)
+  * Update service-protocol with naming changes by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1441](https://github.com/restatedev/restate/pull/1441)
+  * Add doc to specify that idempotency\_retention accepts humantime format by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1442](https://github.com/restatedev/restate/pull/1442)
+  * Fix Journal query in CLI by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1443](https://github.com/restatedev/restate/pull/1443)
+  * Integrate local metadata store with new RocksDbManager by @tillrohrmann in [https://github.com/restatedev/restate/pull/1437](https://github.com/restatedev/restate/pull/1437)
+  * Fix broken links to docs by @gvdongen in [https://github.com/restatedev/restate/pull/1300](https://github.com/restatedev/restate/pull/1300)
+  * Replace bincode with StorageCodec and flexbuffers by @tillrohrmann in [https://github.com/restatedev/restate/pull/1445](https://github.com/restatedev/restate/pull/1445)
+  * Bump helm chart by @jackkleeman in [https://github.com/restatedev/restate/pull/1448](https://github.com/restatedev/restate/pull/1448)
+  * Add cluster marker and validate it at start up of Node  by @tillrohrmann in [https://github.com/restatedev/restate/pull/1400](https://github.com/restatedev/restate/pull/1400)
+  * Include server string for deployments in invocations list by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1451](https://github.com/restatedev/restate/pull/1451)
+  * Improve error messages on invoker by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1452](https://github.com/restatedev/restate/pull/1452)
+  * Improve modified\_at field in invocation status by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1453](https://github.com/restatedev/restate/pull/1453)
+  * \[RocksDb] Dispatch bifrost writes to bg threads automatically by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1438](https://github.com/restatedev/restate/pull/1438)
+  * Configuration support for human-readable bytes by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1455](https://github.com/restatedev/restate/pull/1455)
+  * Eyecandy on startup by @AhmedSoliman in [https://github.com/restatedev/restate/pull/1460](https://github.com/restatedev/restate/pull/1460)
+  * Update integration with RocksDbManager by @tillrohrmann in [https://github.com/restatedev/restate/pull/1458](https://github.com/restatedev/restate/pull/1458)
+  * Fix bad parsing of the descriptor for handler input validation rules by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1462](https://github.com/restatedev/restate/pull/1462)
+  * Fix little bug when logging state machine effects by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1463](https://github.com/restatedev/restate/pull/1463)
+  * Use metadata store RocksDbOptions instead of common RocksDbOptions by @tillrohrmann in [https://github.com/restatedev/restate/pull/1464](https://github.com/restatedev/restate/pull/1464)
+  * Little improvement to handlers Input/output types that are printed during registration. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1459](https://github.com/restatedev/restate/pull/1459)
+  * Remove all the usages of built-in services by @slinkydeveloper in [https://github.com/restatedev/restate/pull/1457](https://github.com/restatedev/restate/pull/1457)
+  * Use correct restate directory in binary builds by @jackkleeman in [https://github.com/restatedev/restate/pull/1465](https://github.com/restatedev/restate/pull/1465)
+  * Fix x86 mac binary builds by @jackkleeman in [https://github.com/restatedev/restate/pull/1468](https://github.com/restatedev/restate/pull/1468)
+  * Bump actions/upload-artifact to v4 and docker/build-push-action to v5 by @tillrohrmann in [https://github.com/restatedev/restate/pull/1467](https://github.com/restatedev/restate/pull/1467)
+
+  ### New Contributors
+
+  * @gvdongen made their first contribution in [https://github.com/restatedev/restate/pull/1300](https://github.com/restatedev/restate/pull/1300)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.9.0)
+</Update>
+
+<Update label="2024-03-06" description="Restate Server v0.8.1">
+  ### What's Changed
+
+  * Patch google/protobuf/descriptor.proto and dev/restate/ext.proto by @tillrohrmann in [https://github.com/restatedev/restate/pull/1263](https://github.com/restatedev/restate/pull/1263)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.8.1)
+</Update>
+
+<Update label="2024-03-01" description="Restate Server v0.8.0">
+  ### Restate 0.8.0 is here 🎉
+
+  The latest Restate release comes with a ton of new useful features for you. Enjoy the release and give us feedback on [discord](https://discord.gg/skW3AZ6uGd) to further improve Restate!
+
+  ### Notable improvements
+
+  * Introducing versioning information to our IDs and our stored data to support forward-compatible migrations in the future.
+  * Faster discoveries by distinguishing between retryable and non-retryable errors
+  * Support for grpc.reflection.v1.ServerReflection which is used by newer grpcurl versions.
+  * Usage of jemalloc to prevent heap fragmentation.
+
+  ### Breaking changes
+
+  The new release contains a few breaking changes which require you to start the server with a clean storage directory.
+
+  * Introducing a new format for our IDs which makes it future-proof for changes.q
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.8.0)
+</Update>
+
+<Update label="2024-01-31" description="Restate Server v0.7.1">
+  ### Fixes
+
+  * Backported [https://github.com/restatedev/restate/pull/1112](https://github.com/restatedev/restate/pull/1112) to v0.7.0. This resolves an issue where arm64 musl binaries would occasionally panic
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.7.1)
+</Update>
+
+<Update label="2024-01-14" description="Restate Server v0.7.0">
+  ### Restate 0.7.0 is here 🎉
+
+  The latest Restate release comes with a ton of new useful features for you. Enjoy the release and give us feedback on [discord](https://discord.gg/skW3AZ6uGd) to further improve Restate!
+
+  ### New features
+
+  * The [Restate CLI](https://docs.restate.dev/restate/cli) is here. It provides a much simpler interaction with a running Restate server and advanced introspection and observability of what is happening.
+  * We are now offering project templates with which you can get a Restate project bootstrapped with a single command via the CLI: `restate examples typescript-hello-world-lambda`.
+  * Stopping running invocations which are no longer of interest or stuck is now possible with [invocation cancelations](https://docs.restate.dev/services/invocation#cancel-an-invocation) and [invocation killings](https://docs.restate.dev/services/invocation#kill-an-invocation). Cancelations even allow to keep your system state consistent by running compensations.
+  * Deploying Restate to the cloud with one click via `restate-cdk`. Learn more about [Restate's CDK support](https://docs.restate.dev/services/deployment/cdk).
+
+  ### Notable improvements
+
+  * We are now offering new ways to install Restate's CLI and server:
+    * CLI
+      * via Homebrew: `brew install restatedev/tap/restate`
+      * via npx: `npx @restatedev/restate`
+    * Server
+      * via Homebrew: `brew install restatedev/tap/restate-server`
+      * via npx: `npx @restatedev/restate-server`
+    * Check out our new [download page](https://restate.dev/get-restate/) for more information.
+  * We started improving Restate's performance which lead to noticeable throughput improvements.
+
+  ### Breaking changes
+
+  The new release contains a few breaking changes which require you to start the server with a clean storage directory.
+
+  * Extending the Restate protocol to make it support future use cases
+  * Fixing a problem in the timer keys which lead to wrong binary orderings
+  * Renaming service endpoints to service deployments which led to new REST paths
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.7.0)
+</Update>
+
+<Update label="2023-12-13" description="Restate Server v0.6.0">
+  ### Breaking changes
+
+  * Due to some breaking changes to the metadata storage format, we recommend existing users to start with a new cluster and wipe all existing state.
+  * We have **restricted** the service key format for keyed services to only `string` keys. If you have any feedback about this change, let us know here [https://github.com/restatedev/restate/issues/955](https://github.com/restatedev/restate/issues/955)
+
+  ### New features
+
+  * We now have a Java SDK to build Restate applications: [https://docs.restate.dev/quickstart](https://docs.restate.dev/quickstart)
+  * We now expose the table of the enqueued invocations in the sql introspection interface as `sys_inbox`
+  * We're publishing the container images on [https://hub.docker.com/r/restatedev/restate](https://hub.docker.com/r/restatedev/restate)
+
+  ### Notable changes
+
+  * Now the Admin API expose more metadata about service endpoints.
+  * Improved DELETE /invocations/:id command
+
+  We've also included some bug fixes and small improvements.
+
+  Enjoy!
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.6.0)
+</Update>
+
+<Update label="2023-12-02" description="Restate Server v0.5.1">
+  ### Fixes
+
+  * Enable the strictest sync mode for RocksDB's WAL.
+  * Extend sys\_status and sys\_invocation\_state with endpoint\_id to make tables more expressive
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.5.1)
+</Update>
+
+<Update label="2023-11-18" description="Restate Server v0.5.0">
+  ### Breaking changes
+
+  * Due to some breaking changes to the metadata storage format, we recommend existing users to start with a new cluster and wipe all existing state.
+
+  ### New features
+
+  * You can now invoke Lambdas directly by providing an ARN during discovery; an API gateway is no longer needed. See [https://docs.restate.dev/services/deployment/lambda](https://docs.restate.dev/services/deployment/lambda) to see how!
+
+  We've also included some bug fixes and small improvements.
+
+  Enjoy!
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.5.0)
+</Update>
+
+<Update label="2023-10-24" description="Restate Server v0.4.0">
+  ### Breaking changes
+
+  * Due to some breaking changes to the storage format, we recommend existing users to start with a new cluster and wipe all existing state.
+  * We've updated the default ports allocation, to reduce potential conflicts with other commonly used tools. See [https://docs.restate.dev/restate/deployment](https://docs.restate.dev/restate/deployment).
+  * We've simplified the definition of Protobuf service contracts for event handlers. See [https://docs.restate.dev/services/sdk/kafka](https://docs.restate.dev/services/sdk/kafka).
+  * Introduced non-backward compatible change in the built-in service `dev.restate.Ingress`. See [https://github.com/restatedev/proto/blob/main/dev/restate/services.proto](https://github.com/restatedev/proto/blob/main/dev/restate/services.proto).
+  * This release works only with sdk-typescript >= 0.3.1
+
+  ### New features
+
+  * You can now provide an idempotency key when sending requests to Restate from an external client. This allows to implement end-to-end exactly once processing of requests. See [https://docs.restate.dev/services/invocation#invoke-a-service-idempotently](https://docs.restate.dev/services/invocation#invoke-a-service-idempotently).
+  * The introspection SQL interface has been expanded with two new tables:
+    * `sys_invocation_state` to inspect the status of in-flight invocations.
+    * `sys_journal` to inspect the invocation journal.
+  * External ingress invocation traces now have client socket info
+
+  Among the other changes, we've also included a plethora of bug fixes and small improvements.
+
+  Enjoy!
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.4.0)
+</Update>
+
+<Update label="2023-09-21" description="Restate Server v0.3.0">
+  ### Breaking changes
+
+  Due to some breaking changes to the storage format, we recommend existing users to start with a new cluster and wipe all existing state.
+
+  ### Changes
+
+  * **New feature**: Add Kafka ingress, to read events from Kafka directly in restate services. Check the documentation [https://docs.restate.dev/services/sdk/kafka](https://docs.restate.dev/services/sdk/kafka) for more details.
+  * **New feature**: Now you can use the function `key_to_json` in SQL queries to convert the service key to json
+  * **Improvements**: Now `GET /service` in the Admin API returns more metadata about service methods
+  * Various fixes
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.3.0)
+</Update>
+
+<Update label="2023-08-26" description="Restate Server v0.2.1">
+  ### What's Changed
+
+  * Rename Meta REST Operational API into Admin API by @tillrohrmann in [https://github.com/restatedev/restate/pull/736](https://github.com/restatedev/restate/pull/736)
+  * Make Storage::Transaction a GAT by @tillrohrmann in [https://github.com/restatedev/restate/pull/738](https://github.com/restatedev/restate/pull/738)
+  * Presize serialization buffers of storage types by @tillrohrmann in [https://github.com/restatedev/restate/pull/739](https://github.com/restatedev/restate/pull/739)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.2.1)
+</Update>
+
+<Update label="2023-08-23" description="Restate Server v0.2.0">
+  ### Breaking changes
+
+  Due to the amount of breaking changes, we recommend existing users to start with a new cluster and wipe all existing state. This release is compatible **only** with SDK versions starting from 0.2.0 (using the new versioning scheme).
+
+  ### Changes
+
+  * **Breaking**: Invocation identifiers and Awakeable identifiers now have a new string format, they are shorter and bounded (both around \~30 characters). You can safely include these identifiers in path parameters, or in headers, without any risk to hit size limits. Awakeable identifiers created with a previous release are not compatible with this release.
+  * **New feature**: Implement the [`dev.restate.Awakeables`](https://buf.build/restatedev/proto/docs/main:dev.restate#dev.restate.Awakeables) built-in service, to complete awakeables directly from the ingress
+  * **New feature**: Added support to reject Awakeables, that is completing an awakeable with a failure value.
+  * **New feature**: Added `GET /endpoints` in the admin api to retrieve the list of registered endpoints
+  * **Breaking**: Modified the `DELETE /invocations` in the admin api to accept the id of the invocation as path parameter: `DELETE /invocations/:invocation_id`
+  * **Breaking**: Modified the `PartitionKey` type to `u64`
+  * Various fixes
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.2.0)
+</Update>
+
+<Update label="2023-08-07" description="Restate Server v0.1.7">
+  ### Overview
+
+  * Adding support for querying the storage via SQL. This allows getting access to the state and status table of the system which helps understanding and debugging the system.
+
+  ### What's Changed
+
+  * Fix using the otlp exporter and the jager file exporter at the same time by @slinkydeveloper in [https://github.com/restatedev/restate/pull/631](https://github.com/restatedev/restate/pull/631)
+  * Make sure we don't generate spans with negative duration. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/634](https://github.com/restatedev/restate/pull/634)
+  * Provide a knob to configure HTTP/2 keep-alive by @slinkydeveloper in [https://github.com/restatedev/restate/pull/632](https://github.com/restatedev/restate/pull/632)
+  * Fix keepalive documentation by @slinkydeveloper in [https://github.com/restatedev/restate/pull/635](https://github.com/restatedev/restate/pull/635)
+  * Ignore multiple completions for awakeables by @slinkydeveloper in [https://github.com/restatedev/restate/pull/637](https://github.com/restatedev/restate/pull/637)
+  * Remove GitHub actions for building and releasing CLI by @tillrohrmann in [https://github.com/restatedev/restate/pull/645](https://github.com/restatedev/restate/pull/645)
+  * Support gRPC health check service by @slinkydeveloper in [https://github.com/restatedev/restate/pull/644](https://github.com/restatedev/restate/pull/644)
+  * Add /health endpoint in the META REST API by @slinkydeveloper in [https://github.com/restatedev/restate/pull/647](https://github.com/restatedev/restate/pull/647)
+  * Use docs subdomain by @jackkleeman in [https://github.com/restatedev/restate/pull/650](https://github.com/restatedev/restate/pull/650)
+  * Remove "unstable" feature from h2 dependency in restate\_invoker\_impl package by @tillrohrmann in [https://github.com/restatedev/restate/pull/651](https://github.com/restatedev/restate/pull/651)
+  * ingress\_service\_invocation -> ingress\_invoke \$method by @jackkleeman in [https://github.com/restatedev/restate/pull/656](https://github.com/restatedev/restate/pull/656)
+  * Rename timeouts and set abort\_timeout to 60s by default by @tillrohrmann in [https://github.com/restatedev/restate/pull/659](https://github.com/restatedev/restate/pull/659)
+  * Rename docker workflow input artifactInsteadOfPush to uploadImageAsTarball by @tillrohrmann in [https://github.com/restatedev/restate/pull/660](https://github.com/restatedev/restate/pull/660)
+  * Don't store requires\_ack = true by @slinkydeveloper in [https://github.com/restatedev/restate/pull/649](https://github.com/restatedev/restate/pull/649)
+  * Put Restate under Business Source License by @tillrohrmann in [https://github.com/restatedev/restate/pull/657](https://github.com/restatedev/restate/pull/657)
+  * Remove the Ok variant from UserErrorCode by @tillrohrmann in [https://github.com/restatedev/restate/pull/662](https://github.com/restatedev/restate/pull/662)
+  * Update release documentation by @tillrohrmann in [https://github.com/restatedev/restate/pull/663](https://github.com/restatedev/restate/pull/663)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.1.7)
+</Update>
+
+<Update label="2023-07-14" description="Restate Server v0.1.6">
+  ### Overview
+
+  * Tracing improvements. Now the traces will look more natural, as if they're published by services. Look at the documentation to configure observability.
+  * (**Breaking**) Upgrade and versioning of services. Registering services now works differently, and supports different service revisions. For more details, look at the documentation.
+
+  ### What's Changed
+
+  * Extract interface for worker apis and move it to separate package by @slinkydeveloper in [https://github.com/restatedev/restate/pull/531](https://github.com/restatedev/restate/pull/531)
+  * Correct logging of invoking invocations when popping the inbox by @tillrohrmann in [https://github.com/restatedev/restate/pull/539](https://github.com/restatedev/restate/pull/539)
+  * Move `ConversionError` from `restate_common` to `restate_storage_api` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/532](https://github.com/restatedev/restate/pull/532)
+  * Replace `GenericError` with `anyhow::Error` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/533](https://github.com/restatedev/restate/pull/533)
+  * Merge `restate_journal` into `restate_common` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/541](https://github.com/restatedev/restate/pull/541)
+  * Merge `restate_service_metadata` types into `restate_common`. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/545](https://github.com/restatedev/restate/pull/545)
+  * Use opentelemetry-otlp for exporting spans to OTLP compatible systems  by @tillrohrmann in [https://github.com/restatedev/restate/pull/553](https://github.com/restatedev/restate/pull/553)
+  * Invoker concurrency quota by @slinkydeveloper in [https://github.com/restatedev/restate/pull/548](https://github.com/restatedev/restate/pull/548)
+  * Set force-frame-pointers=yes on arm machines on arm linux by @jackkleeman in [https://github.com/restatedev/restate/pull/557](https://github.com/restatedev/restate/pull/557)
+  * Fix arm64 rustflags by @jackkleeman in [https://github.com/restatedev/restate/pull/568](https://github.com/restatedev/restate/pull/568)
+  * Move storage related types from common to storage\_api by @slinkydeveloper in [https://github.com/restatedev/restate/pull/536](https://github.com/restatedev/restate/pull/536)
+  * Refactor `common` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/551](https://github.com/restatedev/restate/pull/551)
+  * Introduce restate\_benchmarks package with sequential and parallel throughput benchmark  by @tillrohrmann in [https://github.com/restatedev/restate/pull/561](https://github.com/restatedev/restate/pull/561)
+  * Schema registry design proposal by @slinkydeveloper in [https://github.com/restatedev/restate/pull/511](https://github.com/restatedev/restate/pull/511)
+  * Expand the rust-guidelines.md with the new conventions by @slinkydeveloper in [https://github.com/restatedev/restate/pull/556](https://github.com/restatedev/restate/pull/556)
+  * Remove unnecessary format! calls in Consensus module by @tillrohrmann in [https://github.com/restatedev/restate/pull/571](https://github.com/restatedev/restate/pull/571)
+  * Integrate the new schema registry by @slinkydeveloper in [https://github.com/restatedev/restate/pull/559](https://github.com/restatedev/restate/pull/559)
+  * Remove `EndpointMetadata.delivery_options.retry_policy` by @slinkydeveloper in [https://github.com/restatedev/restate/pull/570](https://github.com/restatedev/restate/pull/570)
+  * Introduce ServiceRevision, and support registering new endpoints  by @slinkydeveloper in [https://github.com/restatedev/restate/pull/563](https://github.com/restatedev/restate/pull/563)
+  * Introduce META REST endpoint to get a service endpoint by id by @slinkydeveloper in [https://github.com/restatedev/restate/pull/565](https://github.com/restatedev/restate/pull/565)
+  * Remove /services/discover, rename /endpoints/discover to /endpoints by @slinkydeveloper in [https://github.com/restatedev/restate/pull/572](https://github.com/restatedev/restate/pull/572)
+  * Update README.md by @slinkydeveloper in [https://github.com/restatedev/restate/pull/579](https://github.com/restatedev/restate/pull/579)
+  * Update the Meta Endpoint to discover services in the benchmarks by @slinkydeveloper in [https://github.com/restatedev/restate/pull/578](https://github.com/restatedev/restate/pull/578)
+  * Record the endpoint id used when invoking a service, and restore it when replaying. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/573](https://github.com/restatedev/restate/pull/573)
+  * META endpoints API ergonomics/inconsistency fixes by @slinkydeveloper in [https://github.com/restatedev/restate/pull/584](https://github.com/restatedev/restate/pull/584)
+  * Always push main docker images by @jackkleeman in [https://github.com/restatedev/restate/pull/587](https://github.com/restatedev/restate/pull/587)
+  * Revert "Always push main docker images" by @jackkleeman in [https://github.com/restatedev/restate/pull/588](https://github.com/restatedev/restate/pull/588)
+  * Always push main docker images by @jackkleeman in [https://github.com/restatedev/restate/pull/589](https://github.com/restatedev/restate/pull/589)
+  * Make it possible to build debug docker images by @jackkleeman in [https://github.com/restatedev/restate/pull/590](https://github.com/restatedev/restate/pull/590)
+  * Ensure debug field is set on chef cook too by @jackkleeman in [https://github.com/restatedev/restate/pull/591](https://github.com/restatedev/restate/pull/591)
+  * Port bincode to 2.0 in restate\_queue by @slinkydeveloper in [https://github.com/restatedev/restate/pull/576](https://github.com/restatedev/restate/pull/576)
+  * Set force = true by default on /endpoints registration by @slinkydeveloper in [https://github.com/restatedev/restate/pull/598](https://github.com/restatedev/restate/pull/598)
+  * Introduce explicit TracingGuard for shutting Tracing down from outside the Tokio thread by @tillrohrmann in [https://github.com/restatedev/restate/pull/593](https://github.com/restatedev/restate/pull/593)
+  * Add support for configuring Restate in benchmarks via env variables by @tillrohrmann in [https://github.com/restatedev/restate/pull/597](https://github.com/restatedev/restate/pull/597)
+  * Tracing improvements by @jackkleeman in [https://github.com/restatedev/restate/pull/558](https://github.com/restatedev/restate/pull/558)
+  * Profiling benchmarks on Linux by @slinkydeveloper in [https://github.com/restatedev/restate/pull/610](https://github.com/restatedev/restate/pull/610)
+  * Public and private services by @slinkydeveloper in [https://github.com/restatedev/restate/pull/585](https://github.com/restatedev/restate/pull/585)
+  * Avoid the alloc/dealloc cycle in SegmentQueue by @slinkydeveloper in [https://github.com/restatedev/restate/pull/613](https://github.com/restatedev/restate/pull/613)
+  * Add service instance type check when updating a service by @slinkydeveloper in [https://github.com/restatedev/restate/pull/608](https://github.com/restatedev/restate/pull/608)
+  * Fix span relation assert by @jackkleeman in [https://github.com/restatedev/restate/pull/616](https://github.com/restatedev/restate/pull/616)
+  * Remove service endpoints by @slinkydeveloper in [https://github.com/restatedev/restate/pull/594](https://github.com/restatedev/restate/pull/594)
+  * Remove the ServiceInvocationFactory interface by @slinkydeveloper in [https://github.com/restatedev/restate/pull/617](https://github.com/restatedev/restate/pull/617)
+  * Update to 0.1.6 by @slinkydeveloper in [https://github.com/restatedev/restate/pull/618](https://github.com/restatedev/restate/pull/618)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.1.6)
+</Update>
+
+<Update label="2023-06-27" description="Restate Server v0.1.5">
+  ### What's Changed
+
+  * Introduce interface to export InvocationStatus by @slinkydeveloper in [https://github.com/restatedev/restate/pull/526](https://github.com/restatedev/restate/pull/526)
+  * Refactor invoker following the rust conventions by @slinkydeveloper in [https://github.com/restatedev/restate/pull/528](https://github.com/restatedev/restate/pull/528)
+  * Allow InvocationStateMachine to handle errors when waiting for retry by @tillrohrmann in [https://github.com/restatedev/restate/pull/535](https://github.com/restatedev/restate/pull/535)
+  * Use a single channel for sending inputs to the Invoker by @tillrohrmann in [https://github.com/restatedev/restate/pull/537](https://github.com/restatedev/restate/pull/537)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.1.5)
+</Update>
+
+<Update label="2023-06-23" description="Restate Server v0.1.4">
+  ### What's Changed
+
+  * Detect the case where `OutputStreamEntry` is sent twice by @slinkydeveloper in [https://github.com/restatedev/restate/pull/489](https://github.com/restatedev/restate/pull/489)
+  * Move service\_protocol\_wireshark\_dissector in the workspace by @slinkydeveloper in [https://github.com/restatedev/restate/pull/490](https://github.com/restatedev/restate/pull/490)
+  * Run e2e tests in CI by @jackkleeman in [https://github.com/restatedev/restate/pull/481](https://github.com/restatedev/restate/pull/481)
+  * Use new builtin gha docker cache type by @jackkleeman in [https://github.com/restatedev/restate/pull/492](https://github.com/restatedev/restate/pull/492)
+  * Upload artifact directly for e2e tests by @jackkleeman in [https://github.com/restatedev/restate/pull/491](https://github.com/restatedev/restate/pull/491)
+  * Remove verification test by @jackkleeman in [https://github.com/restatedev/restate/pull/510](https://github.com/restatedev/restate/pull/510)
+  * Ensure we compare inputs.artifactInsteadOfPush to true by @jackkleeman in [https://github.com/restatedev/restate/pull/512](https://github.com/restatedev/restate/pull/512)
+  * Introduce segmented queue in the invoker by @slinkydeveloper in [https://github.com/restatedev/restate/pull/482](https://github.com/restatedev/restate/pull/482)
+  * Invocation error model overhaul by @slinkydeveloper in [https://github.com/restatedev/restate/pull/507](https://github.com/restatedev/restate/pull/507)
+  * Execute the InvokeEntry resolution process within the invocation task by @slinkydeveloper in [https://github.com/restatedev/restate/pull/509](https://github.com/restatedev/restate/pull/509)
+  * Check bad SuspensionMessage by @slinkydeveloper in [https://github.com/restatedev/restate/pull/513](https://github.com/restatedev/restate/pull/513)
+  * Exclude tools packages from cargo default members by @tillrohrmann in [https://github.com/restatedev/restate/pull/521](https://github.com/restatedev/restate/pull/521)
+  * Fix #519 by @slinkydeveloper in [https://github.com/restatedev/restate/pull/522](https://github.com/restatedev/restate/pull/522)
+  * Implement Ingress Service by @slinkydeveloper in [https://github.com/restatedev/restate/pull/515](https://github.com/restatedev/restate/pull/515)
+  * U64 time fields by @slinkydeveloper in [https://github.com/restatedev/restate/pull/518](https://github.com/restatedev/restate/pull/518)
+  * Introduce FixedConsecutivePartition partition table  by @tillrohrmann in [https://github.com/restatedev/restate/pull/527](https://github.com/restatedev/restate/pull/527)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.1.4)
+</Update>
+
+<Update label="2023-06-05" description="Restate Server v0.1.3">
+  ### What's Changed
+
+  * Remove unused dependencies by @tillrohrmann in [https://github.com/restatedev/restate/pull/461](https://github.com/restatedev/restate/pull/461)
+  * Bump console-subscriber to version 0.1.9 to support scheduled time by @tillrohrmann in [https://github.com/restatedev/restate/pull/466](https://github.com/restatedev/restate/pull/466)
+  * Set default in memory timer limit to 1024 by @tillrohrmann in [https://github.com/restatedev/restate/pull/467](https://github.com/restatedev/restate/pull/467)
+  * Reduce verification test log output to info level by @tillrohrmann in [https://github.com/restatedev/restate/pull/476](https://github.com/restatedev/restate/pull/476)
+  * Force protocol type to RequestResponse if suspension\_timeout is zero. by @slinkydeveloper in [https://github.com/restatedev/restate/pull/479](https://github.com/restatedev/restate/pull/479)
+  * Move ProxyConnector to its own crate by @slinkydeveloper in [https://github.com/restatedev/restate/pull/469](https://github.com/restatedev/restate/pull/469)
+  * Rename restate\_test\_utils to restate\_test\_util by @slinkydeveloper in [https://github.com/restatedev/restate/pull/472](https://github.com/restatedev/restate/pull/472)
+  * Move verif test to use e2e image by @jackkleeman in [https://github.com/restatedev/restate/pull/480](https://github.com/restatedev/restate/pull/480)
+  * Run TimerService as part of the partition processor  by @tillrohrmann in [https://github.com/restatedev/restate/pull/483](https://github.com/restatedev/restate/pull/483)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.1.3)
+</Update>
+
+<Update label="2023-06-01" description="Restate Server v0.1.2">
+  ### What's Changed
+
+  * Make sure all internal channels are configured using the channel\_size by @slinkydeveloper in [https://github.com/restatedev/restate/pull/428](https://github.com/restatedev/restate/pull/428)
+  * Generic error code for InvocationTask by @slinkydeveloper in [https://github.com/restatedev/restate/pull/431](https://github.com/restatedev/restate/pull/431)
+  * Add support for HTTP\_PROXY by @jackkleeman in [https://github.com/restatedev/restate/pull/429](https://github.com/restatedev/restate/pull/429)
+  * \[storage] Add additional configuration parameters by @igalshilman in [https://github.com/restatedev/restate/pull/414](https://github.com/restatedev/restate/pull/414)
+  * Listen on the closed() channel signal for service discovery, to abort when client goes away by @slinkydeveloper in [https://github.com/restatedev/restate/pull/434](https://github.com/restatedev/restate/pull/434)
+  * Validate the sdk is not writing data frames after the end of the stream by @slinkydeveloper in [https://github.com/restatedev/restate/pull/435](https://github.com/restatedev/restate/pull/435)
+  * Fix issue with missing state machine when retrying UnexpectedEndOfStream by @slinkydeveloper in [https://github.com/restatedev/restate/pull/436](https://github.com/restatedev/restate/pull/436)
+  * Use restatedev/dev-tools image as the base image for planner and builder by @tillrohrmann in [https://github.com/restatedev/restate/pull/378](https://github.com/restatedev/restate/pull/378)
+  * Send abort to invoker even if it's not in storage anymore by @slinkydeveloper in [https://github.com/restatedev/restate/pull/433](https://github.com/restatedev/restate/pull/433)
+  * Update assert2 (previous release was yanked) by @slinkydeveloper in [https://github.com/restatedev/restate/pull/457](https://github.com/restatedev/restate/pull/457)
+  * Modify the state handling of the end stream, moving the concern to the InvocationTask by @slinkydeveloper in [https://github.com/restatedev/restate/pull/449](https://github.com/restatedev/restate/pull/449)
+  * Clean GA runner by removing unnecessary software by @tillrohrmann in [https://github.com/restatedev/restate/pull/462](https://github.com/restatedev/restate/pull/462)
+  * \[storage] Upgrade rocksdb to the latest version by @igalshilman in [https://github.com/restatedev/restate/pull/444](https://github.com/restatedev/restate/pull/444)
+  * \[storage] Make sure to delete status of freed services by @igalshilman in [https://github.com/restatedev/restate/pull/464](https://github.com/restatedev/restate/pull/464)
+  * Implement key extraction from json and use it for the kill endpoint by @slinkydeveloper in [https://github.com/restatedev/restate/pull/441](https://github.com/restatedev/restate/pull/441)
+  * Use consistent seeds in verification test by @jackkleeman in [https://github.com/restatedev/restate/pull/465](https://github.com/restatedev/restate/pull/465)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.1.2)
+</Update>
+
+<Update label="2023-05-18" description="Restate Server v0.1.1">
+  ### What's Changed
+
+  * Set the `RUST_LOG` env in `tracing.log` field by @slinkydeveloper in [https://github.com/restatedev/restate/pull/352](https://github.com/restatedev/restate/pull/352)
+  * Jaeger JSON exporter by @slinkydeveloper in [https://github.com/restatedev/restate/pull/353](https://github.com/restatedev/restate/pull/353)
+  * Harden verification test by increasing retry limits by @tillrohrmann in [https://github.com/restatedev/restate/pull/360](https://github.com/restatedev/restate/pull/360)
+  * Fix reflections file name clash by @slinkydeveloper in [https://github.com/restatedev/restate/pull/359](https://github.com/restatedev/restate/pull/359)
+  * Implement Restate Key -> JSON conversion by @slinkydeveloper in [https://github.com/restatedev/restate/pull/346](https://github.com/restatedev/restate/pull/346)
+  * Fail ingress grpc with proper error if it cannot bind to address  by @tillrohrmann in [https://github.com/restatedev/restate/pull/357](https://github.com/restatedev/restate/pull/357)
+  * Let meta reload before worker starts by @slinkydeveloper in [https://github.com/restatedev/restate/pull/365](https://github.com/restatedev/restate/pull/365)
+  * \[storage] Make the Rocksdb storage implemention more type safe by @igalshilman in [https://github.com/restatedev/restate/pull/355](https://github.com/restatedev/restate/pull/355)
+  * Return 415 when no/bad content type is provided by @slinkydeveloper in [https://github.com/restatedev/restate/pull/367](https://github.com/restatedev/restate/pull/367)
+  * Set up workflow to build restate-cli by @tillrohrmann in [https://github.com/restatedev/restate/pull/370](https://github.com/restatedev/restate/pull/370)
+  * Remove okapi git version by @slinkydeveloper in [https://github.com/restatedev/restate/pull/371](https://github.com/restatedev/restate/pull/371)
+  * Reorganize observability config options by @slinkydeveloper in [https://github.com/restatedev/restate/pull/372](https://github.com/restatedev/restate/pull/372)
+  * Fix openapi codegen by @slinkydeveloper in [https://github.com/restatedev/restate/pull/369](https://github.com/restatedev/restate/pull/369)
+  * Configure partitions number and tokio runtime threads by @slinkydeveloper in [https://github.com/restatedev/restate/pull/368](https://github.com/restatedev/restate/pull/368)
+  * Run debug assertions in release build by @tillrohrmann in [https://github.com/restatedev/restate/pull/377](https://github.com/restatedev/restate/pull/377)
+  * Allow to tune serialization/deserialization options of json in ingress by @slinkydeveloper in [https://github.com/restatedev/restate/pull/383](https://github.com/restatedev/restate/pull/383)
+  * Fail with explanatory error message if RocksDB cannot be opened by @tillrohrmann in [https://github.com/restatedev/restate/pull/379](https://github.com/restatedev/restate/pull/379)
+  * Fix Dockerfile build by selecting correct target path by @tillrohrmann in [https://github.com/restatedev/restate/pull/385](https://github.com/restatedev/restate/pull/385)
+  * Fix problems with the TimerService by @tillrohrmann in [https://github.com/restatedev/restate/pull/384](https://github.com/restatedev/restate/pull/384)
+  * Compute partition key eagerly in ServiceId by @tillrohrmann in [https://github.com/restatedev/restate/pull/387](https://github.com/restatedev/restate/pull/387)
+  * Add error message for bad uri by @slinkydeveloper in [https://github.com/restatedev/restate/pull/393](https://github.com/restatedev/restate/pull/393)
+  * Setup default retry policy by @slinkydeveloper in [https://github.com/restatedev/restate/pull/390](https://github.com/restatedev/restate/pull/390)
+  * Less effects logs by @slinkydeveloper in [https://github.com/restatedev/restate/pull/399](https://github.com/restatedev/restate/pull/399)
+  * Add flamegraph justfile command by @tillrohrmann in [https://github.com/restatedev/restate/pull/398](https://github.com/restatedev/restate/pull/398)
+  * Add description to methods and parameters by @slinkydeveloper in [https://github.com/restatedev/restate/pull/403](https://github.com/restatedev/restate/pull/403)
+  * Update the default of observability.log by @slinkydeveloper in [https://github.com/restatedev/restate/pull/410](https://github.com/restatedev/restate/pull/410)
+  * Invoker Abort invocation command by @slinkydeveloper in [https://github.com/restatedev/restate/pull/411](https://github.com/restatedev/restate/pull/411)
+  * Introduce opaque service endpoint id by @slinkydeveloper in [https://github.com/restatedev/restate/pull/413](https://github.com/restatedev/restate/pull/413)
+  * Introduce REST endpoint to kill/cancel a invocation by @slinkydeveloper in [https://github.com/restatedev/restate/pull/412](https://github.com/restatedev/restate/pull/412)
+  * Refactor the invocation task to avoid blocking on waiting the response headers by @slinkydeveloper in [https://github.com/restatedev/restate/pull/425](https://github.com/restatedev/restate/pull/425)
+  * Kill wireup by @slinkydeveloper in [https://github.com/restatedev/restate/pull/422](https://github.com/restatedev/restate/pull/422)
+  * Fix links in error codes documentation by @slinkydeveloper in [https://github.com/restatedev/restate/pull/426](https://github.com/restatedev/restate/pull/426)
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.1.1)
+</Update>
+
+<Update label="2023-04-27" description="Restate Server v0.1.0">
+  *No release notes provided.*
+
+  [View on GitHub](https://github.com/restatedev/restate/releases/tag/v0.1.0)
+</Update>

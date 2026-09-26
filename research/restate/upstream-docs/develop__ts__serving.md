@@ -1,0 +1,162 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Serving
+
+> Create an endpoint to serve your services.
+
+Restate services can run in a few ways: as a Node.js HTTP handler, connected to Restate Cloud/BYOC through an in-process tunnel, as an AWS
+Lambda handler, or on other Javascript runtimes like Bun, Deno and Cloudflare
+Workers.
+
+## Creating a Node.js HTTP handler
+
+Use `restate.serve` to serve the provided services, starting an HTTP/2 server on port `9080`.
+
+```typescript {"CODE_LOAD::ts/src/develop/serving.ts#endpoint"}  theme={null}
+import * as restate from "@restatedev/restate-sdk";
+restate.serve({
+  services: [myService, myVirtualObject, myWorkflow],
+});
+```
+
+<Accordion title="Customizing the HTTP2 server">
+  If you need to manually control or customize the HTTP2 server, use `restate.createEndpointHandler` to create a Node HTTP/2 handler, and then use it to manually instantiate the HTTP server:
+
+  ```ts {"CODE_LOAD::ts/src/develop/serving.ts#custom_endpoint"}  theme={null}
+  const http2Handler = restate.createEndpointHandler({
+    services: [myService, myVirtualObject, myWorkflow],
+  });
+  const httpServer = http2.createServer(http2Handler);
+  httpServer.listen();
+  ```
+</Accordion>
+
+<Accordion title="HTTP/1.1 support">
+  `restate.createEndpointHandler` works with both HTTP/1.1 and HTTP/2. It auto-detects the HTTP version per request, so you can use it with Node.js's standard `http` module:
+
+  ```ts {"CODE_LOAD::ts/src/develop/serving.ts#http1_endpoint"}  theme={null}
+  const restateHandler = restate.createEndpointHandler({
+    services: [myService, myVirtualObject, myWorkflow],
+  });
+  // Works with both HTTP/1.1 and HTTP/2 — auto-detects per request
+  const server = http.createServer(restateHandler);
+  server.listen(9080);
+  ```
+
+  This is useful in environments that don't support HTTP/2.
+</Accordion>
+
+## Connecting to Restate Cloud or BYOC
+
+You can connect your service to Restate Cloud or BYOC through an outbound tunnel without exposing an inbound HTTP endpoint. Your service and handler implementations stay the same.
+
+Install the tunnel package:
+
+```bash theme={null}
+npm install @restatedev/restate-sdk-tunnel
+```
+
+Replace the HTTP server with a tunnel client, while passing the same services.
+
+```typescript {"CODE_LOAD::ts/src/develop/tunnel-operator.ts#operator_in_process_tunnel"} theme={null}
+import { connectTunnel } from "@restatedev/restate-sdk-tunnel";
+import { greeter } from "./greeter";
+
+connectTunnel({ services: [greeter] });
+```
+
+This example reads its configuration from environment variables:
+
+| Variable                            | Value                                                |
+| ----------------------------------- | ---------------------------------------------------- |
+| `RESTATE_INPROC_ENVIRONMENT_ID`     | Your Restate Cloud environment ID                    |
+| `RESTATE_INPROC_CLOUD_REGION`       | Your environment's region identifier                 |
+| `RESTATE_INPROC_TUNNEL_NAME`        | The tunnel name for this deployment                  |
+| `RESTATE_INPROC_SIGNING_PUBLIC_KEY` | Your environment's request signing public key        |
+| `RESTATE_INPROC_AUTH_TOKEN_FILE`    | Path to a file containing your Restate Cloud API key |
+
+On Kubernetes, the Restate operator supplies the environment ID, region, tunnel name, and signing public key when you use `tunnelMode: in-process`. Follow the [Kubernetes deployment guide](/services/deploy/kubernetes#deploy-a-service-to-restate-cloud-or-byoc) to mount the API key and configure the deployment.
+
+Outside Kubernetes, you can set these variables yourself, or pass the configuration explicitly as shown in the [Containers and VMs guide](/services/deploy/standalone). That guide also covers creating credentials and registering the tunnel deployment.
+
+## Creating a Lambda handler
+
+To register your service as a Lambda function, use the `/lambda` import
+component and use `restate.createEndpointHandler`:
+
+```typescript {"CODE_LOAD::ts/src/develop/serving_lambda.ts#lambda"}  theme={null}
+import * as restate from "@restatedev/restate-sdk/lambda";
+export const handler = restate.createEndpointHandler({
+  services: [myService, myVirtualObject, myWorkflow],
+});
+```
+
+The implementation of your services and handlers remains the same across these deployment options.
+
+Have a look at the [deployment section](/services/deploy/lambda)
+for guidance on how to deploy your services on AWS Lambda.
+
+## Creating a Deno/Cloudflare Workers handler
+
+Other Javascript runtimes like Deno and Cloudflare Workers have
+built on top of the [Fetch Standard](https://github.com/whatwg/fetch) for
+defining HTTP server handlers. To register your service as a fetch handler, use
+the `/fetch` import component.
+
+```typescript {"CODE_LOAD::ts/src/develop/serving_fetch.ts#fetch"}  theme={null}
+import * as restate from "@restatedev/restate-sdk/fetch";
+const handler = restate.createEndpointHandler({
+  services: [myService, myVirtualObject, myWorkflow],
+});
+// Cloudflare expects the handler as a default export
+export default handler;
+// Deno expects to be passed the fetch function
+Deno.serve({ port: 9080 }, handler);
+```
+
+By default, a fetch handler will not advertise itself as working
+bidirectionally; the SDK will end the HTTP request at each suspension point,
+and the Restate runtime will re-invoke the service when there is more work to
+do.
+
+However, you can use the option `bidirectional: true` to change this on supported platforms,
+which will improve latencies once the service is re-registered with the runtime.
+
+* Deno (including Deno Deploy) supports HTTP2 and therefore bidirectional mode can be enabled.
+* Cloudflare Workers do not support end-to-end HTTP2 or bidirectional HTTP1.1,
+  and enabling bidirectional mode will cause invocations to stall and time out.
+  Services running on Workers must be discovered with the `--use-http1.1`
+  CLI flag.
+
+<Accordion title="Cloudflare Workers and minification">
+  Cloudflare Workers minification is not working correctly with the Restate SDK. If you see an issue similar to:
+
+  ```
+  ✘ [ERROR] restate-cloudflare-worker: Uncaught TypeError: Cannot read properties of undefined (reading '__wbindgen_malloc')
+  ```
+
+  Then most likely you have enabled minification when deploying. Disable it with `minify = false` in your `workers.toml` file.
+</Accordion>
+
+## Validating request identity
+
+SDKs can validate that incoming requests come from a particular Restate
+instance. You can find out more about request identity in the [Security docs](/services/security#locking-down-service-access)
+
+```typescript {"CODE_LOAD::ts/src/develop/serving.ts#identity"}  theme={null}
+restate.serve({
+  services: [myService],
+  identityKeys: ["publickeyv1_w7YHemBctH5Ck2nQRQ47iBBqhNHy4FV7t2Usbye2A6f"],
+});
+```
+
+For serverless platform handlers, provide the public key to `restate.createEndpointHandler` instead:
+
+```typescript {"CODE_LOAD::ts/src/develop/serving_identity_serverless.ts#identity"} theme={null}
+const handler = restate.createEndpointHandler({
+  services: [myService],
+  identityKeys: ["publickeyv1_w7YHemBctH5Ck2nQRQ47iBBqhNHy4FV7t2Usbye2A6f"],
+});
+```

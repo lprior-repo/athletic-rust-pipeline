@@ -1,0 +1,265 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Flow Control
+
+> Shape and limit concurrent invocations with scope-based concurrency limits.
+
+Flow control lets you shape the traffic flowing through Restate instead of letting invocations run unbounded.
+As soon as many invocations compete for the same downstream resources, you need a way to put a ceiling on how much runs at once.
+
+<Note title="Opt-in feature">
+  Flow control is an opt-in feature and is disabled by default.
+  Its configuration and APIs may change in future releases.
+</Note>
+
+## Why flow control
+
+Flow control gives you a lever over concurrent work, which helps with:
+
+* **Cost control:** Cap how much expensive work runs at once. This is especially valuable for AI agents, where each concurrent invocation can translate directly into model or API spend. A concurrency limit puts a ceiling on that cost.
+* **Endpoint protection:** Keep a burst of invocations from overwhelming a downstream service, database, or third-party API by bounding how many hit it concurrently.
+* **Fairness:** Invocations flow through a scheduler that decides who goes next, so Restate ensures fairness between invocations running on the same partition.
+
+## What Restate supports today
+
+Restate's flow control primitives are built on a scheduler that decides which invocation runs next.
+The first capability built on this scheduler is **concurrency limits**: the maximum number of invocations that may run concurrently for a given [scope](#scopes).
+
+More flow-control capabilities will follow in later releases, all expressed through the same scope-based model.
+Planned follow-ups include throttling and rate limits, invocation priorities, and finite queue (backlog) limits.
+
+## Scopes
+
+A **scope** is a namespace that Restate applies concurrency limits over, and that also namespaces the **identity** of everything inside it.
+
+Every invocation can carry a scope, and concurrency limits are applied per scope: all invocations sharing the same scope draw from the same concurrency budget.
+
+You choose what a scope represents. For example, you might scope by:
+
+* A tenant or customer, to give each one a fair share of capacity.
+* A downstream dependency, to bound how many invocations hit it at once.
+* A class of work, such as `checkout` or `ai-agent`, to cap how much of it runs concurrently.
+
+A scope is more than a concurrency bucket. It becomes **part of the identity of every invocation and resource inside it**, so the same thing addressed under two different scopes is isolated:
+
+* **Idempotency is tracked per scope.** The same idempotency key deduplicates only within one scope. Reused under a different scope, it starts a separate invocation.
+* **Virtual Object and Workflow keys are per scope.** A `Cart` object with key `"a"` under scope `bob` is a different instance, with its own state and queue, from `Cart` `"a"` under scope `joe`. (Routing scoped calls to Virtual Objects requires the [extra opt-in](#enabling-flow-control).)
+
+You attach a scope to an invocation by sending it through a [scoped ingress endpoint](#applying-concurrency-limits), and you define limits per scope through the [rule book](#configuring-concurrency-limits).
+
+A scope value follows a restricted format: only the characters `[a-zA-Z0-9_.-]`, non-empty, and at most 36 characters long.
+
+<Tip title="Choose scopes with enough cardinality">
+  A scope doubles as a **sharding key**: Restate shards an invocation's flow-control state under a hash of its scope.
+  A scope with very low cardinality (a single constant, or a handful of distinct values) concentrates all of that traffic and scheduling onto a few partitions, which can create a hot spot.
+</Tip>
+
+## Limit keys
+
+Within a scope, a **limit key** gives you a finer, hierarchical level of concurrency control.
+Where a scope is a single namespace, a limit key subdivides that namespace into up to two nested levels, so you can cap concurrency per subgroup without creating a separate scope for each one.
+
+A limit key has one or two levels separated by `/`:
+
+* `tenant1` targets a single level (L1) under the scope.
+* `tenant1/user42` targets two levels (L1 and L2) under the scope.
+
+An invocation that carries a limit key counts against *every* level it touches at the same time.
+A `tenant1/user42` invocation draws from the scope budget, the `tenant1` (L1) budget, and the `tenant1/user42` (L2) budget simultaneously, and is admitted only once all of them have a free slot.
+The effective limit is therefore the strictest of the matching rules.
+
+A limit key always requires a scope. Restate rejects an invocation that carries a limit key but no scope.
+
+<Note title="Limit keys don't change invocation identity">
+  A limit key only influences concurrency. It is **not** part of an invocation's identity: two calls to the same target with the same scope and object key but different limit keys still address the *same* resource instance (for example, the same Virtual Object). The limit key never routes to a different object.
+</Note>
+
+Each level of a limit key follows the same restricted value format as a scope: only the characters `[a-zA-Z0-9_.-]`, non-empty, and at most 36 characters long.
+
+## Enabling flow control
+
+Flow control is disabled by default. Enable it in your server configuration:
+
+```toml restate.toml theme={null}
+experimental-enable-protocol-v7 = true
+experimental-enable-vqueues = true
+# Only to route scoped calls to Virtual Objects
+experimental-enable-scoped-virtual-objects = true
+```
+
+Or via the environment variable:
+
+```shell theme={null}
+RESTATE_EXPERIMENTAL_ENABLE_PROTOCOL_V7=true
+RESTATE_EXPERIMENTAL_ENABLE_VQUEUES=true
+# Only to route scoped calls to Virtual Objects
+RESTATE_EXPERIMENTAL_ENABLE_SCOPED_VIRTUAL_OBJECTS=true
+```
+
+<Note title="Existing clusters require Restate 1.7.3 or later">
+  Starting with Restate 1.7.3, you can enable flow control on an existing cluster.
+  When you enable vqueues, Restate automatically migrates the cluster's existing invocations to vqueues.
+  Restate 1.7.0 through 1.7.2 only support enabling vqueues on fresh clusters with no in-flight invocations.
+</Note>
+
+## Configuring concurrency limits
+
+Concurrency limits are defined in a cluster-wide **rule book**.
+A rule pairs a *pattern*, which selects the scopes it applies to, with a set of *limits*.
+The only limit available today is `concurrency`: the maximum number of invocations that may run concurrently for a matching scope.
+
+A pattern is a `/`-separated path that mirrors the scope and [limit key](#limit-keys) hierarchy: `scope`, `scope/l1`, or `scope/l1/l2`.
+Each component is either an exact value or the wildcard `*`:
+
+| Pattern              | Matches                                                         |
+| -------------------- | --------------------------------------------------------------- |
+| `*`                  | Any scope. Acts as a default for scopes without their own rule. |
+| `checkout`           | One specific scope.                                             |
+| `checkout/*`         | Any L1 limit key under the `checkout` scope.                    |
+| `checkout/premium`   | The L1 limit key `premium` under `checkout`.                    |
+| `checkout/premium/*` | Any L2 limit key under `checkout/premium`.                      |
+| `*/premium`          | The L1 limit key `premium` under any scope.                     |
+
+A rule only applies to invocations at its own depth: a `scope/l1` rule limits the L1 counter, and a `scope/l1/l2` rule limits the L2 counter.
+An invocation carrying a two-level limit key is checked against all three levels at once, each against its own most specific matching rule.
+
+When several patterns match the same level, the most specific one wins.
+An exact component beats a wildcard, and specificity is ranked from the scope down: scope first, then L1, then L2.
+So `checkout/premium` takes precedence over `checkout/*`, which takes precedence over `*/premium`.
+
+<Warning title="A `*` limit is not a global pool">
+  A concurrency limit always applies **per scope**, never globally, including for the `*` wildcard.
+  `restate rules set "*" --concurrency 1000` does not cap total concurrency across all scopes at 1000.
+  Instead, every scope that matches `*` gets its own independent budget of 1000.
+  Two different scopes can each run 1000 invocations concurrently under the same `*` rule.
+</Warning>
+
+Manage rules dynamically with the `restate rules` CLI commands.
+`set` is idempotent: it creates a rule if it doesn't exist, or merges into the existing values, preserving fields you don't touch.
+
+```bash theme={null}
+# Set a default of 1000 concurrent invocations per scope, plus a tighter
+# 50-concurrency cap for the "checkout" scope.
+restate rules set "*" --concurrency 1000 --description "global default"
+restate rules set "checkout" --concurrency 50
+
+# Cap each L1 limit key under "checkout" at 5 concurrent invocations,
+# and give any L2 key its own budget of 2.
+restate rules set "checkout/*" --concurrency 5
+restate rules set "checkout/*/*" --concurrency 2
+
+# Inspect what's configured
+restate rules list                # one row per rule
+restate rules list --extra        # also shows description, version, last-modified
+
+# Soft-disable or re-enable a rule without losing its definition
+restate rules disable "checkout"
+restate rules enable  "checkout"
+
+# Remove the checkout rule again
+restate rules delete "checkout"
+```
+
+Run `restate rules --help` for the full set of options.
+
+## Applying concurrency limits
+
+To make an invocation count against a scope's concurrency limit, send it through a scoped ingress endpoint under the reserved `/restate/scope/` prefix:
+
+```
+# Scoped service calls
+POST /restate/scope/{scopeKey}/call/{service}/{handler}
+POST /restate/scope/{scopeKey}/call/{service}/{key}/{handler}
+POST /restate/scope/{scopeKey}/send/{service}/{handler}
+POST /restate/scope/{scopeKey}/send/{service}/{key}/{handler}
+```
+
+Add the `{key}` segment for Virtual Objects and Workflows; omit it for basic Services.
+
+For example, to invoke `checkout` of `OrderService` under the `checkout` scope:
+
+```shell theme={null}
+curl localhost:8080/restate/scope/checkout/call/OrderService/checkout \
+  --json '{"orderId": "order-123"}'
+```
+
+Matching invocations are throttled to the configured `concurrency` and held in their queue until a slot frees up.
+
+### Adding a limit key
+
+To also place an invocation under a [limit key](#limit-keys), pass it with the `limit-key` query parameter or the `x-restate-limit-key` header.
+Separate the two levels with `/`:
+
+<CodeGroup>
+  ```shell Query parameter theme={null}
+  curl "localhost:8080/restate/scope/checkout/call/OrderService/checkout?limit-key=premium/order-123" \
+    --json '{"orderId": "order-123"}'
+  ```
+
+  ```shell Header theme={null}
+  curl localhost:8080/restate/scope/checkout/call/OrderService/checkout \
+    -H 'x-restate-limit-key: premium/order-123' \
+    --json '{"orderId": "order-123"}'
+  ```
+</CodeGroup>
+
+A limit key always requires a scope: sending one without a `scope/{scopeKey}` segment is rejected.
+
+<Info>
+  Invocations sent through the non-scoped endpoints (`/restate/call/...` and `/restate/send/...`) are not subject to any scope-based limit.
+  See [HTTP invocation](/services/invocation/http) for the full set of ingress endpoints.
+</Info>
+
+### From an SDK handler
+
+Service-to-service calls made from a handler can carry a scope and limit key too, so the invocations they trigger count against the same rule book.
+Each SDK exposes a scoped client for this:
+
+* [TypeScript](/develop/ts/service-communication#flow-control-scope-and-limit-key)
+* [Python](/develop/python/service-communication#flow-control-scope-and-limit-key)
+* [Java / Kotlin](/develop/java/service-communication#flow-control-scope-and-limit-key)
+* [Go](/develop/go/service-communication#flow-control-scope-and-limit-key)
+
+## Example: a multi-tenant inference platform
+
+Say the **scope** is an organization, **L1** is a team, and **L2** is a user. One rule book covers every organization through wildcards:
+
+```bash theme={null}
+restate rules set "*"        --concurrency 10000  # each organization
+restate rules set "*/*"      --concurrency 1000   # each team in any org
+restate rules set "*/admins" --unlimited          # admin teams: no limit (overrules "*/*")
+restate rules set "*/*/*"    --concurrency 10      # each individual user (also individual admin users)
+```
+
+To run an invocation for a user, pass the organization as the scope and `team/user` as the limit key:
+
+```shell theme={null}
+# alice on the "growth" team in the "acme" org
+curl "localhost:8080/restate/scope/acme/call/Inference/run?limit-key=growth/alice" \
+  --json '{"prompt": "..."}'
+```
+
+This invocation draws from three budgets at once and is admitted only when all have a free slot:
+
+* **acme** (scope): 10000, shared by the whole organization.
+* **growth** (L1): 1000, shared by everyone on the team.
+* **alice** (L2): 10, hers alone.
+
+Her effective limit is the strictest of these, so alice runs at most 10 concurrently. If she were on the `admins` team instead (`limit-key=admins/alice`), the L1 budget would be unlimited, but she would still be capped at 10 by the `*/*/*` rule. If we want individual admins to have higher limits (say 100), we can add a rule on `*/admins/*`.
+
+## Observing flow control
+
+When flow control is enabled, several SQL system tables let you inspect the scheduler, queues, and concurrency limits directly:
+
+| Table             | What it shows                                                                                                                                                                                         |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sys_rules`       | The configured rule book: one row per rule with its pattern, concurrency limit, description, disabled flag, version, and last-modified time.                                                          |
+| `sys_user_limits` | Concurrency counters at every level (scope, L1, and L2): the scope and limit-key components, the hierarchy level, current usage, configured limit, available capacity, and the matching rule pattern. |
+| `sys_vqueues`     | One row per entry across all queue stages, with its status, attempt counters, and lifecycle timestamps.                                                                                               |
+| `sys_vqueue_meta` | Aggregate statistics per queue: scope, service name, per-stage entry counts, and timing averages.                                                                                                     |
+| `sys_scheduler`   | Real-time scheduler state for each queue's head entry: queue depth, scheduler status, and what it is blocked on.                                                                                      |
+
+These tables are populated only when flow control is enabled.
+See [introspection](/services/introspection) for how to query the system tables.

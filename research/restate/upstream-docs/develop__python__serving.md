@@ -1,0 +1,103 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Serving
+
+> Create an endpoint to serve your services.
+
+Restate services can run in a few ways: as an HTTP handler, or as an AWS Lambda handler.
+
+## Creating the app
+
+Create the app and bind one or multiple services to it:
+
+```python {"CODE_LOAD::python/src/develop/serving.py#endpoint"}  theme={null}
+import restate
+
+app = restate.app(services=[my_service, my_object])
+```
+
+<Accordion title="Mounting Restate app on a FastAPI app">
+  If you are using [FastAPI](https://fastapi.tiangolo.com/), you can mount the Restate app on a route as follows:
+
+  ```python {"CODE_LOAD::python/src/develop/serving.py#fastapi"}  theme={null}
+  from fastapi import FastAPI
+
+  app = FastAPI()
+
+  app.mount("/restate/v1", restate.app(services=[my_service, my_object]))
+  ```
+
+  Then, [register the service](/services/versioning#registering-a-deployment) with Restate specifying this route, here `localhost:9080/restate/v1`.
+</Accordion>
+
+## Serving the app
+
+The Python SDK follows the [ASGI](https://asgi.readthedocs.io/en/latest/introduction.html) standard for the serving of the services.
+
+[Hypercorn](https://pypi.org/project/Hypercorn/) and [Uvicorn](https://www.uvicorn.org/) are two popular ASGI servers that you can use to serve your Restate services.
+
+### Hypercorn
+
+The templates and examples use [Hypercorn](https://pypi.org/project/Hypercorn/) to serve the services.
+
+#### Hypercorn development server
+
+To use Hypercorn during development, you can run the app with:
+
+```python {"CODE_LOAD::python/src/develop/serving.py#hypercorn"}  theme={null}
+if __name__ == "__main__":
+    import hypercorn
+    import hypercorn.asyncio
+    import asyncio
+
+    conf = hypercorn.Config()
+    conf.bind = ["0.0.0.0:9080"]
+    asyncio.run(hypercorn.asyncio.serve(app, conf))
+```
+
+Check out the [Quickstart](/quickstart) for more instructions.
+
+#### Hypercorn production server
+
+To run the app in production, we recommend using a configuration file for Hypercorn:
+
+```toml hypercorn-config.toml theme={null}
+bind = "0.0.0.0:9080"
+h2_max_concurrent_streams = 2147483647
+keep_alive_max_requests = 2147483647
+keep_alive_timeout = 2147483647
+workers = 8
+```
+
+Run the app with:
+
+```shell theme={null}
+python -m hypercorn --config hypercorn-config.toml example:app
+```
+
+This serves the app you specified in an `example.py` file, which contains [the `app`](/develop/python/serving#creating-the-app).
+
+### Uvicorn
+
+You can also use [Uvicorn](https://www.uvicorn.org/) to serve [the app](/develop/python/serving#creating-the-app).
+To run the app with Uvicorn:
+
+```shell theme={null}
+uvicorn example:app
+```
+
+Uvicorn does not support HTTP/2, so you need to tell Restate to use HTTP/1.1 when [registering the deployment](/services/versioning#deployments-supporting-only-http1-1).
+
+## Validating request identity
+
+SDKs can validate that incoming requests come from a particular Restate
+instance. You can find out more about request identity in the [Security docs](/services/security#locking-down-service-access)
+
+```python {"CODE_LOAD::python/src/develop/serving.py#identity"}  theme={null}
+app = restate.app(
+    services=[my_service],
+    identity_keys=["publickeyv1_w7YHemBctH5Ck2nQRQ47iBBqhNHy4FV7t2Usbye2A6f"],
+)
+```

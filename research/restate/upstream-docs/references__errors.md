@@ -1,0 +1,377 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Error Codes
+
+> Descriptions of error codes emitted by Restate components
+
+This page contains the list of error codes emitted by Restate components.
+
+## META0003
+
+Cannot reach the service endpoint to execute discovery. Make sure:
+
+* The provided `URI`/`ARN` is correct
+* The deployment is up and running
+* Restate can reach the deployment through the configured `URI`/`ARN`
+* If additional authentication is required, make sure it's configured through `additional_headers`
+
+## META0004
+
+Cannot register the provided deployment, because it conflicts with the uri of an already registered deployment.
+
+In Restate deployments have a unique uri/arn and are immutable, thus it's not possible to discover the same deployment twice.
+Make sure, when updating a deployment, to assign it a new uri/arn.
+
+You can force the override using the `"force": true` field in the discover request, but beware that this can lead in-flight invocations to an unrecoverable error state.
+
+See the [versioning documentation](https://docs.restate.dev/services/versioning) for more information.
+
+## META0005
+
+Cannot propagate deployment/service metadata to Restate services. If you see this error when starting Restate, this might indicate a corrupted Meta storage.
+
+We recommend wiping the Meta storage and recreating it by registering deployments in the same order they were registered before.
+
+## META0006
+
+Cannot register the newly discovered service revision in the provided deployment, because it conflicts with an already existing service revision.
+
+When implementing a new service revision, make sure that:
+
+* The service type is the same as the previous revision.
+
+See the [versioning documentation](https://docs.restate.dev/services/versioning) for more information.
+
+## META0009
+
+The provided subscription is invalid. Subscriptions should have:
+
+* A `source` field in the format of `kafka://<CLUSTER_NAME>/<TOPIC_NAME>`. When registering, the Kafka cluster should be configured in the Restate configuration.
+* A `sink` field in the format of `service://<service_NAME>/<HANDLER_NAME>`. When registering, service and handler should be available already in the registry, meaning they have been previously registered.
+* Additional constraints may apply depending on the sink service type.
+
+Please look at the Kafka documentation (for [TypeScript](https://docs.restate.dev/develop/ts/kafka) and [Java](https://docs.restate.dev/develop/java/kafka)) for more details on subscriptions and event handlers.
+
+## META0010
+
+Trying to open meta storage directory, configured via `meta.storage_path`, which contains incompatible data. This indicates that your data was written with a different Restate version than you are running right now.
+
+Suggestions:
+
+* Up/Downgrade your Restate server to the requested version.
+* Migrate your data to the requested version by running the migration scripts.
+* Wipe your meta storage directory to start afresh via `rm -rf <BASE_DIR>/<NODE_NAME>/local-metadata-store`.
+* Configure a different meta storage directory via `meta.storage_path`.
+
+## META0011
+
+Non-empty meta storage directory, configured via `meta.storage_path`, is missing the version file. This indicates data corruption or that the data has been written with an incompatible Restate version \< 0.8.
+
+Suggestions:
+
+* Wipe your meta storage directory to start afresh via `rm -rf <BASE_DIR>/<NODE_NAME>/local-metadata-store`.
+* Configure a different meta storage directory via `meta.storage_path`.
+* Downgrade your Restate server to {'<='} 0.7.
+
+## META0012
+
+Trying to register a service endpoint whose supported service protocol versions is incompatible with the server. This indicates that you have to upgrade your server to make it work together with the deployed SDK.
+
+Suggestions:
+
+* Check the compatibility matrix between SDK and server versions
+  * Try upgrading to a server version which is compatible with your SDK
+  * Try using an SDK version which is compatible with your server
+
+## META0013
+
+Received a bad service discovery response from the specified service endpoint. This indicates that you are trying to register a service endpoint with an incompatible server.
+
+Suggestions:
+
+* Check the compatibility matrix between SDK and server versions
+  * Either deploy a server version which is compatible with your SDK
+  * Or use an SDK version which is compatible with your server
+
+## META0014
+
+Service discovery response failed, and the server may have responded in HTTP1.1.
+This can happen when discovering locally running dev servers from Faas platforms
+eg `wrangler dev`. FaaS platforms in generally will support HTTP2, however, so
+this is only a local development concern.
+
+You can try to discover the endpoint with `--use-http1.1` when working
+with these local dev servers. This should not be needed in production.
+
+## META0015
+
+The service discovery response suggested that the SDK is serving in
+bidirectional protocol mode, but discovery is going over a protocol that does
+not support it (currently only Lambda).
+
+Lambda endpoints do not support the bidirectional protocol mode and should be
+configured to announce themselves as being in request-response mode upon
+discovery.
+
+## META0016
+
+Cannot update the provided deployment with the discovered metadata, because the new metadata is insufficiently similar to the old.
+
+When updating a deployment, make sure that:
+
+* All services have the same type as they did in the previous deployment.
+* All services contain at least all the handlers that they did in the previous deployment.
+* The updated deployment contains at least all the services that it previously did.
+* The updated deployment has exactly the same supported protocol versions, which generally means you want to use the same SDK minor version.
+
+See the [versioning documentation](https://docs.restate.dev/services/versioning) for more information.
+
+## META0017
+
+Cannot force-add the provided URI/ARN as a new deployment, because two or more existing deployments use this URI.
+
+Generally Restate enforces that there is only one deployment for a given destination (a HTTP URI or Lambda ARN). This means
+that rediscovering the same destination requires a `force` flag. Adding a deployment in force mode instructs Restate to replace the existing deployment
+with that destination, with the discovered metadata. This relies on there being an unambiguous deployment to replace.
+
+When using the `PUT /deployments/{deployment_id}` API to update a deployment in place, it is possible to create two deployments that have the same destination.
+This is intended to be a temporary measure to fix failing invocations on a draining deployment. While in this state, it is not possible to force deploy that same destination.
+Instead, one of the two deployments must be deleted (`DELETE /deployments/{deployment_id}`) so that there is an unambiguous deployment to replace.
+
+See the [versioning documentation](https://docs.restate.dev/services/versioning) for more information.
+
+## RT0001
+
+The invocation response stream was aborted due to the timeout configured in `worker.invoker.abort_timeout`.
+This timeout is fired when Restate has an open invocation, and it's waiting only for response messages, but no message is seen for the configured time.
+
+Suggestions:
+
+* Check for bugs in your code. Most likely no message was sent to Restate because your code is blocked and/or reached a deadlock.
+* If your code is supposed to not send any message to Restate for longer than the configured timeout, because for example is doing a blocking operation that takes a long time, change the configuration accordingly.
+
+## RT0002
+
+Cannot start Restate because the configuration cannot be parsed. Check the configuration file and the environment variables provided.
+
+For a complete list of configuration options, and a sample configuration, check [https://docs.restate.dev/references/server-config](https://docs.restate.dev/references/server-config)
+
+## RT0003
+
+The invocation failed because Restate received a message from a service larger than the `worker.invoker.message_size_limit`.
+
+Suggestions:
+
+* Check in your code whether there is a case where a very large message can be generated, such as a state entry being too large, a request payload being too large, etc.
+* Increase the limit by tuning the `worker.invoker.message_size_limit` config entry, eventually tuning the memory of your operating system/machine where Restate is running.
+
+## RT0004
+
+Failed starting process because it could not bind to configured address.
+This happens usually if another process has already bound to this address.
+
+Suggestions:
+
+* Select an address that is free.
+* Stop the process that has bound to the specified address.
+* Make sure you have the permissions to bind to the configured port. Some operating systems require admin/root privileges to bind to ports lower than 1024.
+
+## RT0005
+
+Failed opening RocksDB, because the db file is currently locked.\
+This happens usually if another process still holds the lock.
+
+Suggestions:
+
+* Check no other Restate process is running and using the same db file.
+* Configure a different RocksDB storage directory via `worker.storage_rocksdb.path`.
+
+## RT0006
+
+A generic error occurred while invoking the service.
+We suggest checking the service/deployment logs as well to get any hint on the error cause.
+
+## RT0007
+
+A retry-able error was received from the handler while processing the invocation.
+Restate will soon retry executing the invocation, replaying from the point where it left.
+
+Suggestions:
+
+* Check the service logs to get more info about the error cause, like the stacktrace.
+* Look at the error handling docs for more info about error handling in services (e.g. [https://docs.restate.dev/develop/ts/error-handling](https://docs.restate.dev/develop/ts/error-handling) or [https://docs.restate.dev/develop/java/error-handling](https://docs.restate.dev/develop/java/error-handling)).
+
+## RT0009
+
+Trying to open worker storage directory, configured via `worker.storage_rocksdb.path`, which contains no storage format version information. This indicates data corruption or that the data has been written with an incompatible Restate version \< 0.8.
+
+Suggestions:
+
+* Wipe your meta storage directory to start afresh via `rm -rf <BASE_DIR>/<NODE_NAME>/db`.
+* Configure a different worker storage directory via `worker.storage_rocksdb.path`.
+* Downgrade your Restate server to \< 0.8.
+
+## RT0010
+
+Network error when interacting with the service endpoint.
+This can be caused by a variety of reasons including:
+
+* The service is (temporarily) down
+* The service is (temporarily) not reachable over the network
+* Your network security setup blocks Restate from reaching the service
+* A config error where the registered service endpoint and the actually deployed service endpoint differ
+
+## RT0011
+
+No deployment found for the given service.
+This might indicate that the service and/or the associated deployment was removed from the schema registry before starting to process the invocation.
+
+Check whether the deployment still exists using `restate deployments list` or by looking in the UI.
+
+## RT0012
+
+Protocol violation error.
+This can be caused by an incompatible runtime and SDK version, or by an SDK bug.
+
+If the error persists, please file a bug report here: [https://github.com/restatedev/restate/issues](https://github.com/restatedev/restate/issues).
+
+## RT0013
+
+The service endpoint does not support any of the supported service protocol versions of the server.
+Please make sure that the service endpoint's SDK and the Restate server are compatible.
+
+Suggestions:
+
+* Register a service endpoint which uses an SDK which is compatible with the used server
+* Upgrade the server to a version which is compatible with the used SDK
+
+## RT0014
+
+The server cannot resume an in-flight invocation which has been started with a now incompatible service protocol version.
+Restate does not support upgrading service protocols yet.
+
+Suggestions:
+
+* Downgrade the server to a version which is compatible with the used service protocol version
+* Kill the affected invocation via the CLI.
+
+## RT0015
+
+The server can't establish an invocation stream because the SDK does not support the service protocol version negotiated during discovery.
+This indicates that the SDK was updated to a new version that dropped support for old service protocol versions, but no re-registration was performed.
+
+Suggestions:
+
+* For in-flight invocations, downgrade the SDK version back to the previous version.
+* For new invocations, register a new deployment with a new endpoint as described here: [https://docs.restate.dev/services/versioning#manual-versioning](https://docs.restate.dev/services/versioning#manual-versioning).
+* Make sure the new SDK is compatible with this runtime version, for more info check out [https://docs.restate.dev/server/upgrading#service-compatibility](https://docs.restate.dev/server/upgrading#service-compatibility).
+
+## RT0016
+
+Journal mismatch detected when replaying the invocation: the handler generated a sequence of journal entries (thus context operations) that doesn't exactly match the recorded journal.
+This indicates that either the service code was changed (e.g. the service container image updated) without registering a new version of the service deployment, or some code within the handler is non-deterministic.
+
+To fix it:
+
+* Update the deployment in place, fixing the bug, as described in [https://docs.restate.dev/services/versioning#fixing-a-bug-by-updating-deployed-code](https://docs.restate.dev/services/versioning#fixing-a-bug-by-updating-deployed-code)
+* If you can afford to lose partial progress, then kill the invocation as described in [https://docs.restate.dev/services/invocation/managing-invocations#kill](https://docs.restate.dev/services/invocation/managing-invocations#kill)
+
+Some common mistakes that lead to non-deterministic errors are:
+
+* Branch the execution flow based on some non-deterministic information, such as the elapsed time between now and another timestamp, or the result of an HTTP request that was not recorded using the `ctx.run` feature.
+* A parameter passed to a `Context` operation is non-deterministic, for example setting a state key using a random value or the current date-time.
+* Execute a sequence of `Context` operations, such as calling other services, while iterating over a data structure with non-deterministic iteration order (such as sets/maps/dictionaries).
+
+For more info about determinism and journaling of non-deterministic operations, check out [https://docs.restate.dev/get\_started/tour/#journaling-actions](https://docs.restate.dev/get_started/tour/#journaling-actions).
+
+## RT0017
+
+The entry cannot be processed due to a failed precondition.
+This entry, and all the subsequent received entries, have been discarded and Restate will retry executing the invocation from the last recorded entry.
+
+Entry preconditions are usually checked by the SDK.
+If the error persists, please file a bug report here: [https://github.com/restatedev/restate/issues](https://github.com/restatedev/restate/issues).
+
+## RT0018
+
+The request submitted through the `Context` API to the given service handler cannot be processed, because the service handler doesn't exist.
+
+Make sure the service/handler is registered, by using `restate svc ls` or through the UI:
+
+* If the service/handler is correctly registered, you can ignore this error as it's a transient error, due to internal propagation of the cluster metadata.
+* If the service/handler is not registered, you must register it in order for this invocation to progress.
+
+## RT0019
+
+The service replied with Content Too Large/Payload Too Large.
+If you deploy on a serverless platform like Vercel, this might indicate that you're hitting the payload size limit imposed by service providers.
+
+Suggestions:
+
+* Check in your code whether there is a case where a very large message can be generated, such as a state being too large, a `ctx.run` result being too large, etc.
+* Ask the service provider to increase the limits, if possible.
+
+## RT0020
+
+The requested service is exposed by a deployment using a deprecated service protocol version. New requests won't be accepted.
+Upgrade the SDK in your service code and register it as a new deployment to continue accepting requests to the requested service.
+
+## RT0021
+
+The `inactivity_timeout` option is ignored when the deployment serving the services/handlers is using Request/Response mode, such as when deploying on Lambda or using HTTP/1.1
+
+## RT0022
+
+The configured `journal_retention` valued was clamped, because it's higher than the maximum value configured for the server.
+
+## RT0023
+
+Restate is being rate limited by the service deployment, meaning the service deployment, or the network infrastructure in front of it, returned status code `429 Too Many Requests` or `503 Service Unavailable`.
+
+This might indicate that:
+
+* Restate retry policy is too aggressive for this service deployment.
+* The network infrastructure in front of the service, such as gateway or load balancer, is misconfigured.
+* When using a cloud provider for your service deployment, such as Cloud Run or Vercel, the provider might be applying rate limiting due to quota restrictions of your account.
+
+Usually no action is needed, as Restate will dynamically re-adjust its retry policy following the `Retry-After` header.
+
+## RT0024
+
+Invalid usage of flow control APIs.
+
+Scope and limit key can be used only when the flow control experimental feature is enabled.
+Check the documentation for more details: [https://docs.restate.dev/services/flow-control](https://docs.restate.dev/services/flow-control)
+
+The scope MUST be a valid UTF-8 string, containing only `[a-zA-Z0-9_.-]` characters with maximum length of 36 characters.
+
+The limit key MUST be a valid UTF-8 string and can be of these two shapes:
+
+* Only one hierarchical `{level1}`, for example `foo`
+* Two hierarchical levels `{level1}/{level2}`, for example `foo/bar`
+
+Each level must be contain only `[a-zA-Z0-9_.-]` characters with maximum length of 36 characters.
+
+Limit key can be used only in combination with scope.
+
+## RT0025
+
+The maximum nesting depth for the futures (promises) an invocation awaits on has been reached.
+
+Restate futures can be composed with combinators (e.g. `all`, `race`), and each level
+of composition adds one level of nesting. This error is raised when an invocation awaits
+on (or suspends on) a future whose nesting depth exceeds the limit configured in
+`worker.invoker.max-awaited-future-depth` (default: `1000`).
+
+This is most likely caused by unbounded or runaway recursion in the service code building
+ever-deeper combinator futures.
+
+When this limit is reached, the invocation is **paused**. You can resume the
+invocation manually after addressing the root cause.
+
+Suggestions:
+
+* Check your service code for recursive or loop-based composition of futures (e.g. repeatedly
+  wrapping futures in `all`/`race` combinators) that grows without a bound.

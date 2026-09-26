@@ -1,0 +1,35 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Deploying Restate on Azure
+
+> Deploy the Restate Server on Microsoft Azure using AKS and persistent storage.
+
+## Compute
+
+The easiest way to manage Restate is via the [Kubernetes operator](/server/deploy/kubernetes).
+You can deploy Restate on [Azure Kubernetes Service (AKS)](https://azure.microsoft.com/en-us/products/kubernetes-service) using the Restate Operator.
+
+## Persistent volumes
+
+For single node deployments, we recommend using Azure Managed Disk as the persistent volume backing Restate's state store.
+
+For clusters, using persistent volumes is still recommended to speed up failover, but not strictly required.
+
+## Object storage for snapshots
+
+Running a cluster without object storage snapshots is not safe. Partition processors scheduled to move between nodes might take excessively long to catch up to the log, and trimming the log might result in errors that prevent them from starting up altogether.
+
+Restate supports Azure Blob Storage natively as a snapshot repository. Configure your snapshot destination using the `az://` URL scheme:
+
+```toml theme={null}
+[worker.snapshots]
+destination = "az://container/prefix"
+```
+
+Credentials are discovered automatically via the [Azure credential chain](https://docs.rs/object_store/latest/object_store/azure/index.html). You can also set `AZURE_STORAGE_ACCOUNT_NAME` and `AZURE_STORAGE_ACCESS_KEY` for explicit credentials.
+
+For local development, you can use [Azurite](https://github.com/Azure/Azurite) as an emulator.
+
+See the [Snapshots documentation](/server/snapshots) for more details on configuring snapshot intervals, retention, and log trimming.

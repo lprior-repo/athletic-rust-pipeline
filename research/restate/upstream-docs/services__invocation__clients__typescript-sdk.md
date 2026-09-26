@@ -1,0 +1,255 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# TypeScript SDK Clients
+
+> Invoke services from any TypeScript code.
+
+An invocation is a request to execute a handler.
+The Restate SDK client library lets you invoke Restate handlers from anywhere in your application.
+Use this only in non-Restate services without access to the Restate Context.
+
+<Info>
+  Each invocation has its own unique ID and lifecycle.
+  Have a look at [managing invocations](/services/invocation/managing-invocations) to learn how to manage the lifecycle of an invocation.
+</Info>
+
+<Info>
+  Always [invoke handlers via the context](/develop/ts/service-communication), if you have access to it.
+  Restate then attaches information about the invocation to the parent invocation.
+</Info>
+
+## Installation
+
+First, add the dependency to your project
+
+```shell theme={null}
+npm install @restatedev/restate-sdk-clients
+```
+
+Then, [register the service](/services/versioning) you want to invoke.
+
+Finally, connect to Restate and invoke the handler with your preferred semantics.
+
+## Request-response invocations
+
+To wait on a response from the handler:
+
+```ts {"CODE_LOAD::ts/src/develop/clients/ingress.ts#rpc_call_node"}  theme={null}
+// import * as clients from "@restatedev/restate-sdk-clients";
+const restateClient = clients.connect({ url: "http://localhost:8080" });
+
+// To call a service
+const greet = await restateClient
+  .serviceClient<MyService>({ name: "MyService" })
+  .greet({ greeting: "Hi" });
+
+// To call an object
+const count = await restateClient
+  .objectClient<MyObject>({ name: "MyObject" }, "Mary")
+  .greet({ greeting: "Hi" });
+
+// To call a workflow
+const handle = await restateClient
+  .workflowClient<MyWorkflow>({ name: "MyWorkflow" }, "someone")
+  .workflowSubmit({ greeting: "Hi" });
+const result = await restateClient.result(handle);
+
+const status = await restateClient
+  .workflowClient<MyWorkflow>({ name: "MyWorkflow" }, "someone")
+  .myOtherHandler();
+```
+
+## One-way invocations
+
+To send a message without waiting for a response:
+
+```ts {"CODE_LOAD::ts/src/develop/clients/ingress.ts#one_way_call_node"}  theme={null}
+// import * as clients from "@restatedev/restateClient-sdk-clients";
+const restateClient = clients.connect({ url: "http://localhost:8080" });
+
+// To send a message to a service
+await restateClient
+  .serviceSendClient<MyService>({ name: "MyService" })
+  .greet({ greeting: "Hi" });
+
+// To send a message to an object
+await restateClient
+  .objectSendClient<MyObject>({ name: "MyObject" }, "Mary")
+  .greet({ greeting: "Hi" });
+
+// To send a message to a workflow
+const handle = await restateClient
+  .workflowClient<MyWorkflow>({ name: "MyWorkflow" }, "someone")
+  .workflowSubmit({ greeting: "Hi" });
+// You cannot send a message to a shared handler in a workflow
+```
+
+## Delayed invocations
+
+To schedule an invocation for a later point in time:
+
+```ts {"CODE_LOAD::ts/src/develop/clients/ingress.ts#delayed_call_node"}  theme={null}
+// import * as clients from "@restatedev/restate-sdk-clients";
+const restateClient = clients.connect({ url: "http://localhost:8080" });
+
+// To send a delayed message to a service
+await restateClient
+  .serviceSendClient<MyService>({ name: "MyService" })
+  .greet({ greeting: "Hi" }, clients.rpc.sendOpts({ delay: { seconds: 1 } }));
+
+// To send a delayed message to an object
+await restateClient
+  .objectSendClient<MyObject>({ name: "MyObject" }, "Mary")
+  .greet({ greeting: "Hi" }, clients.rpc.sendOpts({ delay: { seconds: 1 } }));
+
+// To send a delayed message to a workflow
+const handle = await restateClient
+  .workflowClient<MyWorkflow>({ name: "MyWorkflow" }, "someone")
+  .workflowSubmit(
+    { greeting: "Hi" },
+    clients.rpc.sendOpts({ delay: { seconds: 1 } })
+  );
+// You cannot send a delayed message to a shared handler in a workflow
+```
+
+## Invoke a handler idempotently
+
+By using Restate and an idempotency key, you can make any service call idempotent, without any extra code or setup. This is a very powerful feature to ensure that your system stays consistent and doesn’t perform the same operation multiple times.
+
+To make a service call idempotent, you can use the idempotency key feature.
+Add the idempotency key [to the header](https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/) via:
+
+```typescript {"CODE_LOAD::ts/src/develop/clients/ingress.ts#service_idempotent"}  theme={null}
+await restateClient
+  .serviceSendClient<MyService>({ name: "MyService" })
+  .greet(request, clients.rpc.sendOpts({ idempotencyKey: "abcde" }));
+```
+
+After the invocation completes, Restate persists the response for a retention period of one day (24 hours).
+If you re-invoke the service with the same idempotency key within 24 hours, Restate sends back the same response and doesn't re-execute the request to the service.
+
+The call options, with which we set the idempotency key, also let you add other headers to the request.
+
+<Info>
+  Check out the [service configuration docs](/services/configuration) to tune the retention time.
+</Info>
+
+## Retrieve result of invocations and workflows
+
+You can use the client library to retrieve the results of invocations **with an idempotency key** or workflows.
+
+### Attach to an invocation with an idempotency key
+
+For invocations with an idempotency key, you can attach to the invocation and wait for it to finish:
+
+```typescript {"CODE_LOAD::ts/src/develop/clients/ingress.ts#service_attach"}  theme={null}
+// import * as clients from "@restatedev/restate-sdk-clients";
+const restateClient = clients.connect({ url: "http://localhost:8080" });
+// To send a message
+const handle = await restateClient
+  .serviceSendClient<MyService>({ name: "MyService" })
+  .greet(request, clients.rpc.sendOpts({ idempotencyKey: "abcde" }));
+
+// ... do something else ...
+
+// Attach later to retrieve the result
+const response = await restateClient.result(handle);
+```
+
+### Attach/peek at a workflow execution
+
+For workflows, you can attach to the workflow execution and wait for it to finish or peek at the output:
+
+```typescript {"CODE_LOAD::ts/src/develop/clients/ingress.ts#workflow_attach"}  theme={null}
+// import * as clients from "@restatedev/restate-sdk-clients";
+const restateClient = clients.connect({ url: "http://localhost:8080" });
+
+// Option 1: attach and wait for result with workflow ID
+const result = await restateClient
+  .workflowClient<MyWorkflow>({ name: "MyWorkflow" }, "someone")
+  .workflowAttach();
+
+// Option 2: peek to check if ready with workflow ID
+const peekOutput = await restateClient
+  .workflowClient<MyWorkflow>({ name: "MyWorkflow" }, "someone")
+  .workflowOutput();
+if (peekOutput.ready) {
+  const result2 = peekOutput.result;
+}
+```
+
+## Automatic retries
+
+The ingress client can retry network failures, HTTP `429` responses, and HTTP `5xx` responses with exponential backoff and full jitter. Retries are disabled by default.
+
+Retries only run when the call has an idempotency key. Restate deduplicates requests with the same key, so a retry attaches to the existing invocation instead of starting another one.
+
+Pass `retry: true` when you connect to use the default policy:
+
+```typescript {"CODE_LOAD::ts/src/develop/clients/ingress.ts#automatic_retries"}  theme={null}
+const restateClient = clients.connect({
+  url: "http://localhost:8080",
+  retry: true,
+});
+
+// Retries require an idempotency key.
+await restateClient
+  .serviceClient<MyService>({ name: "MyService" })
+  .greet(request, clients.rpc.opts({ idempotencyKey: "request-1" }));
+```
+
+Pass an object instead of `true` to tune the policy, and use `shouldRetry` to fully replace the built-in network/`429`/`5xx` rule (compose with the exported defaultShouldRetry rather than reimplementing it):
+
+```typescript {"CODE_LOAD::ts/src/develop/clients/ingress.ts#custom_retries"}  theme={null}
+const restateClient = clients.connect({
+  url: "http://localhost:8080",
+  retry: {
+    maxAttempts: 4,
+    initialInterval: 200,
+    maxInterval: { seconds: 5 },
+    exponentiationFactor: 2,
+    shouldRetry: (failure) =>
+      clients.defaultShouldRetry(failure) ||
+      (failure.kind === "response" && failure.status === 409),
+  },
+});
+```
+
+## Flow control: scope and limit key
+
+<Note title="Preview feature">
+  Scope and limit key are a preview feature and require restate-server 1.7 with [flow control enabled](/services/flow-control#enabling-flow-control).
+</Note>
+
+[Flow control](/services/flow-control) caps how many invocations run concurrently within a **scope**, with optional hierarchical **limit keys**.
+Route a call into a scope with `.scope(...)` on the client, and add a `limitKey` for a finer, per subgroup limit within that scope:
+
+```ts {"CODE_LOAD::ts/src/develop/clients/ingress.ts#scope"}  theme={null}
+const restateClient = clients.connect({ url: "http://localhost:8080" });
+
+// Route a call into a named scope
+const greet = await restateClient
+  .scope("tenant-123")
+  .serviceClient<MyService>({ name: "MyService" })
+  .greet(request);
+
+// Add a limit key for a hierarchical concurrency limit within the scope
+const count = await restateClient
+  .scope("tenant-123")
+  .objectClient<MyObject>({ name: "MyObject" }, "Mary")
+  .greet(request, clients.rpc.opts({ limitKey: "premium/user42" }));
+
+// Fire-and-forget sends can be scoped too
+await restateClient
+  .scope("tenant-123")
+  .serviceSendClient<MyService>({ name: "MyService" })
+  .greet(request);
+```
+
+See [Flow control](/services/flow-control) for how scopes, limit keys, and the concurrency rule book work.
+
+## Advanced: sharing service type definitions
+
+Have a look at the options listed in the [Service Communication docs](/develop/ts/service-communication#advanced%3A-sharing-service-type-definitions). These are also valid for the SDK clients.

@@ -1,0 +1,52 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Testing
+
+> Utilities to test your handler logic.
+
+The Go SDK provides some testing utilities to test your Restate handlers.
+
+This uses [Testcontainers](https://testcontainers.com/) to run a Restate Server in a Docker container and provides a client to let you test your Restate handlers.
+
+The testing utilities are published as a separate module, so you need to add it to your project:
+
+```bash theme={null}
+go get github.com/restatedev/sdk-go/testing@latest
+```
+
+## Testing handlers
+
+If you have a service as follows:
+
+```go {"CODE_LOAD::go/develop/testing/svc.go#here"}  theme={null}
+type Greeter struct{}
+
+func (Greeter) Greet(ctx restate.Context, req string) (string, error) {
+  return fmt.Sprintf("Hello %s!", req), nil
+}
+```
+
+Then you can test it via:
+
+```go {"CODE_LOAD::go/develop/testing/t.go#here"}  theme={null}
+import (
+  "testing"
+
+  restate "github.com/restatedev/sdk-go"
+  restateingress "github.com/restatedev/sdk-go/ingress"
+  restatetest "github.com/restatedev/sdk-go/testing"
+  "github.com/stretchr/testify/require"
+)
+
+func TestWithTestcontainers(t *testing.T) {
+  tEnv := restatetest.Start(t, restate.Reflect(Greeter{}))
+  client := tEnv.Ingress()
+
+  out, err := restateingress.Service[string, string](client, "Greeter", "Greet").
+    Request(t.Context(), "World")
+  require.NoError(t, err)
+  require.Equal(t, "You said hi to World!", out)
+}
+```

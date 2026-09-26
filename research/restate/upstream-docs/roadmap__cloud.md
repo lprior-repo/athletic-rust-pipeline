@@ -1,0 +1,19 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Restate Cloud Roadmap
+
+> Upcoming capabilities in Restate Cloud.
+
+<Note>
+  Roadmap items are directional and may change. See the [Restate blog](https://restate.dev/blog) for capabilities that have shipped.
+
+  Contact us on [Discord](https://discord.restate.dev) or [Slack](https://slack.restate.dev) to request other features.
+</Note>
+
+### Streaming for AWS Lambda, Vercel, Cloudflare Deployments
+
+Unlike deployments that use HTTP/2 streaming endpoints, request/response targets such as AWS Lambda or Vercel currently require a sequence of invocations, often one per durable step. This increases latency and replay cost.
+
+This feature establishes a side channel that enables bidirectional streaming communication for these services as well, reducing the performance gap to native streaming deployments.

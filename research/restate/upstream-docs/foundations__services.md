@@ -1,0 +1,430 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Services
+
+> Understanding Restate's three service types and when to use each
+
+Restate provides three service types optimized for different use cases.
+
+## Service types comparison
+
+|                  | **Basic Service**                            | **Virtual Object**                                                               | **Workflow**                                               |
+| ---------------- | -------------------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **What**         | Independent stateless handlers               | Stateful entity with a unique key                                                | Multi-step processes that execute exactly-once per ID      |
+| **State**        | None                                         | Isolated per object key                                                          | Isolated per workflow instance                             |
+| **Concurrency**  | Unlimited parallel execution                 | Single writer per key (+ concurrent readers)                                     | Single `run` handler per ID (+ concurrent shared handlers) |
+| **Key Features** | Durable execution, service calls             | Built-in K/V state, single-writer consistency                                    | Workflow promises, shared handlers, lifecycle management   |
+| **Best For**     | ETL, sagas, parallelization, background jobs | User accounts, shopping carts, agents, state machines, stateful event processing | Approvals, onboarding workflows, multi-step flows          |
+
+## Basic Service
+
+Basic Services group related handlers as callable endpoints.
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/services/basic_service.ts#here"}  theme={null}
+  const subscriptionService = restate.service({
+    name: "SubscriptionService",
+    handlers: {
+      add: async (ctx: restate.Context, req: SubscriptionRequest) => {
+        const paymentId = ctx.rand.uuidv4();
+
+        const payRef = await ctx.run(() =>
+          createRecurringPayment(req.creditCard, paymentId)
+        );
+
+        for (const subscription of req.subscriptions) {
+          await ctx.run(() =>
+            createSubscription(req.userId, subscription, payRef)
+          );
+        }
+      },
+    },
+  });
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/services/SubscriptionService.java#here"}  theme={null}
+  @Service
+  public class SubscriptionService {
+
+    @Handler
+    public void add(SubscriptionRequest req) {
+      var paymentId = Restate.random().nextUUID().toString();
+
+      String payRef =
+          Restate.run("pay", String.class, () -> createRecurringPayment(req.creditCard(), paymentId));
+
+      for (String subscription : req.subscriptions()) {
+        Restate.run(
+            "add-" + subscription, () -> createSubscription(req.userId(), subscription, payRef));
+      }
+    }
+  }
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/services/basic_service.py#here"}  theme={null}
+  subscription_service = restate.Service("SubscriptionService")
+
+
+  @subscription_service.handler()
+  async def add(ctx: Context, req: SubscriptionRequest) -> None:
+      payment_id = str(uuid.uuid4())
+
+      pay_ref = await ctx.run_typed(
+          "pay",
+          create_recurring_payment,
+          credit_card=req.credit_card,
+          payment_id=payment_id,
+      )
+
+      for subscription in req.subscriptions:
+          await ctx.run_typed(
+              "add-" + subscription,
+              create_subscription,
+              user_id=req.user_id,
+              subscription=subscription,
+              pay_ref=pay_ref,
+          )
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/services/basic_service.go#here"}  theme={null}
+  type SubscriptionService struct{}
+
+  func (SubscriptionService) Add(ctx restate.Context, req SubscriptionRequest) error {
+    paymentId := restate.UUID(ctx).String()
+
+    payRef, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+      return createRecurringPayment(req.CreditCard, paymentId)
+    })
+    if err != nil {
+      return err
+    }
+
+    for _, subscription := range req.Subscriptions {
+      _, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+        return createSubscription(req.UserId, subscription, payRef)
+      })
+      if err != nil {
+        return err
+      }
+    }
+
+    return nil
+  }
+  ```
+</CodeGroup>
+
+**Characteristics:**
+
+* Use Durable Execution to run requests to completion
+* Scale horizontally with high concurrency
+* No shared state between requests
+
+**Use for:** API calls, sagas, background jobs, task parallelization, ETL operations.
+
+## Virtual Object
+
+Stateful entities identified by a unique key.
+
+<img src="https://mintcdn.com/restate-6d46e1dc/enatityNAiZgIlFL/img/foundations/services/objects.png?fit=max&auto=format&n=enatityNAiZgIlFL&q=85&s=8b07dad0cce65c943c6f093919d912c1" alt="Virtual Objects" width="2256" height="828" data-path="img/foundations/services/objects.png" />
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/services/object.ts#here"}  theme={null}
+  const cartObject = restate.object({
+    name: "ShoppingCart",
+    handlers: {
+      addItem: async (ctx: restate.ObjectContext, item: Item) => {
+        const items = (await ctx.get<Item[]>("cart")) ?? [];
+        items.push(item);
+        ctx.set("cart", items);
+        return items;
+      },
+
+      getTotal: restate.handlers.object.shared(
+        async (ctx: restate.ObjectSharedContext) => {
+          const items = (await ctx.get<Item[]>("cart")) ?? [];
+          return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        }
+      ),
+    },
+  });
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/services/ShoppingCartObject.java#here"}  theme={null}
+  @VirtualObject
+  public class ShoppingCartObject {
+    private static final StateKey<Cart> CART = StateKey.of("cart", Cart.class);
+
+    @Handler
+    public Cart addItem(Item item) {
+      var cart = Restate.state().get(CART).orElse(new Cart());
+      var newCart = cart.addItem(item);
+      Restate.state().set(CART, newCart);
+      return cart;
+    }
+
+    @Shared
+    public double getTotal() {
+      var cart = Restate.state().get(CART).orElse(new Cart());
+      return cart.getTotalPrice();
+    }
+  }
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/services/object.py#here"}  theme={null}
+  cart_object = restate.VirtualObject("ShoppingCart")
+
+
+  @cart_object.handler()
+  async def add_item(ctx: ObjectContext, item: Item) -> Cart:
+      cart = await ctx.get("cart", type_hint=Cart) or Cart()
+      cart.items.append(item)
+      ctx.set("cart", cart)
+      return cart
+
+
+  @cart_object.handler(kind="shared")
+  async def get_total(ctx: ObjectSharedContext) -> float:
+      cart = await ctx.get("cart", type_hint=Cart) or Cart()
+      return sum(item.price * item.quantity for item in cart.items)
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/services/object.go#here"}  theme={null}
+  type ShoppingCartObject struct{}
+
+  func (ShoppingCartObject) AddItem(ctx restate.ObjectContext, item Item) ([]Item, error) {
+    items, err := restate.Get[[]Item](ctx, "items")
+    if err != nil {
+      return nil, err
+    }
+    items = append(items, item)
+    restate.Set(ctx, "items", items)
+    return items, nil
+  }
+
+  func (ShoppingCartObject) GetTotal(ctx restate.ObjectSharedContext) (float64, error) {
+    items, err := restate.Get[[]Item](ctx, "items")
+    if err != nil {
+      return 0, err
+    }
+    total := 0.0
+    for _, item := range items {
+      total += item.Price * float64(item.Quantity)
+    }
+    return total, nil
+  }
+  ```
+</CodeGroup>
+
+**Characteristics:**
+
+* Use Durable Execution to run requests to completion
+* K/V state retained indefinitely and shared across requests
+* Horizontal scaling with state consistency:
+  * At most one handler with write access can run at a time per object key. Mimicks a queue per object key.
+  * Concurrent execution across different object keys
+  * Concurrent execution of shared handlers (read-only)
+
+<img src="https://mintcdn.com/restate-6d46e1dc/enatityNAiZgIlFL/img/foundations/services/queue.png?fit=max&auto=format&n=enatityNAiZgIlFL&q=85&s=6965440cd55dba4535dd1f54e2c06e7c" alt="Virtual Objects" width="1944" height="916" data-path="img/foundations/services/queue.png" />
+
+**Use for:** Modeling entities like user accounts, shopping carts, chat sessions, AI agents, state machines, or any business entity needing persistent state.
+
+## Workflow
+
+Workflows orchestrate multi-step processes with guaranteed once-per-ID execution.
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/services/workflow.ts#here"}  theme={null}
+  const signupWorkflow = restate.workflow({
+    name: "UserSignup",
+    handlers: {
+      run: async (
+        ctx: restate.WorkflowContext,
+        user: { name: string; email: string }
+      ) => {
+        // workflow ID = user ID; workflow runs once per user
+        const userId = ctx.key;
+
+        await ctx.run("create", () => createUserEntry({ userId, user }));
+
+        const secret = ctx.rand.uuidv4();
+        await ctx.run("mail", () => sendVerificationEmail({ user, secret }));
+
+        const clickSecret = await ctx.promise<string>("email-link-clicked");
+        return clickSecret === secret;
+      },
+
+      click: async (
+        ctx: restate.WorkflowSharedContext,
+        request: { secret: string }
+      ) => {
+        await ctx.promise<string>("email-link-clicked").resolve(request.secret);
+      },
+    },
+  });
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/services/SignupWorkflow.java#here"}  theme={null}
+  @Workflow
+  public class SignupWorkflow {
+    private static final DurablePromiseKey<String> EMAIL_LINK_CLICKED =
+        DurablePromiseKey.of("email-link-clicked", String.class);
+
+    @Workflow
+    public boolean run(User user) {
+      // workflow ID = user ID; workflow runs once per user
+      String userId = Restate.key();
+
+      Restate.run("createUserEntry", () -> createUserEntry(userId, user));
+
+      String secret = Restate.random().nextUUID().toString();
+      Restate.run("sendVerificationEmail", () -> sendVerificationEmail(user, secret));
+
+      String clickSecret = Restate.promise(EMAIL_LINK_CLICKED).future().await();
+      return clickSecret.equals(secret);
+    }
+
+    @Shared
+    public void click(ClickRequest request) {
+      Restate.promiseHandle(EMAIL_LINK_CLICKED).resolve(request.secret());
+    }
+  }
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/services/workflow.py#here"}  theme={null}
+  signup_workflow = restate.Workflow("UserSignup")
+
+
+  @signup_workflow.main()
+  async def run(ctx: WorkflowContext, user: User) -> bool:
+      # workflow ID = user ID; workflow runs once per user
+      user_id = ctx.key()
+
+      await ctx.run_typed("create", create_user_entry, user_id=user_id, user=user)
+
+      secret = str(ctx.uuid())
+      await ctx.run_typed("mail", send_verification_email, user=user, secret=secret)
+
+      click_secret = await ctx.promise("email-link-clicked", type_hint=str).value()
+      return click_secret == secret
+
+
+  @signup_workflow.handler()
+  async def click(ctx: WorkflowSharedContext, secret: str) -> None:
+      await ctx.promise("email-link-clicked", type_hint=str).resolve(secret)
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/services/workflow.go#here"}  theme={null}
+  type SignupWorkflow struct{}
+
+  func (SignupWorkflow) Run(ctx restate.WorkflowContext, user User) (bool, error) {
+    // workflow ID = user ID; workflow runs once per user
+    userId := restate.Key(ctx)
+
+    _, err := restate.Run(ctx, func(ctx restate.RunContext) (restate.Void, error) {
+      return createUserEntry(userId, user)
+    })
+    if err != nil {
+      return false, err
+    }
+
+    secret := restate.UUID(ctx).String()
+    _, err = restate.Run(ctx, func(ctx restate.RunContext) (restate.Void, error) {
+      return sendVerificationEmail(user, secret)
+    })
+    if err != nil {
+      return false, err
+    }
+
+    clickSecret, err := restate.Promise[string](ctx, "email-link-clicked").Result()
+    if err != nil {
+      return false, err
+    }
+
+    return clickSecret == secret, nil
+  }
+
+  func (SignupWorkflow) Click(ctx restate.WorkflowSharedContext, secret string) error {
+    return restate.Promise[string](ctx, "email-link-clicked").Resolve(secret)
+  }
+  ```
+</CodeGroup>
+
+**Characteristics:**
+
+* Use Durable Execution to run requests to completion
+* The `run` handler executes exactly once per workflow ID
+* Shared handlers run concurrently with the `run` handler to resolve workflow promises, query state, or wait for workflow events
+* Optimized APIs for workflow interaction and lifecycle management
+
+**Use for:** Processes requiring interaction capabilities like approval flows, user onboarding, multi-step transactions, and complex orchestration.
+
+## Choosing the right service type
+
+**Start with Basic Services** for most business logic, data processing, and API integrations.
+
+**Use Virtual Objects** to model stateful entities.
+
+**Use Workflows** for multi-step processes that execute exactly-once and require interaction.
+
+You can combine these service types within the same application for different aspects of your business logic.
+
+## Deployments, Endpoints, and Versions
+
+Services deploy behind endpoints. Multiple services can bind to the same endpoint.
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/services/app.ts#here"}  theme={null}
+  restate.serve({
+    services: [subscriptionService, cartObject, signupWorkflow],
+    port: 9080,
+  });
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/services/App.java#here"}  theme={null}
+  public class App {
+    public static void main(String[] args) {
+      RestateHttpServer.listen(
+          Endpoint.bind(new SubscriptionService())
+              .bind(new ShoppingCartObject())
+              .bind(new SignupWorkflow()));
+    }
+  }
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/services/app.py#here"}  theme={null}
+  app = restate.app([subscription_service, cart_object, signup_workflow])
+
+  if __name__ == "__main__":
+      conf = hypercorn.Config()
+      conf.bind = ["0.0.0.0:9080"]
+      asyncio.run(hypercorn.asyncio.serve(app, conf))
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/services/app.go#here"}  theme={null}
+  func main() {
+    if err := server.NewRestate().
+      Bind(restate.Reflect(SubscriptionService{})).
+      Bind(restate.Reflect(ShoppingCartObject{})).
+      Bind(restate.Reflect(SignupWorkflow{})).
+      Start(context.Background(), ":9080"); err != nil {
+      log.Fatal(err)
+    }
+  }
+  ```
+</CodeGroup>
+
+Services run on your preferred platform: serverless (AWS Lambda), containers (Kubernetes), or dedicated servers.
+
+Restate handles versioning through immutable deployments where each deployment represents a specific, unchangeable version of your service code. After deploying your
+services to an endpoint, you must register that endpoint with Restate so it can discover and route requests to it:
+
+```shell theme={null}
+restate deployments register http://my-service:9080
+```
+
+When you update your services, you deploy the new version to a new endpoint and register it with Restate, which automatically routes new requests to the latest version while existing requests continue on their
+original deployment until completion.
+
+See [deployment](/deploy/services/kubernetes) and [versioning](/services/versioning) docs for details.

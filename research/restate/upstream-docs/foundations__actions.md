@@ -1,0 +1,517 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Actions
+
+> Essential context actions for building reliable handlers
+
+Context actions are methods available on the Restate Context object (`ctx`) that provide Restate's core capabilities.
+These actions enable durable execution, state management, service communication, and timing control.
+
+### Durable steps
+
+Use `run` to safely wrap any non-deterministic operation, like HTTP calls or database responses, and have Restate persist its result.
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/actions/actions.ts#durable_steps"}  theme={null}
+  // External API call
+  const apiResult = await ctx.run("fetch-data", async () => {
+    const response = await fetch("https://api.example.com/data");
+    return response.json();
+  });
+
+  // Database operation
+  const dbResult = await ctx.run("update-user", () => {
+    return updateUserDatabase(userId, { name: "John" });
+  });
+
+  // Idempotency key generation
+  const id = ctx.rand.uuidv4();
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/actions/Actions.java#durable_steps"}  theme={null}
+  // External API call
+  String apiResult =
+      Restate.run("fetchData", String.class, () -> fetchData("https://api.example.com/data"));
+
+  // Database operation
+  boolean dbResult =
+      Restate.run("updateUserDatabase", Boolean.class, () -> updateUserDatabase(userId, user));
+
+  // Idempotency key generation
+  String id = Restate.random().nextUUID().toString();
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/actions/actions.py#durable_steps"}  theme={null}
+  # External API call
+  api_result = await ctx.run_typed(
+      "fetch-data", fetch_url, url="https://api.example.com/data"
+  )
+
+  # Database operation
+  db_result = await ctx.run_typed(
+      "update-user", update_user_database, id=user_id, data={"name": "John"}
+  )
+
+  # Idempotency key generation
+  id = ctx.uuid()
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/actions/actions.go#durable_steps"}  theme={null}
+  // External API call
+  apiResult, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+    return fetchData("https://api.example.com/data")
+  })
+  if err != nil {
+    return err
+  }
+
+  // Database operation
+  success, err := restate.Run(ctx, func(ctx restate.RunContext) (bool, error) {
+    return updateUserDatabase(userId, user)
+  })
+  if err != nil {
+    return err
+  }
+
+  // Idempotency key generation
+  id := restate.UUID(ctx).String()
+  ```
+</CodeGroup>
+
+Without `run()`, these operations would produce different results during replay, breaking deterministic recovery.
+
+## State management
+
+Available in Virtual Object and Workflow handlers for persistent key-value storage.
+
+### Get
+
+Retrieve stored state by key.
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/actions/actions.ts#state_get"}  theme={null}
+  // Get with type and default value
+  const profile = await ctx.get<UserProfile>("profile");
+  const count = (await ctx.get<number>("count")) ?? 0;
+  const cart = (await ctx.get<ShoppingCart>("cart")) ?? [];
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/actions/StateExample.java#state_get"}  theme={null}
+  // Get with type and default value
+  UserProfile profile = Restate.state().get(PROFILE).orElse(null);
+  int count = Restate.state().get(COUNT).orElse(0);
+  ShoppingCart cart = Restate.state().get(CART).orElse(new ShoppingCart());
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/actions/actions.py#state_get"}  theme={null}
+  # Get with type and default value
+  profile = await ctx.get("profile", type_hint=UserProfile)
+  count = await ctx.get("count", type_hint=int) or 0
+  cart = await ctx.get("cart", type_hint=ShoppingCart) or ShoppingCart()
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/actions/actions.go#state_get"}  theme={null}
+  // Get with type and default value
+  profile, err := restate.Get[UserProfile](ctx, "profile")
+  if err != nil {
+    return err
+  }
+
+  count, err := restate.Get[int](ctx, "count")
+  if err != nil {
+    return err
+  }
+
+  cart, err := restate.Get[ShoppingCart](ctx, "cart")
+  if err != nil {
+    return err
+  }
+  ```
+</CodeGroup>
+
+### Set
+
+Store state that persists across function invocations.
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/actions/actions.ts#state_set"}  theme={null}
+  // Store simple values
+  ctx.set("lastLogin", request.date);
+  ctx.set("count", count + 1);
+
+  // Store complex objects
+  ctx.set("profile", {
+    name: "John Doe",
+    email: "john@example.com",
+  });
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/actions/StateExample.java#state_set"}  theme={null}
+  // Store simple values
+  Restate.state().set(COUNT, count + 1);
+  Restate.state().set(LAST_LOGIN, request.date());
+
+  // Store complex objects
+  Restate.state().set(PROFILE, new UserProfile("John Doe", "john@example.com"));
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/actions/actions.py#state_set"}  theme={null}
+  # Store simple values
+  ctx.set("lastLogin", request["date"])
+  ctx.set("count", count + 1)
+
+  # Store complex objects
+  ctx.set("profile", UserProfile(name="John Doe", email="john@example.com"))
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/actions/actions.go#state_set"}  theme={null}
+  // Store simple values
+  restate.Set(ctx, "lastLogin", request.Date)
+  restate.Set(ctx, "count", count+1)
+
+  // Store complex objects
+  restate.Set(ctx, "profile", UserProfile{
+    Name:  "John Doe",
+    Email: "john@example.com",
+  })
+  ```
+</CodeGroup>
+
+### Clear
+
+State is retained indefinitely for Virtual Objects, or for the configured retention period for Workflows.
+
+To clear state:
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/actions/actions.ts#state_clear"}  theme={null}
+  // Clear specific keys
+  ctx.clear("shoppingCart");
+  ctx.clear("sessionToken");
+
+  // Clear all user data
+  ctx.clearAll();
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/actions/StateExample.java#state_clear"}  theme={null}
+  // Clear specific keys
+  Restate.state().clear(StateKey.of("shoppingCart", ShoppingCart.class));
+  Restate.state().clear(StateKey.of("sessionToken", String.class));
+
+  // Clear all user data
+  Restate.state().clearAll();
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/actions/actions.py#state_clear"}  theme={null}
+  # Clear specific keys
+  ctx.clear("shoppingCart")
+  ctx.clear("sessionToken")
+
+  # Clear all user data
+  ctx.clear_all()
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/actions/actions.go#state_clear"}  theme={null}
+  // Clear specific keys
+  restate.Clear(ctx, "shoppingCart")
+  restate.Clear(ctx, "sessionToken")
+
+  // Clear all user data
+  restate.ClearAll(ctx)
+  ```
+</CodeGroup>
+
+## Service communication
+
+### Request-response calls
+
+Make request-response calls to other services. Your function waits for the result.
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/actions/actions.ts#service_calls"}  theme={null}
+  // Call another service
+  const validation = await ctx
+    .serviceClient(ValidationService)
+    .validateOrder(order);
+
+  // Call Virtual Object function
+  const profile = await ctx.objectClient(UserAccount, userId).getProfile();
+
+  // Submit Workflow
+  const result = await ctx
+    .workflowClient(OrderWorkflow, orderId)
+    .run(order);
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/actions/Actions.java#service_calls"}  theme={null}
+  // Call another service
+  var validation =
+      Restate.serviceHandle(ValidationService.class)
+          .call(ValidationService::validateOrder, req.order())
+          .await();
+
+  // Call Virtual Object function
+  var profile =
+      Restate.virtualObjectHandle(UserAccount.class, req.userId())
+          .call(UserAccount::getProfile)
+          .await();
+
+  // Submit Workflow
+  var result =
+      Restate.workflowHandle(OrderWorkflow.class, req.orderId())
+          .call(OrderWorkflow::run, req.order())
+          .await();
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/actions/actions.py#service_calls"}  theme={null}
+  # Call another service
+  from .validation_service import validate_order
+
+  validation = await ctx.service_call(validate_order, order)
+
+  # Call Virtual Object function
+  from .user_account import get_profile
+
+  profile: UserProfile = await ctx.object_call(get_profile, key=user_id, arg=None)
+
+  # Submit Workflow
+  from .order_workflow import run
+
+  result = await ctx.workflow_call(run, key=order_id, arg=order)
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/actions/actions.go#service_calls"}  theme={null}
+  // Call another service
+  validation, err := restate.Service[bool](ctx, "ValidationService", "ValidateOrder").Request(order)
+  if err != nil {
+    return err
+  }
+
+  // Call Virtual Object function
+  profile, err := restate.Object[UserProfile](ctx, "UserAccount", userId, "GetProfile").Request(restate.Void{})
+  if err != nil {
+    return err
+  }
+
+  // Submit Workflow
+  _, err = restate.Workflow[restate.Void](ctx, "OrderWorkflow", orderId, "Run").Request(order)
+  if err != nil {
+    return err
+  }
+  ```
+</CodeGroup>
+
+### Sending messages
+
+Make one-way calls that don't return results. Your function continues immediately.
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/actions/actions.ts#sending_messages"}  theme={null}
+  // Fire-and-forget notification
+  ctx
+    .serviceSendClient(NotificationService)
+    .sendEmail({ userId, message: "Welcome!" });
+
+  // Background analytics
+  ctx
+    .serviceSendClient(AnalyticsService)
+    .recordEvent({ kind: "user_signup", userId });
+
+  // Cleanup task
+  ctx.objectSendClient(ShoppingCartObject, userId).emtpyExpiredCart();
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/actions/Actions.java#sending_messages"}  theme={null}
+  // Fire-and-forget notification
+  Restate.serviceHandle(NotificationService.class)
+      .send(NotificationService::sendEmail, new EmailRequest(userId, "Welcome!"));
+
+  // Background analytics
+  Restate.serviceHandle(AnalyticsService.class).send(AnalyticsService::recordEvent, event);
+
+  // Cleanup task
+  Restate.virtualObjectHandle(ShoppingCartObject.class, userId)
+      .send(ShoppingCartObject::emptyExpiredCart);
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/actions/actions.py#sending_messages"}  theme={null}
+  # Fire-and-forget notification
+  from .notification_service import send_email
+
+  ctx.service_send(send_email, {"userId": user_id, "message": "Welcome!"})
+
+  # Background analytics
+  from .analytics_service import record_event
+
+  ctx.service_send(record_event, {"kind": "user_signup", "userId": user_id})
+
+  # Cleanup task
+  from .shopping_cart_object import empty_expired_cart
+
+  ctx.object_send(empty_expired_cart, key=user_id, arg=None)
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/actions/actions.go#sending_messages"}  theme={null}
+  // Fire-and-forget notification
+  restate.ServiceSend(ctx, "NotificationService", "SendEmail").Send(message)
+
+  // Background analytics
+  restate.ServiceSend(ctx, "AnalyticsService", "RecordEvent").Send(event)
+
+  // Cleanup task
+  restate.ObjectSend(ctx, "ShoppingCartObject", userId, "EmptyExpiredCart").Send(restate.Void{})
+  ```
+</CodeGroup>
+
+### Delayed messages
+
+Schedule handlers to run in the future.
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/actions/actions.ts#delayed_messages"}  theme={null}
+  // Schedule reminder for tomorrow
+  ctx.serviceSendClient(ReminderService).sendReminder(
+    { userId, message },
+    sendOpts({
+      delay: { days: 1 },
+    })
+  );
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/actions/Actions.java#delayed_messages"}  theme={null}
+  // Schedule reminder for tomorrow
+  Restate.serviceHandle(ReminderService.class)
+      .send(ReminderService::sendReminder, reminderRequest, Duration.ofDays(1));
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/actions/actions.py#delayed_messages"}  theme={null}
+  # Schedule reminder for tomorrow
+  from .notification_service import send_reminder
+
+  ctx.service_send(
+      send_reminder,
+      {"userId": user_id, "message": message},
+      send_delay=timedelta(days=1),
+  )
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/actions/actions.go#delayed_messages"}  theme={null}
+  // Schedule reminder for tomorrow
+  restate.ServiceSend(ctx, "ReminderService", "SendReminder").Send(
+    message,
+    restate.WithDelay(24*time.Hour),
+  )
+  ```
+</CodeGroup>
+
+## Durable timers and timeouts
+
+Pause function execution for a specific duration.
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/foundations/actions/actions.ts#durable_timers"}  theme={null}
+  // Sleep for specific duration
+  await ctx.sleep({ minutes: 5 }); // 5 minutes
+
+  // Wait for action or timeout
+  const result = await ctx
+    .workflowClient(OrderWorkflow, orderId)
+    .run(order)
+    .orTimeout({ minutes: 5 });
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/foundations/actions/Actions.java#durable_timers"}  theme={null}
+  // Sleep for specific duration
+  Restate.sleep(Duration.ofMinutes(5)); // 5 minutes
+
+  // Wait for action or timeout
+  try {
+    Restate.workflowHandle(OrderWorkflow.class, req.orderId())
+        .call(OrderWorkflow::run, req.order())
+        .await(Duration.ofMinutes(5));
+  } catch (TimeoutException e) {
+    // Handle timeout
+  }
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/foundations/actions/actions.py#durable_timers"}  theme={null}
+  # Sleep for specific duration
+  await ctx.sleep(timedelta(minutes=5))  # 5 minutes
+
+  # Wait for action or timeout
+  from .order_workflow import run
+
+  match await restate.select(
+      result=ctx.workflow_call(run, key=order_id, arg=order),
+      timeout=ctx.sleep(timedelta(minutes=5)),
+  ):
+      case ["result", result]:
+          return result
+      case _:
+          print("Order processing timed out")
+  ```
+
+  ```go Go {"CODE_LOAD::go/foundations/actions/actions.go#durable_timers"}  theme={null}
+  // Sleep for specific duration
+  if err := restate.Sleep(ctx, 5*time.Minute); err != nil {
+    return err
+  }
+
+  // Wait for action or timeout
+  sleepFuture := restate.After(ctx, 5*time.Minute)
+  callFuture := restate.Workflow[restate.Void](ctx, "OrderWorkflow", orderId, "Run").RequestFuture(order)
+
+  fut, err := restate.WaitFirst(ctx, sleepFuture, callFuture)
+  if err != nil {
+    return err
+  }
+  switch fut {
+  case sleepFuture:
+    if err := sleepFuture.Done(); err != nil {
+      return err
+    }
+    // Timeout occurred
+  case callFuture:
+    if _, err := callFuture.Response(); err != nil {
+      return err
+    }
+    // Call completed
+  }
+  ```
+</CodeGroup>
+
+Handlers consume no resources while sleeping and resume at exactly the right time, even across restarts ([see suspensions](/foundations/key-concepts#suspensions-on-faas)).
+
+## Signals and external events
+
+Use these durable coordination primitives when an invocation needs input after it has started:
+
+| Primitive            | Definition                                                                                                                                                            | Example                                |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| **Signal**           | A durable notification addressed by invocation ID and signal name. The same named signal can be resolved multiple times, and each wait receives the next resolution.  | Steer an ongoing agent                 |
+| **Awakeable**        | A convenient shorthand for a one-shot signal. It has a generated unique ID that an external system can resolve or reject through Restate, similar to a task token.    | Wait for an external approval callback |
+| **Workflow promise** | A named value scoped to a workflow key. It can be resolved or rejected once, then retrieved multiple times by all handlers of the workflow during workflow retention. | Coordination between workflow handlers |
+
+Wait for a named signal:
+
+<CodeGroup>
+  ```typescript TypeScript {"CODE_LOAD::ts/src/develop/signals.ts#one_shot"}  theme={null}
+  const approved = await ctx.signal<boolean>("approval");
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/develop/Signals.java#one_shot"}  theme={null}
+  Boolean approval = Restate.signal("approval", Boolean.class).await();
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/develop/signals.py#one_shot"}  theme={null}
+  approved = await ctx.signal("approval", type_hint=bool)
+  ```
+
+  ```go Go {"CODE_LOAD::go/develop/signals.go#one_shot"}  theme={null}
+  approval, err := restate.Signal[bool](ctx, "approval").Result()
+  ```
+</CodeGroup>
+
+See the SDK guides for examples in [TypeScript](/develop/ts/external-events), [Java/Kotlin](/develop/java/external-events), [Go](/develop/go/external-events), and [Python](/develop/python/external-events).

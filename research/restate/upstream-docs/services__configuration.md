@@ -1,0 +1,469 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Service Configuration
+
+> Configure service-level behavior like retries, timeouts, retention, and privacy.
+
+Restate services support several configuration options to adapt their behavior for different use cases.
+These include timeout settings, retry policies, retention policies, and privacy controls.
+
+## Retries
+
+Restate retries failed invocations according to a retry policy.
+
+The retry policy always uses exponential back-off. You can tune the initial interval, the exponentiation factor and the maximum interval.
+
+The retry policy can set the maximum number of attempts, which can be either limited or unlimited.
+When attempts are exhausted, you can configure what Restate should do with the invocation:
+
+* **Pause** it, requiring the user to [**manually resume it**](/services/invocation/managing-invocations#resume).
+* **Kill** it, which automatically fails the invocation and responds to the caller with a terminal error. Note: **compensation logic will not be executed**, so this may leave your service in an inconsistent state. For more details, check [killing the invocation](/services/invocation/managing-invocations#kill).
+
+**Default:**
+
+```toml restate.toml theme={null}
+[invocation.default-retry-policy]
+initial-interval = "50ms"
+exponentiation-factor = 2.0
+max-attempts = 70
+max-interval = "60s"
+on-max-attempts = "pause"  # Use "pause" (default) or "kill"
+```
+
+**When to adjust:** To bound the maximum number of attempts when running on FaaS, avoiding costs for unnecessary retries. For example, when an invocation constantly fails on the same bug. Use longer retry intervals when you want to reduce the load on downstream services, or shorter intervals when you want snappier retries.
+
+<Info>
+  Learn how to configure this at the [global level](/guides/error-handling#configure-restate-server-defaults), [service level](/services/configuration#service-level-configuration), or [handler level](/services/configuration#handler-level-configuration).
+</Info>
+
+## Retention of completed invocations
+
+You can tune the retention period of the metadata and journal of completed invocations.
+Decrease the retention period to save disk space. Increase it to preserve a longer history of your invocations.
+
+<Note title="Non-idempotent calls also use the idempotency retention">
+  When the `controlled-idempotent-sharding` cluster feature is enabled (the default for new clusters), the HTTP ingress automatically assigns a random idempotency key to service and virtual object calls that don't already carry an `Idempotency-Key` header.
+  This lets the ingress safely retry in-flight requests without risking duplicate execution. It does **not** introduce cross-request deduplication: only retries of the same in-flight request are collapsed.
+
+  As a result, the retention of these completed invocations is now governed by the **idempotency retention** as well, not by the journal retention alone.
+  If you relied on completed invocations being cleaned up after the journal retention, set the idempotency retention to match your former journal retention.
+
+  Workflows are unaffected and keep using the workflow retention.
+</Note>
+
+<AccordionGroup>
+  <Accordion title="Idempotency retention">
+    How long Restate retains idempotency keys to prevent duplicate request processing.
+
+    You can see the status of the completed invocation in the UI.
+
+    **Default:** 24 hours
+
+    **When to adjust:** For services that need longer idempotency windows, such as financial transactions or critical business operations.
+  </Accordion>
+
+  <Accordion title="Workflow retention">
+    The workflow retention describes for how long you will be able to call the shared handlers on a workflow after the run handler has finished.
+    The retention time starts counting down from the moment the run handler completes.
+
+    After this time, the workflow's K/V state is cleared, you cannot call any shared handlers anymore, and any [workflow promises](/develop/ts/external-events#workflow-promises) are discarded.
+
+    **Default:** 24 hours
+
+    **When to adjust:** For workflows that need longer retention windows, to retrieve state or the result of a [workflow promise](/develop/ts/external-events#workflow-promises).
+  </Accordion>
+
+  <Accordion title="Journal retention">
+    How long Restate keeps invocation journals after completion for debugging and auditing.
+
+    Increase to see journals of completed invocations in the log.
+
+    For workflow executions or invocations with idempotency keys:
+
+    * the journal retention is capped by the workflow retention or idempotency retention time
+    * If the journal retention is set to 0, you can see completion status but not journal entries.
+
+    **Default:** 24 hours (tunable in self-hosted Restate as [`default-journal-retention`](/references/server-config#param-default-journal-retention))
+
+    **When to adjust:** For workflows, AI agents, or any service where you need to inspect the execution history after completion.
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+  [Learn how to configure these](#how-to-configure)
+</Info>
+
+## Timeouts
+
+There are two types of timeouts describing the behavior between Restate and the service deployment.
+You should tune these values if you have long-running operations in your code.
+
+<AccordionGroup>
+  <Accordion title="Inactivity timeout">
+    The maximum time Restate waits for new journal entries from a service before Restate considers it stalled.
+    After this timeout, Restate will ask the service to suspend.
+
+    **Default**: 1 minute (tunable in self-hosted Restate as [`worker.invoker.inactivity-timeout`](/references/server-config#param-inactivity-timeout))
+
+    **When to adjust:** For long-running operations like LLM calls, long-running tasks, or external API calls that take longer than the default timeout.
+  </Accordion>
+
+  <Accordion title="Abort timeout">
+    Once the inactivity timeout is reached, Restate will wait for the abort timeout before interrupting the user code.
+    So this is the maximum time Restate will wait for a service to suspend before it forcibly aborts the execution.
+
+    **Default**: 10 minutes (tunable in self-hosted Restate as [`worker.invoker.abort-timeout`](/references/server-config#param-abort-timeout))
+
+    **When to adjust:** For long-running operations like LLM calls, long-running tasks, or external API calls that take longer than the default timeout.
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+  [Learn how to configure these](#how-to-configure)
+</Info>
+
+## Private services
+
+Services can receive requests from HTTP, Kafka and via other services.
+You can mark services as private to prevent receiving requests from HTTP and Kafka, while allowing internal service-to-service communication.
+
+**Default**: Public
+
+**When to adjust:** When you want to forbid requests from 3rd party services through the Restate [HTTP API](/services/invocation/http), e.g. for an internal utility service that shouldn't be exposed externally, or for a backend service that only other Restate services should access.
+
+<Info>
+  [Learn how to configure this](#how-to-configure)
+</Info>
+
+## State
+
+Virtual Objects and Workflow allow to store [persistent state](/foundations/key-concepts#consistent-state). You can tune the state access behavior in your services and handlers.
+
+<AccordionGroup>
+  <Accordion title="Eager/Lazy state access">
+    To access the Virtual object/Workflow embedded K/V store, there are two strategies:
+
+    * Eager: A full snapshot of all K/V entries of the invoked Virtual Object/Workflow instance is sent when an invocation is invoked.
+    * Lazy: Each K/V entry is individually loaded when read through `ctx.get`. On Lambda and other FaaS platforms that doesn't support bidirectional streaming, this requires the invocation to suspend and replay.
+
+    **Default**: Eager
+
+    **When to adjust:** Enable lazy state when you have potentially large state entries, but your handler doesn't get all of them. Enable eager state if your state is small, or you're on AWS Lambda and the cost of replay is too high.
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+  [Learn how to configure this](#how-to-configure)
+</Info>
+
+## How to configure
+
+### Service-level configuration
+
+To configure your services:
+
+<CodeGroup>
+  ```ts TypeScript {"CODE_LOAD::ts/src/services/configuration/my_advanced_service.ts#options"}  theme={null}
+  // Add service options to the service definition
+  const myWorkflow = restate.workflow({
+    name: "MyWorkflow",
+    handlers: {
+      run: async (ctx: restate.Context) => {},
+    },
+    options: {
+      retryPolicy: {
+        initialInterval: { seconds: 1 },
+        maxInterval: { seconds: 30 },
+        maxAttempts: 10,
+        onMaxAttempts: "pause",
+      },
+      abortTimeout: { minutes: 15 },
+      inactivityTimeout: { minutes: 15 },
+      idempotencyRetention: { days: 3 },
+      workflowRetention: { days: 3 }, // only for workflows
+      journalRetention: { days: 7 },
+      ingressPrivate: true,
+      enableLazyState: true, // only for Virtual Objects and Workflows
+    },
+  });
+  ```
+
+  ```properties Spring Boot theme={null}
+  # In your application.properties file
+  restate.components.MyWorkflow.retry-policy.initial-interval=1s
+  restate.components.MyWorkflow.retry-policy.max-interval=30s
+  restate.components.MyWorkflow.retry-policy.max-attempts=10
+  restate.components.MyWorkflow.retry-policy.on-max-attempts=PAUSE
+  restate.components.MyWorkflow.abort-timeout=15m
+  restate.components.MyWorkflow.inactivity-timeout=15m
+  restate.components.MyWorkflow.idempotency-retention=3d
+  restate.components.MyWorkflow.workflow-retention=10d
+  restate.components.MyWorkflow.journal-retention=7d
+  restate.components.MyWorkflow.ingress-private=true
+  restate.components.MyWorkflow.enable-lazy-state=true
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/services/configuration/MyWorkflow.java#options"}  theme={null}
+  // Specify service options when binding them to an endpoint
+  RestateHttpServer.listen(
+      Endpoint.bind(
+          new MyWorkflow(),
+          conf ->
+              conf.invocationRetryPolicy(
+                      InvocationRetryPolicy.builder()
+                          .initialInterval(Duration.ofSeconds(1))
+                          .maxInterval(Duration.ofSeconds(1))
+                          .maxAttempts(10)
+                          .onMaxAttempts(InvocationRetryPolicy.OnMaxAttempts.PAUSE))
+                  .abortTimeout(Duration.ofMinutes(15))
+                  .inactivityTimeout(Duration.ofMinutes(15))
+                  .idempotencyRetention(Duration.ofDays(3))
+                  .workflowRetention(Duration.ofDays(10)) // Only for workflows
+                  .journalRetention(Duration.ofDays(7))
+                  .ingressPrivate(true)
+                  .enableLazyState(true)));
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/services/configuration.py#options"}  theme={null}
+  # Specify service options when you create them
+  my_workflow = restate.Workflow(
+      "MyWorkflow",
+      inactivity_timeout=timedelta(minutes=15),
+      abort_timeout=timedelta(minutes=15),
+      idempotency_retention=timedelta(days=3),
+      journal_retention=timedelta(days=7),
+      ingress_private=True,
+      enable_lazy_state=True,  # only for Objects/Workflows
+      invocation_retry_policy=restate.InvocationRetryPolicy(
+          initial_interval=timedelta(seconds=1),
+          max_interval=timedelta(seconds=30),
+          max_attempts=10,
+          on_max_attempts="pause",
+      ),
+  )
+  ```
+
+  ```go Go {"CODE_LOAD::go/services/configuration.go#options"}  theme={null}
+  // Specify service options when binding them to an endpoint
+  if err := server.NewRestate().
+    Bind(
+      restate.Reflect(
+        MyWorkflow{},
+        restate.WithInvocationRetryPolicy(
+          restate.WithInitialRetryInterval(time.Second),
+          restate.WithMaxRetryInterval(30*time.Second),
+          restate.WithMaxRetryAttempts(10),
+          restate.PauseOnMaxAttempts()),
+        restate.WithInactivityTimeout(15*time.Minute),
+        restate.WithAbortTimeout(15*time.Minute),
+        restate.WithIdempotencyRetention(3*24*time.Hour),
+        restate.WithJournalRetention(7*24*time.Hour),
+        restate.WithIngressPrivate(true),
+        restate.WithEnableLazyState(true),
+        restate.WithWorkflowRetention(10*24*time.Hour), // Only for workflows
+      ),
+    ).
+    Start(context.Background(), "0.0.0.0:9080"); err != nil {
+    log.Fatal(err)
+  }
+  ```
+</CodeGroup>
+
+### Handler-level configuration
+
+To set configuration at the handler level:
+
+<CodeGroup>
+  ```ts TypeScript {"CODE_LOAD::ts/src/services/configuration/my_advanced_service.ts#handleropts"}  theme={null}
+  // Add handler options to the handler definition
+  // For services:
+  const myService = restate.service({
+    name: "MyService",
+    handlers: {
+      myHandler: restate.handlers.handler(
+        {
+          retryPolicy: {
+            initialInterval: { seconds: 1 },
+            maxInterval: { seconds: 30 },
+            maxAttempts: 10,
+            onMaxAttempts: "pause",
+          },
+          abortTimeout: { minutes: 15 },
+          inactivityTimeout: { minutes: 15 },
+          idempotencyRetention: { days: 3 },
+          journalRetention: { days: 7 },
+          ingressPrivate: true,
+        },
+        async (ctx: restate.Context) => {}
+      ),
+    },
+  });
+
+  // For Virtual Objects:
+  const myObject = restate.object({
+    name: "MyObject",
+    handlers: {
+      myHandler: restate.handlers.object.exclusive(
+        {
+          retryPolicy: {
+            initialInterval: { seconds: 1 },
+            maxInterval: { seconds: 30 },
+            maxAttempts: 10,
+            onMaxAttempts: "pause",
+          },
+          abortTimeout: { minutes: 15 },
+          inactivityTimeout: { minutes: 15 },
+          idempotencyRetention: { days: 3 },
+          journalRetention: { days: 7 },
+          ingressPrivate: true,
+          enableLazyState: true,
+        },
+        async (ctx: restate.ObjectContext) => {}
+      ),
+      mySharedHandler: restate.handlers.object.shared(
+        {
+          /*... my options ...*/
+        },
+        async (ctx: restate.ObjectSharedContext) => {}
+      ),
+    },
+  });
+
+  // For Workflows:
+  const myWf = restate.workflow({
+    name: "MyWf",
+    handlers: {
+      run: restate.handlers.workflow.workflow(
+        {
+          retryPolicy: {
+            initialInterval: { seconds: 1 },
+            maxInterval: { seconds: 30 },
+            maxAttempts: 10,
+            onMaxAttempts: "pause",
+          },
+          abortTimeout: { minutes: 15 },
+          inactivityTimeout: { minutes: 15 },
+          journalRetention: { days: 7 },
+          ingressPrivate: true,
+          enableLazyState: true,
+        },
+        async (ctx: restate.WorkflowContext) => {}
+      ),
+      signal: restate.handlers.workflow.shared(
+        {
+          /*... my options ...*/
+        },
+        async (ctx: restate.WorkflowSharedContext) => {}
+      ),
+    },
+  });
+  ```
+
+  ```properties Spring Boot theme={null}
+  # In your application.properties file
+  restate.components.MyWorkflow.handlers.run.retry-policy.initial-interval=1s
+  restate.components.MyWorkflow.handlers.run.retry-policy.max-interval=30s
+  restate.components.MyWorkflow.handlers.run.retry-policy.max-attempts=10
+  restate.components.MyWorkflow.handlers.run.retry-policy.on-max-attempts=PAUSE
+  restate.components.MyWorkflow.handlers.run.abort-timeout=15m
+  restate.components.MyWorkflow.handlers.run.inactivity-timeout=15m
+  restate.components.MyWorkflow.handlers.run.journal-retention=7d
+  restate.components.MyWorkflow.handlers.run.ingress-private=true
+  restate.components.MyWorkflow.handlers.run.enable-lazy-state=true
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/services/configuration/MyWorkflow.java#handleropts"}  theme={null}
+  // Or specify handler options when binding their service to an endpoint
+  RestateHttpServer.listen(
+      Endpoint.bind(
+          new MyWorkflow(),
+          conf ->
+              conf.configureHandler(
+                  "run",
+                  handlerConf ->
+                      handlerConf
+                          .invocationRetryPolicy(
+                              InvocationRetryPolicy.builder()
+                                  .initialInterval(Duration.ofSeconds(1))
+                                  .maxInterval(Duration.ofSeconds(1))
+                                  .maxAttempts(10)
+                                  .onMaxAttempts(InvocationRetryPolicy.OnMaxAttempts.PAUSE))
+                          .abortTimeout(Duration.ofMinutes(15))
+                          .inactivityTimeout(Duration.ofMinutes(15))
+                          .journalRetention(Duration.ofDays(7))
+                          .ingressPrivate(true)
+                          .enableLazyState(true))));
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/services/configuration.py#handleropts"}  theme={null}
+  # Specify handler options via the decorator
+  @my_workflow.main(
+      inactivity_timeout=timedelta(minutes=15),
+      abort_timeout=timedelta(minutes=15),
+      workflow_retention=timedelta(days=3),
+      # -> or idempotency_retention for Services/Objects
+      journal_retention=timedelta(days=7),
+      ingress_private=True,
+      enable_lazy_state=True,  # only for Objects/Workflows
+      invocation_retry_policy=restate.InvocationRetryPolicy(
+          initial_interval=timedelta(seconds=1),
+          max_interval=timedelta(seconds=30),
+          max_attempts=10,
+          on_max_attempts="pause",
+      ),
+  )
+  async def run(ctx: restate.WorkflowContext, req: str) -> str:
+      # ... implement workflow logic here ---
+      return "success"
+  ```
+
+  ```go Go {"CODE_LOAD::go/services/configuration.go#handleropts"}  theme={null}
+  // Use ConfigureHandler to customize a handler configuration
+  if err := server.NewRestate().
+    Bind(
+      restate.Reflect(MyWorkflow{}).
+        ConfigureHandler("MyHandler",
+          restate.WithInvocationRetryPolicy(
+            restate.WithInitialRetryInterval(time.Second),
+            restate.WithMaxRetryInterval(30*time.Second),
+            restate.WithMaxRetryAttempts(10),
+            restate.PauseOnMaxAttempts()),
+          restate.WithInactivityTimeout(15*time.Minute),
+          restate.WithAbortTimeout(15*time.Minute),
+          restate.WithIdempotencyRetention(3*24*time.Hour),
+          restate.WithJournalRetention(7*24*time.Hour),
+          restate.WithIngressPrivate(true),
+          restate.WithEnableLazyState(true),
+          restate.WithWorkflowRetention(10*24*time.Hour), // Only for workflows
+        ),
+    ).
+    Start(context.Background(), "0.0.0.0:9080"); err != nil {
+    log.Fatal(err)
+  }
+  ```
+</CodeGroup>
+
+### Override configuration
+
+You can override the service options configured in your code via the UI or CLI.
+These options apply until the next revision of the service is registered.
+
+<AccordionGroup>
+  <Accordion title="UI">
+    Use the [Restate UI](/installation#restate-ui) to configure services interactively:
+
+    * Navigate to your registered deployment
+    * Click on the service you want to configure
+    * Modify settings through the web interface
+  </Accordion>
+
+  <Accordion title="CLI">
+    Use the Restate CLI to edit the configuration:
+
+    ```bash theme={null}
+    restate services config edit <SERVICE_NAME>
+    ```
+  </Accordion>
+</AccordionGroup>

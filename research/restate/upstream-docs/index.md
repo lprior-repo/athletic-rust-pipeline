@@ -1,0 +1,183 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Welcome to Restate!
+
+> Build innately resilient backends and AI agents
+
+Restate is a lightweight runtime to turn AI agents, workflows, and backend services into durable processes. Focus on your logic, not failure mechanics.
+Write normal code and let Restate handles resilience and consistency automatically.
+
+## Key capabilities
+
+**Durable execution**: Code automatically stores completed steps and resumes from where it left off when recovering from failures.
+
+**Built-in state**: Maintain state beyond workflow executions and share it between functions with strong consistency guarantees.
+
+**Reliable communication**: Call services sync or async with guaranteed execution and exactly-once semantics.
+
+**Flow control**: Shape traffic with concurrency limits per scope to control cost, protect downstream services, and keep scheduling fair.
+
+**Time-based coordination**: Sleep, schedule, and wait for external events with durable timers.
+
+**Workflows**: Coordinate long-running processes, human approvals, listen to webhooks and other signals.
+
+## Common use cases
+
+<Columns cols={4}>
+  <Card title="AI agents" href="/use-cases/ai-agents" img={"/img/overview/ai_agents.svg"}>
+    Manage stateful AI agents with reliable tool usage and long-running conversations.
+  </Card>
+
+  <Card title="Workflows" href="/use-cases/workflows" img={"/img/overview/workflows.svg"}>
+    Build approval processes, multi-step operations, and business workflows that survive failures.
+  </Card>
+
+  <Card title="Microservice orchestration" href="/use-cases/microservice-orchestration" img={"/img/overview/microservices.svg"}>
+    Coordinate calls across multiple services with automatic retries and failure handling.
+  </Card>
+
+  <Card title="Event processing" href="/use-cases/event-processing" img={"/img/overview/event_processing.png"}>
+    Process events with exactly-once guarantees and automatic retry handling.
+  </Card>
+</Columns>
+
+## First time here?
+
+<Columns cols={2}>
+  <Card title="Quickstart" href="/quickstart" icon={"rocket"}>
+    Build your first Restate service in minutes.
+  </Card>
+
+  <Card title="Concepts" href="/foundations/key-concepts" icon={"cube"}>
+    Understand the core building blocks.
+  </Card>
+
+  <Card title="Tour of Restate" icon={"graduation-cap"}>
+    Learn how to build common applications with Restate:
+
+    [AI agents](/tour/vercel-ai-agents) •
+    [Workflows](/tour/workflows) •
+    [Microservice orchestration](/tour/microservice-orchestration)
+  </Card>
+
+  <Card title="Code with AI" href="/develop/ai-assistant" icon={"wand-magic-sparkles"}>
+    Install the Restate plugin for Claude Code, Codex, or Cursor to build Restate apps with an expert agent.
+  </Card>
+</Columns>
+
+## Learning resources
+
+<CardGroup cols={3}>
+  <Card title="Examples" icon="code-branch" iconType="solid" href="https://github.com/restatedev/examples">
+    A collection of examples that illustrate how to use Restate to solve common application challenges.
+  </Card>
+
+  <Card title="AI Recipes" icon="robot" href="/ai">
+    Learn how to build durable AI applications with Restate: agents, chatbots, multi-agent systems, ...
+  </Card>
+
+  <Card title="Guides" icon="book" href="/guides">
+    Learn how to do common tasks with Restate: patterns, integrations, deployment tutorials, ...
+  </Card>
+</CardGroup>
+
+## Run Restate
+
+Choose where your Restate environment runs and who operates it. [Compare all hosting options](/hosting/overview).
+
+<Columns cols={3}>
+  <Card title="Restate Cloud" href="/cloud/getting-started" icon="https://mintcdn.com/restate-6d46e1dc/lEvEZWx1JHeaL3uX/logo/restate-cloud-mini-primary.svg?fit=max&auto=format&n=lEvEZWx1JHeaL3uX&q=85&s=ac7c603bb17386580099ba9483f259b2" width="100" height="100" data-path="logo/restate-cloud-mini-primary.svg">
+    **Managed by Restate** in Restate cloud regions.
+
+    Get started quickly without managing infrastructure.
+  </Card>
+
+  <Card title="Restate BYOC" href="/byoc/overview" icon="https://mintcdn.com/restate-6d46e1dc/lEvEZWx1JHeaL3uX/logo/restate-cloud-mini-primary.svg?fit=max&auto=format&n=lEvEZWx1JHeaL3uX&q=85&s=ac7c603bb17386580099ba9483f259b2" width="100" height="100" data-path="logo/restate-cloud-mini-primary.svg">
+    **Managed by Restate** in your cloud account and VPC.
+
+    Keep application data in your infrastructure without operating Restate.
+  </Card>
+
+  <Card title="Self-hosted Restate" href="/server/overview" icon="https://mintcdn.com/restate-6d46e1dc/lEvEZWx1JHeaL3uX/logo/restate-mini-primary.svg?fit=max&auto=format&n=lEvEZWx1JHeaL3uX&q=85&s=4c8adc5ebca470f93ac06a427e4b41b0" width="200" height="200" data-path="logo/restate-mini-primary.svg">
+    **Managed by you** on infrastructure you choose.
+
+    Take full control of deployment, security, upgrades, and operations.
+  </Card>
+</Columns>
+
+## Reference
+
+<CardGroup cols={2}>
+  <Card title="SDKs" icon="code">
+    Implement Restate applications in one of the available SDKs.
+
+    <div className="flex gap-5">
+      [TypeScript](/develop/ts/services) •
+      [Java](/develop/java/services) •
+      [Kotlin](/develop/java/services) •
+      [Python](/develop/python/services) •
+      [Go](/develop/go/services) •
+      [Rust](https://docs.rs/restate-sdk/latest/restate_sdk/) •
+      [Ruby](https://github.com/restatedev/sdk-ruby)
+    </div>
+  </Card>
+
+  <Card title="Service Lifecycle" icon="box">
+    Deploy and operate services on your preferred platform.
+
+    [Deploy](/deploy/services/kubernetes) •
+    [Invoke](/services/invocation/http) •
+    [Versioning](/services/versioning) •
+    [Monitor & Inspect](/services/introspection)
+  </Card>
+</CardGroup>
+
+## Community
+
+<CardGroup cols={2}>
+  <Card title="Need help?" icon="circle-info">
+    Join the Restate Discord or Slack communities.
+
+    <br />
+
+    <div className="flex gap-3">
+      [<Icon icon="discord" />](https://discord.restate.dev)
+
+      [<Icon icon="slack" />](https://slack.restate.dev)
+    </div>
+  </Card>
+
+  <Card title="Stay up to date" icon="calendar" href="https://lu.ma/restatedev">
+    Follow us on Twitter, LinkedIn, Bluesky.
+
+    <br />
+
+    <div className="flex gap-3">
+      [<Icon icon="twitter" />](https://twitter.com/restatedev)
+
+      [<Icon icon="linkedin" />](https://www.linkedin.com/company/restatedev)
+
+      [<Icon icon="bluesky" />](https://bsky.app/profile/restate.dev)
+    </div>
+  </Card>
+</CardGroup>
+
+<CardGroup cols={2}>
+  <Card title="YouTube Channel" href="https://www.youtube.com/@restatedev">
+    <Frame>
+      <iframe width="100%" height="100%" src="https://www.youtube.com/embed/videoseries?si=SURicc5PJrYirO7J&list=PLlUQm5KZ9TfwtW4t19n_hOaPsnYxDcHxl" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen />
+    </Frame>
+
+    Watch intro videos, community meetings and talks about Restate.
+  </Card>
+
+  <Card title="Events" href="https://lu.ma/restatedev">
+    <Frame>
+      <iframe src="https://lu.ma/embed/calendar/cal-0NVDa4dcYVo2Xxx/events?lt=light" width="100%" height="auto" frameborder="0" allowfullscreen="true" aria-hidden="false" tabindex="0" class="luma-events" />
+    </Frame>
+
+    Subscribe and attend our events.
+  </Card>
+</CardGroup>

@@ -1,0 +1,146 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Key Concepts
+
+> Core concepts of Restate applications
+
+This page explains the key concepts and architecture that make Restate applications reliable and resilient.
+
+## Application Structure
+
+A Restate application consists of the following components:
+
+<img src="https://mintcdn.com/restate-6d46e1dc/enatityNAiZgIlFL/img/foundations/concepts/app-layout.png?fit=max&auto=format&n=enatityNAiZgIlFL&q=85&s=732395ce724e168a5dfed98404a5a177" alt="Application Structure" width="2949" height="831" data-path="img/foundations/concepts/app-layout.png" />
+
+### Restate Services
+
+Your business logic lives in **services**: regular applications that embed the Restate SDK. Services contain **handlers** (durable functions) that process requests and execute business logic.
+
+* **Deploy anywhere**: Services run in your infrastructure as containers, serverless functions, VMs, or Kubernetes pods
+* **Familiar programming model**: Services look and feel like normal applications with added reliability by using the Restate SDK. Restate has SDKs for TypeScript, Java, Kotlin, Python, Go, Rust, and Ruby.
+
+### Restate Server
+
+The **Restate Server** sits in front of your services, similar to a reverse proxy or message broker. It handles incoming requests, manages service discovery, and provides durable execution capabilities.
+
+The server is a single binary written in Rust with a stream-processing architecture for **low latency and high throughput**.
+
+It can be deployed in a high-availability cluster or as a single-node instance.
+
+<Card title="Restate Cloud" href="https://restate.dev/cloud/" icon="cloud" horizontal>
+  Look at the options for Restate Cloud for a fully managed Restate deployment.
+</Card>
+
+### Invocations
+
+An **invocation** represents a request to execute a handler. Restate tracks each invocation through completion, ensuring it runs exactly once regardless of failures.
+
+You can invoke Restate handlers over HTTP, Kafka, or programmatically.
+
+## Durable Execution
+
+Restate's core feature is **durable execution**: the ability to make any code execution reliable and fault-tolerant without changing how you write business logic.
+
+### How it works
+
+Restate tracks every step of your code execution in a **journal**. When you call other services, update databases, set timers, or perform any side-effecting operation, Restate records both the operation and its result. If your function crashes or fails, Restate replays the journal, skipping completed steps and resuming from exactly where it left off.
+
+<img src="https://mintcdn.com/restate-6d46e1dc/enatityNAiZgIlFL/img/foundations/concepts/durable-execution-animation-microservices.gif?s=7d10fc3ad06ff3fffad730dfefb2c0f9" alt="Durable Execution" width="1920" height="800" data-path="img/foundations/concepts/durable-execution-animation-microservices.gif" />
+
+In this example, if sending the receipt fails, Restate automatically retries the function but skips the payment processing since it already completed successfully. Each step is recorded in the journal and won't repeat on retry.
+
+<Info>
+  For a detailed technical walkthrough of the lifecycle of a request, read this **[guide](/guides/request-lifecycle)**.
+</Info>
+
+### What it covers
+
+Restate's implementation of Durable Execution protects your applications from common failure scenarios:
+
+<AccordionGroup>
+  <Accordion title="Infrastructure failures (e.g. server crashes, VM restarts)">
+    * **Service crashes or restarts**: Any ongoing executions are retried on new instances.
+    * **Restate Server crashes or restarts**: The Restate Server can be deployed as a high-availability cluster, so if a node fails, others can take over without losing any execution state.
+      If Restate is deployed as a single node, it can still recover from crashes by recovering from persistent disk.
+  </Accordion>
+
+  <Accordion title="API timeouts and downtime">
+    If a handler calls an API that times out, Restate will retry the run action with exponential backoff. You can tune the retry policy through the [service configuration](/services/configuration#retries).
+  </Accordion>
+
+  <Accordion title="Duplicate requests">
+    If you add an idempotency key to your request headers, Restate will automatically ensure that requests are deduplicated.
+    Duplicate requests will return the same result as the original request.
+  </Accordion>
+
+  <Accordion title="Network outages, partitions and zombie processes">
+    * **Between Server and service**: If the service cannot send journal entries to the Restate Server, it will stop the handler execution. The Restate Server will retry the execution on another service instance.
+    * **Between nodes in a Restate cluster**: Restate clusters rely on a consensus algorithm to accept new entries in the log. The consensus algorithm requires a majority of nodes to be available, so if a network partition occurs, the cluster will still be able to process requests as long as a majority can still communicate.
+  </Accordion>
+</AccordionGroup>
+
+## Resilient Communication
+
+Beyond executing individual handlers reliably, Restate also ensures that communication between services is resilient.
+
+<Frame>
+  <img src="https://mintcdn.com/restate-6d46e1dc/enatityNAiZgIlFL/img/foundations/concepts/communication.png?fit=max&auto=format&n=enatityNAiZgIlFL&q=85&s=7cf57de7ee89817c98dedbcb1c13758f" alt="communication" width="2318" height="885" data-path="img/foundations/concepts/communication.png" />
+</Frame>
+
+Restate proxies all communication towards and between services.
+It provides a **resilient RPC framework**:
+
+* Automatic retries and recovery: Failed calls are retried until they succeed
+* No duplicates: Same call won’t execute twice
+* Full observability: See all calls and call chains in the UI
+* No message queues needed: Restate handles message delivery
+
+## Flow Control
+
+When many invocations compete for the same downstream resources, Restate lets you shape that traffic instead of running it unbounded. **Flow control** lets you cap how many invocations run concurrently for a given scope, which helps you:
+
+* **Control cost**: Put a ceiling on expensive concurrent work, such as AI agent calls that translate directly into model or API spend.
+* **Protect downstream services**: Keep a burst of invocations from overwhelming a database or third-party API.
+* **Keep scheduling fair**: Distribute capacity evenly between invocations competing on the same partition.
+
+Concurrency limits are the first flow-control primitive, with rate limits and priorities planned next.
+
+<Info>
+  Flow control is an opt-in feature. Learn how to configure it in the [flow control](/services/flow-control) docs.
+</Info>
+
+## Consistent State
+
+The Restate Server includes an embedded **key-value store** for persisting application state in Virtual Objects and Workflows.
+
+<img src="https://mintcdn.com/restate-6d46e1dc/enatityNAiZgIlFL/img/foundations/concepts/objects.png?fit=max&auto=format&n=enatityNAiZgIlFL&q=85&s=0f19789c1fd959977b4fd8f4d2f7b4b1" alt="Virtual Objects" width="2256" height="828" data-path="img/foundations/concepts/objects.png" />
+
+Key characteristics:
+
+* **Usage**: Implement consistent state machines, session state, or agent context and memory.
+* **Scoped per entity**: Each Virtual Object and Workflow execution has its own isolated state.
+* **Automatically journaled**: State updates are recorded alongside execution steps for consistency. State is never out of sync with the execution.
+* **Single-writer guarantee**: Only one handler can modify state at a time, preventing race conditions.
+* **Stateless services**: The Restate Server stores all state and execution history, delivering them with each request. Your services remain stateless, can scale horizontally, and run stateful logic even on serverless platforms.
+
+<Info>
+  Learn more about when to store state in Restate vs. in a database with [this guide](/guides/databases).
+</Info>
+
+## Suspensions on FaaS
+
+When running handlers on function-as-a-service platforms (FaaS), like AWS Lambda, Restate can suspend functions while they wait for external events (like user input or long-running tasks).
+
+For example, if a handler needs to wait for a user to approve an order, Restate can suspend the function until the user responds.
+
+This lets you run long-running workflows on FaaS platforms **without paying for wait time**.
+
+## Next Steps
+
+Now that you understand the core concepts, dive deeper into how to build with Restate:
+
+* **[Services](/foundations/services)**: Understand the three service types and when to use each
+* **[Handlers](/foundations/handlers)**: Learn how to write handlers that take advantage of durable execution
+* **[Actions](/foundations/actions)**: Master the context helpers for state management, service calls, and timing control

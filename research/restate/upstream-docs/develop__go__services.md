@@ -1,0 +1,141 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Services
+
+> Implementing Restate services with the Go SDK.
+
+<GitHub.Repo repo="restatedev/sdk-go" />
+
+The Restate SDK lets you implement **handlers**. Handlers can be part of a **[Basic Service](/foundations/services#basic-service)**, a **[Virtual Object](/foundations/services#virtual-object)**, or a **[Workflow](/foundations/services#workflow)**. This page shows how to define them with the Go SDK.
+
+The Restate Go SDK is open source (MIT).
+
+## Prerequisites
+
+* Go: >= 1.25.0
+
+## Getting started
+
+<Tip>
+  Get started quickly with the [Go Quickstart](/quickstart#go).
+</Tip>
+
+Add the `github.com/restatedev/sdk-go` dependency to your project to start developing Restate services.
+
+## Basic Services
+
+[Basic Services](/foundations/services) group related **handlers** and expose them as callable endpoints:
+
+```go {"CODE_LOAD::go/develop/myservice/main.go?collapse_prequel"}  theme={null}
+type MyService struct{}
+
+func (MyService) MyHandler(ctx restate.Context, greeting string) (string, error) {
+  return fmt.Sprintf("%s!", greeting), nil
+}
+
+func main() {
+  if err := server.NewRestate().
+    Bind(restate.Reflect(MyService{})).
+    Start(context.Background(), "0.0.0.0:9080"); err != nil {
+    log.Fatal(err)
+  }
+}
+```
+
+* Define a Service by implementing exported handlers on any struct.
+* Handlers have the `Context` as the first argument.
+  Within the handler, you use the `Context` to interact with Restate.
+  The SDK stores the actions you do on the context in the Restate journal to make them durable.
+* The handler input parameters and return type can be of any type, as long as
+  they can be serialized. By default, serialization is done with [`JSONCodec`](https://pkg.go.dev/github.com/restatedev/sdk-go/encoding#JSONCodec)
+  which uses `encoding/json`. Input types, output types, and even errors are not mandatory
+  and can be omitted if your handler doesn't need them.
+* The service will be reachable under the struct name `MyService`, so the service can be
+  called at `<RESTATE_INGRESS_URL>/MyService/MyHandler`.
+* Pass the `MyService` struct to `restate.Reflect` which uses reflection to turn
+  the methods into handlers. It will skip unexported methods and those that
+  don't have the expected signature - see the [package documentation](https://pkg.go.dev/github.com/restatedev/sdk-go#Reflect)
+  for a list of allowed signatures.
+* Finally, create a server listening on the specified address and bind the
+  service(s) to it.
+
+<Tip>
+  The Go SDK also supports defining handlers and input/output types using
+  code generation from [Protocol Buffers](https://protobuf.dev/). See
+  [Code Generation](/develop/go/code-generation) for more details.
+</Tip>
+
+## Virtual Objects
+
+[Virtual Objects](/foundations/services) are services that are stateful and key-addressable — each object instance has a unique ID and persistent state.
+
+```go {"CODE_LOAD::go/develop/myvirtualobject/main.go?collapse_prequel"}  theme={null}
+type MyObject struct{}
+
+func (MyObject) MyHandler(ctx restate.ObjectContext, greeting string) (string, error) {
+  return fmt.Sprintf("%s %s!", greeting, restate.Key(ctx)), nil
+}
+
+func (MyObject) MyConcurrentHandler(ctx restate.ObjectSharedContext, greeting string) (string, error) {
+  return fmt.Sprintf("%s %s!", greeting, restate.Key(ctx)), nil
+}
+
+func main() {
+  if err := server.NewRestate().
+    Bind(restate.Reflect(MyObject{})).
+    Start(context.Background(), "0.0.0.0:9080"); err != nil {
+    log.Fatal(err)
+  }
+}
+```
+
+* Define a Virtual Object by implementing exported handlers on any struct.
+* You can retrieve the key of the object you are in via `restate.Key(ctx)`.
+* Virtual Objects can have [exclusive and shared handlers](/foundations/handlers#handler-behavior).
+
+- Exclusive handlers receive an `ObjectContext`, allowing read/write access to object state.
+- Shared handlers are wrapped in `handlers.object.shared(...)` and use the `ObjectSharedContext`
+
+## Workflows
+
+[Workflows](/foundations/services) are long-lived processes with a defined lifecycle. They run once per key and are ideal for long-running, multi-step processes that need to preserve progress, wait for external events, or accept input while they are running.
+
+```go {"CODE_LOAD::go/develop/myworkflow/main.go?collapse_prequel"}  theme={null}
+type MyWorkflow struct{}
+
+func (MyWorkflow) Run(ctx restate.WorkflowContext, req string) (string, error) {
+  // implement the workflow logic here
+  return "success", nil
+}
+
+func (MyWorkflow) InteractWithWorkflow(ctx restate.WorkflowSharedContext) error {
+  // implement interaction logic here
+  // e.g. resolve a promise that the workflow is waiting on
+  return nil
+}
+
+func main() {
+  server := server.NewRestate().
+    Bind(restate.Reflect(MyWorkflow{}))
+
+  if err := server.Start(context.Background(), ":9080"); err != nil {
+    slog.Error("application exited unexpectedly", "err", err.Error())
+    os.Exit(1)
+  }
+}
+```
+
+* Define a Workflow by implementing exported handlers on any struct.
+
+- Every workflow **must** include a `Run` handler:
+  * This is the main orchestration entry point
+  * It runs exactly once per workflow execution and uses the `WorkflowContext`
+  * Resubmission of the same workflow will fail with "Previously accepted". The invocation ID can be found in the request header `x-restate-id`.
+  * Use `restate.Key(ctx)` to access the workflow's unique ID
+- Additional handlers must use the `WorkflowSharedContext`. They can query state or resolve workflow promises, run concurrently with the `Run` handler, and remain callable until the retention time expires.
+
+## Configuring services
+
+Check out the [service configuration docs](/services/configuration) to learn how to configure service behavior, including timeouts and retention policies.

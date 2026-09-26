@@ -1,0 +1,138 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Durable Steps
+
+> Persist results of operations.
+
+Restate uses an execution log to replay operations after failures and suspensions. Non-deterministic operations (database calls, HTTP requests, UUID generation) must be wrapped to ensure deterministic replay.
+
+## Run
+
+Use `Run` to safely wrap any non-deterministic operation, like HTTP calls or database responses, and have Restate store its result in the execution log.
+
+```go {"CODE_LOAD::go/develop/journalingresults.go#side_effect"}  theme={null}
+result, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+  return doDbRequest()
+})
+if err != nil {
+  return err
+}
+```
+
+Note that inside `Run`, you cannot use the Restate context (e.g., `get`, `sleep`, or nested `Run`).
+You should only use methods available on the [`RunContext`](https://pkg.go.dev/github.com/restatedev/sdk-go#RunContext) provided to your function.
+
+<AccordionGroup>
+  <Accordion title="Serialization">
+    You can return any payload that can be serialized. By default, serialization is
+    done with [`JSONCodec`](https://pkg.go.dev/github.com/restatedev/sdk-go/encoding#JSONCodec)
+    which uses `encoding/json`. If you don't need to return anything, you can use
+    `restate.Void{}` which serialises to a nil byte slice.
+  </Accordion>
+
+  <Accordion title="Error handling and retry policies">
+    Failures in `Run` are treated the same as any other handler error. Restate will retry it unless configured otherwise or unless a [`TerminalError`](/develop/go/error-handling) is thrown.
+
+    You can customize how `Run` retries via:
+
+    ```go {"CODE_LOAD::go/develop/journalingresults.go#side_effect_retry"}  theme={null}
+    result, err := restate.Run(ctx,
+      func(ctx restate.RunContext) (string, error) {
+        return doDbRequest()
+      },
+      // After 10 seconds, give up retrying
+      restate.WithMaxRetryDuration(time.Second*10),
+      // On the first retry, wait 100 milliseconds before next attempt
+      restate.WithInitialRetryInterval(time.Millisecond*100),
+      // Grow retry interval with factor 2
+      restate.WithRetryIntervalFactor(2.0),
+      // Optional: provide a name for the operation to be visible in the
+      // observability tools.
+      restate.WithName("my_db_request"),
+    )
+    if err != nil {
+      return err
+    }
+    ```
+
+    * You can limit retries by time or count
+    * When the policy is exhausted, a `TerminalError` is thrown
+    * See the [Error Handling Guide](/guides/error-handling) and the [Sagas Guide](/guides/sagas) for patterns like compensation
+  </Accordion>
+
+  <Accordion title="Increasing timeouts">
+    If Restate doesn't receive new journal entries from a service for more than one minute (by default), it will automatically suspend the invocation and retry it.
+
+    However, some business logic can take longer to complete—for example, an LLM call that takes up to 3 minutes to respond.
+
+    In such cases, you can adjust the service’s [inactivity timeout and abort timeout](/services/configuration) settings to accommodate longer execution times.
+
+    For more information, see the [error handling guide](/guides/error-handling).
+  </Accordion>
+
+  <Accordion title="Context propagation">
+    The Go SDK supports wrapping external contexts within Restate contexts, enabling seamless integration with libraries relying on Go's context propagation like OpenTelemetry.
+
+    Use [`WrapContext`](https://pkg.go.dev/github.com/restatedev/sdk-go#WrapContext) to embed an external context into your Restate context:
+
+    ```go {"CODE_LOAD::go/develop/journalingresults.go#wrap_context"}  theme={null}
+    // Wrap an external context (like OpenTelemetry) into the Restate context
+    externalCtx := context.Background()
+    ctx = restate.WrapContext(ctx, externalCtx)
+
+    // Use the wrapped context in Run blocks
+    _, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+      // The external context is now available here
+      return callExternalAPI(ctx)
+    })
+    ```
+
+    You can also propagate custom values using [`WithValue`](https://pkg.go.dev/github.com/restatedev/sdk-go#WithValue):
+
+    ```go {"CODE_LOAD::go/develop/journalingresults.go#with_value"}  theme={null}
+    // Propagate custom values through the context
+    type contextKey string
+    const userIDKey contextKey = "userID"
+
+    // Set a value in the context
+    ctx = restate.WithValue(ctx, userIDKey, "user-123")
+
+    // The value is available in Run blocks
+    _, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+      // Extract the value using standard context APIs
+      userID := ctx.Value(userIDKey).(string)
+      return processWithUserID(userID)
+    })
+    ```
+
+    This feature enables you to maintain context across Restate operations, preserving tracing information and custom metadata throughout your handler execution.
+  </Accordion>
+</AccordionGroup>
+
+## Deterministic randoms
+
+The SDK provides deterministic helpers for random values — seeded by the invocation ID — so they return the **same result on retries**.
+
+### UUIDs
+
+To generate stable UUIDs for things like idempotency keys:
+
+```go {"CODE_LOAD::go/develop/journalingresults.go#uuid"}  theme={null}
+uuid := restate.UUID(ctx)
+```
+
+Do not use this in cryptographic contexts.
+
+### Random numbers
+
+Methods exist on `restate.Rand(ctx)` for generating `float64` and `uint64`, or
+otherwise `restate.RandSource(ctx)` can be provided to `math/rand/v2` as a
+source for any random operation:
+
+```go {"CODE_LOAD::go/develop/journalingresults.go#random_nb"}  theme={null}
+randomInt := restate.Rand(ctx).Uint64()
+randomFloat := restate.Rand(ctx).Float64()
+mathRandV2 := rand.New(restate.RandSource(ctx))
+```

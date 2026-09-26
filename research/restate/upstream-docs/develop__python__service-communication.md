@@ -1,0 +1,222 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Service Communication
+
+> Call other services from your handler.
+
+Your Restate handler can call other handlers in three ways:
+
+* **[Request-response calls](#request-response-calls)**: Call and wait for a response
+* **[One-way messages](#sending-messages)**: Send a message and continue
+* **[Delayed messages](#delayed-messages)**: Send a message after a delay
+
+<Info>
+  To call a service from an external application, see the [Python SDK client](/services/invocation/clients/python-sdk), [HTTP](/services/invocation/http), or [Kafka](/services/invocation/kafka) documentation.
+</Info>
+
+<Info>[Learn how Restate how it works](/foundations/key-concepts#resilient-communication)</Info>
+
+## Request-response calls
+
+To call a Restate handler and wait for its result:
+
+```python {"CODE_LOAD::python/src/develop/service_communication.py#request_response"}  theme={null}
+# import my_service # Import the service module to get to the handler, not the service itself
+
+# To call a Service:
+response = await ctx.service_call(my_service_handler, arg="Hi")
+
+# To call a Virtual Object:
+response = await ctx.object_call(my_object_handler, key="Mary", arg="Hi")
+
+# To call a Workflow:
+# `run` handler — can only be called once per workflow ID
+response = await ctx.workflow_call(run, key="my_workflow_id", arg="Hi")
+# Other handlers can be called anytime within workflow retention
+response = await ctx.workflow_call(
+    interact_with_workflow, key="my_workflow_id", arg="Hi"
+)
+```
+
+Use generic calls when you don't have the service definition or need dynamic service names:
+
+```python {"CODE_LOAD::python/src/develop/service_communication.py#request_response_generic"}  theme={null}
+response_bytes = await ctx.generic_call(
+    "MyObject", "my_handler", key="Mary", arg=json.dumps("Hi").encode("utf-8")
+)
+```
+
+<Accordion title="Workflow retention">
+  After a workflow's run handler completes, other handlers can still be called for up to 24 hours (default).
+  Update this via the [service configuration](/services/configuration).
+</Accordion>
+
+<Info>
+  Request-response calls between [exclusive handlers](/foundations/handlers#handler-behavior) of Virtual Objects may lead to deadlocks:
+
+  * Cross deadlock: A → B and B → A (same keys).
+  * Cycle deadlock: A → B → C → A.
+
+  Use the UI or CLI to [cancel](/services/invocation/managing-invocations#cancel) and unblock deadlocked invocations.
+</Info>
+
+## Sending messages
+
+To send a message to another Restate handler without waiting for a response:
+
+```python {"CODE_LOAD::python/src/develop/service_communication.py#one_way"}  theme={null}
+# To message a Service:
+ctx.service_send(my_service_handler, arg="Hi")
+
+# To message a Virtual Object:
+ctx.object_send(my_object_handler, key="Mary", arg="Hi")
+
+# To message a Workflow:
+# `run` handler — can only be called once per workflow ID
+ctx.workflow_send(run, key="my_wf_id", arg="Hi")
+# Other handlers can be called anytime within workflow retention
+ctx.workflow_send(interact_with_workflow, key="my_wf_id", arg="Hi")
+```
+
+Restate handles message delivery and retries, so the handler can complete and return without waiting for the message to be processed.
+
+Use generic send when you don't have the service definition:
+
+```python {"CODE_LOAD::python/src/develop/service_communication.py#one_way_generic"}  theme={null}
+ctx.generic_send("MyService", "my_handler", arg=json.dumps("Hi").encode("utf-8"))
+```
+
+<Info>
+  Calls to a Virtual Object execute in order of arrival, serially.
+  Example:
+
+  ```python {"CODE_LOAD::python/src/develop/service_communication.py#ordering"}  theme={null}
+  ctx.object_send(my_object_handler, key="Mary", arg="I'm call A")
+  ctx.object_send(my_object_handler, key="Mary", arg="I'm call B")
+  ```
+
+  Call A is guaranteed to execute before B. However, other invocations may interleave between A and B.
+</Info>
+
+## Delayed messages
+
+To send a message after a delay:
+
+```python {"CODE_LOAD::python/src/develop/service_communication.py#delayed"}  theme={null}
+# To message a Service with a delay:
+ctx.service_send(my_service_handler, arg="Hi", send_delay=timedelta(hours=5))
+
+# To message a Virtual Object with a delay:
+ctx.object_send(
+    my_object_handler, key="Mary", arg="Hi", send_delay=timedelta(hours=5)
+)
+
+# To message a Workflow with a delay:
+ctx.workflow_send(
+    run, key="my_workflow_id", arg="Hi", send_delay=timedelta(hours=5)
+)
+```
+
+Use generic send with a delay when you don't have the service definition:
+
+```python {"CODE_LOAD::python/src/develop/service_communication.py#delayed_generic"}  theme={null}
+ctx.generic_send(
+    "MyService",
+    "my_handler",
+    arg=json.dumps("Hi").encode("utf-8"),
+    send_delay=timedelta(hours=5),
+)
+```
+
+<Info>
+  Learn [how this is different](/develop/python/durable-timers#scheduling-async-tasks) from sleeping and then sending a message.
+</Info>
+
+## Using an idempotency key
+
+To prevent duplicate executions of the same call, add an idempotency key:
+
+```python {"CODE_LOAD::python/src/develop/service_communication.py#idempotency_key"}  theme={null}
+await ctx.service_call(
+    my_service_handler,
+    arg="Hi",
+    idempotency_key="my-idempotency-key",
+)
+```
+
+Restate automatically deduplicates calls made during the same handler execution, so there's no need to provide an idempotency key in that case.
+However, if multiple handlers might call the same service independently, you can use an idempotency key to ensure deduplication across those calls.
+
+## Flow control: scope and limit key
+
+<Note title="Preview feature">
+  Scope and limit key are a preview feature and require restate-server 1.7 with [flow control enabled](/services/flow-control#enabling-flow-control).
+  Scoped Virtual Object calls additionally require `RESTATE_EXPERIMENTAL_ENABLE_SCOPED_VIRTUAL_OBJECTS=true` on the server.
+</Note>
+
+[Flow control](/services/flow-control) caps how many invocations run concurrently within a **scope**, with optional hierarchical **limit keys**.
+Route a call into a scope with `ctx.scope(...)`, and add a `limit_key` for a finer, per subgroup limit within that scope:
+
+```python {"CODE_LOAD::python/src/develop/service_communication.py#scope"}  theme={null}
+# Route a call into a named scope
+response = await ctx.scope("tenant-123").service_call(my_service_handler, arg="Hi")
+
+# Add a limit key for hierarchical concurrency limits within the scope
+response = await ctx.scope("tenant-123").workflow_call(
+    run, key="my_workflow_id", arg="Hi", limit_key="premium/user42"
+)
+
+# Fire-and-forget sends can be scoped too
+ctx.scope("tenant-123").object_send(my_object_handler, key="Mary", arg="Hi")
+```
+
+You can read the scope and limit key an invocation was submitted with from the request:
+
+```python {"CODE_LOAD::python/src/develop/service_communication.py#scope_request"}  theme={null}
+# The scope and limit key the invocation was submitted with
+scope = ctx.request().scope
+limit_key = ctx.request().limit_key
+```
+
+See [Flow control](/services/flow-control) for how scopes, limit keys, and the concurrency rule book work.
+
+## Attach to an invocation
+
+To wait for or get the result of a previously sent message:
+
+```python {"CODE_LOAD::python/src/develop/service_communication.py#attach"}  theme={null}
+# Send a request, get the invocation id
+handle = ctx.service_send(
+    my_service_handler, arg="Hi", idempotency_key="my-idempotency-key"
+)
+invocation_id = await handle.invocation_id()
+
+# Now re-attach
+result = await ctx.attach_invocation(invocation_id, type_hint=str)
+```
+
+* With an idempotency key: Wait for completion and retrieve the result.
+* Without an idempotency key: Can only wait, not retrieve the result.
+
+## Cancel an invocation
+
+To cancel a running handler:
+
+```python {"CODE_LOAD::python/src/develop/service_communication.py#cancel"}  theme={null}
+ctx.cancel_invocation(invocation_id)
+```
+
+## Signal an invocation
+
+A signal is a durable notification addressed by invocation ID and signal name. Resolving a signal interacts with the existing invocation instead of starting a new one, and the same named signal can be resolved multiple times.
+
+See [Signals and external events](/develop/python/external-events) for examples and the differences between signals, awakeables, and workflow promises.
+
+## See also
+
+* **[Error Handling](/develop/python/error-handling)**: Handle failures and terminal errors in service calls
+* **[Durable Timers](/develop/python/durable-timers)**: Implement timeouts for your service calls
+* **[Serialization](/develop/python/serialization)**: Customize how data is serialized between services
+* **[Sagas](/guides/sagas)**: Roll back or compensate for canceled service calls.

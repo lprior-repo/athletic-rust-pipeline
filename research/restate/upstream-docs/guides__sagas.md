@@ -1,0 +1,572 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Sagas
+
+> Implementing undo operations in case of failures, to keep your system consistent
+
+A **Saga** is a design pattern for handling transactions that span multiple services. It breaks the process into a sequence of local operations, each with a corresponding **compensating action**. If a failure occurs partway through, these compensations are triggered to **undo** completed steps, ensuring your system stays consistent even when things go wrong.
+
+## How does Restate help?
+
+Restate makes implementing resilient sagas simple:
+
+* **Durable Execution**: Restate guarantees completion and automatically retries from failure points. No manual state tracking or retry logic needed
+* **Code-first approach**: Define sagas using regular code, no DSLs required
+
+<img src={"/img/guides/sagas/saga_invocation.png"} alt="Sagas UI" />
+
+## Example
+
+A travel booking workflow: book a flight, rent a car, then book a hotel. If any step fails (e.g. hotel full), we roll back previous steps to maintain consistency.
+
+<img src={"/img/guides/sagas/saga_diagram.svg"} alt="Sagas example diagram" width={"550px"} />
+
+**Implementation:**
+
+* Wrap business logic in a try-block, throw terminal errors for compensation cases
+* Add compensations to a list for each step
+* In catch block, run compensations in reverse order and rethrow
+
+Note: Golang uses `defer` for compensations.
+
+<CodeGroup>
+  ```ts TypeScript {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/typescript/patterns-use-cases/src/sagas/booking_workflow.ts?collapse_prequel?remove_comments"}  theme={null}
+  const bookingWorkflow = restate.service({
+    name: "BookingWorkflow",
+    handlers: {
+      run: async (ctx: restate.Context, req: BookingRequest) => {
+        const { customerId, flight, car, hotel } = req;
+        const compensations = [];
+
+        try {
+          compensations.push(() => ctx.run("Cancel flight", () => flightClient.cancel(customerId)));
+          await ctx.run("Book flight", () => flightClient.book(customerId, flight));
+
+          compensations.push(() => ctx.run("Cancel car", () => carRentalClient.cancel(customerId)));
+          await ctx.run("Book car", () => carRentalClient.book(customerId, car));
+
+          compensations.push(() => ctx.run("Cancel hotel", () => hotelClient.cancel(customerId)));
+          await ctx.run("Book hotel", () => hotelClient.book(customerId, hotel));
+        } catch (e) {
+          if (e instanceof restate.TerminalError) {
+            for (const compensation of compensations.reverse()) {
+              await compensation();
+            }
+          }
+          throw e;
+        }
+      },
+    },
+  });
+
+  restate.serve({
+    services: [bookingWorkflow],
+    port: 9080,
+  });
+  ```
+
+  ```java Java {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/java/patterns-use-cases/src/main/java/my/example/sagas/BookingWorkflow.java?collapse_prequel?remove_comments"}  theme={null}
+  @Service
+  public class BookingWorkflow {
+
+    public record BookingRequest(
+        String customerId, FlightRequest flight, CarRequest car, HotelRequest hotel) {}
+
+    @Handler
+    public void run(BookingRequest req) throws TerminalException {
+      List<Runnable> compensations = new ArrayList<>();
+
+      try {
+        compensations.add(
+            () -> Restate.run("Cancel flight", () -> FlightClient.cancel(req.customerId)));
+        Restate.run("Book flight", () -> FlightClient.book(req.customerId, req.flight()));
+
+        compensations.add(
+            () -> Restate.run("Cancel car", () -> CarRentalClient.cancel(req.customerId)));
+        Restate.run("Book car", () -> CarRentalClient.book(req.customerId, req.car()));
+
+        compensations.add(
+            () -> Restate.run("Cancel hotel", () -> HotelClient.cancel(req.customerId)));
+        Restate.run("Book hotel", () -> HotelClient.book(req.customerId, req.hotel()));
+      }
+      catch (TerminalException e) {
+        for (Runnable compensation : compensations) {
+          compensation.run();
+        }
+        throw e;
+      }
+    }
+
+    public static void main(String[] args) {
+      RestateHttpServer.listen(Endpoint.bind(new BookingWorkflow()));
+    }
+  }
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/kotlin/patterns-use-cases/src/main/kotlin/my/example/sagas/BookingWorkflow.kt?collapse_prequel?remove_comments"}  theme={null}
+  @Service
+  class BookingWorkflow {
+
+    @Handler
+    suspend fun run(req: BookingRequest) {
+
+      val compensations = mutableListOf<suspend () -> Unit>()
+
+      try {
+        compensations.add { runBlock("Cancel flight") { cancelFlight(req.customerId) } }
+        runBlock("Book flight") { bookFlight(req.customerId, req.flight) }
+
+        compensations.add { runBlock("Cancel car") { cancelCar(req.customerId) } }
+        runBlock("Book car") { bookCar(req.customerId, req.car) }
+
+        compensations.add { runBlock("Cancel hotel") { cancelHotel(req.customerId) } }
+        runBlock("Book hotel") { bookHotel(req.customerId, req.hotel) }
+      }
+      catch (e: TerminalException) {
+        compensations.reversed().forEach { it() }
+        throw e
+      }
+    }
+  }
+
+  fun main() {
+    RestateHttpServer.listen(endpoint { bind(BookingWorkflow()) })
+  }
+  ```
+
+  ```python Python {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/python/patterns-use-cases/sagas/app.py?collapse_prequel?remove_comments"}  theme={null}
+  booking_workflow = restate.Service("BookingWorkflow")
+
+
+  @booking_workflow.handler()
+  async def run(ctx: restate.Context, req: BookingRequest):
+      compensations = []
+
+      try:
+          compensations.append(
+              lambda: ctx.run_typed("Cancel flight", flight_client.cancel, customer_id=req.customer_id)
+          )
+          await ctx.run_typed("Book flight", flight_client.book, customer_id=req.customer_id, flight=req.flight)
+
+          compensations.append(
+              lambda: ctx.run_typed("Cancel car", car_rental_client.cancel, customer_id=req.customer_id)
+          )
+          await ctx.run_typed("Book car", car_rental_client.book, customer_id=req.customer_id, car=req.car)
+
+          compensations.append(
+              lambda: ctx.run_typed("Cancel hotel", hotel_client.cancel, customer_id=req.customer_id)
+          )
+          await ctx.run_typed("Book hotel", hotel_client.book, customer_id=req.customer_id, hotel=req.hotel)
+
+      except TerminalError as e:
+          for compensation in reversed(compensations):
+              await compensation()
+          raise e
+
+
+  app = restate.app([booking_workflow])
+
+  if __name__ == "__main__":
+      import hypercorn
+      import asyncio
+
+      conf = hypercorn.Config()
+      conf.bind = ["0.0.0.0:9080"]
+      asyncio.run(hypercorn.asyncio.serve(app, conf))
+  ```
+
+  ```go Go {"CODE_LOAD::https://raw.githubusercontent.com/restatedev/examples/refs/heads/main/go/patterns-use-cases/src/sagas/bookingworkflow.go?collapse_prequel?remove_comments"}  theme={null}
+  type BookingWorkflow struct{}
+
+  func (BookingWorkflow) Run(ctx restate.Context, req BookingRequest) (err error) {
+
+    var compensations []func() (restate.Void, error)
+
+    defer func() {
+      if err != nil {
+        for _, compensation := range slices.Backward(compensations) {
+          if _, compErr := compensation(); compErr != nil {
+            err = compErr
+          }
+        }
+      }
+    }()
+
+    compensations = append(compensations, func() (restate.Void, error) {
+      return restate.Run(ctx,
+        func(ctx restate.RunContext) (restate.Void, error) {
+          return CancelFlight(req.CustomerId)
+        },
+        restate.WithName("Cancel flight"),
+      )
+    })
+    if _, err = restate.Run(ctx,
+      func(ctx restate.RunContext) (restate.Void, error) {
+        return BookFlight(req.CustomerId, req.Flight)
+      },
+      restate.WithName("Book flight"),
+    ); err != nil {
+      return err
+    }
+
+    compensations = append(compensations, func() (restate.Void, error) {
+      return restate.Run(ctx,
+        func(ctx restate.RunContext) (restate.Void, error) {
+          return CancelCar(req.CustomerId)
+        },
+        restate.WithName("Cancel car"),
+      )
+    })
+    if _, err = restate.Run(ctx,
+      func(ctx restate.RunContext) (restate.Void, error) {
+        return BookCar(req.CustomerId, req.Car)
+      },
+      restate.WithName("Book car"),
+    ); err != nil {
+      return err
+    }
+
+    compensations = append(compensations, func() (restate.Void, error) {
+      return restate.Run(ctx,
+        func(ctx restate.RunContext) (restate.Void, error) {
+          return CancelHotel(req.CustomerId)
+        },
+        restate.WithName("Cancel hotel"),
+      )
+    })
+    if _, err = restate.Run(ctx,
+      func(ctx restate.RunContext) (restate.Void, error) {
+        return BookHotel(req.CustomerId, req.Hotel)
+      },
+      restate.WithName("Book hotel"),
+    ); err != nil {
+      return err
+    }
+
+    return nil
+  }
+
+  func main() {
+    if err := server.NewRestate().
+      Bind(restate.Reflect(BookingWorkflow{})).
+      Start(context.Background(), ":9080"); err != nil {
+      log.Fatal(err)
+    }
+  }
+  ```
+</CodeGroup>
+
+View on GitHub:
+[TS](https://github.com/restatedev/examples/blob/main/typescript/patterns-use-cases/src/sagas/booking_workflow.ts) /
+[Java](https://github.com/restatedev/examples/blob/main/java/patterns-use-cases/src/main/java/my/example/sagas/BookingWorkflow.java) /
+[Kotlin](https://github.com/restatedev/examples/blob/main/kotlin/patterns-use-cases/src/main/kotlin/my/example/sagas/BookingWorkflow.kt) /
+[Python](https://github.com/restatedev/examples/blob/main/python/patterns-use-cases/sagas/app.py) /
+[Go](https://github.com/restatedev/examples/blob/main/go/patterns-use-cases/src/sagas/bookingworkflow.go)
+
+<Note>
+  This pattern is implementable with any of our SDKs. We are still working on translating all patterns to all SDK languages.
+  If you need help with a specific language, please reach out to us via [Discord](https://discord.restate.dev) or [Slack](https://slack.restate.dev).
+</Note>
+
+## When to use Sagas
+
+Restate automatically retries transient failures (network hiccups, temporary outages). For non-transient failures, sagas are essential:
+
+1. **Business logic failures**: When failures are business decisions (e.g. "Hotel is full"), retrying won't help. Throw a terminal error to trigger compensations.
+
+2. **User/system cancellations**: When you [cancel](/services/invocation/managing-invocations#cancel) long-running invocations, sagas undo previous operations to maintain consistency.
+
+## Running the example
+
+<Steps>
+  <Step title="Download the example">
+    <CodeGroup>
+      ```bash TypeScript theme={null}
+      restate example typescript-patterns-use-cases && cd typescript-patterns-use-cases
+      ```
+
+      ```bash Java theme={null}
+      restate example java-patterns-use-cases && cd java-patterns-use-cases
+      ```
+
+      ```bash Kotlin theme={null}
+      restate example kotlin-patterns-use-cases && cd kotlin-patterns-use-cases
+      ```
+
+      ```bash Python theme={null}
+      restate example python-patterns-use-cases && cd python-patterns-use-cases
+      ```
+
+      ```bash Go theme={null}
+      restate example go-patterns-use-cases && cd go-patterns-use-cases
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Start the Restate Server">
+    ```bash theme={null}
+    restate-server
+    ```
+  </Step>
+
+  <Step title="Start the Service">
+    <CodeGroup>
+      ```bash TypeScript theme={null}
+      npm install
+      npx tsx watch ./src/sagas/booking_workflow.ts
+      ```
+
+      ```bash Java theme={null}
+      ./gradlew -PmainClass=my.example.sagas.BookingWorkflow run
+      ```
+
+      ```bash Kotlin theme={null}
+      ./gradlew -PmainClass=my.example.sagas.BookingWorkflowKt run
+      ```
+
+      ```bash Python theme={null}
+      uv run sagas/app.py
+      ```
+
+      ```bash Go theme={null}
+      go run ./src/sagas
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Register the services">
+    ```bash theme={null}
+    restate deployments register localhost:9080
+    ```
+  </Step>
+
+  <Step title="Send a request">
+    <CodeGroup>
+      ```bash TypeScript theme={null}
+      curl localhost:8080/restate/call/BookingWorkflow/run --json '{
+              "flight": {
+                  "flightId": "12345",
+                  "passengerName": "John Doe"
+              },
+                  "car": {
+                  "pickupLocation": "Airport",
+                  "rentalDate": "2024-12-16"
+              },
+                  "hotel": {
+                  "arrivalDate": "2024-12-16",
+                  "departureDate": "2024-12-20"
+              }
+          }'
+      ```
+
+      ```bash Java theme={null}
+      curl localhost:8080/restate/call/BookingWorkflow/run --json '{
+              "flight": {
+                  "flightId": "12345",
+                  "passengerName": "John Doe"
+              },
+                  "car": {
+                  "pickupLocation": "Airport",
+                  "rentalDate": "2024-12-16"
+              },
+                  "hotel": {
+                  "arrivalDate": "2024-12-16",
+                  "departureDate": "2024-12-20"
+              }
+          }'
+      ```
+
+      ```bash Kotlin theme={null}
+      curl localhost:8080/restate/call/BookingWorkflow/run --json '{
+              "flight": {
+                  "flightId": "12345",
+                  "passengerName": "John Doe"
+              },
+                  "car": {
+                  "pickupLocation": "Airport",
+                  "rentalDate": "2024-12-16"
+              },
+                  "hotel": {
+                  "arrivalDate": "2024-12-16",
+                  "departureDate": "2024-12-20"
+              }
+          }'
+      ```
+
+      ```bash Python theme={null}
+      curl localhost:8080/restate/call/BookingWorkflow/run --json '{
+              "flight": {
+                  "flightId": "12345",
+                  "passengerName": "John Doe"
+              },
+                  "car": {
+                  "pickupLocation": "Airport",
+                  "rentalDate": "2024-12-16"
+              },
+                  "hotel": {
+                  "arrivalDate": "2024-12-16",
+                  "departureDate": "2024-12-20"
+              }
+          }'
+      ```
+
+      ```bash Go theme={null}
+      curl localhost:8080/restate/call/BookingWorkflow/Run --json '{
+              "flight": {
+                  "flightId": "12345",
+                  "passengerName": "John Doe"
+              },
+                  "car": {
+                  "pickupLocation": "Airport",
+                  "rentalDate": "2024-12-16"
+              },
+                  "hotel": {
+                  "arrivalDate": "2024-12-16",
+                  "departureDate": "2024-12-20"
+              }
+          }'
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Check the UI or service logs">
+    See in the Restate UI (`localhost:9070`) how all steps were executed, and how the compensations were triggered because the hotel was full.
+
+    <img src="https://mintcdn.com/restate-6d46e1dc/5I23uDb6FXQeLlpU/img/guides/sagas/saga_journal.png?fit=max&auto=format&n=5I23uDb6FXQeLlpU&q=85&s=4f5a73505dbde495ddc67deae81ec650" alt="Sagas UI" width="1939" height="1322" data-path="img/guides/sagas/saga_journal.png" />
+  </Step>
+</Steps>
+
+## Advanced: Idempotency and compensations
+
+Sagas in Restate are flexible and powerful since they're implemented in user code. However, you need to make sure compensations are idempotent.
+The example uses customer ID for idempotency, preventing duplicate bookings on retries. The API provider deduplicates requests based on this ID.
+
+Different APIs require different approaches:
+
+1. **Two-phase APIs**: First *reserve*, then *confirm* or *cancel*. Register the compensation after reservation, when you have the resource ID.
+   This type of API usually auto-cancels reservations after a timeout.
+
+<CodeGroup>
+  ```ts TypeScript {"CODE_LOAD::ts/src/guides/sagas/booking_workflow.ts#twostep"}  theme={null}
+  const bookingId = await ctx.run(() =>
+    flightClient.reserve(customerId, flight)
+  );
+  compensations.push(() => ctx.run(() => flightClient.cancel(bookingId)));
+
+  // ... do other work, like reserving a car, etc. ...
+
+  await ctx.run(() => flightClient.confirm(bookingId));
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/guides/sagas/app.py#twostep"}  theme={null}
+  booking_id = await ctx.run_typed(
+      "reserve", flight_client.reserve, customer_id=customer_id, flight=flight
+  )
+  compensations.append(
+      lambda: ctx.run_typed("cancel", flight_client.cancel, booking_id=booking_id)
+  )
+
+  #  ... do other work, like reserving a car, etc. ...
+
+  await ctx.run_typed("confirm", flight_client.confirm, booking_id=booking_id)
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/guides/sagas/BookingWorkflow.java#twostep"}  theme={null}
+  String bookingId =
+      Restate.run("reserve-flight", String.class, () -> FlightClient.reserve(flight));
+  compensations.add(() -> Restate.run("cancel-flight", () -> FlightClient.cancel(bookingId)));
+
+  // ... do other work, like reserving a car, etc. ...
+
+  Restate.run("confirm-flight", () -> FlightClient.confirm(bookingId));
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/guides/sagas/BookingWorkflow.kt#twostep"}  theme={null}
+  // For each action, we register a compensation that will be executed on failures
+  val bookingId = runBlock { reserveFlight(customerId, flight) }
+  compensations.add { runBlock { cancelFlight(bookingId) } }
+
+  // ... do other work, like reserving a car, etc. ...
+
+  compensations.add { runBlock { confirmFlight(bookingId) } }
+  ```
+
+  ```go Go {"CODE_LOAD::go/guides/sagas/bookingworkflow.go#twostep"}  theme={null}
+  bookingId, err := restate.Run(ctx, func(ctx restate.RunContext) (string, error) {
+    return ReserveFlight(req.CustomerId, req.Flight)
+  })
+  if err != nil {
+    return err
+  }
+
+  compensations = append(compensations, func() (restate.Void, error) {
+    return restate.Run(ctx, func(ctx restate.RunContext) (restate.Void, error) {
+      return CancelFlight(bookingId)
+    })
+  })
+
+  // ... do other work, like reserving a car, etc. ...
+
+  if _, err = restate.Run(ctx, func(ctx restate.RunContext) (restate.Void, error) {
+    return ConfirmFlight(bookingId)
+  }); err != nil {
+    return err
+  }
+  ```
+</CodeGroup>
+
+2. **One-shot APIs with idempotency key**: Generate idempotency key, persist in Restate, register compensation (e.g. `refund`), then do action (e.g. `charge`). Register compensation first in case action succeeded but confirmation was lost.
+
+<CodeGroup>
+  ```ts TypeScript {"CODE_LOAD::ts/src/guides/sagas/booking_workflow.ts#idempotency"}  theme={null}
+  const paymentId = ctx.rand.uuidv4();
+  compensations.push(() => ctx.run(() => paymentClient.refund(paymentId)));
+  await ctx.run(() => paymentClient.charge(paymentInfo, paymentId));
+  ```
+
+  ```python Python {"CODE_LOAD::python/src/guides/sagas/app.py#idempotency"}  theme={null}
+  payment_id = str(ctx.uuid())
+  compensations.append(lambda: ctx.run_typed("refund", refund, payment_id=payment_id))
+  await ctx.run_typed(
+      "charge", charge, payment_info=payment_info, payment_id=payment_id
+  )
+  ```
+
+  ```java Java {"CODE_LOAD::java/src/main/java/guides/sagas/BookingWorkflow.java#idempotency"}  theme={null}
+  String paymentId = Restate.random().nextUUID().toString();
+  compensations.add(() -> Restate.run("refund-payment", () -> PaymentClient.refund(paymentId)));
+  Restate.run("charge-payment", () -> PaymentClient.charge(paymentInfo, paymentId));
+  ```
+
+  ```kotlin Kotlin {"CODE_LOAD::kotlin/src/main/kotlin/guides/sagas/BookingWorkflow.kt#idempotency"}  theme={null}
+  val paymentId = random().nextUUID().toString()
+  compensations.add { runBlock { refund(paymentId) } }
+  runBlock { charge(paymentInfo, paymentId) }
+  ```
+
+  ```go Go {"CODE_LOAD::go/guides/sagas/bookingworkflow.go#idempotency"}  theme={null}
+  paymentID := restate.UUID(ctx).String()
+
+  // Register the refund as a compensation, using the idempotency key
+  compensations = append(compensations, func() (restate.Void, error) {
+    return restate.Run(ctx, func(ctx restate.RunContext) (restate.Void, error) {
+      return Refund(paymentID)
+    })
+  })
+
+  // Do the payment using the idempotency key
+  if _, err = restate.Run(ctx, func(ctx restate.RunContext) (restate.Void, error) {
+    return Charge(paymentID, req.PaymentInfo)
+  }); err != nil {
+    return err
+  }
+  ```
+</CodeGroup>
+
+## Related resources
+
+* [Error Handling guide](/guides/error-handling)
+* [Cancellation of invocations](/services/invocation/managing-invocations#cancel)
+* [Blog post: Graceful cancellations: How to keep your application and workflow state consistent 💪](https://restate.dev/blog/graceful-cancellations-how-to-keep-your-application-and-workflow-state-consistent/)

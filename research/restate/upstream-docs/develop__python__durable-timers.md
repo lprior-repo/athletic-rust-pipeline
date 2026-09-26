@@ -1,0 +1,95 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://docs.restate.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Scheduling & Timers
+
+> Durable timers, scheduled actions, and sleep, backed by Restate.
+
+Restate provides durable, fault-tolerant timers that allow you to:
+
+* [Sleep](#durable-sleep): Pause a handler for a given duration
+* [Send delayed messages](#scheduling-async-tasks): Schedule handler invocations in the future
+* [Set timeouts](#timers-and-timeouts) for async operations
+* Implement patterns like [cron jobs](#cron-jobs)
+
+## How it works
+
+Restate tracks and manages timers, ensuring they survive failures and restarts.
+For example, if a service is sleeping for 12 hours and fails after 8 hours, then Restate will make sure it only sleeps 4 hours more.
+
+If your handler runs on function-as-a-service platforms like AWS Lambda, Restate suspends the handler while it is sleeping, to free up resources.
+Since these platforms charge on execution time, this saves costs.
+
+## Durable sleep
+
+To pause a handler for a set duration:
+
+```python {"CODE_LOAD::python/src/develop/durable_timers.py#here"}  theme={null}
+await ctx.sleep(delta=timedelta(seconds=10), name="wait for payment")
+```
+
+The optional `name` appears on the sleep journal entry in the Restate UI. Use a short name that describes what the invocation is waiting for.
+
+There is no hard limit on how long you can sleep. You can sleep for months or even years, but keep in mind:
+
+* If you sleep in an [exclusive handler](/foundations/handlers#handler-behavior) in a Virtual Object, all other calls to this object will be queued.
+* You need to keep the deployment version until the invocation completes (see [versioning](/services/versioning)).
+  So for long sleeps, we recommend breaking this up into multiple handlers that call each other with [delayed messages](/develop/python/service-communication#delayed-messages).
+
+<Accordion title="Clock synchronization Restate Server vs. SDK">
+  The Restate SDK calculates the wake-up time based on the delay you specify.
+  The Restate Server then uses this calculated time to wake up the handler.
+  If the Restate Server and the SDK have different system clocks, the sleep duration might not be accurate.
+  So make sure that the system clock of the Restate Server and the SDK have the same timezone and are synchronized.
+  A mismatch can cause timers to fire earlier or later than expected.
+</Accordion>
+
+## Scheduling async tasks
+
+To invoke a handler at a later time, use [delayed messages](/develop/python/service-communication#delayed-messages).
+
+<Accordion title="Delayed messages vs. sleep and send">
+  In theory, you can schedule future work in Restate in two ways:
+
+  1. **Delayed messages** (recommended)
+  2. **Sleep + send** - sleeping in the current handler, then sending a message
+
+  At first sight, both approaches might seem to achieve similar results.
+  However, we recommend to use delayed messages for the following reasons:
+
+  * **Handler completes immediately**: The calling handler can finish execution and complete the invocation without waiting for the delay to finish
+  * **No Virtual Object blocking**: Other requests to the same Virtual Object can be processed during the delay period
+  * **Better for service versioning**: No long-running invocations that require keeping old service deployments around for a long time (see [service versioning](/services/versioning))
+</Accordion>
+
+## Timers and timeouts
+
+Most context actions are async actions that return a `RestateDurableFuture`.
+
+You can race these against a timer to bound how long your code waits for an operation.
+
+For example, to either wait for the greeting or for the timeout:
+
+```py {"CODE_LOAD::python/src/develop/durable_timers.py#timer"}  theme={null}
+match await restate.select(
+    greeting=ctx.service_call(my_handler, "Hi"),
+    timeout=ctx.sleep(timedelta(seconds=5)),
+):
+    case ["greeting", greeting]:
+        print("Greeting:", greeting)
+    case _:
+        print("Timeout occurred")
+```
+
+For alternative ways of racing async operations, have a look at the [`RestateDurableFuture` Combinators](/develop/python/concurrent-tasks).
+
+## Cron jobs
+
+Restate does not yet include native cron support, but you can implement your own cron scheduler using:
+
+* Durable timers
+* Virtual Objects
+* A repeat loop or sleep-schedule pattern
+
+Check out the guide on [implementing cron jobs](/guides/cron).
