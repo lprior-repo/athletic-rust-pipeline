@@ -10,11 +10,12 @@ use std::os::unix::process::ExitStatusExt;
 use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
+use calamine::Reader;
 use tempfile::TempDir;
 
 const MEET_DATE: &str = "2026-05-02";
 const SEASON: SchoolYear = SchoolYear::new(2025).expect("2025 is a season");
-const EVIDENCE: Evidence = Evidence::parsed(SourceRef::id("mshsl_results"), MEET_DATE);
+fn evidence() -> Evidence { Evidence::parsed(SourceRef::id("mshsl_results"), MEET_DATE) }
 const ATH_PER_SCHOOL: usize = 100;
 
 struct Corpus {
@@ -47,11 +48,11 @@ fn build_corpus(n: usize) -> Corpus {
     for i in 0..n {
         let name = format!("KillRestart School {i}");
         let (mut school, sid) = CanonicalSchool::new(UsJurisdiction::Wisconsin, &name, &normalize_name(&name));
-        school.evidence.push(EVIDENCE);
+        school.evidence.push(evidence());
         let tid = Id::mint("team", &[sid.as_str(), "track", "m", "2025"]);
         c.teams.push(CanonicalTeam { id: tid.clone(), school: sid.clone(), sport: Sport::OutdoorTrack,
             gender: Gender::Boys, school_year: SEASON, level: None,
-            source_identities: Vec::new(), evidence: vec![EVIDENCE], retained_conflicts: Vec::new() });
+            source_identities: Vec::new(), evidence: vec![evidence()], retained_conflicts: Vec::new() });
         let meet = CanonicalMeet::new(Some(UsJurisdiction::Wisconsin), format!("KillRestart Meet {i}"), MEET_DATE, CompetitionLevel::Invitational);
         let mid = meet.id.clone();
         c.meets.push(meet); c.schools.push(school);
@@ -66,7 +67,7 @@ fn build_corpus(n: usize) -> Corpus {
                 meet: mid.clone(), date: MEET_DATE.to_string(),
                 mark: Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(12.0).expect("in range")),
                 wind_mps: None, place: Some(1), heat: None, round: None, timing: Some(TimingMethod::Fat),
-                observed_grade: Some(Grade::new(11).unwrap()), evidence: vec![EVIDENCE],
+                observed_grade: Some(Grade::new(11).unwrap()), evidence: vec![evidence()],
                 source_key: format!("kill-{i}-{s}"), source_athlete: None, retained_conflicts: Vec::new() });
         }
     }
@@ -99,7 +100,7 @@ fn spawn_workbook(data_dir: &Path, out_path: &Path) -> ChildGuard {
 fn xlsx_rows(path: &Path, sheet: &str) -> Option<usize> {
     let mut book = calamine::open_workbook_auto(path).ok()?;
     let range = book.worksheet_range(sheet).ok()?;
-    Some(range.rows().filter(|r| r.iter().any(|c| !c.is_empty())).count())
+    Some(range.rows().filter(|r| r.iter().any(|c| !matches!(c, calamine::Data::Empty))).count())
 }
 
 fn unique_athlete_ids(path: &Path) -> Option<HashSet<String>> {
@@ -107,12 +108,17 @@ fn unique_athlete_ids(path: &Path) -> Option<HashSet<String>> {
     let range = book.worksheet_range("Athletes").ok()?;
     let mut ids = HashSet::new();
     for row in range.rows().skip(1) {
-        if let Some(id) = row.first()?.as_string() {
-            if !id.is_empty() { ids.insert(id); }
+        if let Some(cell) = row.first() {
+            if let calamine::Data::String(ref s) = cell {
+                if !s.is_empty() {
+                    ids.insert(s.clone());
+                }
+            }
         }
     }
     Some(ids)
 }
+
 
 fn verify_cli(store: &Path, xlsx: &Path) {
     let binary = env!("CARGO_BIN_EXE_census-service");

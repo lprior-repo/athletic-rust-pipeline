@@ -10,7 +10,7 @@ use std::process::Command;
 
 const BASELINE_COUNT: usize = 4;
 const BATCH_COUNT: usize = 32;
-const MAX_ATTEMPTS: usize = 128;
+const ENOSPC_RETRIES: usize = 128;
 const NOTE_BYTES: usize = 64 * 1024;
 
 fn check_bounded_fs(root: &Path) {
@@ -103,7 +103,7 @@ fn drain_writes(store: &Store) -> (Vec<(String, u64)>, Option<(usize, String, bo
     let mut committed: Vec<(String, u64)> = Vec::new();
     let mut first_failure = None;
 
-    for attempt in 0..MAX_ATTEMPTS {
+    for attempt in 0..ENOSPC_RETRIES {
         let schools: Vec<CanonicalSchool> = ((BASELINE_COUNT + attempt * BATCH_COUNT)..(BASELINE_COUNT + (attempt + 1) * BATCH_COUNT))
             .map(mk_school)
             .collect();
@@ -114,7 +114,7 @@ fn drain_writes(store: &Store) -> (Vec<(String, u64)>, Option<(usize, String, bo
         match batch.commit_once(&op, &d) {
             Ok(Application::Written(receipt)) => {
                 committed.push((op, receipt.appended));
-                if (attempt + 1) % 10 == 0 || attempt == MAX_ATTEMPTS - 1 {
+                if (attempt + 1) % 10 == 0 || attempt == ENOSPC_RETRIES - 1 {
                     println!("committed {} batches so far", attempt + 1);
                 }
             }
@@ -131,7 +131,7 @@ fn drain_writes(store: &Store) -> (Vec<(String, u64)>, Option<(usize, String, bo
 
     assert!(first_failure.is_some(),
         "no failure after {} attempts, committed: {}",
-        MAX_ATTEMPTS, committed.len());
+        ENOSPC_RETRIES, committed.len());
     (committed, first_failure)
 }
 
