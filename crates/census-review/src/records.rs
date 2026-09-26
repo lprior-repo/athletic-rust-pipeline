@@ -19,7 +19,6 @@
 use census_domain::model::{ReviewCase, ReviewState, ReviewVerdict, ReviewVerdictRecord};
 
 use super::verdicts::Adjudication;
-use super::ReviewFamily;
 
 /// Build the durable row for one case's verdict.
 fn verdict_record(
@@ -149,7 +148,6 @@ impl ReviewReport {
 /// rather than nothing.
 pub(super) fn record_case(
     case: &ReviewCase,
-    family: ReviewFamily,
     verdicts: Vec<(ReviewVerdict, Adjudication)>,
     reviewer: &str,
     observed_at: &str,
@@ -172,14 +170,14 @@ pub(super) fn record_case(
             observed_at,
         ));
         let mut closed_case = case.clone();
-        closed_case.state = state_after(family, &adjudication);
+        closed_case.state = state_after(&adjudication);
         closed.push(closed_case);
     }
     (rows, closed, tally)
 }
 
 /// The state one answer moves its case to.
-fn state_after(_family: ReviewFamily, adjudication: &Adjudication) -> ReviewState {
+fn state_after(adjudication: &Adjudication) -> ReviewState {
     match adjudication {
         Adjudication::Decided(_) => ReviewState::Resolved,
         Adjudication::Undecided | Adjudication::Refused(_) => ReviewState::Retained,

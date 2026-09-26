@@ -41,9 +41,6 @@ pub enum ReportError {
         #[source]
         source: serde_json::Error,
     },
-    /// An aggregation counter at the end of its range.
-    #[error("counter overflow")]
-    CounterOverflow,
     /// An invariant the report relies on was violated: a bug, not external input.
     #[error("{detail}")]
     Invariant { detail: String },
