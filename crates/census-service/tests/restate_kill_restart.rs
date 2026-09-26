@@ -49,6 +49,7 @@ use census_reconcile::identity::{Revision, WorkflowIdentity};
 use census_store::{Store, Table};
 use std::collections::HashSet;
 use std::net::{SocketAddr, TcpListener};
+use std::os::unix::process::ExitStatusExt;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::{LazyLock, Mutex};
@@ -143,8 +144,9 @@ struct ChildGuard {
 impl ChildGuard {
     /// SIGKILL: the point of the test is that no shutdown hook runs.
     fn kill_hard(&mut self) {
-        let _ = self.child.kill();
-        let _ = self.child.wait();
+        self.child.kill().expect("send SIGKILL to the owned child");
+        let status = self.child.wait().expect("reap the killed child");
+        assert_eq!(status.signal(), Some(9), "the child must die from SIGKILL");
     }
 
     /// SIGTERM, then wait for the drain. The store is a single-writer Fjall database: the test may
@@ -167,7 +169,8 @@ impl ChildGuard {
                 _ => break,
             }
         }
-        self.kill_hard();
+        let _ = self.child.kill();
+        let _ = self.child.wait();
     }
 }
 
@@ -256,6 +259,27 @@ impl Node {
             admin: format!("http://127.0.0.1:{admin_port}/"),
             log_path,
         }
+    }
+
+    fn restart(&mut self) {
+        self._guard.kill_hard();
+        let config_path = self.log_path.parent().unwrap().join("restate.toml");
+        let log_path = self.log_path.clone();
+        let binary = server_binary().unwrap();
+        let log = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+            .expect("open the restart log");
+        let child = Command::new(&binary)
+            .arg("--no-logo")
+            .arg("--config-file")
+            .arg(&config_path)
+            .stdout(Stdio::from(log.try_clone().expect("clone the restart log")))
+            .stderr(Stdio::from(log))
+            .spawn()
+            .expect("spawn the restarted server");
+        self._guard = ChildGuard { child };
     }
 }
 
@@ -356,7 +380,7 @@ async fn paused_invocation(client: &reqwest::Client, node: &Node) -> Result<Stri
         .header("accept", "application/json")
         .json(&serde_json::json!({
             "query": "SELECT id, status FROM sys_invocation \
-                      WHERE target_service_name = 'Consolidate' ORDER BY created_at DESC;"
+                      WHERE target_service_name = 'Consolidate' AND status = 'paused' ORDER BY created_at DESC;"
         }))
         .send()
         .await
@@ -787,4 +811,174 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
 
     drop(node_guard);
     let _ = std::fs::remove_dir_all(&root);
+}
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn b_restate_server_sigkill_resumes_workflow() {
+    if server_binary().is_none() {
+        panic!(
+            "no restate-server found: set {SERVER_ENV} or install one. Refusing to pass without \
+             the server this test exists to prove against."
+        );
+    }
+
+    let root = tempfile::TempDir::new().expect("create temp dir");
+    let data_dir = root.path().join("census");
+    std::fs::create_dir_all(&data_dir).expect("create the census data-dir");
+
+    let corpus = synthetic_corpus(SCHOOLS, ATHLETES_PER_SCHOOL);
+    let expected_observations = corpus.appended_rows();
+    {
+        let store = Store::open(&data_dir).expect("open store to seed corpus");
+        corpus.append(&store);
+    }
+
+    let mut node = Node::start(root.path());
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(5))
+        .build()
+        .expect("build the HTTP client");
+    wait_for_node(&client, &node)
+        .await
+        .expect("the node's admin API answers");
+
+    let endpoint_port = free_port();
+    let mut endpoint = Endpoint::start(&data_dir, endpoint_port);
+    register(&client, &node, &endpoint)
+        .await
+        .expect("the endpoint registers");
+
+    let key = WorkflowIdentity::national(SEASON, REVISION, &UsJurisdiction::CENSUS_SCOPE);
+    let path_run = format!("Consolidate/{key}/run");
+    let request = serde_json::json!({ "tables": [] });
+
+    let submission = {
+        let client = client.clone();
+        let ingress = node.ingress.clone();
+        let path = path_run.clone();
+        let body = request.clone();
+        tokio::spawn(async move {
+            client
+                .post(format!("{ingress}{path}"))
+                .json(&body)
+                .send()
+                .await
+                .map(|response| response.status().as_u16())
+                .map_err(|error| error.to_string())
+        })
+    };
+    tokio::time::sleep(KILL_DELAY).await;
+
+    let snapshot_dir = data_dir.join("out");
+    let snapshots_written = || {
+        Table::ALL
+            .into_iter()
+            .filter(|table| {
+                snapshot_dir
+                    .join(format!("{}.jsonl", table.file()))
+                    .is_file()
+            })
+            .count()
+    };
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let mut written = snapshots_written();
+    while Instant::now() < deadline && written < 1 {
+        tokio::time::sleep(POLL_INTERVAL).await;
+        written = snapshots_written();
+    }
+    assert!(
+        written >= 1,
+        "no snapshots written after submitting the run -- the merge did not start"
+    );
+    assert!(
+        written < Table::ALL.len(),
+        "the merge completed before we could kill: all {} snapshots written",
+        Table::ALL.len()
+    );
+
+    endpoint.guard.kill_hard();
+    assert!(
+        snapshots_written() < Table::ALL.len(),
+        "the kill landed after completion"
+    );
+    submission.abort();
+    let _ = submission.await;
+
+    let deadline = Instant::now() + Duration::from_secs(15);
+    let mut invocation_id: Option<String> = None;
+    while Instant::now() < deadline && invocation_id.is_none() {
+        if let Ok(id) = paused_invocation(&client, &node).await {
+            invocation_id = Some(id);
+        } else {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+    }
+    let original_invocation = invocation_id
+        .expect("no paused invocation after killing the endpoint -- the workflow did not pause");
+
+    node.restart();
+
+    wait_for_node(&client, &node)
+        .await
+        .expect("the restarted node's admin API answers");
+
+    let deadline = Instant::now() + Duration::from_secs(15);
+    let mut post_restart_invocation: Option<String> = None;
+    while Instant::now() < deadline && post_restart_invocation.is_none() {
+        if let Ok(id) = paused_invocation(&client, &node).await {
+            post_restart_invocation = Some(id);
+        } else {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+    }
+    let resumed_invocation = post_restart_invocation.expect(
+        "invocation was lost after server restart -- the journal did not survive the crash",
+    );
+    assert_eq!(
+        original_invocation, resumed_invocation,
+        "the invocation ID changed after restart: expected {original_invocation}, found {resumed_invocation}"
+    );
+
+    endpoint = Endpoint::start(&data_dir, endpoint_port);
+    register(&client, &node, &endpoint)
+        .await
+        .expect("the restarted endpoint re-registers");
+    resume(&client, &node, &resumed_invocation)
+        .await
+        .expect("the paused invocation resumes after restart");
+
+    let deadline = Instant::now() + RUN_BUDGET;
+    let mut written = snapshots_written();
+    while Instant::now() < deadline && written < Table::ALL.len() {
+        tokio::time::sleep(POLL_INTERVAL).await;
+        written = snapshots_written();
+    }
+    assert!(
+        written == Table::ALL.len(),
+        "the merge never finished after server restart: {written} of {} snapshots landed",
+        Table::ALL.len()
+    );
+
+    drop(node);
+    endpoint.guard.stop_gracefully();
+    let store = Store::open(&data_dir).expect("reopen the store after the endpoint drained");
+    let stats = store.stats().expect("read store stats");
+    assert_eq!(
+        stats.observations, expected_observations as u64,
+        "a resumed run replayed a durable write: expected {expected_observations} observations, \
+         found {}",
+        stats.observations
+    );
+
+    let athletes_snapshot = data_dir.join("out").join("athletes.jsonl");
+    let rows = std::fs::read_to_string(&athletes_snapshot)
+        .expect("the consolidate snapshot for athletes")
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .count();
+    assert_eq!(
+        rows,
+        corpus.athletes.len(),
+        "the athletes snapshot holds {rows} rows, not the corpus's {}",
+        corpus.athletes.len()
+    );
 }

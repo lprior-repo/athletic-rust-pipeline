@@ -1,37 +1,43 @@
 #!/usr/bin/env bash
-# scenario-01-endpoint-kill.sh — endpoint consolidation kill recovery.
-#
-# Verifies the integration test crates/census-service/tests/restate_kill_restart.rs:
-# a killed endpoint resumes its run and repeats no durable write.
-# The test spawns a real restate-server, registers census-serve, submits a
-# Consolidate run, SIGKILLs the endpoint after 300ms, restarts it, resumes
-# the paused invocation, and asserts no duplicate durable writes.
-
 set -euo pipefail
 
 SCRATCH_STORE="${SCRATCH_STORE:-/tmp/durability-scenario/01}"
-BINARY="${BINARY:-census-service}"
-REPO_ROOT="${REPO_ROOT:-.}"
+REPO_ROOT="${REPO_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 
-# Check for the pinned Restate server binary required by restate_kill_restart.rs
+PINNED_SERVER="$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server"
 if [ -n "${RESTATE_SERVER_BIN:-}" ] && [ -x "$RESTATE_SERVER_BIN" ]; then
-    echo "RESTATE_SERVER_BIN=$RESTATE_SERVER_BIN available"
+    :
+elif [ -f "$PINNED_SERVER" ] && [ -x "$PINNED_SERVER" ]; then
+    export RESTATE_SERVER_BIN="$PINNED_SERVER"
 else
-    echo "SKIPPED: RESTATE_SERVER_BIN not set or not executable; restate_kill_restart requires a pinned restate-server 1.7.10 binary"
+    echo "SKIPPED: no executable restate-server 1.7.10 at $PINNED_SERVER and RESTATE_SERVER_BIN not set"
     exit 0
 fi
 
-# Run the integration test that proves kill-and-recovery
-echo "Running crates/census-service/tests/restate_kill_restart.rs..."
+mkdir -p "$SCRATCH_STORE"
+SCRATCH_STORE="$(cd "$SCRATCH_STORE" && pwd)"
+TEST_DIR=$(mktemp -d "$SCRATCH_STORE/test-XXXXXX")
+trap 'rm -rf -- "$TEST_DIR"' EXIT
+export TMPDIR="$TEST_DIR"
+
 cd "$REPO_ROOT"
-cargo test -p census-service --test restate_kill_restart -- --nocapture 2>&1
+set +e
+cargo test -p census-service --test restate_kill_restart -- --nocapture 2>&1 | tee "$TEST_DIR/log.txt"
 TEST_RC=$?
+set -e
 cd - >/dev/null
 
-if [ $TEST_RC -eq 0 ]; then
-    echo "PASS: restate_kill_restart verifies endpoint consolidation kill recovery — killed endpoint resumes from journal, no duplicate durable writes"
+if [ "$TEST_RC" -ne 0 ]; then
+    echo "FAIL: restate_kill_restart exited $TEST_RC"
+    grep "test result:" "$TEST_DIR/log.txt" || true
+    exit 1
+fi
+
+if grep -qE '^test result: ok\. [1-9][0-9]* passed; 0 failed; 0 ignored;' "$TEST_DIR/log.txt" && ! grep -q '^SKIPPED:' "$TEST_DIR/log.txt"; then
+    echo "PASS: endpoint and paused-workflow Restate crash recovery"
     exit 0
 else
-    echo "FAIL: restate_kill_restart exited with code $TEST_RC"
+    echo "FAIL: restate_kill_restart had failures, skips, or unexpected output"
+    grep "test result:" "$TEST_DIR/log.txt" || true
     exit 1
 fi

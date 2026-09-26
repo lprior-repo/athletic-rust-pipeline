@@ -27,18 +27,14 @@ pub use centi_distance::CentiMetres;
 pub use centi_points::CentiPoints;
 pub use centi_time::CentiSeconds;
 
-/// Scale a decimal source value to integer hundredths, refusing anything that would not fit.
-///
-/// std has no checked conversion from a float to an integer, so the range test below is what lets
-/// the one cast here be provably in range. It is the module's only cast, and it lives here so the
-/// tree's `as_cast` budget has one documented site to read instead of fifteen scattered ones.
-#[allow(clippy::as_conversions)]
 fn checked_hundredths(value: f64) -> Option<i32> {
-    let scaled = (value * 100.0).round();
-    if !scaled.is_finite() || scaled < f64::from(i32::MIN) || scaled > f64::from(i32::MAX) {
-        return None;
-    }
-    Some(scaled as i32)
+    rust_decimal::prelude::ToPrimitive::to_i32(&(value * 100.0).round())
+}
+
+fn display_hundredths(value: i32, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    let decimal =
+        rust_decimal::Decimal::try_new(i64::from(value), 2).map_err(|_| std::fmt::Error)?;
+    write!(f, "{decimal}")
 }
 
 #[cfg(test)]

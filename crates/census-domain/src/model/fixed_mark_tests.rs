@@ -2,6 +2,27 @@
 
 use crate::model::{CentiMetres, CentiPoints, CentiSeconds};
 
+#[test]
+fn fixed_point_display_preserves_sign_and_integer_extremes() {
+    for (value, expected) in [
+        (i32::MIN, "-21474836.48"),
+        (-101, "-1.01"),
+        (-100, "-1.00"),
+        (-99, "-0.99"),
+        (-5, "-0.05"),
+        (-1, "-0.01"),
+        (0, "0.00"),
+        (1, "0.01"),
+        (99, "0.99"),
+        (100, "1.00"),
+        (i32::MAX, "21474836.47"),
+    ] {
+        assert_eq!(CentiSeconds::new(value).to_string(), expected);
+        assert_eq!(CentiMetres::new(value).to_string(), expected);
+        assert_eq!(CentiPoints::new(value).to_string(), expected);
+    }
+}
+
 // ── Ordering ────────────────────────────────────────────────────────────────────
 
 #[test]
@@ -356,4 +377,36 @@ fn null_token_is_error() {
     let json = r#"null"#;
     let result: Result<CentiSeconds, _> = serde_json::from_str(json);
     assert!(result.is_err(), "null should be rejected");
+}
+
+#[test]
+fn decimal_conversion_preserves_legacy_rounding_and_storage_bounds() {
+    for (value, expected) in [
+        (1.005, Some(100)),
+        (-1.005, Some(-100)),
+        (1.125, Some(113)),
+        (-1.125, Some(-113)),
+        (0.005, Some(1)),
+        (-0.005, Some(-1)),
+        (f64::MIN_POSITIVE, Some(0)),
+        (f64::from(i32::MAX) / 100.0, Some(i32::MAX)),
+        (f64::from(i32::MIN) / 100.0, Some(i32::MIN)),
+        ((f64::from(i32::MAX) + 1.0) / 100.0, None),
+        ((f64::from(i32::MIN) - 1.0) / 100.0, None),
+        (f64::MAX, None),
+        (f64::MIN, None),
+    ] {
+        assert_eq!(
+            CentiSeconds::try_from_seconds_f64(value).map(CentiSeconds::value),
+            expected
+        );
+        assert_eq!(
+            CentiMetres::try_from_metres_f64(value).map(CentiMetres::value),
+            expected
+        );
+        assert_eq!(
+            CentiPoints::try_from_points_f64(value).map(CentiPoints::value),
+            expected
+        );
+    }
 }

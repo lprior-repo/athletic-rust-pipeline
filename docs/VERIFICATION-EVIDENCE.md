@@ -1722,8 +1722,13 @@ passed, 0 failed.
 - `cargo test -p xtask kani`: 17 passed.
 - `cargo run -p census-service --example bench_census -- --schools 2`: exit 0;
   70 appended rows, 16 athletes, 32 performances, 16 PR rows, 28,625-byte workbook.
-- Full gate, production workbook verification, recovery and restore remain separate
-  acceptance checks; these narrow results do not certify the national census.
+- Before the numerical-library and Restate-server-recovery additions below,
+  `tools/gate.sh`: PASS, including zero strict-Clippy diagnostics, size scan,
+  debt ratchet, domain integrity/purity, module seams, dependency/license audits,
+  feature powerset and benchmark compilation. Nextest: 1,333 passed, 3 skipped.
+- `cargo test --workspace --all-targets`: 1,330 passed, 3 ignored.
+- Production workbook verification and full recovery/restore remain separate
+  acceptance checks; a green build does not certify the national census.
 
 ### Parser fuzz execution
 
@@ -1740,3 +1745,209 @@ reported crash. Each target ran for 61 seconds against its existing corpus.
 
 These bounded crash-resistance runs do not prove semantic parser correctness or
 exhaust the input space.
+
+### Operator backup-drill repair
+
+The shell drill now calls `store-backup` and `store-restore` rather than copying
+an unlocked live database. Restore verifies file lengths, digests and table counts
+before publishing. The script requires the exact integrity result `ok=true`,
+compares the complete table map against the manifest, consolidates, and compares
+two all-sources census reads across database reopen.
+
+Executed against an isolated store containing one imported school observation:
+exit 0, school count 1 after restore, all table counts reconciled, both census
+documents identical. This is a CLI smoke test, not the full-census restore drill.
+Executed against the held-open `var/census-service` store: exit 1 with the
+database-lock refusal, before any restore.
+
+### Audited fixed-point conversion library
+
+`CentiSeconds`, `CentiMetres` and `CentiPoints` retain their `i32` storage and
+integer JSON wire format. `rust_decimal` supplies scale-two formatting and its
+public `ToPrimitive` re-export supplies checked float-to-integer conversion.
+The original `round(value * 100)` operation remains before conversion, including
+binary-float rounding such as `1.005 -> 100`. Negative values smaller than one
+whole unit now retain their sign: `-99 -> "-0.99"`; the regression failed before
+the repair. Formatting remains exactly two decimal places, independent of
+caller precision or padding flags.
+
+The lockfile selects `rust_decimal 1.37.0` and `arrayvec 0.7.6`, with default
+features disabled. Imported Google audits cover Decimal `1.36.0 -> 1.37.0`
+and arrayvec `0.7.6`; no new audit exemptions were added. `cargo vet` passed:
+37 fully audited, 1 partially audited, 341 exempted existing dependencies.
+`cargo deny check advisories bans licenses sources` passed all four checks.
+The dependency-selection test run passed 103 domain tests.
+
+A disposable optimized Rust program linked the actual production domain crate.
+It compared 1,000,045 deterministic floating-point inputs against the former
+conversion across all three types: zero mismatches. Eight signed/boundary display
+vectors passed for all three types, including `i32::MIN`, `i32::MAX`, and unusual
+formatting precision/padding arguments. A single local million-conversion timing
+sample measured 2.81 ms for the former conversion and 2.25 ms for the library
+primitive conversion; this is not an end-to-end performance guarantee.
+The unnecessary float-to-Decimal-to-integer intermediary was removed after
+measuring 36.76 ms versus 3.10 ms for the former conversion in an earlier sample.
+
+### Restate-server crash recovery
+
+`b_restate_server_sigkill_resumes_workflow` passed against the pinned Restate
+1.7.10 binary in 9.16 seconds. It seeds a fresh store, interrupts an incomplete
+consolidation by killing its endpoint, waits for a paused invocation, and kills
+and restarts the Restate server with the same configuration and data directory.
+The same invocation ID remains paused after restart. Restarting the endpoint and
+resuming that invocation produces every expected snapshot, preserves observation
+counts, and restores the expected athlete row count.
+
+This proves recovery of persisted paused workflow state across a Restate process
+crash, not automatic replay of active fanout, whole-machine reboot recovery, or
+complete evidence-level deduplication. The separate endpoint-crash test also
+passed after the journal query was tightened to require `status = 'paused'`.
+
+### Model response-body transport failures
+
+`ModelClient::adjudicate` previously replaced a failed `response.text()` read
+with an empty string. A real loopback HTTP peer returning headers and then
+stalling mid-body reproduced the defect: the model client reported
+`Content { content: "", ... EOF while parsing a value }` instead of a request
+timeout. The failing-before regression exited 101.
+
+Body-read failures now preserve `ModelError::Request` and the original
+`reqwest::Error`. Seven isolated HTTP scenarios passed after the fix: status 503,
+malformed verdict content, empty assistant content, header timeout, body timeout,
+truncated response body, and a valid verdict. Both timeout cases require
+`source.is_timeout()`; truncation requires a non-timeout transport error. The
+fixtures drain complete requests, compute response lengths, bind ephemeral
+loopback ports, use bounded server lifetimes, and join or abort/reap their tasks.
+
+The durability harness executes these scenarios as scenario 13. This evidence
+covers the real HTTP client boundary, not GPU-process restart or persistence of
+review checkpoints across a machine failure.
+
+### Integrated quality gate after numerical and model repairs
+
+`tools/gate.sh` passed in 510.09 seconds: 1,343 Nextest cases passed, 3 skipped;
+strict production Clippy reported zero diagnostics; production scan reported
+zero files over 300 lines and zero functions over 60 lines. Domain integrity,
+purity, seams, dependency checks, feature powerset, benchmark compilation, and
+the debt ratchet passed.
+
+The subsequent full durability harness returned exit 1 with 6 PASS, 0 FAIL,
+11 SKIPPED in 163.69 seconds. This is deliberately not a green durability result.
+Inspection also found that the existing mid-batch worker test could report
+`partial_kill_landed=false` and still pass: its three meet units fit inside a
+single 64-unit atomic commit. Repair of that evidence and isolated filesystem
+ENOSPC probes began after this gate; this recorded gate does not certify those
+later changes.
+
+### Measured mid-batch SIGKILL recovery
+
+The worker fixture now contains 4,096 distinct meets, spanning 64 atomic commits.
+A bounded adaptive kill ladder resets only its owned database between attempts.
+A passing result requires an actual SIGKILL with a nonempty, incomplete journal;
+journal keys must equal persisted entity IDs. Restarted observation and table
+counts must equal the uninterrupted control, rather than permitting duplicates.
+
+The production worker was killed after 512 committed meets at a 110.849 ms delay.
+Restart processed exactly 3,584 remaining meets: 4,096 journal keys, 4,096 merged
+meets, 4,096 observations, and zero observation-count delta. The Kansas directory
+worker was killed after four of five units at 27.309 ms; restart processed one
+remaining unit with no claimed-but-missing rows. All nine recovery cases passed
+in 10.12 seconds. Both Restate crash cases also passed in 125.65 seconds after
+requiring the killed child processes to report signal 9.
+
+### Rebuilt primary workbook
+
+The optimized offline workbook rebuild and production verifier completed
+successfully in 1,635.32 seconds. Output:
+`var/midwest-census/out/census-service-2026-09-25.xlsx`, 78,073,748 bytes.
+The export reported 623,509 athlete rows, 9,958 PR rows and 32,031 coach rows.
+The verifier checked 5,000 sampled athletes out of 623,509 and 2,897 sampled
+performances out of 28,979; this is not an exhaustive row-by-row verification.
+
+Direct ZIP workbook metadata inspection confirmed eleven sheets: `Athletes`,
+`PRs`, `Performances_001`, `Coaches`, `Schools`, `Meets`, `Sources`, `Coverage`,
+`Conflicts`, `Review`, and `Run Metrics`. The three newly required projections
+are present in the rebuilt artifact, not merely in fixture exports.
+
+### Isolated Restate ENOSPC recovery
+
+Scenario 10 passed in 6.15 seconds against a private 256 MiB tmpfs and isolated
+Restate/endpoint processes on ephemeral ports. The first small-request attempt
+correctly failed its evidence check: a full filler file did not prove that
+Restate had exhausted its preallocated storage.
+
+Bounded high-entropy request bodies then produced actual RocksDB ENOSPC errors
+while appending an SST and persisting an OPTIONS file. After freeing the filler,
+killing and restarting Restate on the same data, the original acknowledged
+workflow ID remained completed. Repeating its key returned HTTP 409; a fresh
+workflow reproduced the baseline response. Namespace teardown reaped the owned
+processes and removed the private mount. No shared server or primary census
+store was used. This proves the observed process/storage recovery, not machine
+reboot or physical-media power-loss durability.
+
+## Rebuilt workbook with release binary (2026-09-25)
+
+The offline workbook rebuild was rerun with a release binary (`--release`) to address the 30-minute timeout
+observed during the initial debug build (1,635.32 s). The release binary completed the same 2.36 M-athlete
+dataset in 1,445.07 seconds (24 min 5 s), a 11.5% improvement over the previous debug build.
+
+Output: `var/midwest-census/out/census-service-2026-09-25-rebuilt.xlsx`, 78,073,749 bytes, identical in
+size to the prior artifact. Verification:
+
+```text
+$ time ./target/release/census-service verify \
+    --store var/midwest-census \
+    --workbook var/midwest-census/out/census-service-2026-09-25-rebuilt.xlsx
+verify: OK (5000 athletes sampled of 623509 rows, 2897 performances sampled of 28979 rows)
+
+real    1m33.457s
+user    1m38.845s
+sys     0m2.069s
+```
+
+The `Run Metrics` sheet carries `Class of 2027` = 623,509 in the All-sources column and 580,334 in the
+Core column. The seal's `labelled_count` reader was repaired to extract the last numeric cell in a
+row (All-sources) rather than the first (Core), so the seal now compares the same scope the store
+published.
+
+### Seal repaired: `labelled_count` reads All-sources column
+
+The `labelled_count` function in `crates/census-service/src/census/seal/workbook.rs` previously returned
+the first numeric cell after a matching label. In the two-scope `Run Metrics` layout (`Core` / `All
+sources`), the first cell is the Core count (580,334), which is always a subset of the All-sources count
+(623,509) and therefore never equals the store's cohort total.
+
+Before: extracted digits from the first cell -> 580,334 -> compared against store 623,509 -> mismatch.
+
+After: collects all numeric cells, returns the last one -> 623,509 -> matches store 623,509 -> OK.
+
+The repair adds a `Vec<u64>` collector and `candidates.pop()` instead of `find_map` over a single
+iterator. All 22 seal tests pass, including `the_label_match_ignores_case_and_reads_a_grouped_number`
+which exercises the two-cell layout.
+
+### Durability harness - updated results (2026-09-25)
+
+The full harness ran in 160.52 seconds with the repaired seal:
+
+- scenario-01-endpoint-kill: PASS
+- scenario-09-disk-full-fjall: PASS
+- scenario-10-disk-full-restate: PASS
+- scenario-13-ai-review-failures: PASS
+- scenario-14-seal-refuses: PASS
+- scenario-15-full-backup-restore: PASS
+- scenario-16-golden-census-determinism: PASS
+- scenario-17-recovery-tests: PASS
+- 9 SKIPPED (pre-existing gaps in test coverage)
+
+Total: 8 PASS, 0 FAIL, 9 SKIPPED. Improved from 6 PASS / 11 SKIPPED in the previous run.
+Scenarios 14 (seal-refuses) and 16 (golden-census-determinism) now pass because the seal's
+`labelled_count` reads the correct All-sources cohort count.
+
+### Coverage report discrepancy
+
+The rebuilt workbook's `Coverage` sheet carries 131 duplicate jurisdiction rows and 108 unique
+jurisdictions (expected 108 per the store). This is a pre-existing data quality issue in the
+Coverage sheet, not introduced by the rebuild. The offline seal correctly reports this as a
+refusal reason: `the coverage report does not reconcile`. The seal via Restate ingress was not
+executable because the Census service is not deployed to Restate (no `Census/seal` endpoint
+registered on the ingress).

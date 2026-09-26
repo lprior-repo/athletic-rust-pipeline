@@ -1,0 +1,185 @@
+# ENOSPC Probe Review: `enospc.rs` + `scenario-09-disk-full-fjall.sh`
+
+## 1. CRITICAL: `verify_reopen` opens store BEFORE freeing filler space
+
+**File:** `enospc.rs:201-206`
+```rust
+fn verify_reopen(root: &Path, baseline_count: usize, committed: &[(usize, usize)], fail_idx: usize) {
+    drop(Store::open(root).unwrap());          // ← line 202: opens while filler still present
+    let tmp_name = root.join(".enospc_scratch");
+    let _ = fs::remove_dir_all(&tmp_name);     // ← line 204: filler removal AFTER open
+```
+
+The filler occupies ~250 MiB of the 256 MiB tmpfs. `Store::open` calls `ensure_dirs()` (`lib.rs:182-190`) which calls `std::fs::create_dir_all(&dir)` for `http/` and `out/`. If the filesystem is still full (filler not yet removed), this **panics** before cleanup runs.
+
+Furthermore, line 202's `drop(Store::open(root).unwrap())` is a double-open: it opens a store, then immediately drops it, then opens another one. The first open is useless and dangerous. The original `store` from `drain_and_write` (still open in the caller) also holds file descriptors into the full tmpfs.
+
+**Repair:** Remove line 202 entirely. Move `fs::remove_dir_all` BEFORE any `Store::open` call.
+
+---
+
+## 2. MEDIUM: Error not verified as actual ENOSPC
+
+**File:** `enospc.rs:179-185`
+```rust
+Err(e) => {
+    if first_failure.is_none() {
+        first_failure = Some(idx);
+        println!("BATCH {} ({} records): FIRST FAILURE: {}", idx, size, e);
+    } else {
+        println!("BATCH {} ({} records): REFUSED (ENOSPC confirmed): {}", idx, size, e);
+    }
+}
+```
+
+The probe asserts *some* error occurred (`drain_and_write` line 190-191), but does not verify the error is `StoreError::Write` with a `fjall::Error` source containing `io::ErrorKind::NoSpaceLeft`. The error path in `commit.rs:69` wraps any Fjall error as `StoreError::Write { source: fjall::Error }`. Fjall's error type does not expose a public `kind()` method matching `io::ErrorKind` — the probe would need to check the error message string or the `source` chain for ENOSPC. Without this check, a non-ENOSPC failure (e.g., a corrupted LSM tree, permission error) would pass the probe incorrectly.
+
+**Repair:** Add an `is_enospc()` helper that walks the `source` chain: `StoreError::Write → fjall::Error → std::io::Error → io::ErrorKind::NoSpaceLeft`. Assert this matches.
+
+---
+
+## 3. MEDIUM: Filler silently discards write errors — may never fill filesystem
+
+**File:** `enospc.rs:64-67`
+```rust
+if let Ok(mut f) = File::create(&path) {
+    let buf = vec![0u8; FILLER_SIZE as usize];
+    let _ = f.write_all(&buf);   // ← write error silently ignored
+    count += 1;                  // ← increment even if write failed
+}
+```
+
+`write_all` returns `Result`. On some filesystems/conditions (e.g., ENOSPC on write, not on create), `write_all` fails but `File::create` succeeds. The probe ignores the write error and still increments `count`, creating empty (or partial) files. This means `fill_filesystem` may reach `FILLER_COUNT=4000` while only writing ~0 bytes of actual data if every write fails. The tmpfs remains ~75% full, and batch commits may succeed when they should fail.
+
+**Repair:** Only increment `count` on successful `write_all`. The loop naturally terminates when `File::create` fails (true ENOSPC at allocation time).
+
+---
+
+## 4. LOW: `count_schools` searches for wrong serialized table name
+
+**File:** `enospc.rs:116-125`
+```rust
+fn count_schools(store: &Store) -> u64 {
+    store
+        .stats()
+        .unwrap()
+        .tables
+        .iter()
+        .find(|(name, _)| name == "schools")  // ← searches "schools"
+        .map(|(_, c)| *c)
+        .unwrap_or(0)
+}
+```
+
+The `stats()` method at `read/mod.rs:207` uses `table.file()` for the name. `Table::Schools.file()` returns `"schools"` (see `table.rs:109`). So this is actually **correct** — `schools` matches.
+
+**No repair needed.** (Retained for audit completeness.)
+
+---
+
+## 5. LOW: `seed_baseline` uses individual `append()` calls, not batched
+
+**File:** `enospc.rs:78-86`
+```rust
+fn seed_baseline(store: &Store, count: usize) -> StoreResult<()> {
+    for i in 0..count {
+        let obs = mk_source_obs(i, "2026-01-01");
+        store.append(Table::SourceObservations, &obs)?;     // ← individual append
+        let sch = mk_canonical(i);
+        store.append(Table::Schools, &sch)?;                 // ← individual append
+    }
+    Ok(())
+}
+```
+
+Each `append()` call creates its own Fjall `OwnedWriteBatch` and commits it with `fdatasync` (`write.rs:102-107`). For 10 schools this is 20 separate fsyncs. The doc comment says "Seeds baseline observations, flushes" but the implementation does not batch the baseline. This is not a correctness bug (individual appends are atomic), but the baseline writes each consume disk space individually, potentially affecting the filler's ability to fully drain the filesystem.
+
+---
+
+## 6. LOW: `make_batch` unwraps `append_many` — panics on bad serialization
+
+**File:** `enospc.rs:107`
+```rust
+batch.append_many(Table::SourceObservations, &[obs]).unwrap();
+```
+
+`append_many` can fail with `StoreError::Json` (serialization error) or `StoreError::Invariant` (validation error). The probe uses hardcoded well-formed entities, so this should never panic. But the type is `StoreBatch<'s>` — the return value. If `append_many` failed, the batch would be in an inconsistent state. Using `?` and returning `StoreResult<StoreBatch>` would be more robust.
+
+---
+
+## 7. MEDIUM: Fjall preallocates journal — 64 MiB may not be enough for ENOSPC
+
+**Context:** The shell script allocates a 256 MiB tmpfs (`scenario-09-disk-full-fjall.sh:61`). The filler creates 4000 × 64 KiB = 256 MiB of files. But Fjall's journal (`PersistMode::SyncData`) and SST files also consume space within the same tmpfs.
+
+The probe's constants say `FILLER_SIZE=64*1024` (64 KiB per file, `enospc.rs:17`), but the doc comment says "fills4000x64KiB" — that's 256 MiB total filler matching the tmpfs size. However, Fjall's journal writes, bloom filters, and LSM files also live inside `<store>/fjall/` within the same tmpfs. The store's baseline (20 rows) and batch data (~46 rows) are small, but Fjall's WAL can grow to several MB before compaction.
+
+**The real risk:** The filler fills ~250 MiB, leaving ~6 MiB for Fjall. The next batch commit (`commit.rs:66-69`) needs to write the WAL + SST delta. If Fjall's journal needs more than 6 MiB for the WAL, it will fail with ENOSPC — which is the intended behavior. But if Fjall can fit within 6 MiB (small batch, cached data), the commit might **succeed** even when the filesystem is full, because Fjall uses the page cache and may not immediately write dirty pages.
+
+**Repair:** After filler, do a `store.flush()` (`lib.rs:255-259`) to force all Fjall buffers to disk before starting batch writes. This ensures the filesystem is truly full and any subsequent write will fail.
+
+---
+
+## 8. MEDIUM: Shell script `PROBE_BIN` path after `cargo build` may not exist
+
+**File:** `scenario-09-disk-full-fjall.sh:24-34`
+```bash
+echo "Building ENOSPC probe..."
+if ! (cd "$REPO_ROOT" && cargo build --example enospc -p census-store --quiet 2>&1); then
+    echo "SKIPPED: census-store example enospc failed to compile"
+    exit 0
+fi
+
+PROBE_BIN="$REPO_ROOT/target/debug/examples/enospc"
+if [ ! -x "$PROBE_BIN" ]; then
+    echo "SKIPPED: probe binary not built at $PROBE_BIN"
+    exit 0
+fi
+```
+
+If `--quiet` suppresses error output, a build failure goes to the `stderr` redirect but the script exits `0` (SKIPPED) rather than failing. The `|| RC=$?` at line 68 captures the subshell exit code, but the SKIPPED exit 0 from line 27 masks the real error.
+
+**Repair:** Use `exit 1` for build failure; or check for the binary existence as the primary gate.
+
+---
+
+## 9. LOW: `MAX_WRITE_ATTEMPTS` is a soft cap unrelated to ENOSPC
+
+**File:** `enospc.rs:169-172`
+```rust
+for (idx, &size) in BATCH_SIZES.iter().enumerate() {
+    if committed.len() >= MAX_WRITE_ATMPTS {
+        break;
+    }
+```
+
+`BATCH_SIZES.len() == 10` and `MAX_WRITE_ATTEMPTS == 50`. The cap never triggers because the loop runs at most 10 times. This is dead code that adds confusion.
+
+---
+
+## 10. LOW: Shell script subshell inherits `SCRATCH_DIR` but `TMPFS_MNT` set inside
+
+**File:** `scenario-09-disk-full-fjall.sh:37-57`
+```bash
+TMPFS_MNT=""          # line 37: parent scope
+NAMESPACE_PID=""      # line 38: parent scope
+
+(                    # line 56: subshell
+    TMPFS_MNT="$SCRATCH_DIR/tmpfs"  # line 57: parent-scope variable assignment
+```
+
+Bash subshells `( ... )` inherit parent variables and **can modify** them in the parent scope. So `TMPFS_MNT` set at line 57 is visible to `cleanup()` at line 40. This works correctly in bash (unlike `{ ... }` which is a group command, not a subshell). No bug here — retained for completeness.
+
+---
+
+## Summary of Concrete Flaws Requiring Repair
+
+| # | Severity | Issue | File:Line |
+|---|----------|-------|-----------|
+| 1 | CRITICAL | `verify_reopen` opens store before freeing filler — panics on full fs | `enospc.rs:202` |
+| 2 | MEDIUM | ENOSPC not verified — any error passes probe | `enospc.rs:179-185` |
+| 3 | MEDIUM | Filler ignores write errors — may not actually fill filesystem | `enospc.rs:65-67` |
+| 5 | LOW | Baseline not batched — 20 individual fsyncs, inconsistent with probe intent | `enospc.rs:81-83` |
+| 7 | MEDIUM | Fjall may still commit via page cache — needs `store.flush()` before batches | `enospc.rs` (missing call) |
+| 9 | LOW | `MAX_WRITE_ATTEMPTS=50` dead code (loop only iterates 10 times) | `enospc.rs:21,170-171` |
+
+No edits performed — review only.

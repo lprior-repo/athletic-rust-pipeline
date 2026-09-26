@@ -124,7 +124,13 @@ impl ModelClient {
                 source,
             })?;
         let status = response.status().as_u16();
-        let text = response.text().await.unwrap_or_default();
+        let text = response
+            .text()
+            .await
+            .map_err(|source| ModelError::Request {
+                url: url.clone(),
+                source,
+            })?;
         if !(200..300).contains(&status) {
             return Err(ModelError::Status {
                 url,
@@ -144,3 +150,7 @@ impl ModelClient {
 #[cfg(test)]
 #[path = "../model_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "../model_transport_tests.rs"]
+mod transport_tests;

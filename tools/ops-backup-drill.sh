@@ -10,8 +10,8 @@ DRILL_DIR="$(mktemp -d "${TMPDIR:-/tmp}/athletic-backup-drill.XXXXXXXX")"
 trap 'rm -rf -- "$DRILL_DIR"' EXIT
 
 "$BINARY" --store "$STORE" store-backup --to "$DRILL_DIR/backup"
-jq -e '.version == 1 and (.files | length > 0) and (.tables | type == "object")' \
-    "$DRILL_DIR/backup/backup.json" >/dev/null
+"$BINARY" --store "$DRILL_DIR/cli" store-restore \
+    --from "$DRILL_DIR/backup" --to "$DRILL_DIR/restored"
 
 "$BINARY" --store "$DRILL_DIR/restored" store-integrity | tee "$DRILL_DIR/integrity"
 grep -qx $'ok\ttrue' "$DRILL_DIR/integrity"

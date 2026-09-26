@@ -114,22 +114,35 @@ fn sheet_rows(
 ///
 /// The label match is case-insensitive because the sheet's own casing is the workbook writer's
 /// choice, not this command's contract.
+///
+/// The Run Metrics sheet renders two scope columns side by side (`Core` / `All sources`), each
+/// carrying its own copy of the label.  When the function finds such a row it must pick the
+/// *second* numeric cell (the All‑sources column) so the seal compares the same scope the store
+/// published — the Core count is always a subset and will never equal the store's total.
 pub fn labelled_count(rows: &[Vec<String>], label: &str) -> Option<u64> {
     rows.iter().find_map(|row| {
         let named = row.first()?.trim().to_ascii_lowercase();
         if !named.starts_with(label) {
             return None;
         }
-        row.iter().skip(1).find_map(|cell| {
-            let digits: String = cell.chars().filter(|ch| ch.is_ascii_digit()).collect();
-            if digits.is_empty() {
-                None
-            } else {
-                digits.parse::<u64>().ok()
-            }
-        })
+        // Collect all numeric cells; pick the last one (All-sources column in
+        // two-scope layouts).
+        let mut candidates: Vec<u64> = row
+            .iter()
+            .skip(1)
+            .filter_map(|cell| {
+                let digits: String = cell.chars().filter(|ch| ch.is_ascii_digit()).collect();
+                if digits.is_empty() {
+                    None
+                } else {
+                    digits.parse::<u64>().ok()
+                }
+            })
+            .collect();
+        candidates.pop()
     })
 }
+
 
 /// The workbook's own bytes, hashed in chunks so a large export never lands in memory twice.
 pub fn file_digest(path: &Path) -> Result<String> {

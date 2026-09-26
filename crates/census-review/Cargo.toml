@@ -26,7 +26,5 @@ thiserror = "2"
 tracing = "0.1"
 
 [dev-dependencies]
-# The lane's tests drive it against a stub model server, so they need the runtime's test attribute and
-# nothing the crate itself does not already link.
-tokio = { version = "1", features = ["macros", "rt"] }
+tokio = { version = "1", features = ["macros", "rt", "net", "time", "io-util"] }
 tempfile = "3"

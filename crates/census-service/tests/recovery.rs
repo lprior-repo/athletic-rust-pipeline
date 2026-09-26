@@ -28,22 +28,6 @@
 //! exactly as the crate's adapter tests do; `provider athleticlive` performs no HTTP at all. Child
 //! processes additionally run with `HTTPS_PROXY=http://127.0.0.1:9`, so a cache-key drift fails as
 //! a connection refusal instead of reaching the source host.
-//!
-//! # The findings
-//!
-//! Both are printed as `DEFECT:` evidence and reported to `Main` rather than gated here, because
-//! this slice owns tests only; the scenarios stay green so the suite keeps running.
-//!
-//! 1. **Journal before effect.** `sources/ks/collect.rs` journals each directory record done during
-//!    the walk and appends the batch at the end of the pass; `ihsa`, `athleticnet` and `plain_names`
-//!    have the same shape. A kill inside the walk therefore leaves journal entries whose rows were
-//!    never written, and the next run skips them — the unit is lost rather than resumed.
-//!    [`ks_directory_walk_claims_units_the_kill_can_lose`] measures that on a real kill.
-//! 2. **A drain deadline armed before the stop request.** `census-serve` used to abort its endpoint
-//!    (then exit) one `--drain-timeout` after start with no stop request in sight, which under the
-//!    systemd unit (`Restart=on-failure`, exit 0) means a deployed endpoint that dies and is never
-//!    restarted. [`service_with_no_stop_request_survives_its_drain_deadline`] measures whichever
-//!    half of that remains: an unrequested exit, or a live process whose endpoint stopped answering.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
@@ -469,44 +453,6 @@ fn attempt_kill(
     }
 }
 
-/// The fractions of the clean runtime the ladder kills at: an immediate kill, a coarse approach, then
-/// a sweep of the last stretch at 1% steps.
-///
-/// The sweep is dense on purpose. A workload spends most of its runtime in spawn, store open and
-/// parsing, and the batch writes land in the last percent or two, so only samples crowding toward 1
-/// land a kill inside the window that produces a partial batch. Samples are microsecond-accurate
-/// because that window is about a millisecond wide.
-const LADDER_FRACTIONS: [(u64, u64); 27] = [
-    (0, 1),
-    (1, 4),
-    (1, 2),
-    (3, 4),
-    (4, 5),
-    (17, 20),
-    (9, 10),
-    (19, 20),
-    (81, 100),
-    (83, 100),
-    (85, 100),
-    (87, 100),
-    (89, 100),
-    (90, 100),
-    (91, 100),
-    (92, 100),
-    (93, 100),
-    (94, 100),
-    (95, 100),
-    (96, 100),
-    (97, 100),
-    (98, 100),
-    (99, 100),
-    (991, 1000),
-    (993, 1000),
-    (996, 1000),
-    (998, 1000),
-];
-
-/// Kill ladder for a workload whose clean runtime is `clean_runtime`, stopping as soon as a partial
 /// What a ladder attempt kills: the phase to interrupt and the rows that prove the units landed.
 struct Subject<'a> {
     phase: &'a str,
@@ -514,7 +460,6 @@ struct Subject<'a> {
     ids_of: fn(&Store) -> BTreeSet<String>,
 }
 
-/// kill (some units durable, some still owed) lands or the workload turns out to have completed.
 fn kill_ladder(
     scenario: &str,
     root: &Path,
@@ -523,63 +468,62 @@ fn kill_ladder(
     total_units: usize,
     clean_runtime: Duration,
 ) -> Vec<KillAttempt> {
-    let runtime_us = u64::try_from(clean_runtime.as_micros()).unwrap_or(u64::MAX);
-    let mut attempts: Vec<KillAttempt> = Vec::new();
-    for (numerator, denominator) in LADDER_FRACTIONS {
-        let delay = Duration::from_micros(runtime_us.saturating_mul(numerator) / denominator);
+    let runtime_us = u64::try_from(clean_runtime.as_micros()).unwrap_or(5_000_000);
+    let mut lower = 0;
+    let mut upper = runtime_us.clamp(2, 5_000_000);
+    let mut attempts = Vec::new();
+    for index in 0..32 {
+        let database = root.join("fjall");
+        if database.exists() {
+            std::fs::remove_dir_all(database).expect("reset the owned attempt database");
+        }
+        let delay_us = if index == 0 {
+            0
+        } else {
+            lower + (upper - lower) / 2
+        };
         let attempt = attempt_kill(
             root,
             args,
-            delay,
+            Duration::from_micros(delay_us),
             subject.phase,
             subject.table,
             subject.ids_of,
         );
-        note(
-            scenario,
-            format!(
-                "kill delay={:?} exited_before_kill={} signal={:?} journal={} entities={} \
-                 observations={}",
-                attempt.delay,
-                attempt.exited_before_kill,
-                attempt.signal,
-                attempt.journal.len(),
-                attempt.entity_ids.len(),
-                attempt.observations
-            ),
-        );
-        if attempt.exited_before_kill {
-            assert!(
-                attempt.signal.is_none(),
-                "a process that had already exited cannot carry a kill signal"
-            );
-        } else if attempt.signal.is_none() {
-            // Alive at the liveness check, gone by the time the signal landed: the only way a run
-            // refuses SIGKILL is by finishing first, and the store has to say so.
-            assert_eq!(
-                attempt.journal.len(),
-                total_units,
-                "a run that was alive when the ladder checked and refused the kill must have \
-                 completed its units: journal={:?}",
-                attempt.journal
-            );
-        }
+        note(scenario, format!(
+            "kill delay={:?} exited_before_kill={} signal={:?} journal={} entities={} observations={}",
+            attempt.delay, attempt.exited_before_kill, attempt.signal,
+            attempt.journal.len(), attempt.entity_ids.len(), attempt.observations,
+        ));
         let partial = !attempt.journal.is_empty() && attempt.journal.len() < total_units;
         let complete = attempt.journal.len() >= total_units;
+        if partial {
+            assert!(
+                !attempt.exited_before_kill,
+                "partial work must be interrupted while running"
+            );
+            assert_eq!(
+                attempt.signal,
+                Some(9),
+                "partial work must be interrupted by SIGKILL"
+            );
+        }
         attempts.push(attempt);
         if partial {
             note(
                 scenario,
-                "partial kill landed: the store holds a mix of durable and still-owed units",
+                "partial SIGKILL landed at a durable commit boundary",
             );
             break;
         }
         if complete {
-            note(
-                scenario,
-                "the workload completed before this attempt; no later attempt can land mid-batch",
-            );
-            break;
+            upper = delay_us.max(1);
+        } else {
+            lower = delay_us;
+        }
+        if upper.saturating_sub(lower) <= 1 {
+            lower = 0;
+            upper = upper.saturating_mul(2).clamp(2, 5_000_000);
         }
     }
     attempts
@@ -1203,16 +1147,26 @@ fn cli_worker_restart_across_processes_resumes_and_keeps_counters() {
     );
 }
 
-// -------------------------------------------------------------------------------------------------
-// 5. SIGKILL mid-batch on a real worker (AthleticLIVE meets: append-then-journal per unit)
-// -------------------------------------------------------------------------------------------------
+fn generate_athleticlive_csv(count: usize) -> String {
+    let mut csv = format!(
+        "{}\n",
+        ATHLETICLIVE_FIXTURE.lines().next().expect("CSV header")
+    );
+    for i in 0..count {
+        csv.push_str(&format!(
+            "athleticlive,{},,State Meet {i},,Illinois,2025-09-15T04:00:00Z,,True\n",
+            50000 + i + 1
+        ));
+    }
+    csv
+}
 
 #[test]
 fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() {
     const SCENARIO: &str = "sigkill-worker";
     let dir = tempfile::tempdir().expect("temp dir");
     let input = dir.path().join("athleticlive-meets.csv");
-    std::fs::write(&input, ATHLETICLIVE_FIXTURE).expect("writing the CSV input");
+    std::fs::write(&input, generate_athleticlive_csv(4096)).expect("writing the CSV input");
     let args = [
         "provider",
         "athleticlive",
@@ -1258,13 +1212,15 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() {
     let landed_partial = attempts
         .iter()
         .any(|attempt| !attempt.journal.is_empty() && attempt.journal.len() < total_units);
+    assert!(
+        landed_partial,
+        "a real mid-batch kill must have happened (0 < journal < total); workload completed \
+         before the first kill delay"
+    );
     for attempt in &attempts {
-        assert!(
-            attempt.journal.is_subset(&attempt.entity_ids),
-            "journal implies the durable row: every claimed meet id is in the store after the kill \
-             (claimed={:?} stored={:?})",
-            attempt.journal,
-            attempt.entity_ids
+        assert_eq!(
+            attempt.journal, attempt.entity_ids,
+            "each meet and its journal marker must commit atomically"
         );
     }
 
@@ -1312,10 +1268,13 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() {
         control_stats.get("meets"),
         "the snapshot holds one row per meet, not one per observation"
     );
-    assert!(
-        observations >= total_units as u64,
-        "a kill inside the append/journal window may leave one re-observed row, never fewer rows \
-         than units"
+    assert_eq!(
+        observations, total_units as u64,
+        "an atomic append-and-journal batch cannot replay an acknowledged observation"
+    );
+    assert_eq!(
+        resumed_stats, control_stats,
+        "all durable counters must match the clean run"
     );
 }
 
@@ -1682,6 +1641,14 @@ async fn ks_directory_walk_claims_units_the_kill_can_lose() {
             );
         }
     }
+
+    assert!(
+        attempts
+            .iter()
+            .any(|a| !a.journal.is_empty() && a.journal.len() < control_total),
+        "a real mid-batch kill must have happened (0 < journal < total) for the window \
+         measurement to be valid"
+    );
 
     let last = attempts.last().expect("at least one kill attempt");
     let journal_at_kill = last.journal.clone();
