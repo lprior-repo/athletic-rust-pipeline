@@ -1,5 +1,3 @@
-use super::*;
-
 /// Normalize a person/school/meet name for identity comparisons: lowercase, strip diacritics and
 /// punctuation, collapse whitespace, drop school-type suffixes that vary between sources
 /// ("high school", "hs", "school", "academy" is *kept* because it is distinguishing).
