@@ -43,8 +43,6 @@
 //! -p census-service --bench core -- --warm-up-time 1 --measurement-time 2` bounds a full run when
 //! the default criterion schedule is too slow for the machine.
 
-// Helpers live in `benches/core/`; a bench target's root file resolves `mod` names next to itself,
-// so the paths are explicit (the same shape the integration-test roots under `tests/` use).
 #[path = "core/fixtures.rs"]
 mod fixtures;
 #[path = "core/labels.rs"]

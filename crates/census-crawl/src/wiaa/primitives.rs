@@ -3,10 +3,6 @@
 //! No I/O and no store access: every function takes captured text and returns text, an offset
 //! or a decoded address, so the parsers above it stay fixture-testable.
 
-// -------------------------------------------------------------------------------------------------
-// String primitives (no regex: nothing here can panic, every offset is bounds-checked)
-// -------------------------------------------------------------------------------------------------
-
 /// Byte offset of `needle` at or after `from`.
 pub(super) fn find_from(haystack: &str, needle: &str, from: usize) -> Option<usize> {
     haystack
@@ -174,10 +170,6 @@ pub(super) fn meaningful(value: &str) -> Option<String> {
         )
     })
 }
-
-// -------------------------------------------------------------------------------------------------
-// Email decoding
-// -------------------------------------------------------------------------------------------------
 
 fn hex_nibble(byte: u8) -> Option<u8> {
     match byte {

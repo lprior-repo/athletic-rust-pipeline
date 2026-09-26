@@ -231,7 +231,6 @@ fn fixture() -> Fixture {
     let jump = event(&store, &invite, EventKind::LongJump);
     let relay = event(&store, &state, EventKind::Relay4x400);
 
-    // The same 400m at the same meet, reported twice with different marks: the PR row must flag it.
     for (meet, event, kind, date, mark, source, url) in [
         (
             &state,
@@ -414,7 +413,6 @@ fn the_athletes_sheet_publishes_the_objective_columns_and_the_stored_facts() {
         athletes::HEADERS.to_vec()
     );
 
-    // One row per canonical class-of-2027 athlete: the out-of-cohort athlete is not published.
     assert_eq!(range.height(), 3, "header plus two cohort athletes");
 
     let row = row_of(&range, fixture.julian.as_str());
@@ -433,7 +431,6 @@ fn the_athletes_sheet_publishes_the_objective_columns_and_the_stored_facts() {
     assert_eq!(text(&range, row, 11), "yes", "XC");
     assert_eq!(text(&range, row, 12), "", "no indoor participation stored");
     assert_eq!(text(&range, row, 13), "yes", "Outdoor");
-    // PR reduction keeps only 2 events for Julian (400m and Long Jump per fixture)
     assert_eq!(
         text(&range, row, 14),
         "400m; Long Jump",
@@ -535,7 +532,6 @@ fn an_athlete_without_a_performance_is_published_as_identity_only() {
     assert_eq!(text(&range, row, 14), "", "event list is blank");
     assert_eq!(text(&range, row, 15), "", "headline PR summary is blank");
     assert_eq!(text(&range, row, 41), "", "no coach emails");
-    // Nadia's school has an athletics website in the fixture
     assert_eq!(
         text(&range, row, 44),
         "https://ada-borup.test/athletics",
@@ -567,7 +563,6 @@ fn the_prs_sheet_reduces_like_bests_and_flags_a_meet_reported_twice() {
     let range = sheet(&mut book, "PRs");
     assert_eq!(header(&range, prs::HEADERS.len()), prs::HEADERS.to_vec());
 
-    // The crate's own reduction over the same store, scope and cohort publishes the same row count.
     let canonical = bests::build(
         &fixture.store,
         &bests::Options {
@@ -583,7 +578,6 @@ fn the_prs_sheet_reduces_like_bests_and_flags_a_meet_reported_twice() {
         "one row per athlete/event"
     );
 
-    // The relay leg is not a personal best, so only the 400m and the long jump are published.
     let events: Vec<String> = (1..range.height())
         .map(|row| text(&range, row, 7))
         .collect();
@@ -1012,8 +1006,6 @@ fn the_newest_evidence_resolves_two_head_coaches_of_one_sport() {
         "the newest observation wins"
     );
 
-    // The disagreement precedence settled is still retained for a human: one row naming the school,
-    // the slot it is about, and every row the rule had to choose from.
     let recorded = disagreements(&[older.clone(), newer]);
     let disagreement = recorded.first().expect("one bucket disagreed");
     assert!(
@@ -1031,8 +1023,6 @@ fn the_newest_evidence_resolves_two_head_coaches_of_one_sport() {
         "both rows, with the address and the observation that dates them"
     );
 
-    // Two rows sharing the newest observation: neither the address nor the observation picks one, so
-    // the cell says the contact is unresolved instead of a coin toss between names.
     let tied = coach_row(
         &school,
         "Blair Newer",

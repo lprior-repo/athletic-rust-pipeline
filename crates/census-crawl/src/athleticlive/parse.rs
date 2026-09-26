@@ -176,9 +176,6 @@ fn meet_row(
     let tenant = required_field(columns, fields, "tenant", line_number)?;
     let meet_id = required_field(columns, fields, "athleticlive_meet_id", line_number)?;
     let name = required_field(columns, fields, "name", line_number)?;
-    // The harvest publishes the full state name ("Illinois"); the lenient parse is exactly this
-    // vocabulary, and a row in a territory the census does not cover is dropped like any other row
-    // with no usable state.
     let Some(state_code) = UsJurisdiction::parse(field(columns, fields, "state").unwrap_or(""))
     else {
         return Ok(None);

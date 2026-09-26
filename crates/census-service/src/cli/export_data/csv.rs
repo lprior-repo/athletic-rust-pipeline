@@ -48,8 +48,6 @@ fn write_body(
         .write_record(header)
         .map_err(|error| csv_failure(published, error))?;
     for row in rows {
-        // The escaped fields borrow the row where nothing changed, so the write takes one small
-        // vector of field views per row rather than an owned copy of every column.
         let escaped: Vec<Cow<'_, str>> = row.iter().map(|field| escape_field(field)).collect();
         writer
             .write_record(escaped.iter().map(|field| &**field))

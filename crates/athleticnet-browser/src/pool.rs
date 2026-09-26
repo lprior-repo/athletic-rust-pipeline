@@ -56,8 +56,6 @@ fn restrict_directory(_path: &Path) -> anyhow::Result<()> {
 }
 
 pub(super) fn reject_pending(pending: &mut VecDeque<Pending>, error: BrowserError) {
-    // A request that never reached the transport still leaves with a classified outcome: the
-    // verdict is derived from the same cause the drain was recorded with, not written by hand.
     let outcome = BrowserOutcome::failed(error);
     pending.drain(..).for_each(|item| {
         if item.reply.send(outcome.clone()).is_err() {

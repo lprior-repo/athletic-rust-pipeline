@@ -153,8 +153,6 @@ impl ChildGuard {
     /// only open it after the process that holds it has exited.
     fn stop_gracefully(&mut self) {
         let pid = self.child.id();
-        // No `libc` in dev-dependencies: `kill` the shell command is the portable-enough form here,
-        // and a failed kill just means the process already exited.
         let _ = Command::new("kill")
             .arg("-TERM")
             .arg(pid.to_string())
@@ -241,8 +239,6 @@ impl Node {
             ),
         )
         .expect("write the node config");
-        // Kept for the same reason the endpoint's log is: redelivery of the interrupted invocation
-        // is the node's decision, and its log is where that decision is visible.
         let log_path = root.join("restate-server.log");
         let log = std::fs::File::create(&log_path).expect("create the node log");
         let child = Command::new(&binary)
@@ -392,9 +388,6 @@ async fn paused_invocation(client: &reqwest::Client, node: &Node) -> Result<Stri
     }
     let body: serde_json::Value =
         serde_json::from_str(&text).map_err(|error| format!("{error}: {text}"))?;
-    // Column names are fixed; the envelope around them is not (this build answers a `rows` object,
-    // others a bare array), and there is exactly one `Consolidate` invocation on this node, so the
-    // id is read by looking for the row rather than by pinning the wrapper.
     let id = find_key(&body, "id").and_then(|value| value.as_str().map(str::to_string));
     id.ok_or_else(|| format!("no invocation id in the admin's answer: {text}"))
 }
@@ -450,10 +443,6 @@ async fn invoke(
         Err(format!("{status}: {text}"))
     }
 }
-
-// ---------------------------------------------------------------------------------------------
-// The synthetic corpus: the same shape the in-process test builds, sized for a kill window.
-// ---------------------------------------------------------------------------------------------
 
 struct Corpus {
     schools: Vec<CanonicalSchool>,
@@ -603,10 +592,6 @@ fn add_athlete(
     }
 }
 
-// ---------------------------------------------------------------------------------------------
-// The test.
-// ---------------------------------------------------------------------------------------------
-
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
     if server_binary().is_none() {
@@ -622,8 +607,6 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
     let data_dir = root.join("census");
     std::fs::create_dir_all(&data_dir).expect("create the census data-dir");
 
-    // 1. Build the corpus offline, through the same public store API the census uses. This is the
-    //    work the killed run will be doing when the signal lands.
     let corpus = synthetic_corpus(SCHOOLS, ATHLETES_PER_SCHOOL);
     let expected_observations = corpus.appended_rows();
     {
@@ -631,7 +614,6 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
         corpus.append(&store);
     }
 
-    // 2. A real node, and a real endpoint registered with it.
     let node_guard = Node::start(&root);
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(120))
@@ -646,11 +628,7 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
     register(&client, &node_guard, &endpoint)
         .await
         .expect("the endpoint registers");
-    // From here the endpoint guard is reused for restarts, so keep the port for the respawn.
 
-    // The consolidate run's identity: one national run per season and revision, which is the run
-    // whose merge must not be repeated. The key names the job instance; an empty table list means
-    // every table.
     let key = WorkflowIdentity::national(
         SEASON,
         REVISION,
@@ -660,8 +638,6 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
     let path_run = format!("Consolidate/{key}/run");
     let request = serde_json::json!({ "tables": [] });
 
-    // 3. Submit, let it get into the store, then kill the endpoint underneath it. The submission
-    //    future dies with the connection; that is the point.
     let submission = {
         let client = client.clone();
         let ingress = node_guard.ingress.clone();
@@ -680,25 +656,13 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
     tokio::time::sleep(KILL_DELAY).await;
     endpoint.guard.kill_hard();
     let killed = submission.await;
-    // The client either saw the reset or (if the kill landed before the request left) a refusal;
-    // both are reported, neither is an assertion, because the kill is the experiment.
     match &killed {
         Ok(Ok(status)) => eprintln!("note: submission answered {status} before the kill landed"),
         Ok(Err(error)) => eprintln!("note: submission failed as expected: {error}"),
         Err(error) => eprintln!("note: submission task panicked: {error}"),
     }
 
-    // The merge's own output is the completion signal this test reads (step 6), and the count taken
-    // here is what makes it a proof rather than a coincidence: taken immediately after the signal,
-    // before anything could resume, it says how far the merge got before it was killed.
-    //
-    // The publish location is `<store>/out/<table>.jsonl` — the job's own destination, the one the
-    // CLI consolidates to and every reader opens. `Store::table_path` is the pre-Fjall journal the
-    // one-time import reads, not a snapshot output, so counting under `entities/` counted nothing
-    // (0 of 15, every run) after the job moved here.
     let snapshot_dir = data_dir.join("out");
-    // One `stat` per table, not per `.jsonl` in the directory: `out/` also holds the run's other
-    // artifacts (bests, seal, sweep), and one of them landing must not read as a merged table.
     let snapshots_written = || {
         Table::ALL
             .into_iter()
@@ -717,16 +681,11 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
         Table::ALL.len()
     );
 
-    // 4. The run must still be known to the node: the journal is on disk, and the invocation was not
-    //    completed. Re-registering the restarted endpoint is what lets the node redeliver it.
     let mut endpoint = Endpoint::start(&data_dir, endpoint_port);
     register(&client, &node_guard, &endpoint)
         .await
         .expect("the restarted endpoint registers");
 
-    // 5. Re-submitting the same identity must not start a second execution. A workflow invocation
-    //    is one-shot — the id is the key and the node keeps the invocation the kill left in flight —
-    //    so the node refuses the repeat instead of forking the merge. That refusal is the proof.
     let attaching = reqwest::Client::builder()
         .build()
         .expect("build the attaching client");
@@ -745,12 +704,6 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
     }
     eprintln!("note: the repeat was refused as an existing invocation, so nothing forked");
 
-    // 5b. The node does not redeliver on its own. Its retry policy spends the attempts a closed
-    //     socket allows and then pauses the invocation, which is exactly the state the live node
-    //     leaves a run in (`HANDOFF.md` §"Evidence and remaining work": recovery is
-    //     `PATCH /invocations/{id}/resume` per paused row, never a fresh submission). Resuming it
-    //     is the operator's recovery step, and without it this test would be asserting a
-    //     redelivery the node never performs.
     let invocation = paused_invocation(&client, &node_guard)
         .await
         .expect("the admin names the paused invocation");
@@ -759,11 +712,6 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
         .expect("the paused invocation resumes");
     eprintln!("note: the paused invocation {invocation} was resumed");
 
-    // 6. The resume proof. This deployment registers no read handler for a consolidate run — a
-    //    workflow is answered by the invocation that owns it — so the merge's own output is the
-    //    completion signal: the pass writes one JSONL snapshot per table, in order, and the run is
-    //    done when the last one is on disk. The kill landed with only some of them written, so
-    //    reaching all of them can only mean the redelivered invocation finished the merge.
     let deadline = Instant::now() + RUN_BUDGET;
     let mut written = at_kill;
     while Instant::now() < deadline && written < Table::ALL.len() {
@@ -782,8 +730,6 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
         std::fs::read_to_string(&node_guard.log_path).unwrap_or_default(),
     );
 
-    // 7. Nothing was written twice. Observations, not merged entities: a replayed durable write
-    //    would append the whole corpus again and double this.
     endpoint.guard.stop_gracefully();
     let store = Store::open(&data_dir).expect("reopen the store after the endpoint drained");
     let stats = store.stats().expect("read store stats");
@@ -794,8 +740,6 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
         stats.observations
     );
 
-    // And the merge landed: an invocation that resumed into a no-op would satisfy the count above
-    // while merging nothing at all.
     let athletes_snapshot = data_dir.join("out").join("athletes.jsonl");
     let rows = std::fs::read_to_string(&athletes_snapshot)
         .expect("the consolidate snapshot for athletes")

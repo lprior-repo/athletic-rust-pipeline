@@ -28,8 +28,6 @@ proptest! {
         let mut coach = base;
         coach.professional_email = Some(address);
         coach.phone = Some("608-555-0100".to_string());
-        // A stored row carries a source's raw value until `publish` derives the contact fields, so
-        // the strong law is stated over a published row: merging it with itself changes nothing.
         coach.publish();
         let mut merged = coach.clone();
         merged.merge(coach.clone());
@@ -74,10 +72,6 @@ proptest! {
         prop_assert_eq!(merged, event);
     }
 }
-
-// ---------------------------------------------------------------------------
-// Union commutativity: merge order cannot change the element set
-// ---------------------------------------------------------------------------
 
 proptest! {
     #![proptest_config(law_config())]
@@ -169,9 +163,6 @@ proptest! {
         other_sport in sport(),
     ) {
         let mut first = base.clone();
-        // Replace rather than push: a pushed name could repeat one the row already carries, and
-        // `union_vec` de-duplicates only the right-hand side, so the law is stated over set-shaped
-        // rows (which is what the store writes).
         first.known_names = vec![other_name];
         first.source_identities.push(left);
         let mut second = base;

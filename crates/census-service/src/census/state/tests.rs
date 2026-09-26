@@ -13,9 +13,6 @@ use super::*;
 /// cohort, and retained findings that are non-zero on purpose (findings never block a seal).
 fn evidence() -> SealEvidence {
     SealEvidence {
-        // Every open-work field is measured and terminal. `Some(0)` is not the same claim as
-        // `None`: this fixture is the evidence of a census that read the journal and found nothing
-        // outstanding, which is what a seal requires.
         open: OpenWork {
             jurisdiction_sweeps: Some(0),
             source_objects: Some(0),
@@ -316,7 +313,6 @@ fn a_census_that_claims_work_but_proves_nothing_is_refused() {
         })
     ));
 
-    // An empty census makes no such claim, so the same zero counts are not a refusal.
     let mut empty = evidence();
     empty.counts.athletes = 0;
     empty.counts.cohort_performances = 0;
@@ -418,7 +414,6 @@ fn the_seal_digest_is_stable_and_moves_with_the_counts() {
     );
     assert_eq!(a.digest.len(), 64, "sha256 hex");
 
-    // Gap order is not evidence: the digest sorts the tallies before rendering them.
     let mut reordered = evidence();
     reordered.retained.gaps.reverse();
     let reordered = seal_from_export(reordered).expect("seals");
@@ -427,7 +422,6 @@ fn the_seal_digest_is_stable_and_moves_with_the_counts() {
         Some(a.digest.clone())
     );
 
-    // One more athlete is different evidence.
     let mut moved = evidence();
     moved.counts.athletes += 1;
     let moved = seal_from_export(moved).expect("seals");
@@ -477,8 +471,6 @@ fn the_digest_is_pinned_field_by_field() {
         "the sealed digest is that digest in lowercase hex, which is what a stored `seal.json` carries"
     );
 
-    // The silent sources are evidence rather than a comment on the findings: naming one more source
-    // that finished empty is a different census.
     let mut named = evidence();
     named.retained.silent_sources.push("wayzata_ia".to_string());
     assert_ne!(
@@ -487,7 +479,6 @@ fn the_digest_is_pinned_field_by_field() {
         "a source object that finished empty is part of what the digest identifies"
     );
 
-    // The tri-state is part of the wire: a count nobody took must not digest as a measured zero.
     let mut unmeasured = evidence();
     unmeasured.retained.source_failures = None;
     assert_ne!(
@@ -527,7 +518,6 @@ fn digest_of(state: &CensusState) -> String {
 fn the_seal_binds_the_workbook_it_certifies() {
     let base = digest_of(&seal_from_export(evidence()).expect("seals"));
 
-    // The same counts, a different export: a seal that cannot tell these apart certifies neither.
     let mut reexported = evidence();
     reexported.workbook.digests = vec!["9a9a9a".to_string()];
     assert_ne!(
@@ -542,7 +532,6 @@ fn the_seal_binds_the_workbook_it_certifies() {
         digest_of(&seal_from_export(resheeted).expect("seals"))
     );
 
-    // Workbook digests arrive in whatever order the filesystem lists them.
     let mut reordered = evidence();
     reordered.workbook.digests = vec!["ff".to_string(), "00".to_string()];
     let mut sorted = evidence();
@@ -630,20 +619,16 @@ fn a_source_object_is_owed_until_it_accepts_an_observation_or_completes_a_window
         observations: 1,
         windows: 0,
     };
-    // Rows already durable from an earlier run: the resumed walk posts nothing and closes its window,
-    // which is a terminal acquisition state rather than outstanding work.
     let resumed = SourceObject {
         endpoint: "wayzata_mn".to_string(),
         observations: 0,
         windows: 1,
     };
-    // Read and genuinely empty: the closed window still records that the walk finished.
     let empty_read = SourceObject {
         endpoint: "wiaa_results_wi".to_string(),
         observations: 0,
         windows: 3,
     };
-    // Neither: no batch posted and no window declared, so the object is owed.
     let untouched = SourceObject {
         endpoint: "never_walked".to_string(),
         observations: 0,
@@ -679,7 +664,6 @@ fn the_objects_that_finished_empty_are_named_rather_than_owed() {
         observations: 0,
         windows: 3,
     };
-    // Named, never read: no window, so this is owed work rather than a source of no rows.
     let untouched = SourceObject {
         endpoint: "never_walked".to_string(),
         observations: 0,

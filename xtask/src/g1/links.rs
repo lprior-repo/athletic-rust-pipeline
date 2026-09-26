@@ -15,8 +15,6 @@ pub(crate) fn path_of(href: &str) -> &str {
     let mut value = href;
     for prefix in ABS_PREFIXES {
         if value.to_lowercase().starts_with(prefix) {
-            // `to_lowercase` is not length-preserving for every code point, so `prefix.len()` is only
-            // a candidate boundary: a URL that does not cut there is left whole instead of panicking.
             if let Some(tail) = value.get(prefix.len()..) {
                 value = tail;
             }

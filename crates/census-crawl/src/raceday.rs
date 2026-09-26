@@ -21,13 +21,9 @@ mod title;
 
 pub use parse::parse;
 
-// The test file reads the division helper through `use super::*`, and `parse` binds it on its
-// own, so it is bound here for the tests instead of widening the helper's visibility.
 #[cfg(test)]
 use title::division_of;
 
-// The test file reads the model and result types through `use super::*`; the parser imports them
-// for its own use, so they are bound for tests only instead of widening the parser's imports.
 #[cfg(test)]
 use census_domain::model::{CentiSeconds, EventKind, Gender, Grade, Mark, SourceRef};
 

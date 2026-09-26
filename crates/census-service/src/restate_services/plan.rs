@@ -238,7 +238,6 @@ pub fn compute_plan_fingerprint(
 ) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
-    // Fixed order, no map, no clock: jurisdiction code + season + revision + lane state.
     hasher.update(jurisdiction.code().as_bytes());
     hasher.update(season.short().as_bytes());
     hasher.update(revision.get().to_string().as_bytes());

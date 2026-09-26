@@ -11,8 +11,6 @@ use std::collections::HashMap;
 
 /// Reduce the consolidated tables to one best mark per `(athlete, event)`.
 pub fn build(store: &Store, options: &Options) -> StoreResult<Vec<BestResult>> {
-    // Read the store itself: the report reads the store too, and a snapshot left behind by an older
-    // `consolidate` would silently disagree with it.
     let athletes: Vec<CanonicalAthlete> = scan_scoped(store, Table::Athletes, options.scope)?;
     let meets: Vec<CanonicalMeet> = scan_scoped(store, Table::Meets, options.scope)?;
     let events: Vec<CanonicalEvent> = scan_scoped(store, Table::Events, options.scope)?;
@@ -23,9 +21,6 @@ pub fn build(store: &Store, options: &Options) -> StoreResult<Vec<BestResult>> {
     let kind_of: HashMap<&str, &EventKind> =
         events.iter().map(|e| (e.id.as_str(), &e.kind)).collect();
 
-    // The performances are the one table that scales with every meet ever walked, and the reduction
-    // holds one row per `(athlete, event)` — so the rows are streamed, merged one id at a time, and
-    // only the reduction lives on.
     let mut bests: HashMap<(String, String), BestResult> = HashMap::new();
     let mut counts: HashMap<(String, String), usize> = HashMap::new();
     store.for_each_merged(Table::Performances, |mut performance| {
@@ -123,8 +118,6 @@ fn accumulate(
     };
     let event_label = kind.stable_key().into_owned();
     let key = (athlete.id.as_str().to_string(), event_label.clone());
-    // A count is bounded by the scanned performance rows, so saturation is unreachable; it is
-    // here so a change to that bound can never wrap the counter.
     let counter = counts.entry(key.clone()).or_insert(0);
     *counter = counter.saturating_add(1);
 
@@ -165,8 +158,6 @@ fn best_row(
         athlete_id: athlete.id.as_str().to_string(),
         name: athlete.canonical_name.clone(),
         school: athlete.school.as_str().to_string(),
-        // CSV cell: the jurisdiction code, or the unresolved sentinel when the winning mark's meet
-        // (or the meet's venue) could not be placed in one.
         state: MeetState::from(meet.and_then(|meet| meet.state)),
         grad_year: athlete.grad_year.get(),
         gender: athlete.gender.stable_key().to_string(),

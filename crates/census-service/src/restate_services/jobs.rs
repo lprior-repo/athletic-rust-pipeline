@@ -58,10 +58,6 @@ pub(super) fn consolidate_tables(
 ) -> StoreResult<Vec<ConsolidatedTable>> {
     let mut out = Vec::with_capacity(tables.len());
     for table in tables {
-        // The same location the CLI consolidates to and every reader opens: `<store>/out/<table>.jsonl`.
-        // `Store::table_path` is the pre-Fjall journal the one-time import reads, not a snapshot
-        // output, so publishing there left the read model this run is supposed to refresh unreachable
-        // to `report`, `bests`, the workbook and every adapter.
         let path = store.out_dir().join(format!("{}.jsonl", table.file()));
         let consolidated = store.consolidate_table(*table, &path)?;
         out.push(ConsolidatedTable {
@@ -78,8 +74,6 @@ pub(super) fn build_report(store: &Store, scope: Scope) -> ReportResult<ReportRe
     Ok(ReportReply {
         scope: scope.as_str().to_string(),
         generated_on: census.generated_on.clone(),
-        // Encoding a value this model already holds cannot fail, and `Decode` is the reader-shaped
-        // slot, so the serialize site rides `Invariant` exactly as `report::write_census` does.
         totals: serde_json::to_value(&census.totals).map_err(|source| ReportError::Invariant {
             detail: format!("the census totals are not valid json: {source}"),
         })?,
@@ -89,8 +83,6 @@ pub(super) fn build_report(store: &Store, scope: Scope) -> ReportResult<ReportRe
 }
 
 pub(super) fn build_bests(store: &Store, options: &bests::Options) -> ReportResult<BestsReply> {
-    // `bests` reports store failures, which `ReportError` absorbs through its `#[from]`: the reply
-    // and the reduction it summarizes travel as one error type.
     let rows = bests::build(store, options)?;
     let cohort = cohort_label(options.grad_year);
     let (jsonl, csv_path) = bests::write(store, &rows, &cohort)?;
@@ -133,8 +125,6 @@ pub(super) fn write_sweep_report(
     })?;
     Ok(path)
 }
-
-// ------------------------------------------------------- jurisdiction census stages
 
 pub(super) use super::meets_arms::meets_stage;
 pub(super) use super::results_arms::results_stage;
@@ -250,12 +240,9 @@ pub fn collect_error(error: CrawlError) -> JobError {
     match error {
         CrawlError::Store(source) => JobError::from(source),
         CrawlError::Invariant { detail } => JobError::Terminal { message: detail },
-        // Encode a row for the wire once; a replay cannot fix a broken row.
         error @ CrawlError::Encode { .. } => JobError::Terminal {
             message: error.to_string(),
         },
-        // Schema, Decode, Domain and Arithmetic are all deterministic: the same input reproduces
-        // the same failure, so a retry is pointless.
         CrawlError::Schema { .. }
         | CrawlError::Decode { .. }
         | CrawlError::Domain(..)
@@ -264,9 +251,6 @@ pub fn collect_error(error: CrawlError) -> JobError {
         | CrawlError::RegexInit { .. } => JobError::Terminal {
             message: error.to_string(),
         },
-        // Let the transport decide: it classified the failure as retryable or not, and the census
-        // honours that verdict. A fetch the transport says can be retried rides Transient; one it
-        // says cannot (robots, TooLarge, BrowserLane { retryable: false }) is terminal.
         CrawlError::Fetch(e) if e.retryable() => JobError::Transient {
             message: e.to_string(),
         },

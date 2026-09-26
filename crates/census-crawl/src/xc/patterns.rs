@@ -10,11 +10,8 @@ static DATE_NAMED: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?i)\b([A-Z][a-z]{2,8})\s+(\d{1,2}),\s*(\d{4})\b"));
 static DATE_SLASH: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b"));
-static SECTION_BANNER: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
-    // The inner text must start with a letter or digit: a bare `====` run is a table rule, not a
-    // banner, and the AccuRace layout is read through those rules.
-    Regex::new(r"^(?:=+|\*+)\s*([A-Za-z0-9].*?)\s*(?:=+|\*+)$")
-});
+static SECTION_BANNER: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"^(?:=+|\*+)\s*([A-Za-z0-9].*?)\s*(?:=+|\*+)$"));
 static GENDER_HEADING: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?i)^(boys|girls|men|women)['\u{2019}]?(?:\s+(.+?))?\s*$"));
 static DIVISION: LazyLock<Result<Regex, regex::Error>> =
@@ -39,8 +36,6 @@ static GRADE_TABLE_ROW: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(||
 static RACE_BANNER: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?i)^(boys|girls|men|women)['\u{2019}]?\s*(.*)$"));
 
-// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
-// back as a typed error that the readers answer as "this file carries no meet" — never a panic.
 pub(super) fn page_stamp() -> CrawlResult<&'static Regex> {
     PAGE_STAMP.as_ref().map_err(|source| CrawlError::RegexInit {
         pattern: "PAGE_STAMP",

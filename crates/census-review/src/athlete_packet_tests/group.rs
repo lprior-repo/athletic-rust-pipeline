@@ -62,7 +62,6 @@ fn a_packet_carries_both_sides_source_identity_fields() {
         );
     }
 
-    // The same provider object on both rows: the id is the provider's, so it is stated as theirs.
     assert_eq!(
         stated(&packet, "milesplit_athlete", "side_a_athlete_id"),
         Some("14399169".to_string())
@@ -95,7 +94,6 @@ fn a_packet_carries_both_sides_source_identity_fields() {
         Some("Girls".to_string())
     );
 
-    // The class each side's own observations imply, which is the evidence behind the cohort key.
     assert_eq!(
         stated(&packet, "census", "side_a_grad_evidence"),
         Some("grade 11 in 2025-26 implies 2027 (from milesplit_roster)".to_string())
@@ -105,7 +103,6 @@ fn a_packet_carries_both_sides_source_identity_fields() {
         Some("grade 10 in 2025-26 implies 2028 (from milesplit_roster)".to_string())
     );
 
-    // The question and the answers it takes, stated by the packet rather than inferred by a model.
     assert_eq!(
         stated(&packet, "census", "answer_field"),
         Some("identity".to_string())

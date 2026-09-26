@@ -65,9 +65,6 @@ pub(super) async fn walk_season(
         walk.fetched = walk.fetched.saturating_add(usize::from(!read.journaled));
         walk.seen = walk.seen.saturating_add(read.meets.len());
         let ids: Vec<String> = read.meets.iter().map(|meet| meet.meet_id.clone()).collect();
-        // The pager's own end signal: a page that repeats its predecessor byte for byte (by meet id)
-        // is the site saying "no more", and stopping there is what makes the walk terminate on the
-        // site's terms instead of this stage's bound.
         if repeats_previous(previous.as_deref(), &ids) {
             walk.repeated = walk.repeated.saturating_add(1);
             warn_repeated(reader, page);
@@ -79,8 +76,6 @@ pub(super) async fn walk_season(
             break;
         }
         if page >= MAX_PAGES_PER_SEASON {
-            // The pager still offered a next page, so this season's census is short of the published
-            // set. Counted and logged rather than passed off as a complete read.
             walk.truncated = walk.truncated.saturating_add(1);
             warn_truncated(reader, page);
             break;
@@ -125,8 +120,6 @@ async fn read_season_page(
     )
     .await?;
     if !journaled {
-        // One batch per marker, committed on its own: the marker is the walk's own commit boundary,
-        // and a routed run must hold it until the rows it covers are posted.
         let mut batch = sink.write_batch();
         batch.journal_done(phase, &key, &serde_json::json!({ "meets": meets.len() }))?;
         batch.commit()?;

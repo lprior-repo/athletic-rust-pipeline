@@ -163,7 +163,6 @@ fn event_document_rows_carry_the_published_shapes() {
     assert_eq!(xc.event_id(), Some(2_150_205));
     assert_eq!(xc.meet_id(), Some(STATE_MEET));
     assert_eq!(xc.rows.len(), 136);
-    // `xc: true` outranks the published label, and the label is still read as published.
     assert_eq!(xc.label(), Some("Run"));
     assert_eq!(xc.kind(), EventKind::CrossCountry);
     assert_eq!(xc.gender_group.as_deref(), Some("Girls"));
@@ -191,7 +190,6 @@ fn event_document_rows_carry_the_published_shapes() {
         0,
         "a field event publishes no splits"
     );
-    // A field mark keeps the published notation, and its metres are the integer channel's.
     assert_eq!(
         hj.rows[0].canonical_mark(&EventKind::HighJump),
         Some(Mark::FieldImperial {
@@ -199,12 +197,10 @@ fn event_document_rows_carry_the_published_shapes() {
             metres: CentiMetres::new(157),
         })
     );
-    // `NH` publishes `im: 0`: the athlete competed, and there is no mark to mint.
     let no_height = &hj.rows[13];
     assert_eq!(no_height.mark.as_deref(), Some("NH"));
     assert_eq!(no_height.canonical_mark(&EventKind::HighJump), None);
     assert_eq!(no_height.place(), None, "an unplaced row publishes `--`");
-    // The grade cell is published empty on one row: an empty token is no grade, not grade zero.
     let blank_grade = &hj.rows[10];
     assert_eq!(blank_grade.mark.as_deref(), Some("4-06.00"));
     assert_eq!(
@@ -358,7 +354,6 @@ async fn collect_maps_a_captured_state_final_into_the_canonical_tables() {
 
     let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes).expect("athletes read");
     assert_eq!(athletes.len(), 136);
-    // The meet is a fall one, so the school year is 2025-26: a senior is the class of 2026.
     assert_eq!(
         school_year_for_date(
             &meets[0].date,
@@ -373,10 +368,6 @@ async fn collect_maps_a_captured_state_final_into_the_canonical_tables() {
         .iter()
         .any(|athlete| athlete.grad_year == GradYear::new(2029).expect("2029 is a cohort")));
 
-    // Every performance whose athlete object published an Athletic.net id names that object, and the
-    // identity it names is one its athlete row holds: the §31 key that lets a mis-merged athlete be
-    // told apart from what the capture said, without reading the capture again. The capture's four
-    // rows whose athlete object published no id stay unnamed rather than borrowing a canonical id.
     let by_id: HashMap<&str, &CanonicalAthlete> = athletes
         .iter()
         .map(|athlete| (athlete.id.as_str(), athlete))
@@ -431,8 +422,6 @@ async fn a_result_pass_files_one_observation_per_athlete_id_the_capture_publishe
         .expect("the run completes");
     assert_eq!(report.errors, 0, "{}", joined(&report));
 
-    // The capture's own ledger: one entry per row that publishes an Athletic.net athlete id, holding
-    // the name, the school and the class token the capture printed beside that id.
     let grade_number = |token: &str| match token {
         "FR" => Some(9),
         "SO" => Some(10),
@@ -536,7 +525,6 @@ async fn a_result_pass_files_one_observation_per_athlete_id_the_capture_publishe
 #[tokio::test]
 async fn club_labels_and_an_empty_grade_cell_are_refused_not_invented() {
     let (dir, store, fetcher) = scratch();
-    // The index holds one genuine Michigan school; not one of the capture's club labels names it.
     write_schools(
         &store,
         &[(UsJurisdiction::Michigan, "East Kentwood High School")],
@@ -564,8 +552,6 @@ async fn club_labels_and_an_empty_grade_cell_are_refused_not_invented() {
         assert!(notes.contains(expected), "missing `{expected}` in:\n{notes}");
     }
 
-    // The meet and its event are still minted: the capture placed the race even though it placed no
-    // school.
     let meets: Vec<CanonicalMeet> = store.scan(Table::Meets).expect("meets read");
     assert_eq!(meets.len(), 1);
     assert_eq!(meets[0].id.as_str(), mits_meet().meet_id);
@@ -633,7 +619,6 @@ async fn a_standings_capture_folds_into_the_event_that_published_its_run_key() {
         .await
         .expect("the run completes");
     let notes = joined(&report);
-    // The document published run key `1-1`, so the capture is filed under that race.
     assert_eq!(report.errors, 0, "{notes}");
     assert!(
         notes.contains("documents: 1 event documents, 1 standings"),
@@ -643,8 +628,6 @@ async fn a_standings_capture_folds_into_the_event_that_published_its_run_key() {
         notes.contains("legacy ids 1, short team keys 1"),
         "the `anli` and `ti` channels are read and counted: {notes}"
     );
-    // Seven Waukon rows map; the standings row is the twenty-sixth runner, whose name, grade, school
-    // and event key the document already minted, so both routes land on one performance.
     assert!(
         notes.contains("rows read: 137 (mapped 8, skipped 129)"),
         "{notes}"
@@ -668,7 +651,6 @@ async fn a_standings_capture_folds_into_the_event_that_published_its_run_key() {
         Some(Some(event_doc_url(2_150_205))),
         "the document was folded first, so its evidence is the one kept"
     );
-    // `anli` is counted, never minted: no entity carries it as an identity.
     let identities: Vec<String> = store
         .scan::<CanonicalAthlete>(Table::Athletes)
         .expect("athletes read")
@@ -772,7 +754,6 @@ async fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() {
         ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
     };
 
-    // The interrupted walk: it reads its capture, then the run ends before the append.
     let mut walk =
         Run::new(&context(&store, &fetcher), &state_meet(), &options).expect("the walk opens");
     walk.read_captures(&options).expect("the capture is read");
@@ -790,7 +771,6 @@ async fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() {
     );
     drop(walk);
 
-    // The next run: the same capture, read again, with its rows and its entry landing together.
     let report = collect(&context(&store, &fetcher), &options)
         .await
         .expect("the second run completes");
@@ -813,8 +793,6 @@ async fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() {
 
 #[tokio::test]
 async fn the_event_summary_lists_individual_events_and_excludes_relays() {
-    // Written to the shape `docs/events.rs` documents, because the summary capture (19,932 B) is
-    // outside this lane's fixture budget.
     let summary = r#"{"a":{"i":2254280,"ec":"Individual","rui":"19-1","ab":"HJ","un":"High Jump","gl":"Girls"},
             "b":{"i":999001,"ec":"Relay","rui":"7-1","peb":"Relay","ab":"4x400m"},
             "c":{"i":999002,"ec":"Individual","ab":"Underwater Basket Weaving"}}"#.to_string();
@@ -831,7 +809,6 @@ async fn the_event_summary_lists_individual_events_and_excludes_relays() {
     );
     assert_eq!(events[0].event_id(), Some(2_254_280));
 
-    // One summary payload the run reads through, with one of its two individual events supplied.
     let (dir, store, fetcher) = scratch();
     write_schools(
         &store,
@@ -917,8 +894,6 @@ async fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() {
         );
     }
 
-    // The meet the results route minted is the one the harvest route already minted: same id, so
-    // importing results never forks a second canonical meet for one published meet.
     let meets: Vec<CanonicalMeet> = store.scan(Table::Meets).expect("meets read");
     assert_eq!(meets.len(), 2, "one canonical meet per manifest entry");
     for expected in [state_meet().meet_id, mits_meet().meet_id] {

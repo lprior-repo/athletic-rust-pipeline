@@ -112,7 +112,6 @@ fn streaming_merge_does_not_materialize_the_table() {
     let dir = tempfile::tempdir().expect("a temp dir");
     let streamed_store = seeded(&dir.path().join("streamed"));
 
-    // Pass 1: the streaming merge, holding nothing but the id in hand.
     let before = resident_bytes();
     let mut visited = Vec::new();
     streamed_store
@@ -123,7 +122,6 @@ fn streaming_merge_does_not_materialize_the_table() {
         .expect("the streaming pass reads the table");
     let after_stream = resident_bytes();
 
-    // Pass 2: the collecting scan, holding every merged row.
     let collected_store = seeded(&dir.path().join("collected"));
     let before_scan = resident_bytes();
     let collected: Vec<CanonicalPerformance> = collected_store
@@ -131,7 +129,6 @@ fn streaming_merge_does_not_materialize_the_table() {
         .expect("the collecting pass reads the table");
     let after_scan = resident_bytes();
 
-    // The two passes read the same table: same ids, same order, one row per athlete.
     let collected_ids: Vec<String> = collected
         .iter()
         .map(|row| row.id.as_str().to_string())

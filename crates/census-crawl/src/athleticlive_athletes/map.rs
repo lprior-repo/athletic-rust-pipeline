@@ -136,8 +136,6 @@ fn absorb_hit(
     let Some(row) = decode_row(hit, targets, observed_on, fallback_year, out) else {
         return;
     };
-    // School: canonical id from state + normalized name, so a MileSplit school of the same name
-    // and state mints the same school.
     let school_id = row_school(&mut minted.schools, &row);
     let team_entry = row_team(&mut minted.teams, &school_id, &row);
     note_team_ids(row.team, row.target, team_entry, &mut out.rows_with_team_id);
@@ -152,7 +150,6 @@ fn absorb_athlete(
     minted: &mut Minted,
     out: &mut BatchEntities,
 ) {
-    // Grade is required: an athlete entity is minted from (school, name, grad year, gender).
     let Some(grade) = row.grade else { return };
     out.rows_with_grade = out.rows_with_grade.saturating_add(1);
     let grad_year = GradYear::of(grade, row.school_year);
@@ -165,7 +162,8 @@ fn absorb_athlete(
         .athletes
         .entry(athlete_id.as_str().to_string())
         .or_insert_with(|| {
-            let mut athlete = CanonicalAthlete::new(school_id, row.name, grad_year, row.gender, source);
+            let mut athlete =
+                CanonicalAthlete::new(school_id, row.name, grad_year, row.gender, source);
             athlete.sports.push(row.sport);
             athlete.evidence.push(row.evidence.clone());
             athlete
@@ -265,16 +263,27 @@ fn note_team_ids(
 /// A meet-entry key is evidence about that entry, not an identity merge across meets.
 fn source_identity(hit: &AthleteHit, provider: &str) -> Option<SourceIdentity> {
     if let Some(id) = hit.athletic_net_athlete_id() {
-        return Some(SourceIdentity::new(SourceNamespace::LegacyAthleticNet {
-            kind: "athlete".to_string(),
-        }, id.to_string()));
+        return Some(SourceIdentity::new(
+            SourceNamespace::LegacyAthleticNet {
+                kind: "athlete".to_string(),
+            },
+            id.to_string(),
+        ));
     }
     let (meet, row) = hit.meet_id().zip(hit.athleticlive_row_id())?;
-    Some(SourceIdentity::new(SourceNamespace::TimerAthlete { provider: provider.to_string() },
-        format!("meet:{meet}:entry:{row}")))
+    Some(SourceIdentity::new(
+        SourceNamespace::TimerAthlete {
+            provider: provider.to_string(),
+        },
+        format!("meet:{meet}:entry:{row}"),
+    ))
 }
 
-fn note_athlete_ids(entry: &mut CanonicalAthlete, hit: &AthleteHit, rows_with_athlete_id: &mut usize) {
+fn note_athlete_ids(
+    entry: &mut CanonicalAthlete,
+    hit: &AthleteHit,
+    rows_with_athlete_id: &mut usize,
+) {
     if let Some(id) = hit.athletic_net_athlete_id() {
         *rows_with_athlete_id = rows_with_athlete_id.saturating_add(1);
         let profile = format!("https://www.athletic.net/athlete/{id}/track-and-field");

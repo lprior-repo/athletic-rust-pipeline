@@ -59,28 +59,17 @@ pub fn parse_coach(
 
     let name = strip_honorific(&person.name);
     let mut coach = match role {
-        CoachRole::AthleticDirector => CanonicalCoach::new(
-            school_id,
-            &name,
-            None,          // school-wide role
-            Gender::Mixed, // AD is not gender-specific
-            role,
-        ),
-        _ => {
-            // Coaching role. Titles outside track & field / cross country ("Boys Bowling Head
-            // Coach") are still kept as coaches of the school, but they carry no sport: guessing
-            // outdoor track here would present a basketball coach as a track coach.
-            match parse_coach_title(title) {
-                Some((sport, gender)) => {
-                    CanonicalCoach::new(school_id, &name, Some(sport), gender, role)
-                }
-                None => CanonicalCoach::new(school_id, &name, None, Gender::Mixed, role),
-            }
+        CoachRole::AthleticDirector => {
+            CanonicalCoach::new(school_id, &name, None, Gender::Mixed, role)
         }
+        _ => match parse_coach_title(title) {
+            Some((sport, gender)) => {
+                CanonicalCoach::new(school_id, &name, Some(sport), gender, role)
+            }
+            None => CanonicalCoach::new(school_id, &name, None, Gender::Mixed, role),
+        },
     };
 
-    // `staff2` publishes the person, not the address — the collector fills the contact from the
-    // reveal endpoint when `HasEmail` is set.
     if let Some(address) = person.email.as_deref() {
         coach.set_published_email(address);
     }

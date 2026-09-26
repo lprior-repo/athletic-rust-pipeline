@@ -127,13 +127,7 @@ pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<Ind
             RetainedConflict::new(family, &row.subject_id, &row.subject, &row.detail)
         })
         .collect();
-    // The collisions the canonical rows' own merges retained join the same queue: a canonical id two
-    // natural keys minted is a retained conflict like any other, and it has to reach a reader of the
-    // store, not only a reader of the row that kept it.
     conflicts.extend(pass.collisions);
-    // A case is minted in the state its family starts in and then merged with the row the store
-    // holds for the same question: a decision an earlier pass recorded is what that row says, and a
-    // finding has to be derived again for its case to be written again at all.
     let stored = stored_cases(store)?;
     let reviews: Vec<ReviewCase> = retained
         .reviews
@@ -144,17 +138,12 @@ pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<Ind
         })
         .collect();
 
-    // Derived tables are replaced rather than appended: their ids are functions of the findings they
-    // name, so a repeated pass overwrites the row it wrote before instead of adding another copy.
     store.replace_many(Table::SourceIdentities, &pass.identities)?;
     store.replace_many(Table::Conflicts, &conflicts)?;
     store.replace_many(Table::ReviewCases, &reviews)?;
     store.replace_many(Table::Coverage, &coverage)?;
     let superseded = supersede(store, &stored, &reviews)?;
 
-    // The snapshot is taken after every append above: the counters it records are the store's
-    // cumulative appended-observation totals once this pass finished, which is what a later reader
-    // asking "how much is in the store, and as of when" needs.
     store.replace(Table::Snapshots, &snapshot_row(store, phase, finished_at)?)?;
 
     Ok(IndexReport {
@@ -219,8 +208,6 @@ fn canonical_pass(store: &Store) -> ReportResult<CanonicalPass> {
     absorb(&mut pass, store.scan::<CanonicalCoach>(Table::Coaches)?);
     absorb(&mut pass, store.scan::<CanonicalAthlete>(Table::Athletes)?);
     absorb(&mut pass, store.scan::<CanonicalMeet>(Table::Meets)?);
-    // Events and performances name no provider identity of their own — §31 carries an event's and a
-    // performance's provider ids — so they contribute only the collisions their merges retained.
     take_collisions(
         &mut pass,
         store.scan::<CanonicalEvent>(Table::Events)?.iter(),

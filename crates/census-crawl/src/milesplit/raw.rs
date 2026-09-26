@@ -58,7 +58,6 @@ pub fn parse_raw(html: &str, url: &str) -> CrawlResult<RawPage> {
             name: facts.name,
             date: facts.date,
             end_date: facts.end_date,
-            // The file names the meet's host, not the timing vendor; no timer is published here.
             timer: None,
             events,
             rows_parsed: block.rows_parsed,

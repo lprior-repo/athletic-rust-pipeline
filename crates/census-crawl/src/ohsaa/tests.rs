@@ -3,54 +3,41 @@
 use super::*;
 use census_domain::model::{CoachRole, Gender, Sport};
 
-// ── Fixture data ─────────────────────────────────────────────────────
-
-// Trimmed Dublin Coffman search: one unique row
 fn fixture_search_dublin() -> &'static str {
     include_str!("../../tests/fixtures/ohsaa/search_dublin_coffman.html")
 }
 
-// Dublin Coffman sports page (all sports, XC + T&F present)
 fn fixture_sports_dublin() -> &'static str {
     include_str!("../../tests/fixtures/ohsaa/sports_dublin_coffman.html")
 }
 
-// Centerville sports (XC + T&F boys, girls TBA)
 fn fixture_sports_centerville() -> &'static str {
     include_str!("../../tests/fixtures/ohsaa/sports_centerville.html")
 }
 
-// Dublin Coffman AD page (AD + assistant AD + secretaries)
 fn fixture_ad_dublin() -> &'static str {
     include_str!("../../tests/fixtures/ohsaa/ad_dublin_coffman.html")
 }
 
-// Centerville AD page (AD + assistant AD)
 fn fixture_ad_centerville() -> &'static str {
     include_str!("../../tests/fixtures/ohsaa/ad_centerville.html")
 }
 
-// Search with duplicate rows (same ohsaaId repeated)
 fn fixture_search_duplicates() -> &'static str {
     include_str!("../../tests/fixtures/ohsaa/search_duplicate_rows.html")
 }
 
-// Search with no results table
 fn fixture_search_no_results() -> &'static str {
     include_str!("../../tests/fixtures/ohsaa/search_no_results.html")
 }
 
-// Malformed sports HTML
 fn fixture_sports_malformed() -> &'static str {
     include_str!("../../tests/fixtures/ohsaa/sports_malformed.html")
 }
 
-// Malformed AD HTML
 fn fixture_ad_malformed() -> &'static str {
     include_str!("../../tests/fixtures/ohsaa/ad_malformed.html")
 }
-
-// ── Search parsing tests ─────────────────────────────────────────────
 
 #[test]
 fn parse_search_returns_unique_schools() {
@@ -83,8 +70,6 @@ fn parse_search_empty_yields_empty_vec() {
         "search with no results table should return empty vec, not error"
     );
 }
-
-// ── Sports parsing tests ─────────────────────────────────────────────
 
 #[test]
 fn parse_sports_table_extracts_xc_coaches() {
@@ -166,8 +151,6 @@ fn parse_coach_cell_parses_mailto() {
     );
 }
 
-// ── AD parsing tests ─────────────────────────────────────────────────
-
 #[test]
 fn parse_ad_page_extracts_director() {
     let ad = parse_ad_page(fixture_ad_dublin());
@@ -180,7 +163,6 @@ fn parse_ad_page_extracts_director() {
 #[test]
 fn parse_ad_page_excludes_office_roles_from_director() {
     let ad = parse_ad_page(fixture_ad_dublin());
-    // Office roles should be in the office_roles list, not as director
     assert_eq!(ad.office_roles.len(), 2, "should have 2 office roles");
     let role_names: Vec<&str> = ad.office_roles.iter().map(|(l, _)| l.as_str()).collect();
     assert!(
@@ -191,7 +173,6 @@ fn parse_ad_page_excludes_office_roles_from_director() {
         role_names.contains(&"assistant athletic secretary"),
         "assistant secretary should be in office roles"
     );
-    // Director should NOT be in office roles
     assert!(
         !role_names.contains(&"athletic director"),
         "AD must not appear in office roles list"
@@ -207,8 +188,6 @@ fn parse_ad_page_malformed_yields_empty() {
     );
 }
 
-// ── Entity building tests ────────────────────────────────────────────
-
 #[test]
 fn school_entities_includes_ad_and_xc_coaches() {
     let sr = SearchResult {
@@ -223,15 +202,12 @@ fn school_entities_includes_ad_and_xc_coaches() {
         "2026-09-19",
     );
 
-    // School
     assert_eq!(extract.school.name, "DUBLIN COFFMAN");
     assert_eq!(extract.school.city, Some("Dublin".to_string()));
     assert_eq!(extract.school.association, Some("ohsaa".to_string()));
 
-    // Coaches: AD + XC boys + XC girls + TF boys + TF girls = 5
     assert_eq!(extract.coaches.len(), 5, "should have AD + 4 coach rows");
 
-    // Verify coach types
     let roles: Vec<String> = extract
         .coaches
         .iter()
@@ -239,8 +215,6 @@ fn school_entities_includes_ad_and_xc_coaches() {
         .collect();
     assert!(roles.contains(&"AthleticDirector".to_string()));
 
-    // Verify all coaches carry the address the page published: the professional field when the
-    // address is an organisation mailbox, the personal one when it is a consumer mailbox.
     let all_have_email = extract
         .coaches
         .iter()
@@ -265,18 +239,14 @@ fn school_entities_handles_tba_girls_coach() {
         "2026-09-19",
     );
 
-    // AD + XC boys + XC girls + TF boys = 4 (girls T&F is TBA)
     assert_eq!(extract.coaches.len(), 4);
 
-    // Verify T&F girls is missing
     let tf_girls = extract
         .coaches
         .iter()
         .find(|c| matches!(c.sport, Some(Sport::OutdoorTrack)) && c.gender == Gender::Girls);
     assert!(tf_girls.is_none(), "T&F girls should not be present (TBA)");
 }
-
-// ── Honorific stripping tests ────────────────────────────────────────
 
 #[test]
 fn strip_honorific_removes_prefixes() {
@@ -291,13 +261,8 @@ fn strip_honorific_removes_prefixes() {
     );
 }
 
-// ── Office role exclusion tests ──────────────────────────────────────
-
 #[test]
 fn office_roles_never_imported_as_coaches() {
-    // The AD page fixture has Assistant AD (Scott Caster) and
-    // Assistant Athletic Secretary (Andrea Guilliams) — these must
-    // NOT appear as coaches or athletic directors in the output.
     let sr = SearchResult {
         name: "DUBLIN COFFMAN".to_string(),
         city: "Dublin".to_string(),
@@ -328,8 +293,6 @@ fn office_roles_never_imported_as_coaches() {
     );
 }
 
-// ── Malformed / empty payload tests ──────────────────────────────────
-
 #[test]
 fn malformed_search_does_not_panic() {
     let results = parse_search("<html><body><p>No table here</p></body></html>");
@@ -347,8 +310,6 @@ fn malformed_ad_does_not_panic() {
     let ad = parse_ad_page("<html><body><p>No table</p></body></html>");
     assert!(ad.director.is_none());
 }
-
-// ── Sport label mapping tests ────────────────────────────────────────
 
 #[test]
 fn parse_sport_label_maps_correctly() {

@@ -110,9 +110,6 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
     let mut book: Xlsx<_> = open_workbook(&path).unwrap();
     let names = book.sheet_names().to_vec();
 
-    // The published list, in the order it is written; the module documentation of
-    // `census_report::workbook` is the authority. The legacy census views are superseded because
-    // their numbers are published by `Coverage`, `Sources`, `Run Metrics` and `PRs`.
     let published = [
         "Athletes",
         "PRs",
@@ -137,7 +134,6 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
         "no sheet name is written twice"
     );
 
-    // The best-mark reduction picked the fastest 400 and the longest jump.
     let bests = bests::build(
         &store,
         &bests::Options {
@@ -160,8 +156,6 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
     assert_eq!(jump.best_mark, "6.42 m");
     assert!(jump.place.is_none());
 
-    // The best-mark reduction reaches the workbook on the `PRs` sheet, one row per athlete/event;
-    // the text sidecars carry the same reduction.
     let range = book.worksheet_range("PRs").unwrap();
     assert_eq!(
         range.get_value((0, 0)).map(|v| v.to_string()),

@@ -27,9 +27,6 @@ pub(super) fn resolve_school(
 ) -> Option<SchoolId> {
     let index = writer.index;
     let jurisdiction = context.jurisdiction;
-    // The memo holds the resolution, the counters hold this row's outcome: a label resolved once
-    // still has to be counted for every row that published it, or a capture of many rows is
-    // reported as a handful of refusals.
     let resolved = writer
         .resolved
         .entry(label.to_string())
@@ -57,8 +54,6 @@ pub(super) fn map_identity(
     identity: &RowIdentity<'_>,
     row_index: usize,
 ) -> Mapped {
-    // The row publishes the competitor's own gender; the event's side is the fallback, so an
-    // unknown token can never mint an athlete under a third gender.
     let gender = match identity.gender {
         Gender::Unknown => context.gender,
         published => published,
@@ -84,9 +79,22 @@ fn record_athlete(
 ) -> AthleteId {
     let grad_year = GradYear::of(identity.grade, context.school_year);
     let source = identity.an_athlete_id.map_or_else(
-        || SourceIdentity::new(SourceNamespace::TimerAthlete { provider: context.provider.to_string() },
-            format!("{}:row:{row_index}", context.event_key)),
-        |id| SourceIdentity::new(SourceNamespace::LegacyAthleticNet { kind: "athlete".to_string() }, id.to_string()),
+        || {
+            SourceIdentity::new(
+                SourceNamespace::TimerAthlete {
+                    provider: context.provider.to_string(),
+                },
+                format!("{}:row:{row_index}", context.event_key),
+            )
+        },
+        |id| {
+            SourceIdentity::new(
+                SourceNamespace::LegacyAthleticNet {
+                    kind: "athlete".to_string(),
+                },
+                id.to_string(),
+            )
+        },
     );
     let athlete_id = CanonicalAthlete::mint(school_id, identity.name, grad_year, gender, &source);
     let entry = writer
@@ -94,7 +102,8 @@ fn record_athlete(
         .athletes
         .entry(athlete_id.as_str().to_string())
         .or_insert_with(|| {
-            let mut athlete = CanonicalAthlete::new(school_id, identity.name, grad_year, gender, source);
+            let mut athlete =
+                CanonicalAthlete::new(school_id, identity.name, grad_year, gender, source);
             athlete.sports.push(context.sport);
             athlete.evidence.push(context.evidence.clone());
             athlete
@@ -121,8 +130,6 @@ fn record_athlete(
         if !entry.source_identities.contains(&row) {
             entry.source_identities.push(row);
         }
-        // Athletic.net profile URLs are deterministic from the athlete id (the same rule the athlete
-        // index applies), so both AthleticLIVE routes publish one URL for one athlete.
         let profile_url =
             format!("https://www.athletic.net/athlete/{an_athlete_id}/track-and-field");
         if !entry.public_profile_urls.contains(&profile_url) {

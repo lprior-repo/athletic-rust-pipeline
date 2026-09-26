@@ -122,7 +122,6 @@ mod tests {
     fn system_clock_reports_a_plausible_epoch() {
         let clock = SystemClock;
         let ms = clock.now_unix_ms().expect("system clock is representable");
-        // 2020-01-01..2100-01-01 in unix milliseconds: a fixed range, not the current date.
         assert!(
             (1_577_836_800_000..4_102_444_800_000).contains(&ms),
             "unix ms {ms} is outside the plausible range"

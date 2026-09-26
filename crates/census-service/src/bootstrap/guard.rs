@@ -84,7 +84,6 @@ mod tests {
 
     #[test]
     fn this_process_reports_a_resident_set() {
-        // The guard is only a backstop if the reading exists where the service runs.
         assert!(resident_bytes().is_some_and(|bytes| bytes > 0));
     }
 

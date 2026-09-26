@@ -99,9 +99,6 @@ const SOURCE_ATHLETICLIVE_MEETS: &str = "athleticlive_meets_csv";
 /// than asserted.
 const CORE_PART: &str = "docProps/core.xml";
 
-// -------------------------------------------------------------------------------------------------
-// The test
-// -------------------------------------------------------------------------------------------------
 
 /// The whole chain, twice: the second run rebuilds the corpus and the store from scratch — the
 /// directory is deleted and reopened — so equal output is a statement about the pipeline rather than
@@ -115,14 +112,10 @@ async fn pipeline_publishes_the_same_bytes_from_a_rebuilt_store() -> Result<()> 
     let scratch = tempfile::tempdir().context("temp dir for the runs")?;
     let root = scratch.path().join("store");
     let first = run_pipeline(&root).await?;
-    // The first run's store is closed by the time it returns, so the directory can go.
     std::fs::remove_dir_all(&root)
         .with_context(|| format!("clearing {} between runs", root.display()))?;
     let second = run_pipeline(&root).await?;
 
-    // Published text, compared byte for byte. The CSV and JSONL goldens hold the published text of
-    // that name rather than a re-serialization of it: a field rename or a reordered column is a
-    // change to the artifact, not to a data structure.
     common::assert_golden("pipeline__consolidate-counts", &first.counts)?;
     common::assert_golden_json("pipeline__report-core", &first.report_core)?;
     common::assert_golden_json("pipeline__report-all_sources", &first.report_all_sources)?;
@@ -136,15 +129,12 @@ async fn pipeline_publishes_the_same_bytes_from_a_rebuilt_store() -> Result<()> 
     )?;
     common::assert_golden_json("pipeline__best-results-co2027.jsonl", &first.bests_jsonl)?;
     common::assert_golden_json("pipeline__best-results-co2027.csv", &first.bests_csv)?;
-    // The workbook's shape: its sheets, its parts, how many cells it carries and what they say.
     common::assert_golden("pipeline__workbook-shape", &first.workbook.shape)?;
-    // The adapter's own report is published evidence too, and it is what proves the cache answered.
     common::assert_golden(
         "pipeline__wiaa-results-report",
         &report_projection(&first.results_report),
     )?;
 
-    // Every published value must survive rebuilding the corpus and the store.
     ensure!(
         first.report_text == second.report_text,
         "the census JSON changed when the store was rebuilt"
@@ -167,12 +157,6 @@ async fn pipeline_publishes_the_same_bytes_from_a_rebuilt_store() -> Result<()> 
         "the result-file adapter's report changed when the store was rebuilt"
     );
 
-    // The workbook, at the byte level: every part identical once the one part that carries the
-    // file's creation time is set aside. The container's raw size is deliberately not asserted:
-    // `docProps/core.xml` holds `rust_xlsxwriter`'s creation stamp, whose text moves with the
-    // wall clock, so the deflated size of an unchanged workbook drifts by a few bytes across runs
-    // (observed 21293..21297). The per-part CRC map below is the stronger claim: it is identical
-    // only if every part's uncompressed bytes are.
     anyhow::ensure!(
         first.workbook.parts == second.workbook.parts,
         "an xlsx part changed when the store was rebuilt — left={:?} right={:?}",
@@ -193,9 +177,6 @@ async fn pipeline_publishes_the_same_bytes_from_a_rebuilt_store() -> Result<()> 
     Ok(())
 }
 
-// -------------------------------------------------------------------------------------------------
-// The pipeline
-// -------------------------------------------------------------------------------------------------
 
 /// The adapter's notes that are debug-printed maps, and whose key order therefore varies per run.
 ///
@@ -281,12 +262,9 @@ async fn run_pipeline(root: &Path) -> Result<Run> {
         recording: None,
     };
 
-    // The fixture-derived corpus, on its way into the store.
     let corpus = Corpus::build()?;
     corpus.append(&store)?;
 
-    // The result-file adapter reads the *consolidated* school snapshot, so it runs after the first
-    // consolidate — the same two-phase order a real run uses.
     let first_counts = census::consolidate(&store)?;
     assert_counts(&first_counts, &corpus.expected_counts(false))?;
     let results_report = collect_wiaa_results(&store, &fetcher, &context, &corpus).await?;
@@ -299,7 +277,6 @@ async fn run_pipeline(root: &Path) -> Result<Run> {
         counts
     };
 
-    // Both census scopes, written and read back.
     let core = report::build_census(&store, Scope::Core)?;
     let all_sources = report::build_census(&store, Scope::AllSources)?;
     assert_scope_split(&store, &core, &all_sources)?;
@@ -307,7 +284,6 @@ async fn run_pipeline(root: &Path) -> Result<Run> {
     let (all_json, all_csv) = report::write_census(&store, &all_sources, Scope::AllSources)?;
     let core_text = read_file(&core_json)?;
     let all_text = read_file(&all_json)?;
-    // The writer publishes the census it was handed, byte for byte, not a re-derived document.
     ensure!(
         core_text == serde_json::to_string_pretty(&core)?,
         "{} is not the census that was handed to it",
@@ -319,7 +295,6 @@ async fn run_pipeline(root: &Path) -> Result<Run> {
         all_json.display()
     );
 
-    // Class-of-2027 best marks, checked against the reduction the store's own rows imply.
     let rows = bests::build(
         &store,
         &bests::Options {
@@ -333,7 +308,6 @@ async fn run_pipeline(root: &Path) -> Result<Run> {
     let jsonl_text = read_file(&bests_jsonl)?;
     let csv_text = read_file(&bests_csv)?;
 
-    // The workbook, which rewrites the same best-mark sidecars through its own code path.
     let workbook_path = root.join("parity-co2027.xlsx");
     let written = workbook::build(
         &store,
@@ -387,9 +361,6 @@ fn normalize_run_text(text: &str, root: &Path, generated_on: &str) -> Result<Str
     ))
 }
 
-// -------------------------------------------------------------------------------------------------
-// The corpus
-// -------------------------------------------------------------------------------------------------
 
 /// Every row the fixture corpus mints, plus the facts the assertions downstream need.
 #[derive(Default)]
@@ -539,9 +510,6 @@ struct ExpectedEntities {
     performances: BTreeSet<String>,
 }
 
-// -------------------------------------------------------------------------------------------------
-// Corpus part 1: the WIAA result archive (driven through the adapter's own `collect`)
-// -------------------------------------------------------------------------------------------------
 
 /// Walk `wiaa_results/`: classify and parse every committed fixture exactly as the adapter does,
 /// mint a school for every label the files publish, and record the ids the adapter must produce.
@@ -567,7 +535,6 @@ fn wiaa_result_files(corpus: &mut Corpus) -> Result<()> {
             "https://www.wiaawi.org/Portals/0/PDF/Results/{}/{year}/{file}",
             archive_segment(sport)
         );
-        // The adapter's own source label; it is a literal there rather than a constant.
         let source = SourceRef::new("wiaa_results", Some(url.clone()));
         let format = wiaa_results::artifact_format(extension, Some(&body));
         let meet = match format {
@@ -587,9 +554,6 @@ fn wiaa_result_files(corpus: &mut Corpus) -> Result<()> {
             ),
         }
         .with_context(|| format!("{file} yielded no meet as {}", format.as_str()))?;
-        // Per-file coverage: a fixture that parses into nothing is a hole, not a corpus entry.
-        // The events are walked rather than the `rows_parsed` counter, so the claim is about where
-        // the rows live rather than how many were counted.
         ensure!(
             !meet.events.is_empty(),
             "{file}: the parsed meet carries no events"
@@ -624,8 +588,6 @@ fn wiaa_result_files(corpus: &mut Corpus) -> Result<()> {
         ));
     }
 
-    // A canonical school per published label: the adapter resolves labels through `SchoolIndex`, so
-    // the corpus has to carry a school the index can find, and the check below proves it does.
     for label in &labels {
         let (school, id) =
             CanonicalSchool::new(UsJurisdiction::Wisconsin, label, normalize_name(label));
@@ -748,7 +710,6 @@ fn expected_ids_for(
                     .as_str()
                     .to_string(),
             );
-            // Individual rows name an athlete; relay rows name a school and list their legs.
             let members: Vec<(Option<u8>, &str, Option<Grade>)> = if row.legs.is_empty() {
                 vec![(None, row.name.as_str(), row.grade)]
             } else {
@@ -920,9 +881,6 @@ fn hex_prefix(hasher: Sha256) -> Result<String> {
     Ok(head.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
-// -------------------------------------------------------------------------------------------------
-// Corpus part 2: the association and roster adapters
-// -------------------------------------------------------------------------------------------------
 
 /// Walk `wiaa/`: the directory letter is the index, each `school_org<id>_…` page is one school.
 fn wiaa_directory(corpus: &mut Corpus) -> Result<()> {
@@ -954,8 +912,6 @@ fn wiaa_directory(corpus: &mut Corpus) -> Result<()> {
             bail!("{name} is not a known wiaa fixture: the letter or a school page");
         };
         let page = wiaa::parse_school_page(&read_file(path)?);
-        // The index row supplies the org id and page URL; a page whose row is not in the captured
-        // letter falls back to the id in its own file name, exactly as that module's tests do.
         let entry = index
             .iter()
             .find(|entry| entry.org_id == org_id)
@@ -1009,8 +965,6 @@ fn ohsaa_schools(corpus: &mut Corpus) -> Result<()> {
         "the ohsaa corpus is nine fixtures: three searches, three sports pages, three AD pages"
     );
 
-    // Dublin Coffman: one search row, and its own sports and AD pages. The search row and the
-    // school's own header have to agree on the school, or the pair is not one school.
     let dublin = &searches["search_dublin_coffman.html"];
     ensure!(
         dublin.len() == 1,
@@ -1054,9 +1008,6 @@ fn ohsaa_schools(corpus: &mut Corpus) -> Result<()> {
         !extract.coaches.is_empty(),
         "the Dublin Coffman pair yields no coach"
     );
-    // The AD is published as a coach; the office roles are not. This is the row-level half of that
-    // rule — the report's role counts pin the classification itself. Both sides are compared after
-    // the adapter's own honorific stripping.
     let expected_director = ohsaa::strip_honorific(&director);
     ensure!(
         extract
@@ -1078,8 +1029,6 @@ fn ohsaa_schools(corpus: &mut Corpus) -> Result<()> {
     corpus.schools.push(extract.school);
     corpus.coaches.extend(extract.coaches);
 
-    // Mentor: the duplicate-row search collapses to one school, and the malformed pair proves the
-    // degrade path — a school with no coach rows, not an error.
     let mentor = &searches["search_duplicate_rows.html"];
     ensure!(
         mentor.len() == 1 && !mentor[0].name.is_empty() && !mentor[0].ohsaa_id.is_empty(),
@@ -1108,8 +1057,6 @@ fn ohsaa_schools(corpus: &mut Corpus) -> Result<()> {
     );
     corpus.schools.push(extract.school);
 
-    // Centerville: the sports page publishes the school's own header and address, and its
-    // `Track & Field` row reads one of the two cells.
     let centerville_sports = &sports["sports_centerville.html"];
     let track = ohsaa::parse_sports_table(centerville_sports);
     let track = track
@@ -1121,7 +1068,6 @@ fn ohsaa_schools(corpus: &mut Corpus) -> Result<()> {
         "the Centerville Track & Field row names no coach at all"
     );
     let result = ohsaa_school_from_page(centerville_sports)?;
-    // The same school's AD page carries the same header: a capture pair, not two schools.
     let ad_header = ohsaa_school_from_page(&ads["ad_centerville.html"])?;
     ensure!(
         result.name == ad_header.name && result.ohsaa_id == ad_header.ohsaa_id,
@@ -1196,16 +1142,8 @@ fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
         {
             roster = Some((team_id.to_string(), body));
         } else if name.contains("_meet_") {
-            // The per-meet captures: a meet's results page in either template the platform serves
-            // (the `meetResultFiles` literal or the `ddResultsPage` select), its file-list page and
-            // a `/raw` body. The corpus this walk builds models the WI school, its athletes and its
-            // teams; these captures are asserted by the adapter's own tests, and folding them in
-            // here would move the goldens without adding a case the WI pair does not already cover.
-            // They are named, not unknown.
             continue;
         } else if name.starts_with("oh_") {
-            // The rest of the rank-4 route captures — the OH team index, the graded OH roster and
-            // the OH results index — asserted by the adapter's own tests for the same reason.
             continue;
         } else {
             bail!("{name} is not a known milesplit fixture");
@@ -1279,8 +1217,6 @@ fn athleticlive_athletes(corpus: &mut Corpus) -> Result<()> {
         );
         let meet_id = *meet_ids.iter().next().context("no AthleticLIVE meet id")?;
 
-        // The adapter queries athlete rows through the meet's timer identity, so the corpus mints
-        // the meet its own tests mint and hands the same selection to `build_entities`.
         let mut meet = CanonicalMeet::new(
             Some(UsJurisdiction::Kansas),
             "Abilene Invitational",
@@ -1332,9 +1268,6 @@ fn athleticlive_athletes(corpus: &mut Corpus) -> Result<()> {
     Ok(())
 }
 
-// -------------------------------------------------------------------------------------------------
-// Corpus assertions
-// -------------------------------------------------------------------------------------------------
 
 /// The store must hold exactly the ids the corpus (and, once it has run, the result-file adapter)
 /// implies: no row lost to a merge, no row invented.
@@ -1534,9 +1467,6 @@ fn assert_best_reduction(rows: &[BestResult], store: &Store, scope: Scope) -> Re
     Ok(())
 }
 
-// -------------------------------------------------------------------------------------------------
-// The workbook
-// -------------------------------------------------------------------------------------------------
 
 /// The written workbook: its shape (golden-comparable, run-independent) and its raw bytes (compared
 /// between the two runs, which share a store path).
@@ -1558,8 +1488,6 @@ impl Workbook {
         let sheet_names = book.sheet_names().to_vec();
         ensure!(!sheet_names.is_empty(), "the workbook carries no sheets");
 
-        // Every non-empty cell, rendered `sheet!row:column=value`, grouped per sheet so a mismatch
-        // names the sheet that moved rather than one opaque line.
         let mut sheets: Vec<serde_json::Value> = Vec::with_capacity(sheet_names.len());
         let mut cells: Vec<String> = Vec::new();
         for name in &sheet_names {
@@ -1584,9 +1512,6 @@ impl Workbook {
                 !sheet_cells.is_empty(),
                 "the workbook's {name} sheet carries no cell"
             );
-            // A per-sheet digest names the sheet a mismatch moved, not the cell. `WORKBOOK_DUMP=1`
-            // prints every normalized cell the digest reads, in digest order, so the cell can be
-            // named too; it changes nothing about what is compared.
             if std::env::var_os("WORKBOOK_DUMP").is_some() {
                 for cell in &sheet_cells {
                     eprintln!("workbook-cell\t{cell}");
@@ -1639,11 +1564,7 @@ fn volatile_cell(label: &str, column: usize, text: String, root: &Path) -> Strin
         return text;
     }
     match label {
-        // Both meta sheets name the day the run wrote them; that day is the wall clock, so it is
-        // replaced on both rather than pinned to the day the golden was captured.
         "Core report generated" | "Workbook generated on" => "<date>".to_string(),
-        // The store root is the run's own temp path; the coverage notes quote it the way the
-        // `Store` row does, so the same substitution applies to every row that can carry it.
         "Store" | "Core note" | "Note" => text.replace(&root.display().to_string(), "<store>"),
         _ => text,
     }
@@ -1732,8 +1653,6 @@ fn zip_parts(bytes: &[u8]) -> Result<Vec<Part>> {
             .saturating_add(comment_len);
     }
 
-    // Parts are laid out in local-header order: each owns everything up to the next part's header,
-    // and the last owns everything up to the central directory.
     let mut order: Vec<usize> = (0..entries.len()).collect();
     order.sort_by_key(|index| entries[*index].2);
     let mut parts: Vec<Part> = Vec::with_capacity(entries.len());
@@ -1790,9 +1709,6 @@ fn le_u32(bytes: &[u8], at: usize) -> Result<u32> {
     Ok(u32::from_le_bytes(field))
 }
 
-// -------------------------------------------------------------------------------------------------
-// File helpers
-// -------------------------------------------------------------------------------------------------
 
 /// Read a fixture by path; `common::fixture` takes a source and file name, which a walk does not
 /// have.

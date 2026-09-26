@@ -114,15 +114,11 @@ fn an_empty_store_still_writes_every_sheet_with_its_header() {
         );
     }
 
-    // An empty store is an empty census, not a failure: the row-level sheets carry their header
-    // and nothing else, and neither queue has a retained row.
     assert_eq!(sheet(&path, "Schools").len(), 1);
     assert_eq!(sheet(&path, "Meets").len(), 1);
     assert_eq!(sheet(&path, "Conflicts").len(), 1);
     assert_eq!(sheet(&path, "Review").len(), 1);
 
-    // The declarations are not data: the registry and the jurisdiction list are present even when
-    // the store holds nothing.
     assert!(sheet(&path, "Sources").len() > 1, "registry rows");
     assert!(sheet(&path, "Coverage").len() > 1, "jurisdiction rows");
 }
@@ -138,22 +134,16 @@ fn the_sheets_render_the_rows_the_store_retains() {
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     store.append(Table::Schools, &school).unwrap();
 
-    // A second school row whose normalized name collides with the first but whose id was minted from
-    // an older key: the shape a pre-compression journal imports, and the one the census counts as a
-    // duplicate name.
     let (mut twin, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     twin.id = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford legacy");
     let twin_id = twin.id.clone();
     store.append(Table::Schools, &twin).unwrap();
 
-    // A school no adapter placed in a jurisdiction.
     let (mut orphan, orphan_id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Nowhere", "nowhere");
     orphan.state = None;
     store.append(Table::Schools, &orphan).unwrap();
 
-    // One athlete whose own grade observations disagree about the class, and one with no grade
-    // evidence at all: a conflict and a review row, both retained.
     let mut conflicted = CanonicalAthlete::new(
         &school_id,
         "Julian Aguilera",
@@ -197,8 +187,6 @@ fn the_sheets_render_the_rows_the_store_retains() {
         )
         .unwrap();
 
-    // Two head coaches of the same program and side, both with a professional address, both observed
-    // on the same day: nothing evidenced picks one, so the bucket is a retained contact conflict.
     for name in ["Renata Falk", "Sofia Meier"] {
         let mut conflicted_coach = CanonicalCoach::new(
             &school_id,
@@ -218,7 +206,6 @@ fn the_sheets_render_the_rows_the_store_retains() {
         store.append(Table::Coaches, &conflicted_coach).unwrap();
     }
 
-    // One placed meet that names its Athletic.net counterpart, and one whose venue was never placed.
     let mut placed = CanonicalMeet::new(
         Some(UsJurisdiction::Wisconsin),
         "WIAA Division 3 State",
@@ -350,7 +337,6 @@ fn the_sheets_render_the_rows_the_store_retains() {
         "{review:?}"
     );
     assert!(carries(&review, 2, unverified_id.as_str()), "{review:?}");
-    // Every row-level tally the run-metrics sheet reconciles must agree with the core census.
     let metrics = sheet(&path, "Run Metrics");
     assert!(carries(&metrics, 0, "Reconciled counter"), "{metrics:?}");
     assert!(carries(&metrics, 3, "reconciled"), "{metrics:?}");
@@ -369,8 +355,6 @@ fn the_sheets_render_the_rows_the_store_retains() {
         "{metrics:?}"
     );
 
-    // The coverage sheet is the report pass rendered, not recounted here: it names the cohort it was
-    // asked for and carries the jurisdictions.
     let coverage = sheet(&path, "Coverage");
     assert!(carries(&coverage, 0, "Coverage note"), "{coverage:?}");
     assert!(carries(&coverage, 1, "2027"), "{coverage:?}");

@@ -21,7 +21,7 @@ fn parses_fixture_records() {
 #[test]
 fn parses_school_from_record() {
     let records = parse_records(FIXTURE).expect("fixture must parse");
-    let record = &records[0]; // Abilene HS
+    let record = &records[0];
 
     let (school, id) =
         parse_school(record, "https://example.com/api", "2026-09-20").expect("Abilene has a name");
@@ -37,7 +37,6 @@ fn parses_school_from_record() {
     );
     assert_eq!(school.city.as_deref(), Some("Abilene"));
 
-    // Source identity carries the KSHSAA external id.
     assert_eq!(school.source_identities.len(), 1);
     assert_eq!(
         school.source_identities[0].namespace,
@@ -47,14 +46,12 @@ fn parses_school_from_record() {
     );
     assert_eq!(school.source_identities[0].id, "KSS0001");
 
-    // Evidence carries the source ref and observation date.
     assert_eq!(school.evidence.len(), 1);
     assert_eq!(
         school.evidence[0].source.url.as_deref(),
         Some("https://example.com/api")
     );
 
-    // The school id is deterministic from state + normalized name.
     let normalized = normalize_name("Abilene HS");
     let expected_id = CanonicalSchool::mint(UsJurisdiction::Kansas, "Abilene HS", &normalized);
     assert_eq!(id, expected_id);
@@ -70,7 +67,7 @@ fn parses_ad_coach_from_record() {
     let coach = parse_ad_coach(record, &school_id, "https://example.com/api", "2026-09-20")
         .expect("Abilene has an AD");
 
-    assert_eq!(coach.name, "Derek Berns"); // honorific stripped if present
+    assert_eq!(coach.name, "Derek Berns");
     assert_eq!(coach.role, CoachRole::AthleticDirector);
     assert_eq!(coach.sport, None);
     assert_eq!(coach.gender, Gender::Mixed);
@@ -92,7 +89,6 @@ fn honorific_stripped_from_ad_name() {
 
 #[test]
 fn school_with_no_class_or_enrollment_parses() {
-    // Abilene MS (index 3) has no Class or Enrollment.
     let records = parse_records(FIXTURE).expect("fixture must parse");
     let ms = &records[3];
     assert_eq!(ms.school_name, "Abilene MS");
@@ -107,7 +103,6 @@ fn school_with_no_class_or_enrollment_parses() {
 
 #[test]
 fn school_with_no_website_parses() {
-    // Great Bend HS (index 4) has no WebSite.
     let records = parse_records(FIXTURE).expect("fixture must parse");
     let gb = &records[4];
     assert_eq!(gb.school_name, "Great Bend HS");
@@ -119,22 +114,18 @@ fn school_with_no_website_parses() {
 
 #[test]
 fn no_cell_phones_or_principal_data_in_entities() {
-    // The fixture contains PrincipalName, PrincipalCell, ADCell, PresName, PresCell, etc.
-    // The parsed entities must NOT contain any of those values.
     let records = parse_records(FIXTURE).expect("fixture must parse");
 
     for record in &records {
         let (_, school_id) = parse_school(record, "https://example.com/api", "2026-09-20").unwrap();
         let coach = parse_ad_coach(record, &school_id, "https://example.com/api", "2026-09-20");
 
-        // Coach phone field must be None.
         let coach = coach.unwrap();
         assert!(
             coach.phone.is_none(),
             "coach phone must be None for all records"
         );
 
-        // The professional_email should never match a cell number or principal name.
         if let Some(email) = &coach.professional_email {
             let ad_cell = record.ad_cell.as_deref().map(|s| s.trim());
             let principal_name = record.principal_name.as_deref().map(|s| s.trim());
@@ -173,7 +164,6 @@ fn empty_json_array_returns_zero_rows() {
 
 #[test]
 fn fixture_ad_email_fill_rate() {
-    // All 5 fixture records have an AD email — 100% fill rate.
     let records = parse_records(FIXTURE).expect("fixture must parse");
     let with_email = records
         .iter()

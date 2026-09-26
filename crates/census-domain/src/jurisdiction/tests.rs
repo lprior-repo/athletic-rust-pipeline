@@ -71,8 +71,6 @@ fn census_scope_is_the_contiguous_states_and_dc() {
             "a run-scope state must be a modelled jurisdiction"
         );
     }
-    // The constant and the admission check are two spellings of one rule. A state added to one and
-    // not the other must fail here, not in a coverage denominator months later.
     for jurisdiction in UsJurisdiction::ALL {
         assert_eq!(
             jurisdiction.is_in_census_scope(),
@@ -140,7 +138,6 @@ fn parse_ignores_case_and_surrounding_whitespace() {
 
 #[test]
 fn parse_rejects_territories_and_anything_else() {
-    // Territories and freely associated states are explicit absences, not silent inclusions.
     for raw in ["PR", "GU", "VI", "AS", "MP", "FM", "MH", "PW"] {
         assert_eq!(UsJurisdiction::parse(raw), None, "{raw} must not parse");
     }
@@ -233,8 +230,6 @@ fn bucket_codes_round_trip_and_reserved_labels_are_not_jurisdictions() {
         JurisdictionBucket::from_code(" wi "),
         Some(UsJurisdiction::Wisconsin.into())
     );
-    // A territory is still refused, and a bucket never admits a name the jurisdiction itself does
-    // not: the printed form is the code, so the name is not a bucket label.
     assert_eq!(JurisdictionBucket::from_code("PR"), None);
     assert_eq!(JurisdictionBucket::from_code("Wisconsin"), None);
     assert_eq!(JurisdictionBucket::from_code(""), None);
@@ -278,8 +273,6 @@ fn meet_state_prints_the_code_or_the_store_sentinel() {
     assert_eq!(unresolved.jurisdiction(), None);
     assert!(placed < unresolved, "the unresolved label sorts last");
 
-    // The bucket and the meet state are different vocabularies on purpose: a school with no state is
-    // a missing fact (UNKNOWN), a meet with no venue state is the label the store always wrote (??).
     assert_ne!(JurisdictionBucket::Unplaced.code(), unresolved.code());
 }
 

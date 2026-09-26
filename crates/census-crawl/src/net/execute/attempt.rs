@@ -46,8 +46,6 @@ impl Fetcher {
         let response = self.dispatch(plan).await?;
         let status = response.status().as_u16();
         self.count_request(plan.host, status).await;
-        // A 403 or 429 is an observation about the *host*, not about this URL: it is recorded once
-        // per run so a lane can stop on it instead of re-discovering it request by request.
         if let Some(kind) = blocking_kind(status) {
             self.record_access_condition(
                 plan.host,
@@ -173,9 +171,7 @@ impl Fetcher {
     async fn replay_cached(&self, plan: &FetchPlan<'_>) -> Result<FetchOutcome, FetchError> {
         if let Some(meta) = plan.cached {
             if let Ok(bytes) = std::fs::read(plan.body_path) {
-                // Verify the cached body before reusing it.
                 if bytes.len() != meta.bytes || content_digest(&bytes) != meta.content_digest {
-                    // Body is corrupted — fall through to error.
                     let mut stats = self.stats.lock().await;
                     stats.errors = stats.errors.saturating_add(1);
                     return Err(FetchError::Http {
@@ -203,8 +199,6 @@ impl Fetcher {
                 });
             }
         }
-        // The cache body disappeared: there is nothing to publish, so the fetch fails and the
-        // durable layer decides whether to send it again.
         let mut stats = self.stats.lock().await;
         stats.errors = stats.errors.saturating_add(1);
         Err(FetchError::Http {

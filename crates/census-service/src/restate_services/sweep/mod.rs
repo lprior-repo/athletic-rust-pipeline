@@ -123,10 +123,6 @@ impl Sweep {
             Self::wait_windows(&ctx, request.windows, request.window_seconds).await?;
         let (endpoints, stale) = Self::observe_endpoints(&ctx, &request.endpoints).await?;
         let boundary = retention_boundary(&today)?;
-        // Journaled under a single-attempt run policy (ADR-002): a restart replays the prune
-        // count instead of deleting receipts a second time, and the invocation retry owns every
-        // attempt after the first. `Json` is the bridge to the SDK's own serialization traits,
-        // which is what `run` journals with.
         let Json(pruned) = ctx
             .run(|| async move {
                 blocking_prune_receipts::blocking_prune_receipts(

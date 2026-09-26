@@ -61,7 +61,6 @@ fn coach_rows_become_canonical_entities_with_evidence() {
     assert_eq!(entities.school.state, Some(UsJurisdiction::Wisconsin));
     assert_eq!(entities.school.city.as_deref(), Some("Abbotsford"));
     assert_eq!(entities.school.name, "Abbotsford");
-    // one sport coach + one AD
     assert_eq!(entities.coaches.len(), 2);
     let coach = entities
         .coaches
@@ -80,7 +79,6 @@ fn coach_rows_become_canonical_entities_with_evidence() {
         .iter()
         .find(|coach| coach.role == CoachRole::AthleticDirector)
         .unwrap();
-    // Athletic directors are school-wide: no sport binding.
     assert_eq!(ad.sport, None);
     assert_eq!(
         ad.professional_email.as_deref(),
@@ -122,8 +120,6 @@ fn import_dedupes_schools_and_ad_rows() {
     let schools = read_schools();
     let coaches = read_coaches();
 
-    // Four Abbotsford rows collapse to one school record; the MI slug/name forms stay distinct
-    // from each other but each is a single record.
     let abbotsford = schools
         .iter()
         .filter(|school| school["name"] == "Abbotsford")
@@ -148,7 +144,6 @@ fn import_dedupes_schools_and_ad_rows() {
         );
     }
 
-    // Non-coaching office staff are dropped even though they occupy the `ad_name` column.
     let coach_names: Vec<String> = coaches
         .iter()
         .map(|coach| coach["name"].as_str().unwrap().to_string())
@@ -159,13 +154,11 @@ fn import_dedupes_schools_and_ad_rows() {
             "non-coaching office staff imported: {dropped}"
         );
     }
-    // The SD AD appears on two duplicate rows and must exist exactly once.
     assert_eq!(
         coach_names.iter().filter(|name| *name == "Bo Beck").count(),
         1,
         "duplicate AD rows collapse: {coach_names:?}"
     );
-    // Honorifics are stripped so the IL coach matches a plain-name observation.
     assert!(
         coach_names.iter().any(|name| name == "Barry Mink"),
         "{coach_names:?}"

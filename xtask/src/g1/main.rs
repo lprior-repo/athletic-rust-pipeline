@@ -25,24 +25,17 @@ mod verdicts;
 
 use clap::Parser;
 
-// The retained-input directories, the report label and the sample cap. Plain comments deliberately:
-// clap turns doc comments into `--help` text, and the help bytes are part of the observable output.
 #[derive(Parser)]
 #[command(name = "g1-audit")]
 pub(crate) struct Args {
-    // Directories of raw `<sha256>.body` response bodies.
     #[arg(long)]
     pub(crate) raw: Vec<String>,
-    // Directories of evidence records.
     #[arg(long)]
     pub(crate) evidence: Vec<String>,
-    // Directories of parsed records.
     #[arg(long)]
     pub(crate) parsed: Vec<String>,
-    // How many samples of each class to keep.
     #[arg(long, default_value_t = 3)]
     pub(crate) samples: usize,
-    // The label the header prints.
     #[arg(long, default_value = "set")]
     pub(crate) label: String,
 }

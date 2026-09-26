@@ -58,7 +58,6 @@ fn index_parsing_yields_org_ids_level_and_city() {
         entries[0].page_url(),
         format!("{HOST}{SCHOOL_PATH}?orgID=1")
     );
-    // The `title` attribute is the untruncated name; the visible <h5> is CSS-truncated.
     let last = entries.last().expect("six entries");
     assert_eq!(last.name, "ADVANCED LEARNING ACADEMY OF WISCONSIN CHARTER");
     assert_eq!(last.level, "High School");
@@ -74,7 +73,6 @@ fn index_parsing_yields_org_ids_level_and_city() {
 fn empty_index_fragment_yields_no_rows() {
     assert!(parse_directory_letter("").is_empty());
     assert!(parse_directory_letter("null").is_empty());
-    // Shape of the `LetterBtn=-1` fragment: HTTP 200, 3,077 bytes, no school table.
     assert!(parse_directory_letter("<div class=\"alert\"></div>").is_empty());
 }
 
@@ -102,8 +100,6 @@ fn school_page_yields_name_city_conference_ad_and_identity() {
         extract.school.school_website.as_deref(),
         Some("http://www.abbotsford.k12.wi.us")
     );
-    // Canonical id is deterministic from state + normalized name, so another provider that saw
-    // Abbotsford mints the same school.
     assert_eq!(
         extract.school.id,
         CanonicalSchool::new(
@@ -138,8 +134,6 @@ fn school_page_yields_name_city_conference_ad_and_identity() {
         .as_deref()
         .is_some_and(|url| url.contains("orgID=1")));
 
-    // Role and sport labels are scraped out of `<label>` elements; markup must never survive
-    // into the parsed label (the role string feeds the director/coach classifier).
     assert!(!page.admins.is_empty(), "Abbotsford publishes office rows");
     for admin in &page.admins {
         assert!(
@@ -215,7 +209,6 @@ fn coach_rows_map_to_sport_and_gender() {
         Some("dnovak@abbotsford.k12.wi.us")
     );
 
-    // Only TF/XC rows survive: Abbotsford publishes 14 coach rows, of which 3 are TF/XC.
     assert_eq!(
         extract.coaches.len(),
         4,
@@ -232,7 +225,6 @@ fn coach_rows_map_to_sport_and_gender() {
         ));
     }
 
-    // A second school: G-E-T's Paula Gold holds three TF/XC roles, all three must survive.
     let gets = extract_for("135", SCHOOL_GET);
     let gold: Vec<&CanonicalCoach> = gets
         .coaches
@@ -297,9 +289,6 @@ fn sport_and_role_labels_are_mapped_strictly() {
         parse_admin_role("Athletic Director"),
         Some(CoachRole::AthleticDirector)
     );
-    // Real label from the captured sample (orgID 219 Madison East): a district-level director
-    // published inside one school's administration table. It is a role-published director for
-    // that school, so it is kept; the assistant AD row beside it is not.
     assert_eq!(
         parse_admin_role("City-Wide Athletic Director"),
         Some(CoachRole::AthleticDirector)
@@ -330,8 +319,6 @@ fn office_staff_are_never_imported_as_coaches_or_directors() {
         .iter()
         .map(|coach| coach.name.as_str())
         .collect();
-    // Real rows of the captured page: an office assistant inside the AD's table, plus the
-    // building administration.
     for dropped in ["Sheryl Byom", "Michele Butler", "Jamie Oliver"] {
         assert!(
             !names.contains(&dropped),
@@ -370,7 +357,6 @@ fn school_without_coach_rows_yields_no_coaching_rows() {
     assert_eq!(extract.school.name, "S.A.I.L.S. CHARTER");
     assert_eq!(extract.school.city.as_deref(), Some("Sparta"));
     assert_eq!(extract.school.source_identities[0].id, "5151");
-    // WIAA prints "N/A" for this school's conference; a placeholder must not become a field.
     assert_eq!(extract.school.classification, None);
     assert_eq!(extract.coaches.len(), 2, "two directors, zero coach rows");
     assert!(extract
@@ -413,7 +399,6 @@ fn empty_or_malformed_payload_yields_zero_rows() {
     assert!(decode_cfemail("zzzz").is_none());
     assert!(decode_cfemail("00010203").is_none());
 
-    // An index row with an orgID but no name mints nothing.
     let nameless = IndexEntry {
         org_id: "9999".to_string(),
         ..IndexEntry::default()
@@ -423,7 +408,6 @@ fn empty_or_malformed_payload_yields_zero_rows() {
 
 #[test]
 fn cfemail_decoding_matches_published_addresses() {
-    // Verbatim `data-cfemail` payloads from the Abbotsford captures.
     assert_eq!(
         decode_cfemail("7f1514111e0f121613131a0d3f1e1d1d100b0c19100d1b51144e4d510816510a0c")
             .as_deref(),

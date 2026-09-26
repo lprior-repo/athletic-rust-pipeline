@@ -124,8 +124,6 @@ impl RangeFiles<'_> {
                 ),
             });
         };
-        // The universe always holds at least the empty name and the spill always opens at least one
-        // range file, so neither the product nor the division can leave the file list's bounds.
         let files = self.writers.len().max(1);
         let ranges = rank.saturating_mul(files).checked_div(self.names.max(1));
         Ok(ranges.unwrap_or_default().min(files.saturating_sub(1)))
@@ -159,8 +157,6 @@ fn spill(
         Table::Performances,
         |mut performance: census_domain::model::CanonicalPerformance| {
             if failure.is_some() {
-                // The pass is over as far as this caller is concerned; the refusal is returned below, and
-                // reading further rows would only spend time on an answer nobody wants.
                 return Ok(());
             }
             if scope == Scope::Core && !retain_core_row(&mut performance) {
@@ -215,8 +211,6 @@ impl Iterator for PerformanceRows {
 
 impl Drop for PerformanceRows {
     fn drop(&mut self) {
-        // The rows are the workbook's by then, and the spill has no other reader. A destructor cannot
-        // report a failure, so a directory that will not go is named and left for the temp cleaner.
         if let Err(error) = std::fs::remove_dir_all(&self.dir) {
             tracing::warn!(
                 path = %self.dir.display(),

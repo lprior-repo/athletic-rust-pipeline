@@ -41,14 +41,6 @@ const OBSERVED_ON: &str = "2026-09-20";
 /// Provider slug the archive artifacts carry, as `wiaa_results::collect` mints it.
 const SOURCE_ID: &str = "wiaa_results";
 
-// -------------------------------------------------------------------------------------------------
-// Serializable mirrors of the parsed shapes
-//
-// The adapters' hand-off shapes (`IndexEntry`, `SchoolPage`, `ParsedMeet`) are deliberately not
-// `Serialize` — they are internal values, not wire formats. The mirrors below are this harness's
-// own record of a published parse, so each one carries *every* field of the production shape:
-// dropping a field here would let a refactor change it unnoticed.
-// -------------------------------------------------------------------------------------------------
 
 #[derive(Serialize)]
 struct IndexRow {
@@ -268,9 +260,6 @@ struct Corpus {
     files: Vec<CorpusEntry>,
 }
 
-// -------------------------------------------------------------------------------------------------
-// Corpus facts
-// -------------------------------------------------------------------------------------------------
 
 /// Archive year each `wiaa_results` fixture was published under, from the URL the WIAA archive
 /// filed it under (`/Results/Track/2025/…`, `/Results/Cross_Country/2023/…`).
@@ -342,9 +331,6 @@ fn xc_claim(file: &str, body: &str, year: i16) -> Option<MeetView> {
     xc::parse(&lines, source(), year).as_ref().map(MeetView::of)
 }
 
-// -------------------------------------------------------------------------------------------------
-// wiaa: the school directory
-// -------------------------------------------------------------------------------------------------
 
 /// `parse_directory_letter` over every directory fixture, and `parse_school_page` +
 /// `school_entities` over every school fixture.
@@ -448,9 +434,6 @@ fn org_id_of(file: &str) -> Result<&str> {
     Ok(org_id)
 }
 
-// -------------------------------------------------------------------------------------------------
-// wiaa_results: the result archive
-// -------------------------------------------------------------------------------------------------
 
 /// Every artifact in the archive corpus, classified and parsed the way the collection loop does.
 #[test]
@@ -475,9 +458,6 @@ fn wiaa_results_corpus_matches_its_goldens() -> Result<()> {
             archive_year: year,
             meet: MeetView::of(&meet),
         };
-        // The golden key is the whole file name, not the stem: `d1boysstateresults-dash.htm` and
-        // `d1boysstateresults-dash.txt` are two artifacts of the same release read by two
-        // different line readers, and a stem-keyed golden would silently keep only one of them.
         common::assert_golden(&format!("wiaa_results__{file}"), &view)?;
         formats.push(format.as_str().to_string());
         files.push(CorpusEntry {
@@ -485,8 +465,6 @@ fn wiaa_results_corpus_matches_its_goldens() -> Result<()> {
             digest: common::digest(&view)?,
         });
     }
-    // The corpus is only a parity corpus if it still covers every reader the archive needs: track
-    // HTML and text through the Hy-Tek reader, cross-country through the RaceDay reader.
     for required in ["hytek_html", "hytek_text", "raceday"] {
         ensure!(
             formats.iter().any(|format| format == required),
@@ -527,9 +505,6 @@ fn raceday_finish_list_matches_its_golden() -> Result<()> {
     )
 }
 
-// -------------------------------------------------------------------------------------------------
-// xc: the cross-country result layouts
-// -------------------------------------------------------------------------------------------------
 
 /// The three cross-country layouts the WIAA archive publishes, read through `xc::parse`.
 ///
@@ -572,14 +547,6 @@ fn xc_declines_every_archive_fixture() -> Result<()> {
     Ok(())
 }
 
-// -------------------------------------------------------------------------------------------------
-// Cross-country captures, transcribed verbatim from `crates/census-crawl/src/xc.rs`
-//
-// The repository has no cross-country result file under `tests/fixtures/`: the parser's own tests
-// carry these three captures inline. They are reproduced byte for byte so the goldens pin what the
-// parser publishes for the real layouts, and so a decomposition that moves the layouts around is
-// measured against the same input.
-// -------------------------------------------------------------------------------------------------
 
 /// State meet: team score blocks that print each scorer's place, grade and time.
 const XC_STATE_BLOCKS: &str = r#"

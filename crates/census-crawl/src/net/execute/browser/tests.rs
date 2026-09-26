@@ -102,8 +102,6 @@ async fn a_challenge_capture_leaves_a_human_required_row_and_no_evidence() {
     let fetcher = fetcher_in(dir.path());
     let coordinates = Coordinates::for_get(&fetcher);
     let plan = coordinates.plan("GET");
-    // The fixture is the transport's whole answer, so it is read as one: the capture is the arm it
-    // carries, and reading it through the envelope is what keeps the tag part of the contract.
     let capture: BrowserCapture =
         match serde_json::from_str(CAPTURE_FIXTURE).expect("fixture decodes") {
             BrowserOutcome::Captured(capture) => capture,
@@ -224,8 +222,6 @@ async fn a_body_over_the_ceiling_is_refused_before_it_is_allocated() {
     let fetcher = fetcher_in(dir.path());
     let coordinates = Coordinates::for_get(&fetcher);
     let plan = coordinates.plan("GET");
-    // Base64 is four characters per three bytes, so this encodes to just over the ceiling. The
-    // allocation is the point: the guard exists so the decoder never sees a body this size.
     let over = "A".repeat(MAX_BODY_BYTES / 3 * 4 + 4);
     let capture = BrowserCapture {
         response: BrowserResponse {
@@ -420,7 +416,6 @@ async fn a_disallowed_404_capture_returns_err() {
         "expected Http(404), got {error:?}"
     );
 
-    // The evidence was still cached.
     let (meta, cached_body) = read_cache(&coordinates.body_path, &coordinates.meta_path)
         .expect("read cache")
         .expect("evidence was cached");

@@ -42,8 +42,6 @@ pub(super) fn status(origin: &str) -> Result<()> {
 pub(super) fn coverage(origin: &str) -> Result<()> {
     let (endpoint, client) = ingress::job_client(origin)?;
     ingress::announce(&endpoint, "Report", "run");
-    // The key names the job instance: a fresh instant per submission, so today's second report is a
-    // second question rather than the first one's retained answer.
     let key = run_key("report", &[Scope::AllSources.as_str()], "1");
     let report = ReportIngressClient::from_client(client, key);
     let request = ReportRequest {
@@ -79,8 +77,6 @@ pub(super) fn workbook(
         scope: Some(scope.as_str().to_string()),
         out: out.map(|path| path.display().to_string()),
     };
-    // The key names the job instance: a fresh instant per submission, so today's second workbook is
-    // a second question rather than the first one's retained answer.
     let year = request
         .grad_year
         .map_or_else(|| "all".to_string(), |year| year.to_string());

@@ -28,10 +28,6 @@ pub struct SchoolExtract {
     pub skipped_coach_rows: usize,
 }
 
-// -------------------------------------------------------------------------------------------------
-// Label mapping
-// -------------------------------------------------------------------------------------------------
-
 /// Map a published sport label onto the sport ontology plus the gender side it covers.
 ///
 /// `Boys Track and Field` → outdoor track, boys; `Girls Cross Country` → cross country, girls;
@@ -43,7 +39,6 @@ pub fn parse_sport_label(label: &str) -> Option<(Sport, Gender)> {
     } else if lowered.contains("indoor") {
         Sport::IndoorTrack
     } else if lowered.contains("track") {
-        // WIAA sanctions no indoor season: every track row on this surface is outdoor.
         Sport::OutdoorTrack
     } else {
         return None;
@@ -128,10 +123,6 @@ pub fn strip_honorific(value: &str) -> String {
         _ => clean(value),
     }
 }
-
-// -------------------------------------------------------------------------------------------------
-// Entity mapping
-// -------------------------------------------------------------------------------------------------
 
 /// Build the canonical school and its AD/head-coach rows for one directory page.
 ///

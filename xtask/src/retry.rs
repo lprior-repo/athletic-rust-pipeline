@@ -437,7 +437,6 @@ mod tests {
     #[test]
     fn the_run_scan_leaves_clients_alone_and_never_covers_across_sites() {
         let grammars = RunGrammars::compile().expect("the run grammars compile");
-        // A generated client's `run` is a call on another receiver, not a journaled effect.
         let client = masked_of(
             "                client\n                    .run(Json(request.for_jurisdiction(*jurisdiction)))\n                    .call(),\n",
         );
@@ -445,8 +444,6 @@ mod tests {
             bare_runs_in("pkg:src/a.rs", &client, &grammars).is_empty(),
             "the object client's run is not a ctx.run effect"
         );
-        // The second effect's policy sits inside the first effect's forty lines: without the
-        // next-site cut the bare first effect would pass on the second's policy.
         let two = masked_of(
             "        let a = ctx\n            .run(move || step_a(store))\n            .await?;\n        let b = ctx\n            .run(move || step_b(store))\n            .retry_policy(RunRetryPolicy::new().max_attempts(1))\n            .await?;\n",
         );

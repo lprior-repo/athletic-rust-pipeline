@@ -3,8 +3,6 @@
 use super::*;
 use census_domain::model::Sport;
 
-// ── Fixture data ─────────────────────────────────────────────────────
-
 fn fixture_directory() -> &'static str {
     include_str!("../../tests/fixtures/mpa/directory.html")
 }
@@ -12,8 +10,6 @@ fn fixture_directory() -> &'static str {
 fn fixture_staff_bonny_eagle() -> &'static str {
     include_str!("../../tests/fixtures/mpa/staff_bonny_eagle_high.aspx")
 }
-
-// ── Directory parsing tests ───────────────────────────────────────────
 
 #[test]
 fn parse_directory_returns_schools() {
@@ -23,12 +19,9 @@ fn parse_directory_returns_schools() {
         "should find many schools, got {}",
         entries.len()
     );
-    // First school should be Ashland District School
     assert_eq!(entries[0].name, "Ashland District School");
     assert_eq!(entries[0].school_id, "25");
-    // Second school should be Bangor Christian Schools
     assert_eq!(entries[1].name, "Bangor Christian Schools");
-    // Third school should be Bangor High School
     assert_eq!(entries[2].name, "Bangor High School");
     assert_eq!(entries[2].school_id, "27");
 }
@@ -36,7 +29,6 @@ fn parse_directory_returns_schools() {
 #[test]
 fn parse_directory_parses_many_schools() {
     let entries = pages::parse_directory(fixture_directory());
-    // The directory has high schools + middle schools
     assert!(
         entries.len() > 100,
         "should find 100+ schools, got {}",
@@ -56,8 +48,6 @@ fn parse_directory_no_empty_names() {
     }
 }
 
-// ── Staff page parsing tests ──────────────────────────────────────────
-
 #[test]
 fn parse_staff_table_extracts_xc_coaches() {
     let rows = pages::parse_staff_table(fixture_staff_bonny_eagle());
@@ -70,7 +60,6 @@ fn parse_staff_table_extracts_xc_coaches() {
         "should find Cross Country rows, got {}",
         rows.len()
     );
-    // Bonny Eagle High School's staff table carries a Boys Cross Country head coach
     let boys_xc = xc_rows.iter().find(|r| r.sport.contains("Boys"));
     assert!(boys_xc.is_some(), "should find Boys Cross Country row");
 }
@@ -94,7 +83,6 @@ fn parse_staff_table_extracts_track_coaches() {
 #[test]
 fn parse_staff_table_skips_non_head_coaches() {
     let rows = pages::parse_staff_table(fixture_staff_bonny_eagle());
-    // All rows should be Head Coach entries (our filter)
     for row in &rows {
         assert!(
             !row.sport.contains("Principal") && !row.sport.contains("Athletic Director"),
@@ -107,7 +95,6 @@ fn parse_staff_table_skips_non_head_coaches() {
 #[test]
 fn parse_staff_table_captures_non_xc_sport() {
     let rows = pages::parse_staff_table(fixture_staff_bonny_eagle());
-    // Verify that non-XC sports are still captured (e.g. Basketball, Football)
     let other_sports: Vec<_> = rows
         .iter()
         .filter(|r| {
@@ -135,8 +122,6 @@ fn parse_directory_malformed_yields_empty() {
     let entries = pages::parse_directory("<html><body><p>No schools</p></body></html>");
     assert!(entries.is_empty(), "malformed HTML should yield 0 entries");
 }
-
-// ── Sport label mapping tests ─────────────────────────────────────────
 
 #[test]
 fn parse_sport_label_maps_xc() {
@@ -173,8 +158,6 @@ fn parse_sport_label_skips_other_sports() {
     assert_eq!(map::parse_sport_label(""), None);
 }
 
-// ── Entity building tests ─────────────────────────────────────────────
-
 #[test]
 fn school_entities_parses_xc_coaches() {
     use super::map::ParsedSchool;
@@ -201,18 +184,15 @@ fn school_entities_parses_xc_coaches() {
 
     let extract = map::school_entities(&entry, &staff_rows, "2026-09-24");
 
-    // School
     assert_eq!(extract.school.name, "Bangor High School");
     assert_eq!(extract.school.association, Some("mpa".to_string()));
 
-    // Coaches: 2 XC + 1 Basketball = 3 (only XC/TF are kept by parse_sport_label)
     assert_eq!(
         extract.coaches.len(),
         2,
         "should have 2 XC coaches (Basketball filtered out)"
     );
 
-    // Verify XC coaches
     let names: Vec<&str> = extract.coaches.iter().map(|c| c.name.as_str()).collect();
     assert!(names.contains(&"Ben Davis"));
     assert!(names.contains(&"Tom Noonan"));
@@ -227,7 +207,6 @@ fn school_entities_deduplicates_duplicate_sport_rows() {
         name: "Test School".to_string(),
         school_id: "99".to_string(),
     };
-    // Source sometimes lists the same sport twice
     let staff_rows = vec![
         CoachRow {
             sport: "Boys Cross Country".to_string(),
@@ -241,7 +220,6 @@ fn school_entities_deduplicates_duplicate_sport_rows() {
 
     let extract = map::school_entities(&entry, &staff_rows, "2026-09-24");
 
-    // Should deduplicate to 1 coach row for Boys Cross Country, keeping the first published
     assert_eq!(
         extract.coaches.len(),
         1,
@@ -252,8 +230,6 @@ fn school_entities_deduplicates_duplicate_sport_rows() {
 
 #[test]
 fn school_entities_strips_the_coach_honorific() {
-    // The association publishes some rows as "Coach <name>". The honorific is not part of the
-    // person's name, and it is the published Coach column that would otherwise carry it.
     use super::map::ParsedSchool;
     use super::pages::CoachRow;
 

@@ -188,9 +188,6 @@ fn a_placement_value_is_not_mistaken_for_a_finish_time() -> anyhow::Result<()> {
     let event = &meet.events[0];
     anyhow::ensure!(event.rows.len() == 3, "got {} rows", event.rows.len());
 
-    // Row 2: Team Member Place = 5, Finish = 21:22.82
-    // The fix: identify the time column by label ("Finish"), not by position.
-    // The old bug would have picked 5 (the right-most numeric cell) as 5 seconds.
     let bob = &event.rows[1];
     anyhow::ensure!(
         bob.name == "Bob Fast",
@@ -206,7 +203,6 @@ fn a_placement_value_is_not_mistaken_for_a_finish_time() -> anyhow::Result<()> {
         bob.mark
     );
 
-    // Row 3: Team Member Place = 12, Finish = 25:05.00
     let charlie = &event.rows[2];
     anyhow::ensure!(
         charlie.name == "Charlie Slow",
@@ -222,7 +218,6 @@ fn a_placement_value_is_not_mistaken_for_a_finish_time() -> anyhow::Result<()> {
         charlie.mark
     );
 
-    // No rows should be skipped.
     anyhow::ensure!(
         meet.rows_skipped == 0,
         "left={:?} right={:?}",
@@ -254,7 +249,6 @@ const MULTI_TABLE_NO_TIME_FIXTURE: &str = r#"
 #[test]
 fn a_table_with_no_time_column_rejects_its_rows_with_a_reason() -> anyhow::Result<()> {
     let meet = parse(MULTI_TABLE_NO_TIME_FIXTURE, source(), 2023)?;
-    // One valid table (1 row) and one no-time-column table (2 rejected rows).
     anyhow::ensure!(meet.events.len() == 1, "got {} events", meet.events.len());
     let event = &meet.events[0];
     anyhow::ensure!(

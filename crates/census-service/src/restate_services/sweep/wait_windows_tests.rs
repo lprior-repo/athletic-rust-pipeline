@@ -52,7 +52,7 @@ mod tests {
     /// the waits themselves: three windows must mean three waits.
     #[tokio::test]
     async fn a_zero_second_window_waits_once_per_window() {
-        let waits = ScriptedWindows::new(100); // no signal
+        let waits = ScriptedWindows::new(100);
         let (observed, interrupted) = Sweep::wait_windows_with(&waits, 3, 0).await;
         assert_eq!(observed, 3);
         assert!(!interrupted);
@@ -64,7 +64,6 @@ mod tests {
     async fn an_arrived_signal_cuts_the_first_window_short() {
         let waits = ScriptedWindows::new(0);
         let (observed, interrupted) = Sweep::wait_windows_with(&waits, 3, 1).await;
-        // Signal has already arrived — no windows elapsed, no waits recorded.
         assert_eq!(observed, 0);
         assert!(interrupted);
         assert_eq!(waits.windows_waited(), Vec::<u64>::new());
@@ -83,7 +82,7 @@ mod tests {
     /// Every window carries the requested duration, and exhausting them is not an interruption.
     #[tokio::test]
     async fn all_windows_elapse_without_a_signal() {
-        let waits = ScriptedWindows::new(100); // no signal
+        let waits = ScriptedWindows::new(100);
         let (observed, interrupted) = Sweep::wait_windows_with(&waits, 5, 30).await;
         assert_eq!(observed, 5);
         assert!(!interrupted);

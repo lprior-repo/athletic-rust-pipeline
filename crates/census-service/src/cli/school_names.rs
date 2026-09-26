@@ -80,8 +80,6 @@ fn collect_school_names(schools_path: &Path, wanted: &str) -> Result<BTreeSet<St
 
 /// Write the names, one per line, through the atomic publish the snapshot writer uses.
 fn write_school_names(out: &Path, names: &BTreeSet<String>) -> Result<()> {
-    // `publish_atomically` creates the destination's directory itself (`store/read/snapshot.rs`), so
-    // the place that writes the file is the one place that creates what it needs.
     census_store::read::publish_atomically(out, |temporary| {
         let mut file = File::create(temporary).map_err(|source| census_store::StoreError::Io {
             path: out.to_path_buf(),

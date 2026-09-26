@@ -56,9 +56,6 @@ impl Mapper<'_> {
         batch.append_many(Table::Meets, &meets)?;
         batch.append_many(Table::Teams, &teams)?;
         batch.append_many(Table::Athletes, &athletes)?;
-        // Three identity channels and one athlete object each: the association's own entry number, the
-        // net id, and the Live id, each under the namespace that id belongs to. `of_athlete` files
-        // nothing for an athlete that carries none of them.
         ctx.observe_athletes(
             &SourceNamespace::AssociationAthlete {
                 association: ASSOCIATION.to_string(),

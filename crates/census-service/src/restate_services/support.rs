@@ -43,16 +43,11 @@ impl From<StoreError> for JobError {
     fn from(error: StoreError) -> Self {
         let message = error.to_string();
         match error {
-            // Environmental: the database, its journal, or a sidecar file is temporarily
-            // unreachable — a retry is what repairs these.
             StoreError::Open { .. }
             | StoreError::Flush { .. }
             | StoreError::Read { .. }
             | StoreError::Write { .. }
             | StoreError::Io { .. } => Self::Transient { message },
-            // Deterministic: the stored data is corrupt, a scan bound would be exceeded, a
-            // counter reached its limit, or a journal entry is too large — none of these
-            // improve on retry.
             StoreError::Decode { .. }
             | StoreError::Json { .. }
             | StoreError::SnapshotRow { .. }
@@ -121,8 +116,6 @@ where
         Outcome::Cancelled => Err(JobError::Terminal {
             message: "job cancelled".to_string(),
         }),
-        // A region job cannot report a timeout — the abort path reports a cancellation — but the
-        // lattice is total and a job that never returned is terminal either way.
         Outcome::Timeout => Err(JobError::Terminal {
             message: "job timed out".to_string(),
         }),

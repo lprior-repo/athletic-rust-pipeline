@@ -76,9 +76,6 @@ pub(crate) async fn milesplit_results_report(
         .season_year
         .map_or(census::SeasonScope::All, census::SeasonScope::Year);
     let meets = census::select_meets(stored, &states, scope, args.limit);
-    // Only the rows naming a MileSplit results page are this arm's to read. A row naming another
-    // provider's page belongs to that provider's arm, and fetching it here would spend a request to
-    // read a template this arm does not know — which is a mismatch, not a meet without results.
     let selected: Vec<providers::milesplit::MeetPage> = meets
         .iter()
         .filter(|meet| providers::milesplit::is_results_page(&meet.results_url))
@@ -93,8 +90,6 @@ pub(crate) async fn milesplit_results_report(
         .iter()
         .filter(|file| file.is_meet_pro != 0)
         .count();
-    // The request carries the jurisdiction of the row that named the meet, because a results page
-    // which redirects to `www` publishes no state of its own.
     let urls: Vec<providers::milesplit::ResultSetRequest> = pages
         .files
         .iter()

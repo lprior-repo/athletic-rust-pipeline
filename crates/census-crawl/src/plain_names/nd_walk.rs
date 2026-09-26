@@ -173,9 +173,6 @@ impl NdWalk {
         self.tally_offerings(&page.offerings);
         self.ad_rows = self.ad_rows.saturating_add(ad_count);
 
-        // One page: this school's rows and both journal entries commit together, so a resume cannot
-        // skip a school whose rows never landed. The school observation stays a direct write, the way
-        // every school arm writes it: it is re-derived from this row on every pass.
         let mut batch = ctx.store.write_batch();
         batch.append_many(Table::Schools, std::slice::from_ref(&page.school))?;
         ctx.observe_school(

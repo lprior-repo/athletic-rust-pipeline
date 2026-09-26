@@ -30,19 +30,15 @@ fn fetcher_in(dir: &std::path::Path, delay: Duration, authorized: Vec<String>) -
 async fn turns_for_one_host_are_spaced_by_exactly_the_robots_delay() {
     let dir = tempfile::tempdir().expect("temp dir");
     let fetcher = fetcher_in(dir.path(), Duration::from_millis(1), Vec::new());
-    // The delay an origin asks for in robots.txt becomes the host's spacing: the configured
-    // millisecond does not lower it.
     fetcher.host_gate(HOST, Some(Duration::from_secs(3))).await;
 
     let start = tokio::time::Instant::now();
-    // Nothing is reserved for the host yet, so the first turn waits for nothing.
     fetcher.wait_turn(HOST).await;
     assert_eq!(
         tokio::time::Instant::now().duration_since(start),
         Duration::ZERO
     );
 
-    // The first turn reserved a slot one delay ahead, so the second leaves exactly that delay.
     fetcher.wait_turn(HOST).await;
     assert_eq!(
         tokio::time::Instant::now().duration_since(start),
@@ -50,8 +46,6 @@ async fn turns_for_one_host_are_spaced_by_exactly_the_robots_delay() {
         "the second turn must leave exactly the robots crawl-delay after the first"
     );
 
-    // Each turn pushes the slot one delay further instead of resetting it, so the spacing holds for
-    // a queue of turns rather than only for the first pair.
     fetcher.wait_turn(HOST).await;
     assert_eq!(
         tokio::time::Instant::now().duration_since(start),
@@ -68,8 +62,6 @@ async fn a_partial_advance_leaves_the_next_turn_gated() {
     fetcher.wait_turn(HOST).await;
     let reserved_at = tokio::time::Instant::now();
 
-    // The next turn is polled rather than awaited, so the assertions can look at the gate from
-    // inside its wait.
     let mut turn = Box::pin(fetcher.wait_turn(HOST));
     assert!(
         tokio::time::timeout(Duration::ZERO, &mut turn)
@@ -78,7 +70,6 @@ async fn a_partial_advance_leaves_the_next_turn_gated() {
         "the turn passed the gate without waiting for the host's spacing"
     );
 
-    // One millisecond short of the reserved slot: still gated.
     tokio::time::advance(Duration::from_millis(2999)).await;
     assert!(
         tokio::time::timeout(Duration::ZERO, &mut turn)
@@ -87,7 +78,6 @@ async fn a_partial_advance_leaves_the_next_turn_gated() {
         "a partial advance opened the gate early"
     );
 
-    // The last millisecond of the spacing: the gate opens.
     tokio::time::advance(Duration::from_millis(1)).await;
     turn.await;
     assert_eq!(
@@ -99,9 +89,6 @@ async fn a_partial_advance_leaves_the_next_turn_gated() {
 #[tokio::test(start_paused = true)]
 async fn an_authorized_host_is_never_paced_faster_than_the_policy_ceiling() {
     let dir = tempfile::tempdir().expect("temp dir");
-    // The operator authorized the host and configured a millisecond of spacing: authorization
-    // records that robots rules are logged rather than enforced, never that the 2 rps policy
-    // ceiling is relaxed.
     let fetcher = fetcher_in(
         dir.path(),
         Duration::from_millis(1),
@@ -136,7 +123,6 @@ async fn one_blocking_status_mints_one_condition_for_the_host() {
         )
         .await;
 
-    // The row is what a lane stops on, so it has to name the host, the source and the status.
     assert_eq!(condition.id, format!("forbidden:{HOST}"));
     assert_eq!(condition.source, "milesplit");
     assert_eq!(condition.status, 403);
@@ -146,8 +132,6 @@ async fn one_blocking_status_mints_one_condition_for_the_host() {
     assert!(fetcher.host_blocked(HOST, &now).await);
     assert_eq!(fetcher.blocked_hosts(&now).await, vec![HOST.to_string()]);
 
-    // A second observation of the same block refreshes the row: 582 refusals from one host are one
-    // finding, not 582.
     fetcher
         .record_access_condition(HOST, AccessBlockKind::Forbidden, 403, None, "again")
         .await;
@@ -170,7 +154,6 @@ async fn a_retry_after_becomes_the_cooldown_and_blocks_only_its_own_host() {
         "a condition blocks the host that stated it and no other"
     );
 
-    // Past its cooldown the condition stops blocking: the row stays as evidence, the block lifts.
     let after = condition.cooldown_until.clone().expect("cooldown");
     assert!(!condition.is_blocking(&after));
     assert!(fetcher.blocked_hosts(&after).await.is_empty());
@@ -193,10 +176,6 @@ fn fetcher_with_families(
 
 #[tokio::test(start_paused = true)]
 async fn two_hosts_of_one_family_share_one_budget() {
-    // The measured refusal: the national walk holds one budget per state subdomain, MileSplit
-    // enforces one for the client, so 51 states spend 51 budgets against one enforced one. Charging
-    // both hosts to the family is the fix, and the proof is that the second host waits for the
-    // first host's slot instead of pacing on its own.
     let dir = tempfile::tempdir().expect("temp dir");
     let fetcher = fetcher_with_families(
         dir.path(),
@@ -215,7 +194,6 @@ async fn two_hosts_of_one_family_share_one_budget() {
         "the family's spacing must hold across its hosts, not per host"
     );
 
-    // A third host of the same family continues the family's clock rather than restarting it.
     let start = tokio::time::Instant::now();
     fetcher.wait_turn("ca.milesplit.com").await;
     assert_eq!(
@@ -226,10 +204,6 @@ async fn two_hosts_of_one_family_share_one_budget() {
 
 #[tokio::test(start_paused = true)]
 async fn a_host_outside_every_family_keeps_its_own_budget() {
-    // The family entry is an override, not an extra layer: a source that enforces its ceiling per
-    // host must not be slowed to the family rate, and a family must not be slowed by an unrelated
-    // host's traffic. Each budget's spacing is therefore measured on its own first turn pair, and
-    // the other budget's clock is shown not to have moved.
     let dir = tempfile::tempdir().expect("temp dir");
     let fetcher = fetcher_with_families(
         dir.path(),

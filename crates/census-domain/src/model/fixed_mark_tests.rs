@@ -23,36 +23,31 @@ fn fixed_point_display_preserves_sign_and_integer_extremes() {
     }
 }
 
-// ── Ordering ────────────────────────────────────────────────────────────────────
-
 #[test]
 fn time_order_is_integer_order() {
-    assert!(CentiSeconds::new(1094) < CentiSeconds::new(1102)); // 10.94 < 11.02
-    assert!(CentiSeconds::new(1094) < CentiSeconds::new(1230)); // 10.94 < 12.30
-    assert!(CentiSeconds::new(58123) < CentiSeconds::new(59511)); // 9:41.23 < 9:55.11
+    assert!(CentiSeconds::new(1094) < CentiSeconds::new(1102));
+    assert!(CentiSeconds::new(1094) < CentiSeconds::new(1230));
+    assert!(CentiSeconds::new(58123) < CentiSeconds::new(59511));
 }
 
 #[test]
 fn distance_order_is_integer_order() {
-    assert!(CentiMetres::new(610) < CentiMetres::new(642)); // 6.10m < 6.42m
-    assert!(CentiMetres::new(1868) < CentiMetres::new(1880)); // 18.68m < 18.80m
+    assert!(CentiMetres::new(610) < CentiMetres::new(642));
+    assert!(CentiMetres::new(1868) < CentiMetres::new(1880));
 }
 
 #[test]
 fn points_order_is_integer_order() {
-    assert!(CentiPoints::new(290000) < CentiPoints::new(312000)); // 2900 < 3120
-    assert!(CentiPoints::new(845600) < CentiPoints::new(915800)); // 8456 < 9158
+    assert!(CentiPoints::new(290000) < CentiPoints::new(312000));
+    assert!(CentiPoints::new(845600) < CentiPoints::new(915800));
 }
 
 #[test]
 fn mark_equality_is_exact() {
-    // Same integer = same mark, regardless of construction path.
     let a = CentiSeconds::new(1094);
     let b = CentiSeconds::new(1094);
     assert_eq!(a, b);
 }
-
-// ── Parse→fixed-point→format round trip ────────────────────────────────────────
 
 #[test]
 fn centi_seconds_round_trips() {
@@ -102,49 +97,33 @@ fn centi_points_round_trip() {
     }
 }
 
-// ── Float comparison pitfall ───────────────────────────────────────────────────
-
 #[test]
 fn float_comparison_fails_where_fixed_point_succeeds() {
-    // The trap: floating-point addition and multiplication do not distribute
-    // exactly.  (a + b) + c != a + (b + c) is the classic associativity trap.
-    //
-    // 0.1 + 0.2 + 0.3 differs from 0.1 + (0.2 + 0.3) in the low bits:
     let left: f64 = 0.1 + 0.2 + 0.3;
     let right: f64 = 0.1 + (0.2 + 0.3);
-    // They differ by 1 ulp:
     assert_ne!(
         left.to_bits(),
         right.to_bits(),
         "f64 associativity diverges"
     );
 
-    // But centiseconds round to the same integer:
     let cs_left = CentiSeconds::try_from_seconds_f64(left).expect("finite sum");
     let cs_right = CentiSeconds::try_from_seconds_f64(right).expect("finite sum");
     assert_eq!(cs_left, cs_right, "fixed-point unifies the two paths");
-
-    // This is the deterministic guarantee: same published value → same
-    // internal representation, regardless of how it arrived.
 }
 
 #[test]
 fn field_mark_comparison_is_deterministic() {
-    // 61-03.50 → (61*12+3.50)*0.0254 = 18.6817m
-    // But stored as centimetres: 1868cm
     let metres_f64: f64 = (61.0 * 12.0 + 3.50) * 0.0254;
     let cm = CentiMetres::try_from_metres_f64(metres_f64).expect("61-03.50 is in range");
 
-    // 1868cm vs 1868.17cm: the f64 has the fractional part, the cm does not.
-    // Two marks at the same published precision must compare equal.
-    assert_eq!(cm.value(), 1868); // 1868.17 rounds to 1868
+    assert_eq!(cm.value(), 1868);
     assert_eq!(
         cm,
         CentiMetres::new(1868),
         "same published precision → same cm integer"
     );
 }
-// ── Serde: legacy float → integer deserialisation ───────────────────────────────
 
 #[test]
 fn legacy_float_time_deserialises() {
@@ -167,8 +146,6 @@ fn legacy_float_points_deserialises() {
     assert_eq!(cp, CentiPoints::new(842100));
 }
 
-// ── Serde: current integer → integer deserialisation ────────────────────────────
-
 #[test]
 fn current_integer_time_deserialises() {
     let json = r#"5021"#;
@@ -190,11 +167,9 @@ fn current_integer_points_deserialises() {
     assert_eq!(cp, CentiPoints::new(842100));
 }
 
-// ── Serde: overflow on legacy float is a hard error ────────────────────────────
-
 #[test]
 fn legacy_float_overflow_is_error() {
-    let json = r#"30000000.0"#; // ×100 = 3 000 000 000 > i32::MAX
+    let json = r#"30000000.0"#;
     let result: Result<CentiSeconds, _> = serde_json::from_str(json);
     assert!(result.is_err(), "legacy float 30000000.0 should overflow");
     let err = result.unwrap_err().to_string();
@@ -204,8 +179,6 @@ fn legacy_float_overflow_is_error() {
     );
 }
 
-// ── Scaling: the shared conversion's boundary behaviour ────────────────────────
-
 #[test]
 fn scaling_refuses_what_does_not_fit() {
     assert_eq!(super::checked_hundredths(10.94), Some(1094));
@@ -214,15 +187,12 @@ fn scaling_refuses_what_does_not_fit() {
     assert_eq!(super::checked_hundredths(f64::NAN), None);
     assert_eq!(super::checked_hundredths(f64::INFINITY), None);
     assert_eq!(super::checked_hundredths(f64::NEG_INFINITY), None);
-    assert_eq!(super::checked_hundredths(30_000_000.0), None); // ×100 exceeds i32::MAX
+    assert_eq!(super::checked_hundredths(30_000_000.0), None);
     assert_eq!(super::checked_hundredths(-30_000_000.0), None);
 }
 
 #[test]
 fn construction_refuses_what_cannot_be_stored() {
-    // The deleted fallback read NaN as zero and pinned an overflow to the bound it ran past, so a
-    // source that published `NaN` became a valid 0.00 mark and an absurd one became i32::MAX.
-    // Nothing here substitutes a value the source never stated: unrepresentable input is `None`.
     assert_eq!(CentiSeconds::try_from_seconds_f64(f64::NAN), None);
     assert_eq!(CentiSeconds::try_from_seconds_f64(f64::INFINITY), None);
     assert_eq!(CentiSeconds::try_from_seconds_f64(f64::NEG_INFINITY), None);
@@ -233,7 +203,6 @@ fn construction_refuses_what_cannot_be_stored() {
     assert_eq!(CentiPoints::try_from_points_f64(f64::NAN), None);
     assert_eq!(CentiPoints::try_from_points_f64(f64::INFINITY), None);
 
-    // The accepting edge stays exact, rounding included.
     assert_eq!(
         CentiSeconds::try_from_seconds_f64(10.94),
         Some(CentiSeconds::new(1094))
@@ -244,20 +213,14 @@ fn construction_refuses_what_cannot_be_stored() {
     );
 }
 
-// ── Serde: the two accepted wire forms and the meaning of each ─────────────────
-
 #[test]
 fn integer_wire_form_is_the_stored_sub_unit() {
-    // The current writer's form: a raw integer in centiseconds. `60` is sixty centiseconds.
     let cs: CentiSeconds = serde_json::from_str("60").expect("integer wire form");
     assert_eq!(cs.value(), 60);
 }
 
 #[test]
 fn float_wire_form_is_whole_units_scaled_by_one_hundred() {
-    // The pre-migration writer's form: a JSON float in whole units. JSON number syntax is the only
-    // thing separating the two forms, so `60.0` is sixty *seconds* = 6000 centiseconds, while a
-    // writer meaning sixty centiseconds emits `60`. These must not be conflated.
     let cs: CentiSeconds = serde_json::from_str("60.0").expect("legacy float wire form");
     assert_eq!(cs.value(), 6000);
 
@@ -302,8 +265,6 @@ fn u32_past_i32_max_is_refused_not_wrapped() {
     );
 }
 
-// ── Serde: serialisation pins the raw integer form ─────────────────────────────
-
 #[test]
 fn serialise_time_emits_raw_integer() {
     let cs = CentiSeconds::new(5021);
@@ -324,8 +285,6 @@ fn serialise_points_emits_raw_integer() {
     let json = serde_json::to_string(&cp).unwrap();
     assert_eq!(json, "842100");
 }
-
-// ── Serde: whole Mark round-trip from legacy shape ─────────────────────────────
 
 use crate::model::Mark;
 
@@ -362,8 +321,6 @@ fn mark_points_round_trips_legacy_json() {
     let mark: Mark = serde_json::from_str(json).unwrap();
     assert_eq!(mark, Mark::Points(CentiPoints::new(842100)));
 }
-
-// ── Serde: wrong token types are errors ────────────────────────────────────────
 
 #[test]
 fn string_token_is_error() {

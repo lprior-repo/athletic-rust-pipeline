@@ -57,12 +57,9 @@ fn known_identities_and_marks_survive_the_seam() {
 
 #[test]
 fn a_body_carrying_a_pre_block_is_read_from_that_block_alone() {
-    // The front end reads either one `<pre>` report or the body's paragraphs, never both, so a
-    // `<pre>` block appended to a paragraph report takes the body over.
     let mixed = format!("{SECTIONS_HTML}<pre>not the report</pre>");
     assert_eq!(parse(&mixed, ArtifactFormat::HytekHtml, ARCHIVE_YEAR), None);
 
-    // The same report published as a `<pre>` release parses to the same meet as the text release.
     let pre_body = format!(
         "<html><body><pre>{}</pre></body></html>",
         DASH_TEXT.replace('\n', "<br>")

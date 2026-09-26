@@ -1,9 +1,8 @@
 //! Roster -> canonical entities: the school, its athletes with their observed grade, and one
 //! team per sport the roster carries.
 use census_domain::model::{
-    normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, Gender,
-    GradYear, Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
-    SourceRef, Sport,
+    normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, Gender, GradYear,
+    Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 
 use super::wire::{Roster, RosterAthlete, Site, TeamRef};
@@ -30,8 +29,6 @@ impl RosterAthlete {
         school_year: SchoolYear,
         source: SourceRef,
     ) -> Option<ObservedGrade> {
-        // 13 - (grad_year - school_year_start): both steps are checked so an out-of-range year
-        // pair can only yield `None`, never a wrapped or panicking grade.
         let years_to_graduation = self.grad_year.get().checked_sub(school_year.get())?;
         let grade_number = 13_i16.checked_sub(years_to_graduation)?;
         Grade::new(u8::try_from(grade_number).ok()?).map(|grade| ObservedGrade {
@@ -119,9 +116,14 @@ fn roster_athlete_entity(
     observed_on: &str,
     site: &Site,
 ) -> CanonicalAthlete {
-    let mut athlete = CanonicalAthlete::new(school_id, entry.name.clone(), entry.grad_year, entry.gender,
-    SourceIdentity::new(SourceNamespace::MilesplitAthlete, entry.athlete_id.clone())
-        .with_url(entry.profile_url.clone()),);
+    let mut athlete = CanonicalAthlete::new(
+        school_id,
+        entry.name.clone(),
+        entry.grad_year,
+        entry.gender,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, entry.athlete_id.clone())
+            .with_url(entry.profile_url.clone()),
+    );
     athlete.known_names = vec![entry.name.clone(), entry.roster_name.clone()];
     athlete.sports = entry.sports();
     if let Some(observation) = entry.observed_grade(school_year, source.clone()) {

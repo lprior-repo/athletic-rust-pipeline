@@ -128,8 +128,6 @@ fn bench_result_file(criterion: &mut Criterion) -> Result<()> {
 fn bench_school_labels(criterion: &mut Criterion) -> Result<()> {
     let mut schools = Vec::new();
     let mut labels: Vec<(UsJurisdiction, String, Option<SchoolId>)> = Vec::new();
-    // 49-state product scope (CENSUS_SCOPE): the label resolver bench measures throughput over
-    // the jurisdictions the census run actually covers.
     for jurisdiction in UsJurisdiction::CENSUS_SCOPE {
         for slot in 0..SCHOOLS_PER_JURISDICTION {
             let name = format!("{SCHOOL_PREFIX} {} {slot:03}", jurisdiction.code());
@@ -142,9 +140,6 @@ fn bench_school_labels(criterion: &mut Criterion) -> Result<()> {
             }
         }
     }
-    // A school of the next jurisdiction, published here: the resolver keys per jurisdiction, so
-    // every one of these must stay unresolved.
-    // 49-state product scope (CENSUS_SCOPE): cross-jurisdiction labels for product scope.
     let all = UsJurisdiction::CENSUS_SCOPE;
     for (jurisdiction, next) in all.iter().zip(all.iter().cycle().skip(1)) {
         labels.push((
@@ -202,7 +197,6 @@ fn bench_merge(criterion: &mut Criterion) -> Result<()> {
         .scan::<CanonicalPerformance>(Table::Performances)
         .context("scanning the batch once to verify its fold")?;
     let meets: BTreeSet<&str> = rows.iter().map(|row| row.meet.as_str()).collect();
-    // 49-state product scope (CENSUS_SCOPE): matches the meets count from CENSUS_SCOPE fixture batch.
     let fold_holds =
         rows.len() == PERFORMANCES && meets.len() == UsJurisdiction::CENSUS_SCOPE.len();
     ensure!(fold_holds, "the batch lost meets or performances");

@@ -66,8 +66,6 @@ fn copy_dir(src: &Path, dst: &Path, copied: &mut Copied) -> StoreResult<()> {
         let entry = entry.map_err(|source| io_err(src, source))?;
         let path = entry.path();
         let target = dst.join(entry.file_name());
-        // `symlink_metadata` is the point: `metadata` would follow a symlink and report what it points
-        // at, which is how a walker leaves the tree it was asked to copy.
         let kind = fs::symlink_metadata(&path)
             .map_err(|source| io_err(&path, source))?
             .file_type();

@@ -55,9 +55,6 @@ impl Run {
         options: &ResultOptions,
     ) -> CrawlResult<Self> {
         let schools = consolidated_schools(ctx)?;
-        // The meet is this route's own entity: it carries the harvest's facts plus the identities and
-        // evidence the captures add, and every performance it writes points at it, so a run over
-        // captures alone has to leave it in the store under the id the harvest route also mints.
         let meet = meet_for(target, &options.observed_on);
         let mut accumulator = Accumulator::default();
         accumulator

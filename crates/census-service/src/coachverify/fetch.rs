@@ -121,7 +121,6 @@ fn inflate_pdf(binary: &str, body: &[u8]) -> Option<String> {
         }
         std::fs::read_to_string(&text).ok()
     })();
-    // Scratch cleanup is best effort: a leftover PDF is not the gate's answer.
     std::fs::remove_file(&raw).ok();
     std::fs::remove_file(&text).ok();
     result
@@ -136,7 +135,6 @@ async fn run_passes(
     use census_store::clock::{Clock, SystemClock};
     let at = SystemClock.today_iso8601();
     let mut evidence = super::evidence::RowEvidence::default();
-    // Pass 1: plain GET of every cited URL.
     for url in &row.source_urls {
         match fetch_text(fetcher, url, false, options).await {
             Fetched::Text(text) => evidence.absorb(&text, row, url, &at)?,
@@ -144,7 +142,6 @@ async fn run_passes(
             Fetched::Failed => evidence.failed = true,
         }
     }
-    // Pass 2: XHR headers + Referer.
     if options.xhr_pass && !(evidence.found && evidence.role_near) {
         for url in &row.source_urls {
             match fetch_text(fetcher, url, true, options).await {
@@ -154,7 +151,6 @@ async fn run_passes(
             }
         }
     }
-    // Pass 3: the NSAA export screen POST.
     if options.nsaa_post && !(evidence.found && evidence.role_near) {
         for url in row
             .source_urls
@@ -190,11 +186,19 @@ pub(super) async fn verify_one_fragment(
         if let Some(slot) = counts.get_mut(verdict.as_str()) {
             *slot = slot.saturating_add(1);
         }
-        outcomes.push(super::RowOutcome { row, verdict, evidence: evidence.claims });
+        outcomes.push(super::RowOutcome {
+            row,
+            verdict,
+            evidence: evidence.claims,
+        });
     }
-    let claims: Vec<&super::ClaimEvidence> = outcomes.iter().flat_map(|row| &row.evidence).collect();
+    let claims: Vec<&super::ClaimEvidence> =
+        outcomes.iter().flat_map(|row| &row.evidence).collect();
     census_store::read::write_snapshot_rows(
-        &out_dir.join(format!("{}.evidence.jsonl", crate::coachverify::fragment_file_name(path))),
+        &out_dir.join(format!(
+            "{}.evidence.jsonl",
+            crate::coachverify::fragment_file_name(path)
+        )),
         &claims,
     )?;
     crate::coachverify::write_fragment(

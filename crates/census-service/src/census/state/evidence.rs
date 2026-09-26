@@ -113,8 +113,6 @@ impl SealEvidence {
     /// deliberately absent: refusing a seal over a kept one would push an operator to hide it.
     pub fn open_items(&self) -> Vec<AcceptanceItem> {
         let mut open = Vec::new();
-        // `Some(0)` is terminal, `Some(n)` is n outstanding, `None` is unmeasured — and unmeasured
-        // stays open, so a missing measurement can never pass as a zero.
         if self.open.jurisdiction_sweeps != Some(0) {
             open.push(AcceptanceItem::JurisdictionSweepsTerminal);
         }

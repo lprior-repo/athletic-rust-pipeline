@@ -31,9 +31,7 @@ mod tests_inner {
         let rules = parse_robots(
             "User-agent: *\nDisallow: /*calendar*\nAllow: /meets/calendar/2026\nDisallow: /meets/*\n",
         );
-        // `/meets/calendar/2026` is matched by the 21-character allow and the 8-character deny.
         assert!(rules.allows("/meets/calendar/2026"));
-        // A plain meet path is matched by the deny only.
         assert!(!rules.allows("/meets/regionals"));
     }
 

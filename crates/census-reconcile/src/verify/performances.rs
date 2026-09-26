@@ -108,8 +108,6 @@ fn check_performance_row(
     if lookup.contains(&key) {
         return Ok(());
     }
-    // Name the store side where it exists: an Event cell carrying the id where the store holds a
-    // label is this sheet's version of the school-id leak, and saying so beats "not in store".
     if let Some(label) = event_labels.get(event) {
         return Err(Discrepancy {
             row: idx,

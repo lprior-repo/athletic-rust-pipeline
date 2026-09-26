@@ -85,7 +85,6 @@ impl ProfileGate {
     ///
     /// On Mutex poison, no-ops (gate is already closed).
     pub(crate) fn revoke(&self) {
-        // Change state under Mutex, then always wake (Notify is outside Mutex).
         if let Ok(mut guard) = self.state.lock() {
             guard.generation = guard.generation.saturating_add(1);
             guard.ready = false;
@@ -117,7 +116,6 @@ impl ProfileGate {
 
     pub(crate) async fn closed(&self) {
         loop {
-            // Create notified FIRST, then snapshot; avoids lost-wakeup race.
             let notified = self.notify.notified();
             let snap = self.snapshot();
             if !snap.ready {

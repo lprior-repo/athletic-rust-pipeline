@@ -83,7 +83,6 @@ impl Site {
 fn site_at(path: &Path, text: &str, offset: usize) -> Result<Option<Site>, String> {
     let line = line_at(text, offset);
     let line_text = text.lines().nth(line - 1).unwrap_or_default().trim();
-    // `on_max_attempts` ends with this key: only a key that starts on its own is a ceiling.
     if starts_ident(text[..offset].chars().next_back()) {
         return Ok(None);
     }
@@ -262,8 +261,6 @@ pub(super) fn rust_files(dir: &Path, found: &mut Vec<PathBuf>) -> Result<(), Str
                 rust_files(&path, found)?;
             }
         } else if path.extension().is_some_and(|extension| extension == "rs") {
-            // Skip the test file itself and other test modules — they are not production code
-            // and their `ctx.run` artifacts (if any) are not deployment concerns.
             if name == "retry_policy_tests.rs"
                 || name == "retry_policy_transport_tests.rs"
                 || name == "tests.rs"
@@ -423,7 +420,6 @@ fn run_effects_in(text: &str) -> Vec<RunEffect> {
     while let Some(found) = text.get(search..).and_then(|tail| tail.find(CTX)) {
         let offset = search.saturating_add(found);
         search = offset.saturating_add(CTX.len());
-        // `on_ctx` or `myctx` ends with this key: only a key that starts on its own is an effect.
         if starts_ident(text[..offset].chars().next_back()) {
             continue;
         }
@@ -549,8 +545,6 @@ fn the_scan_reads_only_what_the_contract_calls_a_ceiling() {
 #[test]
 #[should_panic(expected = "not a number")]
 fn a_ceiling_the_scan_cannot_read_fails_instead_of_being_skipped() {
-    // The fixture is built rather than spelled out: this file is first-party source too, and a key
-    // written next to its opener here would be read as a ceiling by the scan above.
     let text = format!("    {KEY} = \"pause\",\n");
     let _ = sites_in(Path::new("sample.rs"), &text).expect("read the sample ceiling");
 }
@@ -597,8 +591,6 @@ fn a_bare_effect_fails_and_a_chained_policy_holds() {
     let effect = effects.first().expect("the sample declares an effect");
     assert_eq!(effect.line, 1);
     assert!(!effect.covered, "a run with no chained policy is bare");
-    // The split-chain spelling most handlers use: `ctx` at the end of one line, `.run(` opening
-    // the next, the policy three lines below the site.
     let covered = "        let Json(journaled) = ctx\n                .run(move || step(store))\n                .retry_policy(RunRetryPolicy::new().max_attempts(1))\n                .await?;\n";
     let effects = run_effects_in(covered);
     assert_eq!(effects.len(), 1);
@@ -609,23 +601,17 @@ fn a_bare_effect_fails_and_a_chained_policy_holds() {
 
 #[test]
 fn the_run_scan_reads_split_chains_and_ignores_prose_and_clients() {
-    // Prose quoting the shape is not an effect, whether in a comment or a literal: the scan only
-    // reads code. A generated client's `run` is a call on another receiver, not a journaled
-    // effect, so it is not an effect either.
     let prose = "// a ctx.run effect journals one attempt\n    let quoted = \"ctx.run(move || step(store))\";\n                client\n                    .run(Json(request))\n                    .call(),\n";
     assert!(
         run_effects_in(prose).is_empty(),
         "prose and a client's run are not ctx.run effects"
     );
-    // A policy quoted in a comment is prose, not a chain, so it never covers a site.
     let commented =
         "    ctx.run(move || step(store))\n        // .retry_policy(RunRetryPolicy::new().max_attempts(1))\n        .await?;\n";
     let effects = run_effects_in(commented);
     assert_eq!(effects.len(), 1);
     let effect = effects.first().expect("the sample declares an effect");
     assert!(!effect.covered, "a commented policy leaves the site bare");
-    // The second effect's policy sits inside the first effect's forty lines: without the
-    // next-site cut the bare first effect would pass on the second's policy.
     let two = "        let a = ctx\n            .run(move || step_a(store))\n            .await?;\n        let b = ctx\n            .run(move || step_b(store))\n            .retry_policy(RunRetryPolicy::new().max_attempts(1))\n            .await?;\n";
     let effects = run_effects_in(two);
     let read: Vec<(usize, bool)> = effects

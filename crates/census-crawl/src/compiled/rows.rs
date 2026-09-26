@@ -17,8 +17,6 @@ static QUALIFIER: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex
 static RELAY_LEG: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(\d+)\)\s+([^\d]+?)\s+(\d{1,2}|Fr|So|Jr|Sr)\b"));
 
-// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
-// back as a typed error that the readers answer as "this file carries no meet" — never a panic.
 fn qualifier() -> CrawlResult<&'static Regex> {
     QUALIFIER.as_ref().map_err(|source| CrawlError::RegexInit {
         pattern: "QUALIFIER",
@@ -46,8 +44,6 @@ pub(super) fn parse_row(
     line_tokens: &[hytek::Token<'_>],
     block: &Block,
 ) -> Option<ParsedRow> {
-    // The place number is the last number printed left of the block's identity column, because the
-    // score columns of the event to the left sit between this block's start and its first column.
     let first_column = block.columns.first()?.start;
     let place = line_tokens
         .iter()
@@ -81,7 +77,6 @@ pub(super) fn parse_row(
     if name.is_empty() && school.is_empty() {
         return None;
     }
-    // A relay row names a school and no athlete; an individual row names one.
     if !kind.is_relay() && (name.is_empty() || !looks_like_a_name(&name)) {
         return None;
     }

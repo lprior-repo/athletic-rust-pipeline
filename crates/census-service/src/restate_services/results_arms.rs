@@ -123,9 +123,6 @@ pub(super) async fn results_stage(
     let stored: Vec<SourceMeetRef> = store
         .scan(Table::SourceMeets)
         .map_err(|error| job_error(JobError::from(error)))?;
-    // The selection belongs to the stage rather than to an arm: both arms read the same meets, and
-    // selecting once here — moving the scan rather than copying it — is what keeps an arm from
-    // re-filtering the whole table on its own.
     let selected = crate::census::select_meets(
         stored,
         &[jurisdiction],
@@ -167,8 +164,6 @@ async fn milesplit_results(
     context: &AdapterContext<'_>,
     meets: &[SourceMeetRef],
 ) -> Result<(usize, AdapterReport), HandlerError> {
-    // Only the rows that name a MileSplit results page are this arm's to read; the rest name another
-    // provider's page, and the count of the arm's own is what the caller reports.
     let selected: Vec<census_crawl::milesplit::MeetPage> = meets
         .iter()
         .filter(|meet| census_crawl::milesplit::is_results_page(&meet.results_url))
@@ -184,9 +179,6 @@ async fn milesplit_results(
     )
     .await
     .map_err(|error| job_error(collect_error(error)))?;
-    // Each request carries the jurisdiction of the row that named the meet: a results page that
-    // redirects to `www` publishes no state of its own, and this row is the only thing that knows
-    // whose meet it is.
     let urls = pages.files.iter().map(|file| file.request()).collect();
     let mut report = census_crawl::milesplit::collect_result_sets(
         context,
@@ -194,8 +186,6 @@ async fn milesplit_results(
     )
     .await
     .map_err(|error| job_error(collect_error(error)))?;
-    // §62: a page this build could not read is named with the parser's own reason, so a run that
-    // skipped a meet says which meet and why instead of looking like a meet with no results.
     for (url, reason) in &pages.quarantined {
         report.note(format!("quarantined meet page {url}: {reason}"));
     }
@@ -215,11 +205,6 @@ async fn athleticnet_meets(
 ) -> Result<(usize, AdapterReport), HandlerError> {
     let ids = athleticnet_meet_ids(meets, jurisdiction);
     let meets = ids.len();
-    // A selection that names no meet is a fact about this run's coverage, not a walk: an empty
-    // `--meets` is the adapter's registry route, so calling it here would refuse for lack of a
-    // registry — an operator file this stage has no way to name. Measured 2026-09-24: the previous
-    // national run failed all forty-nine jurisdictions here, because only the states whose own
-    // sources publish Athletic.net links select anything for this arm to pull.
     if meets == 0 {
         return Ok((0, AdapterReport::new(ATHLETICNET, "performances")));
     }

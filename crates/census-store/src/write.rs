@@ -84,8 +84,6 @@ impl Store {
         let _appends = self.lock_appends();
         let count = u64::try_from(encoded.len()).map_err(|_| StoreError::CounterOverflow)?;
         let reserved = self.reserve(table, count)?;
-        // The rows this batch leaves behind: the count the table's ledger holds — a reservation is not
-        // a row, so the sequence mark is never that figure — plus the observations about to be written.
         let rows = self.count(table)?.saturating_add(count);
         let mut batch = self.db.batch();
         for (offset, (id, value)) in encoded.into_iter().enumerate() {
@@ -100,8 +98,6 @@ impl Store {
         self.put_mark(&mut batch, table, reserved.mark);
         self.put_row_mark(&mut batch, table, rows);
         batch
-            // `SyncData` is one `fdatasync` per batch: a crash cannot lose a completed append, and a
-            // batch is a whole adapter page, not a single row.
             .durability(Some(PersistMode::SyncData))
             .commit()
             .map_err(|source| StoreError::Write { source })
@@ -135,10 +131,6 @@ impl Store {
     /// Like [`Store::append_many`], every record is validated before the batch is built, so a
     /// rejected record leaves the keyspace untouched.
     pub fn replace_many<T: Serialize>(&self, table: Table, records: &[T]) -> StoreResult<()> {
-        // A snapshot write is the table's whole content, so an empty one states that the derivation
-        // found nothing and the table must come out empty: otherwise the rows of the previous pass
-        // outlive the findings they describe. Every other mode keeps the rows a write does not name,
-        // so an empty batch there is a no-op and stays one.
         if records.is_empty() && table.storage_mode() != StorageMode::DerivedSnapshot {
             return Ok(());
         }
@@ -149,8 +141,6 @@ impl Store {
         let mut batch = self.db.batch();
         let staged = stage_derived(&mut batch, &self.entities, table, records)?;
         let rows = match table.storage_mode() {
-            // A snapshot write is the table's whole content: the rows it does not name are gone, so
-            // what the batch names is all the table holds, however many rows stood there before.
             StorageMode::DerivedSnapshot => {
                 drop_unnamed(&self.entities, &mut batch, table, &staged.named)?;
                 staged.named_count()?

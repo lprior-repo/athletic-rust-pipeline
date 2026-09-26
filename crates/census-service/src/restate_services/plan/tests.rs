@@ -152,8 +152,6 @@ fn a_states_own_directory_walk_is_planned_only_for_that_state() {
         "Wisconsin's directory is not Minnesota's work: {minnesota:?}"
     );
 
-    // One adapter covers two states, and each run walks its own half: the plan is the only thing
-    // that decides which, so both are held here.
     for (jurisdiction, neighbour) in [
         (UsJurisdiction::Nebraska, UsJurisdiction::NorthDakota),
         (UsJurisdiction::NorthDakota, UsJurisdiction::Nebraska),
@@ -378,7 +376,6 @@ fn fingerprint_is_deterministic() {
         BrowserLaneState::Absent,
     );
     assert_eq!(fp1, fp2);
-    // Fixed length SHA-256 hex.
     assert_eq!(fp1.len(), 64);
 }
 
@@ -397,7 +394,7 @@ fn fingerprint_changes_with_different_inputs() {
     );
     assert_ne!(
         compute_plan_fingerprint(
-            UsJurisdiction::Minnesota, // different jurisdiction
+            UsJurisdiction::Minnesota,
             SchoolYear::new(2026).unwrap(),
             Revision(1),
             BrowserLaneState::Absent,
@@ -407,7 +404,7 @@ fn fingerprint_changes_with_different_inputs() {
     assert_ne!(
         compute_plan_fingerprint(
             UsJurisdiction::Wisconsin,
-            SchoolYear::new(2025).unwrap(), // different season
+            SchoolYear::new(2025).unwrap(),
             Revision(1),
             BrowserLaneState::Absent,
         ),
@@ -417,7 +414,7 @@ fn fingerprint_changes_with_different_inputs() {
         compute_plan_fingerprint(
             UsJurisdiction::Wisconsin,
             SchoolYear::new(2026).unwrap(),
-            Revision(2), // different revision
+            Revision(2),
             BrowserLaneState::Absent,
         ),
         base
@@ -427,7 +424,7 @@ fn fingerprint_changes_with_different_inputs() {
             UsJurisdiction::Wisconsin,
             SchoolYear::new(2026).unwrap(),
             Revision(1),
-            BrowserLaneState::Configured, // different lane state
+            BrowserLaneState::Configured,
         ),
         base
     );

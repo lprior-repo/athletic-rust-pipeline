@@ -51,9 +51,6 @@ pub(super) async fn run_review(store: &Store, args: &ReviewArgs) -> Result<()> {
         .observed_on
         .clone()
         .unwrap_or_else(census_crawl::net::today_iso);
-    // The deterministic pass goes first: it answers the findings the store's own evidence settles
-    // without spending a request, and files the ones it cannot. `--family` scopes it exactly as it
-    // scopes the lanes, so an operator asking about schools is not handed athlete cases.
     let athlete_identity = families.contains(&ReviewFamily::AthleteIdentity);
     let options = ReviewOptions {
         families,

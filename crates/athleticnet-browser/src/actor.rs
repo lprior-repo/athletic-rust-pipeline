@@ -16,7 +16,6 @@ use tokio::{
     time::Instant,
 };
 use tokio_util::sync::CancellationToken;
-// CancellationToken kept only for observer_stop (page observer lifecycle)
 #[path = "lifecycle_ops.rs"]
 mod lifecycle_ops;
 #[path = "shutdown.rs"]
@@ -40,7 +39,6 @@ pub(super) struct Actor {
     pub(super) challenge_target: Option<ChallengeTarget>,
     pub(super) status: Arc<RwLock<BrowserStatus>>,
     pub(super) cooldown_until: Arc<Mutex<Option<Instant>>>,
-    // ready field removed — gate.is_ready() is the single source of truth
     pub(super) shutdown_reply: Option<oneshot::Sender<DrainReport>>,
     pub(super) draining: bool,
     pub(super) queue_capacity: usize,

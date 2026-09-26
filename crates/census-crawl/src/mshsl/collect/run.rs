@@ -71,7 +71,6 @@ impl<'a> MshslRun<'a> {
         let mut page = 0usize;
         'pages: while page < MAX_LISTING_PAGES {
             let url = listing_page_url(page);
-            // A fetch failure already names the URL; the page number rides in it.
             let outcome = self.ctx.fetcher.get(&url, &self.fetch).await?;
             let html = outcome.text();
             let rows = parse_school_list(&html);
@@ -168,9 +167,6 @@ impl<'a> MshslRun<'a> {
                 )],
             ),
         };
-        // One page for the unit: the school, both coach sets and the two journal entries commit
-        // together, so the walk resumes on a school exactly when its rows are durable. The school
-        // observation stays a direct write, the way every school arm writes it.
         let mut batch = self.ctx.store.write_batch();
         batch.append_many(Table::Schools, std::slice::from_ref(school))?;
         self.ctx

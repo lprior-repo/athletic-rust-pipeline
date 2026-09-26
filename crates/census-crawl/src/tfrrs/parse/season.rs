@@ -55,10 +55,6 @@ pub fn sport_from_route(segment: &str) -> Option<Sport> {
     }
 }
 
-// -------------------------------------------------------------------------------------------------
-// Grade vocabulary
-// -------------------------------------------------------------------------------------------------
-
 /// The source's own grade vocabulary, shared by the `Year` column and the `year=` filter.
 ///
 /// `8`, `7` and `6` are published for middle-school competitors. They parse — the site's filter

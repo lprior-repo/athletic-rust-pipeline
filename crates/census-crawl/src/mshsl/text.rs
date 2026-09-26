@@ -25,7 +25,6 @@ pub fn decode_cfemail(encoded: &str) -> Option<String> {
     for pair in digits.chunks_exact(2) {
         let high = pair.first()?.to_digit(16)?;
         let low = pair.get(1)?.to_digit(16)?;
-        // Each digit is ≤ 15, so the nibble pair is ≤ 255 and always fits in a byte.
         let nibble = high.checked_mul(16)?.checked_add(low)?;
         bytes.push(u8::try_from(nibble).ok()?);
     }
@@ -69,7 +68,6 @@ fn decode_entities(value: &str) -> String {
         .replace("&#160;", " ")
         .replace("&lt;", "<")
         .replace("&gt;", ">")
-        // `&amp;` last so `&amp;lt;` cannot turn into a tag.
         .replace("&amp;", "&")
 }
 

@@ -9,10 +9,6 @@ use super::route::{athlete_id, href_name, href_school};
 use super::season::{season_from_label, Season, YearToken};
 use census_domain::model::flip_last_first;
 
-// -------------------------------------------------------------------------------------------------
-// Team pages
-// -------------------------------------------------------------------------------------------------
-
 /// One athlete of a team page's `ROSTER` table.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RosterAthlete {

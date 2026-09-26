@@ -1,9 +1,5 @@
 use super::*;
 
-// -------------------------------------------------------------------------------------------------
-// Identifiers
-// -------------------------------------------------------------------------------------------------
-
 /// Marker types for [`Id`] tags.
 pub mod tag {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -53,7 +49,6 @@ impl<T> Id<T> {
         let mut hex = String::with_capacity(17 + 16);
         hex.push_str(prefix);
         hex.push('_');
-        // SHA-256 always yields 32 bytes; `take(8)` keeps the 64-bit identity prefix.
         for byte in digest.iter().take(8) {
             hex.push_str(&format!("{byte:02x}"));
         }

@@ -47,7 +47,6 @@ pub async fn collect_state_teams(
     let phase = teams_phase(jurisdiction);
     let known = store.journal_keys(&phase)?;
     if !refresh && known.contains(state) {
-        // Team index already collected: reuse the journaled copy from the HTTP cache.
         let options = FetchOptions::default();
         let teams = milesplit::fetch_team_index(fetcher, site, &options).await?;
         return Ok(teams);
@@ -108,7 +107,6 @@ async fn record_roster(
     };
     let co2027 = count_co2027(&roster);
     let mut guard = shared.lock().await;
-    // A roster the host served breaks any run of page refusals.
     guard.refusals.observe(access::Refusal::None);
     guard.rosters = guard.rosters.saturating_add(1);
     if roster.athletes.is_empty() {
@@ -263,21 +261,15 @@ pub async fn collect_milesplit(
     let (mut report, failures) = summarize_states(results);
     let stats = fetcher.stats().await;
     report.elapsed_seconds = started.elapsed().as_secs_f64();
-    // §45: the efficiency metric's numerator. A run's verified useful records are the athletes it
-    // observed into the census; the traffic that produced them is the client's own count, read here
-    // rather than kept a second time.
     let verified = u64::try_from(report.athletes_total).unwrap_or(u64::MAX);
     report.transport = TransportReport::from_stats(&stats, verified);
 
-    // §69: what the sources said about this client is recorded before the report goes back, so a
-    // block the walk paid for is a row the next run reads instead of re-discovering.
     let observed = access::observed(fetcher, store).await;
     report.errors = report.errors.saturating_add(observed.failures);
     report.access_conditions = observed.conditions;
     report.blocked_hosts = observed.blocked_hosts;
 
     if !failures.is_empty() {
-        // Report what completed before failing: the caller keeps its journal and can re-run.
         return Err(CrawlError::Invariant {
             detail: format!(
                 "{} state(s) failed after {} rosters: {}",

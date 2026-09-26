@@ -34,8 +34,6 @@ impl ScheduleSport {
     pub(super) fn sport_for(self, month: u8) -> Sport {
         match self {
             ScheduleSport::CrossCountry => Sport::CrossCountry,
-            // The published "track" schedule opens in the indoor season and runs into the outdoor
-            // one; the month is the only field a row carries that separates them.
             ScheduleSport::Track if month <= 3 || month >= 11 => Sport::IndoorTrack,
             ScheduleSport::Track => Sport::OutdoorTrack,
         }
@@ -77,9 +75,6 @@ static ARIA: LazyLock<Result<Regex, regex::Error>> =
 static TAGS: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>"));
 static DAY: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(\d{1,2})"));
 
-// Accessors for the literal patterns above: a failed compile is a programming mistake rather
-// than something a page can cause, so it is reported as a typed error naming the pattern —
-// never a panic at first use.
 fn row() -> CrawlResult<&'static Regex> {
     ROW.as_ref().map_err(|source| CrawlError::RegexInit {
         pattern: "ROW",
@@ -169,8 +164,6 @@ pub fn schedule_rows(body: &str, year: i16) -> CrawlResult<Vec<MeetRow>> {
     let day_pattern = day()?;
     for found in row()?.find_iter(body) {
         let row = found.as_str();
-        // The month heading is a row of its own (`<tr class="month-title …">`) whose text is the
-        // month name; every competition row beneath it belongs to that month until the next heading.
         if row.contains("month-title") {
             month = month_from_text(&tags()?.replace_all(row, " "));
             continue;
@@ -235,7 +228,6 @@ fn month_from_text(text: &str) -> Option<u8> {
         .iter()
         .position(|month| text.starts_with(&month.to_ascii_lowercase()))
         .and_then(|index| index.checked_add(1))
-        // `MONTHS` holds twelve names, so the 1-based month always fits a `u8`.
         .and_then(|month| u8::try_from(month).ok())
 }
 

@@ -38,15 +38,12 @@ proptest! {
     ) {
         let mut merged = coach_with_email(first.clone());
         merged.merge(coach_with_email(second.clone()));
-        // A merge leaves the row in published form: the first writer's raw address, trimmed and
-        // routed by kind, with the second's filling only the kind the first left empty.
         let want = merged_slots(&published_slots(&first), &published_slots(&second));
         prop_assert_eq!(
             (&merged.professional_email, &merged.personal_email),
             (&want.0, &want.1)
         );
 
-        // Publishing a row the merge already published changes nothing.
         let once = merged.clone();
         merged.publish();
         prop_assert_eq!(merged, once);

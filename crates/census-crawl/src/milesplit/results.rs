@@ -122,9 +122,6 @@ pub async fn collect(
         pending: Vec::new(),
     };
     for request in &options.urls {
-        // A state-host URL is its own authority; only when the host names no jurisdiction is the
-        // caller's row consulted, and a request neither route accepts is reported rather than
-        // requested.
         match ResultSetRef::parse(&request.url)
             .or_else(|| ResultSetRef::parse_with_jurisdiction(&request.url, request.jurisdiction))
         {
@@ -227,8 +224,6 @@ fn append(
     page.append_many(Table::Teams, &teams)?;
     page.append_many(Table::Athletes, &athletes)?;
     page.append_many(Table::Performances, &performances)?;
-    // The entries commit with the rows their result sets yielded: a set counts as read only once
-    // every row it produced is durable.
     for (key, payload) in &entries {
         page.journal_done(PHASE, key, payload)?;
     }

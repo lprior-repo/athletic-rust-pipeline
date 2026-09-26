@@ -10,8 +10,6 @@ use crate::spawn::{SpawnError, TaskReport};
 use super::error::BootstrapError;
 use super::stop::StopReason;
 
-// The drain entry point below is test-facing — the supervisor drains the region itself — so its
-// parameter types are imported only when a test builds a set to hand it.
 #[cfg(test)]
 use crate::spawn::Spawner;
 #[cfg(test)]

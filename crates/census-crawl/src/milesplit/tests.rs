@@ -35,7 +35,6 @@ fn parses_roster_rows_with_grad_year_and_seasons() {
     assert!(first
         .profile_url
         .ends_with("/athletes/14399169-julian-aguilera"));
-    // This athlete's roster row carries no season flags (matched athlete, no imported results).
     assert!(first.sports().is_empty());
     let all_sports = roster
         .athletes
@@ -68,7 +67,6 @@ fn roster_entities_are_canonical_and_source_independent() {
         .find(|athlete| athlete.canonical_name == "Julian Aguilera")
         .unwrap();
     assert_eq!(aguilera.grad_year, GradYear::CO2027);
-    // Grade observed on a 2026-27 roster is 12 for a 2027 graduate.
     let observation = aguilera.observed_grades.first().unwrap();
     assert_eq!(observation.grade.get(), 12);
     assert_eq!(observation.grad_year(), GradYear::CO2027);
@@ -93,14 +91,6 @@ fn malformed_html_fails_loudly() {
         "empty roster is data, not an error"
     );
 }
-
-// ---------------------------------------------------------------------------
-// The state team index, the graded roster, and the `/raw` result set.
-//
-// Every fixture below is byte-identical to the lane capture it came from
-// (`research/sources/milesplit-national/samples/`, checked with `cmp`): `teams-oh.html`,
-// `roster-oh-mason.html` and `raw-oh-770621-rs1321880.txt`. Nothing here touches the network.
-// ---------------------------------------------------------------------------
 
 const OH_TEAMS: &str = include_str!("../../tests/fixtures/milesplit/oh_teams_index.html");
 const OH_ROSTER: &str = include_str!("../../tests/fixtures/milesplit/oh_roster_10002_mason.html");
@@ -146,10 +136,6 @@ fn oh_roster_pins_319_graded_rows_and_96_class_of_2027() {
         .unwrap()
         .clone();
     let roster = parse_roster(OH_ROSTER, mason).unwrap();
-    // The capture carries 319 `column-grad-year` cells and the reader yields 318 of them: one cell
-    // is the literal `0` (an athlete the roster publishes no graduating year for), and a row with no
-    // graduating year is not a cohort row. The other 318 break down 96 x 2027, 88 x 2029, 88 x 2028,
-    // 46 x 2030, which is what the assertions below pin.
     assert_eq!(roster.athletes.len(), 318);
     let co2027 = roster
         .athletes
@@ -157,7 +143,6 @@ fn oh_roster_pins_319_graded_rows_and_96_class_of_2027() {
         .filter(|athlete| athlete.grad_year == GradYear::CO2027)
         .count();
     assert_eq!(co2027, 96);
-    // A 2026-27 roster publishes grades 9..=12, i.e. the classes of 2027 through 2030.
     assert!(roster
         .athletes
         .iter()
@@ -195,9 +180,6 @@ fn raw_result_set_body_pins_80_rows_in_two_sections() {
     assert_eq!(first.place, Some(1));
     assert_eq!(first.name, "Jeydyn Fields");
     assert_eq!(first.school, "Jackson");
-    // The capture is a middle-school invite: all 80 rows publish a `Yr` (47 x 8, 33 x 7) and
-    // `Grade` — the domain's high-school grade — admits neither, so the reader claims no grade here
-    // rather than widening the domain to a grade the census does not count.
     assert_eq!(first.grade, None);
     assert!(matches!(first.mark, Mark::TimeSeconds(_)));
 }
@@ -288,8 +270,6 @@ fn a_high_school_grade_is_carried_as_dated_evidence() {
     );
     assert_eq!(observation.source.id, "milesplit_oh");
     assert_eq!(observation.source.url.as_deref(), Some(OH_RAW_URL));
-    // Grade 10 in 2026-27 graduates in 2029: the projection of the two evidence fields, not a year
-    // the file published.
     assert_eq!(
         athlete.grad_year,
         GradYear::of(observation.grade, observation.school_year)
@@ -339,7 +319,6 @@ fn raw_row_that_does_not_fit_the_column_map_is_reported() {
     let mutated: String = OH_RAW
         .lines()
         .map(|line| match line.contains("Jeydyn Fields") {
-            // Column 75 (1-based) is the separator between the team and mark fields.
             true => {
                 let (head, tail) = line.split_at(74);
                 format!("{head}X{tail}\n")
@@ -370,14 +349,10 @@ fn result_set_urls_are_checked_and_disallowed_routes_are_never_built() {
     assert_eq!(reference.site.code(), "OH");
     assert_eq!(reference.url, OH_RAW_URL);
     for rejected in [
-        // `Disallow: /api/` on every captured host, and the API lives on another host entirely.
         "https://oh.milesplit.com/api/v1/meets/770621/performances",
         "https://api.prod.milesplit.com/v1/meets/770621/performances",
-        // The formatted sibling renders 0 rows: a JS shell over the API.
         "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results/1321880/formatted",
-        // The national channel is not a jurisdiction.
         "https://www.milesplit.com/meets/770621-beaver-eastern-invite-2026/results/1321880/raw",
-        // Not a result set at all.
         "https://oh.milesplit.com/teams",
     ] {
         assert!(ResultSetRef::parse(rejected).is_none(), "accepted {rejected}");
@@ -423,7 +398,6 @@ fn schools_of(page: &RawPage) -> Vec<CanonicalSchool> {
 
 #[test]
 fn parses_a_state_results_index_into_requestable_meets() {
-    // The census's meet enumeration: one page of a state results index, captured 2026-09-22.
     let meets = parse_meet_index(RESULTS_INDEX).unwrap();
     assert_eq!(
         meets.len(),
@@ -442,7 +416,6 @@ fn parses_a_state_results_index_into_requestable_meets() {
         first.meet_url(),
         "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026"
     );
-    // The row publishes `Sep 19` and its section publishes `2026-09`; the date is both.
     assert_eq!(first.date.as_deref(), Some("2026-09-19"));
     assert!(meets.iter().all(|meet| !meet.meet_id.is_empty()));
     assert!(
@@ -457,8 +430,6 @@ fn parses_a_state_results_index_into_requestable_meets() {
 
 #[test]
 fn a_meet_row_without_an_id_is_not_a_meet() {
-    // The reader's contract is a requestable meet: a row it cannot address is dropped rather than
-    // published with an empty id, and a row whose day is not a day of its month keeps no date.
     let html = r#"
 <section class="meet-month" data-month="2026-09">
 <li class="meet-row"
@@ -496,12 +467,6 @@ fn the_results_index_url_is_the_published_query_shape() {
     );
     assert_eq!(Season::ALL.map(Season::code), ["cc", "indoor", "outdoor"]);
 }
-
-// ---------------------------------------------------------------------------
-// The results page's own file list. Fixture:
-// `tests/fixtures/milesplit/oh_meet_770621_results.html`, the same capture the fetch log records
-// (`samples/fetch-log-wave2.tsv`: 200, 45,308 B, 2026-09-22T03:55:44Z), copied byte-for-byte.
-// ---------------------------------------------------------------------------
 
 /// The page lists its result files, and the id it lists is the id the `/raw` route serves: the
 /// capture's own file list (`meetResultFiles = [{"id":1321880,"name":"Results","isMeetPro":0}]`)
@@ -546,10 +511,6 @@ fn an_empty_file_list_is_a_state_not_a_failure() {
     assert!(files.is_empty());
 }
 
-// ---------------------------------------------------------------------------
-// Defect 1: legacy <select id="ddResultsPage"> template.
-// ---------------------------------------------------------------------------
-
 /// The DC fixture uses the legacy `<select id="ddResultsPage">` template instead of the
 /// `meetResultFiles` JS literal. This test proves the parser reads it into the same shape.
 #[test]
@@ -561,7 +522,6 @@ fn dc_legacy_fixture_parses_result_file_entries() {
         DC_LEGACY,
     )
     .unwrap();
-    // The fixture carries two per-file options (Varsity Boys + Varsity Girls), not the All option.
     assert_eq!(files.len(), 2, "two per-file result entries");
     assert_eq!(files[0].id, 1257095);
     assert_eq!(files[0].name, "Varsity Boys Results");
@@ -583,10 +543,6 @@ fn legacy_select_with_only_all_is_empty() {
         parse_meet_result_files("https://www.milesplit.com/meets/999999-x/results", html).unwrap();
     assert!(files.is_empty(), "only-All legacy select yields empty list");
 }
-
-// ---------------------------------------------------------------------------
-// Defect 3: the inline results page — no file list, the page is the result set.
-// ---------------------------------------------------------------------------
 
 /// The DC10 Track Fest capture (`meet 764735`) is the third template: no file list at all, and the
 /// meet's one result set is the `<pre>` block on the results page itself. It is read as one inline
@@ -620,22 +576,16 @@ fn an_inline_results_page_is_its_own_one_result_set() {
     );
 }
 
-// ---------------------------------------------------------------------------
-// Defect 2: www.milesplit.com host handling.
-// ---------------------------------------------------------------------------
-
 /// A www-hosted URL is rejected by `parse` (the original path) but accepted by
 /// `parse_with_jurisdiction` with the caller-supplied jurisdiction.
 #[test]
 fn www_host_is_rejected_by_parse_but_accepted_by_parse_with_jurisdiction() {
     let www_url =
         "https://www.milesplit.com/meets/735841-stancs-home-meet-1-2026/results/1257095/raw";
-    // Original parse: www is not a jurisdiction code → rejected.
     assert!(
         ResultSetRef::parse(www_url).is_none(),
         "www host rejected by plain parse"
     );
-    // With jurisdiction: accepted, attributed to the caller's jurisdiction.
     let ref_with_jur =
         ResultSetRef::parse_with_jurisdiction(www_url, UsJurisdiction::DistrictOfColumbia);
     let reference = ref_with_jur.expect("www host accepted with explicit jurisdiction");

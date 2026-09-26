@@ -9,10 +9,6 @@ use super::html::text_of;
 use super::row::{parse_row, ParsedRow};
 use census_domain::model::Gender;
 
-// -------------------------------------------------------------------------------------------------
-// Performance lists
-// -------------------------------------------------------------------------------------------------
-
 /// One event × gender section of a performance list.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParsedSection {
@@ -30,10 +26,6 @@ pub struct ParsedSection {
 pub struct ParsedList {
     pub sections: Vec<ParsedSection>,
 }
-
-// -------------------------------------------------------------------------------------------------
-// Performance-list parsing
-// -------------------------------------------------------------------------------------------------
 
 /// Read every section of a performance-list page.
 ///
@@ -58,7 +50,6 @@ fn parse_section(chunk: &str) -> ParsedSection {
         .and_then(|digits| digits.parse::<u32>().ok());
     let label = section_label(chunk).unwrap_or_default();
     let mut rows = Vec::new();
-    // The text before the first row is the section's own title and table header.
     for body in chunk.split("<div class=\"performance-list-row").skip(1) {
         rows.push(parse_row(body));
     }

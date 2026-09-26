@@ -166,12 +166,7 @@ pub(super) async fn run() -> Result<()> {
         Command::Jurisdiction(args) => national::run_jurisdiction(&cli, args).await,
         Command::NationalReport(args) => national::run_national_report(&cli, args).await,
         Command::OpenWork(args) => open_work::run_open_work(&cli, args).await,
-        // The lane is the running endpoint's process state, so this never opens a store either: it
-        // submits through the ingress like the commands above it.
         Command::BrowserSession(args) => browser_session::run_browser_session(&cli, args).await,
-        // The seal runs either way, so it is matched here: `--store` opens the store in-process and
-        // `--ingress` submits through the service, which is the only route that can measure the
-        // run's own open work.
         Command::Seal(args) => seal::run_seal(&cli, args).await,
         Command::Teams(args) => gather::run_teams(&cli, args).await,
         Command::Meets(args) => gather::run_meets(&cli, args).await,
@@ -180,15 +175,11 @@ pub(super) async fn run() -> Result<()> {
         Command::Bests(args) => publish::run_bests(&cli, args).await,
         Command::Workbook(args) => publish::run_workbook(&cli, args).await,
         Command::Run(args) => cycle::run_cycle(&cli, args).await,
-        // These write their own files and never touch the store either.
         Command::MergeCoaches(args) => merge_coaches::run_merge_coaches(args),
         Command::VerifyCoaches(args) => verify_coaches::run_verify_coaches(args).await,
         Command::CensusDoc(args) => census_doc::run_census_doc(args),
-        // A backup is a cold copy and refuses an open store, so it is matched here: opening the store
-        // first would hold the very lock the backup has to find free.
         Command::StoreBackup(args) => store::run_backup(&cli.store_root(), args),
         Command::Serve => serve::run_serve(&cli),
-        // Offline tools: open the store in-process, which requires `census-serve` stopped.
         _ => {
             let store = Store::open(cli.store_root())?;
             dispatch::dispatch(&cli, &store).await

@@ -36,7 +36,6 @@ fn the_transport_report_reads_the_counters_once() {
     assert_eq!(report.physical_requests, 3);
     assert_eq!(report.bytes, 900);
     assert_eq!(report.verified_records, 6);
-    // Busiest first, so two runs with the same traffic render the same rows.
     let hosts: Vec<&str> = report.sources.iter().map(|row| row.host.as_str()).collect();
     assert_eq!(hosts, vec!["a.example", "b.example"]);
     let per_source: u64 = report
@@ -48,7 +47,6 @@ fn the_transport_report_reads_the_counters_once() {
         per_source, report.physical_requests,
         "the rows account for the run's physical traffic"
     );
-    // Nothing was measured, so there is no percentile to print — not a zero.
     assert_eq!(report.p95_latency_ms, None);
     assert!(matches!(
         report.verified_records_per_physical_request,

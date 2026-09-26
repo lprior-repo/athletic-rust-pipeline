@@ -33,9 +33,6 @@ mod index_laws;
 #[path = "milesplit_parser_properties/totalness.rs"]
 mod totalness;
 
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
 
 /// The Ohio results index as served on 2026-09-22: fifty meet rows and the pager beside them.
 const OH_INDEX: &str =
@@ -59,9 +56,6 @@ const OH_RAW_URL: &str =
 /// `Middle School 3000 Meter` sections.
 const OH_RAW_ROWS: usize = 80;
 
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
 
 /// The lane's generators: fixed seed, fixed case count, one algorithm — a failure is reproducible
 /// from the seed alone.

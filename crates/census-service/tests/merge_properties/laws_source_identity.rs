@@ -157,8 +157,6 @@ proptest! {
             }
         }
 
-        // The store re-merges a row on every read of its table, so the refusal has to be stable: a
-        // second read of the same observation adds no second finding and still moves no identity.
         merged.merge(incoming);
         prop_assert_eq!(merged.retained_conflicts.len(), 1);
         prop_assert!(same_members(&merged.source_identities, &first.source_identities));

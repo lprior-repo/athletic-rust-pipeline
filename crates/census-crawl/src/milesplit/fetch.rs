@@ -17,8 +17,6 @@ pub async fn fetch_team_index(
 ) -> CrawlResult<Vec<TeamRef>> {
     let outcome = fetcher.get(&site.teams_url(), options).await?;
     if outcome.status != 200 {
-        // A caller that set `allow_not_found` gets the 404 as an outcome rather than an error; the
-        // status is still a fetch failure to every caller that asked for the index itself.
         return Err(CrawlError::Fetch(FetchError::Http {
             status: outcome.status,
             url: outcome.url.clone(),

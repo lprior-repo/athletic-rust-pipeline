@@ -15,9 +15,6 @@ mod collect_schools;
 
 use collect_schools::{plan_schools, process_school, SchoolTally};
 
-// -------------------------------------------------------------------------------------------------
-// Collection
-// -------------------------------------------------------------------------------------------------
 
 /// Walk the WIAA directory and emit canonical schools plus AD/head-coach rows.
 ///
@@ -45,18 +42,15 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let LetterScan { index, letters } = scan_index(ctx, options, &mut report, &before).await?;
     let level_summary = summarize_levels(&index);
 
-    // -- schools: one request per school ---------------------------------------------------------
     let done = ctx.store.journal_keys("wiaa_schools")?;
     let mut tally = SchoolTally::default();
     let fetch_results = plan_schools(ctx, options, &index, &done, &mut tally).await;
 
-    // Phase 3: process results in submission order (deterministic).
     for (idx, result) in fetch_results {
         let Some(entry) = index.get(idx) else {
             continue;
         };
 
-        // Respect limit after collection.
         if let Some(limit) = options.limit {
             if tally.processed >= limit {
                 break;
@@ -91,10 +85,8 @@ async fn scan_index(
     report: &mut AdapterReport,
     before: &FetchStats,
 ) -> CrawlResult<LetterScan> {
-    // -- index: bounded-concurrency fetch per directory letter (shared bound) --------------------
     const LETTER_CONCURRENCY: usize = crate::CONCURRENCY_BOUND;
     let letters = letters_for(&options.school_names);
-    // Collect (letter_index, result) pairs so we can process in submission order.
     let letter_results: Vec<(usize, Result<FetchOutcome, FetchError>)> =
         stream::iter(letters.iter().copied().enumerate())
             .map(|(i, letter)| {
@@ -133,7 +125,6 @@ fn absorb_letters(
     letter_results: Vec<(usize, Result<FetchOutcome, FetchError>)>,
     report: &mut AdapterReport,
 ) -> (Vec<IndexEntry>, usize, Option<String>) {
-    // Process results in submission order for deterministic error tracking.
     let mut index: Vec<IndexEntry> = Vec::new();
     let mut seen_ids: HashSet<String> = HashSet::new();
     let mut letters_ok = 0usize;

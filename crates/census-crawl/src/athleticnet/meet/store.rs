@@ -63,9 +63,6 @@ pub(super) fn meet_row(
                 id: published.id.to_string(),
                 url: Some(meet_url(published.id)),
             });
-            // `LiveID` is the vendor's own cross-source key for the AthleticLIVE copy of this meet.
-            // It is stamped under this adapter's namespace because the id space it uses on
-            // AthleticLIVE's side is unverified, so it is evidence rather than a join key.
             if let Some(live_id) = published.live_id {
                 row.source_identities.push(SourceIdentity {
                     namespace: SourceNamespace::AthleticNet {
@@ -121,9 +118,17 @@ pub(super) fn athlete(
         return athlete.id.clone();
     }
     let profile = u64::try_from(row.provider_id).ok().map(profile_url);
-    let mut athlete = CanonicalAthlete::new(row.school, row.name, observation.grad_year(), row.gender,
-    SourceIdentity { namespace: SourceNamespace::athletic_net("athlete"),
-        id: row.provider_id.to_string(), url: profile.clone() },);
+    let mut athlete = CanonicalAthlete::new(
+        row.school,
+        row.name,
+        observation.grad_year(),
+        row.gender,
+        SourceIdentity {
+            namespace: SourceNamespace::athletic_net("athlete"),
+            id: row.provider_id.to_string(),
+            url: profile.clone(),
+        },
+    );
     if let Some(url) = profile.clone() {
         athlete.public_profile_urls.push(url);
     }

@@ -23,7 +23,6 @@ mod pagination {
 
     #[test]
     fn a_page_below_its_declared_depth_ends_the_chain() {
-        // Live shape: a complete event list shorter than the declared depth.
         let mut rows = String::new();
         for rank in 1..=71 {
             if rank > 1 {
@@ -59,9 +58,6 @@ mod pagination {
 
     #[test]
     fn a_deep_request_answered_with_the_listing_head_ends_the_chain() {
-        // Live shape: the final page filled the declared depth and requested its
-        // successor, and the source answered that request with the listing's
-        // first page carrying the full row count plus the blurred tail.
         let mut rows = String::new();
         for rank in 1..=101 {
             if rank > 1 {
@@ -72,7 +68,6 @@ mod pagination {
         let body =
             format!("{{\"settings\":{{\"depth\":100,\"page\":1}},\"groupedRankings\":[[{rows}]]}}");
         assert_eq!(next_page_after(body.as_bytes(), 246), None);
-        // The listing head itself still requests its successor.
         assert_eq!(next_page_after(body.as_bytes(), 1), Some(2));
     }
 }

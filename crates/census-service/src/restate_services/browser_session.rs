@@ -147,8 +147,6 @@ impl From<DrainReport> for DrainCounts {
     }
 }
 
-// The lane holds no completion of its own: `fetch` is a read, `start` and `stop` are operator
-// actions, and the profile outlives every invocation.
 #[object(
     journal_retention = "90 days",
     idempotency_retention = "30 days",
@@ -165,14 +163,8 @@ impl BrowserSession {
         Json(request): Json<RequestSpec>,
     ) -> Result<Json<BrowserOutcome>, HandlerError> {
         let manager = self.live().await?;
-        // Journaled: the capture is the evidence a receipt cites, so a replay returns what the
-        // transport actually saw rather than a second fetch that might see something else. `Json`
-        // is the bridge to the SDK's own serialization traits, which is what `run` journals with;
-        // the bytes are still `serde_json`'s encoding of the engine's own wire type.
         let outcome = ctx
             .run(move || async move { Ok::<_, HandlerError>(Json(manager.fetch(request).await)) })
-            // Single-attempt run policy (ADR-002): the census's durable layer owns retries, so
-            // `fetch` never retries where the journal cannot see it.
             .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await?;
         Ok(outcome)
@@ -211,11 +203,6 @@ impl BrowserSession {
                 .into());
             }
         }
-        // Deliberately not journaled: a browser is process state, not bytes, so process state
-        // stays process state. The `is_alive` refusal above, the `starting` claim below and this
-        // assignment are what keep a retried or replayed `start` from putting a second manager on
-        // the same profile directory, which the engine documents as a corruption path rather than
-        // a second lane.
         if self
             .starting
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)

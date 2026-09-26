@@ -12,8 +12,6 @@ pub(super) fn text_runs(fragment: &str) -> impl Iterator<Item = String> + '_ {
         .split('<')
         .enumerate()
         .filter_map(|(index, piece)| {
-            // The first piece is the text before any tag; every later piece is a tag, so the run starts
-            // after its `>`.
             let text = if index == 0 {
                 piece
             } else {

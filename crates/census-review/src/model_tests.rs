@@ -124,8 +124,6 @@ fn truncation_keeps_a_string_on_a_character_boundary() {
 
 #[test]
 fn a_verdict_with_no_value_stays_a_verdict_the_reader_can_demote() {
-    // The schema requires both halves as strings, so "no answer" arrives as empty strings; the
-    // domain's sanitizer is what turns that into insufficient_evidence.
     let empty = ReviewVerdict {
         case_id: "c".to_string(),
         kind: ReviewVerdictKind::ValueProposed,

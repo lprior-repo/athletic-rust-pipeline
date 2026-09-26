@@ -1,9 +1,5 @@
 use super::*;
 
-// -------------------------------------------------------------------------------------------------
-// Event ontology
-// -------------------------------------------------------------------------------------------------
-
 /// Our own event taxonomy. Vendor strings map into this via [`EventKind::from_source_label`].
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

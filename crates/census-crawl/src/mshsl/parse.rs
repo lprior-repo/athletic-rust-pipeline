@@ -75,8 +75,6 @@ pub fn parse_school_list(html: &str) -> Vec<SchoolListRow> {
         return Vec::new();
     };
     const ROW_MARKER: &str = "<div class=\"views-row\">";
-    // Without a row marker the split yields nothing after the first element: the whole page is one
-    // chunk, which is what a single-school fixture looks like.
     let mut chunks: Vec<&str> = html.split(ROW_MARKER).skip(1).collect();
     if chunks.is_empty() {
         chunks.push(html);

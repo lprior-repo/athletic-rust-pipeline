@@ -15,7 +15,6 @@ pub struct HarnessInfo {
 /// `crates/census-store/kani/`. Each entry names the `#[kani::proof]` function
 /// and the package that owns it.
 pub const KNOWN_HARNESS: &[HarnessInfo] = &[
-    // census-domain (gradyear.rs)
     HarnessInfo {
         name: "check_gradyear_of_formula",
         package: "census-domain",
@@ -36,7 +35,6 @@ pub const KNOWN_HARNESS: &[HarnessInfo] = &[
         package: "census-domain",
         manifest_path: "crates/census-domain/Cargo.toml",
     },
-    // census-domain (id_mint.rs)
     HarnessInfo {
         name: "check_id_mint_format",
         package: "census-domain",
@@ -62,7 +60,6 @@ pub const KNOWN_HARNESS: &[HarnessInfo] = &[
         package: "census-domain",
         manifest_path: "crates/census-domain/Cargo.toml",
     },
-    // census-domain (publish.rs)
     HarnessInfo {
         name: "check_published_email_printable_ascii_contract",
         package: "census-domain",
@@ -108,7 +105,6 @@ pub const KNOWN_HARNESS: &[HarnessInfo] = &[
         package: "census-domain",
         manifest_path: "crates/census-domain/Cargo.toml",
     },
-    // census-store (keys.rs)
     HarnessInfo {
         name: "check_observation_key_round_trip",
         package: "census-store",
@@ -134,7 +130,6 @@ pub const KNOWN_HARNESS: &[HarnessInfo] = &[
         package: "census-store",
         manifest_path: "crates/census-store/Cargo.toml",
     },
-    // census-store (merge.rs)
     HarnessInfo {
         name: "check_school_merge_idempotent",
         package: "census-store",

@@ -238,8 +238,6 @@ fn planning_band(capabilities: &SourceCapabilities) -> u8 {
     }
 }
 
-// The test module last, as every adapter does: the scan lane reads the production region as the
-// lines before `#[cfg(test)]`, so code after this point would drop out of its counts.
 #[cfg(test)]
 #[path = "registry/tests.rs"]
 mod tests;

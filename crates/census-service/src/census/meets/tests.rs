@@ -147,8 +147,6 @@ fn a_page_that_repeats_its_predecessor_ends_the_season() {
         Some(&first),
         &["3".to_string(), "4".to_string()]
     ));
-    // An empty page is only a repeat of another empty page: a meet index with nothing in it is
-    // a state to report, not a wrap to stop on.
     let empty: Vec<String> = Vec::new();
     assert!(!repeats_previous(None, &empty));
     assert!(repeats_previous(Some(&empty), &empty));
@@ -176,7 +174,6 @@ fn the_journal_phase_carries_the_version_that_forces_a_re_read() {
 /// years are stored for the same jurisdiction.
 #[test]
 fn season_scope_filters_by_year_before_jurisdiction_and_limit() {
-    // Two Wisconsin meets from different years, plus one Ohio meet from 2026.
     let rows: Vec<SourceMeetRef> = vec![
         row_with_year("wi-2025-a", UsJurisdiction::Wisconsin, "w10", 2025),
         row_with_year("wi-2025-b", UsJurisdiction::Wisconsin, "w11", 2025),
@@ -184,7 +181,6 @@ fn season_scope_filters_by_year_before_jurisdiction_and_limit() {
         row_with_year("oh-2026-a", UsJurisdiction::Ohio, "o10", 2026),
     ];
 
-    // Season-specific: only 2026 Wisconsin meets (not 2025).
     let selected = select_meets(
         rows.clone(),
         &[UsJurisdiction::Wisconsin],
@@ -195,7 +191,6 @@ fn season_scope_filters_by_year_before_jurisdiction_and_limit() {
     assert_eq!(selected[0].source_meet_id, "w20");
     assert_eq!(selected[0].year, 2026);
 
-    // Season-specific: only 2025 Wisconsin meets.
     let selected = select_meets(
         rows.clone(),
         &[UsJurisdiction::Wisconsin],
@@ -206,7 +201,6 @@ fn season_scope_filters_by_year_before_jurisdiction_and_limit() {
     let ids: Vec<&str> = selected.iter().map(|r| r.source_meet_id.as_str()).collect();
     assert_eq!(ids, vec!["w10", "w11"]);
 
-    // Non-existent year yields nothing.
     let selected = select_meets(
         rows.clone(),
         &[UsJurisdiction::Wisconsin],
@@ -226,7 +220,6 @@ fn all_seasons_selects_every_year() {
         row_with_year("oh-2026-a", UsJurisdiction::Ohio, "o10", 2026),
     ];
 
-    // All seasons, Wisconsin only.
     let selected = select_meets(
         rows.clone(),
         &[UsJurisdiction::Wisconsin],
@@ -235,7 +228,6 @@ fn all_seasons_selects_every_year() {
     );
     assert_eq!(selected.len(), 3);
 
-    // All seasons, no jurisdiction filter — picks up Ohio too.
     let selected = select_meets(rows.clone(), &[], SeasonScope::All, None);
     assert_eq!(selected.len(), 4);
 }
@@ -251,7 +243,6 @@ fn season_scope_applies_before_limit() {
         row_with_year("wi-2026-a", UsJurisdiction::Wisconsin, "w20", 2026),
     ];
 
-    // Limit 1 per state, season 2025 — only the 2025 meets count toward the limit.
     let selected = select_meets(
         rows.clone(),
         &[UsJurisdiction::Wisconsin],
@@ -261,7 +252,6 @@ fn season_scope_applies_before_limit() {
     assert_eq!(selected.len(), 1);
     assert_eq!(selected[0].source_meet_id, "w10");
 
-    // Same limit, all seasons — 3 Wisconsin meets total, limit 1 applies across both years.
     let selected = select_meets(
         rows,
         &[UsJurisdiction::Wisconsin],

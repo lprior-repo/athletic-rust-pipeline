@@ -38,10 +38,6 @@ pub(super) fn retry_after_secs(response: &reqwest::Response) -> Option<u64> {
         .and_then(|value| value.trim().parse::<u64>().ok())
 }
 
-// ---------------------------------------------------------------------------
-// Fetcher impl methods
-// ---------------------------------------------------------------------------
-
 use crate::net::execute::attempt::FetchPlan;
 
 impl Fetcher {
@@ -83,9 +79,6 @@ impl Fetcher {
             stats.errors = stats.errors.saturating_add(1);
         }
         warn!(status, url = plan.url, "non-success response");
-        // Every status here is either a host observation (403/429, already recorded against the host)
-        // or a fault the durable retry policy exists to absorb. The transport's job is to report it;
-        // grading it as retryable or terminal belonged to the loop that no longer runs here.
         FetchError::Http {
             status,
             url: plan.url.to_string(),

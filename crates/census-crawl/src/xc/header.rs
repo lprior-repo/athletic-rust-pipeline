@@ -40,7 +40,6 @@ pub(super) fn header(lines: &[String]) -> Option<(String, Option<String>)> {
             break;
         }
     }
-    // Some sectional files publish the date only in a page footer, so the fallback walks the file.
     if date.is_none() {
         date = lines.iter().rev().find_map(|line| parse_date(line.trim()));
     }

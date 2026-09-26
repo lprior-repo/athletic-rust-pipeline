@@ -55,11 +55,8 @@ pub struct Options {
     pub school_names: Vec<String>,
 }
 
-// The jurisdiction this adapter covers: the IHSA is the Illinois association.
 use census_domain::UsJurisdiction;
 
-// The moved test module reaches these through `use super::*`; no production path in this
-// file needs them, so they are bound for tests only instead of widening their visibility.
 #[cfg(test)]
 use census_domain::model::{
     normalize_name, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport,

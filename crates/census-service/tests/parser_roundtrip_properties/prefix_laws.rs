@@ -55,7 +55,6 @@ proptest! {
         let full = parse(body, format, ARCHIVE_YEAR)
             .unwrap_or_else(|| panic!("{name} parses in full"));
         match parse(&truncated, format, ARCHIVE_YEAR) {
-            // A body cut before its header is not a meet, and a short one is never padded out.
             None => prop_assert!(full.rows_parsed > 0),
             Some(partial) => prefix_survives(&partial, &full)?,
         }
@@ -67,7 +66,6 @@ proptest! {
             .expect("the fixture parses for any archive year");
         prop_assert_eq!(&meet.date, &format!("{year:04}"));
 
-        // The archive year is the only input that moves: everything else is the body's own.
         let shifted = parse(RACEDAY_HTML, ArtifactFormat::RaceDay, year.saturating_add(1))
             .expect("the fixture parses for any archive year");
         prop_assert_eq!(shifted, ParsedMeet { date: format!("{:04}", year.saturating_add(1)), ..meet });

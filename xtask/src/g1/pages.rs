@@ -176,7 +176,6 @@ fn envelope_parts<'a>(
     envelope: &'a Value,
     verdict_totals: &mut IndexMap<String, usize>,
 ) -> Option<(&'a str, Option<i64>, &'a str)> {
-    // The absent-`d` case is a tally before the page is dropped, which a plain `?` cannot carry.
     let d = envelope.get("d").and_then(|v| v.as_object());
     if d.is_none() {
         bump(

@@ -27,8 +27,6 @@ fn stage_snapshot(dir: &tempfile::TempDir, lines: &[String]) -> std::path::PathB
 
 #[test]
 fn a_malformed_middle_row_fails_the_read_and_names_its_line() {
-    // The reader used to skip one unparseable row, so a row damaged in the middle of a published
-    // snapshot dropped its canonical school from the read model and the read still succeeded.
     let dir = tempfile::tempdir().expect("a temp dir");
     let path = stage_snapshot(
         &dir,
@@ -54,9 +52,6 @@ fn a_malformed_middle_row_fails_the_read_and_names_its_line() {
 
 #[test]
 fn a_truncated_tail_row_fails_the_read_instead_of_vanishing() {
-    // The tolerance this reader used to grant was justified by a writer that truncated snapshots in
-    // place. Publication is a rename now, so a trailing row that does not decode is damage like any
-    // other: refusing the file is what keeps a partial table from being reported as the whole one.
     let dir = tempfile::tempdir().expect("a temp dir");
     let path = stage_snapshot(&dir, &[row("Head School"), "{\"id\":\"trunc".to_string()]);
 
@@ -80,8 +75,6 @@ fn a_whole_snapshot_reads_every_row() {
 
 #[test]
 fn an_absent_snapshot_reads_as_an_empty_table() {
-    // Every adapter reads `out/schools.jsonl` before a consolidate pass has run, so a missing snapshot
-    // is an empty table: only damage inside a file that exists is an error.
     let dir = tempfile::tempdir().expect("a temp dir");
     let read = read_rows::<CanonicalSchool>(&dir.path().join("schools.jsonl"))
         .expect("an absent snapshot is not an error");
@@ -90,9 +83,6 @@ fn an_absent_snapshot_reads_as_an_empty_table() {
 
 #[test]
 fn the_sweep_reclaims_a_temporary_in_out_as_well_as_in_entities() {
-    // The sidecars publish from the same directory their snapshots do, so a process killed during a
-    // `bests` pass leaves its temporary in `out/`. Sweeping only `entities/` would leave that file —
-    // and every later one — on disk for the life of the store.
     let dir = tempfile::tempdir().expect("a temp dir");
     let entities = dir.path().join("entities");
     std::fs::create_dir_all(&entities).expect("the entities dir is created");

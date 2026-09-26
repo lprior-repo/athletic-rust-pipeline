@@ -41,8 +41,6 @@ impl CanonicalCoach {
         role: CoachRole,
     ) -> Self {
         let name = name.into();
-        // `Some(Sport)`/`None` is the byte shape the `Debug` this replaced printed for an
-        // `Option<Sport>`, so a coach id minted before the key was typed keeps its id.
         let sport_key = match sport {
             Some(sport) => format!("Some({})", sport.stable_key()),
             None => "None".to_string(),

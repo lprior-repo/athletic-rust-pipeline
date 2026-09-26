@@ -61,7 +61,6 @@ impl CaseEvidence {
             fact.hash_into(&mut hasher);
         }
         let mut digest = String::with_capacity(16);
-        // SHA-256 always yields 32 bytes; `take(8)` keeps the 64-bit identity the canonical ids use.
         for byte in hasher.finalize().iter().take(8) {
             digest.push_str(&format!("{byte:02x}"));
         }

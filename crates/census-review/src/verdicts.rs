@@ -63,8 +63,6 @@ pub fn validate(
     packet: &ReviewPacket,
 ) -> Adjudication {
     match family {
-        // The athlete family answers with a decision rather than a value, so it has its own reader
-        // and never reaches the jurisdiction rule below.
         ReviewFamily::AthleteIdentity => match athlete_verdict::read(verdict, packet) {
             Ok(answer) if answer.decides() => Adjudication::Decided(Admitted {
                 field: IDENTITY_FIELD.to_string(),

@@ -51,8 +51,6 @@ fn a_changed_scope_is_a_changed_run_and_the_same_scope_reproduces_its_identity()
         WorkflowIdentity::national(season(), Revision(1), &both).as_str(),
         "the same scope must reproduce the same run byte for byte"
     );
-    // The CLI passes the states it was given, the workflow passes the request's list, and neither
-    // spells the default out: an unnamed scope has to be one identity, whichever side derives it.
     assert_eq!(
         WorkflowIdentity::national(season(), Revision(1), &[]).as_str(),
         WorkflowIdentity::national(season(), Revision(1), &UsJurisdiction::CENSUS_SCOPE).as_str(),
@@ -86,9 +84,6 @@ fn the_scope_digest_is_order_stable_over_a_set() {
         scope_digest(&[UsJurisdiction::Iowa, UsJurisdiction::Wisconsin]),
         "a set with a state removed is a different set"
     );
-    // A state outside the census run scope is refused by admission (`national::targets`,
-    // `cli::within_census_scope`), and until it is refused it must not digest as a scope that does not
-    // name it — an identity is not the place to lose a state.
     assert_ne!(
         scope_digest(&[UsJurisdiction::Alaska]),
         scope_digest(&[]),

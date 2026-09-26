@@ -52,8 +52,6 @@ mod run;
 #[cfg(test)]
 mod tests;
 
-// The page readers `xtask replay` drives over the committed captures. The module's own tests call
-// the same two functions on the same fixtures; the route types below stay exported for the walk.
 pub use parse::{
     parse_list_page, parse_list_path, parse_team_page, parse_team_path, ListPath, TeamPath,
 };

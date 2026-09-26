@@ -61,8 +61,6 @@ proptest! {
 
 #[test]
 fn figures_that_are_not_finite_are_never_marks() {
-    // Both are written the way a corrupted cell writes them: digits the `f64` parser accepts and a
-    // value nothing can beat.
     let overlong = "9".repeat(320);
     for token in ["1e400", "1e400m", overlong.as_str()] {
         for kind in kinds() {

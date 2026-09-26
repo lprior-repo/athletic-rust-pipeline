@@ -19,8 +19,6 @@ use census_domain::model::normalize_name;
 
 use super::ASSOCIATION;
 
-// ── Parsed shapes ──────────────────────────────────────────────────────────
-
 /// One parsed row from a school's table.
 #[derive(Debug, Clone)]
 pub struct CoachRow {
@@ -49,8 +47,6 @@ pub struct SchoolExtract {
     pub school: CanonicalSchool,
     pub coaches: Vec<CanonicalCoach>,
 }
-
-// ── Entity mapping ─────────────────────────────────────────────────────────
 
 /// Build canonical school and coach entities from a parsed school table.
 pub fn school_entities(table: &SchoolTable, observed_on: &str) -> SchoolExtract {
@@ -99,7 +95,6 @@ fn coach_from_row(school_id: &SchoolId, row: &CoachRow, observed_on: &str) -> Ca
         CoachRole::HeadCoach,
     );
 
-    // No email is published by the RIIL directory; do not invent one.
     if let Some(phone) = &row.phone {
         coach.phone = Some(phone.clone());
     }

@@ -76,8 +76,6 @@ pub(super) fn run(store: &Store, grad_year: Option<i16>) -> ReportResult<Outcome
     let mut scanned = Scanned::read(store)?;
     let school_state = school_state_index(&scanned.schools);
     let universe = Published::new(jurisdiction_buckets());
-    // The read side is counted from the tables before a column is filled, so no pass below can move
-    // it: a row a pass loses or invents stays visible to the reconciliation.
     let reads = reads::totals(&scanned.tables(), &school_state, &universe, grad_year);
 
     let coach_schools: HashSet<&str> = scanned
@@ -110,11 +108,9 @@ pub(super) fn run(store: &Store, grad_year: Option<i16>) -> ReportResult<Outcome
         grad_year,
         &mut buckets,
     );
-    // Coaches before schools: the school pass counts the sets the coach pass fills.
     classify_coaches(&scanned.coaches, &school_state, &mut buckets, &mut sets);
     classify_schools(&scanned.schools, &sets, &mut buckets);
     classify_meets(&scanned.meets, &mut buckets);
-    // Last: `retain_core` deletes exactly the non-core evidence every column above counted.
     count_core(
         &mut scanned.athletes,
         &school_state,
@@ -253,8 +249,6 @@ fn publish(mut buckets: BucketMap) -> (Vec<JurisdictionCoverage>, Vec<CoverageGa
         Vec::with_capacity(UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1));
     let mut gap_rows = Vec::new();
     for bucket in jurisdiction_buckets() {
-        // A missing accumulator still publishes a row of zeros: an omitted jurisdiction is the one
-        // outcome a coverage report may not produce.
         let (row, counters) = buckets.remove(&bucket).unwrap_or_default().finish(bucket);
         gap_rows.extend(gaps::rows(&row, &counters));
         jurisdictions.push(row);

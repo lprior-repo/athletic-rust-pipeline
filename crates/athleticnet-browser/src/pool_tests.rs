@@ -28,9 +28,6 @@ fn waiting() -> (Pending, oneshot::Receiver<BrowserOutcome>) {
 
 #[tokio::test]
 async fn a_dead_browser_leaves_every_queued_request_with_a_terminal_failure() {
-    // Two waiters, because the failure mode this guards against is a drain that answers the first
-    // and drops the rest: a caller left in the queue is indistinguishable from one whose request
-    // the source never saw, and that is the confusion §9 forbids.
     let (first, first_answer) = waiting();
     let (second, second_answer) = waiting();
     let mut queue = VecDeque::from([first, second]);

@@ -51,7 +51,6 @@ pub use wire::{
     MeetRef, MeetResultFile, ResultSetRef, Roster, RosterAthlete, Season, Site, TeamRef,
 };
 
-// The moved bodies reach these through `super::*`; the test module is the only reader.
 #[cfg(test)]
 use census_domain::model::{CanonicalAthlete, Gender, GradYear, SchoolYear, Sport};
 

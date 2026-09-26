@@ -33,8 +33,6 @@ fn row(source: &str, id: &str, url: &str, jurisdiction: UsJurisdiction) -> Sourc
 
 #[test]
 fn a_foreign_host_is_never_read_as_an_athleticnet_meet() {
-    // A timer's own path can carry a `/meet/<id>` segment, and its number is that provider's id:
-    // reading it here would request a meet that does not exist on Athletic.net.
     assert_eq!(
         meet_id_in("https://results.wayzataresults.com/meet/634313"),
         None
@@ -48,7 +46,6 @@ fn a_foreign_host_is_never_read_as_an_athleticnet_meet() {
         meet_id_in("https://Athletic.Net/xc/meet/634313/"),
         Some(634313)
     );
-    // A path segment that names no number is not an id, and neither is a URL with no `/meet/` at all.
     assert_eq!(meet_id_in("https://www.athletic.net/xc/meet/unknown"), None);
     assert_eq!(meet_id_in("https://www.athletic.net/xc/634313"), None);
 }
@@ -56,42 +53,36 @@ fn a_foreign_host_is_never_read_as_an_athleticnet_meet() {
 #[test]
 fn the_seed_reads_both_row_shapes_and_only_this_jurisdiction() {
     let rows = vec![
-        // A row Athletic.net's own walk wrote: the id is the row's own key.
         row(
             "athleticnet",
             "634313",
             "https://www.athletic.net/TrackAndField/meet/634313/results",
             UsJurisdiction::Wisconsin,
         ),
-        // A row another source published, naming the meet in the URL it read.
         row(
             "wiaa_results",
             "wi-1",
             "https://www.athletic.net/TrackAndField/meet/700001/results",
             UsJurisdiction::Wisconsin,
         ),
-        // The same meet seen twice is one request pair.
         row(
             "mshsl",
             "mn-9",
             "https://www.athletic.net/TrackAndField/meet/700001/results",
             UsJurisdiction::Wisconsin,
         ),
-        // Another state's meets are not this run's, even when the URL names one.
         row(
             "wiaa_results",
             "wi-2",
             "https://www.athletic.net/TrackAndField/meet/800001/results",
             UsJurisdiction::Minnesota,
         ),
-        // A meet another provider published, which this arm must not request.
         row(
             "milesplit",
             "770621",
             "https://oh.milesplit.com/meets/770621/results",
             UsJurisdiction::Wisconsin,
         ),
-        // A row whose key is not an id at all: refused rather than guessed.
         row(
             "athleticnet",
             "not-an-id",
@@ -108,9 +99,6 @@ fn the_seed_reads_both_row_shapes_and_only_this_jurisdiction() {
 
 #[test]
 fn a_meet_index_walk_is_not_a_results_arm() {
-    // The two stages split by what they consume: an index walk publishes meets, a results arm reads
-    // the meets this run published. A source whose own index *is* the meet list belongs to the
-    // meet-index stage, and the one whose payload is a whole meet's result files belongs here.
     assert_eq!(arm_for("wiaa_results"), None);
     assert_eq!(arm_for("wayzata"), None);
     assert_eq!(arm_for("milesplit"), Some(ResultsArm::MilesplitResults));
@@ -122,13 +110,10 @@ fn only_a_milesplit_results_page_is_read_by_the_result_set_arm() {
     assert!(is_results_page(
         "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results"
     ));
-    // Host case is not a name: a site that spells its host differently is the same site.
     assert!(is_results_page("https://WI.MileSplit.COM/meets/1/results"));
-    // The `/raw` address under that page is a result set, not the page that lists them.
     assert!(!is_results_page(
         "https://oh.milesplit.com/meets/770621-x/results/1321880/raw"
     ));
-    // Another provider's page: the selection carries such rows, the arm must not read them.
     assert!(!is_results_page(
         "https://www.wiaawi.org/Results/Track/2026/d1boysstateresults.htm"
     ));

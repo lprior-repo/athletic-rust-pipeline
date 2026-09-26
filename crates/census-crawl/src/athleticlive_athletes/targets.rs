@@ -55,8 +55,6 @@ pub fn meet_targets(meets: &[CanonicalMeet], states: &[UsJurisdiction]) -> MeetS
     let mut skipped_implausible = 0usize;
     let mut skipped_unplaced = 0usize;
     for meet in meets {
-        // The jurisdiction reaches every school the meet's rows mint, so a meet that has none is
-        // not queryable: its count is reported rather than its rows being filed under a guess.
         let Some(state) = meet.state else {
             skipped_unplaced = skipped_unplaced.saturating_add(1);
             continue;

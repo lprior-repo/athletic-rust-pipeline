@@ -105,9 +105,7 @@ fn regional_export_parses_both_blocks_of_a_page() {
     assert_eq!(leader.name, "Parrish, Ashley");
     assert_eq!(leader.grade, census_domain::model::Grade::new(11));
     assert_eq!(leader.place, Some(1));
-    // The source itself truncates long school names with an ellipsis; the parser keeps it.
     assert_eq!(leader.school, "APPLETON NOR\u{2026}");
-    // The qualifier letter is not part of the time, and a prelim awards no points.
     assert_eq!(leader.mark, Mark::TimeSeconds(CentiSeconds::new(1230)));
     assert_eq!(leader.points, None);
 }

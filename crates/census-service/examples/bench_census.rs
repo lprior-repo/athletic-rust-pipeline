@@ -18,9 +18,6 @@
 //! `metric=<name> rate=<n> unit=<unit>/s`, and one `json={...}` summary line. Every phase asserts
 //! the counts it produced before reporting its rate.
 
-// The row shapes, the corpus built from them and the measured phases live in `bench_census/`: an
-// example target is its own crate root, so `mod` names resolve next to this file and the paths are
-// explicit (the same shape `benches/core.rs` uses).
 #[path = "bench_census/corpus.rs"]
 mod corpus;
 #[path = "bench_census/fixtures.rs"]

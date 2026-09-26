@@ -36,9 +36,6 @@ pub const CONCURRENCY_BOUND: usize = 8;
 /// missing.
 pub const FLUSH_UNITS: usize = 64;
 
-// ---------------------------------------------------------------------------
-// Error types
-// ---------------------------------------------------------------------------
 
 /// Adapter-layer failures. Every adapter returns [`CrawlResult`]; `anyhow` is reserved for the
 /// CLI shells.
@@ -126,8 +123,6 @@ pub mod wiaa;
 pub mod wiaa_results;
 pub mod xc;
 
-// The source capability registry (§10/§11): what each adapter can be asked for, what a request to it
-// costs its origin, and the bulk-meet-first ordering a plan starts from.
 pub use registry::{
     bulk_first, descriptor, descriptors, AccessClass, SourceAdmission, SourceCapabilities,
     SourceDescriptor, TransportKind,

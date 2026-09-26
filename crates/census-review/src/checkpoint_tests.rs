@@ -156,14 +156,11 @@ fn resume_after_crash_does_not_reask_closed_cases() {
     let dir = tempfile::tempdir().expect("temp dir");
     let store = Store::open(dir.path()).expect("store opens");
 
-    // Write a resolved case (simulating a prior pass that completed checkpoint 1).
     let case = case_row("c1", ReviewState::Resolved);
     store
         .replace_many(Table::ReviewCases, &[case])
         .expect("case written as resolved");
 
-    // A pass should not find any pending cases.
-    // We test this by checking pending_cases directly.
     let options = ReviewOptions {
         families: vec![ReviewFamily::AthleteIdentity],
         limit: 1000,
@@ -186,7 +183,6 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() {
     let dir = tempfile::tempdir().expect("temp dir");
     let store = Store::open(dir.path()).expect("store opens");
 
-    // Create two schools.
     let school_a = CanonicalSchool::new(
         census_domain::UsJurisdiction::Wisconsin,
         "School A",
@@ -202,11 +198,8 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() {
     .0
     .id;
 
-    // Write two athletes: same name, class, gender, AND same provider object, but different schools.
-    // This triggers the "transferred athlete" rule — they agree, so the pass decides.
     let mut a = CanonicalAthlete::new(&school_a, "Jordan Smith", GradYear::CO2027, Gender::Boys);
     let mut b = CanonicalAthlete::new(&school_b, "Jordan Smith", GradYear::CO2027, Gender::Boys);
-    // Give them the same provider object so they're the same athlete across schools.
     a.source_identities.push(SourceIdentity::new(
         SourceNamespace::MilesplitAthlete,
         "14399169",
@@ -219,11 +212,9 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() {
         .append_many(Table::Athletes, &[a.clone(), b.clone()])
         .expect("athletes written");
 
-    // Run reconcile_athletes — it should decide the pair and write both tables atomically.
     let report = reconcile_athletes(&store, "2026-09-25", false).expect("reconcile runs");
     assert_eq!(report.decided, 1, "one pair decided by rule");
 
-    // Both tables must have the verdict and case.
     let verdicts = store
         .scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)
         .unwrap();
@@ -240,7 +231,6 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() {
         "one receipt for the reconcile pass"
     );
 
-    // Replay should write nothing.
     let report2 = reconcile_athletes(&store, "2026-09-25", false).expect("replay runs");
     assert_eq!(
         report2.decided, 0,

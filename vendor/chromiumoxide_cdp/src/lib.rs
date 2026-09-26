@@ -16,19 +16,6 @@ use crate::revision::Revision;
 pub mod cdp;
 pub mod revision;
 
-// The CDP is not a stable API, it changes from time to time and sometimes
-// in backward incompatible ways.
-//
-// When the CDP changes, the chromium team pushes a commit to the repository
-// https://github.com/ChromeDevTools/devtools-protocol. There you can find
-// valid CDP revisions. That number corresponds to a chromium revision.
-// It is a monotonic version number referring to the chromium master commit position.
-//
-// To map a revision to a chromium version you can use the site
-// https://chromiumdash.appspot.com/commits. We should not necessarily
-// always use the latest revision, as this will mean only the newest chromium
-// browser can be used. Apart from breaking changes, using an older CDP
-// is generally a good idea.
 
 /// Currently built CDP revision
 pub const CURRENT_REVISION: Revision = Revision(1566079);
@@ -155,8 +142,6 @@ mod tests {
 
     use super::cdp::CdpEventMessage;
 
-    // This makes sure we can parse arbitrary numbers (timestamp) as f64
-    // and that the Message untagged union works core
     #[test]
     fn test_event_deserialize_f64() {
         let raw = r#"{"method":"Page.lifecycleEvent","params":{"frameId":"B0FCF18A982213C9947D313EAA8F934A","loaderId":"547DA6CC3D4A41314EA08A88BFA62B21","name":"commit","timestamp":1531.878478},"sessionId":"E0BCD37484373226136272710B8CB432"}"#;

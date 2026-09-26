@@ -57,13 +57,10 @@ const SCHOOLS: [(UsJurisdiction, &str); 16] = [
 ];
 /// Labels that must stay unresolved, and the state they are published in.
 const DECOYS: [(UsJurisdiction, &str); 6] = [
-    // A single token is ambiguous by construction: two schools in this state end in it.
     (UsJurisdiction::Wisconsin, "Memorial"),
     (UsJurisdiction::Wisconsin, "Central"),
-    // A real school, but published in a state whose snapshot does not hold it.
     (UsJurisdiction::Minnesota, "West De Pere"),
     (UsJurisdiction::Illinois, "Milwaukee Bradley Tech"),
-    // A misspelling the resolver must never guess at, and the empty label.
     (UsJurisdiction::Wisconsin, "Milwaukie Bradley Tech"),
     (UsJurisdiction::Wisconsin, ""),
 ];
@@ -177,7 +174,6 @@ fn spellings(name: &str) -> [String; 3] {
 /// in its timer form (`Milwaukee Bradley Tech` → `Milw. Bradley Tech`). `None` when no word of the
 /// name is one timers abbreviate.
 fn abbreviated(name: &str) -> Option<String> {
-    // The table holds ASCII names only, so the lowered copy indexes into the original byte for byte.
     let lowered = name.to_ascii_lowercase();
     for (word, timer_form) in ABBREVIATIONS {
         let Some(at) = lowered.find(word) else {

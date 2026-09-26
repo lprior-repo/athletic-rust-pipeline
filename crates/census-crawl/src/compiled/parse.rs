@@ -19,7 +19,6 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
     let date = date.unwrap_or_else(|| archive_year.to_string());
     let mut blocks: Vec<Block> = Vec::new();
     let mut events: Vec<ParsedEvent> = Vec::new();
-    // Row counters saturate: the counts feed the report, and no file carries 2^64 rows.
     let mut rows_parsed = 0usize;
     let mut rows_skipped = 0usize;
 
@@ -47,8 +46,6 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
     if events.is_empty() {
         return None;
     }
-    // The source reference is part of the parser chain's uniform signature; a parsed meet
-    // carries no source field of its own.
     let _ = source;
     Some(ParsedMeet {
         name,

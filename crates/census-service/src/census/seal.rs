@@ -155,8 +155,6 @@ fn retained_access(rows: &[SourceAccessCondition]) -> (u64, u64, u64) {
             )
         })
         .count();
-    // The remaining kinds are the slowdowns: the split is the store's own row count less the refusals,
-    // so a kind that is neither cannot hide in a number that adds up to less than the table holds.
     let throttled = rows.len().saturating_sub(blocked);
     (count(rows.len()), count(blocked), count(throttled))
 }

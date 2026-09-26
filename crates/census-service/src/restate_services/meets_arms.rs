@@ -120,8 +120,6 @@ pub(super) async fn meets_stage(
             continue;
         };
         let recording = Recording::new();
-        // The arm's sink: `Some` holds the rows for the caller to post through the source's
-        // `Ingest` object. The walk itself is the same either way.
         let rows = walk.armed(arm, &recording).await?;
         take_recorded(slug, recording.drain(), &mut recorded);
         sources.push(MeetSourceRows {

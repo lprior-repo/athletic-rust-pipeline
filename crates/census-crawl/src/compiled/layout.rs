@@ -17,8 +17,6 @@ static BLOCK_START: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(r"(?:^|\s{3,})(#\s?\d+\s+)?(Boys|Girls|Men|Women)['\u{2019}]?s?\s+")
 });
 
-// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
-// back as a typed error that the readers answer as "this file carries no meet" — never a panic.
 fn block_start() -> CrawlResult<&'static Regex> {
     BLOCK_START
         .as_ref()
@@ -148,8 +146,6 @@ pub(super) fn build_blocks(
     events: &mut Vec<ParsedEvent>,
 ) -> Vec<Block> {
     let mut blocks = Vec::new();
-    // The last block runs to the end of every line: its own header line is shorter than the
-    // column header that states where the page's fields sit.
     let ends = starts
         .iter()
         .skip(1)

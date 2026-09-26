@@ -48,10 +48,6 @@ pub(super) struct ImportChunk<'a> {
 
 impl<'a> ImportChunk<'a> {
     pub(super) fn new(store: &'a Store, table: Table) -> StoreResult<Self> {
-        // The import's zero-length probe: it learns the sequence its rows will be keyed from
-        // without reserving any, and the reservation happens when the chunk commits. That sequence
-        // is also the number of observations the table already holds — the quantity the append
-        // funnel's own ceiling counts — so it is worth holding for the whole run.
         let base = store.reserve(table, 0)?.base;
         Ok(Self {
             store,
@@ -68,10 +64,6 @@ impl<'a> ImportChunk<'a> {
 
     /// Validate one journal line, key it, and commit the chunk once it is full.
     pub(super) fn push(&mut self, body: &[u8], path: &Path, line_no: u64) -> StoreResult<()> {
-        // The ceiling belongs to the table, not to the chunk: a table that already holds it refuses
-        // the import at the row that would cross it, and the refusal names the file and the line to
-        // repair. The append funnel refuses the same total at `Store::reserve`, one commit later and
-        // with neither the file nor the line an operator needs to repair a legacy journal.
         if self.table_rows >= MAX_ROWS_PER_TABLE {
             return Err(StoreError::Legacy {
                 detail: format!(
@@ -91,9 +83,6 @@ impl<'a> ImportChunk<'a> {
         self.base = self.base.saturating_add(1);
         self.rows = self.rows.saturating_add(1);
         self.table_rows = self.table_rows.saturating_add(1);
-        // The chunk ceiling is a `u64` byte count, so the body length is widened once here. A body
-        // longer than `u64::MAX` cannot exist on a 64-bit target; saturating keeps the total
-        // monotone, which is what makes the ceiling trip rather than wrap.
         self.bytes = self
             .bytes
             .saturating_add(u64::try_from(body.len()).unwrap_or(u64::MAX));
@@ -110,13 +99,8 @@ impl<'a> ImportChunk<'a> {
         if self.rows == 0 {
             return Ok(());
         }
-        // The mark is arithmetic on the reservation, and the reservation is taken here, under the
-        // same lock an appender reserves under: an import beside a live writer cannot leave the
-        // table's mark below rows that are already stored.
         let _appends = self.store.lock_appends();
         let mark = self.store.reserve(self.table, self.rows)?.mark;
-        // `durability` and `commit` both consume the batch, so the field is swapped for a fresh one
-        // and the filled batch is committed by value.
         let mut batch = std::mem::replace(&mut self.batch, self.store.db.batch());
         batch.insert(
             &self.store.meta,

@@ -100,11 +100,9 @@ fn parse_legacy_results_page(html: &str) -> Option<Vec<MeetResultFile>> {
 pub fn parse_meet_result_files(url: &str, html: &str) -> CrawlResult<Vec<MeetResultFile>> {
     let regex = meet_result_files_regex()?;
     let Some(captured) = regex.captures(html) else {
-        // Second template: legacy `<select id="ddResultsPage">` shape.
         if let Some(files) = parse_legacy_results_page(html) {
             return Ok(files);
         }
-        // Third template: the page is the one result set.
         if html.contains(INLINE_RESULTS_ANCHOR) {
             return Ok(vec![MeetResultFile {
                 id: 0,

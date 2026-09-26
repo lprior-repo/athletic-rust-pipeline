@@ -48,8 +48,6 @@ proptest! {
 
 #[test]
 fn the_vendors_own_notation_reads_exactly() {
-    // The notation table from the parser's own documentation, plus the one mark this repository has
-    // in hand: the `12:40.6` of the MileSplit `/raw` capture.
     let cases = [
         ("10.56", 10.56),
         ("1:54.32", 114.32),
@@ -69,8 +67,6 @@ fn the_vendors_own_notation_reads_exactly() {
 
 #[test]
 fn a_seconds_field_of_sixty_or_more_is_not_a_time() {
-    // `1:75` is not a minute and a quarter: the seconds field of a two- or three-part time is a
-    // field of a sexagesimal, and a parser that adds it up anyway would silently invent a mark.
     for text in ["1:75", "1:60", "1:60.0", "1:59:60", "1:60:00", "2:-1"] {
         assert!(
             parse_time(text).is_none(),

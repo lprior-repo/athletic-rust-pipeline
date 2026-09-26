@@ -100,8 +100,6 @@ pub(crate) fn tokens(line: &str) -> Vec<Token<'_>> {
 pub(crate) fn substring(line: &str, start: usize, end: usize) -> String {
     let mut from = start.min(line.len());
     let mut to = end.min(line.len());
-    // A header offset can land inside a multi-byte character; these walks step to the next
-    // boundary. Both saturate at the line end, which is where each walk terminates anyway.
     while from < line.len() && !line.is_char_boundary(from) {
         from = from.saturating_add(1);
     }
@@ -147,8 +145,6 @@ pub(crate) fn columns_from_header(header: &str) -> Vec<Column> {
         columns.push(Column {
             label: (*label).to_string(),
             start: offset,
-            // A label always ends inside the line it was matched in; saturating keeps the sum from
-            // wrapping rather than truncating the label.
             end: offset.saturating_add(label.len()),
             numeric: !TEXT_LABELS.contains(label),
         });

@@ -12,8 +12,6 @@ fn core_scope_keeps_only_non_athletic_net_evidence() {
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     store.append(Table::Schools, &school).unwrap();
 
-    // One athlete reachable only through the AthleticLIVE mirror, one only through the
-    // Athletic.net host adapter, and one through MileSplit.
     let mut mirrored =
         CanonicalAthlete::new(&school_id, "Mirror Only", GradYear::CO2027, Gender::Boys);
     mirrored.evidence.push(Evidence::parsed(
@@ -77,7 +75,6 @@ fn census_counts_class_of_2027_with_evidence() {
     coach.professional_email = Some("coach@example.org".to_string());
     store.append(Table::Coaches, &coach).unwrap();
 
-    // No consolidation step: the census reads the entity tables through the store.
     let census = build_census(&store, Scope::AllSources).unwrap();
     assert_eq!(census.totals.class_of_2027, 1);
     assert_eq!(census.totals.class_of_2027_boys, 1);
@@ -110,7 +107,6 @@ fn census_reads_merged_observations_without_consolidating() {
         GradYear::CO2027,
         Gender::Boys,
     );
-    // The same entity appended twice and never consolidated: the report still sees one athlete.
     store.append(Table::Athletes, &athlete).unwrap();
     store.append(Table::Athletes, &athlete).unwrap();
 
@@ -118,8 +114,6 @@ fn census_reads_merged_observations_without_consolidating() {
     assert_eq!(census.totals.athletes, 1);
     assert_eq!(census.totals.class_of_2027, 1);
     assert_eq!(census.totals.schools, 1);
-    // The workbook prints a state's school count off its `by_state` row, so the row has to carry
-    // the count and not just the totals.
     assert_eq!(
         census.by_state[&JurisdictionBucket::from(UsJurisdiction::Wisconsin)].schools,
         1
@@ -132,8 +126,6 @@ fn every_jurisdiction_publishes_a_by_state_row() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
 
-    // An empty store still names every configured jurisdiction, plus the bucket for rows no school
-    // placed: an omitted state reads as one nobody looked at.
     let empty = build_census(&store, Scope::AllSources).unwrap();
     let expected = UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1);
     assert_eq!(empty.by_state.len(), expected);
@@ -143,8 +135,6 @@ fn every_jurisdiction_publishes_a_by_state_row() {
         .values()
         .all(|row| row.schools == 0 && row.athletes == 0));
 
-    // A state with a school and no athlete is "covered, empty": its row carries the school count and
-    // zero athletes rather than dropping out of `by_state`.
     let (school, _school_id) = CanonicalSchool::new(UsJurisdiction::Wyoming, "Laramie", "laramie");
     store.append(Table::Schools, &school).unwrap();
     let census = build_census(&store, Scope::AllSources).unwrap();
@@ -154,8 +144,6 @@ fn every_jurisdiction_publishes_a_by_state_row() {
     assert_eq!(wyoming.athletes, 0);
     assert_eq!(census.totals.schools, 1);
 
-    // The published artifacts carry the same rows: the header, one line per jurisdiction whatever it
-    // holds, and the totals line — a state cannot vanish from `report.json` or the CSV either.
     let (_json_path, csv_path) = write_census(&store, &census, Scope::AllSources).unwrap();
     let csv = std::fs::read_to_string(&csv_path).unwrap();
     assert_eq!(csv.lines().count(), expected.saturating_add(2));
@@ -168,8 +156,6 @@ fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
 
-    // Wisconsin is a jurisdiction a census run covers; Hawaii is modelled, never acquired, and a
-    // store can still hold rows for it.
     let (in_scope, in_scope_id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     let (out_of_scope, out_of_scope_id) =
@@ -191,8 +177,6 @@ fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() {
 
     let census = build_census(&store, Scope::AllSources).unwrap();
 
-    // The run scope decides which jurisdictions publish at all: one row per run-scope jurisdiction
-    // plus the unplaced row, and no row for the jurisdiction the run does not cover.
     assert_eq!(
         census.by_state.len(),
         UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1)
@@ -200,7 +184,6 @@ fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() {
     assert!(!census
         .by_state
         .contains_key(&JurisdictionBucket::from(UsJurisdiction::Hawaii)));
-    // Nothing the out-of-scope side holds reaches a row or a total.
     assert_eq!(census.totals.schools, 1);
     assert_eq!(census.totals.athletes, 1);
     assert_eq!(census.totals.class_of_2027, 1);
@@ -210,8 +193,6 @@ fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() {
     assert_eq!(wisconsin.map(|row| row.schools), Some(1));
     assert_eq!(wisconsin.map(|row| row.class_of_2027), Some(1));
 
-    // The work is named rather than dropped: a note carries the jurisdiction and the row it would
-    // have contributed.
     let note = census
         .notes
         .iter()
@@ -225,8 +206,6 @@ fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() {
     assert!(note.contains("athletes=1"), "{note}");
     assert!(note.contains("class_of_2027=1"), "{note}");
 
-    // The evidence scope never changes which jurisdictions publish: a core report and an all-sources
-    // report differ only in the rows they admit.
     let core = build_census(&store, Scope::Core).unwrap();
     assert_eq!(
         core.by_state.keys().collect::<Vec<_>>(),

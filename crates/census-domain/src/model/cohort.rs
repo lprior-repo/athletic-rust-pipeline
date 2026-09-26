@@ -1,9 +1,5 @@
 use super::*;
 
-// -------------------------------------------------------------------------------------------------
-// Time, grade, cohort
-// -------------------------------------------------------------------------------------------------
-
 /// A school year, identified by its starting calendar year (2025 = "2025-26").
 ///
 /// The year is private so a season can only be built by a constructor that bounds it: [`Self::new`]
@@ -50,9 +46,6 @@ impl SchoolYear {
 
     /// `"2025-26"`.
     pub fn short(self) -> String {
-        // `%` is a truncating remainder, which `wrapping_rem` reproduces exactly (including for
-        // negative years) without the `MIN % -1` panic; `saturating_add` keeps the value
-        // well-defined at `i16::MAX` instead of panicking in debug builds.
         let end = self.0.saturating_add(1).wrapping_rem(100);
         format!("{}-{end:02}", self.0)
     }
@@ -137,8 +130,6 @@ impl GradYear {
     ///
     /// Grade 11 in 2025-26 -> 2027. Grade 12 in 2026-27 -> 2027. Grade 9 in 2025-26 -> 2029.
     pub fn of(grade: Grade, school_year: SchoolYear) -> Self {
-        // In-domain inputs (4-digit years, grades 9..=12) stay far inside `i16`; saturating keeps
-        // out-of-domain inputs well-defined instead of panicking in debug builds.
         Self(
             school_year
                 .get()

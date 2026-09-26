@@ -7,10 +7,6 @@ use crate::{CrawlError, CrawlResult};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 
-// ---------------------------------------------------------------------------
-// Data structures
-// ---------------------------------------------------------------------------
-
 /// Envelope returned by `GET /v1/schools`.
 #[derive(Debug, Clone, Deserialize)]
 pub struct SchoolsEnvelope {
@@ -52,9 +48,6 @@ pub struct SchoolRecord {
     #[serde(rename = "URL")]
     #[serde(default)]
     pub url: Option<String>,
-    // Fields deliberately not used:
-    // Address, POBox, Zip, Latitude, Longitude, schoolLogo, Color1/2,
-    // TextOnColor1/2, HasColors, ColorSource.
 }
 
 /// One person from the `/staff2` endpoint.
@@ -85,7 +78,6 @@ pub struct StaffPerson {
     #[serde(rename = "email")]
     #[serde(default)]
     pub email: Option<String>,
-    // Fields deliberately not used: phone, fax.
 }
 
 /// People named by a `GET /v1/schools/{id}/staff2` payload.
@@ -114,10 +106,6 @@ pub fn parse_staff(body: &str) -> CrawlResult<Vec<StaffPerson>> {
     }
     Ok(people)
 }
-
-// ---------------------------------------------------------------------------
-// Parsing helpers
-// ---------------------------------------------------------------------------
 
 /// Non-empty trimmed string → `Some`, or `None`.
 pub(super) fn nonempty(value: &str) -> Option<String> {

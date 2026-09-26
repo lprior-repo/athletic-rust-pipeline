@@ -61,9 +61,6 @@ mod tree;
 
 use std::collections::BTreeMap;
 
-// ---------------------------------------------------------------------------
-// Report types
-// ---------------------------------------------------------------------------
 
 /// What one [`Store::backup`](crate::Store::backup) call produced.
 
@@ -130,9 +127,6 @@ pub struct IntegrityTable {
     pub details: Vec<String>,
 }
 
-// ---------------------------------------------------------------------------
-// Manifest
-// ---------------------------------------------------------------------------
 
 /// A single file entry in `backup.json`.
 

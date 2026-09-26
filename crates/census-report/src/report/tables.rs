@@ -12,8 +12,6 @@ pub(super) fn meet_coverage(meets: &[CanonicalMeet]) -> MeetCoverage {
     let mut coverage = MeetCoverage::default();
     for meet in meets {
         bump(&mut coverage.total);
-        // An unplaced venue stays in the unresolved bucket the pre-cutover reports published, and
-        // the key prints exactly that label.
         bump(
             coverage
                 .by_state

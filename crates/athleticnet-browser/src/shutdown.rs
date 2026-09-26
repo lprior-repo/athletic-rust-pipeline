@@ -23,8 +23,6 @@ impl Actor {
     pub(super) async fn close_browser(&mut self) -> (DrainReport, Option<anyhow::Error>) {
         let deadline = match self.clock.now_instant().checked_add(SHUTDOWN_TIMEOUT) {
             Some(deadline) => deadline,
-            // A deadline the platform clock cannot represent must not panic; fall back to "now",
-            // which is the same immediate-residual path a reached deadline takes.
             None => self.clock.now_instant(),
         };
         self.cancel_and_drain(deadline).await;
@@ -162,7 +160,6 @@ async fn shutdown_browser_process(
             }
         }
     } else {
-        // Attached mode: do not close or wait the external browser.
         drop(browser);
     }
     failure

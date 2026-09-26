@@ -103,9 +103,6 @@ impl Consolidate {
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        // Journaled under a single-attempt run policy (ADR-002): a restart replays the journal
-        // value instead of redoing a completed merge, and the invocation retry owns every attempt
-        // after the first.
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
@@ -155,7 +152,6 @@ impl Report {
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        // Journaled under a single-attempt run policy (ADR-002): see `Consolidate::run`.
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
@@ -209,7 +205,6 @@ impl Bests {
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        // Journaled under a single-attempt run policy (ADR-002): see `Consolidate::run`.
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
@@ -264,7 +259,6 @@ impl Workbook {
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        // Journaled under a single-attempt run policy (ADR-002): see `Consolidate::run`.
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;

@@ -160,7 +160,6 @@ pub(crate) fn populate_totals(
             let key = format!("row_issue:{}", issue_msg);
             tally(verdict_totals, &key, *count);
         }
-        // ambiguous_parser_verdict: pages where parser_verdicts has multiple distinct verdicts
         if distinct_verdicts(page).len() > 1 {
             tally(verdict_totals, "ambiguous_parser_verdict", 1);
         }

@@ -28,8 +28,6 @@ fn five_foot_six_is_five_foot_six_however_it_is_written() {
 
 #[test]
 fn the_published_spelling_is_kept_beside_the_value() {
-    // The `J` tie-break prefix is not part of the mark, so both the value and the kept spelling
-    // start at the feet figure; everything the source printed after it is kept exactly.
     let mark = parse_field_mark("J 61-03.50").expect("a six-foot-plus jump parses");
     match mark {
         Mark::FieldImperial { feet_mark, metres } => {
@@ -52,7 +50,6 @@ fn a_bare_metre_figure_is_a_distance_mark() {
 
 #[test]
 fn a_feet_only_mark_is_whole_feet() {
-    // `16'` is a published pole-vault notation for sixteen feet and no inches.
     let mark = parse_field_mark("16'").expect("a feet-only mark parses");
     assert!((metres_of(&mark) - 16.0 * 12.0 * INCH_METRES).abs() < 0.015);
 }

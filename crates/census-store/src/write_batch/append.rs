@@ -46,8 +46,6 @@ impl StoreBatch<'_> {
     /// never-committed batch leaves it untouched. A table cannot be both appended and replaced in one
     /// batch, because the two disagree about what the table holds.
     pub fn replace_many<T: Serialize>(&mut self, table: Table, records: &[T]) -> StoreResult<()> {
-        // A snapshot write is the table's whole content, so an empty one states that the derivation
-        // found nothing and the table must come out empty: every other mode keeps what it does not name.
         if records.is_empty() && table.storage_mode() != StorageMode::DerivedSnapshot {
             return Ok(());
         }

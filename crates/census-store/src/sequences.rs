@@ -61,8 +61,6 @@ impl Reserve for AtomicU64 {
     fn reserve(&self, count: u64) -> Option<u64> {
         let mut current = self.load(Ordering::Relaxed);
         loop {
-            // Load, check, exchange: a run that would leave the counter's range is refused before the
-            // counter moves, and a contended exchange retries against the value the winner left.
             let next = current.checked_add(count)?;
             match self.compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed) {
                 Ok(_) => return Some(current),
@@ -167,12 +165,7 @@ impl Counters {
             .ok_or_else(|| StoreError::Invariant {
                 detail: format!("table {} has no sequence counter", table.file()),
             })?;
-        // A run the counter cannot represent is refused before the counter moves: the sequences it has
-        // already handed out key observations the store holds, and a second row under one of them
-        // would overwrite the first rather than add to it.
         let base = counter.reserve(count).ok_or(StoreError::CounterOverflow)?;
-        // `reserve` computed this sum to decide the run fits, so it cannot overflow here; the check
-        // stays because the alternative is an unchecked add.
         let mark = base.checked_add(count).ok_or(StoreError::CounterOverflow)?;
         Ok(Reserved { base, mark })
     }

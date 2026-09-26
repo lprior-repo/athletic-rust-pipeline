@@ -217,8 +217,6 @@ pub fn scope_digest(jurisdictions: &[UsJurisdiction]) -> String {
     let mut hasher = Sha256::new();
     for state in &ordered {
         hasher.update(state.code().as_bytes());
-        // A separator, so the field cannot depend on how codes happen to abut once a longer code
-        // exists; codes are two bytes today and the digest must not rely on that.
         hasher.update(b"\n");
     }
     let sum = hasher.finalize();

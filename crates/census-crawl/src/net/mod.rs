@@ -81,9 +81,6 @@ pub const BLOCK_COOLDOWN_SECONDS: u64 = 6 * 60 * 60;
 /// The source slug a fetcher carries until a lane stamps its own.
 const DEFAULT_SOURCE: &str = "unknown";
 
-// ---------------------------------------------------------------------------
-// Fetcher
-// ---------------------------------------------------------------------------
 
 /// Polite, cache-first, per-host-rate-limited HTTP fetcher.
 pub struct Fetcher {
@@ -242,9 +239,6 @@ impl Fetcher {
         )
         .with_retry_after(retry_after_seconds)
         .with_cooldown_until(cooldown_until);
-        // §45 counts the challenges a provider served, apart from its failures: a challenge is the
-        // reason a lane stopped rather than a defect in the request. Counted per observation, so a
-        // host that challenges twice reads as two, and the distinct rows live in `source_access`.
         if matches!(kind, AccessBlockKind::HumanRequired) {
             let mut stats = self.stats.lock().await;
             stats.challenges = stats.challenges.saturating_add(1);
@@ -285,9 +279,6 @@ impl Fetcher {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests;

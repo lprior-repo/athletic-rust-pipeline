@@ -10,8 +10,6 @@ use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::SourceNamespace;
 use census_store::Table;
 
-// ── Collection ─────────────────────────────────────────────────────────────
-
 /// Collect RIIL schools and coaches.
 ///
 /// Single request: one GET to the directory page at `HOST/Directory.aspx`.

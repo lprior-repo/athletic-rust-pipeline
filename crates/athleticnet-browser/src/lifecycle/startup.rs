@@ -85,8 +85,6 @@ async fn finish_startup(
             clock: clock.clone(),
         },
     );
-    // `Actor::run` instruments itself, but a spawn does not carry the spawner's span into the
-    // task, so the actor's own span would start a fresh root trace. This span names the session.
     let span = tracing::info_span!("browser.actor", tabs, launched);
     let join = tokio::spawn(actor.run().instrument(span));
     let manager = BrowserManager {

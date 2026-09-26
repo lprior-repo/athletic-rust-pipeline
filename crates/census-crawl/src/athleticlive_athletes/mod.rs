@@ -124,8 +124,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         pending.len()
     ));
 
-    // FIFO: batches are consumed oldest-meet-first, so a capped run covers settled meets with
-    // results rather than the tail of future-dated entries.
     let mut queue: VecDeque<Vec<&MeetTarget>> = pending
         .chunks(MEETS_PER_BATCH)
         .map(|chunk| chunk.to_vec())

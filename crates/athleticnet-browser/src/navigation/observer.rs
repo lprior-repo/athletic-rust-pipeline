@@ -163,7 +163,6 @@ impl PageObserver {
                 result = body_futures.next(), if !body_futures.is_empty() => {
                     let result: Option<(RequestId, Result<Vec<u8>, BrowserError>)> = result;
                     let Some((request_id, body_result)) = result else { continue };
-                    // Verify current RequestId — drop stale results.
                     if latest_request_id.as_ref() != Some(&request_id) {
                         continue;
                     }
@@ -185,7 +184,6 @@ impl PageObserver {
     ) -> Result<(), BrowserError> {
         observation.status = Some(navigation_status(event.response.status)?);
         observation.headers = transport::response_headers(event)?;
-        // Observe API denials during browser navigation.
         if let Some(status) = observation.status {
             if status == 403 || status == 429 {
                 observation.denied = true;

@@ -101,9 +101,6 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
     let jurisdictions = resolve_states(args.all_states, &args.states)?;
     match cli.route(args.flags.ingress.as_deref())? {
         Route::Offline(root) => {
-            // Staging-only: this walk writes the store directly, bypassing the plan fingerprint
-            // and the Ingest receipts and windows, so seal item 2 and open-work measurement
-            // cannot see it. Measured coverage comes only from the live path.
             let store = Store::open(root)?;
             let fetcher = build_fetcher(cli, &store)?;
             for jurisdiction in &jurisdictions {
@@ -156,9 +153,6 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
     let jurisdictions = resolve_states(args.all_states, &args.states)?;
     match cli.route(args.flags.ingress.as_deref())? {
         Route::Offline(root) => {
-            // Staging-only: this walk writes the store directly, bypassing the plan fingerprint
-            // and the Ingest receipts and windows, so seal item 2 and open-work measurement
-            // cannot see it. Measured coverage comes only from the live path.
             let store = Store::open(root)?;
             let fetcher = build_fetcher(cli, &store)?;
             let observed_on = census_crawl::net::today_iso();
@@ -277,14 +271,9 @@ pub(super) async fn run_collect(cli: &Cli, args: &CollectArgs) -> Result<()> {
     let options = collect_options(args)?;
     match cli.route(args.flags.ingress.as_deref())? {
         Route::Offline(root) => {
-            // Staging-only: this walk writes the store directly, bypassing the plan fingerprint
-            // and the Ingest receipts and windows, so seal item 2 and open-work measurement
-            // cannot see it. Measured coverage comes only from the live path.
             let store = Store::open(root)?;
             let fetcher = build_fetcher(cli, &store)?.with_source("milesplit");
             let outcome = census::collect_milesplit(&fetcher, &store, &options).await;
-            // §69: the blocked hosts are named before the report, so a run that hit a hard block never
-            // reads like a complete one — whatever the walk itself returned.
             print_blocked_hosts(&fetcher).await;
             let report = outcome.context("milesplit collection")?;
             println!("{}", serde_json::to_string_pretty(&report)?);

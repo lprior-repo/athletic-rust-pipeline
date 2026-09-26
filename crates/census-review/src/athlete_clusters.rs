@@ -133,9 +133,6 @@ pub fn reconcile_athletes(
         batch.replace_many(Table::ReviewCases, &cases)?;
         batch.replace_many(Table::IdentityVerdicts, &verdicts)?;
         let digest = super::compute_digest(&verdicts, &cases);
-        // One rule for both review writes: the id dates the pass *and* carries its payload, so an
-        // identical replay of a derivation is a repeat, while a later same-day derivation that
-        // decides new pairs is a new application instead of a refused one.
         let operation = format!("reconcile:{observed_at}:{digest}");
         batch.commit_once(&operation, &digest)?;
     }

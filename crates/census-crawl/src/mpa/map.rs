@@ -18,8 +18,6 @@ use census_domain::model::{
     SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 
-// ── Parsed shapes ──────────────────────────────────────────────────────────
-
 /// A parsed school with its name and FusionPoint ID (used only for URL construction).
 ///
 /// The school's canonical join key is its normalized name — the source publishes no
@@ -51,8 +49,6 @@ pub struct SchoolExtract {
     pub coaches: Vec<CanonicalCoach>,
 }
 
-// ── Sport label mapping ────────────────────────────────────────────────────
-
 /// Map a sport label to a Sport variant, or `None` for non-XC/TF sports.
 pub fn parse_sport_label(label: &str) -> Option<Sport> {
     let cleaned = collapse_whitespace(&decode_entities(label));
@@ -82,8 +78,6 @@ fn sport_gender(label: &str) -> Gender {
         _ => Gender::Mixed,
     }
 }
-
-// ── Helpers ────────────────────────────────────────────────────────────────
 
 fn decode_entities(value: &str) -> String {
     value
@@ -131,8 +125,6 @@ fn staff_page_url(school_id: &str) -> String {
     format!("{HOST_WWW}{STAFF_PATH}?SchoolID={}&tab=staff", school_id)
 }
 
-// ── Entity mapping ─────────────────────────────────────────────────────────
-
 /// Build canonical school and coach entities from parsed directory entries and staff rows.
 ///
 /// `all_entries` is the full directory (all schools), `school_entries` is the subset
@@ -147,8 +139,6 @@ pub fn school_entities(
     let staff_url = staff_page_url(&entry.school_id);
     let (school, school_id) = school_entity(entry, page_url, observed_on);
 
-    // Deduplicate: the source sometimes lists the same sport twice (e.g. two boys XC coaches), and
-    // the first occurrence is the published one.
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     let mut coaches: Vec<CanonicalCoach> = Vec::new();
     for row in staff_rows {

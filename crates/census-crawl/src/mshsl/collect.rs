@@ -64,8 +64,6 @@ fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
 
 /// `u64` view of a `usize` count: lossless on every supported target, saturating otherwise.
 fn count(value: usize) -> u64 {
-    // `clippy::manual_unwrap_or` (a `-D warnings` error) requires this over a `match`, and the
-    // fallback is unreachable on every supported target.
     u64::try_from(value).unwrap_or(u64::MAX)
 }
 

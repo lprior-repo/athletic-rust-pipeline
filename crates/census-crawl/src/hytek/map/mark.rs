@@ -25,8 +25,6 @@ pub fn hytek_event_kind(label: &str) -> EventKind {
     if !matches!(direct, EventKind::Unmapped { .. }) {
         return direct;
     }
-    // `4x800 Relay` drops the unit that `4x200 Meter Relay` keeps, and `Sprint Medley Relay`
-    // spells the medley out, so the relay word is tried like the other noise words.
     for suffix in ["dash", "run", "throw", "relay"] {
         if let Some(stripped) = compact.strip_suffix(suffix) {
             let candidate = EventKind::from_source_label(stripped);
@@ -143,7 +141,6 @@ pub(in crate::hytek) fn parse_marks(
     let mark = if NO_MARK.contains(&upper.as_str()) {
         Mark::Raw(mark_token.to_string())
     } else {
-        // `Q`/`P` mark a qualifier, `J` a jump tie-break; neither belongs to the mark itself.
         let numeric = mark_token
             .trim_end_matches(['Q', 'q', 'P', 'p'])
             .trim_start_matches(['J', 'j'])

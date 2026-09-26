@@ -112,7 +112,6 @@ pub(super) fn absorb_document(
             .push(format!("{path}: the document carries no event id"));
         return None;
     };
-    // A capture of another meet would file its rows under this meet's schools and date.
     if let Some(meet_id) = doc.meet_id() {
         if meet_id != fold.target.athleticlive_meet_id {
             fold.failures.push(format!(
@@ -276,8 +275,6 @@ pub(super) fn absorb_standings(
         event.event_key,
         rows.len()
     ));
-    // A standings payload publishes no event of its own: the event document that named this run key
-    // is what places the race, and its `xc` marker is what makes the sport cross-country.
     let sport = sport_for(false, &fold.target.name, &fold.target.date);
     let (context, mut writer) = fold.split_for(&source, &evidence, event, &event.kind, sport);
     for (row_index, (_run_row, row)) in rows.iter().enumerate() {

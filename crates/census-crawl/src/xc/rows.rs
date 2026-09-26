@@ -72,7 +72,6 @@ pub(super) fn block_rows(line: &str, team: Option<&str>) -> Vec<ParsedRow> {
             }
             let seconds = hytek::parse_time(captures.get(5)?.as_str())?;
             Some(ParsedRow {
-                // A bracketed place is a displacing score: the place is real, the bracket is not.
                 place: captures
                     .get(2)?
                     .as_str()

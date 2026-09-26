@@ -36,8 +36,6 @@ pub(crate) fn resolve_tables(names: &[String]) -> Result<Vec<Table>, TerminalErr
 
 /// Resolve the scope selector used by the report, bests, and workbook surfaces.
 pub(crate) fn resolve_scope(name: Option<&str>) -> Result<Scope, TerminalError> {
-    // An omitted scope means the CLI's default scope, which is every source: the two entry points
-    // must not disagree about what a default report contains.
     match name {
         None | Some("all_sources") => Ok(Scope::AllSources),
         Some("core") => Ok(Scope::Core),

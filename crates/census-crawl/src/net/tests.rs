@@ -28,7 +28,6 @@ fn a_bare_domain_authorizes_its_subdomains_but_not_lookalikes() {
     assert!(fetcher.is_authorized_host("athletic.net"));
     assert!(fetcher.is_authorized_host("www.athletic.net"));
     assert!(fetcher.is_authorized_host("WWW.Athletic.NET"));
-    // Suffix matching must not leak to a domain that merely ends with the same text.
     assert!(!fetcher.is_authorized_host("notathletic.net"));
     assert!(!fetcher.is_authorized_host("athletic.net.evil.com"));
 }
@@ -45,7 +44,6 @@ fn an_exact_host_never_widens_into_its_parent_domain() {
 #[test]
 fn authorization_never_relaxes_the_two_rps_ceiling() {
     let (fetcher, _dir) = fetcher_with(vec!["athletic.net".to_string()]);
-    // The policy ceiling is a floor on spacing: even a 1 ms configured delay is raised.
     assert!(MIN_AUTHORIZED_DELAY >= Duration::from_millis(500));
     let (unauthorized, _dir2) = fetcher_with(Vec::new());
     assert!(!unauthorized.is_authorized_host("athletic.net"));
@@ -74,8 +72,6 @@ fn robots_absent_or_empty_allows_everything() {
 
 #[test]
 fn a_hostile_crawl_delay_cannot_panic_or_park_the_walk() {
-    // `Duration::from_secs_f64` panics on these, and a fetched robots.txt is untrusted input: two
-    // lines served by a crawled host must not be able to kill the walk that fetched them.
     for hostile in ["inf", "-inf", "nan", "1e30", "1e300", "-5"] {
         let body = format!("User-agent: *\nDisallow: /private\nCrawl-delay: {hostile}\n");
         let rules = parse_robots(&body);
@@ -88,14 +84,11 @@ fn a_hostile_crawl_delay_cannot_panic_or_park_the_walk() {
             rules.crawl_delay
         );
     }
-    // A finite but absurd delay is clamped rather than honoured: the host is asking not to be
-    // walked, and the run's own budget stays intact.
     let clamped = parse_robots("User-agent: *\nCrawl-delay: 1e9\n");
     assert_eq!(
         clamped.crawl_delay,
         Some(std::time::Duration::from_secs(3600))
     );
-    // An ordinary delay is honoured unchanged.
     let honoured = parse_robots("User-agent: *\nCrawl-delay: 2\n");
     assert_eq!(
         honoured.crawl_delay,
@@ -113,9 +106,6 @@ fn robots_named_agent_groups_are_ignored() {
 
 #[test]
 fn cache_key_pins_the_on_disk_cache_layout() {
-    // Cached bodies live at `{key}.body` / `{key}.meta.json`, so the key derivation is part
-    // of the on-disk layout: `GET`-with-no-body and `POST`-with-a-body must keep the same
-    // keys across refactors, or a re-run stops being free.
     assert_eq!(
         Fetcher::key_for("GET", "https://example.com/teams", ""),
         "2ee9e0985d9a4ffc8864d9dfaae08524"
@@ -124,7 +114,6 @@ fn cache_key_pins_the_on_disk_cache_layout() {
         Fetcher::key_for("POST", "https://example.com/api", "q=1&page=2"),
         "fd3996c5f6d99f4badb15fb729c483c8"
     );
-    // Two queries against one endpoint are two documents.
     assert_ne!(
         Fetcher::key_for("POST", "https://example.com/api", "q=1&page=2"),
         Fetcher::key_for("POST", "https://example.com/api", "q=1&page=3")
@@ -162,17 +151,14 @@ async fn a_corrupted_cache_body_is_rejected_not_served() {
     };
     write_cache(&body_path, &meta_path, body, &meta).expect("write");
 
-    // A valid body is served.
     let (cached_meta, cached_body) = super::cache::read_cache(&body_path, &meta_path)
         .expect("read")
         .expect("cache hit");
     assert_eq!(cached_body, body);
     assert_eq!(cached_meta.bytes, body.len());
 
-    // Corrupt the body.
     std::fs::write(&body_path, b"corrupted body!!!").expect("corrupt");
 
-    // The corrupted body is a miss — never served as evidence.
     let result = super::cache::read_cache(&body_path, &meta_path).expect("read");
     assert!(result.is_none(), "corrupted body must be a cache miss");
 }
@@ -183,14 +169,10 @@ async fn a_corrupted_cache_body_is_rejected_not_served() {
 #[test]
 fn an_empty_robots_body_is_fetched_but_has_no_rules() {
     let rules = parse_robots("");
-    // An empty body with no User-agent lines: saw_any_group is false, so rules are cleared.
-    // But the `fetched` flag is still true.
     assert!(
         rules.was_fetched(),
         "empty body is a fetched file, not an absent one"
     );
-    // no rules parsed from empty body — parsed rules are empty when no user-agent groups exist
-    // No rules means all paths are allowed.
     assert!(rules.allows("/"));
 }
 
@@ -199,7 +181,6 @@ fn an_empty_robots_body_is_fetched_but_has_no_rules() {
 fn a_comment_only_robots_body_is_fetched_but_has_no_rules() {
     let rules = parse_robots("# just a comment\n  \n# nothing useful\n");
     assert!(rules.was_fetched(), "a comment-only body is still fetched");
-    // no directives parsed from comments — parsed rules are empty when no user-agent groups exist
 }
 
 /// §45: the physical count is derived from the other two, so a cached run cannot claim traffic.

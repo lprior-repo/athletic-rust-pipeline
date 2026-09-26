@@ -54,8 +54,6 @@ impl Fixture {
             "Jordan Smith (Madison West High School)",
             detail.as_str(),
         );
-        // The merge writes this family to the conflict queue, beside the cohort and school conflicts:
-        // that is the row a pass has to read to find the case at all.
         let conflict = RetainedConflict::new(
             ATHLETE_IDENTITY_FAMILY,
             case.subject_id.as_str(),
@@ -148,7 +146,6 @@ fn request_complete(request: &[u8]) -> bool {
     let headers = String::from_utf8_lossy(&request[..head]);
     match content_length(&headers) {
         Some(length) => request.len().saturating_sub(head) >= length,
-        // A body with no declared length is chunked, and a chunked body ends with a zero chunk.
         None => find(&request[head..], b"\r\n0\r\n\r\n").is_some(),
     }
 }
@@ -210,7 +207,6 @@ async fn same_person_is_rejected_when_gender_differs() {
         report.requested, 1,
         "the conflict queue is where the case is read"
     );
-    // §34: AI may never override a deterministic contradiction.
     assert_eq!(report.accepted, 0);
     assert_eq!(report.rejected, 1);
 
@@ -301,8 +297,6 @@ async fn a_proposal_that_is_not_an_answer_is_retained_with_what_it_said() {
 #[test]
 fn a_finding_held_by_both_the_conflict_and_the_review_table_is_asked_once() {
     let (fixture, case) = Fixture::new();
-    // The second pass over a decided case writes it back to the review table, so a finding can be
-    // held by both tables at once; asking it twice would spend two requests on one question.
     fixture
         .store
         .replace_many(Table::ReviewCases, std::slice::from_ref(&case))
@@ -318,9 +312,6 @@ fn a_finding_held_by_both_the_conflict_and_the_review_table_is_asked_once() {
 #[tokio::test]
 async fn a_lane_killed_before_it_answers_is_counted_and_mints_no_verdict() {
     let (fixture, _case) = Fixture::new();
-    // §59's kill-model-lane leg: bind a port, drop the listener, keep the address. The lane is then
-    // exactly as reachable as a llama.cpp process that died between two passes — a refused
-    // connection, which is the shape every lane failure takes from this side of the socket.
     let endpoint = {
         let listener = TcpListener::bind("127.0.0.1:0").expect("an ephemeral port");
         let address = listener.local_addr().expect("the bound address");

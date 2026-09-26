@@ -27,9 +27,6 @@ impl Reserve for AtomicU64 {
     fn reserve(&self, count: u64) -> Option<u64> {
         let mut current = self.load(Ordering::Relaxed);
         loop {
-            // The load, the checked add and the exchange are one step: a run that cannot be
-            // represented is refused here, without moving the counter, and a contended exchange
-            // retries against the value the winner left.
             let next = current.checked_add(count)?;
             match self.compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed) {
                 Ok(_) => return Some(current),
@@ -46,10 +43,6 @@ impl Reserve for AtomicU64 {
 #[test]
 fn concurrent_writers_tile_the_sequence_space() {
     let mut builder = loom::model::Builder::new();
-    // Three writers, because the store reserves in all three of these shapes: a batch, the import's
-    // zero-length probe, a second batch. The thread budget counts the modeling thread as well, so
-    // three workers need four, and the preemption bound is what keeps the exploration inside the
-    // all-features gate's budget.
     builder.max_threads = 4;
     builder.preemption_bound = Some(2);
     builder.check(|| {
@@ -58,8 +51,6 @@ fn concurrent_writers_tile_the_sequence_space() {
             let counter = Arc::clone(&counter);
             thread::spawn(move || (counter.reserve(count), count))
         };
-        // A batch, the import's zero-length probe (`legacy.rs` reserves 0 to learn its base), and a
-        // second batch.
         let first = writer(2);
         let empty = writer(0);
         let second = writer(3);
@@ -99,11 +90,6 @@ fn concurrent_writers_tile_the_sequence_space() {
 
 #[test]
 fn a_reservation_that_would_wrap_is_refused() {
-    // The counter ends at a finite number, and the sequences it has already handed out key
-    // observations the store holds. Two writers, one sequence from the end: the run that ends exactly
-    // at the last sequence lands, the other cannot be represented and is refused, and the counter
-    // never passes its range whichever of them wins. Without the checked step the counter wraps and
-    // the refused writer would be handed a sequence the table already spent.
     let mut builder = loom::model::Builder::new();
     builder.max_threads = 3;
     builder.preemption_bound = Some(2);

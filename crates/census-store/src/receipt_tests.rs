@@ -84,8 +84,6 @@ fn a_replay_of_one_operation_writes_nothing() {
     assert_eq!(receipt.operation, "wiaa_schools_wi:w39:schools:0");
     assert_eq!(rows(&store, Table::Schools), 2);
 
-    // The replay the mechanism exists for: the same operation, the same payload digest, arriving
-    // again because the acknowledgement of the first application was lost.
     let repeat = apply(
         &store,
         "wiaa_schools_wi:w39:schools:0",
@@ -125,9 +123,6 @@ fn one_operation_id_cannot_name_two_payloads() {
     )
     .unwrap();
 
-    // The same id, a different payload: a caller that reused a name for different work. Appending
-    // it would put rows under an id whose receipt describes other rows, so the commit is refused
-    // and the store keeps what it holds.
     let refused = apply(
         &store,
         "wiaa_schools_wi:w39:schools:0",
@@ -178,12 +173,8 @@ fn the_receipt_outlives_the_process_that_wrote_it() {
     {
         let store = Store::open(dir.path()).unwrap();
         apply(&store, operation, "digest-a", "unit-0").unwrap();
-        // No flush, no close: the commit is the durability boundary, so what a crash leaves is what
-        // this leaves.
     }
 
-    // A writer that died after the append and before it heard its own acknowledgement comes back
-    // to a store that already holds the page, and must be told so.
     let store = Store::open(dir.path()).unwrap();
     let receipt = store.receipt(operation).unwrap().unwrap();
     assert_eq!(receipt.appended, 2);
@@ -220,8 +211,6 @@ fn a_replay_moves_no_counter_and_writes_no_second_journal_entry() {
     .unwrap();
     assert!(matches!(repeat, Application::Repeated(_)), "{repeat:?}");
 
-    // A repeat that reserved sequences would leave the table's pointer ahead of the rows the store
-    // holds, and a reopen would hand out those sequences again.
     assert_eq!(counter(&store, Table::Schools), counter_before);
     assert_eq!(rows(&store, Table::Schools), rows_before);
     assert_eq!(
@@ -276,8 +265,6 @@ fn receipts_older_than_the_policy_day_are_removed_and_newer_ones_kept() {
         (NaiveDate::parse_from_str(&today, "%Y-%m-%d").unwrap() - chrono::Days::new(1)).to_string();
     apply(&store, "old-operation", "digest-old", "unit-old").unwrap();
 
-    // A boundary that has not reached the receipt's day removes nothing: the window it guards is
-    // still open, and deleting it would re-open the double append it exists to prevent.
     let kept = store.prune_receipts(&yesterday).unwrap();
     assert_eq!(kept, Pruned::default(), "nothing older than yesterday");
     assert!(store.receipt("old-operation").unwrap().is_some());
@@ -290,8 +277,6 @@ fn receipts_older_than_the_policy_day_are_removed_and_newer_ones_kept() {
     assert!(store.receipt("old-operation").unwrap().is_none());
     assert_eq!(store.receipt_count().unwrap(), 0);
 
-    // With the receipt gone the operation is free to be applied again, which is the point of a
-    // retention policy: past the window a replay cannot arrive, and growth is bounded.
     let reapplied = apply(&store, "old-operation", "digest-old", "unit-old").unwrap();
     assert!(
         matches!(reapplied, Application::Written(_)),

@@ -163,17 +163,6 @@ impl Store {
             sequences,
             appends: Mutex::new(()),
         };
-        // Opening a store is a read, and the one-time import of a pre-Fjall corpus is a write: it is
-        // [`Store::import_legacy`], and the paths that have decided to migrate call it — the offline
-        // census run, the `import-legacy` verb, and the service bootstrap that owns the store for the
-        // live route. Importing here made every open a writer, so an operator running a verb that
-        // only measures a legacy root — integrity, backup, the restore drill — moved the corpus as a
-        // side effect of looking at it.
-        //
-        // The row-count ledger is still seeded here, because it is a count of the rows this store
-        // already holds rather than a migration of rows: a store written before the ledger existed
-        // has no counts, and a count is only knowable by walking the table. It writes `rows:<table>`
-        // for a table that has none, once, and nothing else.
         store.seed_row_marks()?;
         Ok(store)
     }
@@ -205,8 +194,6 @@ fn open_keyspaces(
         .cache_size(CACHE_BYTES)
         .open()
         .map_err(|source| StoreError::Open { source })?;
-    // `entities` keeps its bloom filters: acquisition asks it about source identities that
-    // usually are not there yet, and a miss must not fall through the last level.
     let entities = db
         .keyspace(ENTITIES, KeyspaceCreateOptions::default)
         .map_err(|source| StoreError::Open { source })?;
@@ -220,8 +207,6 @@ fn open_keyspaces(
             KeyspaceCreateOptions::default().expect_point_read_hits(true)
         })
         .map_err(|source| StoreError::Open { source })?;
-    // A receipt is read for one operation id at a time, on the write path itself, so its
-    // keyspace keeps the same point-read hint `meta` wants.
     let receipts = db
         .keyspace(RECEIPTS, || {
             KeyspaceCreateOptions::default().expect_point_read_hits(true)

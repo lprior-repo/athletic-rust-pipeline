@@ -54,9 +54,6 @@ fn review_status(athlete: &CanonicalAthlete) -> Cell {
 
 /// The `Athletes` sheet, ordered by state, school, then athlete.
 pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
-    // The key is materialised once per athlete: `sort_by_key` recomputes it - two school string
-    // clones, a BTreeMap lookup each, and the name clone - on every comparison, and this sheet's
-    // cohort runs to hundreds of thousands of rows.
     let mut ordered: Vec<(&CanonicalAthlete, (String, String, String))> = dataset
         .athletes
         .iter()
@@ -97,7 +94,6 @@ fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Ce
     cells.extend(headline_pr_summary(athlete, &prs));
     cells.extend(pr_event_cells(&prs));
     cells.extend(participation_metrics(tally)?);
-    // School contact names and emails in header order
     cells.push(published(contacts.and_then(|c| c.head_track.clone())));
     cells.push(published(contacts.and_then(|c| c.head_track_email.clone())));
     cells.push(published(
@@ -121,8 +117,6 @@ fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Ce
 /// The identity columns: stored id, name, gender, cohort year and grade, then school placement.
 fn identity_cells(dataset: &Dataset, athlete: &CanonicalAthlete) -> Vec<Cell> {
     let school = athlete.school.as_str();
-    // Use the school's canonical id (if the school row exists), or the athlete's own school id
-    // when the school row is absent — never a blank that reads like a real id.
     let school_id = dataset
         .schools
         .get(school)

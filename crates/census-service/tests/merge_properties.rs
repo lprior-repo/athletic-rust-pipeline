@@ -50,10 +50,6 @@ mod laws_unions;
 #[path = "merge_properties/laws_writers.rs"]
 mod laws_writers;
 
-// ---------------------------------------------------------------------------
-// Deterministic runner configuration
-// ---------------------------------------------------------------------------
-
 fn law_config() -> ProptestConfig {
     ProptestConfig {
         cases: 64,
@@ -62,10 +58,6 @@ fn law_config() -> ProptestConfig {
         ..ProptestConfig::default()
     }
 }
-
-// ---------------------------------------------------------------------------
-// Strategies: scalars
-// ---------------------------------------------------------------------------
 
 /// A lowercase word. The values only need to be printable and distinct.
 fn word(max: usize) -> impl Strategy<Value = String> {
@@ -141,10 +133,6 @@ fn mailbox() -> impl Strategy<Value = String> {
         Just("@school.wi.us".to_string()),
     ]
 }
-
-// ---------------------------------------------------------------------------
-// Strategies: canonical entities, built through their own constructors
-// ---------------------------------------------------------------------------
 
 fn school() -> impl Strategy<Value = CanonicalSchool> {
     (state(), word(20), word(20))
@@ -230,8 +218,6 @@ fn athlete() -> impl Strategy<Value = CanonicalAthlete> {
     )
         .prop_map(|(school, name, grad_year, gender, mut sports)| {
             let mut athlete = CanonicalAthlete::new(&school.id, name, grad_year, gender);
-            // A row the store wrote carries set-shaped vectors: `Sport` is `Ord`, so sorting and
-            // de-duplicating is how a set is held here.
             sports.sort();
             sports.dedup();
             athlete.sports = sports;

@@ -172,9 +172,6 @@ impl NsaaWalk {
         self.sport_rows = self.sport_rows.saturating_add(sport_rows);
         let coach_count = coaches.len();
 
-        // One page: this school's rows and both journal entries commit together, so a resume cannot
-        // skip a school whose rows never landed. The school observation stays a direct write, the way
-        // every school arm writes it: it is re-derived from this row on every pass.
         let mut batch = ctx.store.write_batch();
         batch.append_many(Table::Schools, std::slice::from_ref(&school))?;
         ctx.observe_school(

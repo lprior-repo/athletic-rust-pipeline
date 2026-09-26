@@ -62,7 +62,6 @@ fn each_of_the_three_answers_reads_as_this_familys_verdict() {
         Ok(AthleteVerdict::InsufficientEvidence),
         "a model that declines in the value slot has still declined"
     );
-    // The protocol's own way of declining carries no field and no value at all.
     let declined = ReviewVerdict {
         case_id: case().id,
         kind: ReviewVerdictKind::InsufficientEvidence,

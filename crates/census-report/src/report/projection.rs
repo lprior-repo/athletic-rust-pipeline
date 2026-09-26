@@ -176,8 +176,6 @@ fn outside_scope_notes(
 
 /// One note for one excluded jurisdiction: the counts its published row would have carried.
 fn outside_scope_note(bucket: JurisdictionBucket, row: &OutsideRow) -> String {
-    // Name and code, so the line reads without a lookup. Every excluded bucket is a state — the
-    // unplaced row is inside the run scope — so a bare code is only the total fallback.
     let jurisdiction = bucket.jurisdiction().map_or_else(
         || bucket.code().to_string(),
         |state| format!("{} ({})", state.name(), state.code()),
@@ -243,9 +241,6 @@ fn fill_school_counts(
 pub fn build_census(store: &Store, scope: Scope) -> ReportResult<Census> {
     let out = store.out_dir();
     let (mut schools, mut athletes, mut coaches, mut meets) = scan_tables(store)?;
-    // The index spans both sides of the split: a school the run scope leaves out still places its
-    // own athletes and coaches, so they are excluded with it instead of landing in the unplaced row
-    // as though nothing had placed them.
     let outside_schools = exclude_out_of_scope(&mut schools, |school| school.state.into());
     let mut school_state = school_state_index(&schools);
     school_state.extend(school_state_index(&outside_schools));
@@ -263,8 +258,6 @@ pub fn build_census(store: &Store, scope: Scope) -> ReportResult<Census> {
     let coach_rollup = rollup_coaches(&coaches, &school_state);
     let coach_sources_empty = coach_rollup.sources.is_empty();
     let mut by_state = athlete_rollup.by_state;
-    // Seed before the rollups land: after this line every run-scope jurisdiction has a row, and
-    // `totals_of` still sums exactly the values the rows ended up carrying.
     seed_states(&mut by_state);
     apply_coach_states(&mut by_state, &coach_rollup.by_state);
     fill_school_counts(&mut by_state, &schools);

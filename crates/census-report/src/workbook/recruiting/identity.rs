@@ -16,8 +16,8 @@
 //! pending/rejected review cases cannot be verified. Accepted decisions are the
 //! only basis for claiming identity acceptance.
 
-use census_domain::model::{CanonicalAthlete, Confidence, RetainedConflict};
 use census_domain::model::records::{ReviewCase, ReviewState, COHORT_DECISION_FAMILIES};
+use census_domain::model::{CanonicalAthlete, Confidence, RetainedConflict};
 
 /// The identity decision state for one athlete, as determined by actual records.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,26 +41,15 @@ impl IdentityDecision {
     /// - Cohort decision families (from review_cases table) in non-terminal states
     /// - The athlete's identity_confidence field (which is cohort-derived, not identity-verified)
     pub(super) fn from_athlete(athlete: &CanonicalAthlete) -> Self {
-        // Check for unresolved retained conflicts — these are NOT verified.
         if has_unresolved_conflicts(&athlete.retained_conflicts) {
             return IdentityDecision::Unresolved;
         }
 
-        // Cohort decision families that started terminal (COHORT_UNVERIFIED, COHORT_IDENTITY_CONFIDENCE)
-        // are decided by the evidence rule itself — the row is published at the bar its evidence
-        // supports. A case in these families with state != Resolved is unresolved.
         if has_pending_cohort_decision(athlete) {
             return IdentityDecision::Unresolved;
         }
 
-        // identity_confidence HIGH does NOT mean identity verified — it means the grade
-        // observation agreed with the cohort. Grade agreement supports cohort only, never identity.
-        // An athlete with HIGH confidence but no accepted decision is still NoDecision.
-        if athlete.identity_confidence >= Confidence::HIGH
-            && !has_any_unresolved_signal(athlete)
-        {
-            // No unresolved signals at all — this athlete has no flaggable issues.
-            // This is the closest to "verified" but is still "no decision" per the contract.
+        if athlete.identity_confidence >= Confidence::HIGH && !has_any_unresolved_signal(athlete) {
             return IdentityDecision::NoDecision;
         }
 
@@ -70,22 +59,16 @@ impl IdentityDecision {
 
 /// Whether the athlete has any unresolved signals: conflicts, pending cases, or low confidence.
 fn has_any_unresolved_signal(athlete: &CanonicalAthlete) -> bool {
-    !athlete.retained_conflicts.is_empty()
-        || athlete.identity_confidence < Confidence::HIGH
+    !athlete.retained_conflicts.is_empty() || athlete.identity_confidence < Confidence::HIGH
 }
 
 /// Check if any retained conflicts are unresolved (no verdict recorded).
 fn has_unresolved_conflicts(conflicts: &[RetainedConflict]) -> bool {
-    // Every retained conflict that exists in the row means the merge kept it unresolved.
-    // The presence of ANY retained conflict means this athlete cannot be verified.
     !conflicts.is_empty()
 }
 
 /// Check if the athlete has pending cohort decision cases that haven't been resolved.
 fn has_pending_cohort_decision(athlete: &CanonicalAthlete) -> bool {
-    // This is a stub — the actual implementation would scan review_cases table
-    // for cases matching this athlete's id in the cohort decision families.
-    // For now, check if confidence is LOW (indicating a cohort evidence issue).
     athlete.identity_confidence < Confidence::HIGH
         && athlete
             .observed_grades
@@ -129,8 +112,8 @@ pub(super) fn has_conflicts(athlete: &CanonicalAthlete) -> bool {
 /// One source namespace holding two different external ids for this athlete: the merge kept both
 /// observations and cannot decide which identity is right.
 fn conflicting_identities(athlete: &CanonicalAthlete) -> bool {
-    use std::collections::BTreeMap;
     use census_domain::model::SourceNamespace;
+    use std::collections::BTreeMap;
     let mut seen: BTreeMap<&SourceNamespace, &str> = BTreeMap::new();
     for identity in &athlete.source_identities {
         match seen.get(&identity.namespace) {
@@ -143,52 +126,3 @@ fn conflicting_identities(athlete: &CanonicalAthlete) -> bool {
     }
     false
 }
-
-// ──────────────────────────────────────────────────────────────────────────────────────────────
-// Shared-contract interface proposal for Main
-// ──────────────────────────────────────────────────────────────────────────────────────────────
-//
-// The projection needs access to:
-//
-// 1. **review_cases** table (Table::ReviewCases)
-//    - Filter by subject_id == athlete.id AND family IN (COHORT_UNVERIFIED_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY)
-//    - State Pending or Retained → unresolved
-//    - State Resolved with a matching verdict in identity_verdicts → accepted
-//    - State Superseded → check if the verdict is rejected or superseded
-//
-// 2. **identity_verdicts** table (Table::IdentityVerdicts)
-//    - Keyed by case_id
-//    - A verdict with state "accepted" + matching case in Resolved → accepted decision
-//    - A verdict with state "rejected" → rejected decision
-//
-// 3. **conflicts** table (Table::Conflicts)
-//    - These are the resolved conflicts (merge decided, different from retained_conflicts)
-//    - A conflict with no matching verdict is still a disagreement
-//
-// Proposed shared-contract addition to Dataset:
-//
-// ```rust
-// pub(super) struct IdentityProjection {
-//     /// athlete_id → decision state
-//     decisions: BTreeMap<String, IdentityDecision>,
-// }
-//
-// impl IdentityProjection {
-//     pub(super) fn load(store: &Store, athlete_ids: &[String]) -> ReportResult<Self> {
-//         // 1. Scan review_cases for cohort families
-//         // 2. Scan identity_verdicts for resolved cases
-//         // 3. Join: case.Resolved + verdict.Accepted → Accepted
-//         //    case.Resolved + verdict.Rejected → Rejected
-//         //    case.Pending or Retained → Unresolved
-//         //    No case + no conflict → NoDecision
-//         //    Has retained_conflict → Unresolved
-//         //    No case + no retained_conflict but no verdict → NoDecision
-//     }
-//
-//     pub(super) fn decision(&self, athlete_id: &str) -> IdentityDecision {
-//         self.decisions.get(athlete_id).copied().unwrap_or(IdentityDecision::NoDecision)
-//     }
-// }
-// ```
-//
-// The projection is built once per Dataset load and cached, same as contacts/tallies/prs.

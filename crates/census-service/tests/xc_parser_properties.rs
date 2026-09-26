@@ -41,9 +41,6 @@ mod prefix_laws;
 #[path = "xc_parser_properties/totalness.rs"]
 mod totalness;
 
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
 
 /// The season every body below was archived under: the padded table and the rule-lined table both
 /// publish `October 25, 2025`, and the team blocks publish `11/1/2025`.
@@ -133,9 +130,6 @@ fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)
 }
 
-// ---------------------------------------------------------------------------
-// Plumbing
-// ---------------------------------------------------------------------------
 
 /// One body's lines, split the way the collector splits them.
 fn lines(body: &str) -> Vec<String> {
@@ -170,9 +164,6 @@ fn rows_of(meet: &ParsedMeet, gender: Gender) -> Vec<&ParsedRow> {
         .collect()
 }
 
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
 
 /// The lane's generators: fixed seed, fixed case count, one algorithm — a failure is reproducible
 /// from the seed alone.

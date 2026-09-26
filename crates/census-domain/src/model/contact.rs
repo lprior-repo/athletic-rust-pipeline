@@ -1,7 +1,3 @@
-// -------------------------------------------------------------------------------------------------
-// Contact policy
-// -------------------------------------------------------------------------------------------------
-
 use serde::{Deserialize, Serialize};
 
 /// Consumer mailboxes. An address on one of these domains is a personal mailbox rather than a

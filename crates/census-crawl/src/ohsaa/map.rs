@@ -12,8 +12,6 @@ use census_domain::model::{
     SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 
-// ── Parsed shapes ──────────────────────────────────────────────────────────
-
 /// One row of the search result table.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SearchResult {
@@ -59,8 +57,6 @@ pub struct SchoolExtract {
     pub coaches: Vec<CanonicalCoach>,
 }
 
-// ── Entity mapping ─────────────────────────────────────────────────────────
-
 /// Build canonical school and coach entities from a school's search result,
 /// sports page, and AD page.
 pub fn school_entities(
@@ -69,13 +65,10 @@ pub fn school_entities(
     ad_html: &str,
     observed_on: &str,
 ) -> SchoolExtract {
-    // Build school
     let (school, school_id) = school_from_result(result, observed_on);
 
-    // Collect coaches
     let mut coaches: Vec<CanonicalCoach> = Vec::new();
 
-    // Parse AD
     coaches.extend(ad_coach(
         parse_ad_page(ad_html).director,
         result,
@@ -83,12 +76,10 @@ pub fn school_entities(
         observed_on,
     ));
 
-    // Parse sports sections
     for (sport_label, boys, girls) in parse_sports_table(sports_html) {
         let Some(sport) = parse_sport_label(&sport_label) else {
             continue;
         };
-        // Boys coach
         if let Some(entry) = boys {
             coaches.push(sport_coach(
                 result,
@@ -101,7 +92,6 @@ pub fn school_entities(
             ));
         }
 
-        // Girls coach
         if let Some(entry) = girls {
             coaches.push(sport_coach(
                 result,
@@ -157,7 +147,7 @@ fn ad_coach(
     let mut coach = CanonicalCoach::new(
         school_id,
         strip_honorific(&ad_name),
-        None, // AD is school-wide
+        None,
         Gender::Mixed,
         CoachRole::AthleticDirector,
     );

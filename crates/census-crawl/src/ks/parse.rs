@@ -57,8 +57,8 @@ pub fn parse_ad_coach(
     let mut coach = CanonicalCoach::new(
         school_id,
         &name,
-        None,          // school-wide role
-        Gender::Mixed, // AD is not gender-specific
+        None,
+        Gender::Mixed,
         CoachRole::AthleticDirector,
     );
     if let Some(email) = &record.ad_email {

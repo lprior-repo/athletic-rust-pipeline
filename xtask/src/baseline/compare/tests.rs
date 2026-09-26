@@ -33,8 +33,6 @@ fn refusal(before: Value, after: Value) -> Vec<String> {
 
 #[test]
 fn an_oversized_file_swapped_for_another_is_a_raise() {
-    // One file before and one after: counting the ledger would say the structure did not move, while
-    // the file the baseline records stopped being measured.
     let raised = refusal(
         json!(["census-service:crates/census-service/src/old.rs (412)"]),
         json!(["census-service:crates/census-service/src/new.rs (398)"]),

@@ -59,7 +59,6 @@ pub use map::{level_of, resolve_venue, venue_candidates, venue_state, VenueResol
 pub use parse::{schedule_rows, schedule_url, MeetRow, ScheduleSport};
 use walk::{completed_pages, Walk};
 
-// The module's test file reads these through `use super::*`; the walk itself imports them.
 #[cfg(test)]
 use census_domain::model::{CanonicalMeet, SourceIdentity, SourceNamespace};
 #[cfg(test)]
@@ -102,9 +101,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         options.years.clone()
     };
 
-    // The venue table covers the provider's recurring sites; school-shaped venues ("Albany HS") go
-    // through the consolidated school snapshot instead, so a meet is filed in the state its host
-    // school is in. Before the snapshot exists every such venue stays unplaced, and the run says so.
     let schools: Vec<census_domain::model::CanonicalSchool> =
         ctx.store.scan(census_store::Table::Schools)?;
     let index = SchoolIndex::from_schools(&schools);
@@ -121,7 +117,6 @@ fn default_years(observed_on: &str) -> Vec<i16> {
         .next()
         .and_then(|year| year.parse::<i16>().ok())
         .unwrap_or(2026);
-    // The season before it: a four-digit year never reaches the saturation bound.
     vec![year, year.saturating_sub(1)]
 }
 
@@ -130,9 +125,6 @@ async fn stats_of(ctx: &AdapterContext<'_>) -> (u64, u64) {
     (stats.requests, stats.cache_hits)
 }
 
-// -------------------------------------------------------------------------------------------------
-// Tests
-// -------------------------------------------------------------------------------------------------
 
 #[cfg(test)]
 mod tests;

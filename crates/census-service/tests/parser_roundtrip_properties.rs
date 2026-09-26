@@ -33,9 +33,6 @@ mod prefix_laws;
 #[path = "parser_roundtrip_properties/shapes.rs"]
 mod shapes;
 
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
 
 const DASH_HTML: &str =
     include_str!("../../census-crawl/tests/fixtures/wiaa_results/d1boysstateresults-dash.htm");
@@ -97,9 +94,6 @@ const FIXTURES: [(&str, &str, ArtifactFormat); 6] = [
     ),
 ];
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)
@@ -235,9 +229,6 @@ fn legs_grew(shorter: &ParsedRow, longer: &ParsedRow) -> bool {
         && longer.legs.starts_with(&shorter.legs)
 }
 
-// ---------------------------------------------------------------------------
-// Dispatch: the sniffed format is the format that parses the fixture
-// ---------------------------------------------------------------------------
 
 #[test]
 fn every_fixture_dispatches_to_the_format_that_parses_it() {
@@ -261,7 +252,6 @@ fn every_fixture_dispatches_to_the_format_that_parses_it() {
                     !row.school.is_empty(),
                     "{name}: a result row names a school: {row:?}"
                 );
-                // A placed row identifies an athlete, or a relay team by its school and legs.
                 assert!(
                     row.place.is_none() || !row.name.is_empty() || !row.legs.is_empty(),
                     "{name}: a placed row names an athlete or lists relay legs: {row:?}"

@@ -103,7 +103,6 @@ fn one_id_from_two_natural_keys_keeps_the_row_and_retains_the_collision() {
 
     kept.merge(other.clone());
 
-    // The row already there is the subject that survives; none of the other's facts are absorbed.
     assert_eq!(kept.known_names, vec!["Julian Aguilera".to_string()]);
     assert_eq!(kept.gender, Gender::Boys);
     assert!(kept.public_profile_urls.is_empty());
@@ -131,7 +130,6 @@ fn one_id_from_two_natural_keys_keeps_the_row_and_retains_the_collision() {
         "the dropped side's source identity: {detail}"
     );
 
-    // Re-merging the same pair is what a re-read of the table does: one collision stays one finding.
     kept.merge(other);
     assert_eq!(kept.retained_conflicts.len(), 1);
 }

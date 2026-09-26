@@ -51,9 +51,6 @@ fn census_csv(census: &Census) -> String {
         "state,schools,athletes,co2027,co2027_boys,co2027_girls,co2027_profile_url,co2027_grade_evidence,co2027_multisource,co2027_with_coach,co2027_with_coach_email,coaches,coaches_with_email\n",
     );
     let mut rows: Vec<&StateCensus> = census.by_state.values().collect();
-    // Most athletes first; ties keep the printed label ascending, which is the row order this CSV
-    // published while the bucket was still a string key — and a reordered published file is a
-    // different file.
     rows.sort_by(|left, right| {
         right
             .class_of_2027

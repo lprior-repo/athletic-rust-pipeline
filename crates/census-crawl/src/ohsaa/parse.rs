@@ -7,8 +7,6 @@ use super::map::SearchResult;
 use census_domain::model::{normalize_name, Sport};
 use std::collections::{BTreeMap, HashSet};
 
-// ── String primitives ──────────────────────────────────────────────────────
-
 pub(super) fn collapse_whitespace(value: &str) -> String {
     let mut result = String::with_capacity(value.len());
     let mut prev_space = false;
@@ -53,8 +51,6 @@ pub(super) fn decode_entities(value: &str) -> String {
     let mut chars = value.chars();
     while let Some(ch) = chars.next() {
         if ch == '&' {
-            // Collect entity name up to semicolon (explicit loop avoids
-            // take_while's off-by-one with borrowed iterators)
             let mut rest = String::new();
             let mut found_semicolon = false;
             loop {
@@ -91,7 +87,6 @@ pub(super) fn decode_entities(value: &str) -> String {
                             result.push(';');
                         }
                     } else {
-                        // Incomplete entity (no semicolon found): preserve as-is
                         result.push('&');
                         result.push_str(&rest);
                     }
@@ -113,8 +108,6 @@ pub(super) fn nonempty(value: &str) -> Option<String> {
     }
 }
 
-// ── Email validation ───────────────────────────────────────────────────────
-
 pub(super) fn valid_email(value: &str) -> Option<String> {
     let v = value.trim();
     if v.is_empty() {
@@ -128,8 +121,6 @@ pub(super) fn valid_email(value: &str) -> Option<String> {
     }
 }
 
-// ── Search parsing ─────────────────────────────────────────────────────────
-
 /// Parse the school search result table.
 ///
 /// Returns unique rows deduplicated by `ohsaaId`. The OHSAA search page emits
@@ -138,8 +129,6 @@ pub fn parse_search(html: &str) -> Vec<SearchResult> {
     let mut results = Vec::new();
     let mut seen_ids: HashSet<String> = HashSet::new();
 
-    // Rows are the `</tr>`-terminated segments in document order; a `<tr>` with no closing tag
-    // ends the scan, which is what the previous cursor walk did.
     for chunk in html.split_inclusive("</tr>") {
         let Some(body) = chunk.strip_suffix("</tr>") else {
             break;
@@ -241,8 +230,6 @@ pub fn resolve_school_name(
     ));
     results.into_iter().next()
 }
-
-// ── Name cleaning ──────────────────────────────────────────────────────────
 
 /// Strip leading honorifics so "Coach Barry Mink" and "Barry Mink" mint the same coach.
 pub fn strip_honorific(value: &str) -> String {

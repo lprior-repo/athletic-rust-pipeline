@@ -33,8 +33,6 @@ fn top_modules_read_the_path_shape() {
 
 #[test]
 fn references_resolve_to_top_level_modules() {
-    // A `use` whose root is another crate is a *crate* edge, judged by `crates_in_line` against
-    // `ALLOWED_CRATES`; the module walk judges only `crate::` paths, so this names no module here.
     assert!(refs_in_line("use census_report::report::{Error, read_rows};").is_empty());
     assert_eq!(
         refs_in_line("use crate::{self as census_crate, workbook::Sheet};"),
@@ -46,8 +44,6 @@ fn references_resolve_to_top_level_modules() {
         refs_in_line("use crate::{report::Error, workbook::Sheet};"),
         vec!["report".to_string(), "workbook".to_string()]
     );
-    // A path into another crate is that crate's business: the module walk judges this crate's own
-    // tree, so the crawl crate's `net` is a crate reference, not a module one.
     assert!(refs_in_line("let now = census_crawl::net::now_iso8601();").is_empty());
 }
 
@@ -64,8 +60,6 @@ fn a_cfg_test_module_ends_the_production_region_and_a_gated_use_does_not() {
     .iter()
     .map(|line| (*line).to_string())
     .collect();
-    // The production region ends *at* the attribute rather than after it: the `#[cfg(test)]` line is
-    // the boundary marker, not production, so only the function above it is left.
     assert_eq!(production_lines(&lines, &rules).len(), 1);
     let export_gate: Vec<String> = [
         "pub(crate) use cells::{A, B};",
@@ -108,16 +102,13 @@ fn crate_aliases_resolve_only_whole_identifiers_at_a_path_root() {
         crates_in_line("census_store::Table::open(root)", &aliases),
         vec!["census-store".to_string()]
     );
-    // A renamed dependency is named by the alias its manifest gives it, and a short alias counts.
     assert_eq!(
         crates_in_line("let case = review::packets::pending(&store)?;", &aliases),
         vec!["census-review".to_string()]
     );
-    // The identifier has to be whole, and it has to be a path root.
     assert!(crates_in_line("let census_store_count = 1;", &aliases).is_empty());
     assert!(crates_in_line("let my_census_store = store;", &aliases).is_empty());
     assert!(crates_in_line("let x = census_store;", &aliases).is_empty());
-    // Comments and string literals name nothing, as they name no module either.
     assert!(crates_in_line("// census_store::Table", &aliases).is_empty());
     assert!(crates_in_line("let s = \"census_store::Table\";", &aliases).is_empty());
 }
@@ -128,9 +119,6 @@ fn the_allowed_crate_graph_is_one_way() {
     for (from, to) in ALLOWED_CRATES {
         edges.entry(from).or_default().push(to);
     }
-    // The split's one-way closure: no crate reaches itself, however long the path. A cycle here would
-    // mean two crates that cannot be built or reasoned about separately, which is the property the
-    // split exists to give.
     for start in edges.keys() {
         let mut seen = BTreeSet::new();
         let mut stack = vec![*start];

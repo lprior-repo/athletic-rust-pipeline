@@ -185,14 +185,11 @@ fn append_entities(
     accumulated: Accumulator,
     pending: Vec<(String, serde_json::Value)>,
 ) -> CrawlResult<EntityCounts> {
-    // One append per table keeps the entity logs tight and the run resumable.
     let meets: Vec<CanonicalMeet> = accumulated.meets.into_values().collect();
     let teams: Vec<CanonicalTeam> = accumulated.teams.into_values().collect();
     let athletes: Vec<CanonicalAthlete> = accumulated.athletes.into_values().collect();
     let events: Vec<CanonicalEvent> = accumulated.events.into_values().collect();
     let performances: Vec<CanonicalPerformance> = accumulated.performances.into_values().collect();
-    // The five tables and the artifact entries commit in one page: an artifact counts as read only
-    // once the entities its rows minted are durable, so a run that stopped in between re-reads it.
     let mut batch = ctx.write_batch();
     batch.append_many(Table::Meets, &meets)?;
     batch.append_many(Table::Teams, &teams)?;

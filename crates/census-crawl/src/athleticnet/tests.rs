@@ -121,8 +121,6 @@ fn a_no_mark_row_yields_no_performance() {
 
 #[test]
 fn cross_country_and_track_rows_deserialize_from_their_published_shapes() {
-    // One TF row (string place, event id, result date), one XC row (numeric place, distance,
-    // no result date), plus a null `resultsXC` — the three variations observed live.
     let bio = payload(
         r#"{
               "athlete": {"IDAthlete": 28127170, "FirstName": "Natalia", "LastName": "Casillas",

@@ -7,12 +7,10 @@ pub(crate) fn parse_binding(
     data: &serde_json::Value,
     capture_kind: RankingsCapture,
 ) -> Result<CapturedRanking, BrowserError> {
-    // Parse error BEFORE required success fields.
     if let Some(err) = data.get("error").and_then(|value| value.as_str()) {
         return Err(binding_error(err));
     }
 
-    // Required success fields.
     let status = binding_status(data)?;
     let request_url = required_str(data, "requestUrl")?.to_string();
     let method = required_str(data, "method")?.to_string();
@@ -23,10 +21,8 @@ pub(crate) fn parse_binding(
 
     let (body, body_bytes) = binding_body(data)?;
 
-    // Collect allowed response headers.
     let headers = binding_headers(data)?;
 
-    // Challenge flag from cf-mitigated header.
     let challenge = headers.get("cf-mitigated").is_some();
     Ok(CapturedRanking {
         status,
@@ -135,11 +131,9 @@ pub(crate) fn transport<T, E: std::fmt::Display>(
 
 /// Validate captured data and build BrowserResponse.
 pub(crate) fn build_response(captured: CapturedRanking) -> Result<BrowserResponse, BrowserError> {
-    // Require captured headers.
     if captured.headers.is_empty() {
         return Err(BrowserError::Protocol);
     }
-    // Verify decoded length == bodyBytes and <= 8MiB.
     if captured.body.len() != captured.body_bytes {
         return Err(BrowserError::Protocol);
     }

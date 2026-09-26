@@ -52,7 +52,6 @@ pub fn check_throughput(
     current_data: &BTreeMap<String, GroupMeasurement>,
     tolerance: f64,
 ) -> Result<()> {
-    // A current run that produced no groups means nothing was measured; refuse the gate.
     if current_data.is_empty() {
         bail!("perf check: current run produced no groups; cannot compare against baseline");
     }
@@ -70,8 +69,6 @@ pub fn check_throughput(
         }
     }
 
-    // Every baseline group must appear in the current run; a missing group means the comparison
-    // has blind spots and must refuse rather than silently pass.
     for baseline_group in baseline.groups.keys() {
         if !current_data.contains_key(baseline_group) {
             failures.push(format!(
@@ -128,8 +125,6 @@ fn check_group<'a>(
 ) -> GroupCheckResult {
     println!("group: {group}");
 
-    // A group the baseline never recorded cannot be compared. Report it as a failure the operator
-    // can act on: aborting the comparison here hid every other group's result behind a panic.
     let Some(baseline) = groups.get(group) else {
         return GroupCheckResult {
             max_delta: None,
@@ -138,7 +133,6 @@ fn check_group<'a>(
             )),
         };
     };
-    // Check throughput delta; handles absent values (skip) and non-finite values (fail).
     let mut failure: Option<String> = None;
     let delta = match compute_delta(group, baseline.throughput, current.throughput) {
         Ok(Some((d, old, new))) => {

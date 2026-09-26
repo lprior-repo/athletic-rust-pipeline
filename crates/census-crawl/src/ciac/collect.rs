@@ -16,7 +16,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
     let before = ctx.fetcher.stats().await;
 
-    // Restrict to CT state
     if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Connecticut) {
         let after = ctx.fetcher.stats().await;
         report.requests = after.requests.saturating_sub(before.requests);

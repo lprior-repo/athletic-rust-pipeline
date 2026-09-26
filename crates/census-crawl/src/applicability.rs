@@ -71,8 +71,6 @@ pub fn applicable_sources(jurisdiction: UsJurisdiction) -> Vec<&'static SourceDe
     bulk_first(&slugs)
 }
 
-// The test module last, as every adapter does: the scan lane reads the production region as the
-// lines before `#[cfg(test)]`, so code after this point would drop out of its counts.
 #[cfg(test)]
 #[path = "applicability/tests.rs"]
 mod tests;

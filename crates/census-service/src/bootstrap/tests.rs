@@ -72,8 +72,6 @@ fn options_enable_the_lane_only_with_a_profile() {
     let plain = ServeOptions::from_env(Vec::<String>::new().into_iter()).unwrap();
     assert!(plain.lane.is_none(), "no flag means no lane");
 
-    // The default browser is a program name, so it resolves against the `PATH` this test supplies
-    // rather than the machine's: one entry that does not hold it, then the one that does.
     let without = tempfile::tempdir().unwrap();
     let with = tempfile::tempdir().unwrap();
     std::fs::write(with.path().join("chromium"), b"").unwrap();
@@ -99,7 +97,6 @@ fn options_enable_the_lane_only_with_a_profile() {
     assert_eq!(lane.source_origin.as_str(), "https://www.athletic.net/");
     assert_eq!(lane.tabs, 2);
 
-    // A flag that configures a lane the deployment does not serve is a typo, not a no-op.
     let executable_alone = ["--browser-executable", "/usr/bin/chromium"]
         .into_iter()
         .map(str::to_string);
@@ -113,8 +110,6 @@ fn options_enable_the_lane_only_with_a_profile() {
         Err(BootstrapError::LaneFlagWithoutProfile { flag }) if flag == "--browser-headless"
     ));
 
-    // The executable refines a lane that is already enabled; the profile stays headed by default,
-    // and a browser named outright is used as given rather than looked up.
     let refined = [
         "--browser-profile",
         "/tmp/profile",
@@ -143,7 +138,6 @@ fn options_refuse_a_lane_whose_default_browser_no_path_entry_holds() {
             .expect_err("a lane needs a browser to launch")
     };
 
-    // A directory sharing the browser's name is not the browser.
     let directory = tempfile::tempdir().unwrap();
     std::fs::create_dir(directory.path().join("chromium")).unwrap();
     assert!(matches!(
@@ -151,7 +145,6 @@ fn options_refuse_a_lane_whose_default_browser_no_path_entry_holds() {
         BootstrapError::LaneBrowserNotOnPath { program } if program == "chromium"
     ));
 
-    // An environment with no `PATH` at all cannot resolve the default either.
     assert!(matches!(
         refused(None),
         BootstrapError::LaneBrowserNotOnPath { program } if program == "chromium"

@@ -157,8 +157,6 @@ fn append(
         schools,
     )?;
     page.append_many(Table::Performances, &entities.performances)?;
-    // The entries commit with the rows their captures yielded: a capture counts as read only once
-    // every row it produced is durable.
     for (path, payload) in &entries {
         page.journal_done(PHASE, path, payload)?;
     }

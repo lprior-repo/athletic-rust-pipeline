@@ -62,8 +62,6 @@ fn serialized<T: serde::Serialize>(value: &T) -> String {
     serde_json::to_string(value).expect("entity serializes")
 }
 
-// ------------------------------ North Dakota ------------------------------
-
 #[test]
 fn nd_index_lists_every_member_school() {
     let members = parse_nd_school_refs(ND_INDEX).expect("the ndhsaa index parses");
@@ -153,8 +151,6 @@ fn nd_school_page_parses_school_metadata() {
             &school.normalized_name
         )
     );
-    // Identity is the natural key, not the display name: the same school published elsewhere as
-    // "West Fargo Sheyenne HS" mints the identical id, so the two observations merge.
     let (_, same_school) = CanonicalSchool::new(
         UsJurisdiction::NorthDakota,
         "West Fargo Sheyenne HS",
@@ -209,8 +205,6 @@ fn nd_ad_coaches_include_ad_and_activities_director_only() {
         assert_eq!(coach.evidence[0].observed_on, OBSERVED_ON);
     }
 
-    // The office roles are on the page and were parsed as staff lines — they are simply never
-    // promoted to coaches, however senior the person is.
     let labels: Vec<&str> = staff.iter().map(|role| role.label.as_str()).collect();
     for office in [
         "Superintendent",
@@ -361,7 +355,6 @@ fn nd_sport_coaches_are_names_only() {
         OBSERVED_ON,
     );
 
-    // 4 TF/XC offerings: 2+2 XC names, 1 boys TF name, 1 girls TF name = 6 entities.
     assert_eq!(coaches.len(), 6);
     for coach in &coaches {
         assert_eq!(
@@ -384,7 +377,6 @@ fn nd_sport_coaches_are_names_only() {
             .all(|coach| { !coach.evidence.is_empty() && coach.evidence[0].source.id == "ndhsaa" }),
         "every coach cites the page it came from"
     );
-    // Non-TF/XC offerings contribute nothing.
     assert!(!coaches.iter().any(|coach| coach.name == "Tim Brandt"));
 }
 
@@ -433,7 +425,6 @@ fn nd_malformed_input_yields_no_rows() {
             .expect("the ndhsaa offering rows parse")
             .is_empty()
     );
-    // An empty heading is not a school name.
     assert!(parse_nd_school_page(
         "<h1>   </h1><p>Address: x, Fargo, ND 58102</p>",
         &sheyenne(),
@@ -442,8 +433,6 @@ fn nd_malformed_input_yields_no_rows() {
     .expect("the ndhsaa page parses")
     .is_none());
 }
-
-// ------------------------------ Nebraska ------------------------------
 
 #[test]
 fn nsaa_form_option_list_yields_the_member_schools() {
@@ -469,7 +458,6 @@ fn nsaa_form_option_list_yields_the_member_schools() {
         "names are unique"
     );
 
-    // The form's option names are exactly the names the bulk response uses for its blocks.
     let bulk: Vec<String> = parse_nsaa_directory(NSAA_PAGE)
         .expect("the nsaa directory parses")
         .into_iter()
@@ -482,7 +470,6 @@ fn nsaa_form_option_list_yields_the_member_schools() {
         );
     }
 
-    // Malformed and empty payloads yield no rows rather than panicking.
     assert!(parse_nsaa_school_names("")
         .expect("the nsaa option list parses")
         .is_empty());
@@ -513,7 +500,6 @@ fn nsaa_school_url_round_trips_the_published_name() {
         "hyphens are safe and stay literal"
     );
 
-    // Every published name must survive the encoding: parse the URL back and compare.
     for name in parse_nsaa_school_names(NSAA_FORM).expect("the nsaa option list parses") {
         let url = url::Url::parse(&nsaa_school_url(&name)).expect("valid url");
         let decoded = url
@@ -539,7 +525,6 @@ fn nsaa_single_school_page_matches_the_bulk_block() {
         Some("http://www.adamscentral.us/")
     );
 
-    // The same school from the bulk capture produces identical entities.
     let bulk = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
     let bulk_adams = bulk
         .iter()
@@ -753,39 +738,37 @@ fn nsaa_director_rows_map_to_athletic_director() {
 #[test]
 fn nsaa_office_roles_are_never_emitted() {
     let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
-    // Every one of these people is published in an office row in the fixture and appears in no
-    // coach/AD row anywhere in it.
     let office_people = [
-        "Shawn Scott",           // Superintendent, Adams Central
-        "Scott Harrington",      // Principal, Adams Central
-        "Mattison Tinant",       // AD Secretary, Adams Central
-        "Dave Johnson",          // Board President, Adams Central
-        "Becky Fisher",          // Guidance Counselor, Adams Central
-        "Sean Vonderfecht",      // Trainer, Adams Central
-        "Dale Hafer",            // Superintendent, Ainsworth
-        "Kari Painter",          // AD Secretary, Ainsworth
-        "Brad Wilkins",          // Board President, Ainsworth
-        "Jerry Bockman",         // Trainer, Ainsworth
-        "Mike Pattee",           // Superintendent, Allen
-        "Chris Blohm",           // Principal, Allen
-        "Becky Stapleton",       // AD Secretary, Allen
-        "Jason Olesen",          // Board President, Allen
-        "Kim Jonas",             // Superintendent, Ansley
-        "Chrissy Slingsby",      // AD Secretary, Ansley
-        "Roger Thomsen",         // Superintendent *and* Principal, Amherst
-        "Carlene Abbott",        // AD Secretary, Amherst
-        "Bobbi Sorensen",        // Guidance Counselor, Amherst
-        "Aaron Klingelhoefer",   // Trainer, Amherst
-        "Lloyd McIntyre", // Superintendent, Anselmo-Merna (also coaches Golf, not a census sport)
-        "Molli Miller",   // Guidance Counselor, Anselmo-Merna
-        "Dr. Troy Unzicker", // Superintendent, Alliance
-        "Marissa Rotness", // AD Secretary, Alliance
-        "Tim Kollars",    // Board President, Alliance
-        "Tim Devlin",     // Trainer, Alliance
-        "Stephanie Brandyberry", // Principal, Alma
-        "Hannah Sindelar", // AD Secretary, Alma
-        "Nick Simonson",  // Board President, Alma
-        "Brittney Biskup", // Guidance Counselor, Alma
+        "Shawn Scott",
+        "Scott Harrington",
+        "Mattison Tinant",
+        "Dave Johnson",
+        "Becky Fisher",
+        "Sean Vonderfecht",
+        "Dale Hafer",
+        "Kari Painter",
+        "Brad Wilkins",
+        "Jerry Bockman",
+        "Mike Pattee",
+        "Chris Blohm",
+        "Becky Stapleton",
+        "Jason Olesen",
+        "Kim Jonas",
+        "Chrissy Slingsby",
+        "Roger Thomsen",
+        "Carlene Abbott",
+        "Bobbi Sorensen",
+        "Aaron Klingelhoefer",
+        "Lloyd McIntyre",
+        "Molli Miller",
+        "Dr. Troy Unzicker",
+        "Marissa Rotness",
+        "Tim Kollars",
+        "Tim Devlin",
+        "Stephanie Brandyberry",
+        "Hannah Sindelar",
+        "Nick Simonson",
+        "Brittney Biskup",
     ];
 
     let mut produced: Vec<String> = Vec::new();
@@ -805,7 +788,6 @@ fn nsaa_office_roles_are_never_emitted() {
         );
     }
 
-    // The labels really are published — the parser sees and rejects them.
     let labels: Vec<&str> = schools
         .iter()
         .flat_map(|school| school.roles.iter())
@@ -837,8 +819,6 @@ fn nsaa_office_roles_are_never_emitted() {
 fn nsaa_office_row_is_ignored_but_the_same_persons_coaching_row_is_kept() {
     let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
 
-    // Alliance publishes Nate Lanik as Guidance Counselor *and* as both track coaches: the office
-    // row contributes nothing, the sport rows contribute exactly two entities.
     let alliance = schools
         .iter()
         .find(|school| school.name == "Alliance")
@@ -860,14 +840,11 @@ fn nsaa_office_row_is_ignored_but_the_same_persons_coaching_row_is_kept() {
         assert_eq!(coach.role, CoachRole::HeadCoach);
         assert_eq!(coach.sport, Some(Sport::OutdoorTrack));
     }
-    // `Unified Track & Field` also lists Nate Lanik and is not a census sport.
     assert!(alliance
         .roles
         .iter()
         .any(|role| role.label == "Unified Track & Field"));
 
-    // Anselmo-Merna publishes Chanc McIntosh as Principal and as Activities/Athletic Director:
-    // one AD entity, and no second entity from the Principal row.
     let anselmo = schools
         .iter()
         .find(|school| school.name == "Anselmo-Merna")
@@ -884,8 +861,6 @@ fn nsaa_office_row_is_ignored_but_the_same_persons_coaching_row_is_kept() {
         1
     );
 
-    // Ansley publishes Garrod Fernau as Principal *and* as Assistant Athletic Director: he is
-    // present as a director, because a real director row names him.
     let ansley = schools
         .iter()
         .find(|school| school.name == "Ansley")
@@ -985,7 +960,6 @@ fn nsaa_coop_annotations_are_stripped_from_names() {
     assert!(names.contains(&"Jamee Smith".to_string()));
     assert!(!names.iter().any(|name| name.contains("Co-op")));
 
-    // The other shapes the source publishes, verbatim from the 2026-09-20 full capture.
     assert_eq!(
         split_person_names("Cayley Bailey (Co-op w/Litchfield)").expect("the name cell parses"),
         vec!["Cayley Bailey"]
@@ -1117,7 +1091,6 @@ fn nd_entities_carry_no_emails_anywhere() {
             coach.name
         );
     }
-    // The fixture page itself has no email at all — the provider publishes no email layer.
     assert!(!email_regex()
         .expect("the email probe regex compiles")
         .is_match(ND_PAGE));
@@ -1131,7 +1104,6 @@ fn nsaa_malformed_input_yields_no_rows() {
     assert!(parse_nsaa_directory("")
         .expect("the nsaa directory parses")
         .is_empty());
-    // A heading without a closing tag, and a heading with an empty name, are both skipped.
     assert!(parse_nsaa_directory(r#"<h1 class="mt-3">Broken"#)
         .expect("the nsaa directory parses")
         .is_empty());

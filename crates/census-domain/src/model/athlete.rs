@@ -1,10 +1,6 @@
 use super::*;
 use std::cmp::Ordering;
 
-// -------------------------------------------------------------------------------------------------
-// Candidate keys
-// -------------------------------------------------------------------------------------------------
-
 /// A candidate-search index, not a person's identity. Equal school, name, graduating class and
 /// category narrow a review search; they never authorize an identity merge. Source-owned subjects
 /// use [`CanonicalAthlete::new`], and an applied decision is required to join subjects.
@@ -34,7 +30,6 @@ impl AthleteCandidateKey {
     pub fn index_id(&self) -> AthleteIndexId {
         self.mint()
     }
-
 
     /// The gender side as an id spells it: `Mixed` and `Unknown` both mint `u`, which is why those two
     /// stay a retained disagreement rather than a merge when one row is re-observed as the other.
@@ -119,7 +114,8 @@ impl CanonicalAthlete {
     /// known to that source, which is the honest answer for a row merged from sources that never
     /// named it.
     pub fn identity_in(&self, namespace: &SourceNamespace) -> Option<&SourceIdentity> {
-        self.identities().find(|identity| &identity.namespace == namespace)
+        self.identities()
+            .find(|identity| &identity.namespace == namespace)
     }
 
     pub fn identities(&self) -> impl Iterator<Item = &SourceIdentity> {
@@ -128,16 +124,27 @@ impl CanonicalAthlete {
 
     pub fn add_identity(&mut self, identity: SourceIdentity) {
         if identity.namespace == self.source.namespace && identity.id == self.source.id {
-            if self.source.url.is_none() { self.source.url = identity.url; }
+            if self.source.url.is_none() {
+                self.source.url = identity.url;
+            }
         } else if !self.source_links.contains(&identity) {
             self.source_links.push(identity);
         }
     }
 
     /// Mint a source-owned subject. Candidate-search facts alone cannot mint a person.
-    pub fn mint(school: &SchoolId, name: &str, grad_year: GradYear, gender: Gender, source: &SourceIdentity) -> AthleteId {
+    pub fn mint(
+        school: &SchoolId,
+        name: &str,
+        grad_year: GradYear,
+        gender: Gender,
+        source: &SourceIdentity,
+    ) -> AthleteId {
         let index = AthleteCandidateKey::new(school, name, grad_year, gender).index_id();
-        Id::mint("ath_subject", &[index.as_str(), &source.namespace.to_string(), &source.id])
+        Id::mint(
+            "ath_subject",
+            &[index.as_str(), &source.namespace.to_string(), &source.id],
+        )
     }
 
     /// The candidate key this row's own fields restate, exactly as [`NaturalKey`] restates its mint

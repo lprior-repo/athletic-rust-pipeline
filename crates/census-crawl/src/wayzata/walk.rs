@@ -109,9 +109,6 @@ impl Walk {
                     self.mint_meet(row, sport, state, month, &url);
                 }
 
-                // The entry is buffered, not written: `finish` commits it in the same page as the meets
-                // these rows minted. Written here it would mark the page read before its meets are
-                // durable, and a run that stopped in between would skip the page with nothing stored.
                 self.pending.push((
                     url.clone(),
                     json!({
@@ -178,8 +175,6 @@ impl Walk {
         url: &str,
     ) {
         let level = level_of(&row.name);
-        // A venue that resolved to no jurisdiction mints an unplaced meet: the report spells that
-        // bucket `MEET_STATE_UNRESOLVED`, and a real meet row is never filed under a guess.
         let mut meet = CanonicalMeet::new(state, &row.name, &row.date, level);
         meet.location = Some(row.location.clone());
         meet.sports.push(sport.sport_for(month));
@@ -223,8 +218,6 @@ impl Walk {
             ..
         } = self;
         let meets: Vec<CanonicalMeet> = meets.into_values().collect();
-        // The minted meets and the entries naming the pages they came from commit together, so a page
-        // counts as read only once the meets its rows produced are durable.
         let mut batch = ctx.write_batch();
         batch.append_many(Table::Meets, &meets)?;
         for (url, payload) in pending {

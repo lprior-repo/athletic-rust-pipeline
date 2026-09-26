@@ -12,9 +12,6 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::path::Path;
 
-// ---------------------------------------------------------------------------
-// Error types
-// ---------------------------------------------------------------------------
 
 /// Report, bests and workbook failures.
 #[derive(Debug, thiserror::Error)]
@@ -71,8 +68,6 @@ pub(crate) fn xlsx_error(path: &Path, source: rust_xlsxwriter::XlsxError) -> Rep
     }
 }
 
-// The verbatim `tests` module resolves `Store` and `Table` through `use super::*`, exactly as the
-// net split feeds its tests module from `mod.rs`.
 #[cfg(test)]
 use census_store::{Store, Table};
 

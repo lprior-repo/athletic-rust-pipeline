@@ -16,8 +16,6 @@ fn has_active_cooldown(clock: &dyn Clock, cooldown_until: &Arc<Mutex<Option<Inst
 
 impl Actor {
     pub(crate) async fn inspect_page(&mut self) -> Result<BrowserStatus, BrowserError> {
-        // Return physical status for all non-ready states including CoolingDown,
-        // even if the cooldown has expired. Do not navigate while CoolingDown.
         let current_state = self.status.read().ok().map(|s| s.state);
         if current_state == Some(BrowserState::CoolingDown) {
             return Ok(self.status());
@@ -28,9 +26,7 @@ impl Actor {
         if !self.jobs.is_empty() || (!self.gate.is_ready() && !self.recovery_used) {
             return Ok(self.status());
         }
-        // Gate is closed but recovery_used — snapshot generation BEFORE async
         let snap = self.gate.snapshot();
-        // Compute active cooldown BEFORE try_open to avoid opening then closing.
         if has_active_cooldown(self.clock.as_ref(), &self.cooldown_until) {
             return Ok(self.status());
         }
@@ -50,9 +46,6 @@ impl Actor {
         {
             Ok(value) => value,
             Err(error) => {
-                // Failed inspection: revoke admission and mark handled
-                // so generic gate.closed does not turn invalid metadata
-                // into a fresh automatic challenge navigation.
                 self.gate.revoke();
                 self.challenge_latched = true;
                 self.set_state(BrowserState::Restarting);
@@ -69,8 +62,6 @@ impl Actor {
     }
 
     pub(crate) async fn recover_page(&mut self) -> Result<BrowserStatus, BrowserError> {
-        // Never navigate with active jobs — SDK must skip Recover while
-        // active_requests > 0.
         if !self.jobs.is_empty() {
             return Ok(self.status());
         }
@@ -84,20 +75,15 @@ impl Actor {
             .page
             .clone();
         let target = self.recovery_target();
-        // Compute active cooldown BEFORE try_open.
         if has_active_cooldown(self.clock.as_ref(), &self.cooldown_until) {
             return Ok(self.status());
         }
         let outcome = self.navigate_for_recovery(&page, &target).await?;
         let is_ready = matches!(outcome, NavigationOutcome::Ready);
         self.apply_navigation(outcome);
-        // Only open the gate when the outcome is Ready and no concurrent revocation occurred. The
-        // generation is observed after the navigation: a navigation that settled on Ready is the
-        // verification, and the challenge it waited out is the revocation it has already answered.
         if !is_ready || !self.gate.try_open(self.gate.snapshot().generation) {
             return Ok(self.status());
         }
-        // CAS successful — gate is now open, reset challenge_latched for next cycle.
         self.challenge_latched = false;
         self.complete_recovery_tabs().await
     }
@@ -144,9 +130,6 @@ impl Actor {
                 self.clock.as_ref(),
             )
             .await;
-            // Set recovery_used AFTER successful bootstrap navigation.
-            // This ensures we don't clear a challenge by inspecting an
-            // unchanged Ready homepage before recovery.
             self.recovery_used = true;
             result
         };

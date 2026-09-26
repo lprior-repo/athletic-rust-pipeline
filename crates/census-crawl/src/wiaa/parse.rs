@@ -9,10 +9,6 @@ use super::primitives::{
 };
 use super::{HOST, SCHOOL_PATH};
 
-// -------------------------------------------------------------------------------------------------
-// Parsed shapes
-// -------------------------------------------------------------------------------------------------
-
 /// One row of the per-letter school index (`#tblSchools`).
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct IndexEntry {
@@ -69,10 +65,6 @@ pub struct SchoolPage {
     pub admins: Vec<StaffRow>,
     pub coaches: Vec<CoachRow>,
 }
-
-// -------------------------------------------------------------------------------------------------
-// Page parsing
-// -------------------------------------------------------------------------------------------------
 
 /// WIAA `OrganizationID`s listed by one letter fragment, in page order.
 ///
