@@ -62,10 +62,18 @@ pub(super) struct SealArgs {
     source_objects: Vec<String>,
 }
 
+/// Seal the census from the store here or from the run's objects through the service.
+///
+/// Staging-only on the offline route: the store-side assembly bypasses the plan fingerprint and
+/// the `Ingest` operation-id receipts and windows, so it stays invisible to seal item 2 and to
+/// open-work measurement. Nothing in the batch chain above routes yet; measured coverage comes
+/// only from the live path through the service.
 #[tracing::instrument(skip_all, fields(command = "seal"))]
 pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
+            // Staging-only: this route never reads the run's objects, so the two journal-backed
+            // counts stay unmeasured here. Measured coverage comes only from the live path.
             let store = Store::open(root)?;
             let outcome = seal::seal(&store, &store_request(args))?;
             present(&Ladder::of_outcome(&outcome))
@@ -86,6 +94,10 @@ pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
 
 /// The store-side request: what the store holds, and no journal counts, because this route never
 /// reads the run's objects.
+///
+/// Staging-only by construction: without the run's objects the journal-backed counts stay
+/// unmeasured, so seal item 2 and open-work measurement cannot see this route. Measured coverage
+/// comes only from the live path through the service.
 fn store_request(args: &SealArgs) -> seal::SealRequest {
     seal::SealRequest {
         grad_year: args.grad_year,

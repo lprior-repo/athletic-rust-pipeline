@@ -16,6 +16,12 @@
 //! and the inner `RunRetryPolicy` builder - and a third case is neither of them: the key named in
 //! prose. Prose is left alone, but a key used as a ceiling must carry a literal number, because a
 //! ceiling this scan cannot read is one it cannot hold to the contract.
+//!
+//! A second scan keeps the H2 class out: the bare `ctx.run` absence gate. The ceilings above only
+//! read `max_attempts` sites, so an effect that declares no policy at all is invisible to them -
+//! and a bare `ctx.run` is the common violation, a second in-process retry the journal cannot
+//! account for. Every `ctx.run` effect therefore has to carry a chained `.retry_policy(` inside its
+//! own call, and a site without one fails listing file and line.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -30,6 +36,17 @@ const RUN_ATTEMPTS: u32 = 1;
 const LATTICE_ATTEMPTS: u32 = 4;
 /// The citation that documents that ownership at the site, and the only way four is legal.
 const LATTICE_CITATION: &str = "§43";
+/// The journaled effect's receiver: `ctx` on its own, never part of a longer identifier.
+const CTX: &str = "ctx";
+/// The chained policy that keeps one `ctx.run` to a single attempt.
+const POLICY: &str = ".retry_policy";
+/// How far past a `ctx.run` site its chained `.retry_policy(` may sit.
+///
+/// The longest chain the tree declares today spans thirteen lines (the census seal), so forty
+/// leaves room for a closure to grow while every lookahead stays statically bounded. The window is
+/// cut short where the next site starts, so one effect's policy can never cover another effect's
+/// absence; a window that cannot be read fails as bare rather than passing as covered.
+const RUN_LOOKAHEAD_LINES: usize = 40;
 
 /// One ceiling as it was written, with the line it was written on.
 struct Site {
@@ -287,6 +304,169 @@ fn scan() -> Result<Vec<Site>, String> {
     Ok(sites)
 }
 
+/// One `ctx.run` effect: the line it opens on and whether its chained call carries `.retry_policy(`.
+struct RunEffect {
+    line: usize,
+    covered: bool,
+}
+
+/// The byte offset just past the `(` of the `ctx.run(` opening at `offset`, when `offset` opens one.
+///
+/// `ctx`, whitespace, `.`, `run`, `(`: the whitespace is what lets `ctx` at the end of one line
+/// meet the `.run(` opening the next, which is the spelling most handlers use. Anything else - a
+/// longer identifier, a different method, a generated client's `run` on another receiver - is
+/// `None`, so only journaled effects are read.
+fn ctx_run_end(text: &str, offset: usize) -> Option<usize> {
+    let tail = text.get(offset.saturating_add(CTX.len())..)?;
+    let mut characters = tail.char_indices().peekable();
+    while characters
+        .peek()
+        .is_some_and(|(_, character)| character.is_whitespace())
+    {
+        characters.next();
+    }
+    let (_, dot) = characters.next()?;
+    if dot != '.' {
+        return None;
+    }
+    while characters
+        .peek()
+        .is_some_and(|(_, character)| character.is_whitespace())
+    {
+        characters.next();
+    }
+    for want in ['r', 'u', 'n'] {
+        let (_, got) = characters.next()?;
+        if got != want {
+            return None;
+        }
+    }
+    while characters
+        .peek()
+        .is_some_and(|(_, character)| character.is_whitespace())
+    {
+        characters.next();
+    }
+    let (paren_at, paren) = characters.next()?;
+    if paren != '(' {
+        return None;
+    }
+    Some(
+        offset
+            .saturating_add(CTX.len())
+            .saturating_add(paren_at)
+            .saturating_add(1),
+    )
+}
+
+/// Whether `.retry_policy(` opens at `offset`: the key, then only whitespace, then `(`.
+fn is_policy_at(text: &str, offset: usize) -> bool {
+    let Some(tail) = text.get(offset.saturating_add(POLICY.len())..) else {
+        return false;
+    };
+    let mut characters = tail.chars().peekable();
+    while characters
+        .peek()
+        .is_some_and(|character| character.is_whitespace())
+    {
+        characters.next();
+    }
+    characters.peek().is_some_and(|character| *character == '(')
+}
+
+/// The byte offset opening 1-based `line`: the text length when fewer lines remain.
+///
+/// An offset this returns always opens a line (past a `\n`, or zero), so a window cut with it
+/// never splits a character.
+fn line_start(text: &str, line: usize) -> usize {
+    if line <= 1 {
+        return 0;
+    }
+    let mut current = 1usize;
+    for (index, byte) in text.bytes().enumerate() {
+        if byte == b'\n' {
+            current = current.saturating_add(1);
+            if current >= line {
+                return index.saturating_add(1).min(text.len());
+            }
+        }
+    }
+    text.len()
+}
+
+/// Whether `text[start..end]` holds a `.retry_policy(` written in code.
+///
+/// A policy quoted in a comment or a literal is prose, not a chain, so it never covers a site: see
+/// [`is_code`]. A window that cannot be read covers nothing, so the gate fails closed.
+fn window_carries_policy(text: &str, start: usize, end: usize) -> bool {
+    let Some(window) = text.get(start..end) else {
+        return false;
+    };
+    for (relative, _) in window.match_indices(POLICY) {
+        let offset = start.saturating_add(relative);
+        if is_code(text, offset) && is_policy_at(text, offset) {
+            return true;
+        }
+    }
+    false
+}
+
+/// Every `ctx.run` effect in one file's text, in the order they appear.
+///
+/// A `ctx` quoted in a comment or a literal is not an effect, so it is skipped rather than read:
+/// see [`is_code`]. Coverage is per call: each site looks for its policy in the forty lines after
+/// it, cut short where the next site starts, so one effect's policy can never cover another
+/// effect's absence.
+fn run_effects_in(text: &str) -> Vec<RunEffect> {
+    let mut starts = Vec::new();
+    let mut search = 0usize;
+    while let Some(found) = text.get(search..).and_then(|tail| tail.find(CTX)) {
+        let offset = search.saturating_add(found);
+        search = offset.saturating_add(CTX.len());
+        // `on_ctx` or `myctx` ends with this key: only a key that starts on its own is an effect.
+        if starts_ident(text[..offset].chars().next_back()) {
+            continue;
+        }
+        if !is_code(text, offset) {
+            continue;
+        }
+        if let Some(end) = ctx_run_end(text, offset) {
+            starts.push((offset, end, line_at(text, offset)));
+        }
+    }
+    let mut effects = Vec::new();
+    for (index, &(_, end, line)) in starts.iter().enumerate() {
+        let cap = starts
+            .get(index.saturating_add(1))
+            .map_or(text.len(), |next| next.0);
+        let close = line_start(text, line.saturating_add(RUN_LOOKAHEAD_LINES)).min(cap);
+        effects.push(RunEffect {
+            line,
+            covered: window_carries_policy(text, end, close),
+        });
+    }
+    effects
+}
+
+/// Every `ctx.run` effect in first-party source, as the file holding it and the effect itself.
+fn scan_effects() -> Result<Vec<(PathBuf, RunEffect)>, String> {
+    let mut effects = Vec::new();
+    for root in source_roots()? {
+        let mut paths = Vec::new();
+        rust_files(&root, &mut paths)?;
+        for path in paths {
+            let text = fs::read_to_string(&path)
+                .map_err(|error| format!("read {}: {error}", path.display()))?;
+            effects.extend(
+                run_effects_in(&text)
+                    .into_iter()
+                    .map(|effect| (path.clone(), effect)),
+            );
+        }
+    }
+    Ok(effects)
+}
+
 #[test]
 fn every_retry_ceiling_holds_the_single_retry_owner_contract() {
     let sites = scan().expect("scan the retry ceilings of first-party source");
@@ -373,4 +553,88 @@ fn a_ceiling_the_scan_cannot_read_fails_instead_of_being_skipped() {
     // written next to its opener here would be read as a ceiling by the scan above.
     let text = format!("    {KEY} = \"pause\",\n");
     let _ = sites_in(Path::new("sample.rs"), &text).expect("read the sample ceiling");
+}
+
+#[test]
+fn every_ctx_run_carries_a_chained_retry_policy() {
+    let effects = scan_effects().expect("scan the ctx.run effects of first-party source");
+    let violations: Vec<String> = effects
+        .iter()
+        .filter(|(_, effect)| !effect.covered)
+        .map(|(path, effect)| {
+            format!(
+                "{}:{}: a ctx.run effect with no chained .retry_policy( within \
+                 {RUN_LOOKAHEAD_LINES} lines",
+                path.display(),
+                effect.line
+            )
+        })
+        .collect();
+    assert!(
+        violations.is_empty(),
+        "{} bare ctx.run site(s):\n{}",
+        violations.len(),
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn the_run_scan_reaches_the_effects_the_tree_declares() {
+    let effects = scan_effects().expect("scan the ctx.run effects of first-party source");
+    assert!(
+        !effects.is_empty(),
+        "a scan that reads nothing holds nothing to the contract, so this fails rather than \
+         passing on an empty set: no ctx.run effect was found under {:?}",
+        source_roots().expect("locate the first-party source roots")
+    );
+}
+
+#[test]
+fn a_bare_effect_fails_and_a_chained_policy_holds() {
+    let bare = "    ctx.run(move || step(store))\n        .await?;\n";
+    let effects = run_effects_in(bare);
+    assert_eq!(effects.len(), 1);
+    let effect = effects.first().expect("the sample declares an effect");
+    assert_eq!(effect.line, 1);
+    assert!(!effect.covered, "a run with no chained policy is bare");
+    // The split-chain spelling most handlers use: `ctx` at the end of one line, `.run(` opening
+    // the next, the policy three lines below the site.
+    let covered = "        let Json(journaled) = ctx\n                .run(move || step(store))\n                .retry_policy(RunRetryPolicy::new().max_attempts(1))\n                .await?;\n";
+    let effects = run_effects_in(covered);
+    assert_eq!(effects.len(), 1);
+    let effect = effects.first().expect("the sample declares an effect");
+    assert_eq!(effect.line, 1);
+    assert!(effect.covered, "a chained policy covers the site");
+}
+
+#[test]
+fn the_run_scan_reads_split_chains_and_ignores_prose_and_clients() {
+    // Prose quoting the shape is not an effect, whether in a comment or a literal: the scan only
+    // reads code. A generated client's `run` is a call on another receiver, not a journaled
+    // effect, so it is not an effect either.
+    let prose = "// a ctx.run effect journals one attempt\n    let quoted = \"ctx.run(move || step(store))\";\n                client\n                    .run(Json(request))\n                    .call(),\n";
+    assert!(
+        run_effects_in(prose).is_empty(),
+        "prose and a client's run are not ctx.run effects"
+    );
+    // A policy quoted in a comment is prose, not a chain, so it never covers a site.
+    let commented =
+        "    ctx.run(move || step(store))\n        // .retry_policy(RunRetryPolicy::new().max_attempts(1))\n        .await?;\n";
+    let effects = run_effects_in(commented);
+    assert_eq!(effects.len(), 1);
+    let effect = effects.first().expect("the sample declares an effect");
+    assert!(!effect.covered, "a commented policy leaves the site bare");
+    // The second effect's policy sits inside the first effect's forty lines: without the
+    // next-site cut the bare first effect would pass on the second's policy.
+    let two = "        let a = ctx\n            .run(move || step_a(store))\n            .await?;\n        let b = ctx\n            .run(move || step_b(store))\n            .retry_policy(RunRetryPolicy::new().max_attempts(1))\n            .await?;\n";
+    let effects = run_effects_in(two);
+    let read: Vec<(usize, bool)> = effects
+        .iter()
+        .map(|effect| (effect.line, effect.covered))
+        .collect();
+    assert_eq!(
+        read,
+        [(1, false), (4, true)],
+        "one effect's policy never covers another's absence"
+    );
 }

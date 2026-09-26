@@ -92,10 +92,18 @@ fn meets_line(report: &JurisdictionReport) -> String {
 /// Offline it walks each state's index in-process; live it asks that state's own jurisdiction object,
 /// which runs the full jurisdiction census (all owed stages) through the store the service already
 /// holds and reports one line per state.
+///
+/// Staging-only on the offline route: the walk bypasses the plan fingerprint and the `Ingest`
+/// operation-id receipts and windows, so nothing it writes is visible to seal item 2 or to
+/// open-work measurement. Nothing in the batch chain above routes yet; measured coverage comes
+/// only from the live path through the service.
 pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
     let jurisdictions = resolve_states(args.all_states, &args.states)?;
     match cli.route(args.flags.ingress.as_deref())? {
         Route::Offline(root) => {
+            // Staging-only: this walk writes the store directly, bypassing the plan fingerprint
+            // and the Ingest receipts and windows, so seal item 2 and open-work measurement
+            // cannot see it. Measured coverage comes only from the live path.
             let store = Store::open(root)?;
             let fetcher = build_fetcher(cli, &store)?;
             for jurisdiction in &jurisdictions {
@@ -139,10 +147,18 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
 /// Offline it walks each state's index in-process; live it asks that state's own jurisdiction object,
 /// which runs the full jurisdiction census (all owed stages) through the store the service already
 /// holds.
+///
+/// Staging-only on the offline route: the walk bypasses the plan fingerprint and the `Ingest`
+/// operation-id receipts and windows, so nothing it writes is visible to seal item 2 or to
+/// open-work measurement. Nothing in the batch chain above routes yet; measured coverage comes
+/// only from the live path through the service.
 pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
     let jurisdictions = resolve_states(args.all_states, &args.states)?;
     match cli.route(args.flags.ingress.as_deref())? {
         Route::Offline(root) => {
+            // Staging-only: this walk writes the store directly, bypassing the plan fingerprint
+            // and the Ingest receipts and windows, so seal item 2 and open-work measurement
+            // cannot see it. Measured coverage comes only from the live path.
             let store = Store::open(root)?;
             let fetcher = build_fetcher(cli, &store)?;
             let observed_on = census_crawl::net::today_iso();
@@ -252,10 +268,18 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
 /// runs the full jurisdiction census (all owed stages) through the store the service already holds.
 /// Both paths read the same [`census::CollectOptions`], so the two cannot disagree about which states
 /// a run covers.
+///
+/// Staging-only on the offline route: the walk bypasses the plan fingerprint and the `Ingest`
+/// operation-id receipts and windows, so nothing it writes is visible to seal item 2 or to
+/// open-work measurement. Nothing in the batch chain above routes yet; measured coverage comes
+/// only from the live path through the service.
 pub(super) async fn run_collect(cli: &Cli, args: &CollectArgs) -> Result<()> {
     let options = collect_options(args)?;
     match cli.route(args.flags.ingress.as_deref())? {
         Route::Offline(root) => {
+            // Staging-only: this walk writes the store directly, bypassing the plan fingerprint
+            // and the Ingest receipts and windows, so seal item 2 and open-work measurement
+            // cannot see it. Measured coverage comes only from the live path.
             let store = Store::open(root)?;
             let fetcher = build_fetcher(cli, &store)?.with_source("milesplit");
             let outcome = census::collect_milesplit(&fetcher, &store, &options).await;
