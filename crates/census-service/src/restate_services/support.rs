@@ -116,8 +116,5 @@ where
         Outcome::Cancelled => Err(JobError::Terminal {
             message: "job cancelled".to_string(),
         }),
-        Outcome::Timeout => Err(JobError::Terminal {
-            message: "job timed out".to_string(),
-        }),
     }
 }
