@@ -1,9 +1,4 @@
-//! HTML and published-value primitives for the WIAA directory payloads.
-//!
-//! No I/O and no store access: every function takes captured text and returns text, an offset
-//! or a decoded address, so the parsers above it stay fixture-testable.
 
-/// Byte offset of `needle` at or after `from`.
 pub(super) fn find_from(haystack: &str, needle: &str, from: usize) -> Option<usize> {
     haystack
         .get(from..)?
@@ -11,7 +6,6 @@ pub(super) fn find_from(haystack: &str, needle: &str, from: usize) -> Option<usi
         .and_then(|offset| from.checked_add(offset))
 }
 
-/// Text of the first `<tag …>…</tag>` at or after `from`, plus the offset just past it.
 pub(super) fn element_text(html: &str, tag: &str, from: usize) -> Option<(String, usize)> {
     let open_marker = format!("<{tag}");
     let close_marker = format!("</{tag}>");
@@ -26,8 +20,6 @@ pub(super) fn element_text(html: &str, tag: &str, from: usize) -> Option<(String
     Some((text, next))
 }
 
-/// Bodies of every `<tag …>…</tag>` inside `html`, in document order. The cursor always advances to
-/// just past a closing tag, so the loop terminates on any input.
 pub(super) fn element_bodies<'a>(html: &'a str, tag: &str) -> Vec<&'a str> {
     let open_marker = format!("<{tag}");
     let close_marker = format!("</{tag}>");
@@ -51,7 +43,6 @@ pub(super) fn element_bodies<'a>(html: &'a str, tag: &str) -> Vec<&'a str> {
     out
 }
 
-/// First `attribute="value"` inside `html`.
 pub(super) fn attribute_value(html: &str, attribute: &str) -> Option<String> {
     let marker = format!("{attribute}=\"");
     let start = find_from(html, &marker, 0)?.checked_add(marker.len())?;
@@ -60,7 +51,6 @@ pub(super) fn attribute_value(html: &str, attribute: &str) -> Option<String> {
     rest.get(..end).map(|value| clean(&unescape(value)))
 }
 
-/// Text of every `<label class="<class>">…</label>` inside `html`, in document order.
 pub(super) fn labelled_texts(html: &str, class: &str) -> Vec<String> {
     let marker = format!("<label class=\"{class}\">");
     let mut out = Vec::new();
@@ -83,7 +73,6 @@ pub(super) fn labelled_texts(html: &str, class: &str) -> Vec<String> {
     out
 }
 
-/// The `<table id="<table_id>">…</table>` slice, starting at the id attribute.
 pub(super) fn table_slice<'a>(html: &'a str, table_id: &str) -> Option<&'a str> {
     let marker = format!("id=\"{table_id}\"");
     let at = find_from(html, &marker, 0)?;
@@ -91,17 +80,14 @@ pub(super) fn table_slice<'a>(html: &'a str, table_id: &str) -> Option<&'a str> 
     html.get(at..end)
 }
 
-/// Cell `index` of a row, or `""` when the row is shorter than that.
 pub(super) fn nth<'a>(cells: &[&'a str], index: usize) -> &'a str {
     cells.get(index).copied().unwrap_or("")
 }
 
-/// Element `index` of an owned list, or `""` when the list is shorter than that.
 pub(super) fn nth_owned(values: &[String], index: usize) -> &str {
     values.get(index).map(String::as_str).unwrap_or("")
 }
 
-/// Remove markup, decode the entities this site emits, and collapse whitespace.
 pub(super) fn strip_tags(fragment: &str) -> String {
     let mut out = String::with_capacity(fragment.len());
     let mut depth = 0usize;
@@ -116,7 +102,6 @@ pub(super) fn strip_tags(fragment: &str) -> String {
     clean(&unescape(&out))
 }
 
-/// Decode the HTML entities observed in WIAA payloads.
 fn unescape(value: &str) -> String {
     value
         .replace("&nbsp;", " ")
@@ -150,7 +135,6 @@ pub(super) fn clean(value: &str) -> String {
     collapse_whitespace(value)
 }
 
-/// `None` for an empty or whitespace value, so optional fields stay absent rather than empty.
 pub(super) fn nonempty(value: &str) -> Option<String> {
     let trimmed = value.trim();
     if trimmed.is_empty() {
@@ -160,8 +144,6 @@ pub(super) fn nonempty(value: &str) -> Option<String> {
     }
 }
 
-/// A published value that is not a placeholder. WIAA writes `N/A` where a field does not apply
-/// (e.g. the conference of a charter school), and a placeholder must not become a canonical field.
 pub(super) fn meaningful(value: &str) -> Option<String> {
     nonempty(value).filter(|value| {
         !matches!(
@@ -180,11 +162,6 @@ fn hex_nibble(byte: u8) -> Option<u8> {
     }
 }
 
-/// Decode Cloudflare's `data-cfemail` payload exactly as the page's own `email-decode.min.js` does:
-/// the first byte is the XOR key, every following byte is one character of the address.
-///
-/// Returns `None` for malformed input and for a payload that does not decode to an address, so a
-/// junk attribute can never become a `professional_email`.
 pub fn decode_cfemail(encoded: &str) -> Option<String> {
     let hex = encoded.trim();
     let bytes = hex.as_bytes();
@@ -206,7 +183,6 @@ pub fn decode_cfemail(encoded: &str) -> Option<String> {
     valid_email(&decoded)
 }
 
-/// A published address, or nothing: rejects blanks, placeholders and anything without a domain dot.
 pub(super) fn valid_email(value: &str) -> Option<String> {
     let trimmed = value.trim();
     if trimmed.is_empty() || trimmed.contains(char::is_whitespace) {
@@ -224,7 +200,6 @@ pub(super) fn valid_email(value: &str) -> Option<String> {
     Some(trimmed.to_string())
 }
 
-/// Address from a table cell: the Cloudflare payload when present, otherwise a plain `mailto:` href.
 pub(super) fn cell_email(cell: &str) -> Option<String> {
     let marker = "data-cfemail=\"";
     if let Some(start) = find_from(cell, marker, 0).and_then(|at| at.checked_add(marker.len())) {

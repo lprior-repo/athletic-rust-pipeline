@@ -1,11 +1,3 @@
-//! `census-serve` — run the census as a Restate service endpoint.
-//!
-//! Same adapters, same store, same reports as the batch CLI; the difference is that Restate owns the
-//! journal: a crash mid-ingest resumes at the last recorded step, and every write is idempotent.
-//!
-//! ```text
-//! census-serve --listen 127.0.0.1:9080 --data-dir var
-//! ```
 
 #![forbid(unsafe_code)]
 

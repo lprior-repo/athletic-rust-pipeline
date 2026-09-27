@@ -1,8 +1,3 @@
-//! One cycle stage per transport: the publishing half of `run`, against the store this process
-//! opened and against the running service.
-//!
-//! These live apart from `run_cycle` because they are the part that speaks to the two transports;
-//! the run itself (gather, consolidate, index) stays in the parent module.
 
 use anyhow::{Context, Result};
 use census_report::report;
@@ -14,7 +9,6 @@ use super::RunArgs;
 use crate::cli::cohort_label;
 use crate::cli::live;
 
-/// Build one scope's census, write its JSON and CSV, and print the stage's lines.
 pub(super) fn publish_scope(store: &Store, scope: report::Scope) -> Result<()> {
     let census = report::build_census(store, scope).context("building the census")?;
     let (json_path, csv_path) = report::write_census(store, &census, scope)?;
@@ -31,7 +25,6 @@ pub(super) fn publish_scope(store: &Store, scope: report::Scope) -> Result<()> {
     Ok(())
 }
 
-/// Reduce the best marks, write them with their workbook, and print the stage's lines.
 pub(super) fn publish_bests_and_workbook(
     store: &Store,
     args: &RunArgs,
@@ -45,7 +38,7 @@ pub(super) fn publish_bests_and_workbook(
     };
     let rows = bests::build(store, &bests).context("reducing the best marks")?;
     let cohort = cohort_label(Some(grad_year));
-    let (jsonl, csv) = bests::write(store, &rows, &cohort).context("writing the best marks")?;
+    let (jsonl, csv) = bests::write(&store.out_dir(), &rows, &cohort).context("writing the best marks")?;
     println!(
         "bests\tcohort={cohort} rows={} scope={}\t{}",
         rows.len(),
@@ -59,13 +52,13 @@ pub(super) fn publish_bests_and_workbook(
         out: args.out.clone(),
         limit: args.limit,
         scope,
+        school_year: None,
     };
     let path = workbook::build(store, &workbook).context("building the census workbook")?;
     println!("workbook\t{}", path.display());
     Ok(())
 }
 
-/// Build one scope's census in the running service and print the stage's lines.
 pub(super) async fn publish_scope_live(origin: &str, scope: report::Scope) -> Result<()> {
     let summary = live::report(Some(origin), scope).await?;
     println!(
@@ -81,7 +74,6 @@ pub(super) async fn publish_scope_live(origin: &str, scope: report::Scope) -> Re
     Ok(())
 }
 
-/// Reduce the best marks, write them with their workbook, and print the stage's lines.
 pub(super) async fn publish_bests_and_workbook_live(
     origin: &str,
     args: &RunArgs,

@@ -1,22 +1,17 @@
-//! The snapshot reader's contract: a published snapshot decodes row for row, and a damaged one fails
-//! by file and line instead of quietly losing the canonical entity that row held.
 
 use super::{read_rows, sweep_stale_temporaries};
 use crate::StoreError;
 use census_domain::model::{normalize_name, CanonicalSchool};
 use census_domain::UsJurisdiction;
 
-/// A school row: the entity type `out/schools.jsonl` carries back to the adapters.
 fn school(name: &str) -> CanonicalSchool {
     CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0
 }
 
-/// One serialized school row, exactly as [`super::write_snapshot`] writes it.
 fn row(name: &str) -> String {
     serde_json::to_string(&school(name)).expect("a school serializes")
 }
 
-/// Stage a snapshot from raw lines, so a test can put a damaged row where it wants one.
 fn stage_snapshot(dir: &tempfile::TempDir, lines: &[String]) -> std::path::PathBuf {
     let path = dir.path().join("schools.jsonl");
     let mut body = lines.join("\n");

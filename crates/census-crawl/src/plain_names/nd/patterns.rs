@@ -1,7 +1,3 @@
-//! Compiled patterns for the NDHSAA pages parsed by [`super`].
-//!
-//! Each pattern compiles once per process. A pattern that fails to compile is reported as
-//! [`CrawlError::RegexInit`] naming the pattern, so a bad literal can never panic a run.
 
 use crate::{CrawlError, CrawlResult};
 use regex::Regex;

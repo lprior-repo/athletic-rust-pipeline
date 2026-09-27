@@ -1,9 +1,3 @@
-//! The mints for the two entities a row's event names: the meet it was held at, and the event
-//! itself.
-//!
-//! Meet identity is (state, date, name) and event identity (meet, kind, gender, division,
-//! round): the host's numeric meet id and its standard-event handle are identity *channels*
-//! recorded beside them, never hashed into the key.
 
 use super::entity::push_identity;
 use super::state::{Absorb, Page};
@@ -14,10 +8,6 @@ use census_domain::model::{
 };
 
 impl<'a> Absorb<'a> {
-    /// Resolve or mint the meet a row names.
-    ///
-    /// Meet identity is (state, date, name): the host's numeric meet id is an identity *channel*, not
-    /// the canonical key, so a meet the same host publishes under two routes stays one meet.
     pub(super) fn meet_for(
         &mut self,
         page: Page<'_>,
@@ -54,11 +44,6 @@ impl<'a> Absorb<'a> {
         }
         id
     }
-    /// Resolve or mint the event one section publishes, with the kind the label mapped to.
-    ///
-    /// Event identity is (meet, kind, gender, division, round): the host's own standard-event handle
-    /// is kept as a source label rather than hashed into the key, so the same event listed under two
-    /// handles stays one event.
     pub(super) fn event_for(
         &mut self,
         page: Page<'_>,

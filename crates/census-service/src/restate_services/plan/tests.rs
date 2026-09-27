@@ -1,6 +1,3 @@
-//! The planner's dispositions: what a machine can sweep, what it must refuse by name, and the two
-//! ways a plan goes wrong - dropping a source the research evidences, or inventing sources for a
-//! jurisdiction the research says nothing about.
 
 use census_crawl::registry::descriptor;
 use census_domain::UsJurisdiction;
@@ -9,8 +6,6 @@ use super::*;
 use crate::restate_services::jurisdiction::DISPATCHED;
 use crate::restate_services::wire::{JurisdictionState, RefusedSource, SourcePlan};
 
-/// A browser-session source with no lane behind it is refused, and the refusal names what is
-/// missing: the run records it as owed work, so the reason has to reach the record.
 #[test]
 fn a_browser_source_without_a_lane_is_refused_by_name() {
     let disposition = classify_access(
@@ -28,7 +23,6 @@ fn a_browser_source_without_a_lane_is_refused_by_name() {
     assert_eq!(refusal.reason, NO_BROWSER_LANE);
 }
 
-/// The same source on a machine that has the lane is ordinary sweeps, not a refusal.
 #[test]
 fn a_browser_source_with_a_lane_is_swept() {
     let disposition = classify_access(
@@ -46,7 +40,6 @@ fn a_browser_source_with_a_lane_is_swept() {
     );
 }
 
-/// No lane is configured on the build machine, so an open source must never be gated on one.
 #[test]
 fn an_open_source_needs_no_lane() {
     let disposition = classify_access(
@@ -64,8 +57,6 @@ fn an_open_source_needs_no_lane() {
     );
 }
 
-/// A source no stage runs is owed by name, and the reason says the build is what is missing rather
-/// than the machine: a lane, a setting or a rate would not make it runnable.
 #[test]
 fn a_source_no_stage_runs_is_owed_by_name() {
     let disposition = classify_access(
@@ -87,9 +78,6 @@ fn a_source_no_stage_runs_is_owed_by_name() {
     assert_eq!(refusal.reason, NO_JURISDICTION_WALK);
 }
 
-/// The dispatch question is asked before the lane one: with both gaps present the reason names the
-/// one an operator cannot fix, because "start a lane and re-run" would be a promise this build
-/// cannot keep for a source it has no stage for.
 #[test]
 fn the_dispatch_question_is_asked_before_the_lane() {
     let disposition = classify_access(
@@ -105,8 +93,6 @@ fn the_dispatch_question_is_asked_before_the_lane() {
     assert_eq!(refusal.reason, NO_JURISDICTION_WALK);
 }
 
-/// The plan's central claim, held for every jurisdiction: nothing is sweepable that the chain does
-/// not dispatch, so a unit in the sweepable list is work some stage will actually run.
 #[test]
 fn nothing_sweepable_is_a_source_no_stage_runs() {
     for jurisdiction in [
@@ -125,10 +111,6 @@ fn nothing_sweepable_is_a_source_no_stage_runs() {
     }
 }
 
-/// The state association's directory walk is planned where it covers and nowhere else: the plan is
-/// what a run dispatches, and a directory swept for another state's schools would write rows the
-/// walk never fetched. The applicability table is what decides, so this test is where its answer
-/// for the two states the walks cover is written down.
 #[test]
 fn a_states_own_directory_walk_is_planned_only_for_that_state() {
     let slugs = |jurisdiction: UsJurisdiction| -> Vec<&'static str> {
@@ -170,9 +152,6 @@ fn a_states_own_directory_walk_is_planned_only_for_that_state() {
     }
 }
 
-/// The meet-index sources are planned where their own index covers and nowhere else: the result
-/// archive is one association's publication and the timer publishes its own states' schedules, so a
-/// run of another state that planned them would walk meets it was never asked for.
 #[test]
 fn the_meet_walks_are_planned_for_the_states_they_publish() {
     let slugs = |jurisdiction: UsJurisdiction| -> Vec<&'static str> {
@@ -199,8 +178,6 @@ fn the_meet_walks_are_planned_for_the_states_they_publish() {
     }
 }
 
-/// The dispatched slugs are the registry's, not a second spelling of them: a rename that left this
-/// list behind would refuse every source and report a machine gap that is really a typo.
 #[test]
 fn every_dispatched_slug_is_registered() {
     for slug in DISPATCHED {
@@ -211,8 +188,6 @@ fn every_dispatched_slug_is_registered() {
     }
 }
 
-/// The two partitions a dispatcher reads: refusals never appear in the fetched set, and both keep
-/// the plan's order.
 #[test]
 fn owed_keeps_plan_order_and_sweepable_excludes_refusals() {
     let dispositions = vec![
@@ -247,8 +222,6 @@ fn owed_keeps_plan_order_and_sweepable_excludes_refusals() {
     assert_eq!(sweepable_slugs, vec!["mshsl"]);
 }
 
-/// The plan is the applicability table's answer, not a second opinion: the same sources in the same
-/// order, with none dropped between the two.
 #[test]
 fn a_jurisdiction_plans_the_sources_the_table_evidences_in_order() {
     for jurisdiction in [
@@ -268,15 +241,11 @@ fn a_jurisdiction_plans_the_sources_the_table_evidences_in_order() {
     }
 }
 
-/// Out of scope is not a licence to plan everything: a jurisdiction the research does not evidence
-/// plans nothing, and an empty plan is a real answer.
 #[test]
 fn a_jurisdiction_the_research_does_not_evidence_plans_nothing() {
     assert!(plan(UsJurisdiction::Alaska, BrowserLaneState::Absent).is_empty());
 }
 
-/// The plan as a run records it: sweepable slugs in plan order, every refusal with the reason it is
-/// owed, and no refused source left in the sweepable list.
 #[test]
 fn a_recorded_plan_partitions_the_dispositions_in_plan_order() {
     let dispositions = vec![
@@ -316,9 +285,6 @@ fn a_recorded_plan_partitions_the_dispositions_in_plan_order() {
     );
 }
 
-/// A state journaled before the plan existed reads as absent rather than failing: that absence is
-/// what makes the object build a plan on the next run instead of reporting a machine's gap as a
-/// broken state.
 #[test]
 fn a_state_journaled_before_the_plan_reads_with_no_plan() {
     let state: JurisdictionState = serde_json::from_value(serde_json::json!({
@@ -328,8 +294,6 @@ fn a_state_journaled_before_the_plan_reads_with_no_plan() {
     assert!(state.plan.is_none());
 }
 
-/// What a run wrote is what a re-invocation reads back: the recorded plan survives the journal
-/// whole, refusals and reasons included.
 #[test]
 fn a_recorded_plan_round_trips_through_the_journal() {
     let mut state = JurisdictionState::default();
@@ -356,7 +320,6 @@ fn a_recorded_plan_round_trips_through_the_journal() {
     assert_eq!(plan.refused.len(), 1);
 }
 
-/// The fingerprint is deterministic: same inputs always produce the same hash.
 #[test]
 fn fingerprint_is_deterministic() {
     use crate::restate_services::plan::compute_plan_fingerprint;
@@ -379,7 +342,6 @@ fn fingerprint_is_deterministic() {
     assert_eq!(fp1.len(), 64);
 }
 
-/// Changing any determinant produces a different fingerprint.
 #[test]
 fn fingerprint_changes_with_different_inputs() {
     use crate::restate_services::plan::compute_plan_fingerprint;

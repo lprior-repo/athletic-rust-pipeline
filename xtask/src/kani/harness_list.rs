@@ -1,19 +1,10 @@
-/// A harness name paired with the package that owns it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct HarnessInfo {
-    /// The `#[kani::proof]` function name.
     pub name: &'static str,
-    /// The crate that declares this harness.
     pub package: &'static str,
-    /// Relative path to the crate's Cargo.toml (for `--manifest-path`).
     pub manifest_path: &'static str,
 }
 
-/// All harnesses that exist in the compiled tree.
-///
-/// Scanned from the kani wiring modules under `crates/census-domain/kani/` and
-/// `crates/census-store/kani/`. Each entry names the `#[kani::proof]` function
-/// and the package that owns it.
 pub const KNOWN_HARNESS: &[HarnessInfo] = &[
     HarnessInfo {
         name: "check_gradyear_of_formula",

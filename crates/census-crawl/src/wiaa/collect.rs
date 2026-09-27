@@ -1,4 +1,3 @@
-//! The WIAA directory walk (`collect`), moved verbatim from the flat adapter module.
 
 use crate::net::{FetchError, FetchOutcome, FetchStats};
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
@@ -16,10 +15,6 @@ mod collect_schools;
 use collect_schools::{plan_schools, process_school, SchoolTally};
 
 
-/// Walk the WIAA directory and emit canonical schools plus AD/head-coach rows.
-///
-/// Resumable: a school page is fetched only when `WI:<orgID>` is absent from the `wiaa_schools`
-/// journal, and both journals carry the same `WI:<orgID>` key.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("wiaa", "schools");
     let observed_on = if options.observed_on.trim().is_empty() {
@@ -72,13 +67,11 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-/// The directory index: its entries (deduplicated by org id) and how many letters were walked.
 struct LetterScan {
     index: Vec<IndexEntry>,
     letters: usize,
 }
 
-/// Walk the directory letters and build the school index they list.
 async fn scan_index(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -119,7 +112,6 @@ async fn scan_index(
     })
 }
 
-/// Read the letter fragments in submission order: parse rows, dedupe ids, track the first problem.
 fn absorb_letters(
     letters: &[char],
     letter_results: Vec<(usize, Result<FetchOutcome, FetchError>)>,
@@ -163,7 +155,6 @@ fn absorb_letters(
     (index, letters_ok, first_problem)
 }
 
-/// Count the listed schools per published level, for the index note.
 fn summarize_levels(index: &[IndexEntry]) -> String {
     let mut levels: BTreeMap<String, u64> = BTreeMap::new();
     for entry in index {
@@ -178,7 +169,6 @@ fn summarize_levels(index: &[IndexEntry]) -> String {
         .join(", ")
 }
 
-/// Note how many directory letters were requested and how many schools they listed.
 fn note_index(report: &mut AdapterReport, letters: usize, index_len: usize, level_summary: &str) {
     report.note(format!(
         "index: {} letter request(s), {} schools listed ({level_summary})",
@@ -186,7 +176,6 @@ fn note_index(report: &mut AdapterReport, letters: usize, index_len: usize, leve
     ));
 }
 
-/// Note how many schools and coach rows were written, and the published email fill rate.
 fn note_written(report: &mut AdapterReport, tally: &SchoolTally) {
     let processed = tally.processed;
     let coach_rows = tally.coach_rows;
@@ -207,7 +196,6 @@ fn note_written(report: &mut AdapterReport, tally: &SchoolTally) {
     });
 }
 
-/// Note what the walk skipped, which administration roles it refused, and the applied limit.
 fn note_skips(report: &mut AdapterReport, tally: SchoolTally, limit: Option<usize>) {
     let skipped_done = tally.skipped_done;
     let skipped_filter = tally.skipped_filter;

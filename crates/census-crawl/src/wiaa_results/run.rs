@@ -36,8 +36,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-/// The consolidated schools this walk resolves against. An empty file means `collect` and
-/// `consolidate` have not been run yet, which is an operator error rather than a parse failure.
 fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSchool>> {
     let schools: Vec<CanonicalSchool> =
         census_store::read::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
@@ -51,8 +49,6 @@ fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSc
     Ok(schools)
 }
 
-/// Close the report once every archive page has been walked: the row count, the request and cache
-/// deltas against the stats captured at entry, and the per-item notes.
 async fn finish_report(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
@@ -73,8 +69,6 @@ async fn finish_report(
     Ok(())
 }
 
-/// What one walk of the archive pages carries across them: the school index, the resume set, the
-/// run counters and the entities minted so far.
 struct ArtifactRun {
     index: SchoolIndex,
     source: SourceRef,
@@ -82,13 +76,11 @@ struct ArtifactRun {
     stats: Stats,
     accumulated: Accumulator,
     done: HashSet<String>,
-    /// The artifact entries this walk has earned, committed with the entity tables at the end.
     pending: Vec<(String, serde_json::Value)>,
     reported_missing_tool: bool,
 }
 
 impl ArtifactRun {
-    /// Build the run state from the consolidated schools and the journal's resume set.
     fn new(schools: &[CanonicalSchool], done: HashSet<String>) -> Self {
         Self {
             index: SchoolIndex::from_schools(schools),
@@ -103,11 +95,6 @@ impl ArtifactRun {
     }
 }
 
-/// The artifact URLs already journaled at the current parser version.
-///
-/// Only artifacts that yielded entities (or that are deliberately skipped as non-parsable
-/// formats) are resumed over; a parse failure is retried on the next run, which is cheap
-/// because the body is already in the HTTP cache.
 fn resumed_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
     Ok(ctx
         .store
@@ -129,7 +116,6 @@ fn resumed_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
         .collect())
 }
 
-/// Fetch one archive page and read every artifact it lists.
 async fn collect_archive(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -170,7 +156,6 @@ async fn collect_archive(
     Ok(())
 }
 
-/// Canonical entity counts, for the run note.
 struct EntityCounts {
     meets: usize,
     events: usize,
@@ -179,7 +164,6 @@ struct EntityCounts {
     performances: usize,
 }
 
-/// Append one batch per table, journal the artifacts this run read, and return what was written.
 fn append_entities(
     ctx: &AdapterContext<'_>,
     accumulated: Accumulator,
@@ -209,7 +193,6 @@ fn append_entities(
     })
 }
 
-/// Note what the run saw, parsed, skipped and failed on, by format and season.
 fn note_artifacts(report: &mut AdapterReport, stats: &Stats) {
     report.note(format!(
         "artifacts: {} seen, {} parsed, {} skipped (unrecognised extension), {} unsupported, {} \
@@ -244,7 +227,6 @@ fn note_artifacts(report: &mut AdapterReport, stats: &Stats) {
     ));
 }
 
-/// Note how many canonical entities the run appended.
 fn note_entities(report: &mut AdapterReport, counts: &EntityCounts) {
     report.note(format!(
         "canonical entities: meets {} events {} athletes {} teams {} performances {}",
@@ -252,7 +234,6 @@ fn note_entities(report: &mut AdapterReport, counts: &EntityCounts) {
     ));
 }
 
-/// Note how published school labels resolved, and which ones did not.
 fn note_resolution(report: &mut AdapterReport, stats: &Stats) {
     report.note(format!(
         "school label resolution: {}",

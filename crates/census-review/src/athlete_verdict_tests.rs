@@ -1,8 +1,3 @@
-//! What the athlete family's reader must accept and refuse: exactly three answers, a verdict that
-//! names the case it decided, and a proposal that either parses or is refused with the value kept.
-//!
-//! The reader is fed wire verdicts, not typed ones: it is the boundary a model's answer crosses, so
-//! these are the spellings and shapes a server can actually return.
 
 use census_domain::model::{ReviewCase, ReviewPacket, ReviewVerdict, ReviewVerdictKind};
 
@@ -12,7 +7,6 @@ use crate::ReviewFamily;
 
 use super::{read, AthleteVerdict, HardContradiction};
 
-/// The retained case: one canonical athlete, and the ids the store kept it apart from.
 fn case() -> ReviewCase {
     ReviewCase::pending(
         "Athlete identity",
@@ -22,7 +16,6 @@ fn case() -> ReviewCase {
     )
 }
 
-/// The packet the case is asked with.
 fn packet() -> ReviewPacket {
     let case = case();
     ReviewPacket::new(case.subject_id.clone(), case.subject.clone())
@@ -35,7 +28,6 @@ fn packet_with_flag(flag: &str) -> ReviewPacket {
     packet().with_evidence(fact("flag", &value))
 }
 
-/// A proposal carrying one answer, as a model would return it.
 fn proposal(answer: &str) -> ReviewVerdict {
     ReviewVerdict {
         case_id: case().id,

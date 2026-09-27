@@ -1,17 +1,3 @@
-//! Type-integrity scan for domain modules (Scott Wlaschin doctrine, measured not asserted).
-//!
-//! Counts candidates in the DOMAIN paths only:
-//!
-//! * `bool` parameters or return types in public signatures (boolean control flags);
-//! * primitive id parameters (`String`/`&str`/integer named `*id`/`*_id`) where a newtype belongs;
-//! * structs with two or more `Option<..>` fields (Option-as-state candidates).
-//!
-//! These are review candidates, not verdicts: each hit must be either converted or justified. The
-//! counts are printed by `tools/gate.sh` and ratcheted in the DDD phase.
-//!
-//! Emits JSON on stdout: one object per domain root - one today, `census-domain` ->
-//! `crates/census-domain/src` - keyed as the deleted `type_integrity_scan.py` keyed it, plus `ok`,
-//! which is true only when every declared root produced at least one production file to measure.
 
 use crate::json::count;
 use crate::paths;
@@ -22,32 +8,20 @@ use serde_json::{Map, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// The domain roots, keyed as the deleted `type_integrity_scan.py` keyed them.
 const DOMAINS: [(&str, &str); 1] = [("census-domain", "crates/census-domain/src")];
 
-/// A public function signature, up to its parameters and optional return type.
 const PUB_FN: &str =
     r"^\s*pub\s+(?:async\s+)?fn\s+([a-zA-Z0-9_]+)\s*(?:<[^>]*>)?\s*\(([^)]*)\)\s*(?:->\s*([^{]+))?";
 
-/// A parameter whose type is a primitive named like an identifier.
 const ID_PARAM: &str =
     r"\b([a-zA-Z0-9_]*id)\s*:\s*(?:&(?:'[a-z]+\s+)?)?(String|&str|u8|u16|u32|u64|usize|i32|i64)";
 
-/// A `bool` in the signature: a parameter or a return type.
 const BOOL_TOKEN: &str = r":\s*bool\b|->\s*bool\b";
 
-/// A public struct declaration.
 const PUB_STRUCT: &str = r"^\s*pub\s+struct\s+([A-Za-z0-9_]+)";
 
-/// An `Option<..>` field inside a struct body.
 const OPTION_FIELD: &str = r":\s*Option<";
 
-/// Scan both domain roots and write the report to stdout.
-///
-/// The report carries `ok`, which is true only when every declared domain root produced at least one
-/// production file. It is the difference between a scan of zero candidates and a scan of nothing:
-/// `tools/gate.sh` fails the lane on `ok: false`, because a root that moved (or a filter that widened)
-/// would otherwise read as a clean burndown.
 pub fn run() -> Result<()> {
     let rules = Rules::compile()?;
     let root = paths::repo_root();
@@ -74,7 +48,6 @@ pub fn run() -> Result<()> {
     Ok(())
 }
 
-/// The candidate hits of one domain root, in scan order.
 #[derive(Default)]
 struct Hits {
     bool_in_signature: Vec<String>,
@@ -83,10 +56,6 @@ struct Hits {
 }
 
 impl Hits {
-    /// Record the candidates one file carries.
-    ///
-    /// The deleted script cut the file at the first `#[cfg(test)]` line whatever it gated, and its
-    /// struct walk started one line below the declaration, stopping at the first line holding a `}`.
     fn measure(&mut self, path: &Path, rules: &Rules) -> Result<()> {
         let text = fs::read_to_string(path)
             .with_context(|| format!("reading {}", paths::relative(path)))?;
@@ -141,12 +110,10 @@ impl Hits {
     }
 }
 
-/// One class of hits as a JSON array of strings.
 fn strings(hits: Vec<String>) -> Value {
     Value::Array(hits.into_iter().map(Value::String).collect())
 }
 
-/// `Option<..>` fields from the line after the declaration up to the first line holding a `}`.
 fn option_fields(production: &[String], declaration: usize, rules: &Rules) -> u64 {
     let mut options = 0usize;
     let mut index = declaration;
@@ -162,7 +129,6 @@ fn option_fields(production: &[String], declaration: usize, rules: &Rules) -> u6
     count(options)
 }
 
-/// Lines before the first `#[cfg(test)]` line, whatever it gates.
 fn strip_test_cut(lines: &[String]) -> &[String] {
     let cut = lines
         .iter()
@@ -171,8 +137,6 @@ fn strip_test_cut(lines: &[String]) -> &[String] {
     lines.get(..cut).unwrap_or(lines)
 }
 
-/// The scanned files of one domain root: its `.rs` files, or the root itself when it is not a
-/// directory.
 fn domain_files(root: &Path) -> Result<Vec<PathBuf>> {
     if !root.is_dir() {
         return Ok(vec![root.to_path_buf()]);
@@ -180,13 +144,11 @@ fn domain_files(root: &Path) -> Result<Vec<PathBuf>> {
     paths::rust_files(root)
 }
 
-/// The file name alone, which is how the report names a hit.
 fn file_name(path: &Path) -> String {
     path.file_name()
         .map_or_else(String::new, |name| name.to_string_lossy().into_owned())
 }
 
-/// Every pattern the scan matches, compiled once.
 struct Rules {
     pub_fn: Regex,
     id_param: Regex,

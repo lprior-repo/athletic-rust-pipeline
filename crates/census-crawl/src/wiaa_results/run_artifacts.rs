@@ -1,5 +1,3 @@
-//! The per-artifact stage of the WIAA results walk: fetch one artifact, read the format it
-//! declares, and absorb what it yields.
 
 use super::super::map::{absorb, AbsorbedMeet, RowWriter};
 use super::super::parse::{parse_pdf, pdftotext};
@@ -13,7 +11,6 @@ use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{SourceRef, Sport};
 use serde_json::json;
 
-/// Read one artifact: index it when its extension is unparsable, otherwise parse and absorb it.
 pub(super) async fn process_artifact(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -55,11 +52,6 @@ pub(super) async fn process_artifact(
     )
 }
 
-/// Index an artifact whose extension names no format this walk reads: counted, journalled, never
-/// fetched.
-///
-/// The journal entry is what keeps a later run from looking at the same bytes twice: the artifact is
-/// recorded as read at the version of the index that looked at it.
 fn index_unparsed(
     run: &mut ArtifactRun,
     artifact: &ArchiveArtifact,
@@ -81,10 +73,6 @@ fn index_unparsed(
     Ok(())
 }
 
-/// Fetch an artifact's body and the format its bytes declare, or `None` when the walk skips it.
-///
-/// Both skips are counted and reported here rather than by the caller: a fetch that failed, and a
-/// body that neither its extension nor its own bytes place in a format this walk reads.
 async fn fetch_body(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
@@ -114,15 +102,12 @@ async fn fetch_body(
     })
 }
 
-/// A fetched body with the format it declares: the bytes the parse reads, and the format the
-/// absorption journals.
 struct FetchedBody {
     outcome: FetchOutcome,
     body: String,
     format: ArtifactFormat,
 }
 
-/// Note a body that yielded no meet: counted unless PDFs are already reported by their tool error.
 fn note_unparsed(
     run: &mut ArtifactRun,
     report: &mut AdapterReport,
@@ -141,7 +126,6 @@ fn note_unparsed(
     }
 }
 
-/// Dispatch one artifact body to the reader its format selects.
 fn parse_artifact(
     fetched: &FetchOutcome,
     body: &str,
@@ -172,7 +156,6 @@ fn parse_artifact(
     }
 }
 
-/// Read a PDF artifact: extract its text, hand it to the PDF parser, and report the outcome.
 fn parse_pdf_artifact(
     fetched: &FetchOutcome,
     artifact: &ArchiveArtifact,
@@ -209,8 +192,6 @@ fn parse_pdf_artifact(
     }
 }
 
-/// One artifact body that parsed, with the run facts its absorption needs: the sport the walk is
-/// reading, the day it observed the body, and the format that produced the meet.
 struct ReadArtifact<'a> {
     parsed: &'a ParsedMeet,
     artifact: &'a ArchiveArtifact,
@@ -219,7 +200,6 @@ struct ReadArtifact<'a> {
     observed_on: &'a str,
 }
 
-/// Count a parsed artifact, absorb its meet, and journal the body as read.
 fn record_parsed_artifact(
     report: &mut AdapterReport,
     run: &mut ArtifactRun,

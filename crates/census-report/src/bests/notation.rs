@@ -1,14 +1,7 @@
-//! Published notation for a mark.
-//!
-//! Every formatting function works on integers only — no floating-point conversion — to agree with
-//! the tree's independent renderer used in the property tests and to keep the crate's `as_cast`
-//! count at zero. The construct is named rather than spelled because `xtask`'s per-line construct
-//! counts read the raw line, so a comment that writes the cast out is scored as one.
 
 use census_domain::model::CentiSeconds;
 use census_domain::model::Mark;
 
-/// Published notation for a mark: `10.94`, `4:41.23`, `5' 4"`, `42.10 m`, `3120 pts`.
 pub fn mark_text(mark: &Mark) -> String {
     match mark {
         Mark::TimeSeconds(cs) => format_time(*cs),
@@ -19,24 +12,16 @@ pub fn mark_text(mark: &Mark) -> String {
     }
 }
 
-/// Centimetres as a published metre mark — `642` → `"6.42 m"`.
-///
-/// The unit is part of the notation a reader expects for a distance or field value, exactly as
-/// `format_points_scored` carries `pts`; the comparable value is the integer, never this string.
 pub fn format_distance_metres(cm: i32) -> String {
     let (whole, frac) = (cm / 100, (cm % 100).abs());
     format!("{whole}.{frac:02} m")
 }
 
-/// Centi-points as a scored string — `312000` → `"3120 pts"`.
 pub fn format_points_scored(cp: i32) -> String {
     let (whole, _frac) = (cp / 100, (cp % 100).abs());
     format!("{whole} pts")
 }
 
-/// Centiseconds as a race time: `1094` stays `10.94`, `28123` becomes `4:41.23`,
-/// `360000` becomes `1:00:00.00`.  Integer-only — no floating-point conversion — to agree
-/// with the tree's independent renderer used in the property tests.
 pub fn format_time(cs: CentiSeconds) -> String {
     let total_cs = cs.value().abs();
     let total_seconds = total_cs / 100;
@@ -51,4 +36,8 @@ pub fn format_time(cs: CentiSeconds) -> String {
     } else {
         format!("{total_seconds}.{sub_seconds:02}")
     }
+}
+
+pub fn disagreement(meet: &str, marks: &[String]) -> String {
+    format!("{meet}: {}", marks.join(" | "))
 }

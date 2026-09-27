@@ -130,7 +130,6 @@ impl Actor {
         self.update_active();
     }
 
-    /// Release every page slot and latch a shutdown after a job ended outside its own result path.
     fn abort_jobs(&mut self, cause: BrowserError) {
         self.jobs.abort_all();
         self.pages.iter_mut().for_each(|p| p.busy = false);

@@ -1,11 +1,3 @@
-//! School resolution: the IHSA's own school ids first, published names second.
-//!
-//! The association-id map is built from the identities the `ihsa` schools adapter already minted
-//! (`AssociationSchool { association: "ihsa" }`), so a run that follows a schools pull resolves every
-//! finisher onto the canonical school instead of minting a second one. A row the map does not know
-//! falls back to the name index the result-file adapters use, and a row both miss mints a school under
-//! this adapter's own association id — never a school with no name, because school identity is
-//! (jurisdiction, normalized name).
 
 use super::map::{Accumulator, Origin, ASSOCIATION};
 use crate::{AdapterContext, CrawlResult};
@@ -17,7 +9,6 @@ use census_domain::UsJurisdiction;
 use census_store::Table;
 use std::collections::HashMap;
 
-/// The schools a run resolves against.
 pub(super) struct Schools {
     by_association_id: HashMap<String, SchoolId>,
     index: SchoolIndex,
@@ -26,7 +17,6 @@ pub(super) struct Schools {
 }
 
 impl Schools {
-    /// Load the store's schools into the two lookup tables.
     pub(super) fn load(ctx: &AdapterContext<'_>) -> CrawlResult<Self> {
         let schools: Vec<CanonicalSchool> = ctx.store.scan(Table::Schools)?;
         let mut by_association_id = HashMap::new();
@@ -49,15 +39,10 @@ impl Schools {
         })
     }
 
-    /// How many schools this run minted because neither table knew the row's school.
     pub(super) fn minted(&self) -> u64 {
         self.minted
     }
 
-    /// Resolve the school one published row names.
-    ///
-    /// `None` when the row publishes neither an id nor a name: a row that carries neither cannot be
-    /// filed, and minting a school from nothing would invent one.
     pub(super) fn resolve(
         &mut self,
         ihsa_id: Option<&str>,
@@ -86,10 +71,6 @@ impl Schools {
         Some(self.mint(label, &normalized, published, url, origin, accumulated))
     }
 
-    /// Mint a school the association-id map and the name index both missed.
-    ///
-    /// `IHSA` publishes `ihsaSchoolId` on every finisher row, so the id it does know is kept as the
-    /// school's association identity: the next run resolves it from the map instead of the name.
     fn mint(
         &mut self,
         name: &str,
@@ -119,19 +100,16 @@ impl Schools {
         id
     }
 
-    /// A resolution this run has already made.
     fn memo(&self, kind: &str, key: &str) -> Option<SchoolId> {
         self.resolved.get(&format!("{kind}:{key}")).cloned()
     }
 
-    /// Remember a resolution for the rest of the run.
     fn remember(&mut self, kind: &str, key: &str, found: SchoolId) -> SchoolId {
         self.resolved.insert(format!("{kind}:{key}"), found.clone());
         found
     }
 }
 
-/// A published field, trimmed, or `None` when the row leaves it empty.
 pub(super) fn trimmed(value: Option<&str>) -> Option<&str> {
     value.map(str::trim).filter(|text| !text.is_empty())
 }

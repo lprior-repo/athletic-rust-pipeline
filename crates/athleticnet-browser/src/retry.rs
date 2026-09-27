@@ -1,30 +1,11 @@
-//! What the transport still owns about retrying: the classification, not the retry.
-//!
-//! ADR-002 gives retrying one owner - the invocation retry declared on the handler - so the
-//! transport performs a single attempt and reports what it saw. Nothing here asks the source
-//! again: no attempt budget, no delay ladder, no sleep inside the invocation. What survives is the
-//! part a caller needs to judge the attempt itself: what a `Retry-After` header asked for, which is
-//! what the 429 cooldown is built from.
-//!
-//! The pipeline crate keeps `retryable_status` - the status classification its HTTP lanes share -
-//! and imports the header arithmetic from here, because a browser cooldown and an HTTP lane read
-//! the same header the same way.
 
 use crate::clock::{self, Clock};
 use httpdate::parse_http_date;
 use reqwest::header::{HeaderMap, RETRY_AFTER};
 use std::time::{Duration, SystemTime};
 
-/// Bound on the `Retry-After` a source may ask for. An instant beyond it is not a delay a run can
-/// honour, so it fails closed instead of parking the lane on an unusable instant.
 pub const MAX_RETRY_DELAY: Duration = Duration::from_secs(86_400);
 
-/// Parse `Retry-After` against the injected wall clock.
-///
-/// `Retry-After` is an absolute HTTP date or a delta from *now*, so this site is wall clock by
-/// definition and must not be switched to the monotonic reading. A clock that cannot be read fails
-/// closed with the same `Err` an unusable header produces, which makes the caller non-retryable
-/// instead of retrying on a substituted instant.
 pub fn retry_after_now(clock: &dyn Clock, headers: &HeaderMap) -> Result<Duration, &'static str> {
     let unix_ms = clock
         .now_unix_ms()
@@ -34,7 +15,6 @@ pub fn retry_after_now(clock: &dyn Clock, headers: &HeaderMap) -> Result<Duratio
     retry_after(headers, now)
 }
 
-/// Parse `Retry-After` against a caller-supplied instant.
 pub fn retry_after(headers: &HeaderMap, now: SystemTime) -> Result<Duration, &'static str> {
     let mut values = headers.get_all(RETRY_AFTER).iter();
     let Some(value) = values.next() else {

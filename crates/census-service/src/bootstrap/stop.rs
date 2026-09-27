@@ -1,4 +1,3 @@
-//! The stop protocol: why the endpoint stopped, and the watchers that observe it.
 
 use std::future::Future;
 use std::sync::atomic::{AtomicU8, Ordering};
@@ -6,19 +5,14 @@ use std::sync::Arc;
 
 use super::error::BootstrapError;
 
-/// Why the endpoint stopped.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 #[derive(Default)]
 pub enum StopReason {
-    /// SIGINT/SIGTERM arrived.
     Signal = 0,
-    /// The `shutdown` future passed to [`serve_until`](super::serve_until) resolved.
     Requested = 1,
-    /// The endpoint task ended on its own — a fault, not an operator action.
     #[default]
     ServerExit = 2,
-    /// The process passed its memory budget and drained itself before the machine swapped.
     MemoryBudget = 3,
 }
 
@@ -32,7 +26,6 @@ impl StopReason {
         }
     }
 
-    /// The byte the watchers publish this reason as; the inverse of [`from_raw`](Self::from_raw).
     pub(super) const fn to_raw(self) -> u8 {
         match self {
             StopReason::Signal => 0,
@@ -43,8 +36,6 @@ impl StopReason {
     }
 }
 
-/// Resolve when a shutdown signal arrives or the caller's `shutdown` future resolves, recording
-/// which of the two stopped the endpoint.
 pub(super) async fn stop_watch(
     reason: Arc<AtomicU8>,
     shutdown: impl Future<Output = ()> + Send + 'static,
@@ -62,7 +53,6 @@ pub(super) async fn stop_watch(
     }
 }
 
-/// Wait for SIGINT/SIGTERM (or Ctrl-C where the platform has no signals).
 async fn wait_for_shutdown_signal() -> Result<(), BootstrapError> {
     #[cfg(unix)]
     {
@@ -74,7 +64,6 @@ async fn wait_for_shutdown_signal() -> Result<(), BootstrapError> {
     }
 }
 
-/// Install the SIGTERM/SIGINT subscriptions and return when either one arrives.
 #[cfg(unix)]
 async fn wait_for_unix_signal() -> Result<(), BootstrapError> {
     use tokio::signal::unix::{signal, SignalKind};
@@ -95,7 +84,6 @@ async fn wait_for_unix_signal() -> Result<(), BootstrapError> {
     }
 }
 
-/// Wait for Ctrl-C on the platforms that have no signal subscriptions.
 #[cfg(not(unix))]
 async fn wait_for_ctrl_c() -> Result<(), BootstrapError> {
     tokio::signal::ctrl_c()

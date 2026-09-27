@@ -1,27 +1,20 @@
-//! Scope filtering: which units a resumed run still owes, and which athletes the cohort counts.
-//!
-//! `pending_rosters` is the resume ledger — a roster already journaled is skipped, and the skip is
-//! counted rather than assumed away — and the two counters are the class-of-2027 cohort the census
-//! is judged on. Both are predicates over a roster, never over a report.
 
+use census_domain::model::{Gender, GradYear, SchoolYear};
 use census_crawl::milesplit::{Roster, TeamRef};
-use census_domain::model::{Gender, GradYear};
 use census_store::{Store, StoreResult};
 
 use super::rosters_phase;
 use census_domain::UsJurisdiction;
 
-/// Rosters not yet journaled for `jurisdiction`, plus how many were skipped because they already
-/// were.
-///
-/// The filter walks the jurisdiction's team index once; `journal_keys` is the resume ledger.
 pub(super) fn pending_rosters(
     store: &Store,
     teams: &[TeamRef],
     jurisdiction: UsJurisdiction,
+    school_year: SchoolYear,
+    revision: std::num::NonZeroU32,
 ) -> StoreResult<(Vec<TeamRef>, usize)> {
     let state = jurisdiction.code();
-    let done = store.journal_keys(&rosters_phase(jurisdiction))?;
+    let done = store.journal_keys(&rosters_phase(jurisdiction, school_year, revision))?;
     let pending: Vec<TeamRef> = teams
         .iter()
         .filter(|team| !done.contains(&format!("{}:{}", state, team.id)))
@@ -31,7 +24,6 @@ pub(super) fn pending_rosters(
     Ok((pending, skipped))
 }
 
-/// Class-of-2027 athletes in a roster.
 pub(super) fn count_co2027(roster: &Roster) -> usize {
     roster
         .athletes
@@ -40,7 +32,6 @@ pub(super) fn count_co2027(roster: &Roster) -> usize {
         .count()
 }
 
-/// Class-of-2027 athletes of one gender in a roster.
 pub(super) fn count_cohort(roster: &Roster, gender: Gender) -> usize {
     roster
         .athletes

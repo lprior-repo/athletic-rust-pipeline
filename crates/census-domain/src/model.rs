@@ -1,16 +1,3 @@
-//! Canonical model for the independent Midwest HS TF/XC recruiting graph.
-//!
-//! Identity rules enforced here:
-//!
-//! * Every entity has a **locally minted, deterministic opaque id** derived from its natural key.
-//!   No external vendor id is ever the canonical identity; vendor ids live in
-//!   [`SourceIdentity`] lists and can disappear without invalidating a canonical record.
-//! * Cohort membership is [`GradYear`] — an absolute, immutable property. Grade level is never a
-//!   cohort key; it is recorded as [`ObservedGrade`] together with the school year and source that
-//!   observed it, and only *deterministically implies* a [`GradYear`].
-//! * Events are described by our own ontology ([`EventKind`]); vendor event names are source evidence
-//!   ([`SourceEventLabel`]), not canonical keys.
-
 use crate::jurisdiction::UsJurisdiction;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sha2::{Digest, Sha256};
@@ -18,47 +5,42 @@ use std::borrow::Cow;
 use std::fmt;
 use std::marker::PhantomData;
 
-mod collision;
-mod natural_key;
-mod records;
-mod review;
-pub use collision::{id_collision, CANONICAL_ID_COLLISION_FAMILY};
-pub use natural_key::NaturalKey;
-
-pub use records::{
-    AccessBlockKind, CaseEvidence, CollectionSnapshot, CoverageRow, CoverageScope,
-    EvidenceFact, RetainedConflict, ReviewCase, ReviewState, SourceAccessCondition,
-    SourceAthleteObservation, SourceEntityKind, SourceMeetRef, SourceObjectIdentity,
-    SourceObservation, SourceSchoolObservation, ATHLETE_IDENTITY_FAMILY, COHORT_DECISION_FAMILIES,
-    COHORT_EVIDENCE_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY,
-    CONTACT_CONFLICT_FAMILY, MEMBER_SET_LABEL, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
-    UNRESOLVED_VENUE_FAMILY,
-};
-pub use review::{
-    ReviewCaseFact, ReviewEvidenceFact, ReviewPacket, ReviewVerdict, ReviewVerdictKind,
-    ReviewVerdictRecord, VerdictBatch,
-};
-
 mod athlete;
 mod classification;
 mod coach;
 mod cohort;
+mod collision;
 mod contact;
+mod contact_tenure;
 mod event_ontology;
 mod event_performance;
 mod fixed_mark;
 mod identifiers;
+mod identity_aliases;
 mod identity_decision;
+mod identity_index;
+mod identity_projection;
+mod identity_validation;
 mod meet;
+mod natural_key;
 mod normalization;
 mod provenance;
+mod serialization_digest;
+mod records;
+mod review;
+mod contact_proof;
 mod school;
 
 pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
 pub use classification::{CanonicalTeam, CompetitionLevel, Gender, Sport};
 pub use coach::{CanonicalCoach, CoachRole};
 pub use cohort::{GradYear, Grade, ObservedGrade, SchoolYear};
+pub use collision::{id_collision, CANONICAL_ID_COLLISION_FAMILY};
 pub use contact::{is_consumer_domain, published_email, MailboxKind, CONSUMER_MAIL_DOMAINS};
+pub use contact_tenure::{
+    assess_coach_tenure, validate_tenure_evidence, CoachTenure, CoachTenureEvidence,
+    TenureAssessmentError, TenureValidation,
+};
 pub use event_ontology::{EventKind, SourceEventLabel};
 pub use event_performance::{CanonicalEvent, CanonicalPerformance, Mark, TimingMethod};
 pub use fixed_mark::{CentiMetres, CentiPoints, CentiSeconds};
@@ -66,17 +48,39 @@ pub use identifiers::{
     tag, AthleteCandidateId, AthleteId, AthleteIndexId, CoachId, EventId, Id, MeetId, PerformanceId, SchoolId,
     TeamId,
 };
-pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
-pub use normalization::{flip_last_first, normalize_name};
-pub use provenance::{
-    Confidence, Evidence, EvidenceMethod, SourceIdentity, SourceNamespace, SourceRef,
-};
 pub use identity_decision::{
-    athlete_identity_digest, has_person_source, identity_verdict_digest, person_provider,
-    shares_person_source, AppliedAthleteIdentity, AppliedIdentityKind, IdentityMember,
+    athlete_identity_digest, identity_verdict_digest, person_provider,
+    AppliedAthleteIdentity, AppliedIdentityKind, IdentityMember,
     ATHLETE_IDENTITY_POLICY,
 };
+pub use identity_index::{AthleteIdentityIndex, IdentityError};
+pub use identity_projection::{IdentityProjectionBuilder, AthleteIdentityProjection};
+pub use identity_validation::IdentityDecisionIssue;
+pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
+pub use natural_key::NaturalKey;
+pub use normalization::{flip_last_first, normalize_name};
+pub use provenance::{
+    Confidence, Evidence, EvidenceMethod, IdentityStatus, SourceIdentity, SourceNamespace, SourceRef,
+};
+pub use records::{
+    AccessBlockKind, CaseEvidence, CollectionSnapshot, CoverageRow, CoverageScope,
+    EvidenceFact, RetainedConflict, ReviewCase, ReviewState, SourceAccessCondition,
+    SourceAthleteObservation, SourceEntityKind, SourceMeetRef, SourceObjectIdentity,
+    SourceObservation, SourceSchoolObservation, ATHLETE_IDENTITY_FAMILY, COHORT_DECISION_FAMILIES,
+    COHORT_EVIDENCE_FAMILY, IDENTITY_UNVERIFIED_FAMILY, COHORT_UNVERIFIED_FAMILY,
+    CONTACT_CONFLICT_FAMILY, MEMBER_SET_LABEL, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
+    UNRESOLVED_VENUE_FAMILY,
+};
+pub use review::{
+    ReviewCaseFact, ReviewEvidenceFact, ReviewPacket, ReviewVerdict, ReviewVerdictKind,
+    ReviewVerdictRecord, VerdictBatch,
+};
 pub use school::CanonicalSchool;
+pub use serialization_digest::serialized_digest;
+pub use contact_proof::{
+    compute_contact_proof, verify_contact_proof, ContactClaimEvidence, ContactProofError, ContactProofField,
+    CONTACT_COLUMNS, CONTACT_PROOF_COLUMN, RawContactRow, ValidatedContactProof,
+};
 
 #[cfg(test)]
 #[path = "model_tests.rs"]

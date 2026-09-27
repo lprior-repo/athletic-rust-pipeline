@@ -5,7 +5,6 @@ use std::sync::LazyLock;
 use super::text::{clean, decode_cfemail_fragment};
 use super::{SCHOOL_LIST_URL, SCHOOL_URL_PREFIX};
 
-/// Compiled once per process, with no panic path: a malformed pattern yields `None`.
 static LIST_ROW: LazyLock<Option<Regex>> = LazyLock::new(|| {
     Regex::new(r##"<a href="/schools/([^"#?]+)" class="school-teaser__title">([^<]*)</a>"##).ok()
 });
@@ -31,19 +30,13 @@ static ADMIN_NAME: LazyLock<Option<Regex>> =
 static ADMIN_NAME_TEXT: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::new(r#"</strong>([^<]{2,80})"#).ok());
 
-/// One row of the `/schools` listing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SchoolListRow {
-    /// Page slug (`/schools/<slug>`).
     pub slug: String,
     pub name: String,
     pub city: Option<String>,
 }
 
-/// One entry of a school page's Administration block.
-///
-/// Every address published for the entry is kept (an entry can carry more than one `mailto`); the first
-/// decoded address is the one emitted.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdminEntry {
     pub role: String,
@@ -57,19 +50,15 @@ impl AdminEntry {
     }
 }
 
-/// A parsed school detail page.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SchoolDetail {
-    /// `<h1>` title, used only when the listing row has no name.
     pub name: Option<String>,
-    /// MSHSL numeric school id, read from the page's `/group/<id>/` links.
     pub school_id: Option<String>,
     pub enrollment: Option<u32>,
     pub website: Option<String>,
     pub admin: Vec<AdminEntry>,
 }
 
-/// The school universe as published by the `/schools` listing.
 pub fn parse_school_list(html: &str) -> Vec<SchoolListRow> {
     let (Some(rows), Some(locality)) = (LIST_ROW.as_ref(), LOCALITY.as_ref()) else {
         return Vec::new();
@@ -106,10 +95,6 @@ pub fn parse_school_list(html: &str) -> Vec<SchoolListRow> {
     school_rows
 }
 
-/// Next listing page number, from the pager markup.
-///
-/// A page is followed when the pager links to `current + 1`: either as a numbered page link or through
-/// the "next" anchor, which is what a Drupal pager renders on every page but the last.
 pub fn parse_next_listing_page(html: &str, current: usize) -> Option<usize> {
     let next = current.checked_add(1)?;
     let link = PAGE_LINK.as_ref()?;
@@ -131,7 +116,6 @@ pub fn parse_next_listing_page(html: &str, current: usize) -> Option<usize> {
     followed.then_some(next)
 }
 
-/// URL of a `/schools` listing page.
 pub fn listing_page_url(page: usize) -> String {
     if page == 0 {
         SCHOOL_LIST_URL.to_string()
@@ -140,12 +124,10 @@ pub fn listing_page_url(page: usize) -> String {
     }
 }
 
-/// URL of a school page.
 pub fn school_page_url(slug: &str) -> String {
     format!("{SCHOOL_URL_PREFIX}{slug}")
 }
 
-/// The `Administration` grid of a school page, up to the next section heading.
 fn administration_block(html: &str) -> Option<&str> {
     let start = html.find("grid--administration")?;
     let tail = html.get(start..)?;
@@ -157,7 +139,6 @@ fn administration_block(html: &str) -> Option<&str> {
     tail.get(..end)
 }
 
-/// The Administration block as role/name/address entries, in document order.
 pub fn parse_admin_entries(html: &str) -> Vec<AdminEntry> {
     let Some(block) = administration_block(html) else {
         return Vec::new();
@@ -200,7 +181,6 @@ pub fn parse_admin_entries(html: &str) -> Vec<AdminEntry> {
     entries
 }
 
-/// Parse a school page: identity, facts and Administration block.
 pub fn parse_school_detail(html: &str) -> SchoolDetail {
     let name = PAGE_TITLE
         .as_ref()

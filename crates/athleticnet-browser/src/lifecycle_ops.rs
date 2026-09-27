@@ -6,7 +6,6 @@ use std::sync::{Arc, Mutex};
 use tokio::time::Instant;
 use url::Url;
 
-/// Check if cooldown is currently active (until > now; poison => closed).
 fn has_active_cooldown(clock: &dyn Clock, cooldown_until: &Arc<Mutex<Option<Instant>>>) -> bool {
     match cooldown_until.lock() {
         Ok(value) => value.is_some_and(|until| until > clock.now_instant()),
@@ -88,8 +87,6 @@ impl Actor {
         self.complete_recovery_tabs().await
     }
 
-    /// Target for the recovery navigation: a GET challenge target keeps its
-    /// own URL, a POST one downgrades to the source origin.
     fn recovery_target(&self) -> Url {
         self.challenge_target.as_ref().map_or_else(
             || self.settings.source_origin.clone(),
@@ -103,10 +100,6 @@ impl Actor {
         )
     }
 
-    /// Navigate for recovery: inspect after a consumed latch, else bootstrap.
-    ///
-    /// A failed navigation revokes admission and latches the challenge before
-    /// the error is handed back to the caller.
     async fn navigate_for_recovery(
         &mut self,
         page: &Page,
@@ -144,7 +137,6 @@ impl Actor {
         }
     }
 
-    /// Finish remaining tabs after first-tab challenge resolves.
     async fn complete_recovery_tabs(&mut self) -> Result<BrowserStatus, BrowserError> {
         if self.gate.is_ready() && self.pages.len() < self.settings.tabs {
             if let Err(_error) = self.create_pages().await {
@@ -157,9 +149,6 @@ impl Actor {
         Ok(self.status())
     }
 
-    /// Operator-requested relaunch: re-arm the one-shot recovery latch and
-    /// re-run the bootstrap navigation, so a session whose latch was consumed
-    /// can make progress again instead of reporting the stalled state forever.
     pub(crate) async fn restart_page(&mut self) -> Result<BrowserStatus, BrowserError> {
         self.recovery_used = false;
         self.challenge_latched = false;

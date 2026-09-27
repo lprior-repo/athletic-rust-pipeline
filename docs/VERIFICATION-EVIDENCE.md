@@ -1,8 +1,329 @@
 # Verification Evidence — Phase 6
 
-Executed evidence only. Every status below comes from a command run against the current working tree;
-raw output tails are quoted verbatim. Anything that could not be executed says so with the probe
-output that shows why.
+Sections below record runs against different historical working trees. Results do not transfer to
+later revisions without re-execution. The current integration section distinguishes exercised
+behavior from release requirements that remain unverified.
+
+## Current main-cleanup integration
+
+Integrated upstream cleanup through `d7df661`, preserving local implementation and fixtures.
+The preservation stash is `499f204be4260809a31a8168941bca74d5914dda`; it has not been dropped.
+All 20 merge conflicts were resolved. `SchoolMatch::as_str` remains because the integrated
+MileSplit, WIAA-results, and benchmark callers use it; obsolete APIs removed upstream stay removed.
+Seven `VerifyArgs` test constructors were migrated after removal of the `grad_year` field.
+
+### Executed acquisition and artifact smoke
+
+Commands ran with `TMPDIR=/home/lewis/av.kqQlyuIY` and an empty `RUSTC_WRAPPER`.
+The four examples were temporary runtime harnesses, not production entrypoints:
+
+```text
+cargo run -p census-crawl --example observation_transaction_smoke --message-format short
+before: orphan_reproduced=true abandoned_page_athletes=0 abandoned_page_observations=1 abandoned_page_journal=0
+after: abandoned_page_rows=0 abandoned_page_observations=0 abandoned_page_journal=0 committed_and_reopened_athletes=1 committed_and_reopened_observations=1 committed_and_reopened_journal=1
+
+cargo run -p census-crawl --example contact_artifact_smoke --message-format short
+old_implementation: reproduced reader_and_writer_reject_17th_64KiB_block_under_128MiB_file_limit=true error=record exceeds 1 MiB limit
+encoded_boundary: PASS LF_and_CRLF_1MiB_records_accepted_and_1MiB_plus_one_refused=true
+new_artifact: PASS rows=1024 csv_bytes=2374786 evidence_bytes=1862656; quoted_unicode_roundtrip=true replacement_refused=true tamper_refused=true oversized_record_refused=true
+
+cargo run -p census-crawl --example identity_acceptance_smoke --message-format short
+before: invalid_empty_native_id_source_bound=true overflow_native_id_source_bound=true advisory_link_promotes_row_owner=true shared_advisory_id_authorizes_merge=true
+after: invalid_empty_native_id_source_bound=false overflow_native_id_source_bound=false advisory_link_promotes_row_owner=false shared_advisory_id_authorizes_merge=false
+
+cargo run -p census-crawl --example ihsa_ownership_smoke --message-format short
+ihsa_replay: PASS athletes=1637 primary_native=68 primary_association=1569 grade_evidence_preserved=true duplicate_performances=0 physical_requests=0 reopened=true
+
+cargo test -p census-domain --lib --message-format short
+145 passed
+
+cargo test -p census-crawl --lib --message-format short
+403 passed
+```
+
+The observation reproducer abandoned an entity-and-journal batch. Before the fix, its observation
+had already committed separately. Observation builders now return values; callers append them in
+their entity batch. The post-fix run checked both rollback and committed state after reopening
+Fjall. TFRRS now includes its page journals in that same batch.
+
+The artifact smoke used synthetic contacts, not the admissions workbook. It crossed 1 MiB in both
+files using small records, preserved quoted Unicode fields, refused replacement of an existing
+stage, detected a changed CSV digest, and refused an oversized raw record. A school-wide athletic
+director claim may omit sport; coach claims still require the matching published sport, and a
+director claim explicitly scoped to a different sport is rejected.
+
+Artifact bounds apply independently: 128 MiB per CSV or JSONL file, 1 MiB per encoded CSV record or
+JSONL envelope including its line ending, 200,000 rows, and a 4 KiB manifest. Passing the domain's
+individual claim bounds does not waive the artifact's aggregate envelope bound.
+
+The encoded-record regression first exposed a CRLF off-by-one: `csv-core` reports record completion
+on CR, leaving LF for its next call. The reader now consumes and counts that LF before accepting the
+record. The runtime smoke accepted exact-limit LF and CRLF records and refused limit-plus-one bytes.
+
+Identity acceptance now requires a checked, primary positive-u64 person identifier and Parsed
+evidence rather than allowing an advisory link or a fetched page alone to qualify a source owner.
+Same-person support no longer treats a shared advisory identifier as positive identity evidence.
+This is not complete F02 delivery: URL-labelled evidence is not yet capture-bound, cross-provider
+corroboration remains unwired, and the review-case digest and decision-writer contracts still need
+integration. Reciprocal advisory labels alone must not substitute for captured evidence.
+
+The IHSA regression exposed a real omission: new athletes lost their initial observed grade while
+repeated observations retained it. New rows now preserve that first observation. The captured replay
+checked every athlete's grade evidence, primary-owner counts, 20 retained performances, an idempotent
+second collection, and reopened Fjall state. No remote requests were made. Assertions requiring
+unreviewed name-based merges and report prose were removed rather than repinned.
+
+### Executed observation-history smoke
+
+The temporary `census-store` example used two observations of one synthetic school:
+
+```text
+cargo run -p census-store --example observation_overwrite_smoke --message-format short
+before replace-append: physical_rows=1 merged_evidence=1 integrity=false
+before append-replace: physical_rows=1 merged_evidence=1 integrity=true
+before reopen: both orders retained only one observation and one evidence item
+after both orders: replacement rejected, physical_rows=2 merged_evidence=2 integrity=true
+after reopen: physical_rows=2 merged_evidence=2
+
+cargo test -p census-store --lib replace_tests --message-format short
+6 passed; 120 filtered
+```
+
+Replacement used sequence zero and could overwrite an append-only observation in either operation
+order. `Store::replace_many` and `StoreBatch::replace_many` now return typed
+`ObservationReplacement` errors for observation-log tables, including empty replacements, before
+serializing or staging rows. Production replacement callers already target derived tables; obsolete
+test fixtures now append observations instead. The regression covers all nine observation logs,
+unchanged records after refusal, subsequent appends, and reopening. A table-list wiring assertion
+and a test that legitimized mixed replacement/observation history were removed.
+
+This does not certify sequence-ceiling concurrency, failed-commit counter handling, or legacy import
+interleaving. Those findings remain separate integration obligations.
+
+### Executed request and cache bounds
+
+The temporary examples exercised the public clients with synthetic, non-admissions data:
+
+```text
+cargo run -p census-review --example local_model_request_smoke --message-format short
+11000 / Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf: one synthetic state case returned WI
+11001 / qwen3.8-27b-uncensored: one synthetic state case returned WI
+both clients refused oversized requests: attempted encoded bytes 2098243 and 2098234
+
+cargo run -p census-crawl --example bounded_cache_smoke --message-format short
+exact_metadata_bytes=65536 metadata_plus_one_refused=true
+oversized_physical_body_refused=true cache_hits=1 robots_blocked=1
+
+cargo test -p census-crawl --lib --message-format short
+407 passed
+
+cargo test -p census-review --lib --message-format short
+71 passed; 5 failed in athlete_verdict tests
+```
+
+The request writer streams escaped packet fields directly into a bounded buffer instead of first
+building an unbounded prompt or JSON value. Both real local model servers completed the structured
+response path. This is a transport/serialization smoke, not evidence of correct real-person identity
+adjudication. The cache smoke used a loopback robots server: an oversized physical body with
+false-small metadata was not served, and reacquisition respected the robots denial. The cache
+regressions also exercise exact body/metadata boundaries, file growth and shrinkage after metadata
+inspection, and I/O failure propagation.
+
+The five review failures require identity-admission integration; their old expectations accept
+`same_person` without sufficient supporting evidence. No full review-suite or report-suite pass is
+claimed. Temporary examples were removed after recording these observations.
+
+### Executed identity-projection smoke
+
+```text
+cargo run -p census-store --example identity_projection_smoke --message-format short
+source_owners=2 cohort=2027 statuses=unverified,pending
+rejected_applications=1 aliases=0 reopen=true
+
+cargo test -p census-domain --lib --message-format short
+145 passed
+
+cargo test -p census-store --lib read::view::tests --message-format short
+6 passed; 120 filtered
+
+cargo test -p census-store --lib read::identity::tests --message-format short
+1 passed; 126 filtered
+```
+
+Two synthetic same-name, same-school subjects retained separate native owners and explicit grade
+evidence for 2027. An unsupported source-binding application neither verified them nor aborted the
+projection; its rejection remained counted, the unresolved review remained pending, and reopening
+preserved both raw subjects. Missing projection subjects now return a typed error. The temporary
+example was removed, and the refusal/reopen case was retained as a store regression.
+
+Recruiter status consumers now use this projection, not a numeric confidence field. The workbook
+smoke below exercises that surface. Capture-bound positive identity evidence and the still-unwired
+accepted-decision producer remain separate, unresolved integration obligations.
+
+### Executed shared PR and workbook smoke
+
+```text
+cargo run -p census-report --example shared_projection_smoke --message-format short
+source_owners=2 unverified=2 cohort=2027 winners=4 artifacts=xlsx,jsonl,csv
+later_tie=true historical_school=true athlete_state=WI venue_state=IL metric_widening=true
+```
+
+The real exporter wrote a temporary workbook and both sidecars. Calamine read the workbook back:
+two same-name source owners remained separate and unverified despite agreeing grade evidence.
+Four expected winning performance IDs matched across XLSX, JSONL and CSV; normalized values were
+checked in XLSX and JSONL. Indoor, outdoor legal FAT, wind-assisted FAT and hand-timed marks retained
+separate selections. The equal-mark tie selected the later performance. All winners retained their
+historical team school, and the state column used the athlete's Wisconsin school rather than the
+Illinois meet venue. The maximum `i32` metric value widened before scaling without overflow.
+
+The workbook-specific reducer and count-only reconciliation were removed; one owned selection
+vector feeds the sidecars and recruiter projection. Ambiguous athlete summary cells now retain
+classified alternatives rather than taking the first row. This smoke does not certify conflict
+classification, contact precedence, artifact-bundle atomicity, concurrent snapshot consistency or
+the full report regression suite. The temporary example was removed after execution.
+
+### Executed imperial-input boundary repair
+
+```text
+cargo run -p census-report --example imperial_boundary_smoke --message-format short
+before: exit 101; byte index 2 split the UTF-8 character in the fraction "1é"
+after: PASS malformed_unicode_and_fraction_refused exact_trailing_zero_retained
+```
+
+The parser now validates fractional ASCII digits and precision without slicing at an unchecked
+UTF-8 byte boundary. The smoke rejected non-ASCII fractions, a fractional plus sign and nonzero
+excess precision, while preserving an exact trailing-zero representation. Permanent regressions
+were added alongside the metric-widening boundary case. The temporary example was removed.
+
+The first full report test compilation exposed 198 errors, primarily stale self-crate paths and
+test fixtures using removed or nonexistent contracts. After that migration, the full report run
+compiled and returned 111 passed / 13 failed. Failures covered imperial boundaries, non-finite wind,
+contact scope/precedence and obsolete ordering expectations. This is not a full-suite pass.
+
+### Executed contextual PR selection
+
+```text
+cargo test -p census-report --lib bests::tests --message-format short
+64 passed; 53 filtered
+
+cargo run -p census-report --example pr_context_smoke --message-format short
+pr_context: PASS distinct_xc_contexts=2 within_context_winner=true exact_feet=true
+malformed_unicode_refused=true nonfinite_wind_unknown=true
+```
+
+A temporary Fjall store held three XC performances in two distinct canonical event contexts.
+The selector retained the correct winning ID and mark population for each context, rather than
+comparing the two races as one PR. The sole PR-key constructor now derives that context from the
+performance; the caller-controlled, infallible `Result<_, ()>` builder was removed. This does not
+prove upstream canonical event IDs distinguish every source course or distance.
+
+The runtime also exercised bare-foot notation, malformed Unicode and all three non-finite wind
+values. Exact imperial units are exposed as `field_micrometres`; the misleading `field_mm` name and
+the unused second numeric-conversion helper were removed. The temporary example was removed after
+execution. Contact and full-suite integration remain open.
+
+### Executed academic-year contact projection
+
+The tenure regression initially returned 6 passed / 2 failed: whitespace-only source IDs and a
+63-digit capture hash could qualify a current claim. Validation now requires nonblank metadata,
+a 64-digit hexadecimal SHA-256 and an RFC3339 retrieval timestamp. The subsequent full domain
+library run passed all 148 tests. These checks validate metadata, not the claimed captured bytes.
+
+```text
+cargo run -p census-report --example contact_context_smoke --message-format short
+before: contact_tenure_conflict expected; professional_coach_email was exported
+after: contact_context: PASS actual_xlsx=6_athletes
+programme_side_role_year_scoped=true historical_rows_retained=true
+stale_address_refused=true tenure_conflict_retained=true
+metadata_only_not_capture_proof=true
+```
+
+The temporary program wrote a real Fjall store and read the generated XLSX with calamine.
+Its six synthetic athletes exercised programme/side/role/year exclusion, a named current coach
+against an emailed former coach, labelled AD fallback, unresolved coach conflicts, contradictory
+tenure observations, undated-address rejection and personal email classification. The raw Coaches
+projection retained the former contact with `former_declared` and its assessment school year.
+No admissions workbook or private source rows were used.
+
+The failing runtime exposed a store merge that deduplicated tenure evidence without comparing
+tenure itself. Full evidence equality now preserves conflicting interpretations. Contact selection
+and contact conflict queues read individual snapshot observations instead of mixing addresses and
+tenure from different observations of one coach. Merged entity scans retain their existing API.
+Currentness is assessed against an explicit workbook school year, or the school year containing
+the run date; fetch recency is not appointment authority. Missing rows mean research is unknown,
+not that a source was unattempted or successfully searched.
+
+The integrated domain/report command returned 148 domain passes and 125 report passes / 1 report
+failure at an obsolete season-column expectation. The separate store library command returned
+123 passes / 4 failures in row-ceiling/reservation regressions. Neither result is a full-suite pass.
+Raw-capture binding, persisted contact research attempts, and complete coverage accounting remain
+open. The contact metadata fixtures do not establish source authority.
+
+### Executed roster verdict and service integration
+
+The current MileSplit parser run passed 32 tests:
+
+```text
+cargo test -p census-crawl --lib milesplit::
+```
+
+The temporary `roster_context_smoke` executable exercised a real loopback HTTP server, the
+production fetcher and collector, and reopened Fjall stores. Its five cases passed:
+
+| Response | Accepted athletes | Completed rosters | Named gaps |
+|---|---:|---:|---:|
+| Complete fixture | 25 | 1 | 0 |
+| One rejected graduation-year row | 24 | 0 | 1 |
+| Unrecognized template | 0 | 0 | 1 |
+| Invalid UTF-8 | 0 | 0 | 1 |
+| HTTP 404 | 0 | 0 | 1 |
+
+The server observed 11 physical requests: six roster requests and five robots requests.
+The 404 was fetched twice rather than cached; the other four captures were reused by the
+collector. Accepted source observations survived reopening, including partial-roster rows.
+Resuming each store preserved its counts and gaps without additional fetch or cache activity.
+The smoke asserted response-body SHA-256, not immutable archival or source authority.
+It used public fixtures and synthetic responses, not admissions data, and was removed afterward.
+
+The integrated service command passed all 10 tests across four targets:
+
+```text
+cargo test -p census-service --test fjall_restate_e2e --test workbook_shape --test parity_pipeline --test milesplit_roster_observations --no-fail-fast -- --test-threads=1
+```
+
+All commands used `TMPDIR=/home/lewis/av.kqQlyuIY` and an empty `RUSTC_WRAPPER`.
+The Fjall regressions now distinguish retained raw duplicate observations from deduplicated
+merged evidence, including reopening and one-time legacy import. The workbook PR oracle
+uses the existing later-date, later-meet-ID, later-performance-ID tie order rather than assuming
+the smallest ID wins. Incidental text goldens were removed, not regenerated.
+These targets do not establish native Restate crash recovery, a fully independent PR classifier
+oracle, raw-capture archival, or recovery of an incomplete roster after its source changes.
+
+### Unexecuted durability contract audits
+
+Four DeepSeek workers inspected the native Restate restart, export-crash, recovery and backup
+test contracts. They ran no commands, services or faults. These are review inputs, not execution
+evidence, and the historical drill results below do not transfer to this integration.
+
+- Native restart: `restate_kill_restart.rs` contains endpoint/server kill paths; the audit flagged
+  pre-kill progress, pause timing and the distinction between snapshot reruns and evidence-write
+  deduplication. All 17 required scenarios still need current execution evidence.
+- Export crash: the workbook currently saves directly to its published path, while sidecars are
+  separately published. There is no snapshot-bound atomic bundle yet; a readable restarted ZIP
+  does not prove preservation of the previous complete generation.
+- Recovery: the audit identified old roster progress/revision contracts and assertions that can
+  tolerate lost rows or only print a defect. Those findings require integration and actual drills.
+- Backup: the audit distinguished cold-copy/byte-corruption tests from the production manifest
+  API and power-loss durability. It flagged the outdated table-count expectation and missing
+  nonempty identity-history and crash-publication cases. No restore was executed in this batch.
+
+### Verification limits
+
+These are slice results, not a release verdict. Full-workspace gates, raw-capture binding of contact
+proofs, the complete F01–F15 acceptance set, real processing of both workbook sheets, and all 17
+real durability fault scenarios remain unverified. Historical workbook/seal and durability entries
+below do not certify this integration. The original admissions workbook was not opened or modified
+by these smoke runs.
 
 ## Toolchain
 

@@ -1,27 +1,8 @@
-//! §60 Fjall backup/restore drill: consistent backup → restore into a fresh data directory →
-//! integrity verification → reopen → full census read.
-//!
-//! The drill follows the operator sequence in `docs/OPERATIONS.md` (stop the unit, copy the whole
-//! data directory) and asserts what a restore must reproduce: every per-table observation count, the
-//! merged observation history of one entity, both census scopes, the best-mark reduction, and the
-//! consolidated JSONL snapshots the read model is built from. `docs/FJALL_BACKUP.md` records the
-//! command lines and the raw output of the run that produced these assertions.
-//!
-//! The store's public API is the only thing the drill touches: `census-service` owns the Fjall
-//! handle, and the census `Store` exposes neither the `Database` nor a `snapshot()` borrow, so a
-//! backup is a *file* operation on a stopped store and the consistency argument is the cold copy
-//! itself, not a read view. [`a_copy_taken_while_the_store_handle_is_open_keeps_every_committed_batch`]
-//! pins the durability property that makes that copy complete, and
-//! [`a_second_open_of_a_live_store_is_refused`] pins the lock that forces the cold copy.
-//!
-//! Nothing here touches the network: the corpus is synthetic and every byte the drill compares comes
-//! from a temporary directory.
-
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiSeconds, CoachRole,
     CompetitionLevel, EventKind, Evidence, Gender, GradYear, Grade, Id, Mark, ObservedGrade,
-    SchoolId, SchoolYear, SourceRef, Sport, TeamId, TimingMethod,
+    SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport, TeamId, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_report::bests;
@@ -33,27 +14,19 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// A core adapter id: never one of `report::NON_CORE_SOURCE_IDS`, so both census scopes keep every
-/// synthetic row.
 const SOURCE: &str = "wiaa_schools";
-/// The second source that observes the history school, so the merged entity has to union evidence
-/// from two origins rather than concatenating one.
 const SECOND_SOURCE: &str = "mshsl_schools";
 const FIRST_DATE: &str = "2026-09-01";
 const SECOND_DATE: &str = "2026-09-02";
 const THIRD_DATE: &str = "2026-09-05";
 const AFTER_RESTORE_DATE: &str = "2026-09-08";
 const MEET_DATE: &str = "2026-05-02";
-/// Observations of the history school beyond its corpus row. The corpus row is observation one.
 const HISTORY_EXTRA_OBSERVATIONS: usize = 2;
 
 fn observation(source: &str, observed_on: &str) -> Evidence {
     Evidence::parsed(SourceRef::id(source), observed_on)
 }
 
-/// A synthetic season that fills every table the census reads: three schools in three states, each
-/// with a team, a coach, a meet, two athletes, one event per athlete and two performances per
-/// athlete.
 struct Corpus {
     schools: Vec<CanonicalSchool>,
     teams: Vec<CanonicalTeam>,
@@ -62,11 +35,7 @@ struct Corpus {
     meets: Vec<CanonicalMeet>,
     events: Vec<CanonicalEvent>,
     performances: Vec<CanonicalPerformance>,
-    /// Event ids minted while building, so a duplicate id would make the count assertion wrong
-    /// instead of silently inflating it.
     distinct_events: BTreeSet<String>,
-    /// The school the drill re-observes. Its merged evidence is the observation history the
-    /// restored store has to reproduce row for row.
     history_school: SchoolId,
 }
 
@@ -95,7 +64,6 @@ impl Corpus {
             .expect("appending performances");
     }
 
-    /// The corpus row of the history school — observation one of three.
     fn history_row(&self) -> &CanonicalSchool {
         self.schools
             .iter()
@@ -142,7 +110,6 @@ fn corpus() -> Corpus {
     corpus
 }
 
-/// One school with its team, coach, meet and two athletes. Returns the school id.
 fn add_school(
     corpus: &mut Corpus,
     jurisdiction: UsJurisdiction,
@@ -190,8 +157,6 @@ fn add_school(
     school_id
 }
 
-/// One athlete with one event and two performances of that event — the shape the best-mark
-/// reduction needs to have something to reduce.
 fn add_athlete(
     corpus: &mut Corpus,
     index: usize,
@@ -205,11 +170,16 @@ fn add_athlete(
     } else {
         Gender::Girls
     };
+    let source = SourceIdentity::new(
+        SourceNamespace::Other("fixture".to_string()),
+        format!("drill-athlete-{index}-{slot}"),
+    );
     let mut athlete = CanonicalAthlete::new(
         school_id,
         format!("Drill Runner {index}-{slot}"),
         GradYear::CO2027,
         gender,
+        source.clone(),
     );
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.observed_grades.push(ObservedGrade {
@@ -252,7 +222,7 @@ fn add_athlete(
             observed_grade: Some(Grade::new(11).expect("grade 11 is a school grade")),
             evidence: vec![observation(SOURCE, MEET_DATE)],
             source_key,
-            source_athlete: None,
+            source_athlete: source.clone(),
             retained_conflicts: Vec::new(),
         });
     }
@@ -260,9 +230,6 @@ fn add_athlete(
     corpus.athletes.push(athlete);
 }
 
-/// Observations two and three of the history school: the second fills a field the first left empty
-/// (the merge has work to do), the third repeats the first source on a later day (the evidence union
-/// has to keep both rows rather than dedupe them).
 fn add_history(store: &Store, first: &CanonicalSchool) {
     let mut second = first.clone();
     second.city = Some("Drill City".to_string());
@@ -279,8 +246,6 @@ fn add_history(store: &Store, first: &CanonicalSchool) {
         .expect("appending the third history observation");
 }
 
-/// Everything the drill reads out of one store. Captured from the live store before the copy and
-/// from the restored copy after it; every field must be identical.
 struct ReadModel {
     tables: Vec<(String, u64)>,
     observations: u64,
@@ -293,13 +258,6 @@ struct ReadModel {
     snapshots: Vec<(String, String)>,
 }
 
-/// Steps 1-3 of the drill, in the order an operator runs them, plus the corpus the store was built
-/// from and the root the backup was restored into.
-///
-/// 1. build the live store and stop the unit (the handle drops: Fjall holds an exclusive lock, so a
-///    live store cannot be opened — let alone copied — by a second process),
-/// 2. consistent backup: cold copy of the whole data directory,
-/// 3. restore: copy the backup's `fjall/` database into a fresh data directory.
 fn drill(root: &Path) -> (Corpus, PathBuf) {
     let live = root.join("live");
     let backup = root.join("backup");
@@ -337,7 +295,6 @@ fn drill(root: &Path) -> (Corpus, PathBuf) {
     (corpus, restored)
 }
 
-/// Read every surface a restored store has to reproduce.
 fn capture(store: &Store, history_id: &SchoolId) -> ReadModel {
     let stats = store.stats().expect("store stats");
     let schools = store
@@ -378,7 +335,6 @@ fn capture(store: &Store, history_id: &SchoolId) -> ReadModel {
     }
 }
 
-/// The consolidated snapshots the report and the workbook consume, as text.
 fn snapshots(out: &Path) -> Vec<(String, String)> {
     ["schools", "coaches", "performances"]
         .iter()
@@ -391,9 +347,6 @@ fn snapshots(out: &Path) -> Vec<(String, String)> {
         .collect()
 }
 
-/// A census document with the root path and the run date blanked out: `store_dir`, the output
-/// directory the notes name, and `generated_on` all describe the *run*, not the data, and a restored
-/// copy is read from a different root. Everything else must be identical.
 fn census_json(census: &Census, root: &Path) -> String {
     let mut value = serde_json::to_value(census).expect("a census serializes");
     if let Some(object) = value.as_object_mut() {
@@ -406,8 +359,6 @@ fn census_json(census: &Census, root: &Path) -> String {
     text.replace(&root.display().to_string(), "<drill>")
 }
 
-/// Compare two captured documents field by field. A restore that changes one number must say which
-/// one — a raw string comparison of a whole census prints two walls of JSON and names nothing.
 fn assert_same_json(label: &str, left: &str, right: &str) {
     let left_value: serde_json::Value = serde_json::from_str(left)
         .unwrap_or_else(|error| panic!("{label}: left is not JSON: {error}"));
@@ -418,7 +369,6 @@ fn assert_same_json(label: &str, left: &str, right: &str) {
     }
 }
 
-/// The first field path where two documents differ, with the two values at that path.
 fn first_difference(
     left: &serde_json::Value,
     right: &serde_json::Value,
@@ -464,7 +414,6 @@ fn first_difference(
     }
 }
 
-/// A value short enough to fit in a panic message.
 fn render(value: Option<&serde_json::Value>) -> String {
     let text = match value {
         Some(value) => value.to_string(),
@@ -477,7 +426,6 @@ fn render(value: Option<&serde_json::Value>) -> String {
     out
 }
 
-/// One count out of a captured census document, addressed by field path.
 fn census_field(census: &str, path: &[&str]) -> u64 {
     let value: serde_json::Value =
         serde_json::from_str(census).expect("a captured census is valid JSON");
@@ -492,8 +440,6 @@ fn census_field(census: &str, path: &[&str]) -> u64 {
         .unwrap_or_else(|| panic!("census field {} is not an integer", path.join(".")))
 }
 
-/// The per-table observation counts the corpus must produce, counted rather than scanned: a restore
-/// that loses the same rows on both sides of the comparison must not pass.
 fn expected_observations(corpus: &Corpus) -> Vec<(String, u64)> {
     let row = |table: Table, rows: usize| {
         let rows = u64::try_from(rows).expect("a corpus table holds fewer than 2^64 rows");
@@ -529,7 +475,6 @@ fn expected_observations(corpus: &Corpus) -> Vec<(String, u64)> {
     expected
 }
 
-/// The live store must hold exactly the corpus, merged where the corpus observes an entity twice.
 fn assert_live_store_matches_corpus(before: &ReadModel, corpus: &Corpus) {
     assert_eq!(
         before.tables,
@@ -566,8 +511,6 @@ fn assert_live_store_matches_corpus(before: &ReadModel, corpus: &Corpus) {
     );
 }
 
-/// The history school's merged evidence, checked against the corpus rather than against the other
-/// store: a restore that drops a row on both sides must still fail here.
 fn assert_history(school: &CanonicalSchool) {
     let observed: Vec<(String, String)> = school
         .evidence
@@ -588,8 +531,6 @@ fn assert_history(school: &CanonicalSchool) {
     assert!(school.co_op, "the third observation set co_op");
 }
 
-/// Recursively copy `from` into a fresh `to`, byte for byte. Directories are walked in sorted order
-/// so a failure names the same file on every run.
 fn copy_tree(from: &Path, to: &Path) {
     fs::create_dir_all(to).unwrap_or_else(|error| {
         panic!("creating {} failed: {error}", to.display());
@@ -622,8 +563,6 @@ fn copy_tree(from: &Path, to: &Path) {
     }
 }
 
-/// Every file under `root` as `(relative path, sha256)`, sorted — the manifest an operator diffs to
-/// prove a copy is faithful instead of trusting that the database opened.
 fn file_digests(root: &Path) -> Vec<(String, String)> {
     fn walk(root: &Path, dir: &Path, out: &mut Vec<(String, String)>) {
         let mut entries: Vec<PathBuf> = fs::read_dir(dir)
@@ -662,7 +601,6 @@ fn sha256_file(path: &Path) -> String {
     format!("{:x}", Sha256::digest(&bytes))
 }
 
-/// One digest over the whole tree: the same manifest, folded into a single line.
 fn tree_digest(root: &Path) -> String {
     let mut hasher = Sha256::new();
     for (path, digest) in file_digests(root) {
@@ -683,7 +621,6 @@ fn table_count(stats: &StoreStats, table: Table) -> u64 {
         .unwrap_or_else(|| panic!("stats reported no count for {}", table.file()))
 }
 
-/// The merged row of one school.
 fn merged_school(store: &Store, id: &SchoolId) -> CanonicalSchool {
     store
         .scan::<CanonicalSchool>(Table::Schools)
@@ -693,7 +630,6 @@ fn merged_school(store: &Store, id: &SchoolId) -> CanonicalSchool {
         .expect("the merged history school")
 }
 
-/// One row of the damaged-copy stores: batch `batch`, slot `slot`.
 fn batch_row(batch: usize, slot: usize) -> CanonicalSchool {
     let index = batch * 2 + slot;
     let name = format!("Batch School {index}");
@@ -705,14 +641,12 @@ fn batch_row(batch: usize, slot: usize) -> CanonicalSchool {
     .0
 }
 
-/// The ids of the first `count` batch rows, minted exactly as [`batch_store`] mints them.
 fn batch_ids(count: usize) -> BTreeSet<String> {
     (0..count)
         .map(|index| batch_row(index / 2, index % 2).id.as_str().to_string())
         .collect()
 }
 
-/// Append one batch of two schools and close the store again.
 fn append_batch(root: &Path, batch: usize) {
     let store = Store::open(root).expect("opening the batch store");
     let rows: Vec<CanonicalSchool> = (0..2).map(|slot| batch_row(batch, slot)).collect();
@@ -722,11 +656,6 @@ fn append_batch(root: &Path, batch: usize) {
     store.flush().expect("flushing the batch store");
 }
 
-/// A store built for the damaged-copy tests: `batches` batches of two schools each, every batch
-/// committed and the store closed again. Returns the observation count, and the journal length after
-/// the *first* batch - a real frame edge, because closing and reopening a store settles the journal
-/// to the frames that were actually written (fjall preallocates a fresh journal to 64 MiB,
-/// `fjall-3.1.10/src/journal/writer.rs:19`, and only recovery truncates it back).
 fn batch_store(root: &Path, batches: usize) -> (u64, u64) {
     let mut boundary = 0_u64;
     for batch in 0..batches {
@@ -742,7 +671,6 @@ fn batch_store(root: &Path, batches: usize) -> (u64, u64) {
     (rows, boundary)
 }
 
-/// Length of a store's active journal, once a reopen has settled it to the recorded prefix.
 fn journal_len(root: &Path) -> u64 {
     let journal = journal_file(root);
     fs::metadata(&journal)
@@ -750,8 +678,6 @@ fn journal_len(root: &Path) -> u64 {
         .len()
 }
 
-/// Cut the copy's journal short and read the copy back: the rows that survive, and the schools they
-/// merge into.
 fn cut_and_read(copy: &Path, full: &[u8], cut: usize) -> (u64, BTreeSet<String>) {
     let journal = journal_file(copy);
     fs::write(
@@ -770,7 +696,6 @@ fn cut_and_read(copy: &Path, full: &[u8], cut: usize) -> (u64, BTreeSet<String>)
     (rows, school_ids(&store))
 }
 
-/// The active Fjall journal file under a store's `fjall/` directory.
 fn journal_file(root: &Path) -> PathBuf {
     let fjall = root.join("fjall");
     let mut found: Vec<PathBuf> = fs::read_dir(&fjall)
@@ -788,7 +713,6 @@ fn journal_file(root: &Path) -> PathBuf {
         .unwrap_or_else(|| panic!("no journal file under {}", fjall.display()))
 }
 
-/// The school ids a store holds, for a subset check that does not depend on counts.
 fn school_ids(store: &Store) -> BTreeSet<String> {
     store
         .scan::<CanonicalSchool>(Table::Schools)
@@ -798,8 +722,6 @@ fn school_ids(store: &Store) -> BTreeSet<String> {
         .collect()
 }
 
-/// Every school a store holds, keyed by id, as the store serializes it: a restored or damaged copy
-/// must reproduce these strings exactly or not have the row at all.
 fn school_rows(store: &Store) -> BTreeMap<String, String> {
     store
         .scan::<CanonicalSchool>(Table::Schools)
@@ -1114,9 +1036,6 @@ fn a_copy_with_a_torn_byte_inside_a_row_never_yields_an_invented_row() {
     );
 }
 
-/// A pre-Fjall store: `<root>/entities/schools.jsonl` holds one school under two observations, and
-/// `<root>/journal/drill_phase.jsonl` holds one finished unit of work. `Store::open` imports both
-/// once and records the markers in the `meta` keyspace.
 fn write_legacy_journals(root: &Path) {
     let (mut school, _) = CanonicalSchool::new(
         UsJurisdiction::Wisconsin,

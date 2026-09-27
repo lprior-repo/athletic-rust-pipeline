@@ -14,23 +14,10 @@ use super::wire::{
 };
 use super::JobError;
 
-/// `Census`: the operator's read surface over the store, and the seal over both the store and the run.
-///
-/// The four heavy jobs are workflows of their own — see [`Jobs`](super::publish::Jobs) — because a
-/// job is worth finishing: its journal and completion are retained, so a caller that repeats the job
-/// attaches to the result instead of running months of work again.
-///
-/// A read has no such need. It answers from the store in milliseconds, and retaining an invocation
-/// per status check would be retention with nothing behind it. The seal is the exception that earns
-/// its place here: it *is* a read of the store, but only a context inside the service can read the
-/// run's own objects, and §70 asks about both in one breath.
 #[derive(Clone)]
 pub struct Census {
     store: Arc<Store>,
     clock: Arc<dyn Clock>,
-    /// The heavy-job region and permit. The seal reads the whole store, so it is started through the
-    /// same spawner and capped by the same semaphore as the four jobs: nothing this service begins
-    /// outlives the drain, and a seal cannot run beside four merges and starve them.
     jobs: Jobs,
 }
 
@@ -70,13 +57,6 @@ impl Census {
         }))
     }
 
-    /// The durable run's own open work: which jurisdiction sweeps still owe stages, and which source
-    /// objects have accepted nothing.
-    ///
-    /// A read like [`Self::status`], but from the workflow's objects rather than from the store:
-    /// these two counts are properties of the run, and the objects that did the work are the only
-    /// surface that records them. The season and revision name the run, so a caller reads one run's
-    /// work and not another's, and a count nobody could take comes back `None` rather than as zero.
     #[handler]
     async fn open_work(
         &self,
@@ -86,17 +66,6 @@ impl Census {
         Ok(Json(super::open_work::measure(&ctx, &request).await?))
     }
 
-    /// The §70 seal, assembled where both the store and the run's journal can be read.
-    ///
-    /// The offline seal holds the store and cannot read the journal: a jurisdiction's stages and a
-    /// source object's accepted observations are recorded in the run's own objects, and only a
-    /// context inside the service can address them. Assembled here, those two counts are *measured*
-    /// instead of absent, which is what lets §70's first two items be certified at all — and the
-    /// store-side counts stay where they were, because the store is the authority on its own rows.
-    ///
-    /// Idempotent: the evidence is a function of the store, the workbook and the journal, so the same
-    /// census seals to the same digest, and a repeated `--write` writes the same bytes. Heavy — it
-    /// walks the whole store — so it runs on the blocking pool under the shared load permit.
     #[handler]
     #[tracing::instrument(skip_all, fields(grad_year = request.grad_year))]
     async fn seal(
@@ -127,7 +96,6 @@ impl Census {
     }
 }
 
-/// The run whose journal supplies the two counts the store cannot answer, by its own identity.
 fn run_request(request: &SealRequest) -> OpenWorkRequest {
     OpenWorkRequest {
         season: request.season,
@@ -136,12 +104,6 @@ fn run_request(request: &SealRequest) -> OpenWorkRequest {
     }
 }
 
-/// The store-side seal request, carrying what the journal could measure and nothing it could not.
-///
-/// `source_failures` stays unmeasured: the journal reports the objects with no terminal acquisition,
-/// which is what §70 asks for, and the per-attempt failure count is not a row either side keeps. The
-/// objects that finished their walk empty are named alongside that count rather than inside it, so
-/// the seal records them as findings instead of silently reading their sources as never read.
 fn store_request(request: &SealRequest, journal: &OpenWorkReply) -> StoreSealRequest {
     StoreSealRequest {
         grad_year: request.grad_year,

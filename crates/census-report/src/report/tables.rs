@@ -1,4 +1,3 @@
-//! Per-table aggregates: meet coverage, school-table counts, and the `ALL` row.
 
 use super::notes::{add, bump};
 use super::rows::RowCounts;
@@ -7,7 +6,6 @@ use census_domain::model::{CanonicalMeet, CanonicalSchool, SourceNamespace};
 use census_domain::{JurisdictionBucket, MeetState};
 use std::collections::BTreeMap;
 
-/// Meet-table coverage, one pass over the merged meet rows.
 pub(super) fn meet_coverage(meets: &[CanonicalMeet]) -> MeetCoverage {
     let mut coverage = MeetCoverage::default();
     for meet in meets {
@@ -45,9 +43,6 @@ pub(super) fn meet_coverage(meets: &[CanonicalMeet]) -> MeetCoverage {
     coverage
 }
 
-/// School counts per jurisdiction bucket, from the school table rather than from athlete-derived
-/// buckets. A school whose row carries no state counts under the unplaced bucket, exactly where the
-/// per-state row for it prints.
 pub(super) fn schools_by_state(schools: &[CanonicalSchool]) -> BTreeMap<JurisdictionBucket, usize> {
     let mut counts: BTreeMap<JurisdictionBucket, usize> = BTreeMap::new();
     for school in schools {
@@ -60,7 +55,6 @@ pub(super) fn schools_by_state(schools: &[CanonicalSchool]) -> BTreeMap<Jurisdic
     counts
 }
 
-/// Number of `(state, normalized_name)` pairs shared by more than one school row.
 pub(super) fn duplicate_school_names(schools: &[CanonicalSchool]) -> usize {
     let mut name_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
     for school in schools {
@@ -75,7 +69,6 @@ pub(super) fn duplicate_school_names(schools: &[CanonicalSchool]) -> usize {
     name_counts.values().filter(|count| **count > 1).count()
 }
 
-/// The `ALL` row: state buckets summed, school and coach totals taken from the tables.
 pub(super) fn totals_of(
     by_state: &BTreeMap<JurisdictionBucket, StateCensus>,
     counts: &RowCounts,

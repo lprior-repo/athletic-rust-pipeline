@@ -1,48 +1,15 @@
-//! Deterministic workflow identities (objective §8).
-//!
-//! Every durable unit of work — one jurisdiction's census, one source sweep, one meet, one athlete,
-//! one identity review — is addressed by a string that is a pure function of the values that define
-//! the work: jurisdiction, season, revision, source object id. A retry reuses it.
-//!
-//! Nothing here depends on a timestamp, a counter, a random value or a run id. That is the whole
-//! point: an identity that changed after a failed HTTP call would turn one logical job into an
-//! unbounded family of jobs, and the journal would fill with duplicate work that no operator can
-//! distinguish from real progress. `{revision}` is the one escape hatch — an operator bumps it to
-//! invalidate completed work deliberately, which is a decision, not an accident.
-//!
-//! # Bounds
-//!
-//! Restate addresses objects and workflows by a UTF-8 key, so an identity is a key. External source
-//! ids are unbounded strings: a meet id from a timing provider can be any length and can contain the
-//! `:` separator this module joins fields with. A dynamic part that is empty, longer than
-//! `MAX_PART_BYTES`, or carrying a byte outside `[A-Za-z0-9._-]` is therefore replaced by its
-//! digest. That keeps every identity inside [`MAX_IDENTITY_BYTES`], keeps the field structure
-//! unambiguous, and costs nothing: the full provider value lives in the store row the workflow reads.
 
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use sha2::{Digest, Sha256};
 use std::fmt;
 
-/// Longest identity this crate mints, in bytes.
-///
-/// Restate's own ceiling is the server's, not the SDK's; this bound is ours and it exists so an
-/// identity cannot grow with a provider's id space and stays readable in `restate` CLI output and
-/// server logs. The longest pattern — `source-sweep:<source>:<jurisdiction>:<season>:<revision>` —
-/// fits with room for a 32-byte source slug.
 pub const MAX_IDENTITY_BYTES: usize = 64;
 
-/// Longest dynamic part that rides verbatim. Longer parts are digested, not truncated, so two
-/// different provider ids can never collapse onto one identity.
 const MAX_PART_BYTES: usize = 32;
 
-/// Bytes a digested part keeps. Eight bytes of SHA-256 is the same identity width the domain's
-/// `Id::mint` uses for entity ids, so the collision argument is already the repo's own.
 const DIGEST_BYTES: usize = 8;
 
-/// A pipeline revision. Bumping it invalidates completed work for that identity on purpose: the
-/// operator is saying the acquisition or normalization changed enough that a cached completion is no
-/// longer evidence about the current pipeline.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
 )]
@@ -61,25 +28,11 @@ impl fmt::Display for Revision {
     }
 }
 
-/// A workflow address: `<pattern>:<field>[:<field>…]`, built only by the constructors below.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize)]
 #[serde(transparent)]
 pub struct WorkflowIdentity(String);
 
 impl WorkflowIdentity {
-    /// `national:<season>:<scope>:<revision>` — the root run that fans out one jurisdiction census per
-    /// state, over the scope that run admits.
-    ///
-    /// The scope is part of the identity because an existing run is *re-attached to*, not replaced:
-    /// submitting the same revision over a different jurisdiction set would observe the old fan-out
-    /// instead of the states the scope now admits, and the census would quietly cover the wrong set.
-    /// Deriving the field from the set — rather than remembering to bump the revision — makes that a
-    /// mechanism instead of a promise: the same jurisdictions reproduce this identity byte for byte, so
-    /// a retry attaches to its run, while a changed set cannot address one.
-    ///
-    /// The per-jurisdiction objects are deliberately *not* scope-keyed: two runs that both cover Iowa
-    /// share that state's census, which is what makes the second run replay that state instead of
-    /// walking it twice.
     pub fn national(
         season: SchoolYear,
         revision: Revision,
@@ -95,7 +48,6 @@ impl WorkflowIdentity {
         )
     }
 
-    /// `jurisdiction:<state>:<season>:<revision>` — one jurisdiction's census for one season.
     pub fn jurisdiction(
         jurisdiction: UsJurisdiction,
         season: SchoolYear,
@@ -107,7 +59,6 @@ impl WorkflowIdentity {
         )
     }
 
-    /// The wire form: the string Restate receives as the object key or workflow id.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -129,12 +80,6 @@ impl fmt::Display for WorkflowIdentity {
     }
 }
 
-/// The jurisdictions one national run admits: the ones the caller named, or the census run scope when
-/// it names none (ADR-009).
-///
-/// One rule in one place, because a run's identity is a function of the set it admits: a caller that
-/// derives an identity has to admit the same states the workflow will, or it addresses a run nobody
-/// starts.
 pub fn admitted_scope(jurisdictions: &[UsJurisdiction]) -> Vec<UsJurisdiction> {
     if jurisdictions.is_empty() {
         UsJurisdiction::CENSUS_SCOPE.to_vec()
@@ -143,17 +88,6 @@ pub fn admitted_scope(jurisdictions: &[UsJurisdiction]) -> Vec<UsJurisdiction> {
     }
 }
 
-/// The run scope as one identity field: a digest over the admitted set, taken in `CENSUS_SCOPE` order.
-///
-/// Order is the caller's business and must not be part of the identity — `--states WI,IA` and
-/// `--states IA,WI` cover one census and are one run. Ordering by [`UsJurisdiction::CENSUS_SCOPE`], the
-/// order the census itself defines coverage in, makes the field a function of the set alone: reordering
-/// an argument, a declaration or an unrelated list cannot move an existing run to a new identity.
-///
-/// Every state is folded in exactly once, and a state outside the run scope is appended in code order
-/// rather than dropped. Admission is what refuses such a set (`national::targets`,
-/// `cli::within_census_scope`), and until it is refused the set still earns an identity no admissible
-/// set shares — a digest that silently discarded Alaska would be the identity of a different run.
 fn scope_digest(jurisdictions: &[UsJurisdiction]) -> String {
     let admitted = admitted_scope(jurisdictions);
     let mut ordered: Vec<UsJurisdiction> = UsJurisdiction::CENSUS_SCOPE
@@ -184,7 +118,6 @@ fn scope_digest(jurisdictions: &[UsJurisdiction]) -> String {
     digest
 }
 
-/// Append one field, digesting anything that would make the identity ambiguous or unbounded.
 fn push_bounded(out: &mut String, field: &str) {
     if field.is_empty() || field.len() > MAX_PART_BYTES || !field.bytes().all(is_part_byte) {
         out.push('h');
@@ -200,8 +133,6 @@ fn push_bounded(out: &mut String, field: &str) {
     out.push_str(field);
 }
 
-/// One lowercase hex digit for a nibble (`0..=15` by construction; wider inputs saturate rather
-/// than panic, so the loop above has no failing path).
 fn hex_digit(nibble: u8) -> char {
     match nibble {
         0..=9 => char::from(b'0'.saturating_add(nibble)),
@@ -209,8 +140,6 @@ fn hex_digit(nibble: u8) -> char {
     }
 }
 
-/// The bytes a field may carry verbatim: the URL-safe identifier alphabet, minus `:` so the field
-/// separator cannot be forged from inside a field.
 fn is_part_byte(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-' || byte == b'.'
 }

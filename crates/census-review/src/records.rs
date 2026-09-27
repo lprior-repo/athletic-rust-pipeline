@@ -1,26 +1,8 @@
-//! The durable rows one pass writes, and the report it returns.
-//!
-//! A verdict is evidence, not an edit: a row records what the model answered and whether local
-//! validation admitted it, while the canonical tables stay the merge's. Two records for one case
-//! never merge — the stored row is the one an operator already read.
-//!
-//! # Report stages
-//!
-//! The report tracks:
-//! - `requested`: cases selected for asking (this crate can observe)
-//! - `answered`: answers returned, including failures and cancellations (this crate can observe)
-//! - `decided`: real decisions via `Adjudication::Decided` (this crate can observe)
-//! - `accepted`: verdict rows written to the verdict table (this crate can observe)
-//! - `applied`: whether a verdict was applied to an athlete's identity (measured by the reporting layer)
-//!
-//! A deterministic decision is not a model call. A stored verdict count is not an accuracy
-//! measurement.
 
 use census_domain::model::{ReviewCase, ReviewState, ReviewVerdict, ReviewVerdictRecord};
 
 use super::verdicts::Adjudication;
 
-/// Build the durable row for one case's verdict.
 fn verdict_record(
     case: &ReviewCase,
     verdict: &ReviewVerdict,
@@ -62,42 +44,23 @@ fn verdict_record(
     }
 }
 
-/// What one review pass did.
-///
-/// Tracks four stages this crate can observe: `requested` (cases selected), `answered` (answers
-/// returned, including failures), `decided` (real decisions via `Adjudication::Decided`), and
-/// `accepted` (verdict rows written). The fifth stage, `applied` — whether a verdict was applied
-/// to an athlete's identity — is measured by the reporting layer, not this crate.
-///
-/// A deterministic decision is not a model call. A stored verdict count is not an accuracy
-/// measurement.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct ReviewReport {
-    /// Cases the pass selected for asking.
     pub requested: usize,
-    /// Cases whose proposal validation admitted.
     pub accepted: usize,
-    /// Cases whose proposal validation refused.
     pub rejected: usize,
-    /// Cases the model declined to decide.
     pub insufficient: usize,
-    /// Verdicts dropped because they answered a case that was not asked, or answered one twice.
     pub dropped: usize,
-    /// Asked cases no verdict came back for.
     pub unanswered: usize,
-    /// Requests that failed outright.
     pub failed: usize,
-    /// Answers that came back (Answered variants).
     pub answered: usize,
 }
 
 impl ReviewReport {
-    /// Cases this pass closed, either way.
     pub const fn resolved(&self) -> usize {
         self.accepted.saturating_add(self.insufficient)
     }
 
-    /// One line for the CLI: what was asked, what came back, what was kept.
     pub fn summary(&self) -> String {
         format!(
             "requested={} answered={} decided={} accepted={} rejected={} insufficient={} unanswered={} dropped={} failed={}",
@@ -114,19 +77,15 @@ impl ReviewReport {
     }
 }
 
-/// What one asked case's verdicts add to a pass report.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub(super) struct CaseTally {
     pub(super) accepted: usize,
     pub(super) rejected: usize,
     pub(super) insufficient: usize,
-    /// Whether any verdict answered the case at all.
     pub(super) answered: bool,
 }
 
 impl ReviewReport {
-    /// Fold one case's tally into the report: the verdict kinds it closed, and, when nothing
-    /// answered the case at all, the case as unanswered.
     pub(super) fn absorb(&mut self, tally: CaseTally) {
         self.accepted = self.accepted.saturating_add(tally.accepted);
         self.rejected = self.rejected.saturating_add(tally.rejected);
@@ -137,15 +96,6 @@ impl ReviewReport {
     }
 }
 
-/// Build one asked case's durable rows, the states its case moves to, and the tally they contribute.
-///
-/// The caller owns the tables: this reads only what the case and its verdicts say.
-///
-/// A decision resolves a case. An insufficient-evidence answer settles an athlete case as
-/// retained for this evidence snapshot: it is terminal here so the lane does not repeatedly ask the
-/// same unanswered question, while new evidence reopens the question by minting a new case id.
-/// A refusal is a finding about the model, so it is retained as well, with the answer the model gave
-/// rather than nothing.
 pub(super) fn record_case(
     case: &ReviewCase,
     verdicts: Vec<(ReviewVerdict, Adjudication)>,
@@ -176,7 +126,6 @@ pub(super) fn record_case(
     (rows, closed, tally)
 }
 
-/// The state one answer moves its case to.
 fn state_after(adjudication: &Adjudication) -> ReviewState {
     match adjudication {
         Adjudication::Decided(_) => ReviewState::Resolved,

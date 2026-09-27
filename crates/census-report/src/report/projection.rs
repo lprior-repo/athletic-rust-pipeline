@@ -1,12 +1,3 @@
-//! The JSON projection: the rollup passes that turn the store's merged entity tables into one
-//! `Census` document.
-//!
-//! Two filters shape every published row, and their order is the contract the rest of the report
-//! reads. The **run scope** — the jurisdictions [`UsJurisdiction::CENSUS_SCOPE`] names, plus the
-//! unplaced row — is applied first, to the rows as scanned: outside it, a row publishes in no row
-//! and counts in no total, and is named in the notes rather than dropped. The evidence [`Scope`] is
-//! applied second, to the rows the run scope kept, so `core` and `all-sources` publish exactly the
-//! same jurisdictions and differ only in the evidence they admit.
 
 use super::coverage::{jurisdiction_of, school_state_index};
 use super::notes::{bump, census_notes, state_entry};
@@ -23,7 +14,6 @@ use census_store::clock::{Clock, SystemClock};
 use census_store::{Store, Table};
 use std::collections::{BTreeMap, HashMap};
 
-/// One pass over the merged athlete rows.
 fn rollup_athletes(
     athletes: &[CanonicalAthlete],
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
@@ -47,7 +37,6 @@ fn rollup_athletes(
     rollup
 }
 
-/// One pass over the merged coach rows.
 fn rollup_coaches(
     coaches: &[CanonicalCoach],
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
@@ -75,8 +64,6 @@ fn rollup_coaches(
     rollup
 }
 
-/// Merge per-state coach counts into the athlete-derived buckets, creating a state that only a coach
-/// mentions.
 fn apply_coach_states(
     by_state: &mut BTreeMap<JurisdictionBucket, StateCensus>,
     coach_states: &BTreeMap<JurisdictionBucket, (usize, usize)>,
@@ -88,13 +75,6 @@ fn apply_coach_states(
     }
 }
 
-/// Give every configured jurisdiction a row before any rollup touches the map.
-///
-/// A state that holds schools but no athletes — or nothing at all — must publish zeros rather than
-/// disappear from `by_state`, the per-state CSV and the "By state" sheets: §49 reads an omitted state
-/// as one nobody looked at, when the measured answer is "covered, empty". The seeded rows are the
-/// same labels the rollups already mint, so a state with data overwrites its own zero row instead of
-/// gaining a second one.
 fn seed_states(by_state: &mut BTreeMap<JurisdictionBucket, StateCensus>) {
     for jurisdiction in UsJurisdiction::CENSUS_SCOPE {
         state_entry(by_state, jurisdiction.into());
@@ -102,21 +82,12 @@ fn seed_states(by_state: &mut BTreeMap<JurisdictionBucket, StateCensus>) {
     state_entry(by_state, JurisdictionBucket::Unplaced);
 }
 
-/// Whether a census run publishes a row for `bucket`: the jurisdictions
-/// [`UsJurisdiction::CENSUS_SCOPE`] names, plus the unplaced row. The same universe the coverage
-/// report publishes, off the same domain constant.
 pub(crate) fn in_run_scope(bucket: JurisdictionBucket) -> bool {
     bucket
         .jurisdiction()
         .is_none_or(UsJurisdiction::is_in_census_scope)
 }
 
-/// Split one scanned table by the run scope: `rows` keeps what a run publishes, and the rows the
-/// scope leaves out are returned in the order the table held them.
-///
-/// The excluded rows stay reachable because the run-scope split of one table is what *places* a row
-/// of another: schools are split here so their ids can name a jurisdiction for the athletes, coaches
-/// and meets that point at them, whether or not the school itself publishes.
 pub(crate) fn exclude_out_of_scope<T>(
     rows: &mut Vec<T>,
     place: impl Fn(&T) -> JurisdictionBucket,
@@ -127,8 +98,6 @@ pub(crate) fn exclude_out_of_scope<T>(
     excluded
 }
 
-/// The counts one jurisdiction the run scope leaves out would have contributed, so a note can name
-/// the work the store holds for it without that work entering a row or a total.
 #[derive(Debug, Default)]
 struct OutsideRow {
     schools: usize,
@@ -138,9 +107,6 @@ struct OutsideRow {
     meets: usize,
 }
 
-/// One note per jurisdiction the run scope leaves outside every published row: the row the census
-/// would have published for it, named rather than silently dropped, in the field the coverage report
-/// writes its own notes to.
 fn outside_scope_notes(
     outside_schools: &[CanonicalSchool],
     outside_athletes: &[CanonicalAthlete],
@@ -174,7 +140,6 @@ fn outside_scope_notes(
         .collect()
 }
 
-/// One note for one excluded jurisdiction: the counts its published row would have carried.
 fn outside_scope_note(bucket: JurisdictionBucket, row: &OutsideRow) -> String {
     let jurisdiction = bucket.jurisdiction().map_or_else(
         || bucket.code().to_string(),
@@ -187,8 +152,6 @@ fn outside_scope_note(bucket: JurisdictionBucket, row: &OutsideRow) -> String {
     )
 }
 
-/// The four merged entity tables one census pass reads, in scan order — schools, athletes, coaches,
-/// meets — named so a signature that hands them on says what it hands back.
 type ScannedTables = (
     Vec<CanonicalSchool>,
     Vec<CanonicalAthlete>,
@@ -196,9 +159,6 @@ type ScannedTables = (
     Vec<CanonicalMeet>,
 );
 
-/// Scan every merged table a census reads: [`Store::scan`] merges a table's append-only observations
-/// into one entity per id, so the report never needs the materialized export, and bounds the table at
-/// [`census_store::MAX_ROWS_PER_TABLE`] rows, which bounds every loop over them.
 fn scan_tables(store: &Store) -> ReportResult<ScannedTables> {
     Ok((
         store.scan(Table::Schools)?,
@@ -208,7 +168,6 @@ fn scan_tables(store: &Store) -> ReportResult<ScannedTables> {
     ))
 }
 
-/// Apply the requested [`Scope`] to the rows the run scope kept, and report how many it dropped.
 fn apply_evidence_scope(
     scope: Scope,
     athletes: &mut Vec<CanonicalAthlete>,
@@ -220,8 +179,6 @@ fn apply_evidence_scope(
     }
 }
 
-/// Fill every published row's school count from the school table, where the workbook and the CSV
-/// read it from rather than re-deriving it per writer.
 fn fill_school_counts(
     by_state: &mut BTreeMap<JurisdictionBucket, StateCensus>,
     schools: &[CanonicalSchool],
@@ -232,12 +189,6 @@ fn fill_school_counts(
     }
 }
 
-/// Build the census from the store's merged entity tables.
-///
-/// The run scope decides which jurisdictions a run has at all, and the evidence [`Scope`] decides
-/// which of their rows count; the order the two are applied in, and why, is documented at the top of
-/// this module. Both filters run before any rollup, so every number below — rows, the `ALL` row the
-/// seal reads, and the notes — is measured over the same cohort.
 pub fn build_census(store: &Store, scope: Scope) -> ReportResult<Census> {
     let out = store.out_dir();
     let (mut schools, mut athletes, mut coaches, mut meets) = scan_tables(store)?;

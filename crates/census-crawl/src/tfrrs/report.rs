@@ -1,13 +1,8 @@
-//! The run's notes: what the walk read, absorbed and refused, in the order the report reads.
-//!
-//! Counters are published the way the other adapters publish theirs — every number a run can
-//! explain, so a thin run is legible from the report alone rather than only from the store.
 
 use super::map::Stats;
 use super::run::Run;
 use crate::AdapterReport;
 
-/// Canonical entities written by one run, per table.
 #[derive(Debug, Default, Clone, Copy)]
 pub(super) struct EntityCounts {
     pub(super) schools: usize,
@@ -18,10 +13,8 @@ pub(super) struct EntityCounts {
     pub(super) performances: usize,
 }
 
-/// The most failures a report spells out before it summarizes the rest.
 const WORST_FAILURES: usize = 20;
 
-/// What the walk read: pages, resumes and the two page shapes.
 pub(super) fn note_pages(report: &mut AdapterReport, run: &Run<'_>) {
     let stats = &run.absorb.stats;
     report.note(format!(
@@ -30,7 +23,6 @@ pub(super) fn note_pages(report: &mut AdapterReport, run: &Run<'_>) {
     ));
 }
 
-/// The performance-list rows and every reason one was not absorbed.
 pub(super) fn note_rows(report: &mut AdapterReport, stats: &Stats) {
     report.note(format!(
         "performance-list rows: {} seen, {} absorbed, {} relay rows ({} members; a relay row prints \
@@ -66,7 +58,6 @@ pub(super) fn note_rows(report: &mut AdapterReport, stats: &Stats) {
     ));
 }
 
-/// The team pages: their rows, and why one was not absorbed.
 pub(super) fn note_rosters(report: &mut AdapterReport, stats: &Stats) {
     report.note(format!(
         "rosters: {} rows seen, {} absorbed, {} without a name, {} pages whose season control states \
@@ -78,7 +69,6 @@ pub(super) fn note_rosters(report: &mut AdapterReport, stats: &Stats) {
     ));
 }
 
-/// Where school names came from: the consolidated index, or this run's own mint.
 pub(super) fn note_resolution(report: &mut AdapterReport, stats: &Stats) {
     report.note(format!(
         "schools: {} resolved against the consolidated index, {} minted from this source",
@@ -86,7 +76,6 @@ pub(super) fn note_resolution(report: &mut AdapterReport, stats: &Stats) {
     ));
 }
 
-/// What was written to the store.
 pub(super) fn note_entities(report: &mut AdapterReport, counts: &EntityCounts) {
     report.note(format!(
         "canonical entities: schools {} meets {} teams {} athletes {} events {} performances {}",
@@ -99,7 +88,6 @@ pub(super) fn note_entities(report: &mut AdapterReport, counts: &EntityCounts) {
     ));
 }
 
-/// The pages that were refused or could not be read, worst-first in the order they occurred.
 pub(super) fn note_failures(report: &mut AdapterReport, failures: &[String]) {
     for failure in failures.iter().take(WORST_FAILURES) {
         report.note(format!("failure: {failure}"));

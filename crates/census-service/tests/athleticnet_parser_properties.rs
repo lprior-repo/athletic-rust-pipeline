@@ -1,21 +1,3 @@
-//! Property tests for the Athletic.net parse and request seams.
-//!
-//! Athletic.net is the corpus's primary source, so these are the laws the census's most expensive
-//! requests rest on:
-//!
-//! * **Marks** — the published column is read the same way the shared vendor parser reads it (the
-//!   notation table holds exactly), automatic and qualifier suffixes are stripped rather than parsed
-//!   as part of the mark, a metric field mark is a *distance* and never a time, and a multi-event
-//!   total is whole points — see [`marks`].
-//! * **Requests** — the two meet requests and the metadata request name the same meet on the same
-//!   https host and three distinct endpoints, so a mistyped id cannot request another meet's page —
-//!   see [`requests`].
-//! * **Total-ness** — arbitrary and mark-shaped tokens answer or refuse, never panic; an accepted
-//!   mark is always finite, because a non-finite mark would win every best-mark comparison from then
-//!   on — see [`totalness`].
-//!
-//! Deterministic by construction: [`seam_config`] pins 64 cases on ChaCha with the fixed seed
-//! `0x4154_484E_4554_4D4B` ("ATHNETMK").
 
 #![forbid(unsafe_code)]
 
@@ -40,12 +22,10 @@ fn seam_config() -> ProptestConfig {
     }
 }
 
-/// Arbitrary mark text: every `char`, so digits, signs, letters and separators can meet in any order.
 fn arbitrary_token() -> impl Strategy<Value = String> {
     prop::collection::vec(any::<char>(), 0..32).prop_map(|chars| chars.into_iter().collect())
 }
 
-/// Text built out of what a published mark column actually holds, woven in arbitrary order.
 fn shaped_token() -> impl Strategy<Value = String> {
     prop::collection::vec(
         prop_oneof![
@@ -68,7 +48,6 @@ fn shaped_token() -> impl Strategy<Value = String> {
     .prop_map(|parts| parts.concat())
 }
 
-/// The number a mark holds, whichever variant carries one; `None` for a mark kept as raw text.
 fn number_of(mark: &Mark) -> Option<f64> {
     match mark {
         Mark::TimeSeconds(cs) => Some(cs.as_seconds_f64()),

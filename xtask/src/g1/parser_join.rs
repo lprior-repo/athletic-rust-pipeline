@@ -1,7 +1,3 @@
-//! The join between a raw body and the parsed records that claim the same bytes.
-//!
-//! An evidence record names the digest of the page's response and, for each page, the digest of the
-//! parser's own record over those bytes; this module reads that second digest's record.
 
 use std::collections::{BTreeMap, HashSet};
 
@@ -11,21 +7,14 @@ use serde_json::Value;
 use crate::counts::{bump, len_count};
 use crate::evidence::EvidenceEntry;
 
-/// What the parser's own record says about one raw body.
 pub(crate) struct ParserView {
-    /// Number of candidates the parser kept, when it recorded a candidate list.
     pub(crate) candidates: Option<usize>,
-    /// The parser's issue messages, counted.
     pub(crate) issues: IndexMap<String, usize>,
-    /// The parser's envelope count, overridden by the last record joined.
     pub(crate) count: Option<i64>,
-    /// The parser's next offset, when it had one.
     pub(crate) next: Option<i64>,
-    /// One verdict per joined record, in digest order.
     pub(crate) verdicts: Vec<String>,
 }
 
-/// The parsed digests one raw body is joined to, sorted and deduplicated.
 fn parsed_digests(entries: &[EvidenceEntry]) -> Vec<String> {
     let mut digests: Vec<_> = entries
         .iter()
@@ -37,7 +26,6 @@ fn parsed_digests(entries: &[EvidenceEntry]) -> Vec<String> {
     digests
 }
 
-/// The candidate count, issue tally, count and next offset of every joined record.
 fn totals(digests: &[String], parsed_files_map: &BTreeMap<String, Value>, view: &mut ParserView) {
     for pd in digests {
         if let Some(parser) = parsed_files_map.get(pd) {
@@ -59,8 +47,6 @@ fn totals(digests: &[String], parsed_files_map: &BTreeMap<String, Value>, view: 
     }
 }
 
-/// One joined record's verdict (per the Python logic): its issues, a short last page, a clean full
-/// page, or a page that is still paginating.
 fn verdict_of(parser: &Value) -> String {
     let issues_here: Vec<String> = parser
         .get("issues")
@@ -93,7 +79,6 @@ fn verdict_of(parser: &Value) -> String {
     }
 }
 
-/// Every joined record's verdict, in digest order.
 fn verdicts(digests: &[String], parsed_files_map: &BTreeMap<String, Value>) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for pd in digests {
@@ -104,7 +89,6 @@ fn verdicts(digests: &[String], parsed_files_map: &BTreeMap<String, Value>) -> V
     out
 }
 
-/// Read the parser's records for the digests one raw body is joined to.
 pub(crate) fn view(
     entries: &[EvidenceEntry],
     parsed_files_map: &BTreeMap<String, Value>,

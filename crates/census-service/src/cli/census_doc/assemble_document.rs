@@ -1,4 +1,3 @@
-//! Assemble the complete Markdown document from pre-built parts.
 
 use std::collections::HashMap;
 
@@ -6,7 +5,6 @@ use super::format_sections;
 use super::md_table;
 use super::Seeds;
 
-/// Build the document header section.
 fn header(report: &serde_json::Value, store_out: &std::path::Path) -> String {
     let mut doc = String::new();
     doc.push_str("# 10. Measured census — what the pipeline actually collected\n");
@@ -30,7 +28,6 @@ fn header(report: &serde_json::Value, store_out: &std::path::Path) -> String {
     doc
 }
 
-/// Build the totals section.
 fn totals_section(totals: &super::data_loader::Totals) -> String {
     let mut doc = String::new();
     doc.push_str("## Totals\n\n");
@@ -40,7 +37,6 @@ fn totals_section(totals: &super::data_loader::Totals) -> String {
     doc
 }
 
-/// Build the by-state section.
 fn state_section(state_rows: &[Vec<String>]) -> String {
     let mut doc = String::new();
     doc.push_str("## By state\n\n");
@@ -62,7 +58,6 @@ fn state_section(state_rows: &[Vec<String>]) -> String {
     doc
 }
 
-/// Build the class-of-2027-by-sport section.
 fn sport_section(sports_rows: &[Vec<String>]) -> String {
     let mut doc = String::new();
     doc.push_str("## Class of 2027 by sport\n\n");
@@ -71,7 +66,6 @@ fn sport_section(sports_rows: &[Vec<String>]) -> String {
     doc
 }
 
-/// Build the Athletic.net identities section.
 fn identities_section(
     seeds: &Seeds,
     co2027_len: usize,
@@ -89,7 +83,6 @@ fn identities_section(
     doc
 }
 
-/// Build the coach coverage section.
 fn coach_section(
     coach_rows: &[Vec<String>],
     recruiting: &[HashMap<String, String>],
@@ -111,7 +104,6 @@ fn coach_section(
     doc
 }
 
-/// Build the meets section.
 fn meets_section(
     meets_by_state_rows: &[Vec<String>],
     provider_rows: &[Vec<String>],
@@ -131,7 +123,6 @@ fn meets_section(
     doc
 }
 
-/// Build the measured answers section.
 fn measured_section(
     seeds: &Seeds,
     total_co2027: u64,
@@ -160,7 +151,6 @@ fn measured_section(
     doc
 }
 
-/// Build the footer section.
 fn footer() -> String {
     let mut doc = String::new();
     doc.push_str("## Limits and honest gaps\n\n");
@@ -171,7 +161,6 @@ fn footer() -> String {
     doc
 }
 
-/// Assemble parameters for the document builder.
 pub(super) struct DocParts<'a> {
     pub(super) report: &'a serde_json::Value,
     pub(super) store_out: &'a std::path::Path,
@@ -188,7 +177,6 @@ pub(super) struct DocParts<'a> {
     pub(super) totals: &'a super::data_loader::Totals,
 }
 
-/// Build the full document string.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn assemble(parts: &DocParts) -> String {
     let mut doc = String::new();

@@ -1,15 +1,7 @@
-//! Append-only reading: what a truncated body is allowed to yield.
-//!
-//! Result files reach the census through archives, resumes and half-written downloads, and the walk
-//! journals what it read. Reading is one pass over the lines, so a body cut short can only yield
-//! rows the whole body starts with — never an event, a place or a mark that the missing lines would
-//! have contradicted.
 
 use super::{lines, parse_body, parse_lines, rendered_rows, seam_config, ACCURACE, STATE, TABLE};
 use proptest::prelude::*;
 
-/// The law: a body cut after `cut` lines parses to rows the whole body's rows start with, and the
-/// meet header it read is the one the whole body carries.
 fn prefix_holds(name: &str, body: &str, cut: usize) -> Result<(), TestCaseError> {
     let full = parse_body(body).expect("the whole body is a meet");
     let full_rows = rendered_rows(&full);

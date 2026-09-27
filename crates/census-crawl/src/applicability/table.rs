@@ -1,25 +1,7 @@
-//! The applicability table itself: one row per registered adapter, in slug order.
-//!
-//! Sources, all under `research/midwest-source-program/`:
-//!
-//! * `data/source-coverage-matrix.csv` — 66 rows: the six `12-state` rollups, the twelve target
-//!   states' five families each, and the `report_ref` column the citations here come from.
-//! * `synthesis/05-source-matrix.md` §0a (the national lanes, which cover all 51 jurisdictions),
-//!   §1a/§1b (the per-state rows, including the `unknown`/absence notations quoted below), §2 (what
-//!   each family is for and where it stops) and §3b (rejected routes).
-//! * `data/coach-contacts.csv` — the jurisdictions that have any contact row at all.
-//! * the adapter's own module doc, where it states its provider's geography (`wayzata`, `tfrrs`,
-//!   `plain_names`) or the host it reads.
-//!
-//! A row that cannot point at one of those does not belong here. `athleticlive` and
-//! `athleticlive_athletes` are the two the registry declares as reading artifacts instead of
-//! contacting a host; both are planned, because a plan wants the sources that cost no request.
 
 use super::Applicability;
 use census_domain::UsJurisdiction;
 
-/// The rows: one per registered adapter, in slug order, each with the jurisdictions the research
-/// evidences it for.
 pub(super) const TABLE: [Applicability; 17] = [
     Applicability {
         slug: "athleticlive",

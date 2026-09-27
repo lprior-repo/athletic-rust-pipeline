@@ -1,9 +1,3 @@
-//! What the athlete packet must carry before a model sees it: both sides of the comparison as the
-//! store holds them, and the flags the store computed without asking anybody.
-//!
-//! The two rows below are the finding the family exists for: one school, one normalized name, one
-//! graduating class, two canonical ids because the gender component differs. The cases live beside
-//! this fixture, one file per half of the packet: the group and its sides, and the flags.
 
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalSchool, Gender, GradYear, Grade, ObservedGrade,
@@ -17,7 +11,6 @@ mod flags;
 #[path = "athlete_packet_tests/group.rs"]
 mod group;
 
-/// The school both rows belong to.
 fn school() -> SchoolId {
     CanonicalSchool::new(
         UsJurisdiction::Wisconsin,
@@ -28,12 +21,11 @@ fn school() -> SchoolId {
     .id
 }
 
-/// One canonical row, minted the way the merge mints it.
 fn athlete(name: &str, gender: Gender, grad_year: GradYear) -> CanonicalAthlete {
-    CanonicalAthlete::new(&school(), name, grad_year, gender)
+    let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
+    CanonicalAthlete::new(&school(), name, grad_year, gender, source)
 }
 
-/// A grade a source observed, which is what implies a graduating class.
 fn observed(athlete: &mut CanonicalAthlete, grade: u8, school_year: i16) {
     athlete.observed_grades.push(ObservedGrade {
         grade: Grade::new(grade).expect("a grade in 9..=12"),
@@ -43,7 +35,6 @@ fn observed(athlete: &mut CanonicalAthlete, grade: u8, school_year: i16) {
     });
 }
 
-/// A provider identity, with the profile URL when the provider published one.
 fn known_as(
     athlete: &mut CanonicalAthlete,
     namespace: SourceNamespace,
@@ -51,14 +42,12 @@ fn known_as(
     url: Option<&str>,
 ) {
     let identity = SourceIdentity::new(namespace, id);
-    athlete.source_identities.push(match url {
+    athlete.add_identity(match url {
         Some(url) => identity.with_url(url),
         None => identity,
     });
 }
 
-/// Two rows the merge kept apart, plus a third the merge kept: the finding, and a row nobody
-/// collides with.
 fn rows() -> (CanonicalAthlete, CanonicalAthlete, CanonicalAthlete) {
     let mut boys = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
     observed(&mut boys, 11, 2025);
@@ -92,7 +81,6 @@ fn rows() -> (CanonicalAthlete, CanonicalAthlete, CanonicalAthlete) {
     (boys, girls, other)
 }
 
-/// The case the merge retained for one row of the pair, labelled the way the store labels it.
 fn case_for(row: &CanonicalAthlete) -> ReviewCase {
     ReviewCase::pending(
         ATHLETE_IDENTITY_FAMILY,
@@ -102,7 +90,6 @@ fn case_for(row: &CanonicalAthlete) -> ReviewCase {
     )
 }
 
-/// One value the packet states, from the source that issued it.
 fn stated(packet: &ReviewPacket, source: &str, field: &str) -> Option<String> {
     packet
         .evidence

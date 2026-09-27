@@ -1,4 +1,3 @@
-//! Saturating counters, per-state buckets and the report's provenance notes.
 
 use super::rows::RowCounts;
 use super::{Scope, StateCensus, NON_CORE_SOURCE_IDS};
@@ -6,21 +5,14 @@ use census_domain::JurisdictionBucket;
 use std::collections::BTreeMap;
 use std::path::Path;
 
-/// Saturating counter bump.
-///
-/// Counters cannot exceed the scanned row count, which [`census_store::MAX_ROWS_PER_TABLE`] bounds,
-/// so saturation is unreachable in practice; it is here so a change to that bound can never wrap a
-/// counter or trap the report.
 pub(super) fn bump(counter: &mut usize) {
     *counter = counter.saturating_add(1);
 }
 
-/// Saturating accumulation of `value` into `total`.
 pub(super) fn add(total: &mut usize, value: usize) {
     *total = total.saturating_add(value);
 }
 
-/// The per-state bucket for `state`, created on first use.
 pub(super) fn state_entry(
     by_state: &mut BTreeMap<JurisdictionBucket, StateCensus>,
     state: JurisdictionBucket,
@@ -31,7 +23,6 @@ pub(super) fn state_entry(
     })
 }
 
-/// Provenance notes recorded in `report.json`.
 pub(super) fn census_notes(
     scope: Scope,
     counts: &RowCounts,

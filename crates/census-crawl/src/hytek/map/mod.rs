@@ -1,8 +1,3 @@
-//! Meet, event and mark mapping for Hy-Tek reports.
-//!
-//! The meet header, the event labels and the published marks are what a Hy-Tek report states in
-//! prose instead of in fixed columns; the readers here turn each into the canonical shape the
-//! model carries: an ISO date, an event kind, a round marker, or a `Mark` with its wind and heat.
 
 use crate::result_file::ParsedEvent;
 use crate::{CrawlError, CrawlResult};
@@ -46,11 +41,8 @@ fn dated_regex() -> CrawlResult<&'static Regex> {
     })
 }
 
-/// Plain-text marks that are results rather than numbers.
 pub(crate) const NO_MARK: [&str; 8] = ["DNF", "DNS", "SCR", "NH", "FOUL", "NM", "DQ", "X"];
 
-/// The meet name and dates are published on one header line, either as a single day
-/// (`Name - 6/6/2025`) or as a range (`Name - 6/6/2025 to 6/7/2025`).
 pub(super) fn header_meet(lines: &[String]) -> Option<(String, String, Option<String>)> {
     let dated = dated_regex().ok()?;
     for line in lines.iter().take(40) {

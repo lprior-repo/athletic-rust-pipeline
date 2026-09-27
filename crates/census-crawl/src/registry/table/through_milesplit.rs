@@ -1,9 +1,3 @@
-//! The registry's entries up to and including `milesplit`, in the table's published order.
-//!
-//! `descriptors()` is one flat list, so the two shards here are a positional cut and not a taxonomy:
-//! a new adapter belongs in the shard whose slugs bracket it, and the splice in `mod.rs` keeps the
-//! published order either way. Each entry's comment names the symbol its `true` capabilities rest
-//! on, which is what makes a reviewer's check possible without reading the adapter end to end.
 
 use super::super::policy::{
     artifact, fetched, FETCHER_RPS, SCHOOL_COACH_CONTACT, SCHOOL_COACH_NAMES,
@@ -11,7 +5,6 @@ use super::super::policy::{
 use super::super::SourceCapabilities as Caps;
 use super::super::{SourceDescriptor, TransportKind};
 
-/// The adapters whose slugs sort up to `milesplit`.
 pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 8] = [
     SourceDescriptor {
         slug: "athleticlive",

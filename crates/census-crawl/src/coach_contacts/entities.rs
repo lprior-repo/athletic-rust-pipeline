@@ -1,5 +1,3 @@
-//! Row to canonical entities: the school one row describes, its sport coach, its school-wide
-//! athletic director, and the athletic office its AD columns describe.
 
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
@@ -12,9 +10,6 @@ use crate::{CrawlError, CrawlResult};
 use super::parse::{clean, nonempty, parse_role, parse_sport, strip_honorific};
 use super::wire::{CoachContactRow, RowEntities, RowSource};
 
-/// Build the canonical entities for one CSV row.
-///
-/// The jurisdiction arrives resolved from the CSV boundary; every school this row mints carries it.
 pub fn row_entities(
     row: &CoachContactRow,
     state: UsJurisdiction,
@@ -51,7 +46,6 @@ pub fn row_entities(
     Ok(RowEntities { school, coaches })
 }
 
-/// The canonical school one CSV row describes, with the city alias the row publishes.
 fn school_with_city(
     state: UsJurisdiction,
     school_name: &str,
@@ -66,21 +60,18 @@ fn school_with_city(
     (school, school_id)
 }
 
-/// The sport a row's label resolves to (`None` when it names none) and the gender side it covers.
 fn sport_of(row: &CoachContactRow) -> (Option<Sport>, Gender) {
     let sport_gender = parse_sport(&row.sport);
     let (sport, gender) = sport_gender.unwrap_or((Sport::OutdoorTrack, Gender::Mixed));
     (sport_gender.map(|_| sport), gender)
 }
 
-/// The role a sport-scoped coaching row must name; the message is the one the builder raised.
 fn required_role(role: Option<CoachRole>) -> CrawlResult<CoachRole> {
     role.ok_or_else(|| CrawlError::Invariant {
         detail: "coaching role".to_string(),
     })
 }
 
-/// Set a coach row's published email and attach its provider identity and evidence.
 fn attach_source(
     coach: &mut CanonicalCoach,
     identity: String,
@@ -100,7 +91,6 @@ fn attach_source(
     ));
 }
 
-/// The primary coach entity one CSV row describes: a sport coach, a school-wide AD, or nothing.
 fn primary_coach(
     row: &CoachContactRow,
     school_id: &SchoolId,
@@ -116,7 +106,6 @@ fn primary_coach(
     }
 }
 
-/// The sport-scoped coaching entity one row describes, when the row names a coach.
 fn sport_coach(
     row: &CoachContactRow,
     school_id: &SchoolId,
@@ -143,7 +132,6 @@ fn sport_coach(
     Ok(Some(coach))
 }
 
-/// The school-wide athletic-director entity an AD row describes.
 fn ad_coach(
     row: &CoachContactRow,
     school_id: &SchoolId,
@@ -159,7 +147,6 @@ fn ad_coach(
     ))
 }
 
-/// The athletic office a coaching row's AD columns describe.
 fn imported_ad(
     row: &CoachContactRow,
     school_id: &SchoolId,
@@ -174,7 +161,6 @@ fn imported_ad(
     ))
 }
 
-/// Build the athletic-director coach entity both AD branches share.
 fn ad_entity(
     school_id: &SchoolId,
     name: String,

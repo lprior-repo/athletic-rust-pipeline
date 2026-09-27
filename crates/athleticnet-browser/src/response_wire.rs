@@ -1,10 +1,3 @@
-//! Serde codecs for the parts of a [`crate::BrowserResponse`] that have no representation of their
-//! own: `http`'s `StatusCode` and `HeaderMap` are foreign types, and a captured body is bytes.
-//!
-//! The wire these feed is what crosses a deployment boundary, so every codec fails closed: an
-//! impossible status, a malformed header name or value, a header value that is not text, or a body
-//! that is not base64 is an error the caller sees - never a value silently dropped, reordered or
-//! replaced with a substitute.
 
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
@@ -12,7 +5,6 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::StatusCode;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
-/// `StatusCode` as its `u16`.
 pub mod status {
     use super::*;
 
@@ -26,7 +18,6 @@ pub mod status {
     }
 }
 
-/// `HeaderMap` as ordered name/value pairs, so a repeated name keeps every value it carried.
 pub mod headers {
     use super::*;
 
@@ -52,8 +43,6 @@ pub mod headers {
     }
 }
 
-/// A captured body as base64: the encoding the CDP capture already carries a body in, and the only
-/// one that survives a JSON wire without expanding a binary body into an array of integers.
 pub mod body {
     use super::*;
 

@@ -1,17 +1,3 @@
-//! One mapped `/raw` row: the school it resolves to, the athlete it observes, and the performance it
-//! mints.
-//!
-//! Grade handling is the point of this route, and it is deliberately asymmetric. The file publishes
-//! `Yr` — the athlete's grade *at the meet* — not a graduating year, and the row itself carries no
-//! school year, so the grade is kept as evidence: an `ObservedGrade` record (grade + the school year
-//! the meet's published date sits in + the source) travels on the athlete, and the canonical grad
-//! year is the projection those two fields produce. The published cell is quoted in the
-//! performance's evidence note, so a reviewer can check the projection against the row it came from
-//! without re-fetching the file.
-//!
-//! A row with no `Yr` cannot be projected onto a grad year at all — the identity the census mints
-//! athletes on — so such a row is counted and contributes no entity, exactly as the roster route
-//! drops a roster row whose `column-grad-year` cell does not parse.
 
 use super::{MeetContext, RowWriter};
 use crate::hytek;
@@ -25,7 +11,6 @@ use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
-/// Count one result row and write the athlete and performance it names.
 pub(super) fn record_row(
     writer: &mut RowWriter<'_>,
     context: &MeetContext<'_>,
@@ -47,42 +32,25 @@ pub(super) fn record_row(
         context.school_year,
         context.evidence,
     );
-    let athlete_id = record_athlete(
-        writer,
-        context,
-        &school_id,
-        &row.name,
-        shape.grade,
-        row_index,
-    );
+    let (athlete_id, source_athlete) = record_athlete(writer, context, &school_id, &row.name, shape.grade, row_index);
     record_performance(
         writer,
         context,
         row,
         row_index,
-        shape,
+        &shape,
+        &source_athlete,
         &athlete_id,
         &team_id,
     );
     1
 }
 
-/// The two facts a row must publish before it can be minted at all: the sport that places it under a
-/// team, and the grade that projects onto a graduation year.
 struct RowShape {
     sport: Sport,
     grade: Grade,
 }
 
-/// The guards a row must pass, each one counted under its own name so a run reports why rows vanish
-/// rather than dropping them silently.
-///
-/// A page that names no sport leaves its rows without a team or a performance to hang on; a row with
-/// no `Yr` has no grad-year projection; a row whose athlete cell repeats its own school's name is the
-/// shape a relay row takes in a file that lists the school where the athlete belongs — no individual
-/// row can legitimately do that, and the guard can only fire when the two cells name the same school,
-/// so it cannot drop a real athlete. (The file's relay shape is itself unverified: no relay result
-/// set was captured.)
 fn shape_of(
     writer: &mut RowWriter<'_>,
     context: &MeetContext<'_>,
@@ -114,14 +82,13 @@ fn shape_of(
     Some(RowShape { sport, grade })
 }
 
-/// Write one row's performance, minted on the same key the shared pass writes so a re-run lands on one
-/// entity.
 fn record_performance(
     writer: &mut RowWriter<'_>,
     context: &MeetContext<'_>,
     row: &ParsedRow,
     row_index: usize,
-    shape: RowShape,
+    shape: &RowShape,
+    source_athlete: &SourceIdentity,
     athlete_id: &AthleteId,
     team_id: &TeamId,
 ) {
@@ -154,18 +121,15 @@ fn record_performance(
             observed_grade: Some(shape.grade),
             evidence: vec![evidence],
             source_key,
-            source_athlete: None,
+            source_athlete: source_athlete.clone(),
             retained_conflicts: Vec::new(),
         });
 }
 
-/// Count one dropped row under its own name.
 fn bump(counter: &mut usize) {
     *counter = counter.saturating_add(1);
 }
 
-/// Resolve a row's published school label inside the site's own jurisdiction, memoising hits and
-/// misses alike.
 fn resolve_school(
     writer: &mut RowWriter<'_>,
     context: &MeetContext<'_>,
@@ -199,7 +163,6 @@ fn resolve_school(
         .clone()
 }
 
-/// Record one row's athlete: their sports, the published grade as evidence, and the meet's evidence.
 fn record_athlete(
     writer: &mut RowWriter<'_>,
     context: &MeetContext<'_>,
@@ -207,7 +170,7 @@ fn record_athlete(
     member_name: &str,
     grade: Grade,
     row_index: usize,
-) -> AthleteId {
+) -> (AthleteId, SourceIdentity) {
     let grad_year = GradYear::of(grade, context.school_year);
     let source = SourceIdentity::new(
         SourceNamespace::Other("milesplit_result_row".to_string()),
@@ -257,15 +220,13 @@ fn record_athlete(
     {
         entry.evidence.push(context.evidence.clone());
     }
-    athlete_id
+    (athlete_id, entry.source.clone())
 }
 
-/// The deterministic per-row performance key: the result set (`RSID`), the section, and the row.
 fn performance_key(context: &MeetContext<'_>, row_index: usize) -> String {
     format!("{}:{}:{}", context.rsid, context.event.label, row_index)
 }
 
-/// The performance's evidence: the meet's, annotated with the `Yr` cell this row published.
 fn performance_evidence(context: &MeetContext<'_>, grade: Grade, row_index: usize) -> Evidence {
     let mut evidence = context.evidence.clone();
     evidence.note = Some(format!(
@@ -278,8 +239,6 @@ fn performance_evidence(context: &MeetContext<'_>, grade: Grade, row_index: usiz
     evidence
 }
 
-/// The team a row belongs to: one per (school, sport, gender, school year), minted on the same key
-/// the roster route uses so both routes land on one team.
 fn team_for(
     teams: &mut HashMap<String, CanonicalTeam>,
     school: &SchoolId,

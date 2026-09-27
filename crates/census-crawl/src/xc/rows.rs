@@ -1,12 +1,9 @@
-//! One line of a result file as a row: the Hy-Tek block, the padded grade table and the
-//! AccuRace rule-lined table.
 use crate::hytek::{self, grade_from_token, looks_like_a_name, substring};
 use crate::result_file::ParsedRow;
 use census_domain::model::{Gender, Mark};
 
 use super::patterns::{block_row, gender_heading, grade_table_row_regex, race_banner};
 
-/// `Boys Varsity` / `Boys' 5000 Meter Run` / `Division 1 Girls` as a section heading.
 pub(super) fn section_heading(trimmed: &str) -> Option<(Gender, String)> {
     let captures = gender_heading().ok()?.captures(trimmed)?;
     let gender = match captures.get(1)?.as_str().to_ascii_lowercase().as_str() {
@@ -31,7 +28,6 @@ pub(super) fn race_heading(inner: &str) -> Option<(Gender, String)> {
     (!label.is_empty()).then_some((gender, label))
 }
 
-/// The `====` rule line of a rule-lined table, as the byte spans of its runs.
 pub(super) fn rule_spans(line: &str) -> Option<Vec<(usize, usize)>> {
     if !line.trim_start().starts_with('=') {
         return None;
@@ -53,9 +49,6 @@ pub(super) fn rule_spans(line: &str) -> Option<Vec<(usize, usize)>> {
     (spans.len() >= 5).then_some(spans)
 }
 
-/// Every runner on a block line. A team-score block belongs to the heading above it, so a line
-/// outside such a block yields nothing: a row without a school cannot be minted into an athlete, and
-/// the school is never guessed.
 pub(super) fn block_rows(line: &str, team: Option<&str>) -> Vec<ParsedRow> {
     let Some(team) = team else {
         return Vec::new();
@@ -114,8 +107,6 @@ pub(super) fn grade_table_row(line: &str) -> Option<ParsedRow> {
     })
 }
 
-/// AccuRace row, read through the spans of its `====` rule: place, team points, team place, bib,
-/// name, grade, team, time, average mile, state qualification.
 pub(super) fn accurace_row(line: &str, spans: Option<&[(usize, usize)]>) -> Option<ParsedRow> {
     let spans = spans?;
     if spans.len() < 8 {

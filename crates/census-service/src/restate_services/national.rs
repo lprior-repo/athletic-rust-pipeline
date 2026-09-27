@@ -1,24 +1,3 @@
-//! `NationalCensus`: the root workflow, one run per season, run scope and revision (objective §7).
-//!
-//! # Shape
-//!
-//! The run fans out one `JurisdictionCensus` invocation per state and folds the per-state reports
-//! into one national report. A jurisdiction whose run fails becomes a row in `failures` and the
-//! fan-out continues: one source outage in one state must not fail a national run, and an operator
-//! reading the report needs to see which states are missing and why (§69).
-//!
-//! # Admission
-//!
-//! The fan-out is bounded by construction, not by a counter: the jurisdiction set is the variants of
-//! [`UsJurisdiction`], duplicates are refused, and the request itself is durable — Restate journals
-//! each call, so a restart resumes the fan-out instead of starting a second one over the same states.
-//! Each jurisdiction object serializes its own stages, so re-running a national run that already
-//! finished a state replays that state's stages rather than repeating their work.
-//!
-//! # Concurrency
-//!
-//! The states are walked concurrently — the per-host gates live in the fetcher, which the service
-//! shares across jurisdictions, so concurrency here cannot multiply the traffic any one origin sees.
 
 use std::sync::Arc;
 
@@ -49,20 +28,6 @@ impl NationalCensus {
     }
 }
 
-/// The jurisdictions one national run covers, each with the object key its census is addressed by:
-/// the request's order when it names one, otherwise the census run scope — the 48 continental states
-/// plus the District of Columbia (ADR-009) — in declaration order. Which set that is comes from
-/// [`admitted_scope`], one rule shared with the callers that derive this run's identity.
-///
-/// A jurisdiction outside the run scope is terminal: Alaska and Hawaii are modelled but never
-/// acquired, and admitting one here would put it in every denominator afterwards.
-///
-/// A duplicate is terminal. Restate would queue the second call behind the first rather than
-/// deduplicating it, so a repeated state would walk itself twice for no coverage and the report
-/// would count it twice.
-///
-/// A free function rather than a method: the fan-out's admission logic is worth testing without a
-/// service instance, and it reads nothing but the request.
 pub(super) fn targets(
     request: &NationalRequest,
 ) -> Result<Vec<(UsJurisdiction, String)>, HandlerError> {
@@ -91,22 +56,11 @@ pub(super) fn targets(
     Ok(targets)
 }
 
-/// One completion of the fan-out, classified against the state it belongs to.
-///
-/// The two arms are the report's two row sets. A failure is a *row*, not an abort: §69 asks for the
-/// states that did not answer to be listed, so one state's outage never abandons the states whose
-/// calls are still in flight.
 pub(super) enum Completion {
-    /// The state answered: its summary.
     Answered(JurisdictionSummary),
-    /// The state did not: the row that names it and why.
     Unanswered(NationalFailure),
 }
 
-/// Classify one completion for `jurisdiction`, addressed by the identity `key`.
-///
-/// A free function, like [`targets`]: this is all the fan-out's per-state logic, and it is worth
-/// testing without a Restate context, a target list, or a live fan-out.
 pub(super) fn classify(
     jurisdiction: UsJurisdiction,
     key: &str,
@@ -116,16 +70,11 @@ pub(super) fn classify(
         Ok(Json(report)) => Completion::Answered(JurisdictionSummary {
             jurisdiction,
             identity: report.identity,
-            teams: report.teams,
-            rosters_done: report.rosters.rosters_done,
+            rosters_total: report.rosters.rosters_total,
+            rosters_committed: report.rosters.rosters_committed,
+            rosters_remaining: report.rosters.rosters_remaining,
             rosters_skipped: report.rosters.rosters_skipped,
-            rosters_owed: Some(
-                report
-                    .teams
-                    .saturating_sub(report.rosters.rosters_done)
-                    .saturating_sub(report.rosters.rosters_skipped),
-            ),
-            blocked: Some(report.rosters.blocked),
+            blocked: report.rosters.blocked,
             athletes: report.rosters.athletes,
             class_of_2027: report.rosters.class_of_2027,
         }),
@@ -137,11 +86,6 @@ pub(super) fn classify(
     }
 }
 
-/// Drain the fan-out into the report's two row sets: one summary per state that answered, one failure
-/// row per state that did not.
-///
-/// A completion for an index the run never pushed is a bug in this workflow, not a source condition,
-/// so it is terminal rather than a silently dropped row.
 async fn collect_outcomes(
     in_flight: &mut DurableFuturesUnordered<impl CallFuture<Response = Json<JurisdictionReport>>>,
     targets: &[(UsJurisdiction, String)],
@@ -162,11 +106,6 @@ async fn collect_outcomes(
     Ok((summaries, failures))
 }
 
-/// The national report one fan-out produced.
-///
-/// Completion order is the states' business; report order is the reader's. Both row sets sort by
-/// USPS code, so two identical runs produce byte-identical reports and a diff between two of them
-/// shows the coverage that actually moved.
 fn assemble(
     season: SchoolYear,
     revision: Revision,
@@ -179,7 +118,7 @@ fn assemble(
     NationalReport {
         season,
         revision,
-        teams_total: jurisdictions.iter().map(|summary| summary.teams).sum(),
+        rosters_total: jurisdictions.iter().map(|summary| summary.rosters_total).sum(),
         athletes_total: jurisdictions.iter().map(|summary| summary.athletes).sum(),
         class_of_2027_total: jurisdictions
             .iter()
@@ -190,7 +129,6 @@ fn assemble(
         today,
     }
 }
-
 #[workflow(
     journal_retention = "90 days",
     workflow_completion_retention = "180 days",
@@ -203,7 +141,6 @@ fn assemble(
     )
 )]
 impl NationalCensus {
-    /// Fan out one jurisdiction census per state and fold the results into one report.
     #[handler]
     #[tracing::instrument(
         skip_all,
@@ -259,9 +196,6 @@ impl NationalCensus {
         Ok(Json(report))
     }
 
-    /// The last report this run wrote, or none before its first completed fan-out. Shared — the
-    /// context type is what makes it one — because a finished workflow's run handler cannot be
-    /// called again to ask.
     #[handler]
     async fn report(
         &self,

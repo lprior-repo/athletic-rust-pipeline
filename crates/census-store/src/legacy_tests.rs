@@ -1,17 +1,3 @@
-//! Tests for the one-time legacy import and for the writes it shares with a crash.
-//!
-//! The import is explicit, so a test lays the pre-Fjall journal out on disk and then calls
-//! [`Store::import_legacy`] on the open store: an import that succeeds proves the migration finished,
-//! and one that fails proves it refused — with the file and the line in the error.
-//! `an_open_is_a_read_and_the_import_is_explicit` holds that apart from opening the store. The `meta`
-//! rows a *failing* import must not write are read straight from the Fjall database, because a refused
-//! import leaves no `Store` to read them through; that is also the only way to build the state no
-//! writer will produce, such as a table one row short of the ceiling.
-//!
-//! Every fixture is a small file, and every assertion is on what a caller of the store can observe:
-//! the rows a scan returns, the counts a table reports, the markers `meta` holds, and the error an
-//! open failed with.
-
 use super::legacy::{read_legacy_line, MAX_LEGACY_LINE_BYTES};
 use super::read::directory_bytes;
 use super::sequences::mark_key;
@@ -21,19 +7,15 @@ use census_domain::UsJurisdiction;
 use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
 
-/// One school's serialized observation, exactly as the pre-Fjall journals hold one.
 fn observation(name: &str) -> String {
     let school = CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0;
     serde_json::to_string(&school).unwrap()
 }
 
-/// An item of the pre-Fjall resume ledger: one unit of work a run finished.
 fn journal_entry(key: &str) -> String {
     format!("{{\"key\":\"{key}\",\"at\":\"2026-09-20\",\"payload\":{{\"athletes\":5}}}}\n")
 }
 
-/// One conflict row as the derivation pass writes it: the id is a function of the finding, so the same
-/// finding re-derives the same id.
 fn conflict(subject: &str, detail: &str) -> String {
     serde_json::to_string(&RetainedConflict::new(
         "duplicate",
@@ -44,28 +26,18 @@ fn conflict(subject: &str, detail: &str) -> String {
     .unwrap()
 }
 
-/// A store root that has been opened once, so its Fjall database and keyspaces exist and a test can
-/// lay out the fixture the next import reads — or the `meta` row that describes a table too large to
-/// write.
 fn opened_root() -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
     drop(Store::open(dir.path()).unwrap());
     dir
 }
 
-/// Open `root` and run the one-time import the way a migrating path does.
-///
-/// [`Store::open`] does not import — opening is a read — so a fixture that expects imported rows says
-/// when the migration happened. `an_open_is_a_read_and_the_import_is_explicit` holds the two apart.
 fn imported(root: &Path) -> StoreResult<Store> {
     let store = Store::open(root)?;
     store.import_legacy()?;
     Ok(store)
 }
 
-/// Run `f` against a store's keyspaces with no `Store` open: Fjall holds the database exclusively,
-/// so what a failing import left behind — and the state no writer can produce — is read and written
-/// this way.
 fn with_keyspaces<T>(root: &Path, f: impl FnOnce(&fjall::Keyspace, &fjall::Keyspace) -> T) -> T {
     let db = fjall::Database::builder(root.join(DB_DIR)).open().unwrap();
     let meta = db
@@ -79,30 +51,22 @@ fn with_keyspaces<T>(root: &Path, f: impl FnOnce(&fjall::Keyspace, &fjall::Keysp
     out
 }
 
-/// A `meta` row as an open store holds it.
 fn meta_row(store: &Store, key: &str) -> Option<Vec<u8>> {
     store.meta.get(key).unwrap().map(|value| value.to_vec())
 }
 
-/// A `meta` row as it survives a refused import.
 fn unopened_meta_row(root: &Path, key: &str) -> Option<Vec<u8>> {
     with_keyspaces(root, |meta, _| {
         meta.get(key).unwrap().map(|value| value.to_vec())
     })
 }
 
-/// How many entries a phase's ledger holds in the store, counted without a `Store` at all.
 fn unopened_journal_entries(root: &Path, phase: &str) -> usize {
     with_keyspaces(root, |_, journal| {
         journal.prefix(Store::journal_key(phase, "")).count()
     })
 }
 
-/// The error an explicit import of `root` refused with.
-///
-/// The store is dropped before the caller reads the `meta` rows a refused import must not have
-/// written: Fjall owns the database exclusively, so those rows are read straight from it, and a
-/// refused import leaves no `Store` to read them through.
 fn import_failure(root: &Path) -> StoreError {
     let store = Store::open(root).expect("opening a store is a read, so no journal can refuse it");
     match store.import_legacy() {
@@ -111,7 +75,6 @@ fn import_failure(root: &Path) -> StoreError {
     }
 }
 
-/// The `detail` of a legacy import failure, and the assertion that the failure is one.
 fn legacy_detail(error: &StoreError) -> &str {
     match error {
         StoreError::Legacy { detail } => detail,
@@ -119,8 +82,6 @@ fn legacy_detail(error: &StoreError) -> &str {
     }
 }
 
-/// Whether this process runs as root, in which case the kernel ignores the permission bits a test
-/// needs to make an entry unreadable.
 fn running_as_root() -> bool {
     std::fs::metadata("/proc/self")
         .map(|metadata| metadata.uid() == 0)
@@ -623,19 +584,9 @@ fn directory_bytes_refuses_a_subtree_whose_entries_it_cannot_stat() {
     std::fs::set_permissions(&blocked, permissions).unwrap();
 }
 
-/// The streaming merged scan: that it yields exactly what the collecting scan yields, that a refused
-/// visitor stops it, and that a table's rows are never held at once.
-///
-/// The last one is the measurement, and it is why the module lives here: the property it holds is the
-/// reason `for_each_merged` exists, and a number printed by a passing test is the only form of it a
-/// later reader can check.
 mod merged_scan {
     use super::*;
 
-    /// The process's resident set in KiB, read from `/proc/self/status`.
-    ///
-    /// The measurement below is taken from this rather than from an instrumented allocator because the
-    /// crate is `#![forbid(unsafe_code)]` and a counting `GlobalAlloc` is `unsafe impl` by definition.
     #[cfg(target_os = "linux")]
     fn resident_kib() -> u64 {
         let status =
@@ -648,7 +599,6 @@ mod merged_scan {
             .expect("VmRSS is reported in KiB")
     }
 
-    /// A legacy journal holding `lines`, one observation per line.
     fn journal(lines: &[String]) -> String {
         let mut out = String::new();
         for line in lines {
@@ -658,7 +608,6 @@ mod merged_scan {
         out
     }
 
-    /// Store `lines` as the pre-Fjall `schools` journal and import them, so a table holds those rows.
     fn store_of(root: &Path, lines: &[String]) -> Store {
         std::fs::create_dir_all(root.join("entities")).unwrap();
         std::fs::write(root.join("entities/schools.jsonl"), journal(lines)).unwrap();

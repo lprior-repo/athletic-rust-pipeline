@@ -1,5 +1,3 @@
-//! Nebraska (NSAA): directory rows → canonical school/coach entities, plus the per-school walk
-//! that fetches each member page, journals it and writes the rows.
 
 use super::nsaa::{parse_nsaa_school_names, NsaaRow, NsaaSchool};
 use super::nsaa_walk::NsaaWalk;
@@ -14,11 +12,6 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
-/// Classify one NSAA directory row label.
-///
-/// Office roles are rejected first, so an `AD Secretary` never reaches the director branch. The
-/// `Unified Track & Field` activity is a distinct NSAA offering (Special Olympics unified) and is not
-/// the census's track & field sport, so it is excluded as well.
 pub fn parse_nsaa_row(label: &str) -> Option<NsaaRow> {
     let lowered = label.to_ascii_lowercase();
     if is_office_role(&lowered) {
@@ -47,8 +40,6 @@ pub fn parse_nsaa_row(label: &str) -> Option<NsaaRow> {
     Some(NsaaRow::SportCoach { sport, gender })
 }
 
-/// Canonical school for one NSAA directory entry. NSAA publishes no numeric school id, so the
-/// published school name is the provider key (recorded in the association-school namespace).
 pub fn parse_nsaa_school(
     school: &NsaaSchool,
     source_url: &str,
@@ -79,7 +70,6 @@ pub fn parse_nsaa_school(
     (canonical, school_id)
 }
 
-/// Coach and athletic-director rows for one NSAA school, deduplicated by coach identity.
 pub fn nsaa_coaches(
     school: &NsaaSchool,
     school_id: &SchoolId,
@@ -117,7 +107,6 @@ pub fn nsaa_coaches(
     Ok(coaches)
 }
 
-/// Nebraska half: the directory form yields the 312 member names, then one GET per school.
 pub(super) async fn collect_nebraska(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -145,7 +134,6 @@ pub(super) async fn collect_nebraska(
     walk.publish(report, members.len())
 }
 
-/// The NSAA directory form's member-school names; `None` means the failure is on the report.
 async fn nsaa_members(
     ctx: &AdapterContext<'_>,
     fetch: &FetchOptions,

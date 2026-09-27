@@ -1,11 +1,3 @@
-//! Kani proof harnesses for `Entity::merge` and `Entity::publish` on the canonical entities.
-//!
-//! The entities are built from concrete natural keys because minting an id runs SHA-256, and a
-//! symbolic input would put the compression function's 64 rounds into the solver. The fields an
-//! observation actually varies - names, cities, addresses - are overwritten with symbolic values
-//! afterwards, so the properties below still quantify over arbitrary text: `String` arrives as a
-//! bounded byte array through `String::from_utf8_lossy`, since `kani::any::<String>()` has no
-//! `Arbitrary` impl.
 
 use census_domain::UsJurisdiction;
 use census_domain::model::{
@@ -14,20 +6,8 @@ use census_domain::model::{
 };
 use crate::Entity;
 
-/// Bound on the symbolic text fields.
 const TEXT_BYTES: usize = 6;
 
-/// `sha2` picks its backend at runtime through `cpufeatures`, which probes the CPU with
-/// `__cpuid_count` - inline asm, and `cargo kani` cannot model it:
-///
-/// ```text
-/// Failed Checks: TerminatorKind::InlineAsm is not currently supported by Kani
-///  File: ".../core_arch/src/x86/cpuid.rs", line 75, in std::arch::x86_64::__cpuid_count
-/// ```
-///
-/// Minting an id runs SHA-256, so every harness here needs the probe stubbed to answer "no
-/// features": the hash then runs on sha2's pure-Rust soft backend. The entity code under test is
-/// untouched; the SHA-NI backend is an acceleration of the same function and stays out of reach.
 fn cpuid_without_features(_leaf: u32, _sub_leaf: u32) -> core::arch::x86_64::CpuidResult {
     core::arch::x86_64::CpuidResult {
         eax: 0,
@@ -101,7 +81,6 @@ fn any_coach() -> CanonicalCoach {
     coach
 }
 
-/// Merging an entity with a copy of itself changes nothing, whatever the observation carried.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
@@ -121,7 +100,6 @@ fn check_school_merge_idempotent() {
     );
 }
 
-/// The merge idempotence law also covers both published mailbox fields.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
@@ -141,7 +119,6 @@ fn check_coach_merge_idempotent() {
     );
 }
 
-/// Publishing twice is publishing once, for arbitrary addresses in both fields.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
@@ -158,7 +135,6 @@ fn check_coach_publish_idempotent() {
     );
 }
 
-/// An address is routed to the field matching its domain, regardless of its input field.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
@@ -187,7 +163,6 @@ fn check_coach_publish_routes_arbitrary_address() {
     }
 }
 
-/// Both address kinds route correctly even when each starts in the other field.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]

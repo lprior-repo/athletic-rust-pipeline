@@ -1,4 +1,3 @@
-//! One payload's rows: the walk from a decoded bio to canonical rows, refusing the rest.
 
 mod rows;
 
@@ -12,7 +11,6 @@ use census_domain::model::{
 use census_domain::school_index::SchoolIndex;
 use std::collections::HashMap;
 
-/// Absorb one payload; returns the number of result rows stored.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn absorb(
     bio: &Bio,
@@ -49,6 +47,11 @@ pub(super) fn absorb(
         stats,
         accumulated,
         target,
+        source_athlete: SourceIdentity::new(
+            SourceNamespace::athletic_net("athlete"),
+            target.athlete_id.to_string(),
+        )
+        .with_url(profile_url(target.athlete_id)),
         school_names: school_names(bio),
         observed_grades,
         seasons: season_sports(bio),
@@ -63,7 +66,6 @@ pub(super) fn absorb(
     }
 }
 
-/// One payload's walk: the identity it resolved, the schools its rows name, and where rows go.
 struct Ctx<'a> {
     source: &'a SourceRef,
     observed_on: &'a str,
@@ -72,13 +74,13 @@ struct Ctx<'a> {
     stats: &'a mut Stats,
     accumulated: &'a mut Accumulator,
     target: &'a Target,
+    source_athlete: SourceIdentity,
     school_names: HashMap<String, &'a str>,
     observed_grades: Vec<ObservedGrade>,
     seasons: HashMap<(i64, i16), Option<Sport>>,
 }
 
 impl<'a> Ctx<'a> {
-    /// The canonical school a payload names, counting a payload whose state cannot be resolved.
     fn canonical_school(&mut self, school_id: &str) -> Option<SchoolId> {
         let school = school_for(
             school_id,
@@ -97,7 +99,6 @@ impl<'a> Ctx<'a> {
         school
     }
 
-    /// The athlete every row of this payload hangs off, minted once per (athlete id, school).
     fn athlete_id(
         &mut self,
         school: &SchoolId,
@@ -114,11 +115,7 @@ impl<'a> Ctx<'a> {
                     name,
                     grad_year,
                     gender,
-                    SourceIdentity::new(
-                        SourceNamespace::athletic_net("athlete"),
-                        self.target.athlete_id.to_string(),
-                    )
-                    .with_url(profile_url(self.target.athlete_id)),
+                    self.source_athlete.clone(),
                 );
                 athlete
                     .public_profile_urls
@@ -132,20 +129,11 @@ impl<'a> Ctx<'a> {
         if let Some(athlete) = self.accumulated.athletes.get_mut(&key) {
             athlete.observed_grades = observed_grades;
             athlete.evidence = vec![Evidence::fetched(self.source.clone(), self.observed_on)];
-            athlete.source_identities = vec![SourceIdentity {
-                namespace: SourceNamespace::AthleticNet {
-                    kind: "athlete".to_string(),
-                },
-                id: self.target.athlete_id.to_string(),
-                url: Some(profile_url(self.target.athlete_id)),
-            }];
         }
         id
     }
 }
 
-/// Grade observations: `grades` maps `"<SchoolID>_<SeasonID>"` to the grade that season, which is
-/// what makes a class year derived rather than assumed.
 fn grade_observations(bio: &Bio, source: &SourceRef) -> Vec<ObservedGrade> {
     let mut observed: Vec<ObservedGrade> = Vec::new();
     for (key, grade) in bio.grades.iter().flatten() {
@@ -171,7 +159,6 @@ fn grade_observations(bio: &Bio, source: &SourceRef) -> Vec<ObservedGrade> {
     observed
 }
 
-/// School names are published once per payload, keyed by the school id the rows carry.
 fn school_names(bio: &Bio) -> HashMap<String, &str> {
     bio.teams
         .iter()
@@ -179,8 +166,6 @@ fn school_names(bio: &Bio) -> HashMap<String, &str> {
         .collect()
 }
 
-/// Season entries are the only place the indoor/outdoor split is published, keyed by the
-/// payload's school + season.
 fn season_sports(bio: &Bio) -> HashMap<(i64, i16), Option<Sport>> {
     bio.seasons
         .iter()

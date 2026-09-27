@@ -1,9 +1,6 @@
-//! Row parsing, CSV loading, and in-place normalization.
-
 use super::{url_find, Row, HEADER, PERSONAL_MAIL};
 use std::path::Path;
 
-/// Build a Row from parsed CSV fields, padding with blanks as needed.
 pub(super) fn from_fields(fields: Vec<String>) -> Row {
     let mut rest = fields
         .into_iter()
@@ -21,10 +18,10 @@ pub(super) fn from_fields(fields: Vec<String>) -> Row {
         ad_email: next(),
         source_url: next(),
         last_observed: next(),
+        verified_proof_digest: next(),
     }
 }
 
-/// Return the row as a flat vec of field strings, in HEADER order.
 pub(super) fn to_fields(row: &Row) -> Vec<String> {
     vec![
         row.school.clone(),
@@ -38,10 +35,10 @@ pub(super) fn to_fields(row: &Row) -> Vec<String> {
         row.ad_email.clone(),
         row.source_url.clone(),
         row.last_observed.clone(),
+        row.verified_proof_digest.clone(),
     ]
 }
 
-/// Dedupe key: (lowercased school, state, lowercased sport, lowercased role).
 pub(super) fn dedupe_key(row: &Row) -> (String, String, String, String) {
     (
         row.school.trim().to_lowercase(),
@@ -51,10 +48,13 @@ pub(super) fn dedupe_key(row: &Row) -> (String, String, String, String) {
     )
 }
 
-/// Validate the header row against the expected HEADER.
 fn validate_header(record: &[String]) -> Result<(), String> {
+    if record.len() < 11 {
+        return Err("expected at least 11 columns".to_string());
+    }
     let normalized: Vec<String> = record
         .iter()
+        .take(11)
         .map(|h| h.trim().trim_start_matches('\u{feff}').to_string())
         .collect();
     let expected: Vec<String> = HEADER.iter().map(|s| s.to_string()).collect();
@@ -65,12 +65,10 @@ fn validate_header(record: &[String]) -> Result<(), String> {
     }
 }
 
-/// Check if a record is completely empty.
 fn is_empty_record(record: &[String]) -> bool {
     record.iter().all(|f| f.trim().is_empty())
 }
 
-/// Load rows from a fragment CSV file.
 pub(super) fn load_rows(path: &Path, expected_state: &str) -> (Vec<(usize, Row)>, Option<String>) {
     let mut content = String::new();
     if let Err(e) = std::fs::read_to_string(path).map(|s| content = s) {
@@ -112,28 +110,18 @@ pub(super) fn load_rows(path: &Path, expected_state: &str) -> (Vec<(usize, Row)>
         } else {
             state_field
         };
+        if row.verified_proof_digest.is_empty() {
+            return (Vec::new(), Some(format!("missing proof digest at line {line_no}")));
+        }
         records.push((line_no, row));
     }
     (records, None)
 }
 
-/// Normalize a row in place: trim source_url, blank personal-mail addresses.
 pub(super) fn normalize(row: &mut Row) {
     if let Some(m) = url_find().and_then(|re| re.captures(&row.source_url)) {
         if let Some(whole) = m.get(0) {
             row.source_url = whole.as_str().to_string();
-        }
-    }
-    for field in [&mut row.public_professional_email, &mut row.ad_email] {
-        let value = field.trim().to_string();
-        if value.is_empty() || !value.contains('@') {
-            continue;
-        }
-        let domain = value.rsplit_once('@').map(|(_, d)| d.trim().to_lowercase());
-        if let Some(domain) = domain {
-            if PERSONAL_MAIL.contains(&domain.as_str()) {
-                *field = String::new();
-            }
         }
     }
 }

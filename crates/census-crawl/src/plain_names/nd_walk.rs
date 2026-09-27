@@ -1,8 +1,3 @@
-//! The North Dakota half's per-school walk: fetch one member page, read its heading, staff and
-//! offering rows, append the page's entity rows and journal the school.
-//!
-//! Split out of `nd_coaches` when that file's walk outgrew the repository's file budget; the
-//! collection entry point and the row parsers stay there.
 
 use super::nd::{
     parse_nd_offerings, parse_nd_school_page, parse_nd_staff, NdOffering, NdSchoolRef, NdStaffRole,
@@ -15,7 +10,6 @@ use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{CanonicalSchool, SchoolId, SourceNamespace};
 use census_store::{StoreBatch, Table};
 
-/// One parsed NDHSAA school page: its heading and the row sets the entity builders read.
 struct NdPage {
     school: CanonicalSchool,
     school_id: SchoolId,
@@ -23,7 +17,6 @@ struct NdPage {
     offerings: Vec<NdOffering>,
 }
 
-/// Journal both NDHSAA phases for one walked school, in the page that holds its rows.
 fn journal_school(
     batch: &mut StoreBatch<'_>,
     key: &str,
@@ -45,7 +38,6 @@ fn journal_school(
     Ok(())
 }
 
-/// One walk of the NDHSAA member index: the rows each visit appended and its report counters.
 #[derive(Default)]
 pub(super) struct NdWalk {
     observed_on: String,
@@ -61,7 +53,6 @@ pub(super) struct NdWalk {
 }
 
 impl NdWalk {
-    /// A walk whose entities cite `observed_on`.
     pub(super) fn new(observed_on: String) -> Self {
         Self {
             observed_on,
@@ -69,17 +60,14 @@ impl NdWalk {
         }
     }
 
-    /// Whether the operator's row limit has already been reached.
     pub(super) fn limit_reached(&self, limit: Option<usize>) -> bool {
         limit.is_some_and(|limit| self.processed >= limit)
     }
 
-    /// Count one member school as already journalled.
     pub(super) fn note_resumed(&mut self) {
         self.resumed = self.resumed.saturating_add(1);
     }
 
-    /// Fetch one member page's HTML; `None` means the failure is already on the report.
     async fn page(
         &mut self,
         ctx: &AdapterContext<'_>,
@@ -98,7 +86,6 @@ impl NdWalk {
         }
     }
 
-    /// Fetch, parse and record one member school: its entity rows, tallies and journal entries.
     pub(super) async fn visit(
         &mut self,
         ctx: &AdapterContext<'_>,
@@ -116,7 +103,6 @@ impl NdWalk {
         self.record(ctx, &url, member, page)
     }
 
-    /// Parse one member page into its heading and row sets; `None` means it carried no heading.
     fn parse_page(
         &mut self,
         html: &str,
@@ -142,7 +128,6 @@ impl NdWalk {
         }))
     }
 
-    /// Count one page's published TF/XC offering slots, named or blank.
     fn tally_offerings(&mut self, offerings: &[NdOffering]) {
         for offering in offerings {
             if parse_nd_sport(&offering.label).is_some() {
@@ -154,7 +139,6 @@ impl NdWalk {
         }
     }
 
-    /// Append one page's entity rows, count its coach roles and journal both phases.
     fn record(
         &mut self,
         ctx: &AdapterContext<'_>,
@@ -175,10 +159,8 @@ impl NdWalk {
 
         let mut batch = ctx.store.write_batch();
         batch.append_many(Table::Schools, std::slice::from_ref(&page.school))?;
-        ctx.observe_school(
-            &SourceNamespace::association_school(super::ND_ADAPTER_ID),
-            &page.school,
-        )?;
+        batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(super::ND_ADAPTER_ID),
+        &page.school,).as_slice())?;
         batch.append_many(Table::Coaches, &coaches)?;
         self.school_rows = self.school_rows.saturating_add(1);
         self.coach_rows = self.coach_rows.saturating_add(coaches.len());
@@ -197,7 +179,6 @@ impl NdWalk {
         Ok(())
     }
 
-    /// Report the counts of the rows each visit appended and emit the two summary lines.
     pub(super) fn publish(
         &self,
         report: &mut AdapterReport,
@@ -213,7 +194,6 @@ impl NdWalk {
         Ok((school_rows, coach_rows))
     }
 
-    /// The two NDHSAA summary lines: parse coverage and the page email split.
     fn summary(&self, report: &mut AdapterReport, members: usize, coach_rows: u64) {
         let NdWalk {
             processed,

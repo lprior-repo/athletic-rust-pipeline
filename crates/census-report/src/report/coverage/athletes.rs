@@ -1,5 +1,3 @@
-//! The athlete and performance passes: one athlete into one jurisdiction row, and the performance
-//! tallies the published athlete ids then join to.
 
 use super::state::{bucket_mut, in_cohort, jurisdiction_of, Bucket, BucketMap, PerfTally};
 use super::JurisdictionCoverage;
@@ -8,10 +6,6 @@ use census_domain::JurisdictionBucket;
 use census_domain::UsJurisdiction;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
-/// The athlete pass: cohort filtering, the identity and sport columns, and the two gap counts that
-/// need the school and coach tables. Returns the athletes the cohort filter left out, which publish
-/// as [`super::CoverageReport::off_cohort_athletes`] rather than as a row; the read side of the
-/// reconciliation is counted independently in [`super::reads`].
 pub(super) fn classify<'a>(
     athletes: &'a [CanonicalAthlete],
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
@@ -40,7 +34,6 @@ pub(super) fn classify<'a>(
     off_cohort
 }
 
-/// One athlete into one row.
 fn tally(bucket: &mut Bucket, athlete: &CanonicalAthlete) {
     let row = &mut bucket.row;
     bump(&mut row.athletes);
@@ -66,7 +59,6 @@ fn tally(bucket: &mut Bucket, athlete: &CanonicalAthlete) {
     tally_sources(row, athlete);
 }
 
-/// The column one census sport counts in.
 fn sport_column(row: &mut JurisdictionCoverage, sport: Sport) -> &mut usize {
     match sport {
         Sport::OutdoorTrack => &mut row.outdoor_track,
@@ -75,7 +67,6 @@ fn sport_column(row: &mut JurisdictionCoverage, sport: Sport) -> &mut usize {
     }
 }
 
-/// The profile columns: any URL, and the two provider profiles the objective names.
 fn tally_profile(row: &mut JurisdictionCoverage, athlete: &CanonicalAthlete) {
     if !athlete.public_profile_urls.is_empty() {
         bump(&mut row.with_profile_url);
@@ -96,7 +87,6 @@ fn tally_profile(row: &mut JurisdictionCoverage, athlete: &CanonicalAthlete) {
     }
 }
 
-/// The provider columns, from evidence and identities rather than from URLs.
 fn tally_sources(row: &mut JurisdictionCoverage, athlete: &CanonicalAthlete) {
     if distinct_namespaces(athlete) > 1 {
         bump(&mut row.multisource);
@@ -106,7 +96,6 @@ fn tally_sources(row: &mut JurisdictionCoverage, athlete: &CanonicalAthlete) {
     }
 }
 
-/// The adapters that left evidence on one athlete, each counted once however many rows it wrote.
 fn distinct_evidence_sources(athlete: &CanonicalAthlete) -> Vec<&str> {
     let mut sources: Vec<&str> = athlete
         .evidence
@@ -118,11 +107,8 @@ fn distinct_evidence_sources(athlete: &CanonicalAthlete) -> Vec<&str> {
     sources
 }
 
-/// How many distinct source namespaces one athlete's identities name.
 fn distinct_namespaces(athlete: &CanonicalAthlete) -> usize {
-    let mut namespaces: Vec<String> = athlete
-        .source_identities
-        .iter()
+    let mut namespaces: Vec<String> = athlete.identities()
         .map(|identity| identity.namespace.to_string())
         .collect();
     namespaces.sort_unstable();
@@ -130,8 +116,6 @@ fn distinct_namespaces(athlete: &CanonicalAthlete) -> usize {
     namespaces.len()
 }
 
-/// Whether a grade observation implies a graduation year other than the athlete's stored cohort —
-/// the disagreement the store's athlete merge records as `Confidence::LOW`.
 fn has_conflicting_grade(athlete: &CanonicalAthlete) -> bool {
     athlete
         .observed_grades
@@ -139,9 +123,6 @@ fn has_conflicting_grade(athlete: &CanonicalAthlete) -> bool {
         .any(|observation| observation.grad_year() != athlete.grad_year)
 }
 
-/// The performance pass: one tally per athlete id, plus the tally for rows whose athlete is not in
-/// the athlete table (they cannot be cohort-filtered, so they publish in
-/// [`UNKNOWN_JURISDICTION`](super::UNKNOWN_JURISDICTION)).
 pub(super) fn tally_performances<'a>(
     performances: &'a [CanonicalPerformance],
     athlete_ids: &HashSet<&str>,
@@ -170,9 +151,6 @@ pub(super) fn tally_performances<'a>(
     (tallies, orphan)
 }
 
-/// Attach the performance tallies to the jurisdiction each published athlete publishes in. A tally
-/// whose athlete sits outside the run scope lands in a bucket no row publishes and is dropped with
-/// it; the read side that counts those rows is [`super::reads`], not this pass.
 pub(super) fn classify_performances(
     athletes: &[CanonicalAthlete],
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
@@ -205,7 +183,6 @@ pub(super) fn classify_performances(
     }
 }
 
-/// One published athlete's tally into that athlete's row.
 fn add_perf(bucket: &mut Bucket, tally: &PerfTally) {
     let row = &mut bucket.row;
     if tally.rows > 0 {
@@ -222,8 +199,6 @@ fn add_perf(bucket: &mut Bucket, tally: &PerfTally) {
     gaps.unmapped_event = gaps.unmapped_event.saturating_add(tally.unmapped_event);
 }
 
-/// Saturating counter bump. The crate's report helpers are `pub(super)` to `report`, so this part
-/// keeps its own copy rather than widening their visibility.
 fn bump(counter: &mut usize) {
     *counter = counter.saturating_add(1);
 }

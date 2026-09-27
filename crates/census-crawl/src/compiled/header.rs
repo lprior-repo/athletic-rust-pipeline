@@ -1,5 +1,3 @@
-//! Meet name and date from the print header: the page stamp, the readable date stamp, and the
-//! print artifacts that are not part of the name.
 
 use regex::Regex;
 use std::sync::LazyLock;
@@ -52,11 +50,6 @@ const MONTHS: [&str; 12] = [
     "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
 ];
 
-/// Meet name and date from the print header.
-///
-/// The first line is a page stamp (`5/27/25, 8:35 PM`) that may also carry the meet name; the venue
-/// line carries the readable date stamp (`Tue, May 27, 2025`). Chrome's print header occasionally
-/// prepends `Manage ` to the name, which is dropped because no meet is called that.
 pub(super) fn header(lines: &[String]) -> Option<(String, Option<String>)> {
     let mut name: Option<String> = None;
     let mut date: Option<String> = None;

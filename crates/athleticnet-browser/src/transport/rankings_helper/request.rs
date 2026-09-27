@@ -2,13 +2,6 @@ use super::capture::CapturedRanking;
 use crate::protocol::RankingsCapture;
 use crate::request::RankingsAction;
 use crate::BrowserError;
-/// Build the navigation URL the source serves unchanged:
-/// `/TrackAndField/rankings/list/{list_id}/{gender}/{event}?grades=N`.
-///
-/// The page depth travels in the API payload (`qParams.page`), never in this
-/// landing URL. The source canonicalises a trailing slash and a `page` query
-/// away, and a canonicalising navigation makes Chromium abort the original
-/// document, which the navigation layer must not read as a transport failure.
 pub(crate) fn build_ui_url(
     source_origin: &url::Url,
     action: &RankingsAction,
@@ -53,8 +46,6 @@ struct RankingsEnvelope {
     default_settings: Option<EnvelopeSettings>,
 }
 
-/// The page-depth fields the source declares for a list response. Rows stay
-/// `IgnoredAny`; only the declared depth is materialized.
 #[derive(serde::Deserialize)]
 struct EnvelopeSettings {
     depth: Option<u64>,
@@ -69,8 +60,6 @@ impl RankingsEnvelope {
             .sum()
     }
 
-    /// The declared page depth: `settings.depth` when the request echoed its
-    /// settings, otherwise the default settings echoed alongside.
     fn declared_page_depth(&self) -> Option<u64> {
         self.settings
             .as_ref()
@@ -82,8 +71,6 @@ impl RankingsEnvelope {
             })
     }
 
-    /// The page this body declares for itself: `settings.page` when the request
-    /// echoed its settings, otherwise the default settings echoed alongside.
     fn declared_page(&self) -> Option<u64> {
         self.settings
             .as_ref()
@@ -96,7 +83,6 @@ impl RankingsEnvelope {
     }
 }
 
-/// Parse and validate the captured request body once, returning its validated page.
 pub(crate) fn validate_request(
     captured: &CapturedRanking,
     action: &RankingsAction,
@@ -136,18 +122,12 @@ pub(crate) fn validate_request(
     Ok(Some(request_page))
 }
 
-/// The row count and declared page depth of a captured list response, used to
-/// decide whether another page can exist. A body that is not a rankings
-/// envelope is a protocol error for the caller to treat as terminal.
 pub(crate) fn page_extent(body: &[u8]) -> Result<(u64, Option<u64>), BrowserError> {
     let envelope: RankingsEnvelope =
         serde_json::from_slice(body).map_err(|_| BrowserError::Protocol)?;
     Ok((envelope.row_count(), envelope.declared_page_depth()))
 }
 
-/// The page number the captured response body declares for itself. The source
-/// answers a request past the listing's last page with the listing's first page,
-/// which is how the pagination chain learns the list is exhausted.
 pub(crate) fn declared_page(body: &[u8]) -> Option<u32> {
     let envelope: RankingsEnvelope = serde_json::from_slice(body).ok()?;
     let page = envelope.declared_page()?;

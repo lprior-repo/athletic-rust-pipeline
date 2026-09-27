@@ -1,10 +1,8 @@
-//! Canonical schools CSV export.
 
 use crate::cli::export_data::{csv::write_csv, helpers::*};
 use serde_json::Value;
 use std::collections::BTreeSet;
 
-/// Compute identity fields (source namespaces, evidence sources, identity count) for a school.
 fn build_identity_fields(s: &Value) -> (String, String, usize) {
     let source_ns: String = identities(s)
         .iter()
@@ -22,7 +20,6 @@ fn build_identity_fields(s: &Value) -> (String, String, usize) {
     (source_ns, evidence_src, ident_count)
 }
 
-/// Build a single school row from a JSON Value.
 fn build_school_row(s: &Value) -> Vec<String> {
     let id = s.get("id").and_then(|v| v.as_str()).unwrap_or("");
     let name = s.get("name").and_then(|v| v.as_str()).unwrap_or("");
@@ -83,7 +80,6 @@ fn build_school_row(s: &Value) -> Vec<String> {
     ]
 }
 
-/// Sort schools by state then name.
 fn sort_schools(mut schools: Vec<Value>) -> Vec<Value> {
     schools.sort_by(|a, b| {
         let sa = a
@@ -111,7 +107,6 @@ fn sort_schools(mut schools: Vec<Value>) -> Vec<Value> {
     schools
 }
 
-/// Build and write canonical-schools.csv.
 pub fn write_canonical_schools(schools: &[Value], data: &std::path::Path) -> anyhow::Result<()> {
     let sorted_schools = sort_schools(schools.to_vec());
     let school_rows: Vec<Vec<String>> = sorted_schools.iter().map(build_school_row).collect();

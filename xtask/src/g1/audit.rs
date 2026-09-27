@@ -1,5 +1,3 @@
-//! One audit run: read the three inputs, index them, scan the raw bodies, cross-check the records,
-//! and print every section in the order the retained outputs fixed.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -18,7 +16,6 @@ use crate::samples;
 use crate::verdicts;
 use crate::Args;
 
-/// The parsed records, keyed by the digest the evidence records join on.
 fn read_parsed(
     parsed_files: &[(String, String)],
 ) -> Result<BTreeMap<String, Value>, Box<dyn std::error::Error>> {
@@ -32,7 +29,6 @@ fn read_parsed(
         .collect::<Result<_, _>>()
 }
 
-/// Run the inventory over the directories `args` names.
 pub(crate) fn run(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let raw_files = inputs::read_dir(&args.raw);
     let evidence_files = inputs::read_dir(&args.evidence);

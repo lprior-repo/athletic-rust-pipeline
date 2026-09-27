@@ -1,6 +1,3 @@
-//! The §52 partition: the column order, the budget and its margin, the zero-padded sheet names,
-//! the repeated header, the order the split follows, and the rejection that keeps a row from being
-//! dropped.
 
 use super::*;
 use crate::report::retain_core_row;
@@ -17,22 +14,21 @@ const DAY: &str = "2026-09-21";
 const SOURCE: &str = "wiaa_results";
 const RESULT_URL: &str = "https://example.test/results/1";
 
-/// One synthetic performance and the rows it needs, small enough to read whole.
 struct Fixture {
     school: &'static str,
     athlete: &'static str,
+    source_id: &'static str,
     date: &'static str,
     kind: EventKind,
     mark: Mark,
 }
 
-/// The five performances the split tests run on: two schools, three dates, a time, a distance and a
-/// mark the census has not parsed.
 fn fixtures() -> Vec<Fixture> {
     vec![
         Fixture {
             school: "Abbotsford",
             athlete: "Ada",
+            source_id: "runner-a",
             date: "2026-05-01",
             kind: EventKind::Track400m,
             mark: Mark::TimeSeconds(CentiSeconds::new(4855)),
@@ -40,6 +36,7 @@ fn fixtures() -> Vec<Fixture> {
         Fixture {
             school: "Abbotsford",
             athlete: "Ada",
+            source_id: "runner-a",
             date: "2026-05-08",
             kind: EventKind::Track400m,
             mark: Mark::TimeSeconds(CentiSeconds::new(4810)),
@@ -47,6 +44,7 @@ fn fixtures() -> Vec<Fixture> {
         Fixture {
             school: "Abbotsford",
             athlete: "Bo",
+            source_id: "runner-b",
             date: "2026-05-08",
             kind: EventKind::LongJump,
             mark: Mark::DistanceMetres(CentiMetres::new(642)),
@@ -54,6 +52,7 @@ fn fixtures() -> Vec<Fixture> {
         Fixture {
             school: "Colby",
             athlete: "Cy",
+            source_id: "runner-c",
             date: "2026-04-30",
             kind: EventKind::Track800m,
             mark: Mark::Raw("DNS".to_string()),
@@ -61,6 +60,7 @@ fn fixtures() -> Vec<Fixture> {
         Fixture {
             school: "Colby",
             athlete: "Dee",
+            source_id: "runner-d",
             date: "2026-05-08",
             kind: EventKind::Track1600m,
             mark: Mark::TimeSeconds(CentiSeconds::new(28123)),
@@ -68,7 +68,6 @@ fn fixtures() -> Vec<Fixture> {
     ]
 }
 
-/// The order the sheets publish: school, then date, then athlete (`COLUMNS` columns 2, 6, 1, 10).
 fn expected_order() -> Vec<String> {
     [
         ("Abbotsford", "2026-05-01", "Ada", "48.55"),
@@ -82,12 +81,15 @@ fn expected_order() -> Vec<String> {
     .collect()
 }
 
-/// One core-source observation, carrying the URL the `Source URL` column prints.
 fn observation() -> Evidence {
     Evidence::parsed(SourceRef::new(SOURCE, Some(RESULT_URL.to_string())), DAY)
 }
 
-/// Append a fixture's school, athlete, meet, event and performance, returning the performance id.
+fn fixture_source(id: &str) -> census_domain::model::SourceIdentity {
+    census_domain::model::SourceIdentity::new(
+        census_domain::model::SourceNamespace::Other("fixture".to_owned()), id)
+}
+
 fn seed(store: &Store, fixture: &Fixture) -> String {
     let (mut school, school_id) = CanonicalSchool::new(
         UsJurisdiction::Wisconsin,
@@ -97,8 +99,8 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
     school.evidence.push(observation());
     store.append(Table::Schools, &school).unwrap();
 
-    let mut athlete =
-        CanonicalAthlete::new(&school_id, fixture.athlete, GradYear::CO2027, Gender::Boys);
+    let mut athlete = CanonicalAthlete::new(&school_id, fixture.athlete, GradYear::CO2027,
+        Gender::Boys, fixture_source(fixture.source_id));
     athlete.evidence.push(observation());
     store.append(Table::Athletes, &athlete).unwrap();
 
@@ -151,14 +153,13 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
         observed_grade: None,
         evidence: vec![observation()],
         source_key,
-        source_athlete: None,
+        source_athlete: athlete.source.clone(),
         retained_conflicts: Vec::new(),
     };
     store.append(Table::Performances, &performance).unwrap();
     performance.id.as_str().to_string()
 }
 
-/// A store holding [`fixtures`], in the order given.
 fn seeded_store(dir: &tempfile::TempDir, fixtures: &[Fixture]) -> Store {
     let store = Store::open(dir.path()).unwrap();
     for fixture in fixtures {
@@ -167,16 +168,12 @@ fn seeded_store(dir: &tempfile::TempDir, fixtures: &[Fixture]) -> Store {
     store
 }
 
-/// Write `rows` to `path`, `per_sheet` data rows to a sheet.
 fn write_sheets(rows: &[PerformanceRow], per_sheet: usize, path: &Path) {
     let mut book = Workbook::new();
     write_partitions(&mut book, path, rows.iter().cloned().map(Ok), per_sheet).unwrap();
     book.save(path).unwrap();
 }
 
-/// The §52 rows, in sheet order, collected rather than streamed. Every caller outside the tests
-/// streams (`PerformanceRows`), so this exists to let a test assert the join column by column, and to
-/// compare what the spill hands over against what the whole table holds.
 fn performance_rows(store: &Store, scope: Scope) -> ReportResult<Vec<PerformanceRow>> {
     let parents = super::join::Parents::read(store, scope, None)?;
     let lookups = parents.lookups();
@@ -192,7 +189,6 @@ fn performance_rows(store: &Store, scope: Scope) -> ReportResult<Vec<Performance
     Ok(rows)
 }
 
-/// The text one cell holds, as the sheet publishes it. `calamine` addresses cells by `(u32, u32)`.
 fn text(range: &Range<Data>, row: u32, column: u32) -> String {
     range
         .get_value((row, column))
@@ -444,7 +440,8 @@ fn a_performance_the_store_cannot_join_is_still_written() {
     school.evidence.push(observation());
     store.append(Table::Schools, &school).unwrap();
 
-    let athlete = CanonicalAthlete::mint(&school_id, "Orphan", GradYear::CO2027, Gender::Boys);
+    let source = fixture_source("orphan");
+    let athlete = CanonicalAthlete::mint(&school_id, "Orphan", GradYear::CO2027, Gender::Boys, &source);
     let meet = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
         "2026-04-30",
@@ -478,7 +475,7 @@ fn a_performance_the_store_cannot_join_is_still_written() {
         observed_grade: None,
         evidence: vec![observation()],
         source_key: "test:orphan".to_string(),
-        source_athlete: None,
+        source_athlete: source,
         retained_conflicts: Vec::new(),
     };
     store.append(Table::Performances, &performance).unwrap();

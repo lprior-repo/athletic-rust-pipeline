@@ -110,7 +110,7 @@ fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) {
         "url": url,
         "method": "GET",
         "status": 200,
-        "sha256": format!("{:x}", Sha256::digest(body.as_bytes())),
+        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
         "fetched_at": "2026-09-20T14:39:00Z",
     });

@@ -1,4 +1,3 @@
-//! Unit tests for the service shell: flag parsing, the bind refusal, and drain accounting.
 
 use std::ffi::OsStr;
 

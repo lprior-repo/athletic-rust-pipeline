@@ -1,11 +1,3 @@
-//! Draining the actor from the manager's side.
-//!
-//! Shutdown is a bounded protocol, not a flag: revoke admission and mark the status `Stopped`
-//! first, then send `Command::Shutdown` under one deadline, then await the actor task under the
-//! same deadline and abort it only if the reply never arrives. The end of the protocol is the
-//! actor's region certificate, so it is returned even when the teardown failed: the actor finishes
-//! its counts before it touches the browser process, and a lost certificate would hide exactly the
-//! units the drain could not account for.
 
 use super::super::{actor::Command, BrowserState, SHUTDOWN_TIMEOUT};
 use super::status::write_state;
@@ -14,7 +6,6 @@ use crate::drain::DrainReport;
 use tokio::sync::oneshot;
 
 impl BrowserManager {
-    /// Drain the actor and return its region certificate plus any teardown failure.
     pub async fn shutdown(&self) -> (DrainReport, Option<anyhow::Error>) {
         self.gate.revoke();
         write_state(&self.status, BrowserState::Stopped);
@@ -29,10 +20,6 @@ impl BrowserManager {
         (report, failure)
     }
 
-    /// Send `Command::Shutdown` and await the actor's certificate, both under the deadline.
-    ///
-    /// A failure here means the actor never delivered a certificate, so the report is the empty
-    /// one and the reason names the step that gave up.
     async fn send_shutdown_command(
         &self,
         deadline: tokio::time::Instant,
@@ -61,10 +48,6 @@ impl BrowserManager {
         }
     }
 
-    /// Wait for the actor task, aborting it when the deadline expires.
-    ///
-    /// The actor reports its own teardown failure as its task result, so a joined task that failed
-    /// is the failure here — and it is the same failure the certificate was mailed with.
     async fn join_actor(&self, deadline: tokio::time::Instant) -> Option<anyhow::Error> {
         let mut guard = self.join.lock().await;
         let join = guard.take();

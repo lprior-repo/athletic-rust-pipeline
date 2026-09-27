@@ -1,10 +1,3 @@
-//! The mechanics a write shares: the rows a derived batch stages and clears, and the ceilings that
-//! refuse a batch or a journal entry before it exists.
-//!
-//! `write.rs` holds the store's write API; the pieces those methods share live here. The ceilings are
-//! enforced on the write side because that is the only place they can be: a committed batch past one
-//! leaves a table no later scan can read, and nothing short of deleting rows repairs that.
-
 use fjall::{Keyspace, OwnedWriteBatch};
 use serde::Serialize;
 use std::collections::HashSet;
@@ -14,32 +7,27 @@ use super::keys::{
 };
 use super::{StorageMode, StoreError, StoreResult, Table, MAX_ROWS_PER_TABLE};
 
-/// Refuse a batch that would leave `table` holding more than `MAX_ROWS_PER_TABLE` rows.
-///
-/// The ceiling is what keeps the store's reads bounded — [`Store::scan`](crate::Store::scan)
-/// aborts on the row past it — so the writer holds it for the reader: a committed batch past the
-/// ceiling leaves a table no later scan can read, and nothing short of deleting rows repairs that.
-/// `rows` is the sequence the batch would reach for a table that spends sequences, and the batch's own
-/// row count for one that does not; the two modes are the ceiling applied to the quantity each table
-/// actually grows by.
 pub(super) fn refuse_over_bound(table: Table, rows: u64) -> StoreResult<()> {
     if rows > MAX_ROWS_PER_TABLE {
         return Err(StoreError::TooManyRows {
             table: table.file().to_string(),
-            max: usize::try_from(MAX_ROWS_PER_TABLE).unwrap_or(usize::MAX),
+            max: usize::try_from(MAX_ROWS_PER_TABLE).map_err(|_| StoreError::CounterOverflow)?,
         });
     }
     Ok(())
 }
 
-/// How much of a caller-supplied name an error message carries.
+pub(super) fn refuse_observation_replacement(table: Table) -> StoreResult<()> {
+    if table.storage_mode() == StorageMode::ObservationLog {
+        return Err(StoreError::ObservationReplacement {
+            table: table.file(),
+        });
+    }
+    Ok(())
+}
+
 const MAX_JOURNAL_LABEL_CHARS: usize = 64;
 
-/// Refuse a journal entry whose key or serialized value is past the ceiling that bounds it.
-///
-/// The refusal names the phase and the key so the caller that wrote it can be found, and it names them
-/// truncated: the entry being refused for its size is exactly the one whose size cannot be reproduced
-/// in a message.
 pub(super) fn refuse_over_journal(
     phase: &str,
     key: &str,
@@ -59,35 +47,21 @@ pub(super) fn refuse_over_journal(
     Ok(())
 }
 
-/// A caller-supplied name, as much of it as an error message can carry.
 fn label(name: &str) -> String {
     name.chars().take(MAX_JOURNAL_LABEL_CHARS).collect()
 }
 
-/// What a derived batch staged: the ids it names, and how many of them the table did not hold.
 pub(super) struct Staged {
     pub(super) named: HashSet<String>,
     pub(super) added: u64,
 }
 
 impl Staged {
-    /// The rows a batch leaves standing when that batch is all the table holds.
     pub(super) fn named_count(&self) -> StoreResult<u64> {
         u64::try_from(self.named.len()).map_err(|_| StoreError::CounterOverflow)
     }
 }
 
-/// Key every record of a derived batch and insert it, replacing the row its id already holds.
-///
-/// A derived row is one row per id, so an id repeated inside one batch writes the same key twice — the
-/// last record wins — and an id the table already holds is replaced where it stands. What a batch adds
-/// is therefore the ids it is the first to name, whichever of the two wrote them. The ids a batch is
-/// the first to name also have their foreign rows cleared, in the same batch, so a table that took
-/// rows from an older store comes back to one row per id as the derivation names them again.
-///
-/// Foreign rows are dropped in a single scan of the table after all records are staged, rather than
-/// once per id inside the loop.  That avoids the degenerate case where each id's prefix scan reads the
-/// entire table instead of seeking to a narrow range.
 pub(super) fn stage_derived<T: Serialize>(
     batch: &mut OwnedWriteBatch,
     entities: &Keyspace,
@@ -105,8 +79,6 @@ pub(super) fn stage_derived<T: Serialize>(
     stage_derived_encoded(batch, entities, table, encoded)
 }
 
-/// The same staging for records a caller already encoded, so a batch can hold a table's whole content
-/// without re-serializing it at the commit.
 pub(super) fn stage_derived_encoded(
     batch: &mut OwnedWriteBatch,
     entities: &Keyspace,
@@ -136,11 +108,6 @@ pub(super) fn stage_derived_encoded(
     Ok(staged)
 }
 
-/// Remove every row whose id sits in `named` and whose sequence is not [`DERIVED_SEQUENCE`].
-///
-/// Scans the table once rather than once per id, collecting all keys to remove and removing them in
-/// a single pass.  The caller must only pass ids that the table already holds at a non-derived
-/// sequence; this function does not verify that itself.
 fn drop_foreign_batch(
     entities: &Keyspace,
     batch: &mut OwnedWriteBatch,
@@ -165,12 +132,6 @@ fn drop_foreign_batch(
     Ok(())
 }
 
-/// Remove every row of a snapshot table that the batch does not name.
-///
-/// A snapshot write describes the table's whole content, so a write that only upserted would keep a row
-/// for every subject the newest derivation no longer derives — a jurisdiction that lost its last meet
-/// would go on reporting the meet it had. A map write is the opposite: its rows are keyed to findings
-/// that persist, so it leaves the rows it does not name standing.
 pub(super) fn drop_unnamed(
     entities: &Keyspace,
     batch: &mut OwnedWriteBatch,

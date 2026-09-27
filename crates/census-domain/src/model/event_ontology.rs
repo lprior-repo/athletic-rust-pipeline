@@ -1,6 +1,5 @@
 use super::*;
 
-/// Our own event taxonomy. Vendor strings map into this via [`EventKind::from_source_label`].
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EventKind {
@@ -19,7 +18,6 @@ pub enum EventKind {
     Track400mHurdles,
     Track2000mSteeplechase,
     Track3000mSteeplechase,
-    /// Cross-country race; the published distance varies by division and course.
     CrossCountry,
     Relay4x100,
     Relay4x200,
@@ -39,19 +37,12 @@ pub enum EventKind {
     Pentathlon,
     Heptathlon,
     Decathlon,
-    /// Recognized source label that has no canonical home yet.
     Unmapped {
         label: String,
     },
 }
 
 impl EventKind {
-    /// The byte spelling of this kind inside a minted event and performance id.
-    ///
-    /// A unit variant spells its own name; [`Self::Unmapped`] spells the source label the way the
-    /// derived `Debug` this replaced printed it (a `Debug` string literal, so a label containing a
-    /// quote or a backslash keeps that escaping). Ids are a persistence contract, so the spelling is
-    /// frozen in this function rather than taken from `Debug`; see [`Gender::stable_key`].
     pub fn stable_key(&self) -> Cow<'_, str> {
         match self {
             Self::Track100m => Cow::Borrowed("Track100m"),
@@ -92,9 +83,6 @@ impl EventKind {
         }
     }
 
-    /// Map a source label (`"1600m"`, `"110mH"`, `"Shot Put"`, `"4x400m Relay"`, …) to the ontology.
-    ///
-    /// Unknown labels are preserved as [`EventKind::Unmapped`] rather than dropped.
     pub fn from_source_label(label: &str) -> Self {
         let compact = Self::normalized_label(label);
         match compact.as_str() {
@@ -150,8 +138,6 @@ impl EventKind {
         }
     }
 
-    /// Fold a source label to its compact form: no spaces, `-` or `_`, lowercase, and
-    /// `meters`/`metre`/`meter` all read as `m`.
     fn normalized_label(label: &str) -> String {
         let normalized: String = label
             .chars()
@@ -195,7 +181,6 @@ impl EventKind {
     }
 }
 
-/// A raw event label seen at a source, retained as evidence next to the mapped [`EventKind`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SourceEventLabel {
     pub source: SourceRef,

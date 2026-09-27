@@ -1,4 +1,3 @@
-//! Unit tests for the `ohsaa` adapter: fixtures in, parsed rows and canonical entities out.
 
 use super::*;
 use census_domain::model::{CoachRole, Gender, Sport};

@@ -1,31 +1,3 @@
-//! Hy-Tek Meet Manager result files.
-//!
-//! Every Hy-Tek-licensed timer (PrimeTime Timing and the rest) publishes the same fixed-column
-//! layout, either as HTML converted from the Meet Manager text report, or as the plain-text report
-//! itself. One parser therefore covers the WIAA result archive, PrimeTime's own files, and any
-//! other Hy-Tek-licensed timer a later adapter adds.
-//!
-//! The layout, with the column anchors taken from the section's own header line rather than
-//! hard-coded widths (timers differ slightly):
-//!
-//! ```text
-//!     Name                    Year School                 Prelims  Wind H#
-//! ========================================================================
-//! Preliminaries
-//!   1 Ben Lemirand              12 West De Pere             10.56Q  0.4  1
-//!   1 Homestead                                             41.61Q  1
-//!      1) Jamir Erving 11                 2) Sean O'Byrne 12
-//! ```
-//!
-//! Field sections carry `Finals  H# Points` instead of `Prelims  Wind H#`, and relay sections list
-//! the school instead of the athlete, with one indented line per leg. Grades are published for
-//! both individual and relay-leg athletes, which is what makes these files class-of-2027 evidence
-//! rather than only results.
-//!
-//! The module is split by responsibility: this file holds the entry point and the line front
-//! ends, `parse` holds the section and row readers, `identity` the rows whose own header states no
-//! identity columns, `columns` the fixed-column toolkit the other vendors share, and `map` the
-//! meet, event and mark mapping.
 
 mod columns;
 mod identity;
@@ -82,10 +54,6 @@ fn tag_regex() -> CrawlResult<&'static Regex> {
     })
 }
 
-/// Parse a Hy-Tek report.
-///
-/// Returns `None` when the header is missing: a file without a meet name and date cannot be minted
-/// into a canonical meet, and a half-parsed meet would be worse than a skipped file.
 pub fn parse(lines: &[String], source: SourceRef) -> Option<ParsedMeet> {
     let (name, date, end_date) = header_meet(lines)?;
     let timer = lines.iter().find_map(|line| {
@@ -138,8 +106,6 @@ pub fn parse(lines: &[String], source: SourceRef) -> Option<ParsedMeet> {
     })
 }
 
-/// Read a line that describes the stream itself rather than one athlete: a section header, an event
-/// header or a round marker. `true` when the line was one of those and the stream state now holds.
 fn apply_marker(
     line: &str,
     trimmed: &str,
@@ -166,8 +132,6 @@ fn apply_marker(
     false
 }
 
-/// Relay legs belong to the relay row above them; a leg line is consumed either way, because a
-/// `1) Name 11` line is never a row of its own.
 fn extend_relay_legs(
     trimmed: &str,
     events: &mut [ParsedEvent],
@@ -189,10 +153,6 @@ fn extend_relay_legs(
     true
 }
 
-/// Split an HTML result file into report lines.
-///
-/// Hy-Tek's HTML export either wraps each report line in one `<p>` or hands the whole report over
-/// inside a single `<pre>`; both shapes occur in the WIAA archive and must yield the same lines.
 pub fn lines_from_html(body: &str) -> Vec<String> {
     let pre = pre_regex().ok();
     let breaks = break_regex().ok();
@@ -216,16 +176,10 @@ pub fn lines_from_html(body: &str) -> Vec<String> {
         .collect()
 }
 
-/// Split a plain-text Hy-Tek report into report lines.
 pub fn lines_from_text(body: &str) -> Vec<String> {
     body.lines().map(clean_line).collect()
 }
 
-/// Split PDF text (`pdftotext -layout`) into report lines.
-///
-/// Hy-Tek's own PDF exports and Chrome's "print to PDF" captures both keep the fixed-width columns,
-/// so the layout carries the same information as the HTML release. Page breaks arrive as form feeds
-/// and must become line breaks: a page footer must not glue itself onto the next page's first line.
 pub fn lines_from_pdf_text(text: &str) -> Vec<String> {
     text.replace('\u{c}', "\n")
         .lines()

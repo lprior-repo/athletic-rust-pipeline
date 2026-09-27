@@ -1,4 +1,3 @@
-//! What an observation row says: the provider's own object, in the source's own words.
 
 use super::super::*;
 use crate::model::{
@@ -62,14 +61,12 @@ fn an_athlete_observation_keeps_what_its_source_published() {
     );
 }
 
-/// What the adapters' athlete write rests on: the observation is minted from the provider's own
-/// athlete id on the canonical row, so a row whose only name for its athlete is one this program
-/// decided files nothing.
 #[test]
 fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one() {
     let school = SchoolId::mint("sch", &["WI", "Madison West"]);
     let grad_year = GradYear::new(2028).expect("a class");
-    let mut athlete = CanonicalAthlete::new(&school, "Jordan Smith", grad_year, Gender::Girls);
+    let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
+    let mut athlete = CanonicalAthlete::new(&school, "Jordan Smith", grad_year, Gender::Girls, source.clone());
     athlete.observed_grades.push(ObservedGrade {
         grade: Grade::new(10).expect("a grade in 9..=12"),
         school_year: SchoolYear::new(2025).expect("a season"),
@@ -78,10 +75,6 @@ fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one() {
     athlete
         .public_profile_urls
         .push("https://wi.milesplit.com/athletes/14399169-jordan-smith".to_string());
-    athlete.source_identities.push(SourceIdentity::new(
-        SourceNamespace::MilesplitAthlete,
-        "14399169",
-    ));
 
     let observation = SourceAthleteObservation::of_athlete(
         &SourceNamespace::MilesplitAthlete,
@@ -108,16 +101,16 @@ fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one() {
         "the class the source's own grade observation implies"
     );
     assert_eq!(observation.observed_on, "2026-09-22");
+    let no_match = CanonicalAthlete::new(&school, "Jordan Smith", grad_year, Gender::Girls, SourceIdentity::new(SourceNamespace::TfrrsAthlete, "tfrrs-999"));
     assert_eq!(
         SourceAthleteObservation::of_athlete(
             &SourceNamespace::MilesplitAthlete,
-            &CanonicalAthlete::new(&school, "Jordan Smith", grad_year, Gender::Girls),
+            &no_match,
             None,
             "2026-09-22",
         ),
         None,
-        "a row with no provider identity files nothing: its canonical id is this program's, not the \
-         source's, and an observation keyed by it would outlive nothing"
+        "an identity for another source is not this source's sighting of the athlete"
     );
     assert_eq!(
         SourceAthleteObservation::of_athlete(

@@ -1,13 +1,5 @@
-//! The file's own name and date: the first heading line that is neither stamp nor credit, and the
-//! first recognised date, with a walk of the page footer when the header carries none.
 use super::patterns::{date_named, date_slash, page_stamp};
 
-/// Meet name and date from the file's own header lines.
-///
-/// The name is the first line that is not a page stamp, a date, a rule or a "results provided by"
-/// credit; the date is the first recognised date, because the state meet prints it under the course
-/// name, AccuRace prints it under the host school, and the Chrome-printed sectionals print it in
-/// the page footer (`October 24, 2025        Page 4 of 4`).
 pub(super) fn header(lines: &[String]) -> Option<(String, Option<String>)> {
     let mut name: Option<String> = None;
     let mut date: Option<String> = None;

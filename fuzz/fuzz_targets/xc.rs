@@ -1,7 +1,3 @@
-//! Fuzz target for the Cross-Country parser.
-//!
-//! Exercises `xc::parse`.
-//! Input: lines of an XC result file.
 
 #![no_main]
 

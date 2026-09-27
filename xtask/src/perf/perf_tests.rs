@@ -1,25 +1,14 @@
-//! Fixture-driven unit tests for the benchmark parser.
-//!
-//! These tests exercise `parse_bencher_line` and the empty-stream error path
-//! without running actual benchmarks.
 
 use crate::perf::bench::parse_bencher_line;
 
-/// Realistic Criterion bencher output for two benchmarks in a group.
-///
-/// Criterion 0.8 bencher format:
-///   `test <group>/<function> ... bench: <N,NNN> <unit>/iter (+/- <N,NNN>)`
 const BENCHER_SAMPLE: &str = "test census/parse/hynek_lines_from_html ... bench:   12,345 ns/iter (+/- 1,234)\ntest census/parse/hynek_parse ... bench:   23,456 ns/iter (+/- 2,345)\n";
 
-/// Bencher output with no throughput declared (wall time should still parse).
 const BENCHER_NO_THROUGHPUT: &str =
     "test census/school_index/normalize_label ... bench:    1,234 ns/iter (+/- 123)\n";
 
-/// Garbage output that contains no valid bencher lines.
 const GARBAGE_OUTPUT: &str =
     "this is not criterion output\nname=something\nmetric=wall_seconds value=1.0\n";
 
-/// Test that a normal bencher line with nanoseconds parses correctly.
 #[test]
 fn parse_bencher_line_normal_ns() {
     let line = "test census/parse/hynek_lines_from_html ... bench:   12,345 ns/iter (+/- 1,234)";
@@ -28,7 +17,6 @@ fn parse_bencher_line_normal_ns() {
     assert_eq!(ns, 12_345.0);
 }
 
-/// Test that a bencher line with the second benchmark parses correctly.
 #[test]
 fn parse_bencher_line_second_benchmark() {
     let line = "test census/parse/hynek_parse ... bench:   23,456 ns/iter (+/- 2,345)";
@@ -37,7 +25,6 @@ fn parse_bencher_line_second_benchmark() {
     assert_eq!(ns, 23_456.0);
 }
 
-/// Test that microseconds parse correctly (both μ and µ variants).
 #[test]
 fn parse_bencher_line_microseconds() {
     for unit in &["μs", "µs"] {
@@ -48,7 +35,6 @@ fn parse_bencher_line_microseconds() {
     }
 }
 
-/// Test that milliseconds parse correctly.
 #[test]
 fn parse_bencher_line_milliseconds() {
     let line = "test group/fn ... bench: 5 ms/iter (+/- 1)";
@@ -57,7 +43,6 @@ fn parse_bencher_line_milliseconds() {
     assert_eq!(ns, 5_000_000.0);
 }
 
-/// Test that seconds parse correctly.
 #[test]
 fn parse_bencher_line_seconds() {
     let line = "test slow_bench ... bench: 2.5 s/iter (+/- 0.1)";
@@ -66,7 +51,6 @@ fn parse_bencher_line_seconds() {
     assert!((ns - 2_500_000_000.0).abs() < 1.0);
 }
 
-/// Test that a bencher line with no "bench:" field is rejected.
 #[test]
 fn parse_bencher_line_missing_bench() {
     let line = "test group/fn something wrong";
@@ -74,14 +58,12 @@ fn parse_bencher_line_missing_bench() {
     assert!(err.to_string().contains("bench"));
 }
 
-/// Test that a garbled line (no "test " prefix) is rejected.
 #[test]
 fn parse_bencher_line_empty() {
     let err = parse_bencher_line("").expect_err("should error");
     assert!(err.to_string().contains("name"));
 }
 
-/// Garbage output yields zero bencher lines — caller detects this as an error.
 #[test]
 fn garbled_output_is_error() {
     let bencher_lines: Vec<&str> = GARBAGE_OUTPUT
@@ -94,7 +76,6 @@ fn garbled_output_is_error() {
     );
 }
 
-/// Empty output yields zero bencher lines.
 #[test]
 fn empty_output_yields_no_lines() {
     let bencher_lines: Vec<&str> = ""
@@ -107,7 +88,6 @@ fn empty_output_yields_no_lines() {
     );
 }
 
-/// Parse a multi-line bencher stream (simulates real output).
 #[test]
 fn parse_multi_line_stream() {
     let mut parsed = Vec::new();
@@ -122,7 +102,6 @@ fn parse_multi_line_stream() {
     assert_eq!(parsed[1].1, 23_456.0);
 }
 
-/// Parse a bencher line that has no throughput (just wall time).
 #[test]
 fn parse_bencher_no_throughput() {
     let line = BENCHER_NO_THROUGHPUT.trim();
@@ -131,7 +110,6 @@ fn parse_bencher_no_throughput() {
     assert_eq!(ns, 1_234.0);
 }
 
-/// Large seconds value parses correctly.
 #[test]
 fn parse_bencher_line_large_seconds() {
     let line = "test massive_group/massive_bench ... bench: 123.456 s/iter (+/- 12.345)";
@@ -173,11 +151,6 @@ fn group_measurement(throughput: Option<f64>, wall_time: f64) -> GroupMeasuremen
     }
 }
 
-/// Test that an empty current map is rejected — the gate must refuse when there
-/// is nothing to compare against the baseline.
-///
-/// This test fails if the `current_data.is_empty()` check is removed from
-/// `check_throughput` in compare.rs.
 #[test]
 fn empty_current_map_is_rejected() {
     let mut baseline_groups = BTreeMap::new();
@@ -201,12 +174,6 @@ fn empty_current_map_is_rejected() {
     );
 }
 
-/// Test that a missing baseline group (present in baseline but absent from current)
-/// is rejected — the gate must not silently pass when the current run does not
-/// exercise every baseline group.
-///
-/// This test fails if the baseline-key check in `check_throughput` is removed
-/// from compare.rs.
 #[test]
 fn missing_baseline_group_is_rejected() {
     let mut baseline_groups = BTreeMap::new();
@@ -233,12 +200,6 @@ fn missing_baseline_group_is_rejected() {
     );
 }
 
-/// Test that a NaN throughput measurement is rejected — IEEE NaN comparisons
-/// are always false, so a NaN value would silently pass the tolerance check
-/// without this guard.
-///
-/// This test fails if the `is_finite()` check is removed from `check_group`
-/// in compare.rs.
 #[test]
 fn nan_throughput_is_rejected() {
     let mut baseline_groups = BTreeMap::new();

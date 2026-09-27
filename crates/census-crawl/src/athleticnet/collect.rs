@@ -1,10 +1,3 @@
-//! The run's dispatch, the resume reads that both routes share, and the accumulator append they
-//! both write through.
-//!
-//! The bio walk itself lives in `walk`, split out when this file passed the repository's file
-//! budget: what stays here is what the registry route dispatches to and what the meet route
-//! imports.
-
 use super::map::{Accumulator, Stats};
 use super::{read_registry, Options, Target, BIO_ENDPOINT, PARSE_VERSION, SCHOOL_KIND};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
@@ -22,13 +15,6 @@ mod walk;
 use walk::{absorb_targets, flush_batch};
 
 
-/// Read every available result for the registry's athletes into the canonical store.
-///
-/// Strategy: one request per (athlete, sport) pair, journaled per URL so a re-run resumes; both
-/// payloads are absorbed under one athlete so its teams and grades are minted once.
-///
-/// A run whose options list meets (`--meets`) takes the whole-meet route instead: the `meet` module
-/// pulls each listed meet whole, two requests per meet, and the registry is not read.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     if !options.meets.is_empty() {
         return super::meet::collect_meets(ctx, options).await;
@@ -75,19 +61,15 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(run.report)
 }
 
-/// One run's sinks: what it accumulates, what it counts, and the report it narrates onto.
 struct RunState {
     resolved: HashMap<String, SchoolId>,
     stats: Stats,
     accumulated: Accumulator,
-    /// Units read since the last flush: the URL to journal and the payload to journal it with.
     pending: Vec<(String, Value)>,
-    /// What each flush appended; the report's entity note sums them.
     batches: Vec<EntityCounts>,
     report: AdapterReport,
 }
 
-/// Canonical entities written by one run, per table.
 pub(in crate::athleticnet) struct EntityCounts {
     pub(in crate::athleticnet) schools: usize,
     pub(in crate::athleticnet) meets: usize,
@@ -97,7 +79,6 @@ pub(in crate::athleticnet) struct EntityCounts {
     pub(in crate::athleticnet) performances: usize,
 }
 
-/// Resolve the operator's registry into the run's targets, noting the ones that name no state.
 fn registry_targets(options: &Options, report: &mut AdapterReport) -> CrawlResult<Vec<Target>> {
     let targets = read_registry(options)?;
     let without_state = targets.iter().filter(|t| t.state.is_none()).count();
@@ -111,7 +92,6 @@ fn registry_targets(options: &Options, report: &mut AdapterReport) -> CrawlResul
     Ok(targets)
 }
 
-/// Sum one table's counter over a run's flushes.
 pub(in crate::athleticnet) fn appended_total(
     batches: &[EntityCounts],
     counter: fn(&EntityCounts) -> usize,
@@ -119,7 +99,6 @@ pub(in crate::athleticnet) fn appended_total(
     batches.iter().map(counter).sum()
 }
 
-/// The URLs a previous run already journaled at the current parse version.
 pub(super) fn journaled_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
     let payloads = ctx.store.journal_payloads("athleticnet")?;
     let version = u64::from(PARSE_VERSION);
@@ -132,13 +111,6 @@ pub(super) fn journaled_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<St
     Ok(done)
 }
 
-/// Append every entity the run accumulated and count what was written.
-///
-/// The six tables go into the caller's page rather than into six commits: one page of a bio walk is
-/// sixty-four units' worth of rows, and a commit per table per unit spent most of the walk's time in
-/// `fdatasync` rather than in parsing. The observations the page's schools and athletes are also
-/// filed under stay direct writes — they are first derived from the rows in hand, so a page that never
-/// commits leaves nothing behind but observation rows a re-run rewrites.
 pub(super) fn store_accumulated(
     ctx: &AdapterContext<'_>,
     accumulated: Accumulator,
@@ -150,22 +122,12 @@ pub(super) fn store_accumulated(
     let athletes: Vec<CanonicalAthlete> = accumulated.athletes.into_values().collect();
     let events: Vec<CanonicalEvent> = accumulated.events.into_values().collect();
     let performances: Vec<CanonicalPerformance> = accumulated.performances.into_values().collect();
-    let mut performances = performances;
-    crate::stamp_source_athletes(
-        &SourceNamespace::athletic_net("athlete"),
-        &athletes,
-        &mut performances,
-    );
     page.append_many(Table::Schools, &schools)?;
-    ctx.observe_schools(&SourceNamespace::athletic_net(SCHOOL_KIND), &schools)?;
+    page.append_many(Table::SourceObservations, &ctx.school_observations(&SourceNamespace::athletic_net(SCHOOL_KIND), &schools))?;
     page.append_many(Table::Meets, &meets)?;
     page.append_many(Table::Teams, &teams)?;
     page.append_many(Table::Athletes, &athletes)?;
-    ctx.observe_athletes(
-        &SourceNamespace::athletic_net("athlete"),
-        &athletes,
-        &schools,
-    )?;
+    page.append_many(Table::SourceObservations, &ctx.athlete_observations(&athletes, &schools))?;
     page.append_many(Table::Events, &events)?;
     page.append_many(Table::Performances, &performances)?;
     Ok(EntityCounts {
@@ -178,7 +140,6 @@ pub(super) fn store_accumulated(
     })
 }
 
-/// Record what the run read, absorbed and refused, in the order the report reads.
 fn note_stats(report: &mut AdapterReport, stats: &Stats) {
     report.note(format!(
         "athletes: {} seen, {} absorbed, {} without a published grade, {} without a school entry, \
@@ -215,8 +176,6 @@ fn note_stats(report: &mut AdapterReport, stats: &Stats) {
     ));
 }
 
-/// The consolidated school index, when one exists. Athletic.net spans the whole country while the
-/// index covers the platform's states, so a miss mints rather than skips.
 pub(super) fn consolidated_index(ctx: &AdapterContext<'_>) -> CrawlResult<SchoolIndex> {
     let path = ctx.store.out_dir().join("schools.jsonl");
     if !path.exists() {

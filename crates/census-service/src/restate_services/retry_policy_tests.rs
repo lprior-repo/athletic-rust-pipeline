@@ -1,71 +1,26 @@
-//! One retry owner per invocation, and the scan that keeps it that way.
-//!
-//! ADR-002 hands retry to Restate: a handler gets the invocation retry it declares, three attempts
-//! at most, and then the invocation pauses for an operator. Declaring more breaks the contract - a
-//! run that should have stopped and asked keeps being replayed, and the failure trying to surface is
-//! buried under attempts. A `ctx.run` step declaring a budget of its own breaks it from below: a
-//! second, in-process retry the journal cannot account for. The transport declares no budget either:
-//! it performs one attempt, and the invocation retry owns every attempt after that.
-//!
-//! Nothing here can be turned back up by hand, because this scan reads the ceilings out of the tree -
-//! every `.rs` file under the root crate's `src/` and under the workspace's `crates/` - and fails
-//! with the file and the line when a value is outside the contract.
-//!
-//! It reads text rather than parsing Rust, on purpose: a ceiling a parser could be talked out of
-//! recognising is a ceiling a hand-edit could hide. Two forms are in scope - the handler attribute
-//! and the inner `RunRetryPolicy` builder - and a third case is neither of them: the key named in
-//! prose. Prose is left alone, but a key used as a ceiling must carry a literal number, because a
-//! ceiling this scan cannot read is one it cannot hold to the contract.
-//!
-//! A second scan keeps the H2 class out: the bare `ctx.run` absence gate. The ceilings above only
-//! read `max_attempts` sites, so an effect that declares no policy at all is invisible to them -
-//! and a bare `ctx.run` is the common violation, a second in-process retry the journal cannot
-//! account for. Every `ctx.run` effect therefore has to carry a chained `.retry_policy(` inside its
-//! own call, and a site without one fails listing file and line.
 
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// The key both ceilings are written with.
 const KEY: &str = "max_attempts";
-/// The attempts a handler invocation retry declares: the ceiling ADR-002 and §9 fix.
 const HANDLER_ATTEMPTS: u32 = 3;
-/// The attempts an inner `ctx.run` retry declares: the handler owns every attempt after it.
 const RUN_ATTEMPTS: u32 = 1;
-/// The attempts the §43 outcome lattice's bounded retry declares, where it declares one.
 const LATTICE_ATTEMPTS: u32 = 4;
-/// The citation that documents that ownership at the site, and the only way four is legal.
 const LATTICE_CITATION: &str = "§43";
-/// The journaled effect's receiver: `ctx` on its own, never part of a longer identifier.
 const CTX: &str = "ctx";
-/// The chained policy that keeps one `ctx.run` to a single attempt.
 const POLICY: &str = ".retry_policy";
-/// How far past a `ctx.run` site its chained `.retry_policy(` may sit.
-///
-/// The longest chain the tree declares today spans thirteen lines (the census seal), so forty
-/// leaves room for a closure to grow while every lookahead stays statically bounded. The window is
-/// cut short where the next site starts, so one effect's policy can never cover another effect's
-/// absence; a window that cannot be read fails as bare rather than passing as covered.
 const RUN_LOOKAHEAD_LINES: usize = 40;
 
-/// One ceiling as it was written, with the line it was written on.
 struct Site {
     path: PathBuf,
     line: usize,
-    /// The retry the number bounds, as a failure names it.
     surface: &'static str,
     attempts: u32,
     text: String,
-    /// The site's line and the two above it: where an ownership citation is written.
     context: String,
 }
 
 impl Site {
-    /// Whether the contract allows this ceiling.
-    ///
-    /// One attempt is an inner step's policy and three is a handler's invocation retry, legal wherever
-    /// either is written. Four is the §43 lattice's bounded retry, legal only where the site documents
-    /// that ownership: a bare four is a ceiling raised by hand and nothing else.
     fn holds_contract(&self) -> bool {
         match self.attempts {
             RUN_ATTEMPTS | HANDLER_ATTEMPTS => true,
@@ -75,11 +30,6 @@ impl Site {
     }
 }
 
-/// The ceiling written at `offset`, `Ok(None)` when the key there names a ceiling it is not.
-///
-/// A key followed by `=` is a handler declaration and one followed by `(` is an inner run policy;
-/// anything else - prose, a string literal - only names the key. Either form must carry a literal
-/// number: a ceiling this scan could not read would be a ceiling nothing holds to the contract.
 fn site_at(path: &Path, text: &str, offset: usize) -> Result<Option<Site>, String> {
     let line = line_at(text, offset);
     let line_text = text.lines().nth(line - 1).unwrap_or_default().trim();
@@ -128,30 +78,14 @@ fn site_at(path: &Path, text: &str, offset: usize) -> Result<Option<Site>, Strin
     }))
 }
 
-/// Whether `character` would make the key it precedes part of a longer identifier.
 fn starts_ident(character: Option<char>) -> bool {
     character.is_some_and(|character| character.is_alphanumeric() || character == '_')
 }
 
-/// The 1-based line the byte at `offset` falls on.
 pub(super) fn line_at(text: &str, offset: usize) -> usize {
     1 + text[..offset].bytes().filter(|byte| *byte == b'\n').count()
 }
 
-/// Whether the key at `offset` is written in code rather than quoted in a comment or a literal.
-///
-/// The module's contract is that prose is left alone: a doc comment that quotes the attribute
-/// (`max_attempts = N`) names the key without declaring a ceiling, and the sentence is the place a
-/// reader learns the shape from. Reading text rather than parsing Rust means the scan has to know
-/// which text is code, so comments and double-quoted literals are skipped here and everything else is
-/// read as a ceiling. Single quotes are deliberately not treated as literal delimiters: in this tree
-/// they open lifetimes far more often than character literals, and a character literal cannot hold
-/// the key.
-///
-/// One pass per match rather than a precomputed span table: a file holds a handful of matches and
-/// this runs in a test, so the simple control flow is worth more than the saved scan. A key inside a
-/// block comment that never closes is read as prose to the end of the file, which is what a Rust
-/// file with an unterminated comment is anyway.
 fn is_code(text: &str, offset: usize) -> bool {
     #[derive(Clone, Copy, PartialEq, Eq)]
     enum State {
@@ -212,10 +146,6 @@ fn is_code(text: &str, offset: usize) -> bool {
     state == State::Code
 }
 
-/// Every ceiling written in one file's text, in the order they appear.
-///
-/// A key quoted in a comment or a literal is not a ceiling, so it is skipped rather than read: see
-/// [`is_code`].
 fn sites_in(path: &Path, text: &str) -> Result<Vec<Site>, String> {
     let mut sites = Vec::new();
     let mut search = 0;
@@ -231,9 +161,6 @@ fn sites_in(path: &Path, text: &str) -> Result<Vec<Site>, String> {
     Ok(sites)
 }
 
-/// Every ceiling declared in the `.rs` files under one source root.
-///
-/// `target` never appears: the roots are `crates/` and `xtask/`, and cargo's copies live elsewhere.
 fn ceilings_under(root: &Path) -> Result<Vec<Site>, String> {
     let mut sites = Vec::new();
     let mut paths = Vec::new();
@@ -246,7 +173,6 @@ fn ceilings_under(root: &Path) -> Result<Vec<Site>, String> {
     Ok(sites)
 }
 
-/// Every `.rs` file under `dir`, recursively, in path order, skipping `target`.
 pub(super) fn rust_files(dir: &Path, found: &mut Vec<PathBuf>) -> Result<(), String> {
     let mut paths: Vec<PathBuf> = fs::read_dir(dir)
         .map_err(|error| format!("read {}: {error}", dir.display()))?
@@ -274,7 +200,6 @@ pub(super) fn rust_files(dir: &Path, found: &mut Vec<PathBuf>) -> Result<(), Str
     Ok(())
 }
 
-/// The workspace root, this crate's grandparent: `crates/census-service` sits directly under it.
 pub(super) fn workspace_root() -> Result<PathBuf, String> {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
@@ -283,16 +208,11 @@ pub(super) fn workspace_root() -> Result<PathBuf, String> {
         .ok_or_else(|| format!("no workspace root above {}", env!("CARGO_MANIFEST_DIR")))
 }
 
-/// The first-party source roots: the workspace's `crates/` and `xtask/`, because handlers in either
-/// tree are replayed by the same Restate scheduler. The root package that used to hold the rest was
-/// deleted once its reusable pieces had moved into the crates, so its `src/` is gone rather than
-/// merely empty — a scan that still named it would fail on a missing directory.
 fn source_roots() -> Result<Vec<PathBuf>, String> {
     let root = workspace_root()?;
     Ok(vec![root.join("crates"), root.join("xtask")])
 }
 
-/// Every ceiling declared in first-party source, across the workspace.
 fn scan() -> Result<Vec<Site>, String> {
     let mut sites = Vec::new();
     for root in source_roots()? {
@@ -301,18 +221,11 @@ fn scan() -> Result<Vec<Site>, String> {
     Ok(sites)
 }
 
-/// One `ctx.run` effect: the line it opens on and whether its chained call carries `.retry_policy(`.
 struct RunEffect {
     line: usize,
     covered: bool,
 }
 
-/// The byte offset just past the `(` of the `ctx.run(` opening at `offset`, when `offset` opens one.
-///
-/// `ctx`, whitespace, `.`, `run`, `(`: the whitespace is what lets `ctx` at the end of one line
-/// meet the `.run(` opening the next, which is the spelling most handlers use. Anything else - a
-/// longer identifier, a different method, a generated client's `run` on another receiver - is
-/// `None`, so only journaled effects are read.
 fn ctx_run_end(text: &str, offset: usize) -> Option<usize> {
     let tail = text.get(offset.saturating_add(CTX.len())..)?;
     let mut characters = tail.char_indices().peekable();
@@ -356,7 +269,6 @@ fn ctx_run_end(text: &str, offset: usize) -> Option<usize> {
     )
 }
 
-/// Whether `.retry_policy(` opens at `offset`: the key, then only whitespace, then `(`.
 fn is_policy_at(text: &str, offset: usize) -> bool {
     let Some(tail) = text.get(offset.saturating_add(POLICY.len())..) else {
         return false;
@@ -371,10 +283,6 @@ fn is_policy_at(text: &str, offset: usize) -> bool {
     characters.peek().is_some_and(|character| *character == '(')
 }
 
-/// The byte offset opening 1-based `line`: the text length when fewer lines remain.
-///
-/// An offset this returns always opens a line (past a `\n`, or zero), so a window cut with it
-/// never splits a character.
 fn line_start(text: &str, line: usize) -> usize {
     if line <= 1 {
         return 0;
@@ -391,10 +299,6 @@ fn line_start(text: &str, line: usize) -> usize {
     text.len()
 }
 
-/// Whether `text[start..end]` holds a `.retry_policy(` written in code.
-///
-/// A policy quoted in a comment or a literal is prose, not a chain, so it never covers a site: see
-/// [`is_code`]. A window that cannot be read covers nothing, so the gate fails closed.
 fn window_carries_policy(text: &str, start: usize, end: usize) -> bool {
     let Some(window) = text.get(start..end) else {
         return false;
@@ -408,12 +312,6 @@ fn window_carries_policy(text: &str, start: usize, end: usize) -> bool {
     false
 }
 
-/// Every `ctx.run` effect in one file's text, in the order they appear.
-///
-/// A `ctx` quoted in a comment or a literal is not an effect, so it is skipped rather than read:
-/// see [`is_code`]. Coverage is per call: each site looks for its policy in the forty lines after
-/// it, cut short where the next site starts, so one effect's policy can never cover another
-/// effect's absence.
 fn run_effects_in(text: &str) -> Vec<RunEffect> {
     let mut starts = Vec::new();
     let mut search = 0usize;
@@ -444,7 +342,6 @@ fn run_effects_in(text: &str) -> Vec<RunEffect> {
     effects
 }
 
-/// Every `ctx.run` effect in first-party source, as the file holding it and the effect itself.
 fn scan_effects() -> Result<Vec<(PathBuf, RunEffect)>, String> {
     let mut effects = Vec::new();
     for root in source_roots()? {

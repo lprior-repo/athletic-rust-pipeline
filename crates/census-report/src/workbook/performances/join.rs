@@ -1,16 +1,3 @@
-//! The parent tables a §52 row joins: read once under the requested scope, indexed by id.
-//!
-//! A performance names its athlete, meet and event, and the athlete names the school; those are the
-//! four tables [`Parents`] reads. The reading applies exactly the filters the row assembly applies —
-//! the core-source rule ([`Scope::Core`]) and the run-scope rule (ADR-009) — so a row can only cite a
-//! parent the report itself would publish. [`Lookups`] then indexes each table by the id its rows
-//! carry, which makes one performance four lookups rather than four scans.
-//!
-//! A parent the store does not hold is `None`. The row is still written: §52 asks for every stored
-//! performance, not only the rows whose joins resolve, and [`Joins`] leaves the cells a missing parent
-//! would have filled blank. `State` is the one absence with two spellings — a meet whose venue was
-//! never placed prints [`MEET_STATE_UNRESOLVED`], while a meet row the store does not hold prints
-//! nothing.
 
 use super::rows::PerformanceRow;
 use crate::bests::{mark_text, sport_of, Measure};
@@ -26,8 +13,6 @@ use census_domain::JurisdictionBucket;
 use census_store::{Store, Table};
 use std::collections::{HashMap, HashSet};
 
-/// The parent tables a row joins, read under `scope` and the run scope, exactly as the report applies
-/// both. Held owned so a [`Lookups`] can borrow all four at once.
 pub(super) struct Parents {
     athletes: Vec<CanonicalAthlete>,
     schools: Vec<CanonicalSchool>,
@@ -66,14 +51,11 @@ impl Parents {
         Lookups::of(&self.athletes, &self.schools, &self.meets, &self.events)
     }
 
-    /// The athlete IDs retained by the cohort filter — owned HashSet the spill uses to gate
-    /// performances, so every eligible athlete's captured history stays while outsiders are dropped.
     pub(super) fn cohort_set(&self) -> HashSet<&str> {
         self.athletes.iter().map(|a| a.id.as_str()).collect()
     }
 }
 
-/// The canonical rows a performance names, indexed by id: a row is four lookups, never a scan.
 pub(super) struct Lookups<'a> {
     athletes: HashMap<&'a str, &'a CanonicalAthlete>,
     schools: HashMap<&'a str, &'a CanonicalSchool>,
@@ -82,7 +64,6 @@ pub(super) struct Lookups<'a> {
 }
 
 impl<'a> Lookups<'a> {
-    /// Index the parent tables by the id each row carries.
     fn of(
         athletes: &'a [CanonicalAthlete],
         schools: &'a [CanonicalSchool],
@@ -97,7 +78,6 @@ impl<'a> Lookups<'a> {
         }
     }
 
-    /// The school names a row can print, sorted and deduplicated: the bucket universe.
     pub(super) fn school_names(&self) -> Vec<&'a str> {
         let mut names: Vec<&'a str> = self
             .schools
@@ -109,7 +89,6 @@ impl<'a> Lookups<'a> {
         names
     }
 
-    /// One joined row.
     pub(super) fn row(&self, performance: &CanonicalPerformance) -> PerformanceRow {
         let joins = self.joins(performance);
         PerformanceRow {
@@ -136,7 +115,6 @@ impl<'a> Lookups<'a> {
         }
     }
 
-    /// The rows `performance` names, plus the observation that names its source.
     fn joins<'b>(&self, performance: &'b CanonicalPerformance) -> Joins<'a, 'b> {
         let athlete = self.athletes.get(performance.athlete.as_str()).copied();
         Joins {
@@ -149,8 +127,6 @@ impl<'a> Lookups<'a> {
     }
 }
 
-/// One performance's parents, `None` where the store holds no such row. The parents are borrowed
-/// from the indexed tables (`'a`) and the cited observation from the performance itself (`'b`).
 struct Joins<'a, 'b> {
     athlete: Option<&'a CanonicalAthlete>,
     school: Option<&'a CanonicalSchool>,
@@ -160,25 +136,20 @@ struct Joins<'a, 'b> {
 }
 
 impl Joins<'_, '_> {
-    /// The athlete's canonical name, empty when the athlete row is absent.
     fn athlete_name(&self) -> String {
         self.athlete
             .map(|row| row.canonical_name.clone())
             .unwrap_or_default()
     }
 
-    /// The athlete's school name, empty when either row is absent.
     fn school_name(&self) -> String {
         self.school.map(|row| row.name.clone()).unwrap_or_default()
     }
 
-    /// The athlete's graduation year, blank when the athlete row is absent.
     fn grad_year(&self) -> Option<i16> {
         self.athlete.map(|row| row.grad_year.get())
     }
 
-    /// The meet's name, or the venue's state: `??` for a venue never placed, blank for a meet row the
-    /// store does not hold at all.
     fn state(&self) -> Option<String> {
         self.meet.map(|row| {
             row.state.map_or_else(
@@ -192,21 +163,18 @@ impl Joins<'_, '_> {
         self.meet.map(|row| row.name.clone()).unwrap_or_default()
     }
 
-    /// The event's family, in the vocabulary the `PRs` sheet publishes.
     fn sport(&self) -> String {
         self.event
             .map(|row| sport_of(&row.kind).to_string())
             .unwrap_or_default()
     }
 
-    /// The event as the census names it (`Track1600m`, `LongJump`, …), blank for an absent event.
     fn event_label(&self) -> String {
         self.event
             .map(|row| row.kind.stable_key().into_owned())
             .unwrap_or_default()
     }
 
-    /// The round the performance was run in, falling back to the round its event was published in.
     fn round_of(&self, performance: &CanonicalPerformance) -> Option<String> {
         performance
             .round
@@ -227,13 +195,10 @@ impl Joins<'_, '_> {
     }
 }
 
-/// Index a parent table by the id each row carries.
 fn index<'a, T>(rows: &'a [T], id: impl Fn(&'a T) -> &'a str) -> HashMap<&'a str, &'a T> {
     rows.iter().map(|row| (id(row), row)).collect()
 }
 
-/// The observation a row cites: the lexicographically first source id, ties broken by URL, so the
-/// choice never depends on the order the observations were merged in.
 fn observed(performance: &CanonicalPerformance) -> Option<&Evidence> {
     performance.evidence.iter().min_by(|left, right| {
         left.source
@@ -243,8 +208,6 @@ fn observed(performance: &CanonicalPerformance) -> Option<&Evidence> {
     })
 }
 
-/// Convert a mark to its canonical f64 representation: seconds, metres, or points.
-/// Field marks (millimetres) are divided by 1000; time/distance/points (centi-units) by 100.
 fn normalized_mark(mark: &Mark) -> Option<f64> {
     Measure::of(mark)?.normalized_mark(mark)
 }

@@ -1,21 +1,9 @@
-//! One mapped result row: the school it resolves to, the athlete it observes, and the performance it
-//! mints.
-//!
-//! Both routes that can publish a race read their rows through this file — an event document
-//! (`record_row`) and a live-standings payload (`record_standing`) — so the two agree on every
-//! identity they mint, including the performance key (the event's key plus the athlete, never the
-//! row's position, which differs between the two payloads).
-//!
-//! Refusals are counted by reason and contribute no entity: a row with no published name, no school
-//! label, no high-school grade, or a label that names no consolidated school. A row that maps but
-//! publishes no mark (`NH`) still yields its athlete and team: the identity is evidence even when the
-//! mark is not.
 
 use super::docs::{value_u64, DocRow, DocTeam};
 use super::map::{ResultStats, RowContext, Writer};
 use super::standings::StandingRow;
 use crate::athleticlive_athletes::{gender_from_token, grade_from_token};
-use census_domain::model::{AthleteId, Gender, Grade, TeamId};
+use census_domain::model::{AthleteId, Gender, Grade, SourceIdentity, TeamId};
 use serde_json::Value;
 
 mod identity;
@@ -24,7 +12,6 @@ mod performance;
 use identity::{map_identity, resolve_school};
 use performance::{write_performance, PerformanceFacts};
 
-/// True for the reasons a row can be refused before any entity is minted.
 enum Refusal {
     NoName,
     NoSchool,
@@ -32,7 +19,6 @@ enum Refusal {
     NoGrade,
 }
 
-/// The facts one row publishes about its athlete and team, as the mapping needs them.
 struct RowIdentity<'a> {
     name: &'a str,
     school_name: &'a str,
@@ -43,15 +29,12 @@ struct RowIdentity<'a> {
     an_team_id: Option<u64>,
 }
 
-/// The athlete and team one row mints, before its performance is written.
 struct Mapped {
     athlete: AthleteId,
     team: TeamId,
+    source_athlete: SourceIdentity,
 }
 
-/// Record one event document's row: its athlete, its team and the performance it published.
-///
-/// Returns true when the row yielded identity evidence, whether or not it published a mark.
 pub(super) fn record_row(
     writer: &mut Writer<'_>,
     context: &RowContext<'_>,
@@ -84,9 +67,6 @@ pub(super) fn record_row(
     true
 }
 
-/// Record one live-standings row, whose mark arrives through the raw timing channel.
-///
-/// Returns true when the row yielded identity evidence, whether or not it published a mark.
 pub(super) fn record_standing(
     writer: &mut Writer<'_>,
     context: &RowContext<'_>,
@@ -119,7 +99,6 @@ pub(super) fn record_standing(
     true
 }
 
-/// Count one refusal and report that no entity was written.
 fn refused<T>(stats: &mut ResultStats, refusal: Refusal) -> Option<T> {
     match refusal {
         Refusal::NoName => {
@@ -139,7 +118,6 @@ fn refused<T>(stats: &mut ResultStats, refusal: Refusal) -> Option<T> {
     None
 }
 
-/// Decode one event-document row into the identity facts a mapping needs, counting its refusal.
 fn decode_row<'a>(writer: &mut Writer<'_>, row: &'a DocRow) -> Option<RowIdentity<'a>> {
     let Some(athlete) = row.athlete.as_ref() else {
         return refused(writer.stats, Refusal::NoName);
@@ -175,7 +153,6 @@ fn decode_row<'a>(writer: &mut Writer<'_>, row: &'a DocRow) -> Option<RowIdentit
     })
 }
 
-/// Decode one live-standings row into the identity facts a mapping needs, counting its refusal.
 fn decode_standing<'a>(writer: &mut Writer<'_>, row: &'a StandingRow) -> Option<RowIdentity<'a>> {
     let Some(name) = row.name() else {
         return refused(writer.stats, Refusal::NoName);
@@ -199,7 +176,6 @@ fn decode_standing<'a>(writer: &mut Writer<'_>, row: &'a StandingRow) -> Option<
     })
 }
 
-/// Read a published grade token, counting the refusal that leaves no grade.
 fn read_grade(stats: &mut ResultStats, value: Option<&Value>) -> Option<Grade> {
     let token = match value {
         Some(Value::String(text)) => text.trim().to_string(),
@@ -216,10 +192,6 @@ fn read_grade(stats: &mut ResultStats, value: Option<&Value>) -> Option<Grade> {
     }
 }
 
-/// Count the channels one event-document row publishes beside its mark.
-///
-/// These describe the rows that mapped, because a row refused for identity reasons never has its
-/// mark or its heat read.
 fn count_channels(stats: &mut ResultStats, row: &DocRow) {
     if row.heat_number().is_some() {
         stats.rows_with_heat = stats.rows_with_heat.saturating_add(1);
@@ -243,7 +215,6 @@ fn count_channels(stats: &mut ResultStats, row: &DocRow) {
     }
 }
 
-/// Count the channels one live-standings row publishes beside its mark.
 fn count_standing_channels(stats: &mut ResultStats, row: &StandingRow) {
     if row.has_legacy_id() {
         stats.rows_with_legacy_id = stats.rows_with_legacy_id.saturating_add(1);

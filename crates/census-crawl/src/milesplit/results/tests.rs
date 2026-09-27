@@ -1,12 +1,3 @@
-//! What the result-set route's unit of work is: one result set's rows and the entry naming it land
-//! in one commit, so an interrupted run leaves the set unread for the next run to land.
-//!
-//! The fixture is the repository's own capture of `RSID 1321880` (47,564 B, 80 rows, two sections,
-//! the Beaver Eastern Invite), the same body `milesplit::tests` reads; here it is the HTTP cache's
-//! answer, so the route runs end to end with no socket. Its rows are middle-school rows — every
-//! `Yr` is 8 — so the mapper mints the meet and its two events and drops all 80 athletes: the tests
-//! below assert the rows this capture does mint, and never a count the run reported about itself.
-
 use super::run::Run;
 use super::{collect, Accumulator, ResultSetOptions, ResultSetRequest, Stats, ADAPTER, PHASE};
 use crate::net::Fetcher;
@@ -23,11 +14,9 @@ const OH_RAW: &str =
     include_str!("../../../tests/fixtures/milesplit/oh_meet_770621_rs1321880_raw.html");
 const OH_RAW_URL: &str =
     "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results/1321880/raw";
-/// The journal key one result set earns: the meet id and the provider's own result-set id.
 const OH_RAW_KEY: &str = "770621/1321880";
 const OBSERVED_ON: &str = "2026-09-22";
 
-/// A store and fetcher pair over a fresh directory.
 fn scratch() -> (tempfile::TempDir, Store, Fetcher) {
     let dir = tempfile::tempdir().expect("temp dir");
     let store = Store::open(dir.path().join("store")).expect("store");
@@ -53,8 +42,6 @@ fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> AdapterContext<'a> {
     }
 }
 
-/// Seed the fetcher's on-disk cache for `url` under the key `Fetcher` derives
-/// (`sha256(method \x1f url \x1f body)[..16]`), so the route is driven with no socket.
 fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
@@ -70,7 +57,7 @@ fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) {
         "url": url,
         "method": "GET",
         "status": 200,
-        "sha256": format!("{:x}", Sha256::digest(body.as_bytes())),
+        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
         "fetched_at": "2026-09-22T03:55:59Z",
     });
@@ -83,13 +70,10 @@ fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) {
     std::fs::write(cache_dir.join(format!("{key}.body")), body).expect("write body");
 }
 
-/// The consolidated school the capture's own rows name (`Jackson` is the first section's first
-/// row's label), as the index the route resolves labels against.
 fn consolidated() -> Vec<CanonicalSchool> {
     vec![CanonicalSchool::new(UsJurisdiction::Ohio, "Jackson", normalize_name("Jackson")).0]
 }
 
-/// Write the consolidated index where the route reads it.
 fn write_schools(store: &Store, schools: &[CanonicalSchool]) {
     let mut lines = String::new();
     for school in schools {
@@ -100,12 +84,10 @@ fn write_schools(store: &Store, schools: &[CanonicalSchool]) {
     std::fs::write(store.out_dir().join("schools.jsonl"), lines).expect("schools written");
 }
 
-/// The route's journal entries, as the store holds them.
 fn journal(store: &Store) -> HashSet<String> {
     store.journal_keys(PHASE).expect("journal keys")
 }
 
-/// A run over the same index and resume set `collect` opens, stopped before the flush.
 fn interrupted_run(ctx: &AdapterContext<'_>) -> Run {
     Run {
         index: SchoolIndex::from_schools(&consolidated()),
@@ -117,10 +99,6 @@ fn interrupted_run(ctx: &AdapterContext<'_>) -> Run {
     }
 }
 
-/// The unit of work is the result set: its rows and the entry naming it commit together, so a run
-/// that stops after reading a set leaves nothing behind and the next run reads that set again and
-/// lands it. The discriminating assertions are the store's own rows: an entry written ahead of the
-/// rows would make the second run resume the set as done and never write them.
 #[tokio::test]
 async fn a_result_set_whose_rows_never_landed_is_read_again_by_the_next_run() {
     let (_dir, store, fetcher) = scratch();

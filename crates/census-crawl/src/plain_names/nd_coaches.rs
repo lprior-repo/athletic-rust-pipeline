@@ -1,5 +1,3 @@
-//! North Dakota (NDHSAA): offering/staff rows → canonical coach entities, plus the per-school
-//! walk that fetches each member page, journals it and writes the rows.
 
 use super::nd::{parse_nd_school_refs, NdOffering, NdSchoolRef, NdStaffRole};
 use super::nd_walk::NdWalk;
@@ -12,10 +10,6 @@ use census_domain::model::{
 };
 use std::collections::HashSet;
 
-/// Map an NDHSAA sport label onto our ontology plus the gender side it covers.
-///
-/// Handles the coop-suffixed labels by ignoring everything the caller did not already strip, and
-/// returns `None` for non-TF/XC offerings (`Cheerleading`, `Wrestling`, `Music - Vocal`, …).
 pub fn parse_nd_sport(label: &str) -> Option<(Sport, Gender)> {
     let lowered = label.to_ascii_lowercase();
     let sport = if lowered.contains("cross country") || lowered.contains("cross-country") {
@@ -37,7 +31,6 @@ pub fn parse_nd_sport(label: &str) -> Option<(Sport, Gender)> {
     Some((sport, gender))
 }
 
-/// The coach/AD role a published NDHSAA staff label implies, or `None` for office staff.
 pub fn parse_nd_role(label: &str) -> Option<CoachRole> {
     let lowered = label.to_ascii_lowercase();
     if is_office_role(&lowered) {
@@ -49,7 +42,6 @@ pub fn parse_nd_role(label: &str) -> Option<CoachRole> {
     None
 }
 
-/// Athletic/activities-director rows for one NDHSAA school, deduplicated by coach identity.
 pub fn nd_ad_coaches(
     roles: &[NdStaffRole],
     school_id: &SchoolId,
@@ -78,10 +70,6 @@ pub fn nd_ad_coaches(
     coaches
 }
 
-/// Cross-country / track coach rows for one NDHSAA school.
-///
-/// `CoachRole::Unknown` is deliberate: the table says "Coaches" and never distinguishes a head coach
-/// from an assistant, so no split is invented here.
 pub fn nd_sport_coaches(
     offerings: &[NdOffering],
     school_id: &SchoolId,
@@ -114,7 +102,6 @@ pub fn nd_sport_coaches(
     coaches
 }
 
-/// North Dakota half: index, then one page per member school.
 pub(super) async fn collect_north_dakota(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -142,7 +129,6 @@ pub(super) async fn collect_north_dakota(
     walk.publish(report, members.len())
 }
 
-/// The NDHSAA school index's member links; `None` means the failure is on the report.
 async fn nd_members(
     ctx: &AdapterContext<'_>,
     fetch: &FetchOptions,

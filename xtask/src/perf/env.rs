@@ -1,11 +1,9 @@
-//! Environment detection: CPU, cores, toolchain, git, corpus size.
 
 use super::Meta;
 use crate::paths;
 use anyhow::{Context, Result};
 use std::path::Path;
 
-/// Build environment metadata from the current system.
 pub fn build_meta() -> Result<Meta> {
     Ok(Meta {
         cpu: cpu_model()?,
@@ -16,7 +14,6 @@ pub fn build_meta() -> Result<Meta> {
     })
 }
 
-/// CPU model name from `/proc/cpuinfo`, or "unknown" when the file is absent.
 pub fn cpu_model() -> Result<String> {
     let content = std::fs::read_to_string("/proc/cpuinfo").unwrap_or_default();
     for line in content.lines() {
@@ -27,7 +24,6 @@ pub fn cpu_model() -> Result<String> {
     Ok("unknown".to_string())
 }
 
-/// Physical core count from `nproc --physical`, falling back to `nproc`.
 pub fn physical_cores() -> Result<u32> {
     let output = super::Cmd::new("bash")
         .arg("-c")
@@ -39,7 +35,6 @@ pub fn physical_cores() -> Result<u32> {
         .with_context(|| "parsing nproc --physical")
 }
 
-/// Git commit SHA of the working tree.
 pub fn git_sha() -> String {
     super::Cmd::new("bash")
         .arg("-c")
@@ -49,7 +44,6 @@ pub fn git_sha() -> String {
         .unwrap_or_else(|_| "unknown".to_string())
 }
 
-/// Rust compiler version string.
 pub fn rustc_version() -> String {
     super::Cmd::new("bash")
         .arg("-c")
@@ -59,7 +53,6 @@ pub fn rustc_version() -> String {
         .unwrap_or_else(|_| "unknown".to_string())
 }
 
-/// Total lines of fixture text files, if the crawl crate's fixtures directory exists.
 pub fn corpus_size() -> u64 {
     fn count_lines_in_dir(dir: &Path) -> u64 {
         let mut total = 0u64;
@@ -86,7 +79,6 @@ pub fn corpus_size() -> u64 {
     count_lines_in_dir(&paths::fixtures_dir())
 }
 
-/// Whether `perf` is available on the system.
 pub fn perf_available() -> bool {
     std::process::Command::new("perf")
         .arg("--version")

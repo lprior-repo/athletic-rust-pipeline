@@ -1,13 +1,8 @@
-//! One team page: its roster, dated by the season the page's own control states.
-//!
-//! A roster publishes no marks, so it contributes no performances; it is the head-count route a
-//! list's top-N cannot produce.
 
 use super::state::{Absorb, AthleteFacts, RosterContext, TeamFacts};
 use crate::tfrrs::parse::{sport_from_route, ParsedRoster, RosterAthlete, YearToken};
 use census_domain::model::{Gender, GradYear, ObservedGrade, SchoolId, SchoolYear, Sport};
 
-/// What every athlete of one roster page is dated and titled by.
 #[derive(Debug, Clone, Copy)]
 struct PageSeason {
     sport: Sport,
@@ -16,7 +11,6 @@ struct PageSeason {
 }
 
 impl<'a> Absorb<'a> {
-    /// Absorb one team page's roster.
     pub(in crate::tfrrs) fn absorb_roster(
         &mut self,
         context: &RosterContext<'_>,
@@ -48,9 +42,6 @@ impl<'a> Absorb<'a> {
         }
     }
 
-    /// The season the page's own control states, with the route's sport filled in where the control
-    /// is silent and the route is unambiguous (`xc`). A `tf` route cannot say indoor from outdoor,
-    /// so it never guesses; a page that states neither is counted and its rows are skipped.
     fn page_season(
         &mut self,
         context: &RosterContext<'_>,
@@ -74,7 +65,6 @@ impl<'a> Absorb<'a> {
         })
     }
 
-    /// Absorb one roster row: the athlete it names, with the grade its `YEAR` cell states.
     fn absorb_roster_row(
         &mut self,
         context: &RosterContext<'_>,
@@ -94,7 +84,7 @@ impl<'a> Absorb<'a> {
                 self.stats.roster_rows_without_year.saturating_add(1);
             return;
         };
-        self.athlete_for(
+        let _ = self.athlete_for(
             context.page,
             &AthleteFacts {
                 school,

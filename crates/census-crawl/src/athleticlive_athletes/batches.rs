@@ -1,17 +1,12 @@
-//! The batch walk: one query per batch of meet ids, its Elasticsearch pages, and the entities a
-//! batch contributes before it is journaled as done.
-
 use super::map::{build_entities, BatchEntities};
 use super::parse::AthleteHit;
 use super::targets::MeetTarget;
 use super::{batch_query, BatchStats, Options, ENDPOINT, PAGE_SIZE, RESULT_WINDOW};
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use census_domain::model::SourceNamespace;
 use census_store::{StoreBatch, Table};
 use serde_json::{json, Value};
 use std::collections::{HashMap, VecDeque};
 
-/// Walk the batch queue, storing every batch's entities and journaling each batch as done.
 pub(super) async fn run_batches<'t>(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -36,7 +31,6 @@ pub(super) async fn run_batches<'t>(
     Ok(())
 }
 
-/// Page one batch's query to the end of its result window, with the total it reported first.
 async fn page_hits(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -85,7 +79,6 @@ async fn page_hits(
     Ok((hits, total))
 }
 
-/// The `_source` documents of one response, in the order the hits arrived.
 fn page_sources(parsed: &Value) -> Vec<Value> {
     parsed
         .pointer("/hits/hits")
@@ -98,7 +91,6 @@ fn page_sources(parsed: &Value) -> Vec<Value> {
         .unwrap_or_default()
 }
 
-/// Split a batch that exceeds the result window; `true` when the caller must move to the next one.
 fn split_batch<'t>(
     queue: &mut VecDeque<Vec<&'t MeetTarget>>,
     batch: &[&'t MeetTarget],
@@ -132,7 +124,6 @@ fn split_batch<'t>(
     false
 }
 
-/// Journal a batch as done, store its canonical entities and add it to the run's counters.
 fn emit_batch<'t>(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -177,8 +168,6 @@ fn emit_batch<'t>(
     Ok(())
 }
 
-/// Fill one batch's page: its entities, the observations they are filed under, and the entries naming
-/// the meets it covered. Nothing reaches the store until the caller commits the page.
 fn fill_page<'t>(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -191,13 +180,7 @@ fn fill_page<'t>(
     page.append_many(Table::Schools, &entities.schools)?;
     page.append_many(Table::Teams, &entities.teams)?;
     page.append_many(Table::Athletes, &entities.athletes)?;
-    ctx.observe_athletes(
-        &SourceNamespace::LegacyAthleticNet {
-            kind: "athlete".to_string(),
-        },
-        &entities.athletes,
-        &entities.schools,
-    )?;
+    page.append_many(Table::SourceObservations, &ctx.athlete_observations(&entities.athletes, &entities.schools))?;
     for target in batch {
         page.journal_done(
             "athleticlive_rosters",

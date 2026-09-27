@@ -5,7 +5,6 @@ fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)
 }
 
-/// State meet layout: team score blocks that print each scorer's place, grade and time.
 const STATE: &str = r#"
 11/1/25, 1:38 PM                                                     WIAA State Cross Country Championships
                                                      WIAA State Cross Country Championships
@@ -20,7 +19,6 @@ const STATE: &str = r#"
     3     10 Fisher Carroll                  9    16:03.1   7   ( 58) Donald Voetberg            12   17:06.6
 "#;
 
-/// Sectional layout: a padded table whose header carries a grade column.
 const TABLE: &str = r#"
 WIAA D3 Sectional @ Sheboygan Lutheran
 Overall Results
@@ -32,7 +30,6 @@ Boys Varsity
 4       4        573   Paceler Moll                Poynette                      M        10      17:18.1   5:34
 "#;
 
-/// AccuRace layout: columns are stated by a rule line, not by a labelled header.
 const ACCURACE: &str = r#"
                            WIAA Division 3 Sectional Championship Meet
                    Baertschi & Keepers Property - Hosted by Albany High School

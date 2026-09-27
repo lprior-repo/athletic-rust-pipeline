@@ -1,26 +1,12 @@
-//! The transport declares no attempt budget of its own, and the scan that keeps it that way.
-//!
-//! ADR-002 gives retrying one owner: the invocation retry a handler declares. The transport performs
-//! a single attempt and reports what it saw, so a budget here would be a second retry owner the
-//! journal cannot see - and one review would miss, because a constant reads like a tuning knob rather
-//! than a contract change. This reads every first-party crate's source and fails on the name, so the
-//! ceiling cannot be turned back up by hand.
 
 use super::retry_policy_tests::{line_at, rust_files, workspace_root};
 use std::fs;
 use std::path::Path;
 
-/// The name an attempt budget for the transport would be declared with, which must not be used.
 const TRANSPORT_KEY: &str = "MAX_ATTEMPTS";
 
-/// The file that declares [`TRANSPORT_KEY`]. The key has to be written down somewhere for the scan to
-/// look for it, and this is the only place the name may appear: a scan cannot forbid the constant that
-/// names what it forbids, and an exemption written as a file rather than as a line number does not
-/// drift when the file above it changes.
 const DECLARING_FILE: &str = "retry_policy_transport_tests.rs";
 
-/// Every occurrence of the transport's budget name under `root`, as `path:line`, except the
-/// declaration above.
 fn budget_mentions(root: &Path) -> Result<Vec<String>, String> {
     let mut paths = Vec::new();
     rust_files(root, &mut paths)?;

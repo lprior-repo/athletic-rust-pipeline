@@ -2,7 +2,6 @@ use crate::protocol::{RankingPageObservation, RankingsCapture};
 use crate::{BrowserError, BrowserResponse};
 use base64::Engine;
 use reqwest::header::HeaderMap;
-/// Parse the binding event payload into a CapturedRanking.
 pub(crate) fn parse_binding(
     data: &serde_json::Value,
     capture_kind: RankingsCapture,
@@ -37,7 +36,6 @@ pub(crate) fn parse_binding(
     })
 }
 
-/// Map the interceptor's `error` field onto the error the operator contract exposes.
 fn binding_error(err: &str) -> BrowserError {
     match err {
         "payload_limit" => BrowserError::PayloadLimit,
@@ -49,14 +47,12 @@ fn binding_error(err: &str) -> BrowserError {
     }
 }
 
-/// Read one required string field of the binding payload.
 fn required_str<'a>(data: &'a serde_json::Value, key: &str) -> Result<&'a str, BrowserError> {
     data.get(key)
         .and_then(|value| value.as_str())
         .ok_or(BrowserError::Protocol)
 }
 
-/// Read the required response status.
 fn binding_status(data: &serde_json::Value) -> Result<u16, BrowserError> {
     data.get("status")
         .and_then(|value| value.as_u64())
@@ -64,7 +60,6 @@ fn binding_status(data: &serde_json::Value) -> Result<u16, BrowserError> {
         .ok_or(BrowserError::Protocol)
 }
 
-/// Decode the required body plus its declared byte count, enforcing both limits.
 fn binding_body(data: &serde_json::Value) -> Result<(Vec<u8>, usize), BrowserError> {
     let body_str = required_str(data, "body")?;
     let body_bytes = data
@@ -84,7 +79,6 @@ fn binding_body(data: &serde_json::Value) -> Result<(Vec<u8>, usize), BrowserErr
     Ok((body, body_bytes))
 }
 
-/// Collect the allowed response headers, rejecting malformed names and values.
 fn binding_headers(data: &serde_json::Value) -> Result<HeaderMap, BrowserError> {
     let Some(values) = data.get("headers").and_then(|value| value.as_object()) else {
         return Err(BrowserError::Protocol);
@@ -117,8 +111,6 @@ pub(crate) struct CapturedRanking {
     pub(crate) capture_kind: RankingsCapture,
 }
 
-/// Map a CDP failure to the coarse transport error the operator contract
-/// exposes, keeping the underlying cause in the log.
 pub(crate) fn transport<T, E: std::fmt::Display>(
     result: Result<T, E>,
     stage: &'static str,
@@ -129,7 +121,6 @@ pub(crate) fn transport<T, E: std::fmt::Display>(
     })
 }
 
-/// Validate captured data and build BrowserResponse.
 pub(crate) fn build_response(captured: CapturedRanking) -> Result<BrowserResponse, BrowserError> {
     if captured.headers.is_empty() {
         return Err(BrowserError::Protocol);

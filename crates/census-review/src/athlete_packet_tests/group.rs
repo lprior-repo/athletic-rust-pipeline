@@ -1,4 +1,3 @@
-//! The group a case names, and the two sides the packet compares.
 
 use super::*;
 

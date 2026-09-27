@@ -1,37 +1,21 @@
-//! The performance-list page and its sections.
-//!
-//! The page is one document per list *view*: the same markup serves the unfiltered page (the
-//! host's per-section top-N over every grade) and a `?year=<TOKEN>` view (that grade's own
-//! ranking), so the sections are read the same way either way and the row's own `Year` cell
-//! stays authoritative.
 
 use super::html::text_of;
 use super::row::{parse_row, ParsedRow};
 use census_domain::model::Gender;
 
-/// One event × gender section of a performance list.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParsedSection {
-    /// The event label with its gender parenthetical removed (`60 Meters`, `4 x 200 Relay`).
     pub label: String,
     pub gender: Option<Gender>,
-    /// The host's own standard-event handle (`standard_event_hnd_46`), kept so a row's identity
-    /// stays stable even if the printed label is reworded.
     pub event_hnd: Option<u32>,
     pub rows: Vec<ParsedRow>,
 }
 
-/// The parsed sections of one performance-list page.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParsedList {
     pub sections: Vec<ParsedSection>,
 }
 
-/// Read every section of a performance-list page.
-///
-/// The page is one document per list *view*: the same markup serves the unfiltered page (the host's
-/// per-section top-N over every grade) and a `?year=<TOKEN>` view (that grade's own ranking), so the
-/// sections are read the same way either way and the row's own `Year` cell stays authoritative.
 pub fn parse_list_page(html: &str) -> ParsedList {
     let mut sections = Vec::new();
     for chunk in html.split("<div class=\"row gender_").skip(1) {
@@ -40,7 +24,6 @@ pub fn parse_list_page(html: &str) -> ParsedList {
     ParsedList { sections }
 }
 
-/// One `<div class="row gender_… standard_event_hnd_…">` block: its event, its gender side, its rows.
 fn parse_section(chunk: &str) -> ParsedSection {
     let gender = section_gender(chunk);
     let event_hnd = chunk
@@ -61,7 +44,6 @@ fn parse_section(chunk: &str) -> ParsedSection {
     }
 }
 
-/// The section title (`60 Meters (Men)`), with a trailing gender parenthetical dropped.
 fn section_label(chunk: &str) -> Option<String> {
     let start = chunk.find("<h3")?;
     let after = chunk.get(start..)?;
@@ -70,11 +52,6 @@ fn section_label(chunk: &str) -> Option<String> {
     Some(strip_gender_parenthetical(&text_of(text)))
 }
 
-/// Drop a trailing `(Men)`/`(Women)`/`(M)`/`(W)` from a section title, leaving the event label.
-///
-/// The gender itself is read from the section's own `gender_m`/`gender_f` class and from the team
-/// slug, both of which are single-letter and unambiguous; this only removes the title's restatement
-/// of it so the event label matches the ontology's compact keys.
 fn strip_gender_parenthetical(label: &str) -> String {
     let trimmed = label.trim();
     let Some(open) = trimmed.rfind('(') else {
@@ -97,11 +74,6 @@ fn strip_gender_parenthetical(label: &str) -> String {
     }
 }
 
-/// The single-letter gender side a section wrapper states.
-///
-/// The split that reaches this parser has already consumed `row gender_`, so the chunk opens with
-/// the side itself; the title's restatement of it (`60 Meters (Men)`) is only stripped from the
-/// label, never read as the side.
 fn section_gender(chunk: &str) -> Option<Gender> {
     match chunk.chars().next()? {
         'm' => Some(Gender::Boys),

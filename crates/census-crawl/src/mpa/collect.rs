@@ -1,6 +1,3 @@
-//! The adapter body: resolve the school directory, walk each school's staff page, append and journal.
-//!
-//! Network and store access live here and nowhere else in this module.
 
 use super::map::{school_entities, ParsedSchool, SchoolExtract};
 use super::pages::parse_directory;
@@ -12,7 +9,6 @@ use census_domain::model::SourceNamespace;
 use census_domain::UsJurisdiction;
 use census_store::Table;
 
-/// Collect MPA schools and coaches.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("mpa", "schools");
     let observed_on = if options.observed_on.trim().is_empty() {
@@ -69,18 +65,12 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-/// Fold the fetcher's counters since `before` into the report.
-///
-/// Every exit from [`collect`] records the same two numbers, including the ones that return before
-/// the walk: a run that stopped at the directory page still spent its request, and a report that
-/// omitted it would look free.
 async fn record_spend(ctx: &AdapterContext<'_>, report: &mut AdapterReport, before: &FetchStats) {
     let after = ctx.fetcher.stats().await;
     report.requests = after.requests.saturating_sub(before.requests);
     report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
 }
 
-/// Counters for one collect run.
 #[derive(Default)]
 struct Tally {
     processed: usize,
@@ -88,7 +78,6 @@ struct Tally {
     coach_rows: usize,
 }
 
-/// Resolve which schools to process, applying limit and name filters.
 fn resolve_schools(entries: &[super::pages::SchoolEntry], options: &Options) -> Vec<ParsedSchool> {
     let wanted: Option<std::collections::HashSet<String>> = if options.school_names.is_empty() {
         None
@@ -119,7 +108,6 @@ fn resolve_schools(entries: &[super::pages::SchoolEntry], options: &Options) -> 
         .collect()
 }
 
-/// Fetch one school's staff page, parse and emit.
 async fn process_school(
     ctx: &AdapterContext<'_>,
     entry: &ParsedSchool,
@@ -165,7 +153,6 @@ async fn process_school(
     Ok(())
 }
 
-/// Append and journal one school's rows.
 fn emit_school(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
@@ -175,10 +162,8 @@ fn emit_school(
     let key = &extract.source_school_id;
     let mut batch = ctx.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    ctx.observe_school(
-        &SourceNamespace::association_school(ASSOCIATION),
-        &extract.school,
-    )?;
+    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(ASSOCIATION),
+    &extract.school,).as_slice())?;
     report.rows = report.rows.saturating_add(1);
 
     tally.coach_rows = tally.coach_rows.saturating_add(extract.coaches.len());

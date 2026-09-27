@@ -1,30 +1,23 @@
-//! Centimetres (hundredths of a metre).
 
 use serde::{de, Deserialize, Deserializer, Serialize};
 
-/// Centimetres (hundredths of a metre).  Range: ±21 474 836m.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Default)]
 #[serde(transparent)]
 pub struct CentiMetres(i32);
 
 impl CentiMetres {
-    /// Wrap an exact centimetre count.
     pub const fn new(centimetres: i32) -> Self {
         Self(centimetres)
     }
 
-    /// Scale a value already known to be in metres into centimetres, refusing NaN, infinity and
-    /// anything that would not fit in `i32`.
     pub fn try_from_metres_f64(v: f64) -> Option<Self> {
         super::checked_hundredths(v).map(Self)
     }
 
-    /// The exact centimetre count.
     pub const fn value(self) -> i32 {
         self.0
     }
 
-    /// Convert the stored integer back to metres as an f64.
     pub fn as_metres_f64(self) -> f64 {
         f64::from(self.0) / 100.0
     }

@@ -1,26 +1,16 @@
-//! What one pulled meet counts, and the report lines it narrates.
 
 use crate::AdapterReport;
 
-/// The rows one meet contributes, counted as they are read.
-///
-/// Every counter is a refusal the walk made or a row it stored, so the run report accounts for each
-/// published row exactly once.
 #[derive(Debug, Default)]
 pub(in crate::athleticnet) struct MeetStats {
     pub(in crate::athleticnet) meets_pulled: u64,
-    /// Meets whose venue the payload does not place in a jurisdiction (no `Location.State`).
     pub(in crate::athleticnet) meets_unplaced: u64,
-    /// Meets whose `MeetDate` is not a `YYYY-MM-DD` timestamp.
     pub(in crate::athleticnet) meets_without_date: u64,
-    /// Meets whose date yields no season year and whose payload publishes no `SeasonID`.
     pub(in crate::athleticnet) meets_without_season: u64,
     pub(super) blocks: u64,
     pub(super) blocks_gender_unknown: u64,
     pub(super) blocks_without_division: u64,
-    /// Blocks whose label maps to one class of event while the third request declares the other.
     pub(super) blocks_event_type_mismatch: u64,
-    /// Blocks whose event id the third request does not list.
     pub(super) blocks_metadata_absent: u64,
     pub(super) rows_seen: u64,
     pub(super) rows_stored: u64,
@@ -28,13 +18,9 @@ pub(in crate::athleticnet) struct MeetStats {
     pub(super) rows_no_name: u64,
     pub(super) rows_no_athlete: u64,
     pub(super) rows_no_grade: u64,
-    /// Rows whose team id has no entry in the payload's team list.
     pub(super) rows_unknown_school: u64,
-    /// Rows of an event whose own label maps to no platform kind, pulled without the third
-    /// request's type: their marks are unreadable, so they are refused rather than guessed at.
     pub(super) rows_unmapped_event: u64,
     pub(super) relay_rows: u64,
-    /// Squad rows whose result id carries no legs: never attributed to a person.
     pub(super) relay_rows_without_legs: u64,
     pub(super) legs_seen: u64,
     pub(super) legs_stored: u64,
@@ -44,12 +30,10 @@ pub(in crate::athleticnet) struct MeetStats {
 }
 
 impl MeetStats {
-    /// The performance rows this meet stored: individual rows plus relay legs.
     pub(in crate::athleticnet) fn stored(&self) -> u64 {
         self.rows_stored.saturating_add(self.legs_stored)
     }
 
-    /// Fold one meet's counters into a run's totals.
     pub(in crate::athleticnet) fn merge(&mut self, other: &MeetStats) {
         self.meets_pulled = self.meets_pulled.saturating_add(other.meets_pulled);
         self.meets_unplaced = self.meets_unplaced.saturating_add(other.meets_unplaced);
@@ -97,7 +81,6 @@ impl MeetStats {
 }
 
 impl std::fmt::Display for MeetStats {
-    /// The counters, as the run report prints them.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -137,7 +120,6 @@ impl std::fmt::Display for MeetStats {
     }
 }
 
-/// Add the run's meet counters, and the third request's disposition, to the report.
 pub(in crate::athleticnet) fn note(
     report: &mut AdapterReport,
     totals: &MeetStats,

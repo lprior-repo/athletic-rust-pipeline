@@ -12,12 +12,6 @@ use super::jobs::apply_observations;
 use super::wire::ingest::{IngestReply, IngestRequest, IngestState, WindowRequest};
 use super::{blocking, job_error, resolve_table, JobError, KEY_STATE};
 
-/// The digest one request's payload hashes to: the target table's name and every row, canonically.
-///
-/// The digest is the payload half of a receipt; the operation id the caller sends is the identity
-/// half. They are deliberately not derived from one another: an id derived from the payload cannot
-/// notice that the payload changed under it, which is the case a re-used operation id has to fail
-/// on rather than append.
 pub(super) fn payload_digest(table: Table, rows: &[Value]) -> Result<String, HandlerError> {
     let mut hasher = Sha256::new();
     hasher.update(table.file().as_bytes());
@@ -35,8 +29,6 @@ pub(super) fn payload_digest(table: Table, rows: &[Value]) -> Result<String, Han
         .collect())
 }
 
-/// One posted operation, as the handler hands it to the store: what to write, under which name, and
-/// the digest of the payload that name covers.
 struct Posted {
     table: Table,
     rows: Vec<Value>,
@@ -44,13 +36,10 @@ struct Posted {
     digest: String,
 }
 
-/// `Ingest`: durable per-endpoint cursor and window bookkeeping, plus the append itself.
 #[derive(Clone)]
 pub struct Ingest {
     store: Arc<Store>,
     clock: Arc<dyn Clock>,
-    /// The shell's region: the append runs through it, so an aborted invocation cannot leave a
-    /// writer behind the drain does not own.
     region: Arc<Spawner>,
 }
 
@@ -63,8 +52,6 @@ impl Ingest {
         }
     }
 
-    /// Read the endpoint's state. An endpoint that has never recorded anything reads as empty
-    /// rather than as an error: absence is the normal first-run state, not a failure.
     async fn load_object(&self, ctx: &ObjectContext<'_>) -> Result<IngestState, HandlerError> {
         let endpoint = ctx.key().to_string();
         Ok(ctx
@@ -77,7 +64,6 @@ impl Ingest {
             }))
     }
 
-    /// The same read through the read-only (shared) handler context.
     async fn load_shared(
         &self,
         ctx: &SharedObjectContext<'_>,
@@ -156,12 +142,6 @@ impl Ingest {
         }))
     }
 
-    /// Apply one operation to the store: its rows and its receipt, in one commit.
-    ///
-    /// The step's value is journaled as the [`Application`] the store answered, so a replay that
-    /// never re-executes the closure reads back which of the two it was — while a replay that *does*
-    /// re-execute it, because the first attempt died before the journal recorded it, is answered by
-    /// the store's own receipt.
     async fn apply(
         &self,
         ctx: &ObjectContext<'_>,
@@ -189,12 +169,6 @@ impl Ingest {
         Ok(application)
     }
 
-    /// Update ingest state: counters, cursor, the operation just applied, timestamp. Must follow
-    /// [`Self::apply`].
-    ///
-    /// The operation list is this object's own view for an operator reading `state`; the store's
-    /// receipt is what decides a repeat, so a replay that appended nothing still names the operation
-    /// it replayed rather than adding a second copy of it.
     fn update_ingest_state(
         state: &mut IngestState,
         appended: u64,

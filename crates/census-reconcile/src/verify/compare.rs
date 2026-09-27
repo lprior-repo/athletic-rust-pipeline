@@ -1,4 +1,3 @@
-//! Row-level comparison against the store's canonical records.
 
 use std::collections::HashMap;
 
@@ -6,22 +5,17 @@ use census_domain::model::{CanonicalAthlete, CanonicalSchool};
 
 use census_store::{Store, Table};
 
-/// A single discrepancy found during verification.
 #[derive(Debug)]
 pub struct Discrepancy {
     pub message: String,
 }
 
-/// A verification pass over one entity type.
 #[derive(Debug)]
 pub struct EntityCheck {
-    /// Number of rows that passed verification.
     pub passed: usize,
-    /// Indices that were sampled.
     pub sampled_indices: Vec<usize>,
 }
 
-/// Extract a trimmed string field from a row via the column map.
 pub(super) fn field<'a>(
     col_map: &'a HashMap<&str, usize>,
     row: &'a [String],
@@ -34,8 +28,6 @@ pub(super) fn field<'a>(
         .unwrap_or("")
 }
 
-/// Verify athletes: every sampled row's athlete must exist in the store's Athletes table
-/// with the same id, name, school id, and grad_year of 2027.
 pub fn verify_athletes(
     store: &Store,
     rows: &[Vec<String>],
@@ -72,8 +64,6 @@ pub fn verify_athletes(
     })
 }
 
-/// Check one sampled athlete row against the store: the id must exist, the name must match, the
-/// School cell must resolve the way the sheet prints it, and the row must be the published cohort.
 fn check_athlete_row(
     idx: usize,
     row: &[String],
@@ -108,16 +98,6 @@ fn check_athlete_row(
     check_athlete_cohort(idx, aid, row, col_map)
 }
 
-/// The Athletes sheet prints the athlete's school by *name* — that is the recruiter's view — so the
-/// check resolves that name through the row the athlete names rather than comparing a printed name
-/// against a set of ids, which would fail every row. A school renamed in the store after the
-/// workbook was written is still a discrepancy, which is the point.
-///
-/// The store holds no row for some school ids, so there is no name to print and the sheet carries
-/// the id itself — the recruiting read model's documented fallback (`Dataset::school_name`). The
-/// check holds the workbook to that and to nothing else: an id printed where the store *does* hold
-/// a row is still a discrepancy, which is what catches an athlete published with its school
-/// filtered out of the sheet's own index.
 fn check_athlete_school(
     idx: usize,
     aid: &str,
@@ -143,7 +123,6 @@ fn check_athlete_school(
     }
 }
 
-/// The Graduation Year cell must name the cohort the run published.
 fn check_athlete_cohort(
     idx: usize,
     aid: &str,

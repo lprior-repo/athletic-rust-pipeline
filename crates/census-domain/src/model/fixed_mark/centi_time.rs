@@ -1,35 +1,23 @@
-//! Centiseconds (hundredths of a second).
 
 use serde::{de, Deserialize, Deserializer, Serialize};
 
-/// Centiseconds (hundredths of a second).  Range: ±214 748 364s (~60h).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Default)]
 #[serde(transparent)]
 pub struct CentiSeconds(i32);
 
 impl CentiSeconds {
-    /// Wrap an exact centisecond count. Every `i32` is a valid count, so this cannot fail; the
-    /// guard that matters sits on the float path below, which has to settle a unit before scaling.
     pub const fn new(centiseconds: i32) -> Self {
         Self(centiseconds)
     }
 
-    /// Scale a value already known to be in seconds into centiseconds, refusing NaN, infinity and
-    /// anything that would not fit in `i32`.
-    ///
-    /// Callers own their source format, so they own the refusal: nothing here substitutes `0` for
-    /// NaN or pins a bound for an overflow, because either would publish a mark the source never
-    /// stated.
     pub fn try_from_seconds_f64(v: f64) -> Option<Self> {
         super::checked_hundredths(v).map(Self)
     }
 
-    /// The exact centisecond count.
     pub const fn value(self) -> i32 {
         self.0
     }
 
-    /// Convert the stored integer back to seconds as an f64 — lossless for values ≤ 999 999.
     pub fn as_seconds_f64(self) -> f64 {
         f64::from(self.0) / 100.0
     }

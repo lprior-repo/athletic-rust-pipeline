@@ -1,53 +1,32 @@
-//! Validation: what a proposal has to satisfy before a pass records it.
-//!
-//! The rule a family's answer must pass is local and checkable — no model, no network — so a model
-//! can be wrong without being able to move a row. Every family answers its own kind of question, so
-//! the rule is per family: the jurisdiction families ask for a value, the athlete family asks for a
-//! decision, and [`Adjudication`] is the shape both produce. A refusal is never a silence: it is
-//! returned with the reason, and the caller keeps the answer the model gave.
 
 use census_domain::model::{ReviewPacket, ReviewVerdict, ReviewVerdictKind, VerdictBatch};
 
 use super::families::IDENTITY_FIELD;
 use super::{athlete_verdict, ReviewFamily};
 
-/// A proposal validation admitted: the field and the value that may be recorded.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Admitted {
     pub field: String,
     pub value: String,
 }
 
-/// Why a proposal was refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Refusal {
-    /// The proposal does not answer the field the family asked about.
     WrongField,
-    /// The field's own rule refused the value.
     InvalidValue,
-    /// The subject already carries a value for the field, so nothing needed proposing.
     AlreadyResolved,
-    /// The verdict does not name a case the packet asks about, so it decides nothing.
     UnnamedCase,
-    /// A `same_person` proposal contradicts deterministic packet evidence.
     HardContradiction(crate::athlete_verdict::HardContradiction),
 }
 
-/// What validating one proposal produced.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Adjudication {
-    /// A decision, and the value that may be recorded for it.
     Decided(Admitted),
-    /// The answer was not a decision: the lane declined, so there is no value to record. An athlete
-    /// case is retained as terminal for this evidence snapshot, and new evidence mints a new case.
     Undecided,
-    /// The proposal was refused, and why. The case stays for an operator, and the answer is kept as
-    /// the model gave it rather than dropped.
     Refused(Refusal),
 }
 
 impl Adjudication {
-    /// The value validation admitted, when it admitted one.
     pub const fn admitted(&self) -> Option<&Admitted> {
         match self {
             Self::Decided(admitted) => Some(admitted),
@@ -56,7 +35,6 @@ impl Adjudication {
     }
 }
 
-/// Adjudicate one proposal against its family's own rule.
 pub fn validate(
     family: ReviewFamily,
     verdict: &ReviewVerdict,
@@ -77,10 +55,6 @@ pub fn validate(
     }
 }
 
-/// The jurisdiction rule: a proposal must answer `state` with a jurisdiction this census covers.
-///
-/// Both jurisdiction families retain a subject with no jurisdiction at all, so a packet that already
-/// carries one is not this case; a code and a spelled-out name are both answers.
 fn jurisdiction(verdict: &ReviewVerdict, packet: &ReviewPacket, field: &str) -> Adjudication {
     if named(&verdict.field) != Some(field) {
         return Adjudication::Refused(Refusal::WrongField);
@@ -104,17 +78,12 @@ fn jurisdiction(verdict: &ReviewVerdict, packet: &ReviewPacket, field: &str) -> 
     })
 }
 
-/// A slot's text, when the model filled it in.
 fn named(slot: &Option<String>) -> Option<&str> {
     slot.as_deref()
         .map(str::trim)
         .filter(|text| !text.is_empty())
 }
 
-/// Read one batch into adjudications worth keeping, plus how many the reader dropped.
-///
-/// Only a proposal is validated: a verdict that declined carries nothing to check, and the caller
-/// reads that as the case not being closed.
 pub fn triage(
     packet: &ReviewPacket,
     family: ReviewFamily,

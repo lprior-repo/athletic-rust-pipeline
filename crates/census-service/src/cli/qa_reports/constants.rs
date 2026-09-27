@@ -1,6 +1,4 @@
-//! The 46 expected assignment reports, required sections, and evidence range.
 
-/// The 46 expected assignment reports, keyed by their sequence number.
 pub const EXPECTED: [(usize, &str); 46] = [
     (1, "01-athletic-net-team-universe.md"),
     (2, "02-athletic-net-profile-acquisition.md"),
@@ -50,11 +48,9 @@ pub const EXPECTED: [(usize, &str); 46] = [
     (46, "46-event-token-mapping.md"),
 ];
 
-/// Reports 31–46 are gap-phase follow-ups; each must carry a non-empty evidence directory.
 pub const EVIDENCE_START: usize = 31;
 pub const EVIDENCE_END: usize = 46;
 
-/// Required section headings for every report.
 pub const REQUIRED_SECTIONS: &[&str] = &[
     "Source",
     "Coverage",

@@ -1,27 +1,17 @@
-//! Regex analysis of one response's rows: which athlete links a row carries and what is wrong with
-//! them.
 
 use regex::Regex;
 
 use crate::links::link_class;
 
-/// One row's athlete links, in document order, with the class of each.
 pub(crate) struct RowAnalysis {
-    /// Every athlete href the row carried (all classes).
     pub(crate) athlete_hrefs: Vec<String>,
-    /// The hrefs whose class is `empty_id` or `other_noncanonical`.
     pub(crate) noncanonical: Vec<String>,
-    /// The sport tokens (`tf` / `xc`) of the canonical sported hrefs.
     pub(crate) sported: Vec<String>,
-    /// The row's issue messages, in the order the checks run.
     pub(crate) issues: Vec<String>,
-    /// Whether the row is a same-sport candidate with no issue.
     pub(crate) candidate: bool,
 }
 
-/// The compiled patterns every page and row is tested against.
 pub(crate) struct Regexes {
-    /// Splits one response's `results` string into rows.
     pub(crate) tr: Regex,
     href: Regex,
     athlete: Regex,
@@ -31,8 +21,6 @@ pub(crate) struct Regexes {
     name: Regex,
 }
 
-/// The compiled patterns every row is tested against, bundled so `analyse_row` takes one argument
-/// for them instead of six.
 pub(crate) struct RowRegexes<'a> {
     href: &'a Regex,
     athlete: &'a Regex,
@@ -43,7 +31,6 @@ pub(crate) struct RowRegexes<'a> {
 }
 
 impl Regexes {
-    /// Compile the seven patterns the page and row analysis runs on.
     pub(crate) fn compile() -> Result<Self, regex::Error> {
         Ok(Self {
             tr: Regex::new(r"<tr[ >]")?,
@@ -58,7 +45,6 @@ impl Regexes {
         })
     }
 
-    /// The borrow bundle the row analysis takes.
     pub(crate) fn for_rows(&self) -> RowRegexes<'_> {
         RowRegexes {
             href: &self.href,
@@ -71,10 +57,8 @@ impl Regexes {
     }
 }
 
-/// One href with its class token, and the sport token for the canonical sported forms.
 type AthleteLink = (String, &'static str, Option<&'static str>);
 
-/// Every href in the row, in document order.
 fn hrefs_of(row_html: &str, href_re: &Regex) -> Vec<String> {
     href_re
         .captures_iter(row_html)
@@ -83,7 +67,6 @@ fn hrefs_of(row_html: &str, href_re: &Regex) -> Vec<String> {
         .collect()
 }
 
-/// The hrefs that point at an athlete, each with its class.
 fn athlete_links(hrefs: &[String], re: &RowRegexes<'_>) -> Vec<AthleteLink> {
     hrefs
         .iter()
@@ -95,7 +78,6 @@ fn athlete_links(hrefs: &[String], re: &RowRegexes<'_>) -> Vec<AthleteLink> {
         .collect()
 }
 
-/// The hrefs whose class is `empty_id` or `other_noncanonical`.
 fn noncanonical_hrefs(athlete: &[AthleteLink]) -> Vec<String> {
     athlete
         .iter()
@@ -104,7 +86,6 @@ fn noncanonical_hrefs(athlete: &[AthleteLink]) -> Vec<String> {
         .collect()
 }
 
-/// The sport tokens of the canonical sported hrefs.
 fn sported_tokens(athlete: &[AthleteLink]) -> Vec<String> {
     athlete
         .iter()
@@ -113,7 +94,6 @@ fn sported_tokens(athlete: &[AthleteLink]) -> Vec<String> {
         .collect()
 }
 
-/// The row's issue messages: a noncanonical link, another sport, or no display name.
 fn row_issues(
     noncanonical: &[String],
     identity: bool,
@@ -141,7 +121,6 @@ fn row_issues(
     issues
 }
 
-/// Analyse one row: its athlete links, their classes, and the issues that disqualify it.
 pub(crate) fn analyse_row(row_html: &str, sport: Option<&str>, re: &RowRegexes<'_>) -> RowAnalysis {
     let hrefs = hrefs_of(row_html, re.href);
     let athlete = athlete_links(&hrefs, re);

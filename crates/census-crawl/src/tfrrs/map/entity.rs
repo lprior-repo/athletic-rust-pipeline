@@ -1,8 +1,3 @@
-//! The mints for the three entities a row's own text names: its school, its team, its athlete.
-//!
-//! Each one mints a canonical id from the domain's own key and records the provider's channel
-//! beside it (`TfrrsTeam`, `TfrrsAthlete`), so a second page that names the same entity upserts
-//! it instead of adding a twin.
 
 use super::state::{Absorb, AthleteFacts, Page, TeamFacts};
 use census_domain::model::{
@@ -11,12 +6,6 @@ use census_domain::model::{
 };
 
 impl<'a> Absorb<'a> {
-    /// Resolve a school against the consolidated index, memoized per run, minting it when the index
-    /// has never seen it.
-    ///
-    /// School identity keys on the page's own state + the normalized name, so the mint is
-    /// deterministic and a second run over the same list resolves to the same school instead of
-    /// adding a twin.
     pub(super) fn school_for(&mut self, page: Page<'_>, name: &str) -> Option<SchoolId> {
         if let Some(id) = self.resolved.get(name) {
             return Some(id.clone());
@@ -36,10 +25,6 @@ impl<'a> Absorb<'a> {
         Some(id)
     }
 
-    /// Resolve or mint the team an observation names.
-    ///
-    /// Team identity is (school, sport, gender, school year): the slug is an identity *channel*, so a
-    /// roster and a list that name the same team in the same season upsert one team.
     pub(super) fn team_for(&mut self, page: Page<'_>, facts: &TeamFacts<'_>) -> TeamId {
         let id = CanonicalTeam::mint(facts.school, facts.sport, facts.gender, facts.school_year);
         let team = self
@@ -67,8 +52,7 @@ impl<'a> Absorb<'a> {
         }
         id
     }
-    /// Resolve or mint one athlete, recording every channel the page published for them.
-    pub(super) fn athlete_for(&mut self, page: Page<'_>, facts: &AthleteFacts<'_>) -> AthleteId {
+    pub(super) fn athlete_for(&mut self, page: Page<'_>, facts: &AthleteFacts<'_>) -> (AthleteId, SourceIdentity) {
         let source = SourceIdentity {
             namespace: if facts.tfrrs_id.is_some() { SourceNamespace::TfrrsAthlete }
                 else { SourceNamespace::Other("tfrrs_document_row".to_string()) },
@@ -95,10 +79,9 @@ impl<'a> Absorb<'a> {
                 athlete.observed_grades.push(grade.clone());
             }
         }
-        id
+        (id.clone(), athlete.source.clone())
     }
 }
-/// Push an identity channel when the same namespace + id is not already recorded.
 pub(super) fn push_identity(
     identities: &mut Vec<SourceIdentity>,
     namespace: SourceNamespace,

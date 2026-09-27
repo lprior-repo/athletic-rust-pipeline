@@ -3,14 +3,8 @@ mod tests {
     use super::super::*;
     use std::cell::{Cell, RefCell};
 
-    /// A scripted stand-in for the durable wait. It records every window it was asked to wait — the
-    /// assertion that matters, since a loop that stopped waiting cannot fail a test that only counts
-    /// windows.
     struct ScriptedWindows {
-        /// The signal arrives after this many successful (elapsed) windows.
-        /// Once the signal arrives, window() returns false immediately without recording.
         signal_after: u32,
-        /// How many successful (true) windows have elapsed.
         elapsed: Cell<u32>,
         waited: RefCell<Vec<u64>>,
     }
@@ -46,10 +40,6 @@ mod tests {
         }
     }
 
-    /// A zero-second window is a wait of zero length, not a skipped wait. The pre-fix code awaited
-    /// `ctx.signal` alone for `window_seconds == 0`, so with no signal the future never resolved and
-    /// the call never returned; a later repair deleted the sleep entirely. That is why this asserts
-    /// the waits themselves: three windows must mean three waits.
     #[tokio::test]
     async fn a_zero_second_window_waits_once_per_window() {
         let waits = ScriptedWindows::new(100);
@@ -59,7 +49,6 @@ mod tests {
         assert_eq!(waits.windows_waited(), vec![0, 0, 0]);
     }
 
-    /// A stop signal that has already arrived ends the sweep before the first window completes.
     #[tokio::test]
     async fn an_arrived_signal_cuts_the_first_window_short() {
         let waits = ScriptedWindows::new(0);
@@ -69,7 +58,6 @@ mod tests {
         assert_eq!(waits.windows_waited(), Vec::<u64>::new());
     }
 
-    /// A signal arriving mid-sweep keeps the windows already observed.
     #[tokio::test]
     async fn a_signal_mid_sweep_keeps_the_windows_observed_so_far() {
         let waits = ScriptedWindows::new(2);
@@ -79,7 +67,6 @@ mod tests {
         assert_eq!(waits.windows_waited(), vec![10, 10]);
     }
 
-    /// Every window carries the requested duration, and exhausting them is not an interruption.
     #[tokio::test]
     async fn all_windows_elapse_without_a_signal() {
         let waits = ScriptedWindows::new(100);
@@ -89,7 +76,6 @@ mod tests {
         assert_eq!(waits.windows_waited(), vec![30, 30, 30, 30, 30]);
     }
 
-    /// No windows means no waits at all.
     #[tokio::test]
     async fn zero_windows_waits_for_nothing() {
         let waits = ScriptedWindows::new(0);

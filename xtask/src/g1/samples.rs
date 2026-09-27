@@ -1,7 +1,3 @@
-//! The evidence samples the report prints: the first `--samples` findings of each class.
-//!
-//! Every entry is kept in one bucket keyed by class name, in the order the raw bodies were scanned,
-//! so the printed lines are the corpus's first findings rather than a random subset.
 
 use indexmap::IndexMap;
 
@@ -9,18 +5,13 @@ use crate::digests::digest_head;
 use crate::pyrepr::py_repr_tuple;
 use crate::rows::RowAnalysis;
 
-/// The sample buckets, keyed by class name.
 pub(crate) type Samples = IndexMap<String, Vec<SampleEntry>>;
 
-/// One retained finding, in the shape the deleted script printed it.
 pub(crate) enum SampleEntry {
-    /// A noncanonical athlete href: `(digest, href)`.
     Noncanonical(String, String),
-    /// A page whose envelope count exceeds its rows: `(digest, sport, count, rows, pager head)`.
     CountGtRows(String, Option<String>, i64, usize, String),
 }
 
-/// Keep a row's noncanonical hrefs as samples until the bucket is full.
 pub(crate) fn push_noncanonical(
     class_samples: &mut Samples,
     digest: &str,
@@ -37,7 +28,6 @@ pub(crate) fn push_noncanonical(
     }
 }
 
-/// The pager's first 200 bytes, for the sample line that shows what the pager looked like.
 fn pager_head(pager: &str) -> String {
     if pager.len() > 200 {
         match pager.split_at_checked(200) {
@@ -49,7 +39,6 @@ fn pager_head(pager: &str) -> String {
     }
 }
 
-/// Keep the page as a `count_gt_rows` sample when its envelope count exceeds its rows.
 pub(crate) fn push_count_gt_rows(
     class_samples: &mut Samples,
     digest: &str,
@@ -73,7 +62,6 @@ pub(crate) fn push_count_gt_rows(
     }
 }
 
-/// One sample line: `  [class] (elements)`.
 fn print_entry(name: &str, value: &SampleEntry) {
     match value {
         SampleEntry::Noncanonical(digest, href) => {
@@ -101,7 +89,6 @@ fn print_entry(name: &str, value: &SampleEntry) {
     }
 }
 
-/// Every bucket's samples, in bucket and insertion order.
 pub(crate) fn print(class_samples: &Samples) {
     println!("samples:");
     for (name, values) in class_samples {

@@ -71,12 +71,6 @@ mod pagination {
         assert_eq!(next_page_after(body.as_bytes(), 1), Some(2));
     }
 }
-/// End-to-end qualification of the persistent lane against an offline fixture.
-///
-/// Ignored by default: each test needs a fixture origin serving the rankings API
-/// and a CDP browser. Point `ADLAW_LANE_FIXTURE` (default `http://127.0.0.1:21045/`)
-/// and `ADLAW_LANE_CDP` (default `http://127.0.0.1:9223`) at those, then run
-/// `cargo test --lib -- --ignored lane_smoke`.
 #[cfg(test)]
 mod lane_smoke {
     use super::super::session::fetch_rankings;
@@ -92,8 +86,6 @@ mod lane_smoke {
     const API_PATH: &str = "/api/v1/tfRankings/GetRankings";
     const MEASURED_BODY: &str = r#"{"reportType":"div","mode":"list","divListId":168416,"indoor":null,"eventShort":"100m","gender":"m","qParams":{"grades":[11],"page":1},"qualifyingListKey":"","version":2,"debug":""}"#;
 
-    /// The fixture holds one global scenario, so a test that sets a scenario
-    /// must not overlap another test running against the same origin.
     static SCENARIO: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
     fn var(key: &str, fallback: &str) -> String {
@@ -141,8 +133,6 @@ mod lane_smoke {
             .unwrap_or_default()
     }
 
-    /// Connect a browser whose first page is parked on the fixture origin: the
-    /// lane issues its request from that document, so the page must be there.
     async fn parked_page(fixture: &url::Url) -> (Browser, Page) {
         let cdp = var("ADLAW_LANE_CDP", "http://127.0.0.1:9223");
         let (browser, mut handler) = Browser::connect_with_config(

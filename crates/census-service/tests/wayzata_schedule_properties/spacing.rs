@@ -1,20 +1,7 @@
-//! The spacing and the case a rendered schedule prints its own furniture in, and what it decides.
-//!
-//! The provider's page is table markup with the month in a heading row, a day in a date cell and two
-//! labels in `awayteam`/`hometeam` cells, and every label it publishes has been through a stylesheet:
-//! the same meet prints as `Hawkeye  Invitational  Day 1` on one page and `Hawkeye Invitational Day 1`
-//! on the next, and the month heading is as likely to be `JANUARY` as `January`. Neither is a fact
-//! about the competition — the venue is looked up in the state table verbatim and the date is what
-//! orders the refresh — so both are collapsed before a row is published.
-//!
-//! The laws are stated over pages built from `tests/fixtures/wayzata/track_2026_schedule.html`, whose
-//! row markup, month heading and `/links/<slug>` keys are copied here verbatim; the labels and venues
-//! are that capture's own.
 
 use super::{rendered_rows, rows, seam_config, SEASON};
 use proptest::prelude::*;
 
-/// Meet labels and venues taken from the committed track capture.
 const LABELS: [&str; 4] = [
     "USATF Minnesota All-Comers Meet #3",
     "Hawkeye Invitational Day 1",
@@ -27,11 +14,9 @@ const VENUES: [&str; 4] = [
     "Macalester College",
     "Augustana College",
 ];
-/// Provider keys and day cells taken from the same capture.
 const SLUGS: [&str; 4] = ["15nug0", "6v95xo", "7vqvs7", "ar41us"];
 const DAYS: [&str; 4] = ["Sun. 4", "Fri. 9", "Sat. 17", "Thu. 25"];
 
-/// One competition day: the cells the row prints.
 #[derive(Debug)]
 struct Day {
     day: String,
@@ -40,7 +25,6 @@ struct Day {
     slug: String,
 }
 
-/// One competition day per case, in the order the page prints them.
 fn days() -> impl Strategy<Value = Vec<Day>> {
     prop::collection::vec(
         (
@@ -63,13 +47,10 @@ fn days() -> impl Strategy<Value = Vec<Day>> {
     })
 }
 
-/// A label written the way a stylesheet's whitespace arrives: runs instead of single blanks.
 fn spaced(text: &str) -> String {
     text.split(' ').collect::<Vec<_>>().join("  \t")
 }
 
-/// The provider's own row markup, with `spaced_text` choosing whether the label cells carry
-/// whitespace runs.
 fn page(heading: &str, days: &[Day], spaced_text: bool) -> String {
     let label = |text: &str| -> String {
         if spaced_text {
@@ -118,15 +99,10 @@ fn page(heading: &str, days: &[Day], spaced_text: bool) -> String {
     body
 }
 
-/// A page's rows, or the reason it published none.
 fn read(name: &str, body: &str) -> Result<Vec<super::MeetRow>, TestCaseError> {
     rows(body, SEASON).map_err(|error| TestCaseError::fail(format!("{name}: {error:?}")))
 }
 
-/// The facts a heading decides, as values: the date a row is stamped with, the meet it names, the
-/// venue it is held at, and the result link it carries. `aria_label` is left out on purpose — it is
-/// the page's own furniture, reprinted verbatim, so the case and blanks the markup carried are its
-/// business and not the heading's.
 fn facts(rows: &[super::MeetRow]) -> Vec<(String, String, String, String)> {
     rows.iter()
         .map(|row| {
@@ -143,8 +119,6 @@ fn facts(rows: &[super::MeetRow]) -> Vec<(String, String, String, String)> {
 proptest! {
     #![proptest_config(seam_config())]
 
-    /// A venue is looked up in the state table verbatim and a meet label keys the row, so the blanks
-    /// a stylesheet collapses into runs cannot reach either: the same table prints the same rows.
     #[test]
     fn whitespace_runs_in_a_label_are_collapsed(days in days()) {
         let plain = read("plain page", &page("January", &days, false))?;
@@ -161,8 +135,6 @@ proptest! {
         );
     }
 
-    /// The month heading is a name, not a case: `JANUARY`, `January` and a padded ` january ` all
-    /// carry the same month into the dates the rows publish.
     #[test]
     fn the_month_heading_is_a_name_not_a_case(days in days(), style in 0usize..3) {
         let heading = match style {

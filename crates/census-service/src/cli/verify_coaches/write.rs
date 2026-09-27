@@ -4,7 +4,6 @@ use census_service::coachverify::{self, FragmentOutcome};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-/// Expand the arguments into a sorted list of fragment CSVs: directories contribute their `*.csv`.
 pub fn collect_fragments(paths: &[PathBuf]) -> Result<Vec<PathBuf>> {
     let mut files = Vec::new();
     for path in paths {
@@ -30,7 +29,6 @@ pub fn collect_fragments(paths: &[PathBuf]) -> Result<Vec<PathBuf>> {
     Ok(files)
 }
 
-/// Write all output artifacts and print results.
 pub async fn print_results(
     args: &super::VerifyCoachesArgs,
     outcomes: &[FragmentOutcome],
@@ -42,7 +40,7 @@ pub async fn print_results(
     write_log(&args.log, outcomes)?;
     print_row_logs(outcomes);
     write_outputs(args, outcomes, files)?;
-    print_reconciliation(&args.reconcile, outcomes);
+    print_reconciliation(&args.reconcile, outcomes)?;
     let shipped = compute_shipped(outcomes);
     let stats = fetcher.stats().await;
     print_fetch_stats(&stats);
@@ -50,7 +48,6 @@ pub async fn print_results(
     check_failures(failures)
 }
 
-/// Append tally lines to the freeze log.
 fn write_log(log: &Option<PathBuf>, outcomes: &[FragmentOutcome]) -> Result<()> {
     if let Some(log) = log {
         let mut handle = std::fs::OpenOptions::new()
@@ -59,21 +56,21 @@ fn write_log(log: &Option<PathBuf>, outcomes: &[FragmentOutcome]) -> Result<()> 
             .open(log)
             .with_context(|| format!("open freeze log {log:?}"))?;
         for outcome in outcomes {
-            writeln!(handle, "{}", outcome.log_line())?;
+            serde_json::to_writer(&mut handle, &outcome.summary())?;
+            writeln!(handle)?;
         }
         handle.flush()?;
     }
     Ok(())
 }
 
-/// Print one tally line per outcome to stdout.
 fn print_row_logs(outcomes: &[FragmentOutcome]) {
     for outcome in outcomes {
-        println!("{}", outcome.log_line());
+        tracing::info!(fragment = %outcome.file, rows = outcome.rows.len(),
+            verdicts = ?outcome.counts, "contact fragment inspected");
     }
 }
 
-/// Write all output artifacts: CSV, union, manifest, report.
 fn write_outputs(
     args: &super::VerifyCoachesArgs,
     outcomes: &[FragmentOutcome],
@@ -95,16 +92,15 @@ fn write_outputs(
         );
     }
     if let Some(manifest) = &args.manifest {
-        coachverify::write_manifest(manifest, files, outcomes)?;
-        println!("manifest: {}", manifest.display());
+        coachverify::write_manifest(manifest, files, outcomes, args.union.as_deref())?;
+        tracing::info!(path = %manifest.display(), "contact manifest written");
     }
     Ok(())
 }
 
-/// Print reconciliation output against a published artifact.
-fn print_reconciliation(published: &Option<PathBuf>, outcomes: &[FragmentOutcome]) {
+fn print_reconciliation(published: &Option<PathBuf>, outcomes: &[FragmentOutcome]) -> Result<()> {
     if let Some(published) = published {
-        let reconciliation = coachverify::reconcile(published, outcomes).unwrap_or_default();
+        let reconciliation = coachverify::reconcile(published, outcomes)?;
         println!(
             "verified rows: {} distinct identities from {} fragment files",
             reconciliation.verified, reconciliation.files
@@ -122,9 +118,9 @@ fn print_reconciliation(published: &Option<PathBuf>, outcomes: &[FragmentOutcome
             println!("  {state}: {count}");
         }
     }
+    Ok(())
 }
 
-/// Count shipped rows across all outcomes.
 fn compute_shipped(outcomes: &[FragmentOutcome]) -> usize {
     outcomes
         .iter()
@@ -132,7 +128,6 @@ fn compute_shipped(outcomes: &[FragmentOutcome]) -> usize {
         .sum()
 }
 
-/// Print fetch stats from the HTTP fetcher.
 fn print_fetch_stats(stats: &FetchStats) {
     println!(
         "fetch stats: requests={} cache_hits={} robots_blocked={} robots_authorized={} errors={} bytes={}",
@@ -145,7 +140,6 @@ fn print_fetch_stats(stats: &FetchStats) {
     );
 }
 
-/// Print the verification summary line.
 fn print_verification_summary(outcomes: &[FragmentOutcome], shipped: usize, out_dir: &Path) {
     println!(
         "verified fragments: {} files, {} rows, {} shipped -> {}",
@@ -159,7 +153,6 @@ fn print_verification_summary(outcomes: &[FragmentOutcome], shipped: usize, out_
     );
 }
 
-/// Report fragment-level failures, or return Ok.
 fn check_failures(failures: &[anyhow::Error]) -> Result<()> {
     if !failures.is_empty() {
         let messages: Vec<String> = failures.iter().map(|error| format!("{error:#}")).collect();
@@ -172,7 +165,6 @@ fn check_failures(failures: &[anyhow::Error]) -> Result<()> {
     Ok(())
 }
 
-/// Write the audit table plus the tally block that surrounds it in the published audit doc.
 fn write_report(path: &Path, outcomes: &[FragmentOutcome]) -> Result<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).with_context(|| format!("create report dir {parent:?}"))?;

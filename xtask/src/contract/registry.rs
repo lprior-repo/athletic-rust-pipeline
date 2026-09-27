@@ -1,18 +1,3 @@
-//! Checks 2, 5 and 8: what the source registry declares, and which modules it declares it for.
-//!
-//! The first two read the crate's own registry — `descriptor`/`descriptors` — rather than a list kept
-//! here, so a source that is added, renamed or re-typed changes the verdict on the next run; the third
-//! reads the `sources/` module tree beside it and compares the two sets, because a registry and a
-//! module tree that disagree describe sources no plan can reach.
-//!
-//! The `maximum_in_flight` floor is a property of the type before it is a property of the value:
-//! `NonZeroUsize::MIN` is what the shared constructors declare, so the clause below can only fail if
-//! the field is re-declared with a type that admits zero — and in that direction the check stops
-//! compiling, which is the loudest form the floor can take. The failure line stays because the floor
-//! is a contract (one in-flight request per host) and not an implementation detail.
-//!
-//! The origin clause is a syntax rule rather than a registry lookup, so it lives in [`origin`] with
-//! its own tests; what this module asserts is what the registry declares.
 
 mod origin;
 
@@ -28,23 +13,14 @@ use crate::paths;
 
 use self::origin::is_host;
 
-/// The slug the Athletic.net adapter is registered under.
 const ATHLETICNET: &str = "athleticnet";
 
-/// Transports a source is registered with today, where a check asserts a different one.
-///
-/// A deviation entry is a migration item, not an exemption: it names the value the registry holds
-/// now and the reason the assertion cannot hold yet, and `xtask contract` prints it as a known
-/// deviation — visible on every run, failing nothing. An entry whose recorded value is no longer
-/// registered is dead weight the next reader has to reason about, so resolving the migration means
-/// deleting the row; a transport outside both the assertion and this table fails the check.
 pub(super) const DEVIATIONS: [(&str, TransportKind, &str); 1] = [(
     ATHLETICNET,
     TransportKind::StructuredApi,
     "the Athletic.net browser migration has not landed: the adapter still arrives through the JSON client, and this check reports the deviation rather than failing the gate until it does",
 )];
 
-/// Check 2: the Athletic.net source arrives through a browser session, not a JSON client.
 pub(super) fn athleticnet_transport() -> Result<Check> {
     const NAME: &str = "athleticnet transport";
     let Some(source) = descriptor(ATHLETICNET) else {
@@ -86,10 +62,6 @@ pub(super) fn athleticnet_transport() -> Result<Check> {
     ))
 }
 
-/// Check 5: every registered source admits a host, a positive rate, and a request in flight.
-///
-/// An empty registry is a violation rather than a pass: a check that measures nothing must not be
-/// reportable as a check that holds.
 pub(super) fn admissions() -> Result<Check> {
     const NAME: &str = "source admission";
     let mut failures: Vec<String> = Vec::new();
@@ -143,12 +115,6 @@ pub(super) fn admissions() -> Result<Check> {
     Ok(Check::violated(5, NAME, detail, failures))
 }
 
-/// Modules under `sources/` that are not adapters, with what they are instead.
-///
-/// The direction this check exists for is "a module with no descriptor is a source the planner cannot
-/// see", and telling a new *adapter* apart from a new *reader* needs this list: `sources/` holds both
-/// kinds, and a reader has no origin to admit, no transport, and nothing a plan can ask for. The list
-/// is the reason the check can be written as an equality rather than as a search for suspicious names.
 const NON_ADAPTERS: [(&str, &str); 12] = [
     (
         "applicability",
@@ -191,12 +157,6 @@ const NON_ADAPTERS: [(&str, &str); 12] = [
     ),
 ];
 
-/// Check 8: every adapter module in the crawl crate is a registered source, and every registered
-/// source is a module.
-///
-/// Both directions are violations of one claim: the registry and the module tree describe the same set
-/// of sources. An unregistered adapter is a source no plan can reach; a descriptor with no module is
-/// a plan that dispatches nowhere.
 pub(super) fn adapter_registration() -> Result<Check> {
     const NAME: &str = "adapter registration";
     let registered: BTreeSet<&str> = descriptors().map(|source| source.slug).collect();
@@ -238,10 +198,6 @@ pub(super) fn adapter_registration() -> Result<Check> {
     Ok(Check::violated(8, NAME, detail, failures))
 }
 
-/// Every module name in the crawl crate's source root: a file's stem or a directory's name.
-///
-/// A module is a `.rs` file or a directory of them; `mod` and a bare `tests` directory name no
-/// adapter either way.
 fn source_modules() -> Result<BTreeSet<String>> {
     let directory = paths::adapters_dir();
     let listing = fs::read_dir(&directory)

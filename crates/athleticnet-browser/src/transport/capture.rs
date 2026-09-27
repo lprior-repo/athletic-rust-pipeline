@@ -29,8 +29,6 @@ pub(crate) fn response_headers(event: &EventResponseReceived) -> Result<HeaderMa
     Ok(headers)
 }
 
-/// Charset-decoded CDP text is used only for navigation classification.
-/// Retained source evidence uses the Fetch byte stream instead.
 pub(crate) async fn capture_body(
     page: &Page,
     request_id: RequestId,

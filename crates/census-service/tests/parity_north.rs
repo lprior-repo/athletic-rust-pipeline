@@ -1,20 +1,3 @@
-//! Golden-corpus parity for the MSHSL, ND/NSAA (`plain_names`) and Hy-Tek adapters.
-//!
-//! A decomposition refactor moves code between functions and files; these tests are the proof that
-//! no published parse result changes while it happens. Every fixture in `tests/fixtures/mshsl` and
-//! `tests/fixtures/plain_names` is walked with `common::fixtures` and asserted per file — a new
-//! fixture without a case fails the run instead of becoming a silent coverage hole — and the Hy-Tek
-//! report parser is pinned against every result file its own `#[cfg(test)]` tests read.
-//!
-//! The two `collect` surfaces are driven end to end against a seeded disk cache, so their goldens
-//! cover the `AdapterReport` and every entity the run appends to a `tempfile` store, not only the
-//! parse helpers. Each source directory also goldens a per-file digest list (`<source>__corpus`):
-//! one case drifting turns the aggregate red even if that case's own golden were refreshed by
-//! mistake.
-//!
-//! Seed once with `GOLDEN_UPDATE=1 cargo nextest run -p census-service --test parity_north`, review
-//! the diff, then re-run without the variable. The comparison is on golden bytes, so a changed
-//! field, ordering or default fails.
 
 mod common;
 
@@ -36,14 +19,11 @@ use census_domain::model::{
 use census_store::{Store, Table};
 use serde_json::{json, Value};
 
-/// Evidence date every case stamps, matching the adapters' own fixture-backed tests.
 const OBSERVED_ON: &str = "2026-09-20";
-/// Source directories under `tests/fixtures`.
 const MSHSL: &str = "mshsl";
 const PLAIN_NAMES: &str = "plain_names";
 const WIAA_RESULTS: &str = "wiaa_results";
 
-/// Fixture file name without its extension: the golden suffix.
 fn stem(name: &str) -> Result<String> {
     Path::new(name)
         .file_stem()
@@ -55,11 +35,6 @@ fn read_fixture(path: &Path) -> Result<String> {
     fs::read_to_string(path).with_context(|| format!("reading fixture {}", path.display()))
 }
 
-/// Golden names are unique inside a corpus.
-///
-/// Two fixtures whose names collapse onto one golden would silently pin only the last write —
-/// `d1boysstateresults-dash.htm` and `.txt` shared a stem until the Hy-Tek case was named by file —
-/// so the claim is checked rather than trusted.
 fn claim_golden(claimed: &mut Vec<String>, name: &str) -> Result<()> {
     ensure!(
         !claimed.iter().any(|seen| seen == name),
@@ -69,8 +44,6 @@ fn claim_golden(claimed: &mut Vec<String>, name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Seed the fetcher's on-disk cache for `url` under the key `Fetcher` derives
-/// (`sha256(method \x1f url \x1f body)[..16]`), so `collect` can be driven without a socket.
 fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
     use sha2::{Digest, Sha256};
 
@@ -87,7 +60,7 @@ fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
         "url": url,
         "method": "GET",
         "status": 200,
-        "sha256": format!("{:x}", Sha256::digest(body.as_bytes())),
+        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
         "fetched_at": "2026-09-20T14:39:00Z",
     });
@@ -104,7 +77,6 @@ fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
 }
 
 
-/// Every fixture in `tests/fixtures/mshsl`, one golden plus one aggregate digest per file.
 #[test]
 fn mshsl_fixtures_match_golden() -> Result<()> {
     let listing = common::fixture(MSHSL, "schools_listing.html")?;
@@ -124,7 +96,6 @@ fn mshsl_fixtures_match_golden() -> Result<()> {
     Ok(())
 }
 
-/// Dispatch one fixture onto its parity case; an unhandled fixture is a coverage hole, not a skip.
 fn mshsl_case(name: &str, body: &str, rows: &[SchoolListRow]) -> Result<Value> {
     if name.starts_with("schools_listing") {
         return Ok(mshsl_listing(body));
@@ -147,7 +118,6 @@ fn mshsl_case(name: &str, body: &str, rows: &[SchoolListRow]) -> Result<Value> {
     bail!("{name}: no parity case — every mshsl fixture has to be asserted")
 }
 
-/// A fixture with no parity case has to fail the run, not quietly drop out of the corpus.
 #[test]
 fn unmapped_fixture_names_are_rejected() -> Result<()> {
     ensure!(
@@ -161,7 +131,6 @@ fn unmapped_fixture_names_are_rejected() -> Result<()> {
     Ok(())
 }
 
-/// The school listing: its rows, its pager and the URL each row page takes.
 fn mshsl_listing(body: &str) -> Value {
     let rows = mshsl::parse_school_list(body);
     let next = mshsl::parse_next_listing_page(body, 0);
@@ -180,10 +149,6 @@ fn mshsl_listing(body: &str) -> Value {
     })
 }
 
-/// The listing row a school page belongs to.
-///
-/// Foley and Wayzata sit on listing pages outside this fixture corpus; their row is the one the
-/// listing would publish (the page's own `<h1>`), without a city no fixture carries.
 fn row_for(slug: &str, detail: &SchoolDetail, rows: &[SchoolListRow]) -> SchoolListRow {
     match rows.iter().find(|row| row.slug == slug) {
         Some(row) => row.clone(),
@@ -214,8 +179,6 @@ fn detail_json(detail: &SchoolDetail) -> Value {
     })
 }
 
-/// One school page: its facts, every Administration entry, the roles those labels map to, the
-/// canonical school and the AD rows the page emits.
 fn mshsl_detail(slug: &str, body: &str, rows: &[SchoolListRow]) -> Result<Value> {
     let detail = mshsl::parse_school_detail(body);
     let row = row_for(slug, &detail, rows);
@@ -258,7 +221,6 @@ fn sport_json(sport: Option<(Sport, Gender)>) -> Value {
     }
 }
 
-/// The team list: every node, the track/XC subset `collect` walks, and the sport each alias maps to.
 fn mshsl_team_nodes(body: &str) -> Value {
     let nodes = mshsl::parse_team_nodes(body);
     json!({
@@ -277,8 +239,6 @@ fn mshsl_team_nodes(body: &str) -> Value {
     })
 }
 
-/// Each coach payload, the school page and team list it belongs to, and the alias marker naming its
-/// team.
 const COACH_CASES: [(&str, &str, &str, &str); 3] = [
     (
         "aitkin_track-and-field-boys",
@@ -300,8 +260,6 @@ const COACH_CASES: [(&str, &str, &str, &str); 3] = [
     ),
 ];
 
-/// One `/api/coaches/<nid>` payload: every record, the level/role decision taken on it, the email
-/// the domain rule keeps, and the canonical coach rows the payload mints.
 fn mshsl_coach_records(case: &str, body: &str, rows: &[SchoolListRow]) -> Result<Value> {
     let binding = COACH_CASES.iter().find(|(name, ..)| *name == case).copied();
     let Some((_, detail_file, nodes_file, marker)) = binding else {
@@ -358,7 +316,6 @@ fn mshsl_coach_records(case: &str, body: &str, rows: &[SchoolListRow]) -> Result
     }))
 }
 
-/// `mshsl::collect` against a seeded cache: the report plus every row it appends to a fresh store.
 #[tokio::test]
 async fn mshsl_collect_matches_golden() -> Result<()> {
     let dir = tempfile::tempdir().context("temp dir")?;
@@ -436,7 +393,6 @@ async fn mshsl_collect_matches_golden() -> Result<()> {
 }
 
 
-/// Every fixture in `tests/fixtures/plain_names`, one golden plus an aggregate digest per file.
 #[test]
 fn plain_names_fixtures_match_golden() -> Result<()> {
     let index = common::fixture(PLAIN_NAMES, "nd_schools_index.html")?;
@@ -455,7 +411,6 @@ fn plain_names_fixtures_match_golden() -> Result<()> {
     Ok(())
 }
 
-/// Dispatch one fixture onto its parity case; an unhandled fixture is a coverage hole, not a skip.
 fn plain_names_case(name: &str, body: &str, index: &str) -> Result<Value> {
     match name {
         "nd_schools_index.html" => plain_names_nd_index(body),
@@ -469,7 +424,6 @@ fn plain_names_case(name: &str, body: &str, index: &str) -> Result<Value> {
     }
 }
 
-/// The NDHSAA member-school index: every published ref and the page URL it resolves to.
 fn plain_names_nd_index(body: &str) -> Result<Value> {
     let members = plain_names::parse_nd_school_refs(body)?;
     Ok(json!({
@@ -484,8 +438,6 @@ fn plain_names_nd_index(body: &str) -> Result<Value> {
     }))
 }
 
-/// One NDHSAA school page: the parsed school, its staff lines with the role each maps to, its
-/// offerings with the sport each maps to, and the coach/AD rows it mints.
 fn plain_names_nd_page(id: &str, body: &str, index: &str) -> Result<Value> {
     let members = plain_names::parse_nd_school_refs(index)?;
     let member = members
@@ -533,8 +485,6 @@ fn plain_names_nd_page(id: &str, body: &str, index: &str) -> Result<Value> {
     }))
 }
 
-/// The NSAA directory form's option list: the member-school key space and the request URL each name
-/// resolves to.
 fn plain_names_nsaa_form(body: &str) -> Result<Value> {
     let names = plain_names::parse_nsaa_school_names(body)?;
     Ok(json!({
@@ -585,8 +535,6 @@ fn nsaa_school_json(
     })
 }
 
-/// One NSAA directory response (the bulk screen's first blocks, or one school's view): every school
-/// block with its roles, its canonical school and its coach rows.
 fn plain_names_nsaa_directory(body: &str) -> Result<Value> {
     let schools = plain_names::parse_nsaa_directory(body)?;
     let mut entries: Vec<Value> = Vec::with_capacity(schools.len());
@@ -601,12 +549,6 @@ fn plain_names_nsaa_directory(body: &str) -> Result<Value> {
     Ok(json!({ "schools": entries }))
 }
 
-/// `plain_names::collect` against a seeded cache: one ND school page and one NSAA school view.
-///
-/// The NDHSAA walk normally pages through all 169 member schools; every one without a fixture page
-/// is marked done in the journal first, which is exactly the state a resumed run finds, so the walk
-/// fetches the single page this corpus carries and still runs its real journal, parse and append
-/// path. Nebraska is capped at one school by `options.limit`.
 #[tokio::test]
 async fn plain_names_collect_matches_golden() -> Result<()> {
     let dir = tempfile::tempdir().context("temp dir")?;
@@ -685,10 +627,6 @@ async fn plain_names_collect_matches_golden() -> Result<()> {
 }
 
 
-/// The Hy-Tek fixtures its own `#[cfg(test)]` tests read, with the line splitter each needs.
-///
-/// `racinesectionalb-finish-list.htm` shares the directory but belongs to the RaceDay parser, so it
-/// is not part of this corpus.
 const HYTEK_FIXTURES: [(&str, &str); 5] = [
     ("d1boysstateresults-dash.htm", "html"),
     ("d1boysstateresults-sections.htm", "html"),
@@ -742,8 +680,6 @@ fn meet_json(meet: &ParsedMeet) -> Value {
     })
 }
 
-/// The Hy-Tek report parser on every fixture it reads: the report lines, the meet, and the digest
-/// list that turns any single drifted case into a failing aggregate.
 #[test]
 fn hytek_fixtures_match_golden() -> Result<()> {
     let mut corpus: Vec<Value> = Vec::new();

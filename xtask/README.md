@@ -2,7 +2,7 @@
 
 One binary that runs the repository's real tools, and prints the exact child command before it runs
 it, so a terminal session and this harness cannot drift apart. The measurement subcommands — `scan`,
-`integrity`, `domain-purity`, `seams`, `quality-baseline`, `ratchet` — are the exception: they are
+`comments`, `integrity`, `domain-purity`, `seams`, `quality-baseline`, `ratchet` — are the exception: they are
 the gate's measurement layer, which used to be a set of Python scripts under `tools/`. Everything
 else shells out, submits an invocation to the running Restate deployment, or writes files.
 
@@ -29,6 +29,7 @@ named in the message; there is no stack trace.
 | --- | --- |
 | `gate [-- <args>]` | `bash tools/gate.sh [<args>]` |
 | `scan` | measures this repository's production code; JSON on stdout |
+| `comments` | rejects ordinary/doc comments and prose documentation attributes in project-owned Rust source, including tests, examples and benchmarks |
 | `integrity` | lists the domain type-integrity candidates; JSON on stdout |
 | `quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]` | rewrites the debt baseline |
 | `ratchet <baseline> <clippy.tsv> <scan.json>` | compares measurements with the debt baseline |
@@ -51,9 +52,23 @@ cargo xtask gate -- --update-baseline  # arguments after `--` go to gate.sh
 cargo xtask gate -- --allow-increase   # (only with --update-baseline)
 ```
 
-The gate is the whole workspace: fmt, check `--all-targets`, doc, tests, strict clippy, the scans,
+The gate is the whole workspace: fmt, zero-code-comments enforcement, check `--all-targets`, doc, tests, strict clippy, the scans,
 the debt ratchet, and every optional tool lane that is installed. This command does not weaken any
 of it — it forwards arguments, prints the command, and reports the child's status.
+
+### `comments`
+
+`cargo xtask comments` lexes project-owned Rust with the compiler lexer. It rejects line comments,
+nested block comments, rustdoc comments and prose `doc = ...` attributes, including conditional
+attributes. It preserves comment-shaped bytes inside ordinary, raw, byte and C string literals:
+captured evidence is data, not commentary. Non-prose directives such as `#[doc(hidden)]` are allowed.
+
+The command includes test, example, benchmark and fuzz source. VCS directories, `target`, `var`,
+`vendor` and `node_modules` are excluded. Each source file is limited to 4 MiB; unreadable or invalid
+UTF-8 source, unterminated literals, excessive source count and an empty source tree fail closed.
+The lexer and its Unicode tables are locked together in `Cargo.lock`; dependency updates must
+preserve compatible Unicode versions. Design rationale belongs in separate documentation; CLI
+help belongs in explicit clap attributes rather than doc comments.
 
 ### `scan`, `integrity`, `domain-purity`, `seams`
 

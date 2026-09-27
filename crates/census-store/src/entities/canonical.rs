@@ -1,5 +1,3 @@
-//! `Entity` for the canonical rows: the seven types the merge materializes, keyed by the id the
-//! cross-source reconciliation stamps on them.
 
 use census_domain::model::{
     id_collision, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
@@ -9,16 +7,6 @@ use census_domain::model::{
 use super::super::Entity;
 use super::union_vec;
 
-/// The finding for one merge of two rows that share a canonical id, or `None` when the two rows state
-/// the same natural key and are therefore one subject.
-///
-/// Two natural keys that minted one id are a collision, not a match: an id is the first 64 bits of a
-/// SHA-256, and the merge keys on the id alone, so absorbing the other row would merge two subjects
-/// into a third one that is neither. The row already there therefore keeps every field it holds, and
-/// the finding names the id, both sides' material and both sides' sources for an operator to resolve.
-///
-/// The test is the cheap one: already-decoded fields compared, no hashing, and nothing formatted or
-/// allocated unless it fails.
 fn collision<T: NaturalKey>(id: &str, kept: &T, dropped: &T) -> Option<RetainedConflict> {
     if kept.same_natural_key(dropped) {
         return None;
@@ -26,8 +14,6 @@ fn collision<T: NaturalKey>(id: &str, kept: &T, dropped: &T) -> Option<RetainedC
     Some(id_collision(id, kept, dropped))
 }
 
-/// Take one finding onto a row, unless a previous read already took it: the store re-merges a row on
-/// every read of the table it lives in, so one collision stays one row in the findings table.
 fn record(conflicts: &mut Vec<RetainedConflict>, conflict: RetainedConflict) {
     if !conflicts.contains(&conflict) {
         conflicts.push(conflict);
@@ -108,6 +94,7 @@ impl Entity for CanonicalCoach {
         }
         union_vec(&mut self.source_identities, &other.source_identities);
         union_vec(&mut self.evidence, &other.evidence);
+        union_vec(&mut self.tenure_evidence, &other.tenure_evidence);
     }
 
     fn publish(&mut self) {
@@ -123,6 +110,7 @@ fn route_published_email(coach: &mut CanonicalCoach, address: Option<String>) {
         coach.set_published_email(&address);
     }
 }
+
 
 impl Entity for CanonicalAthlete {
     fn entity_id(&self) -> &str {
@@ -209,9 +197,6 @@ impl Entity for CanonicalPerformance {
         }
         if self.observed_grade.is_none() {
             self.observed_grade = other.observed_grade;
-        }
-        if self.source_athlete.is_none() {
-            self.source_athlete = other.source_athlete;
         }
         if self.timing.is_none() {
             self.timing = other.timing;

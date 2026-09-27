@@ -1,5 +1,3 @@
-//! The provider's two published schedules: their page URL, the shape of one schedule row, and
-//! the parser that reads a rendered schedule table into those rows.
 
 use crate::{CrawlError, CrawlResult};
 use census_domain::model::Sport;
@@ -8,7 +6,6 @@ use std::sync::LazyLock;
 
 use super::BASE;
 
-/// The two schedules this adapter walks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScheduleSport {
     Track,
@@ -30,7 +27,6 @@ impl ScheduleSport {
         }
     }
 
-    /// Which sport a row of this schedule belongs to, from its month alone.
     pub(super) fn sport_for(self, month: u8) -> Sport {
         match self {
             ScheduleSport::CrossCountry => Sport::CrossCountry,
@@ -40,21 +36,16 @@ impl ScheduleSport {
     }
 }
 
-/// Schedule page for one sport and season year.
 pub fn schedule_url(sport: ScheduleSport, year: i16) -> String {
     format!("{BASE}/sports/{}/{year}/schedule", sport.path())
 }
 
-/// One row of a schedule table.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MeetRow {
-    /// `YYYY-MM-DD`, from the row's own date cell and the month heading above it.
     pub date: String,
     pub name: String,
     pub location: String,
-    /// Provider key: the last segment of the row's `/links/<slug>` target, when it has one.
     pub slug: Option<String>,
-    /// The link's own `aria-label`, which repeats month, day, name and venue.
     pub aria_label: Option<String>,
 }
 
@@ -153,11 +144,6 @@ const MONTHS: [&str; 12] = [
     "December",
 ];
 
-/// Read every competition row from one schedule page.
-///
-/// Rows are published under month headings; the heading is the only month a row carries, so it is
-/// tracked as the table is walked. A row without a date, a name or a venue is skipped: the platform
-/// cannot mint an identity for it.
 pub fn schedule_rows(body: &str, year: i16) -> CrawlResult<Vec<MeetRow>> {
     let mut rows = Vec::new();
     let mut month: Option<u8> = None;
@@ -207,7 +193,6 @@ pub fn schedule_rows(body: &str, year: i16) -> CrawlResult<Vec<MeetRow>> {
     Ok(rows)
 }
 
-/// A table cell's label: its `<span title="…">` when it has one, otherwise its stripped text.
 fn cell_text(cell: &Regex, row: &str) -> CrawlResult<String> {
     let Some(captures) = cell.captures(row) else {
         return Ok(String::new());

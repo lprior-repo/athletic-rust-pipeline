@@ -5,9 +5,6 @@ use std::sync::LazyLock;
 
 static LINK: LazyLock<std::result::Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r#"(?is)<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>"#));
-/// Result files live under three URL shapes: `/Results/<sport>/<year>/…` (the archive's own
-/// releases), `/Portals/0/PDF/Results/…` (older mirrors, matched by the same `/Results/` marker) and
-/// `/sites/default/files/<year>-<month>/…` (the current-season files the state meet pages link).
 static RESULT_PATH: LazyLock<std::result::Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
         r"(?i)/(?:Results/(?:Track|Cross_Country)/(\d{4})/|sites/default/files/(\d{4})-\d{2}/)",
@@ -16,7 +13,6 @@ static RESULT_PATH: LazyLock<std::result::Result<Regex, regex::Error>> = LazyLoc
 static TAGS: LazyLock<std::result::Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?is)<[^>]*>"));
 
-/// The archive-page link pattern, or the compile error of the literal it was built from.
 fn link() -> CrawlResult<&'static Regex> {
     LINK.as_ref().map_err(|source| CrawlError::RegexInit {
         pattern: "LINK",
@@ -24,7 +20,6 @@ fn link() -> CrawlResult<&'static Regex> {
     })
 }
 
-/// The result-file URL pattern, or the compile error of the literal it was built from.
 fn result_path() -> CrawlResult<&'static Regex> {
     RESULT_PATH
         .as_ref()
@@ -34,7 +29,6 @@ fn result_path() -> CrawlResult<&'static Regex> {
         })
 }
 
-/// The tag-stripping pattern, or the compile error of the literal it was built from.
 fn tags() -> CrawlResult<&'static Regex> {
     TAGS.as_ref().map_err(|source| CrawlError::RegexInit {
         pattern: "TAGS",
@@ -42,19 +36,15 @@ fn tags() -> CrawlResult<&'static Regex> {
     })
 }
 
-/// One artifact link found on an archive page.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ArchiveArtifact {
     pub url: String,
     pub year: i16,
-    /// File name without directory or extension — the artifact's local key.
     pub stem: String,
-    /// Anchor text as published (`Boys`, `Team`, `Division 1`, …).
     pub label: String,
     pub extension: String,
 }
 
-/// Extract every result-file link from an archive page, with its year from the URL path.
 pub fn archive_artifacts(body: &str) -> CrawlResult<Vec<ArchiveArtifact>> {
     let link = link()?;
     let result_path = result_path()?;

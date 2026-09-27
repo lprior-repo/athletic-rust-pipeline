@@ -1,30 +1,3 @@
-//! Golden-corpus parity harness for the Wisconsin sources (`wiaa`, `wiaa_results`, `raceday`,
-//! `xc`).
-//!
-//! Decomposition moves code between functions and files; this harness is the proof that no
-//! published parse result moves with it. Every fixture under `tests/fixtures/wiaa/` and
-//! `tests/fixtures/wiaa_results/` is parsed through the adapter's public entry point — the same
-//! entry point, and the same line reader, that `wiaa_results::collect` uses for a body of that
-//! format — and the parsed value is serialized into `tests/golden/<source>__<case>.json`. A
-//! refactor that changes a field, a default, a row order or a normalised mark fails the byte
-//! comparison.
-//!
-//! Coverage is closed from both ends:
-//!
-//! * the walk is `common::fixtures(dir)`, so every committed fixture in the directory is parsed;
-//!   a file the harness cannot classify fails the walk instead of being skipped;
-//! * `<source>__corpus` records one digest per fixture in that directory, so *dropping* a fixture
-//!   file — which would remove its per-fixture assertion — changes the aggregate golden and
-//!   fails. A silently shrinking corpus cannot pass.
-//!
-//! The RaceDay and cross-country cases are direct: the RaceDay finish list is read through
-//! `raceday::parse`, the three cross-country layouts through `xc::parse`. The repository ships no
-//! cross-country file under `tests/fixtures/` (`xc`'s own tests carry their captures inline), so
-//! those three captures are transcribed verbatim from `crates/census-crawl/src/xc.rs` into the constants below
-//! and their parsed output is pinned exactly like a file-backed fixture.
-//!
-//! Seeding: `GOLDEN_UPDATE=1 cargo nextest run -p census-service --test parity_wisconsin`, then
-//! re-run without the variable. The green run is the contract.
 
 mod common;
 
@@ -36,9 +9,7 @@ use census_domain::model::{
 };
 use serde::Serialize;
 
-/// Date stamped into canonical evidence; the capture date the module's own tests use.
 const OBSERVED_ON: &str = "2026-09-20";
-/// Provider slug the archive artifacts carry, as `wiaa_results::collect` mints it.
 const SOURCE_ID: &str = "wiaa_results";
 
 
@@ -235,8 +206,6 @@ impl MeetView {
     }
 }
 
-/// One `wiaa_results` artifact: how it was classified, and what the classified parser (and the
-/// cross-country fallback) made of it.
 #[derive(Serialize)]
 struct ArtifactView {
     file: String,
@@ -246,14 +215,12 @@ struct ArtifactView {
     meet: MeetView,
 }
 
-/// A fixture file and the digest of its parsed view.
 #[derive(Serialize)]
 struct CorpusEntry {
     file: String,
     digest: String,
 }
 
-/// The whole fixture directory: a dropped file changes the list and fails the golden.
 #[derive(Serialize)]
 struct Corpus {
     source: &'static str,
@@ -261,12 +228,6 @@ struct Corpus {
 }
 
 
-/// Archive year each `wiaa_results` fixture was published under, from the URL the WIAA archive
-/// filed it under (`/Results/Track/2025/…`, `/Results/Cross_Country/2023/…`).
-///
-/// The RaceDay layout publishes no date of its own, so `raceday::parse` stamps the meet with the
-/// year the artifact was archived under; that year belongs to the corpus, not to the file. A
-/// fixture missing from this table is a coverage hole, not a default.
 const ARCHIVE_YEARS: [(&str, i16); 6] = [
     ("d1boysstateresults-dash.htm", 2025),
     ("d1boysstateresults-dash.txt", 2025),
@@ -280,7 +241,6 @@ fn extension_of(file: &str) -> &str {
     file.rsplit_once('.').map_or("", |(_, extension)| extension)
 }
 
-/// File name without its extension, used for golden names.
 fn stem_of(file: &str) -> &str {
     file.rsplit_once('.').map_or(file, |(stem, _)| stem)
 }
@@ -297,11 +257,6 @@ fn source() -> SourceRef {
     SourceRef::new(SOURCE_ID, None)
 }
 
-/// Parse one `wiaa_results` artifact exactly the way `wiaa_results::collect` does: classify by
-/// extension and body, then hand the body to the parser that owns that format.
-///
-/// A PDF or an unrecognised extension yields `None` here — the walk rejects a `None` result, so a
-/// PDF added to this corpus fails loudly instead of being quietly streamed around.
 fn dispatch_artifact(file: &str, body: &str, year: i16) -> Result<Option<ParsedMeet>> {
     match wiaa_results::artifact_format(extension_of(file), Some(body)) {
         wiaa_results::ArtifactFormat::HytekHtml => {
@@ -317,11 +272,6 @@ fn dispatch_artifact(file: &str, body: &str, year: i16) -> Result<Option<ParsedM
     }
 }
 
-/// What the cross-country parser makes of a body the archive classified otherwise.
-///
-/// `xc` is reached only from the PDF arm of the collection loop, and each of its layouts states a
-/// header the report must carry; a Track & Field artifact must therefore come back without a meet.
-/// The body is split with the reader that produced this format's report lines.
 fn xc_claim(file: &str, body: &str, year: i16) -> Option<MeetView> {
     let lines = if extension_of(file) == "txt" {
         hytek::lines_from_text(body)
@@ -332,8 +282,6 @@ fn xc_claim(file: &str, body: &str, year: i16) -> Option<MeetView> {
 }
 
 
-/// `parse_directory_letter` over every directory fixture, and `parse_school_page` +
-/// `school_entities` over every school fixture.
 #[test]
 fn wiaa_corpus_matches_its_goldens() -> Result<()> {
     let index = index_entries()?;
@@ -397,11 +345,6 @@ fn wiaa_corpus_matches_its_goldens() -> Result<()> {
     Ok(())
 }
 
-/// The parsed per-letter directory index, keyed for the school pages.
-///
-/// The school-page fixtures are keyed by the index row their own letter fragment publishes, exactly
-/// as the module's tests do; a school whose letter fragment is not part of the corpus falls back to
-/// an entry that carries only its `orgID`.
 fn index_entries() -> Result<Vec<wiaa::IndexEntry>> {
     for path in common::fixtures("wiaa")? {
         let file = common::file_name(&path)?;
@@ -424,7 +367,6 @@ fn entry_for(org_id: &str, index: &[wiaa::IndexEntry]) -> wiaa::IndexEntry {
         })
 }
 
-/// `school_org135_gale_ettrick_trempealeau.html` → `135`.
 fn org_id_of(file: &str) -> Result<&str> {
     let rest = file
         .strip_prefix("school_org")
@@ -435,7 +377,6 @@ fn org_id_of(file: &str) -> Result<&str> {
 }
 
 
-/// Every artifact in the archive corpus, classified and parsed the way the collection loop does.
 #[test]
 fn wiaa_results_corpus_matches_its_goldens() -> Result<()> {
     let mut files = Vec::new();
@@ -481,10 +422,6 @@ fn wiaa_results_corpus_matches_its_goldens() -> Result<()> {
     Ok(())
 }
 
-/// The RaceDay finish list, read directly through `raceday::parse`.
-///
-/// This is the module-level entry point the archive calls for a `data-display` export; the corpus
-/// test above reaches the same fixture through the classifier.
 #[test]
 fn raceday_finish_list_matches_its_golden() -> Result<()> {
     const FILE: &str = "racinesectionalb-finish-list.htm";
@@ -506,10 +443,6 @@ fn raceday_finish_list_matches_its_golden() -> Result<()> {
 }
 
 
-/// The three cross-country layouts the WIAA archive publishes, read through `xc::parse`.
-///
-/// A capture is the report as the timer published it; `lines_from_pdf_text` is the reader the PDF
-/// arm of the archive uses before handing the lines to this parser.
 #[test]
 fn xc_layouts_match_their_goldens() -> Result<()> {
     for (name, capture, year) in [
@@ -528,11 +461,6 @@ fn xc_layouts_match_their_goldens() -> Result<()> {
     Ok(())
 }
 
-/// The cross-country parser declines every Track & Field artifact in the archive corpus.
-///
-/// `xc` is the third layout of the PDF fallback chain, so a report it wrongly claims would be
-/// parsed as a race. The corpus golden records `xc: null` per artifact; this test states the claim
-/// once, with the fixture list, so a regression names the file it happened on.
 #[test]
 fn xc_declines_every_archive_fixture() -> Result<()> {
     for path in common::fixtures("wiaa_results")? {
@@ -548,7 +476,6 @@ fn xc_declines_every_archive_fixture() -> Result<()> {
 }
 
 
-/// State meet: team score blocks that print each scorer's place, grade and time.
 const XC_STATE_BLOCKS: &str = r#"
 11/1/25, 1:38 PM                                                     WIAA State Cross Country Championships
                                                      WIAA State Cross Country Championships
@@ -563,7 +490,6 @@ const XC_STATE_BLOCKS: &str = r#"
     3     10 Fisher Carroll                  9    16:03.1   7   ( 58) Donald Voetberg            12   17:06.6
 "#;
 
-/// Sectional: a padded table whose header carries a grade column.
 const XC_PADDED_GRADE_TABLE: &str = r#"
 WIAA D3 Sectional @ Sheboygan Lutheran
 Overall Results
@@ -575,7 +501,6 @@ Boys Varsity
 4       4        573   Paceler Moll                Poynette                      M        10      17:18.1   5:34
 "#;
 
-/// AccuRace: columns stated by a `====` rule line rather than by a labelled header.
 const XC_ACCURACE_RULE_LINED: &str = r#"
                            WIAA Division 3 Sectional Championship Meet
                    Baertschi & Keepers Property - Hosted by Albany High School

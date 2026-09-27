@@ -1,8 +1,3 @@
-//! The mark readers: an event label is an [`EventKind`], a round marker is a round, and a published
-//! mark is a [`Mark`] with its wind and heat.
-//!
-//! Every token here arrives as prose — `11.83a`, `5-06`, `1:52.4c` — so each reader answers with
-//! `None` or an error rather than a guess, and the caller decides what an unreadable mark means.
 
 use census_domain::model::CentiMetres;
 use census_domain::model::CentiSeconds;
@@ -38,7 +33,6 @@ pub fn hytek_event_kind(label: &str) -> EventKind {
     }
 }
 
-/// `preliminaries` / `finals` / `semi-finals` markers that open a section inside an event.
 pub fn round_marker(trimmed: &str) -> Option<&'static str> {
     match trimmed {
         "Preliminaries" | "Prelims" => Some("preliminaries"),
@@ -47,7 +41,6 @@ pub fn round_marker(trimmed: &str) -> Option<&'static str> {
         _ => None,
     }
 }
-/// Convert a published Hy-Tek time (`10.56`, `1:54.32`, `15:32.1`, `1:05:12.34`) to centiseconds.
 pub fn parse_time(token: &str) -> Option<CentiSeconds> {
     let token = token.trim();
     if token.is_empty() {
@@ -85,8 +78,6 @@ pub fn parse_time(token: &str) -> Option<CentiSeconds> {
     }
 }
 
-/// A published field mark: imperial (`61-03.50`, `5' 4"`) kept verbatim plus its metric value, or a
-/// bare metre figure. The leading `J` Hy-Tek prints for a jump tie-break is not part of the mark.
 pub fn parse_field_mark(token: &str) -> Option<Mark> {
     let token = token.trim().trim_start_matches(['J', 'j']).trim();
     if token.is_empty() {
@@ -128,8 +119,6 @@ pub fn parse_field_mark(token: &str) -> Option<Mark> {
         .map(Mark::DistanceMetres)
 }
 
-/// Mark plus the wind, heat and points published beside it.
-/// `(mark, wind m/s, timing label, place)` — what one published mark token resolves to.
 pub(in crate::hytek) type ParsedMark = (Mark, Option<f64>, Option<String>, Option<f64>);
 
 pub(in crate::hytek) fn parse_marks(

@@ -1,17 +1,6 @@
-//! The registry's own contract: unique slugs, an admission inside the collection ceiling, a lookup
-//! that answers every registered slug, and a planning order that puts bulk payloads first.
-//!
-//! These run against the table itself rather than a fixture, so a table edit that breaks one of the
-//! properties fails here. Each test names the property it holds, because the point is to catch a
-//! broken table, not to restate its contents.
 
 use super::{bulk_first, descriptor, descriptors, transport_for_host, AccessClass, TransportKind};
 
-/// The vocabulary a plan can choose from: one slug per adapter that fetches or parses external
-/// source material, which is also the name the provider dispatch accepts (§11). Spelled out
-/// deliberately, so deleting an entry fails here instead of quietly shrinking what a plan can see,
-/// and adding one requires saying so in both places. An adapter's stamped evidence id is not a plan
-/// name (`wayzata_schedule` for `wayzata`, `ohsaa_portal` for `ohsaa`), so only slugs appear here.
 const PLAN_SLUGS: [&str; 17] = [
     "athleticlive",
     "athleticlive_athletes",
@@ -32,8 +21,6 @@ const PLAN_SLUGS: [&str; 17] = [
     "wayzata",
 ];
 
-/// Two entries under one slug would make `descriptor(slug)` answer with whichever the scan met
-/// first, and a declared-but-missing module would be a provider no plan can select.
 #[test]
 fn every_provider_module_is_registered_exactly_once() {
     let mut slugs: Vec<&str> = descriptors().map(|entry| entry.slug).collect();
@@ -59,8 +46,6 @@ fn every_provider_module_is_registered_exactly_once() {
     }
 }
 
-/// The lookup is the table's only index: every registered slug has to answer with its own entry,
-/// and a slug naming no source has to answer with nothing rather than with a neighbour.
 #[test]
 fn descriptor_answers_every_registered_slug_and_nothing_else() {
     for entry in descriptors() {
@@ -87,9 +72,6 @@ fn descriptor_answers_every_registered_slug_and_nothing_else() {
     assert!(descriptor("wiaa_").is_none());
 }
 
-/// The collection's ceiling is 2 rps per host (`net`'s authorized-host floor), so a declaration
-/// above it would be a rate the transport never grants; a declaration of zero or less would be a
-/// source no request may ever be made against.
 #[test]
 fn every_admission_stays_inside_the_collection_ceiling() {
     for entry in descriptors() {
@@ -112,10 +94,6 @@ fn every_admission_stays_inside_the_collection_ceiling() {
     }
 }
 
-/// The transport grants one in-flight request per host, and every entry repeats that bound so a
-/// widened one has to be a visible edit in the table rather than a silent one in a caller. The same
-/// holds for the crawl-delay floor: the fetcher raises spacing to a published `Crawl-delay` and
-/// never lowers it, so an entry claiming otherwise would describe a run the transport refuses.
 #[test]
 fn every_admission_repeats_the_transport_bound() {
     for entry in descriptors() {
@@ -134,9 +112,6 @@ fn every_admission_repeats_the_transport_bound() {
     }
 }
 
-/// The configured spacing is one second by default, and a host whose `robots.txt` asks for ten is
-/// held to ten: a declaration that kept the default there would contradict the floor the fetcher
-/// applies, which is exactly the mismatch this field exists to make reviewable.
 #[test]
 fn a_crawl_delay_host_declares_the_slower_rate() {
     assert_eq!(
@@ -149,8 +124,6 @@ fn a_crawl_delay_host_declares_the_slower_rate() {
     );
 }
 
-/// An adapter that reads a checked-in artifact contacts no host, so declaring a live origin for it
-/// would let a plan believe a request is possible where none is.
 #[test]
 fn artifact_adapters_declare_no_fetchable_host() {
     for slug in ["athleticlive", "coach_contacts"] {
@@ -168,11 +141,6 @@ fn artifact_adapters_declare_no_fetchable_host() {
     }
 }
 
-/// The derived acquisition class a plan records in its journal: the two artifact adapters cost a
-/// plan no request, a browser-transported source renders only under a session, and every other
-/// registered adapter is an open fetch. The expectation is read from each descriptor's own transport
-/// rather than assumed, so a source that moves onto the browser lane appears as its own class instead
-/// of a silent `Open` — and the `browser_session` a durable plan now carries stays reachable.
 #[test]
 fn access_class_separates_artifact_reads_from_host_fetches() {
     for slug in ["athleticlive", "coach_contacts"] {
@@ -211,8 +179,6 @@ fn access_class_separates_artifact_reads_from_host_fetches() {
     );
 }
 
-/// The class names are what a durable plan field carries, so they are part of the contract rather
-/// than an implementation detail of `Debug`.
 #[test]
 fn access_class_names_are_stable() {
     assert_eq!(AccessClass::Open.as_str(), "open");
@@ -220,11 +186,6 @@ fn access_class_names_are_stable() {
     assert_eq!(AccessClass::BrowserSession.as_str(), "browser_session");
 }
 
-/// ADR-004's preference in one assertion: a payload that carries many performances comes before a
-/// source that only names athletes, whatever order the caller listed the two in.
-///
-/// `athleticnet` answers both shapes now (bio per athlete, whole meet per pull), so it can no
-/// longer serve as the weaker side: it sorts by its bulk route, which the last assertion holds to.
 #[test]
 fn bulk_first_puts_a_bulk_source_before_an_athlete_index() {
     let plan = bulk_first(&["athleticlive_athletes", "wiaa_results"]);
@@ -243,11 +204,6 @@ fn bulk_first_puts_a_bulk_source_before_an_athlete_index() {
     );
 }
 
-/// The bands run bulk results, then meet discovery, then athlete-shaped sources, then everything
-/// else — one source from each band, so a band that swallowed its neighbour shows up here.
-///
-/// `milesplit` is deliberately not the athlete-shaped probe: the `/raw` route makes it a
-/// `bulk_results` source, which the runner below would otherwise be testing for the wrong band.
 #[test]
 fn bands_run_bulk_meet_athlete_then_directories() {
     let plan = bulk_first(&["mshsl", "athleticlive_athletes", "wayzata", "wiaa_results"]);
@@ -259,9 +215,6 @@ fn bands_run_bulk_meet_athlete_then_directories() {
     );
 }
 
-/// Ordering inside a band is by slug rather than by caller order, so a plan is reproducible from the
-/// same set of slugs; a repeated slug contributes one source, not two places in a budget; and a slug
-/// nobody registered contributes nothing.
 #[test]
 fn equal_bands_order_by_slug_and_ignore_repeats() {
     let forward = bulk_first(&["ihsa", "ks", "ohsaa", "wiaa", "plain_names"]);
@@ -273,10 +226,6 @@ fn equal_bands_order_by_slug_and_ignore_repeats() {
     assert!(bulk_first(&["no_such_source"]).is_empty());
 }
 
-/// Every name a plan can choose has to survive both queries the planner calls: `descriptor` answers
-/// it with its own entry, and `bulk_first` keeps it in the plan instead of filtering it out. A slug
-/// that is registered but dropped from the ordering would be a source an operator can select and
-/// the plan then silently ignores.
 #[test]
 fn every_plan_slug_resolves_and_stays_in_the_plan() {
     for slug in PLAN_SLUGS {
@@ -294,9 +243,6 @@ fn every_plan_slug_resolves_and_stays_in_the_plan() {
     }
 }
 
-/// Multiple entries behind one origin each repeat that origin's policy, so a rate that drifted on
-/// one of them shows up here as a disagreement instead of as traffic the host never permitted, and
-/// a widened in-flight bound has to be an edit every entry agrees on.
 #[test]
 fn one_origin_has_one_declared_policy() {
     let mut seen: Vec<(&str, f64, usize)> = Vec::new();
@@ -325,9 +271,6 @@ fn one_origin_has_one_declared_policy() {
     }
 }
 
-/// One origin is acquired one way. A transport that drifted on one entry of a shared origin would
-/// otherwise show up as a run that half-uses the browser lane, and [`transport_for_host`] answers
-/// from the first entry it finds, so this is the property that makes its answer well defined.
 #[test]
 fn one_origin_has_one_transport() {
     let mut seen: Vec<(&str, TransportKind)> = Vec::new();
@@ -344,8 +287,6 @@ fn one_origin_has_one_transport() {
     }
 }
 
-/// The transport lookup answers for a registered origin, ignores case the way host names do, and
-/// declines a host no descriptor claims instead of choosing a default for it.
 #[test]
 fn the_transport_lookup_reads_the_table() {
     assert_eq!(

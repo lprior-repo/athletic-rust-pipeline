@@ -1,6 +1,3 @@
-//! The adapter body: one GET against the RIIL directory, then map and journal.
-//!
-//! Network and store access live here and nowhere else in this module.
 
 use super::map::school_entities;
 use super::pages::parse_directory;
@@ -10,10 +7,6 @@ use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::SourceNamespace;
 use census_store::Table;
 
-/// Collect RIIL schools and coaches.
-///
-/// Single request: one GET to the directory page at `HOST/Directory.aspx`.
-/// The page returns all schools in one HTML document, each as a `<details>` block.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("riil", "schools");
     let observed_on = if options.observed_on.trim().is_empty() {
@@ -69,7 +62,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-/// Counters for one `collect` run.
 #[derive(Default)]
 struct Tally {
     schools: usize,
@@ -77,7 +69,6 @@ struct Tally {
     xc_tf_rows: usize,
 }
 
-/// Process one school: map to canonical entities, append and journal.
 fn process_school(
     ctx: &AdapterContext<'_>,
     table: &super::map::SchoolTable,
@@ -89,10 +80,8 @@ fn process_school(
 
     let mut batch = ctx.store.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    ctx.observe_school(
-        &SourceNamespace::association_school(ASSOCIATION),
-        &extract.school,
-    )?;
+    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(ASSOCIATION),
+    &extract.school,).as_slice())?;
     report.rows = report.rows.saturating_add(1);
 
     let mut xc_tf_count = 0u64;

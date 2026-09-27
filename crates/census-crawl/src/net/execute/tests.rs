@@ -1,27 +1,11 @@
-//! Pause-time tests for the fetch loop's timer: the per-host pacing.
-//!
-//! It runs on the clock capability, so a paused clock makes the test deterministic: the assertions
-//! are about the virtual-time deltas themselves rather than "it eventually returned", and nothing
-//! here sleeps in real time. The pacing is driven through the same functions the fetch loop calls —
-//! [`Fetcher::host_gate`] and [`Fetcher::wait_turn`] — so what is asserted is the loop's own timing,
-//! not a model of it.
-//!
-//! Retry timing is deliberately absent: the durable layer owns retries (ADR-002), so there is no
-//! in-process backoff schedule left to assert.
-//!
-//! No test here performs IO: with a paused clock, a real socket wait parks the runtime and the
-//! clock auto-advances to the next timer (the client's request timeout), which is real-time
-//! dependent and therefore not an assertion that could be deterministic.
 
 use super::*;
 use crate::net::Fetcher;
 use std::collections::HashMap;
 use std::time::Duration;
 
-/// A host name for the pacing map. Nothing resolves it: these tests never open a socket.
 const HOST: &str = "www.example.test";
 
-/// A fetcher whose cache is a throwaway directory.
 fn fetcher_in(dir: &std::path::Path, delay: Duration, authorized: Vec<String>) -> Fetcher {
     Fetcher::new(dir.join("http"), None, delay, HashMap::new(), authorized).expect("fetcher")
 }
@@ -159,7 +143,6 @@ async fn a_retry_after_becomes_the_cooldown_and_blocks_only_its_own_host() {
     assert!(fetcher.blocked_hosts(&after).await.is_empty());
 }
 
-/// A fetcher whose hosts share one budget per configured source family.
 fn fetcher_with_families(
     dir: &std::path::Path,
     delay: Duration,

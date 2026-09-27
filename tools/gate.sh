@@ -238,6 +238,7 @@ main() {
   trap 'rm -rf "$tmp"' EXIT
 
   run_lane fmt lane_fmt
+  run_lane "zero code comments" cargo run -q -p xtask -- comments
   run_lane check lane_check
   run_lane doc lane_doc
   run_lane tests lane_tests

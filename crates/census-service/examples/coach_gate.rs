@@ -1,10 +1,3 @@
-//! Throwaway driver for the coach-fragment gate while `cli/verify_coaches.rs`'s package is being
-//! edited concurrently by the compile-fix lane. Runs the same library entry points the subcommand
-//! calls, so the numbers it prints are the subcommand's numbers.
-//!
-//! Usage: cargo run --release -p census-service --example coach_gate -- <out_dir> <jobs> <fragment...>
-//! Env: AUTHORIZED_HOSTS (comma-separated), RECONCILE (published csv), LOG (freeze log), REPORT (md),
-//!      CSV (per-row verdicts), DELAY_MS, REFRESH=1.
 
 use census_crawl as sources;
 use census_crawl::net::Fetcher;
@@ -14,8 +7,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-/// The gate's positional arguments: where verified fragments land, how many run at once, and the
-/// fragment files themselves.
 struct Args {
     out_dir: PathBuf,
     jobs: usize,
@@ -44,7 +35,6 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Install the `tracing` subscriber: `RUST_LOG` when it parses, `info` otherwise.
 fn init_tracing() {
     tracing_subscriber::fmt()
         .with_env_filter(
@@ -55,8 +45,6 @@ fn init_tracing() {
         .init();
 }
 
-/// Read `<out_dir> <jobs> <fragment...>`, defaulting the first two, and refuse an empty fragment list
-/// — a gate with no inputs has nothing to say.
 fn parse_args() -> anyhow::Result<Args> {
     let mut args = std::env::args().skip(1);
     let out_dir = PathBuf::from(args.next().unwrap_or_else(|| "out/verified".to_string()));
@@ -75,8 +63,6 @@ fn parse_args() -> anyhow::Result<Args> {
     })
 }
 
-/// Build the fetcher the gate reads citations through: `CACHE_DIR` holds the bodies, `DELAY_MS` is
-/// the per-host delay, and the allow-list is whatever the citations (or `AUTHORIZED_HOSTS`) imply.
 fn build_fetcher(fragments: &[PathBuf]) -> anyhow::Result<Fetcher> {
     let cache_dir = PathBuf::from(
         std::env::var("CACHE_DIR").unwrap_or_else(|_| "var/census-service/http".to_string()),
@@ -97,9 +83,6 @@ fn build_fetcher(fragments: &[PathBuf]) -> anyhow::Result<Fetcher> {
     Ok(fetcher)
 }
 
-/// The host allow-list: every host the fragments cite when `AUTHORIZE_CITED` is set (the count is
-/// reported, because that decision changes what the gate may fetch), otherwise the comma-separated
-/// `AUTHORIZED_HOSTS` entries.
 fn authorized_hosts(fragments: &[PathBuf]) -> anyhow::Result<Vec<String>> {
     if std::env::var("AUTHORIZE_CITED").is_ok() {
         let hosts = census_service::coachverify::cited_hosts(fragments)?;
@@ -115,8 +98,6 @@ fn authorized_hosts(fragments: &[PathBuf]) -> anyhow::Result<Vec<String>> {
         .collect())
 }
 
-/// Every pass the gate runs, all enabled: the XHR + Referer pass, the NSAA form POST, `pdftotext`
-/// for PDF citations, and `REFRESH=1` to ignore cached bodies.
 fn gate_options() -> GateOptions {
     GateOptions {
         xhr_pass: true,
@@ -126,8 +107,6 @@ fn gate_options() -> GateOptions {
     }
 }
 
-/// Re-derive every fragment from its own cited pages, at most `jobs` in flight, then sort by file so
-/// the report does not depend on completion order.
 async fn verify_fragments(
     fetcher: &Fetcher,
     fragments: &[PathBuf],
@@ -151,7 +130,6 @@ async fn verify_fragments(
     Ok(outcomes)
 }
 
-/// Append one tally line per fragment to the freeze log `LOG` names.
 fn emit_freeze_log(outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
     if let Ok(log) = std::env::var("LOG") {
         let mut handle = std::fs::OpenOptions::new()
@@ -166,7 +144,6 @@ fn emit_freeze_log(outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Write the `REPORT` audit table, the `CSV` per-row verdicts and the `UNION` per-state files.
 fn write_reports(outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
     if let Ok(report) = std::env::var("REPORT") {
         std::fs::write(&report, coachverify::audit_table(outcomes))?;
@@ -189,7 +166,6 @@ fn write_reports(outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Write the `MANIFEST` freeze manifest over the input fragments and their verdicts.
 fn write_manifest(fragments: &[PathBuf], outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
     if let Ok(manifest) = std::env::var("MANIFEST") {
         let manifest = PathBuf::from(&manifest);
@@ -199,8 +175,6 @@ fn write_manifest(fragments: &[PathBuf], outcomes: &[FragmentOutcome]) -> anyhow
     Ok(())
 }
 
-/// Reconcile the `RECONCILE` published csv against the verified rows, printing what the published
-/// artifact holds that no verified fragment backs.
 fn reconcile_published(outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
     if let Ok(published) = std::env::var("RECONCILE") {
         let reconciliation = coachverify::reconcile(&PathBuf::from(&published), outcomes)?;
@@ -220,7 +194,6 @@ fn reconcile_published(outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// The closing numbers: what the fetcher did, and what shipped.
 async fn print_summary(fetcher: &Fetcher, outcomes: &[FragmentOutcome], out_dir: &Path) {
     let stats = fetcher.stats().await;
     println!(

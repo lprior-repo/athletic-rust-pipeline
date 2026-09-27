@@ -20,11 +20,6 @@ use futures::{StreamExt, TryStreamExt};
 use std::sync::Arc;
 use std::time::Duration;
 
-/// Fetch rankings data from the target source via browser CDP.
-///
-/// All setup, navigation, and capture awaits are bounded by a single
-/// absolute `tokio::time::Instant` deadline.  Cleanup runs on every
-/// exit path (success, timeout, transport error) and is itself bounded
 pub(crate) async fn fetch_rankings(
     page: &Page,
     action: &RankingsAction,
@@ -73,8 +68,6 @@ pub(crate) async fn fetch_rankings(
     }
 }
 
-/// One rankings capture attempt: the wired page plus the setup handles that
-/// cleanup has to remove afterwards.
 struct CaptureRun<'a> {
     page: &'a Page,
     action: &'a RankingsAction,
@@ -89,14 +82,11 @@ struct CaptureRun<'a> {
 }
 
 impl CaptureRun<'_> {
-    /// Wire the page, navigate to the rankings UI, and stream events until one
-    /// rankings response is captured. The caller's deadline cancels this future.
     async fn run(&mut self) -> Result<BrowserResponse, BrowserError> {
         let (binding_events, response_events) = self.wire_page().await?;
         self.collect(binding_events, response_events).await
     }
 
-    /// Install the capture hooks, subscribe to the delivery streams, and navigate.
     async fn wire_page(
         &mut self,
     ) -> Result<
@@ -123,20 +113,11 @@ impl CaptureRun<'_> {
         Ok((binding_events, response_events))
     }
 
-    /// Enable the domains the capture needs, then install the interceptor script
-    /// and the binding that delivers the payload.
     async fn install(&mut self) -> Result<(), BrowserError> {
         self.enable_domains().await?;
         self.install_interceptor().await
     }
 
-    /// Enable Network and Runtime with the capture's own settings.
-    ///
-    /// Default Network.enable. A durable 32 MiB event buffer makes Chromium
-    /// replay oversized buffered messages that the CDP client cannot parse
-    /// ("WS Invalid message"), which desynchronises command responses and
-    /// surfaces as transport failures. The ranking payload is captured by
-    /// the injected binding, so no buffered replay is required.
     async fn enable_domains(&self) -> Result<(), BrowserError> {
         transport(
             self.page
@@ -153,10 +134,6 @@ impl CaptureRun<'_> {
         Ok(())
     }
 
-    /// Install the interceptor script, then the binding that delivers the payload.
-    ///
-    /// `binding_attempted` is raised before the binding call, because cleanup MUST remove the
-    /// binding whenever its installation may have landed.
     async fn install_interceptor(&mut self) -> Result<(), BrowserError> {
         let installed = transport(
             self.page
@@ -185,8 +162,6 @@ impl CaptureRun<'_> {
         Ok(())
     }
 
-    /// Fold the binding and response streams into ranked candidates until one is
-    /// captured, bounded by the attempt deadline.
     async fn collect(
         &self,
         binding_events: EventStream<EventBindingCalled>,

@@ -1,7 +1,3 @@
-//! Fuzz target for the Hy-Tek parser.
-//!
-//! Exercises `hytek::lines_from_html`, `hytek::lines_from_text`, and `hytek::parse`.
-//! Input: raw bytes that are split into lines (text or HTML) and fed to the Hy-Tek parser.
 
 #![no_main]
 

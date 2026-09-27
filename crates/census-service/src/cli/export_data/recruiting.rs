@@ -1,10 +1,8 @@
-//! Recruiting projection: Co2027 athlete x school x coach.
 
 use crate::cli::export_data::{csv::write_csv, helpers::*};
 use serde_json::Value;
 use std::collections::HashMap;
 
-/// Build coach index: school -> sport:role -> best coach record.
 pub(super) fn build_coach_index(coaches: &[Value]) -> HashMap<&str, HashMap<String, &Value>> {
     let mut coach_index: HashMap<&str, HashMap<String, &Value>> = HashMap::new();
     for c in coaches {
@@ -34,7 +32,6 @@ fn coach_email_value(coach: &Value) -> Option<&str> {
         .and_then(Value::as_str)
 }
 
-/// Coach lookup results for an athlete's school.
 struct SchoolCoaches<'a> {
     track: Option<&'a Value>,
     xc: Option<&'a Value>,
@@ -78,7 +75,6 @@ fn lookup_coaches<'a>(
     }
 }
 
-/// Find a coach record for a given index and key priority list.
 fn find_coach<'a>(
     index: &'a HashMap<&str, HashMap<String, &Value>>,
     school_id: &str,
@@ -94,7 +90,6 @@ fn find_coach<'a>(
     None
 }
 
-/// Get the first non-empty source URL from a coach record.
 fn coach_source_url(record: Option<&Value>) -> String {
     record
         .and_then(|c| {
@@ -113,19 +108,16 @@ fn coach_source_url(record: Option<&Value>) -> String {
         .to_string()
 }
 
-/// Extract coach name from an optional Value.
 fn coach_name(c: Option<&Value>) -> String {
     c.and_then(|c| c.get("name").and_then(|v| v.as_str()))
         .unwrap_or("")
         .to_string()
 }
 
-/// Extract coach email from an optional Value.
 fn coach_email(c: Option<&Value>) -> String {
     c.and_then(coach_email_value).unwrap_or("").to_string()
 }
 
-/// Get a school field as string.
 fn school_str(sch: &Value, field: &str) -> String {
     sch.get(field)
         .and_then(|v| v.as_str())
@@ -133,7 +125,6 @@ fn school_str(sch: &Value, field: &str) -> String {
         .to_string()
 }
 
-/// Extract a string field from a Value.
 fn field_str(v: &Value, key: &str) -> String {
     v.get(key)
         .and_then(|v| v.as_str())
@@ -141,7 +132,6 @@ fn field_str(v: &Value, key: &str) -> String {
         .to_string()
 }
 
-/// Build a single recruiting row from an athlete and pre-looked-up school coaches.
 fn build_recruit_row(a: &Value, sch: &Value, coaches: &SchoolCoaches) -> Vec<String> {
     let source_url = coach_source_url(coaches.track.or(coaches.xc).or(coaches.ad));
 
@@ -172,7 +162,6 @@ fn build_recruit_row(a: &Value, sch: &Value, coaches: &SchoolCoaches) -> Vec<Str
     ]
 }
 
-/// Extract athletic.net athlete URL from public_profile_urls.
 fn extract_an_url(a: &Value) -> String {
     a.get("public_profile_urls")
         .and_then(|v| v.as_array())
@@ -184,7 +173,6 @@ fn extract_an_url(a: &Value) -> String {
         .to_string()
 }
 
-/// Extract milesplit athlete URL from public_profile_urls.
 fn extract_ms_url(a: &Value) -> String {
     a.get("public_profile_urls")
         .and_then(|v| v.as_array())
@@ -196,9 +184,6 @@ fn extract_ms_url(a: &Value) -> String {
         .to_string()
 }
 
-/// Build and write recruiting-co2027.csv.
-///
-/// Returns (with_coach_count, with_email_count).
 pub fn write_recruiting(
     athletes: &[Value],
     coach_index: &HashMap<&str, HashMap<String, &Value>>,

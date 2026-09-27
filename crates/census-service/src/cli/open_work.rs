@@ -1,11 +1,3 @@
-//! `open-work`: what the durable run still owes, read from the objects that own it.
-//!
-//! Every other §70 count comes from a store artifact. These two — jurisdiction sweeps that have
-//! stages left, source objects that have never accepted an observation — are properties of the run,
-//! so the answer lives in the durable state of the objects that did the work.
-//!
-//! The command therefore addresses the running service, which holds the store's single writer: a CLI
-//! that opened the store itself could not ask those objects anything while the service had it open.
 
 use anyhow::Result;
 use clap::Args;
@@ -16,24 +8,22 @@ use census_service::restate_services::{CensusIngressClient, OpenWorkReply, OpenW
 use super::Cli;
 use census_service::ingress;
 
-/// `census-service open-work`
 #[derive(Debug, Args)]
+#[command(about = "`census-service open-work`")]
 pub(super) struct OpenWorkArgs {
-    /// Ingress origin of the local Restate server. The local census deployment when omitted.
+    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
-    /// Season start year: 2026 is the 2026-27 school year.
+    #[arg(help = "Season start year: 2026 is the 2026-27 school year")]
     #[arg(long, default_value_t = 2026)]
     season: i16,
-    /// Run revision: the one the run was submitted under, not a new one.
+    #[arg(help = "Run revision: the one the run was submitted under, not a new one")]
     #[arg(long, default_value_t = 1)]
     revision: u32,
-    /// Ingest object key to read, e.g. `milesplit_wi`. Repeatable, because an object key is the
-    /// caller's to choose and the service cannot enumerate them: naming none leaves the count
-    /// unmeasured rather than reporting it as zero.
+    #[arg(help = "Ingest object key to read, e.g. `milesplit_wi`. Repeatable, because an object key is the caller's to choose and the service cannot enumerate them: naming none leaves the count unmeasured rather than reporting it as zero")]
     #[arg(long = "source-object", value_name = "KEY")]
     source_objects: Vec<String>,
-    /// Print the reply as JSON instead of a table.
+    #[arg(help = "Print the reply as JSON instead of a table")]
     #[arg(long)]
     json: bool,
 }
@@ -63,10 +53,6 @@ pub(super) async fn run_open_work(cli: &Cli, args: &OpenWorkArgs) -> Result<()> 
     Ok(())
 }
 
-/// Print the counts first, then the rows behind them.
-///
-/// An unmeasured count prints as `unmeasured`, never as `0`: the difference between "no work is
-/// owed" and "nobody looked" is the whole reason the field is an `Option`.
 fn print_open_work(reply: &OpenWorkReply) {
     println!("season {} revision {}", reply.season, reply.revision);
     println!(
@@ -104,7 +90,6 @@ fn print_open_work(reply: &OpenWorkReply) {
     }
 }
 
-/// A count as text, or the statement that nobody took it.
 fn count(value: Option<u64>) -> String {
     value.map_or_else(|| "unmeasured".to_string(), |count| count.to_string())
 }

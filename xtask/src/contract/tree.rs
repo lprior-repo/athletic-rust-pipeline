@@ -1,9 +1,3 @@
-//! Checks 4, 6 and 7: what the tree itself holds — its files, its packages, its documents.
-//!
-//! Each reads the working tree rather than the build, so a `.py` file dropped beside a tool, a
-//! package added to the workspace, or a document renamed out from under its reference is caught here.
-//! Each also refuses to pass on an empty measurement: "no file violated the rule" is only evidence
-//! when files were read.
 
 use anyhow::{Context, Result};
 use serde_json::Value;
@@ -17,10 +11,8 @@ use super::Check;
 use crate::paths;
 use crate::scan;
 
-/// The subtrees a repository-wide file check stays out of, by name, at any depth.
 const SKIP: [&str; 3] = ["target", ".git", "var"];
 
-/// Check 4: no Python file survives in the tree.
 pub(super) fn python_free() -> Result<Check> {
     const NAME: &str = "no python files";
     let root = paths::repo_root();
@@ -49,12 +41,6 @@ pub(super) fn python_free() -> Result<Check> {
     Ok(Check::violated(4, NAME, detail, failures))
 }
 
-/// Check 6: the packages the scan covers are exactly the workspace's own packages.
-///
-/// The measured set comes from the scan's own report and the comparison set from a fresh
-/// `cargo metadata` answer, so the check is not the enumeration agreeing with itself: a filter, a
-/// skip or a hard-wired list inside the scan shows up as a package the workspace declares and the
-/// report does not carry.
 pub(super) fn package_parity() -> Result<Check> {
     const NAME: &str = "scanned package set";
     let report = scan::report()?;
@@ -97,7 +83,6 @@ pub(super) fn package_parity() -> Result<Check> {
     Ok(Check::violated(6, NAME, detail, failures))
 }
 
-/// Check 7: every document the front doors name exists.
 pub(super) fn documentation() -> Result<Check> {
     const NAME: &str = "documented set";
     let root = paths::repo_root();
@@ -131,17 +116,6 @@ pub(super) fn documentation() -> Result<Check> {
     Ok(Check::violated(7, NAME, detail, failures))
 }
 
-/// Why a path is a Python artifact the tree must not hold, or `None` when it is not one.
-///
-/// A `.py` file is the source of the language, and a `.pyc`/`.pyo` file is what running one leaves
-/// behind; both are out of place in a Rust repository, and a commit that deleted a script left the
-/// second kind behind twice — bytecode under a gitignored `__pycache__` is invisible to a walk that
-/// only looks for sources. A file *inside* a `__pycache__` directory counts whatever its extension is
-/// (`__pycache__/x.cpython-311.pyc`, and the `x.so` an extension module compiles to), which is why
-/// the directory is tested before the extension.
-///
-/// The boundary: an empty `__pycache__` directory holds no file for this walk to find, so it is not
-/// reported. It is also inert — nothing imports it without a module beside it.
 fn python_artifact(path: &Path) -> Option<&'static str> {
     if path
         .components()
@@ -159,7 +133,6 @@ fn python_artifact(path: &Path) -> Option<&'static str> {
     None
 }
 
-/// The keys of one object field of the scan report, empty when the field is absent.
 fn object_keys(report: &Value, field: &str) -> BTreeSet<String> {
     report
         .get(field)
@@ -168,7 +141,6 @@ fn object_keys(report: &Value, field: &str) -> BTreeSet<String> {
         .unwrap_or_default()
 }
 
-/// The strings of one array field of the scan report, empty when the field is absent.
 fn array_strings(report: &Value, field: &str) -> BTreeSet<String> {
     report
         .get(field)

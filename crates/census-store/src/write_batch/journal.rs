@@ -8,13 +8,6 @@ use super::StoreBatch;
 use crate::clock::{Clock, SystemClock};
 
 impl StoreBatch<'_> {
-    /// Record a completed unit of work in the same commit as the rows it names.
-    ///
-    /// The entry's `at` stamp is read when the entry is buffered, not at the commit: the producers
-    /// that use this call commit the batch holding both the rows and the entry right after.
-    ///
-    /// The entry is bounded exactly as [`Store::journal_done`] bounds it, and the refusal names the
-    /// phase and key without either reaching the batch.
     pub fn journal_done<T: Serialize>(
         &mut self,
         phase: &str,

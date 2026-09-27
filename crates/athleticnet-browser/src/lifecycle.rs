@@ -1,10 +1,3 @@
-//! The browser manager handle and its lifecycle seams.
-//!
-//! `BrowserManager` is the runtime's handle on one browser actor: the command channel, the shared
-//! status snapshot, the profile gate, and the actor's join handle. The lifecycle is split by
-//! responsibility — [`startup`] builds a live manager, [`commands`] forwards commands and reads
-//! status, [`shutdown`] drains the actor, and [`status`] owns the shared-snapshot accessors that
-//! `browser::state` uses too.
 
 use super::{actor::Command, gate::ProfileGate, BrowserStatus};
 use crate::clock::Clock;

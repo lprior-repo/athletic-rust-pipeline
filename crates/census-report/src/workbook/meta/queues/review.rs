@@ -1,30 +1,12 @@
-//! The review families: retained rows a reader or the review model still has to adjudicate.
-//!
-//! Four families, every one keyed on a stored field that is empty rather than on a score:
-//! a class-of-2027 athlete with no grade observation at all, one whose identity confidence sits below
-//! the domain's high bar, a meet no source placed in a jurisdiction, and a school with no jurisdiction
-//! on its row.
-//!
-//! They are all here because a reader who goes looking for a retained finding goes to one place, but
-//! the cohort families are claims the census publishes as decided while meet and school families are
-//! the lane's work in the strict sense: a jurisdiction is a fact about the world that no rule of this
-//! store derives.
-//!
-//! The cohort families are scoped to the published class of 2027; the meet and school families cover
-//! the whole table, because neither row carries a cohort.
 
 use super::super::{school_of, subject_of, Family, StoreRows};
 use super::{
-    class_of_2027, queue_row, COHORT_UNVERIFIED, LOW_CONFIDENCE, UNRESOLVED_SCHOOL,
+    class_of_2027, queue_row, COHORT_UNVERIFIED, IDENTITY_UNVERIFIED, UNRESOLVED_SCHOOL,
     UNRESOLVED_VENUE,
 };
-use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalSchool, Confidence};
+use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalSchool};
 use std::collections::HashMap;
 
-/// Class-of-2027 athletes with no grade observation at all: the cohort they are published under is
-/// asserted by a source that named no grade level, so the row is published at the confidence its own
-/// evidence supports rather than at the high bar. A source that carries the grade level closes the
-/// finding; nothing this store holds would.
 pub(super) fn cohort_unverified(rows: &StoreRows, names: &HashMap<&str, &str>) -> Family {
     let mut family = Family::new(COHORT_UNVERIFIED);
     for athlete in class_of_2027(&rows.athletes) {
@@ -48,12 +30,12 @@ pub(super) fn cohort_unverified(rows: &StoreRows, names: &HashMap<&str, &str>) -
     family
 }
 
-/// Class-of-2027 athletes whose identity confidence sits below the domain's high bar: the merge
-/// accepted the row, and the objective's `identity_confidence` column is what makes them reviewable.
-pub(super) fn low_confidence(rows: &StoreRows, names: &HashMap<&str, &str>) -> Family {
-    let mut family = Family::new(LOW_CONFIDENCE);
+pub(super) fn identity_unverified(rows: &StoreRows, names: &HashMap<&str, &str>) -> crate::report::ReportResult<Family> {
+    let mut family = Family::new(IDENTITY_UNVERIFIED);
     for athlete in class_of_2027(&rows.athletes) {
-        if athlete.identity_confidence >= Confidence::HIGH {
+        let status = rows.identities.status(athlete.id.as_str())
+            .map_err(census_store::StoreError::from)?;
+        if status == census_domain::model::IdentityStatus::Verified {
             continue;
         }
         let subject = subject_of(
@@ -64,17 +46,14 @@ pub(super) fn low_confidence(rows: &StoreRows, names: &HashMap<&str, &str>) -> F
             athlete.id.as_str(),
             subject,
             format!(
-                "identity confidence {} below the high bar of {}",
-                athlete.identity_confidence.get(),
-                Confidence::HIGH.get()
+                "identity status {}; verification requires a current admissible identity decision",
+                status.as_str(),
             ),
         ));
     }
-    family
+    Ok(family)
 }
 
-/// Meets no source placed in a jurisdiction: the census files them under `??` rather than guessing,
-/// and the venue decision is still owed.
 pub(super) fn unresolved_venues(meets: &[CanonicalMeet]) -> Family {
     let mut family = Family::new(UNRESOLVED_VENUE);
     for meet in meets {
@@ -93,7 +72,6 @@ pub(super) fn unresolved_venues(meets: &[CanonicalMeet]) -> Family {
     family
 }
 
-/// Schools with no jurisdiction on their row: the census buckets them under `UNKNOWN`.
 pub(super) fn unresolved_schools(schools: &[CanonicalSchool]) -> Family {
     let mut family = Family::new(UNRESOLVED_SCHOOL);
     for school in schools {
@@ -109,7 +87,6 @@ pub(super) fn unresolved_schools(schools: &[CanonicalSchool]) -> Family {
     family
 }
 
-/// How many distinct source ids a row's evidence names.
 fn source_count(athlete: &CanonicalAthlete) -> usize {
     let mut sources: Vec<&str> = athlete
         .evidence

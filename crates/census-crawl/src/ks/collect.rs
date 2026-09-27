@@ -1,4 +1,3 @@
-//! The KSHSAA directory pass: fetch the directory, then append and journal each member school.
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{CanonicalCoach, SourceNamespace};
 use census_domain::UsJurisdiction;
@@ -8,32 +7,17 @@ use std::collections::HashSet;
 use super::parse::{parse_ad_coach, parse_school};
 use super::wire::{parse_records, KshsaaRecord};
 
-/// API base URL for the name-search directory endpoint.
 const KSHSAA_API: &str = "https://kshsaa-api.kshsaa.org/directory/search/name/";
 
-/// Adapter options.
 #[derive(Debug, Clone, Default)]
 pub struct Options {
-    /// Stop after this many schools (smoke runs).
     pub limit: Option<usize>,
-    /// Ignore cached HTTP bodies and re-fetch.
     pub refresh: bool,
-    /// ISO date stamped into evidence.
     pub observed_on: String,
-    /// Restrict to these jurisdictions when the provider spans several states.
     pub states: Vec<UsJurisdiction>,
-    /// School names to resolve when the provider has no bulk index.
     pub school_names: Vec<String>,
 }
 
-/// Collect this provider's schools and AD contacts into the canonical store.
-///
-/// Strategy:
-/// 1. Fetch `https://kshsaa-api.kshsaa.org/directory/search/name/a/` — the single request returns
-///    all ~526 Kansas member schools.
-/// 2. Parse the JSON array; each record becomes one canonical school and one AD coach.
-/// 3. Append each school and its AD coach, then journal that school, so a re-run resumes past
-///    every school whose rows are already in the store.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("ks", "schools");
     report.unit = "schools".to_string();
@@ -73,27 +57,17 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-/// What one directory record contributed to the pass.
 enum KsRead {
-    /// The record carried no canonical school; nothing was appended and nothing journaled.
     Unreadable,
-    /// The record was appended and journaled as done; `None` means it published no AD coach.
-    ///
-    /// Boxed: a `CanonicalCoach` is 224 bytes, so an unboxed payload would make every value of
-    /// this enum - including the `Unreadable` ones the walk drops - carry that size.
     Read(Box<Option<CanonicalCoach>>),
 }
 
-/// What one directory pass counted; the email count is recorded on the report as each record is
-/// read.
 struct KsTally {
     processed: usize,
     skipped: usize,
     skipped_no_ad: usize,
 }
 
-/// Walk the directory once: journalled schools are counted as skipped, the rest are appended and
-/// journalled as done so a re-run resumes past them.
 fn collect_records(
     records: &[KshsaaRecord],
     ctx: &AdapterContext<'_>,
@@ -138,10 +112,6 @@ fn collect_records(
     Ok(tally)
 }
 
-/// One directory record: append its rows, then journal the school as done.
-///
-/// The append commits at `SyncData` and the journal write commits separately, so the journal entry
-/// goes last: a journaled school never claims rows the store does not hold.
 fn collect_record(
     record: &KshsaaRecord,
     ctx: &AdapterContext<'_>,
@@ -157,10 +127,8 @@ fn collect_record(
 
     let mut batch = ctx.store.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&school))?;
-    ctx.observe_school(
-        &SourceNamespace::association_school(super::ASSOCIATION),
-        &school,
-    )?;
+    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(super::ASSOCIATION),
+    &school,).as_slice())?;
     if let Some(row) = coach.as_ref() {
         batch.append_many(Table::Coaches, std::slice::from_ref(row))?;
     }

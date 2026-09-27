@@ -1,9 +1,3 @@
-//! The `review` subcommand: ask a local model about the findings the merge retained, keep only the
-//! answers the store's own evidence can back, and record what came back either way.
-//!
-//! The model is a local server, so a pass is an operator action rather than a pipeline stage: the
-//! default limit is small, `--dry-run` asks and validates without writing, and the summary line names
-//! every outcome including the ones that mean the model misbehaved (dropped, unanswered, failed).
 
 use anyhow::{bail, Context, Result};
 use census_review::{
@@ -12,39 +6,35 @@ use census_review::{
 use census_store::Store;
 use clap::Args;
 
-/// What `review` was asked to do.
 #[derive(Args, Debug)]
+#[command(about = "What `review` was asked to do")]
 pub(super) struct ReviewArgs {
-    /// Family to ask about (repeatable): `school-jurisdiction`, `meet-jurisdiction`,
-    /// `athlete-identity`. Default: every family the lane asks about.
+    #[arg(help = "Family to ask about (repeatable): `school-jurisdiction`, `meet-jurisdiction`, `athlete-identity`. Default: every family the lane asks about")]
     #[arg(long = "family", value_name = "FAMILY")]
     family: Vec<String>,
-    /// Ask about at most this many cases.
+    #[arg(help = "Ask about at most this many cases")]
     #[arg(long, default_value_t = 25)]
     limit: usize,
-    /// Ask and validate, but write no verdicts and leave every case pending.
+    #[arg(help = "Ask and validate, but write no verdicts and leave every case pending")]
     #[arg(long)]
     dry_run: bool,
-    /// Base URL of a local model server (repeatable). One request is kept in flight per lane,
-    /// because the local llama.cpp servers run a single slot.
+    #[arg(help = "Base URL of a local model server (repeatable). One request is kept in flight per lane, because the local llama.cpp servers run a single slot")]
     #[arg(long, default_value = "http://127.0.0.1:11000")]
     endpoint: Vec<String>,
-    /// Model name to ask for. One value applies to every endpoint, or give one per endpoint
-    /// (the machine's two lanes load different quantizations).
+    #[arg(help = "Model name to ask for. One value applies to every endpoint, or give one per endpoint (the machine's two lanes load different quantizations)")]
     #[arg(long, default_value = "Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf")]
     model: Vec<String>,
-    /// Per-request timeout in seconds.
+    #[arg(help = "Per-request timeout in seconds")]
     #[arg(long, default_value_t = 180)]
     timeout_secs: u64,
-    /// Output budget per request.
+    #[arg(help = "Output budget per request")]
     #[arg(long, default_value_t = 1536)]
     max_tokens: u32,
-    /// ISO date stamped into evidence (defaults to today).
+    #[arg(help = "ISO date stamped into evidence (defaults to today)")]
     #[arg(long)]
     observed_on: Option<String>,
 }
 
-/// Run one review pass against the store's retained cases.
 pub(super) async fn run_review(store: &Store, args: &ReviewArgs) -> Result<()> {
     let families = families_of(&args.family)?;
     let observed_on = args
@@ -64,11 +54,10 @@ pub(super) async fn run_review(store: &Store, args: &ReviewArgs) -> Result<()> {
     }
     let mut clients = Vec::new();
     for (endpoint, model) in lane_pairs(&args.endpoint, &args.model)? {
-        let model_options = ModelOptions {
-            timeout: std::time::Duration::from_secs(args.timeout_secs),
-            max_tokens: args.max_tokens,
-            ..ModelOptions::local(&endpoint, &model)
-        };
+        let model_options = ModelOptions::local(&endpoint, &model)
+            .with_context(|| format!("invalid model endpoint {endpoint}"))?
+            .with_timeout(std::time::Duration::from_secs(args.timeout_secs))
+            .with_max_tokens(args.max_tokens);
         let client = ModelClient::new(model_options)
             .with_context(|| format!("building the model client for {endpoint}"))?;
         clients.push(client);
@@ -78,10 +67,6 @@ pub(super) async fn run_review(store: &Store, args: &ReviewArgs) -> Result<()> {
     Ok(())
 }
 
-/// Pair the requested endpoints with the model name to ask each of them for.
-///
-/// One model name applies to every endpoint; otherwise a name is required for each, because the
-/// machine's two local lanes serve different quantization filenames.
 pub(super) fn lane_pairs(endpoints: &[String], models: &[String]) -> Result<Vec<(String, String)>> {
     if endpoints.is_empty() {
         bail!("no model endpoint configured; pass --endpoint <URL>");
@@ -109,7 +94,6 @@ pub(super) fn lane_pairs(endpoints: &[String], models: &[String]) -> Result<Vec<
         .collect())
 }
 
-/// The families this pass asks about, from the CLI's spellings.
 pub(super) fn families_of(names: &[String]) -> Result<Vec<ReviewFamily>> {
     if names.is_empty() {
         return Ok(ReviewFamily::askable().to_vec());

@@ -1,11 +1,3 @@
-//! The synthetic corpus and the loop that builds it: `--schools` schools, each with one team, one
-//! meet, `ATHLETES_PER_SCHOOL` athletes, one event per athlete and `PERFORMANCES_PER_ATHLETE` marks
-//! in that event.
-//!
-//! Every row is built from the seeded generator in `lcg` and the row shapes in `fixtures`, so two
-//! runs of the same `--schools` build the same corpus; the counts recorded here are what the
-//! measured phases assert the store and the merged snapshot against.
-
 use anyhow::Result;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
@@ -21,12 +13,9 @@ use super::fixtures::{
 };
 use super::lcg::{Lcg, SEED};
 
-/// Athletes in every synthetic school; one team and one meet per school scale with it.
 pub(super) const ATHLETES_PER_SCHOOL: usize = 8;
-/// Marks in every athlete's one event.
 pub(super) const PERFORMANCES_PER_ATHLETE: usize = 2;
 
-/// The whole synthetic corpus, kept in memory so every phase can assert against the input.
 pub(super) struct Corpus {
     pub(super) schools: Vec<CanonicalSchool>,
     pub(super) teams: Vec<CanonicalTeam>,
@@ -34,7 +23,6 @@ pub(super) struct Corpus {
     pub(super) meets: Vec<CanonicalMeet>,
     pub(super) events: Vec<CanonicalEvent>,
     pub(super) performances: Vec<CanonicalPerformance>,
-    /// Event ids seen during generation; the merge must reduce `events` to exactly this count.
     pub(super) distinct_events: HashSet<String>,
 }
 
@@ -51,7 +39,6 @@ impl Corpus {
         }
     }
 
-    /// Rows handed to `append_many`, i.e. observations, not merged entities.
     pub(super) fn appended_rows(&self) -> usize {
         [
             self.schools.len(),
@@ -65,7 +52,6 @@ impl Corpus {
         .sum()
     }
 
-    /// Distinct rows after the merge: what `consolidate` writes and the workbook reads.
     pub(super) fn merged_rows(&self) -> usize {
         [
             self.schools.len(),
@@ -89,7 +75,6 @@ pub(super) fn build_corpus(school_count: usize) -> Result<Corpus> {
     Ok(corpus)
 }
 
-/// One school, its team, its meet, and the athletes that compete at that meet.
 pub(super) fn append_school(corpus: &mut Corpus, rng: &mut Lcg, index: usize) -> Result<()> {
     let state = match index % 3 {
         0 => UsJurisdiction::Wisconsin,
@@ -118,7 +103,6 @@ pub(super) fn append_school(corpus: &mut Corpus, rng: &mut Lcg, index: usize) ->
     Ok(())
 }
 
-/// One athlete with one event at `meet_id` and `PERFORMANCES_PER_ATHLETE` marks in it.
 fn append_athlete(
     corpus: &mut Corpus,
     rng: &mut Lcg,
@@ -144,7 +128,6 @@ fn append_athlete(
     Ok(())
 }
 
-/// Boys and girls alternate across the corpus: one slot per athlete, offset by the school index.
 fn gender_of(index: usize, slot: usize) -> Gender {
     if index.saturating_add(slot).is_multiple_of(2) {
         Gender::Boys
@@ -153,40 +136,38 @@ fn gender_of(index: usize, slot: usize) -> Gender {
     }
 }
 
-/// The athlete row: one outdoor-track entry, one observed grade and one MileSplit profile.
 fn athlete_of(
     school_id: &SchoolId,
     index: usize,
     slot: usize,
     gender: Gender,
 ) -> Result<CanonicalAthlete> {
+    let source = SourceIdentity::new(
+        SourceNamespace::MilesplitAthlete,
+        format!("profile-{index}-{slot}"),
+    );
     let mut athlete = CanonicalAthlete::new(
         school_id,
         format!("Runner {index}-{slot}"),
         GradYear::CO2027,
         gender,
+        source,
     );
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.observed_grades.push(observed_grade()?);
     athlete.evidence.push(evidence());
-    athlete.source_identities.push(SourceIdentity::new(
-        SourceNamespace::MilesplitAthlete,
-        format!("profile-{index}-{slot}"),
-    ));
     athlete
         .public_profile_urls
         .push(format!("https://example.invalid/athletes/{index}-{slot}"));
     Ok(athlete)
 }
 
-/// The athlete's event at this meet: one kind per athlete, so a meet holds a handful of events.
 fn event_of(meet_id: &MeetId, kind: &EventKind, gender: Gender) -> CanonicalEvent {
     let mut event = CanonicalEvent::new(meet_id, kind.clone(), gender, None, None);
     event.evidence.push(evidence());
     event
 }
 
-/// One mark in that event, keyed by the `source_key` the merge deduplicates on.
 fn performance_of(
     athlete: &CanonicalAthlete,
     team_id: &TeamId,
@@ -218,7 +199,7 @@ fn performance_of(
         observed_grade: Some(grade(11)?),
         evidence: vec![evidence()],
         source_key,
-        source_athlete: None,
+        source_athlete: athlete.source.clone(),
         retained_conflicts: Vec::new(),
     })
 }

@@ -1,4 +1,3 @@
-//! Edges: empty, malformed, truncated-by-content and arbitrary bytes.
 
 use super::*;
 

@@ -1,15 +1,3 @@
-//! The per-source replay arms: one function per source, each selecting the parse entry point a
-//! capture's own name and body describe and reporting what that parser published.
-//!
-//! Every arm is thin by construction - a call into the crate's published parse surface, the same
-//! refusal check the parity harnesses apply (a body that yields nothing did not parse), and one
-//! summary line. No arm decodes a body by hand, keeps a second copy of a fixture table, or compares
-//! against a record: that is what makes `replay` the same read as the fixture tests rather than a
-//! second parser beside them.
-//!
-//! A file name no arm claims is refused, naming the file, and a source no arm covers is refused,
-//! naming the source, so a newly committed capture fails the verb until the path that reads it is
-//! stated here.
 
 mod results;
 
@@ -18,7 +6,6 @@ use anyhow::{bail, Result};
 use census_crawl::{ihsa, ihsa::tournament, ks, mshsl, ohsaa, plain_names, wayzata, wiaa};
 use std::collections::BTreeSet;
 
-/// Replay one capture, returning the line the verb prints for it.
 pub(super) fn replay(capture: &Capture<'_>) -> Result<String> {
     match capture.source {
         "wiaa" => wiaa(capture),
@@ -40,7 +27,6 @@ pub(super) fn replay(capture: &Capture<'_>) -> Result<String> {
     }
 }
 
-/// The WIAA directory: one letter's school index, and one school's own page.
 fn wiaa(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     if file.starts_with("directory_letter_") {
@@ -64,8 +50,6 @@ fn wiaa(capture: &Capture<'_>) -> Result<String> {
     unmapped("wiaa", file)
 }
 
-/// The MSHSL directory: the school listing, one school page, one school's team nodes and its coach
-/// records.
 fn mshsl(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     if file.starts_with("schools_listing") {
@@ -114,11 +98,6 @@ fn mshsl(capture: &Capture<'_>) -> Result<String> {
     unmapped("mshsl", file)
 }
 
-/// The OHSAA directory: the search page, a school's sports table, its AD page.
-///
-/// Three captures are the corpus's own refusals - `search_no_results.html`, `sports_malformed.html`
-/// and `ad_malformed.html` - whose expected parse is empty by design, so an empty result there is
-/// the answer and everywhere else it is a body that did not parse.
 fn ohsaa(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     let refusal = matches!(
@@ -156,7 +135,6 @@ fn ohsaa(capture: &Capture<'_>) -> Result<String> {
     unmapped("ohsaa", file)
 }
 
-/// The plain-names directory pages: NDHSAA's index and school pages, NSAA's form and directory.
 fn plain_names(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     if file == "nsaa_directory_form.html" {
@@ -187,7 +165,6 @@ fn plain_names(capture: &Capture<'_>) -> Result<String> {
     unmapped("plain_names", file)
 }
 
-/// The IHSA staff and school directories.
 fn ihsa(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     if file == "v1_schools.json" {
@@ -208,8 +185,6 @@ fn ihsa(capture: &Capture<'_>) -> Result<String> {
     unmapped("ihsa", file)
 }
 
-/// The IHSA state-final tournament archives: meets, one meet's events, one event's summary, the
-/// cross-country qualifier envelopes, and the term list the archive is walked by.
 fn ihsa_tournament(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     if file == "track_field_meets.json" {
@@ -261,7 +236,6 @@ fn ihsa_tournament(capture: &Capture<'_>) -> Result<String> {
     unmapped("ihsa_tournament", file)
 }
 
-/// The KSHAA directory: one association's school records.
 fn ks_directory(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     if file.starts_with("kshsaa_directory_") {
@@ -272,8 +246,6 @@ fn ks_directory(capture: &Capture<'_>) -> Result<String> {
     unmapped("ks", file)
 }
 
-/// A Wayzata athletics schedule: the season is the year its own capture's file name carries
-/// (`track_2026_schedule.html`), which is the year the page's month headings sit in.
 fn wayzata_schedule(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     let Some(year) = season_year(file) else {
@@ -284,7 +256,6 @@ fn wayzata_schedule(capture: &Capture<'_>) -> Result<String> {
     Ok(format!("schedule season={year} rows={}", rows.len()))
 }
 
-/// The four-digit season a capture's file name carries, when it carries one.
 fn season_year(file: &str) -> Option<i16> {
     file.split(|ch: char| !ch.is_ascii_digit())
         .find(|part| part.len() == 4)

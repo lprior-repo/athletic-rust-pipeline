@@ -1,5 +1,3 @@
-//! Compiled patterns for the RaceDay HTML shapes, and the accessors that turn a failed compile
-//! into a typed error.
 
 use crate::{CrawlError, CrawlResult};
 use regex::Regex;
@@ -68,10 +66,6 @@ pub(super) fn tags_regex() -> CrawlResult<&'static Regex> {
     })
 }
 
-/// The patterns one result body is read with, resolved together.
-///
-/// A body is walked with all five at once, so a parse resolves them once and hands the bundle down,
-/// instead of one accessor call per use site.
 pub(super) struct Patterns {
     pub(super) table: &'static Regex,
     pub(super) head: &'static Regex,
@@ -81,7 +75,6 @@ pub(super) struct Patterns {
 }
 
 impl Patterns {
-    /// Resolve every pattern the reader needs, or the typed error naming the one that failed.
     pub(super) fn compile() -> CrawlResult<Self> {
         Ok(Self {
             table: table_regex()?,

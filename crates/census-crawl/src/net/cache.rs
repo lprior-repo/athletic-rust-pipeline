@@ -1,43 +1,17 @@
-//! On-disk body/metadata cache: content-addressed keys, self-verifying evidence, and atomic publish.
-//!
-//! A crash between the body rename and the metadata rename is impossible to observe: the cache read
-//! requires *both* files to be present and a content digest that matches, so a half-written
-//! generation is silently treated as a cache miss rather than poisoning a later read with stale
-//! evidence.
-
-use super::{FetchError, Fetcher};
+use super::{Fetcher, FetchError, MAX_BODY_BYTES};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
-/// Metadata stored alongside a cached body on disk.
-///
-/// `key_prefix` is the 16-byte truncated SHA-256 used to derive the on-disk filenames. It serves
-/// exclusively as a cache key, never as evidence.
-///
-/// `content_digest` is the full 32-byte SHA-256 of the body, hex-encoded (64 characters). It is
-/// the content hash: the thing that proves "this body is what we think it is." On read, both the
-/// byte count and the digest are checked; a mismatch means the body has changed since it was cached
-/// (corruption, truncation, or a torn write) and must be discarded.
+const MAX_META_BYTES: usize = 64 * 1024;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub(super) struct CacheMeta {
     pub(super) url: String,
     pub(super) method: String,
     pub(super) status: u16,
-    /// Truncated SHA-256 key: the 16-byte prefix used to derive the on-disk file names. SHA-256
-    /// always produces 32 bytes, so the prefix is present; `get` keeps the extraction total
-    /// without a panic path.
-    ///
-    /// Backward compatible: the old field name `sha256` (a 16-byte truncated key) is accepted
-    /// during deserialization. If `key_prefix` is missing, the old `sha256` value is used as
-    /// the key, and `content_digest` is computed from the cached body on read.
-    #[serde(default, alias = "sha256")]
-    pub(super) key_prefix: String,
-    /// Full 32-byte SHA-256 content digest of the body, hex-encoded (64 characters).
-    ///
-    /// Backward compatible: if missing, the digest is computed from the body on read.
-    /// A mismatch means the body has changed (corruption, truncation, or a torn write).
-    #[serde(default)]
     pub(super) content_digest: String,
     pub(super) bytes: usize,
     pub(super) fetched_at: String,
@@ -68,11 +42,6 @@ impl Fetcher {
     }
 }
 
-/// Hex of the leading 16 bytes of a SHA-256 hash.
-///
-/// The crate keys cached bodies, cache metadata and content ids by that prefix. SHA-256 always
-/// digests to 32 bytes, so the prefix is present; `get` keeps the extraction total without a
-/// panic path.
 pub(super) fn sha256_prefix16(hasher: Sha256) -> String {
     let digest = hasher.finalize();
     let head = match digest.get(..16) {
@@ -82,11 +51,6 @@ pub(super) fn sha256_prefix16(hasher: Sha256) -> String {
     head.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// Full 32-byte SHA-256 digest, hex-encoded — the content hash, not a key.
-///
-/// The caller hands the body bytes (not a hasher), so this function does the hashing. On read, the
-/// result is compared against `CacheMeta::content_digest`; a mismatch means the body has changed
-/// since it was cached (corruption, truncation, or a torn write) and must be discarded.
 pub(super) fn content_digest(body: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(body);
@@ -94,11 +58,45 @@ pub(super) fn content_digest(body: &[u8]) -> String {
     d.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// Read a cached entry and verify it against the on-disk body.
-///
-/// Returns `Ok(None)` when either file is missing, the body file cannot be read, or the body does
-/// not match the metadata (size or digest mismatch). A mismatch is a cache miss, not an error —
-/// the corrupted body is discarded and the request is re-fetched.
+fn is_valid_hex64(s: &str) -> bool {
+    s.len() == 64 && s.bytes().all(|byte| byte.is_ascii_digit() || matches!(byte, b'a'..=b'f'))
+}
+
+fn read_cache_file(
+    path: &Path,
+    limit: usize,
+    expected: Option<usize>,
+) -> Result<Option<Vec<u8>>, FetchError> {
+    let read = || -> std::io::Result<Option<Vec<u8>>> {
+        let mut file = File::open(path)?;
+        let size = usize::try_from(file.metadata()?.len())
+            .map_err(|_| std::io::Error::other("cache file length cannot be represented"))?;
+        if size > limit || expected.is_some_and(|expected| expected != size) {
+            return Ok(None);
+        }
+        read_snapshot(&mut file, size)
+    };
+    read().map_err(|source| FetchError::Cache {
+        path: path.to_path_buf(),
+        source,
+    })
+}
+
+fn read_snapshot(reader: &mut impl Read, size: usize) -> std::io::Result<Option<Vec<u8>>> {
+    let limit = u64::try_from(size)
+        .map_err(|_| std::io::Error::other("cache read length cannot be represented"))?;
+    let mut body = Vec::with_capacity(size);
+    (&mut *reader).take(limit).read_to_end(&mut body)?;
+    if body.len() != size {
+        return Ok(None);
+    }
+    match reader.read_exact(&mut [0_u8; 1]) {
+        Ok(()) => Ok(None),
+        Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => Ok(Some(body)),
+        Err(error) => Err(error),
+    }
+}
+
 pub(super) fn read_cache(
     body_path: &Path,
     meta_path: &Path,
@@ -106,30 +104,30 @@ pub(super) fn read_cache(
     if !meta_path.exists() || !body_path.exists() {
         return Ok(None);
     }
-    let meta = std::fs::read_to_string(meta_path).map_err(|source| FetchError::Cache {
-        path: meta_path.to_path_buf(),
-        source,
-    })?;
-    let meta: CacheMeta = serde_json::from_str(&meta).map_err(|source| FetchError::Decode {
+    let meta_bytes = read_cache_file(meta_path, MAX_META_BYTES, None)?
+        .ok_or_else(|| FetchError::Cache {
+            path: meta_path.to_path_buf(),
+            source: std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "cache metadata exceeds its limit or changed during reading",
+            ),
+        })?;
+    let meta: CacheMeta = serde_json::from_slice(&meta_bytes).map_err(|source| FetchError::Decode {
         target: meta_path.display().to_string(),
         source,
     })?;
-    let body = std::fs::read(body_path).map_err(|source| FetchError::Cache {
-        path: body_path.to_path_buf(),
-        source,
-    })?;
-    if body.len() != meta.bytes {
+    if meta.status != 200 || !is_valid_hex64(&meta.content_digest) || meta.bytes > MAX_BODY_BYTES {
         return Ok(None);
     }
-    if !meta.content_digest.is_empty() && content_digest(&body) != meta.content_digest {
+    let Some(body) = read_cache_file(body_path, MAX_BODY_BYTES, Some(meta.bytes))? else {
+        return Ok(None);
+    };
+    if content_digest(&body) != meta.content_digest {
         return Ok(None);
     }
     Ok(Some((meta, body)))
 }
 
-/// Publish a cached entry atomically: both body and metadata are written to temp files and
-/// renamed in sequence. A crash between the two renames leaves one file without the other, so the
-/// next read (which requires both) treats the entry as absent rather than corrupted.
 pub(super) fn write_cache(
     body_path: &Path,
     meta_path: &Path,
@@ -160,3 +158,6 @@ pub(super) fn write_cache(
     })?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

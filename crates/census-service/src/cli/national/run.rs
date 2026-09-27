@@ -1,5 +1,3 @@
-//! The three workflow-driving commands: submit the run, attach to the one that already holds the
-//! identity, then observe it or detach.
 
 use anyhow::{Context, Result};
 use census_reconcile::identity::{admitted_scope, Revision, WorkflowIdentity};
@@ -16,12 +14,6 @@ use super::{named_season, JurisdictionArgs, NationalArgs, NationalReportArgs};
 use crate::cli::Cli;
 use census_service::ingress;
 
-/// The handle for a run that already exists under `identity`.
-///
-/// Restate refuses a second invocation of a workflow's run handler and refuses an idempotency key on
-/// one at all — the workflow id is already the idempotency. That is exactly the identity §8 asks
-/// for, and it leaves an observation path: the workflow id addresses its own run invocation, so a
-/// probe of the output tells a run that exists (ready or not ready) from one that was never invoked.
 pub(crate) async fn attach_existing(
     ingestion: &ReqwestClient,
     identity: &WorkflowIdentity,
@@ -34,13 +26,6 @@ pub(crate) async fn attach_existing(
     }
 }
 
-/// Submit the run, or attach to the run that already holds this identity.
-///
-/// Restate deduplicates a workflow run by its identity alone, so two answers carry a message an
-/// operator has to see: a repeat submission attaches to the run that exists and its payload is *not*
-/// re-read, and a second run under the identity is refused outright. Both cases say so where they
-/// happen, and the refusal path observes the run that exists instead of manufacturing a second one
-/// (§8).
 pub(crate) async fn submit_national(
     ingestion: &ReqwestClient,
     identity: &WorkflowIdentity,

@@ -11,10 +11,6 @@ use std::{future::Future, time::Duration};
 use tokio::sync::oneshot;
 use tracing::Instrument;
 
-/// Send one command's result back, logging a receiver that went away.
-///
-/// A dropped reply is not an error: the caller was cancelled, and the work it asked for is done
-/// either way.
 async fn reply_with<T>(
     label: &'static str,
     reply: oneshot::Sender<T>,
@@ -143,10 +139,6 @@ impl Actor {
         self.set_state(BrowserState::CoolingDown);
     }
 
-    /// Handle one command, or the closed command channel.
-    ///
-    /// Each arm is one ingress call: the four that answer a caller go through `reply_with`, and the
-    /// two drain entries share `begin_drain`.
     pub(crate) async fn command(&mut self, command: Option<Command>) {
         match command {
             Some(Command::Bootstrap { reply }) => {
@@ -167,8 +159,6 @@ impl Actor {
         }
     }
 
-    /// Start the drain: keep the reply that carries the region certificate, then revoke every
-    /// admission path. The `Shutdown` command and a closed command channel are the same drain.
     fn begin_drain(&mut self, reply: Option<oneshot::Sender<DrainReport>>) {
         if let Some(reply) = reply {
             self.shutdown_reply = Some(reply);
@@ -180,10 +170,6 @@ impl Actor {
         self.reject_pending(BrowserError::Shutdown);
     }
 
-    /// Reject every queued request, counting each as accepted-then-cancelled.
-    ///
-    /// A queued request is a unit this actor took responsibility for, so whichever path rejects it
-    /// the certificate says so; the caller learns the reason from its own reply channel.
     pub(crate) fn reject_pending(&mut self, cause: BrowserError) {
         let rejected = count(self.pending.len());
         self.region.accept(rejected);
@@ -246,12 +232,6 @@ impl Actor {
         Ok(())
     }
 
-    /// A launched Chromium restores the profile's previous tabs, so a relaunch
-    /// accumulates pages this pool never tracks. They keep loading and compete
-    /// with the pool for renderer capacity, which raises the odds that the next
-    /// acquisition fails and the following recovery adds another one. Attached
-    /// (loopback) sessions share a browser this process did not start, so their
-    /// pages are left alone.
     async fn close_restored_pages(&mut self) -> anyhow::Result<()> {
         let tracked: std::collections::HashSet<TargetId> = self
             .pages

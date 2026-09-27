@@ -1,5 +1,3 @@
-//! The three fetches: a state team index, one roster page, and one `/raw` result set — each
-//! status-checked before parsing.
 use crate::net::{FetchError, FetchOptions, Fetcher};
 use crate::{CrawlError, CrawlResult};
 
@@ -7,9 +5,9 @@ use super::parse::{
     has_next_page, parse_meet_index, parse_meet_result_files, parse_roster, parse_team_index,
 };
 use super::raw::{parse_raw, RawPage};
-use super::wire::{MeetRef, MeetResultFile, ResultSetRef, Roster, Season, Site, TeamRef};
+use super::wire::{MeetRef, MeetResultFile, ResultSetRef, Season, Site, TeamRef};
+use super::roster::{RosterOutcome, RosterQuarantine, RosterVerdict};
 
-/// Fetch and parse the team index for a state site.
 pub async fn fetch_team_index(
     fetcher: &Fetcher,
     site: Site,
@@ -25,12 +23,11 @@ pub async fn fetch_team_index(
     parse_team_index(&outcome.text())
 }
 
-/// Fetch and parse one roster.
 pub async fn fetch_roster(
     fetcher: &Fetcher,
     team: &TeamRef,
     options: &FetchOptions,
-) -> CrawlResult<Roster> {
+) -> CrawlResult<RosterOutcome> {
     let url = format!("{}/roster", team.url);
     let outcome = fetcher
         .get(
@@ -41,22 +38,23 @@ pub async fn fetch_roster(
             },
         )
         .await?;
-    if outcome.status == 404 {
-        return Ok(Roster {
-            team: team.clone(),
-            athletes: Vec::new(),
-        });
-    }
-    if outcome.status != 200 {
-        return Err(CrawlError::Fetch(FetchError::Http {
-            status: outcome.status,
-            url,
-        }));
-    }
-    parse_roster(&outcome.text(), team.clone())
+    let verdict = match outcome.status {
+        404 => RosterVerdict::Quarantined {
+            reason: RosterQuarantine::NotFound,
+            rejected: Vec::new(),
+        },
+        200 => match std::str::from_utf8(&outcome.body) {
+            Ok(body) => parse_roster(body, team.clone())?,
+            Err(_) => RosterVerdict::Quarantined {
+                reason: RosterQuarantine::InvalidEncoding,
+                rejected: Vec::new(),
+            },
+        },
+        status => return Err(CrawlError::Fetch(FetchError::Http { status, url })),
+    };
+    Ok(RosterOutcome { capture: outcome, verdict })
 }
 
-/// Fetch and parse one `/raw` result set: one request, the whole result set, no pagination.
 pub async fn fetch_result_set(
     fetcher: &Fetcher,
     reference: &ResultSetRef,
@@ -72,15 +70,6 @@ pub async fn fetch_result_set(
     parse_raw(&outcome.text(), &reference.url)
 }
 
-/// One page of a state's results index, with whether the pager published a next page.
-///
-/// The index is the meet census's enumeration: one request per fifty meets, ordered by date, with
-/// the pagination the site itself publishes (`rel="next"`). Nothing here walks into the meet — a
-/// caller that wants results asks for them by the id and URL this returns.
-/// Read a meet's results page and return the result files it lists.
-///
-/// One request. The page is the meet's own results URL — the same URL the meet census stores in
-/// `source_meets.results_url` — so a whole meet costs this plus one request per result file.
 pub async fn fetch_meet_result_files(
     fetcher: &Fetcher,
     results_url: &str,

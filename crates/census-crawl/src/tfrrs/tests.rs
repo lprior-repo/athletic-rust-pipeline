@@ -1,13 +1,3 @@
-//! The TFRRS readers against captures of the pages the host actually served.
-//!
-//! | fixture | what it is | what it pins |
-//! |---|---|---|
-//! | `indiana_list_5489_excerpt.html` | byte-exact prefixes of six sections of `indiana.tfrrs.org/lists/5489/HSR_All_School_Performance_List/2026/i` (1,880,743 B, HTTP 200), in document order | section labels/sides/event handles, the `Year` column, the `(55)`, `#` and `h` markers with their `title` conversions, the `Conv` column, the empty-`Year` row |
-//! | `nh_pembroke_xc_team.html` | the whole `nh.tfrrs.org/teams/xc/Pembroke_Academy_m.html` capture (64,461 B) | the `ROSTER` table, the `YEAR` column, the school in the athlete routes, the page's own season control |
-//! | `indiana_home_teams.html` | the whole `indiana.tfrrs.org/` capture (104,698 B) | the `/teams/tf/<School>_m.html` route family the instance publishes |
-//!
-//! Every assertion is on a row a page published, never on a string this adapter produced: the
-//! fixture is the evidence, and a change that shifts a column is meant to break these tests.
 
 use super::classify;
 use super::parse::{
@@ -22,7 +12,6 @@ const LIST: &str = include_str!("../../tests/fixtures/tfrrs/indiana_list_5489_ex
 const ROSTER: &str = include_str!("../../tests/fixtures/tfrrs/nh_pembroke_xc_team.html");
 const HOME: &str = include_str!("../../tests/fixtures/tfrrs/indiana_home_teams.html");
 
-/// The section a list page publishes for one event label.
 fn section<'a>(list: &'a ParsedList, label: &str) -> &'a ParsedSection {
     list.sections
         .iter()
@@ -30,7 +19,6 @@ fn section<'a>(list: &'a ParsedList, label: &str) -> &'a ParsedSection {
         .expect("the capture publishes this event")
 }
 
-/// One published row of a section, by position.
 fn row(section: &ParsedSection, index: usize) -> &ParsedRow {
     section
         .rows
@@ -38,7 +26,6 @@ fn row(section: &ParsedSection, index: usize) -> &ParsedRow {
         .expect("the capture publishes this row")
 }
 
-/// The fixture's sections keep the host's own labels, sides and event handles.
 #[test]
 fn sections_keep_the_hosts_labels_sides_and_handles() {
     let list = parse_list_page(LIST);
@@ -60,8 +47,6 @@ fn sections_keep_the_hosts_labels_sides_and_handles() {
     }
 }
 
-/// A sprint row publishes place, athlete, grade, team, mark, meet and date — and its `(55)`
-/// marker's note.
 #[test]
 fn a_sprint_row_reads_every_column_it_publishes() {
     let list = parse_list_page(LIST);
@@ -84,7 +69,6 @@ fn a_sprint_row_reads_every_column_it_publishes() {
     assert!(row.date.is_some());
 }
 
-/// A `#` row publishes the host's own track-size conversion of its mark.
 #[test]
 fn a_track_size_row_keeps_the_hosts_conversion_note() {
     let list = parse_list_page(LIST);
@@ -97,7 +81,6 @@ fn a_track_size_row_keeps_the_hosts_conversion_note() {
         .is_some_and(|note| note.contains("for Track Size")));
 }
 
-/// A relay row lists its members and mints no single athlete.
 #[test]
 fn a_relay_row_lists_its_members_without_a_single_athlete() {
     let list = parse_list_page(LIST);
@@ -113,8 +96,6 @@ fn a_relay_row_lists_its_members_without_a_single_athlete() {
     assert!(matches!(row.mark, Some(ParsedMark::Time(_))));
 }
 
-/// A field row publishes feet–inches beside the host's own metric conversion, and a row the host
-/// tracks without a class year publishes an empty `Year` cell.
 #[test]
 fn a_field_row_reads_feet_inches_beside_the_hosts_metres() {
     let list = parse_list_page(LIST);
@@ -135,8 +116,6 @@ fn a_field_row_reads_feet_inches_beside_the_hosts_metres() {
     assert!(matches!(high_jump.mark, Some(ParsedMark::Field(_))));
 }
 
-/// A team page publishes its roster, the school its athlete routes name, and the season its own
-/// control states.
 #[test]
 fn a_team_page_publishes_its_roster_and_season() {
     let roster = parse_team_page(ROSTER);
@@ -160,8 +139,6 @@ fn a_team_page_publishes_its_roster_and_season() {
     assert_eq!(season.sport, Some(Sport::CrossCountry));
 }
 
-/// The routes name the state the instance serves, the season a list path states and the `?year=`
-/// view it was requested with — and a host that names no state is refused rather than placed.
 #[test]
 fn routes_name_the_state_and_the_season_they_publish() {
     let list_url = "https://indiana.tfrrs.org/lists/5489/HSR_All_School_Performance_List/2026/i";
@@ -199,7 +176,6 @@ fn routes_name_the_state_and_the_season_they_publish() {
     assert!(classify("https://indiana.tfrrs.org/").is_none());
 }
 
-/// The Indiana home page publishes the same team-route family the list rows link, on both sides.
 #[test]
 fn the_home_page_publishes_the_team_route_family() {
     let routes: Vec<&str> = HOME
@@ -221,7 +197,6 @@ fn the_home_page_publishes_the_team_route_family() {
     assert!(parsed.iter().any(|path| path.gender == Some(Gender::Girls)));
 }
 
-/// The season label, the grade vocabulary and the published date read the host's own tokens.
 #[test]
 fn the_published_vocabulary_reads_the_hosts_tokens() {
     let cross_country = season_from_label("2026 NHIAA DII Cross Country").expect("season label");

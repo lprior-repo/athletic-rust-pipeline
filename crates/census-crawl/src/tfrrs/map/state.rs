@@ -1,4 +1,3 @@
-//! The run's writing half: what one page shape accumulates, and what it counts.
 
 use crate::tfrrs::parse::{ListPath, TeamPath, YearToken};
 use census_domain::model::{
@@ -41,8 +40,6 @@ pub(in crate::tfrrs) struct Stats {
     pub(in crate::tfrrs) schools_minted: u64,
 }
 
-/// Everything one run accumulated, keyed by canonical id so a second view of the same page upserts
-/// the same entity instead of duplicating it.
 #[derive(Default)]
 pub(in crate::tfrrs) struct Accumulator {
     pub(in crate::tfrrs) schools: HashMap<String, CanonicalSchool>,
@@ -53,41 +50,31 @@ pub(in crate::tfrrs) struct Accumulator {
     pub(in crate::tfrrs) performances: HashMap<String, CanonicalPerformance>,
 }
 
-/// The writing half of one collection run.
 pub(in crate::tfrrs) struct Absorb<'a> {
     pub(super) index: &'a SchoolIndex,
-    /// Schools already resolved or minted, memoized per run: a list names its schools once per row.
     pub(super) resolved: HashMap<String, SchoolId>,
     pub(in crate::tfrrs) accumulator: Accumulator,
     pub(in crate::tfrrs) stats: Stats,
 }
 
-/// Where one page's observations come from.
 #[derive(Clone, Copy)]
 pub(in crate::tfrrs) struct Page<'a> {
     pub(in crate::tfrrs) source: &'a SourceRef,
     pub(in crate::tfrrs) observed_on: &'a str,
-    /// The state the page's own host serves: TFRRS publishes one instance per state
-    /// (`indiana.tfrrs.org`, `nh.tfrrs.org`), so the host is the only jurisdiction a page
-    /// states and every school it names is minted in it.
     pub(in crate::tfrrs) jurisdiction: UsJurisdiction,
 }
 
-/// What every row of one list page shares.
 pub(in crate::tfrrs) struct ListContext<'a> {
     pub(in crate::tfrrs) page: Page<'a>,
     pub(in crate::tfrrs) list: &'a ListPath,
-    /// The `?year=` the page was requested with, when it was.
     pub(in crate::tfrrs) filter: Option<YearToken>,
 }
 
-/// What every athlete of one team page shares.
 pub(in crate::tfrrs) struct RosterContext<'a> {
     pub(in crate::tfrrs) page: Page<'a>,
     pub(in crate::tfrrs) team: &'a TeamPath,
 }
 
-/// The facts one athlete observation carries.
 pub(super) struct AthleteFacts<'a> {
     pub(in crate::tfrrs) school: &'a SchoolId,
     pub(in crate::tfrrs) name: &'a str,
@@ -100,15 +87,12 @@ pub(super) struct AthleteFacts<'a> {
     pub(in crate::tfrrs) source_key: String,
 }
 
-/// The facts one team observation carries.
 pub(super) struct TeamFacts<'a> {
     pub(in crate::tfrrs) school: &'a SchoolId,
     pub(in crate::tfrrs) sport: Sport,
     pub(in crate::tfrrs) gender: Gender,
     pub(in crate::tfrrs) school_year: SchoolYear,
-    /// The team route's own slug (`Lawrence_Central`), the channel a `TfrrsTeam` identity holds.
     pub(in crate::tfrrs) slug: Option<&'a str>,
-    /// The team route as published.
     pub(in crate::tfrrs) path: Option<&'a str>,
 }
 

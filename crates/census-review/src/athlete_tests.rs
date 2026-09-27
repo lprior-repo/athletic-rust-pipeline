@@ -1,9 +1,3 @@
-//! What the lane must do with an athlete case end to end: ask a model about two retained rows, keep
-//! the answer it gave, and move the case according to whether that answer decided anything.
-//!
-//! The lane talks to a local server, so these tests serve one canned answer over a real socket. The
-//! path under test is the one an operator's pass takes — a store, a client, a retained case, a
-//! durable verdict — and a mocked client would skip the request the model is actually sent.
 
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -11,7 +5,7 @@ use std::thread::JoinHandle;
 
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalSchool, Gender, GradYear, RetainedConflict,
-    ReviewCase, ReviewState, ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY,
+    ReviewCase, ReviewState, ReviewVerdictRecord, SourceIdentity, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
 };
 use census_domain::UsJurisdiction;
 
@@ -20,14 +14,12 @@ use census_store::{Store, Table};
 use super::packets::pending_cases;
 use super::{run_lanes, ModelClient, ModelOptions, ReviewFamily, ReviewOptions};
 
-/// The schools and athletes a test works with: one school, two rows the merge kept apart.
 struct Fixture {
     store: Store,
     _dir: tempfile::TempDir,
 }
 
 impl Fixture {
-    /// A store holding one athlete pair and the conflict the merge retained for it.
     fn new() -> (Self, ReviewCase) {
         let dir = tempfile::tempdir().expect("a temporary store");
         let store = Store::open(dir.path()).expect("the store opens");
@@ -38,8 +30,10 @@ impl Fixture {
         )
         .0
         .id;
-        let boys = CanonicalAthlete::new(&school, "Jordan Smith", GradYear::CO2027, Gender::Boys);
-        let girls = CanonicalAthlete::new(&school, "Jordan Smith", GradYear::CO2027, Gender::Girls);
+        let source_boys = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
+        let boys = CanonicalAthlete::new(&school, "Jordan Smith", GradYear::CO2027, Gender::Boys, source_boys);
+        let source_girls = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
+        let girls = CanonicalAthlete::new(&school, "Jordan Smith", GradYear::CO2027, Gender::Girls, source_girls);
         store
             .append_many(Table::Athletes, &[boys.clone(), girls.clone()])
             .expect("the athletes are written");
@@ -67,7 +61,6 @@ impl Fixture {
     }
 }
 
-/// The options a test passes: the athlete family alone, asked about once.
 fn options() -> ReviewOptions {
     ReviewOptions {
         families: vec![ReviewFamily::AthleteIdentity],
@@ -76,12 +69,10 @@ fn options() -> ReviewOptions {
     }
 }
 
-/// A client for one stub lane.
 fn client(endpoint: &str) -> ModelClient {
-    ModelClient::new(ModelOptions::local(endpoint, "stub.gguf")).expect("a client for the stub")
+    ModelClient::new(ModelOptions::local(endpoint, "stub.gguf").expect("valid test endpoint")).expect("a client for the stub")
 }
 
-/// The batch a stub lane answers with, naming the case it decided.
 fn batch(case: &ReviewCase, kind: &str, field: &str, value: &str) -> String {
     serde_json::json!({
         "subject_id": case.subject_id,
@@ -97,7 +88,6 @@ fn batch(case: &ReviewCase, kind: &str, field: &str, value: &str) -> String {
     .to_string()
 }
 
-/// Serve one request with one completion, and hand back the endpoint that answers for it.
 fn lane(content: String) -> (String, JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").expect("an ephemeral port");
     let address = listener.local_addr().expect("the bound address");
@@ -121,8 +111,6 @@ fn lane(content: String) -> (String, JoinHandle<()>) {
     (format!("http://{address}"), handle)
 }
 
-/// Read one request off the socket, headers and body, so the answer reaches a client that has
-/// finished writing.
 fn read_request(stream: &mut TcpStream) {
     let mut request = Vec::new();
     let mut buffer = [0_u8; 1_024];
@@ -138,7 +126,6 @@ fn read_request(stream: &mut TcpStream) {
     }
 }
 
-/// Whether a request's headers and body have both arrived.
 fn request_complete(request: &[u8]) -> bool {
     let Some(head) = find(request, b"\r\n\r\n") else {
         return false;
@@ -150,7 +137,6 @@ fn request_complete(request: &[u8]) -> bool {
     }
 }
 
-/// The offset just past `needle` in `haystack`.
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack
         .windows(needle.len())
@@ -158,7 +144,6 @@ fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
         .map(|at| at.saturating_add(needle.len()))
 }
 
-/// The body length a request declared, when it declared one.
 fn content_length(headers: &str) -> Option<usize> {
     for line in headers.lines() {
         let Some((name, value)) = line.split_once(':') else {
@@ -171,7 +156,6 @@ fn content_length(headers: &str) -> Option<usize> {
     None
 }
 
-/// The one durable verdict the store holds.
 fn verdict(store: &Store) -> ReviewVerdictRecord {
     let mut rows = store
         .scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)
@@ -180,7 +164,6 @@ fn verdict(store: &Store) -> ReviewVerdictRecord {
     rows.remove(0)
 }
 
-/// The one case row the pass wrote.
 fn recorded_case(store: &Store) -> ReviewCase {
     let mut rows = store
         .scan::<ReviewCase>(Table::ReviewCases)

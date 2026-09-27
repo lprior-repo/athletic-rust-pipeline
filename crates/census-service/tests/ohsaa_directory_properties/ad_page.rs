@@ -1,18 +1,8 @@
-//! The athletic-department table: label rows naming a role, value rows carrying the person.
-//!
-//! The association writes this table as pairs of rows: a row of `athleticDepartmentSubheader` spans
-//! naming the role (and repeating an `Email:` label), then a row whose `fieldValue` span carries the
-//! person and whose mailto href carries the address. `Phone:`/`Fax:` labels usually carry their value
-//! in the label row itself, and separator rows are `<br>`. The laws: the first row that names an
-//! athletic director is the director, every other named office role is published under the
-//! association's own label, and a name printed under a label the pipeline does not track is not a
-//! role at all.
 
 use super::seam_config;
 use census_crawl::ohsaa::parse_ad_page;
 use proptest::prelude::*;
 
-/// The label rows the capture prints, and the canonical role each one is published under.
 const ROLES: [&str; 4] = [
     "Athletic Director:",
     "Assistant Athletic Director:",
@@ -25,12 +15,9 @@ const CANONICAL: [&str; 4] = [
     "athletic secretary",
     "principal",
 ];
-/// The labels that name a value column rather than a person, as the capture prints them.
 const VALUE_LABELS: [&str; 2] = ["Email:", "Phone: (614) 718-8142"];
-/// The people printed under those labels.
 const PEOPLE: [&str; 4] = ["Jennifer Music", "Adam Banks", "Barry Mink", "Joe DePalma"];
 
-/// One printed row pair: which role label precedes which person.
 #[derive(Debug, Clone)]
 struct Row {
     role: usize,
@@ -38,7 +25,6 @@ struct Row {
     value_label: bool,
 }
 
-/// The table's row pairs, with the association's value labels mixed in.
 fn rows() -> impl Strategy<Value = Vec<Row>> {
     prop::collection::vec((0usize..4, 0usize..4, any::<bool>()), 1..5).prop_map(|rows| {
         rows.into_iter()
@@ -51,7 +37,6 @@ fn rows() -> impl Strategy<Value = Vec<Row>> {
     })
 }
 
-/// The table markup `ad_dublin_coffman.html` prints: a label row, then the value row it labels.
 fn render_ad(rows: &[Row]) -> String {
     let mut body = String::from("<table><tbody>\n");
     for (index, row) in rows.iter().enumerate() {
@@ -82,17 +67,12 @@ fn render_ad(rows: &[Row]) -> String {
     body
 }
 
-/// One published person: the name the table printed and the address its row carried.
 type Person = (String, Option<String>);
 
-/// One office role behind the director, as the association's own label publishes it.
 type Office = (String, String);
 
-/// What the page publishes: the director it names first, and the office roles behind them.
 type Publication = (Option<Person>, Vec<Office>);
 
-/// The director the page names first, and the office roles behind them, in document order — the shape
-/// the parser documents.
 fn expectation(rows: &[Row]) -> Publication {
     let mut director: Option<Person> = None;
     let mut office: Vec<Office> = Vec::new();
@@ -116,9 +96,6 @@ fn expectation(rows: &[Row]) -> Publication {
 proptest! {
     #![proptest_config(seam_config())]
 
-    /// The director the page names first is the director published, with the address that row
-    /// carries, and every other named office role is published under the association's own label with
-    /// the person that row printed.
     #[test]
     fn the_director_the_page_names_first_is_the_one_published(rows in rows()) {
         let page = parse_ad_page(&render_ad(&rows));

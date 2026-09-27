@@ -26,10 +26,6 @@ use fetch_loop::{drive_capture, subscribe_fetch};
 use fetch_state::{complete_fetch, FetchCapture};
 pub(super) use rankings::fetch_rankings;
 
-/// Subscribe to one CDP event stream.
-///
-/// Every capture loop subscribes the same way, so the one-liner lives once: the fetch lane's five
-/// streams and the navigation lane's four are both field lists over this.
 pub(crate) async fn subscribe<T: IntoEventKind>(
     page: &Page,
 ) -> Result<EventStream<T>, BrowserError> {
@@ -68,10 +64,6 @@ struct ResponseEvidence {
     headers: HeaderMap,
 }
 
-/// Fetch a request through the browser. Uses absolute deadline so inner
-/// awaits cannot exceed the budget. Does NOT call gate.try_open.
-/// On header challenge: sets challenge flag and revokes gate but continues
-/// bounded body capture — never aborts solely because of challenge.
 pub(crate) async fn fetch(
     page: &Page,
     request: &RequestSpec,

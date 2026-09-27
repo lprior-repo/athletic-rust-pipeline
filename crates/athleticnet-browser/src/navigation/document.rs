@@ -1,7 +1,3 @@
-//! Capture state for one bootstrap navigation.
-//!
-//! `bootstrap` owns the deadline and the navigation future; this module owns the
-//! CDP event streams and the document observation they build.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -22,7 +18,6 @@ use super::REDIRECT_ABORT;
 use crate::challenge::{cf_header_challenge, html_body_challenge};
 use crate::{gate::ProfileGate, transport, BrowserError};
 
-/// Navigation event streams, subscribed before the document is requested.
 pub(super) struct BootstrapEvents {
     pub(super) requests: EventStream<EventRequestWillBeSent>,
     pub(super) responses: EventStream<EventResponseReceived>,
@@ -30,7 +25,6 @@ pub(super) struct BootstrapEvents {
     pub(super) failures: EventStream<EventLoadingFailed>,
 }
 
-/// Subscribe to the navigation streams in the order the capture loop expects.
 pub(super) async fn bootstrap_events(page: &Page) -> Result<BootstrapEvents, BrowserError> {
     Ok(BootstrapEvents {
         requests: transport::subscribe(page).await?,
@@ -40,14 +34,11 @@ pub(super) async fn bootstrap_events(page: &Page) -> Result<BootstrapEvents, Bro
     })
 }
 
-/// Absolute deadline for a navigation. A deadline the platform clock cannot
-/// represent must not panic; bound it to the longest representable fallback.
 pub(super) fn navigation_deadline(now: Instant, timeout: Duration) -> Instant {
     now.checked_add(timeout)
         .unwrap_or_else(|| now.checked_add(Duration::from_secs(300)).unwrap_or(now))
 }
 
-/// What the bootstrap loop has learned about the document so far.
 pub(super) struct DocumentState {
     navigation_done: bool,
     latest_request_id: Option<RequestId>,
@@ -58,7 +49,6 @@ pub(super) struct DocumentState {
 }
 
 impl DocumentState {
-    /// Fresh state for a navigation to `url`.
     pub(super) fn new(url: String) -> Self {
         Self {
             navigation_done: false,
@@ -70,27 +60,22 @@ impl DocumentState {
         }
     }
 
-    /// True once the navigation settled and the document body was captured.
     pub(super) fn complete(&self) -> bool {
         self.navigation_done && self.observation.status.is_some() && self.observation.body_complete
     }
 
-    /// True while the navigation command is still outstanding.
     pub(super) fn navigated(&self) -> bool {
         self.navigation_done
     }
 
-    /// Record that the navigation command settled.
     pub(super) fn mark_navigated(&mut self) {
         self.navigation_done = true;
     }
 
-    /// Hand the observation to the caller for classification.
     pub(super) fn into_observation(self) -> Observation {
         self.observation
     }
 
-    /// Track a new main-document request, capturing a body that already arrived.
     pub(super) async fn on_request(
         &mut self,
         page: &Page,
@@ -118,7 +103,6 @@ impl DocumentState {
         Ok(())
     }
 
-    /// Fold response headers into the tracked document.
     pub(super) fn on_response(
         &mut self,
         event: Arc<EventResponseReceived>,
@@ -135,8 +119,6 @@ impl DocumentState {
         Ok(())
     }
 
-    /// Capture the body of a finished document, or remember the finish of a
-    /// request that has not been seen yet.
     pub(super) async fn on_finished(
         &mut self,
         page: &Page,
@@ -154,7 +136,6 @@ impl DocumentState {
         Ok(())
     }
 
-    /// Track a document failure. A redirect abort is not a failure.
     pub(super) fn on_failure(&mut self, event: &EventLoadingFailed) {
         if !is_current(&self.latest_request_id, &event.request_id) {
             return;
@@ -170,7 +151,6 @@ impl DocumentState {
     }
 }
 
-/// Fold a captured document body into the observation.
 fn record_body(observation: &mut Observation, body: &[u8]) {
     let media_type = observation
         .headers
@@ -181,7 +161,6 @@ fn record_body(observation: &mut Observation, body: &[u8]) {
     observation.body_complete = true;
 }
 
-/// Fold response headers into the observation, revoking on header challenge.
 fn record_headers(
     observation: &mut Observation,
     event: &EventResponseReceived,

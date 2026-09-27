@@ -1,9 +1,3 @@
-//! Dispatch: route a parsed [`Command`] to the module that owns its logic.
-//!
-//! Everything here is an offline tool: the caller has already opened the store for it, and the pipeline
-//! commands — the ones that submit through the ingress, and the ones that write their own files without
-//! a store — were handled before this point. Adding a command to [`super::run`] instead of here is the
-//! way to keep it out of a store open it does not want.
 
 use anyhow::Result;
 use census_store::Store;

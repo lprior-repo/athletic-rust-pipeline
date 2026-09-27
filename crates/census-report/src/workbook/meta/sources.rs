@@ -1,12 +1,3 @@
-//! The sources sheet: every registered adapter's declaration (§10/§11) beside the evidence the store
-//! actually carries for it.
-//!
-//! Two blocks, because the halves have different provenance and a reader must not confuse them. The
-//! declaration block is the compile-time registry: what a request to the adapter buys, what its
-//! origin permits, and the symbol each claim rests on. The evidence block is the census's own
-//! counters over stored rows: which namespaces named class-of-2027 athletes, which provider
-//! namespace a meet came from, which source id a coach row or a grade observation cites. An adapter
-//! that declares capabilities and left no evidence behind is therefore visible as exactly that.
 
 use crate::report::{Census, ReportResult};
 use census_crawl::{descriptors, SourceCapabilities, SourceDescriptor, TransportKind};
@@ -16,10 +7,8 @@ use crate::workbook::cells::{row, Cell};
 
 use super::sorted_counts;
 
-/// Widths for the source sheet.
 pub(super) const SOURCE_WIDTHS: [u16; 8] = [22, 46, 15, 62, 24, 10, 9, 11];
 
-/// The registered adapters, then the evidence channels the census measured.
 pub(super) fn sources_sheet(census: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     let mut cells = vec![row!(
         "Source",
@@ -49,8 +38,6 @@ pub(super) fn sources_sheet(census: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     Ok(cells)
 }
 
-/// One registered adapter's declaration: what it is, how its bytes arrive, what a request buys and
-/// what its origin permits.
 fn descriptor_row(descriptor: &SourceDescriptor) -> ReportResult<Vec<Cell>> {
     let admission = &descriptor.admission;
     Ok(row!(
@@ -69,7 +56,6 @@ fn descriptor_row(descriptor: &SourceDescriptor) -> ReportResult<Vec<Cell>> {
     ))
 }
 
-/// The census counters that name a source id or a source namespace, and what each one counts.
 fn evidence_channels(census: &Census) -> Vec<(&'static str, &BTreeMap<String, usize>)> {
     vec![
         ("Meet provider namespace", &census.meets.by_provider),
@@ -82,7 +68,6 @@ fn evidence_channels(census: &Census) -> Vec<(&'static str, &BTreeMap<String, us
     ]
 }
 
-/// The capabilities an adapter claims, in the order the registry declares them.
 fn capability_labels(capabilities: &SourceCapabilities) -> String {
     let mut labels: Vec<&str> = Vec::new();
     push_flag(
@@ -113,14 +98,12 @@ fn capability_labels(capabilities: &SourceCapabilities) -> String {
     labels.join(", ")
 }
 
-/// Record one capability label when the adapter claims it.
 fn push_flag(labels: &mut Vec<&'static str>, claimed: bool, label: &'static str) {
     if claimed {
         labels.push(label);
     }
 }
 
-/// How one adapter's bytes arrive, as the sheet prints it.
 fn transport_label(kind: TransportKind) -> &'static str {
     match kind {
         TransportKind::StructuredApi => "structured api",

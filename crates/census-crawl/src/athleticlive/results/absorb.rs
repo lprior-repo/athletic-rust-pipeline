@@ -1,9 +1,3 @@
-//! The document-level folds: one capture becomes the events, teams, athletes and performances it
-//! publishes.
-//!
-//! Three folds, one per route in [`super::super::wire`]. Only an event document mints an event: the
-//! summary exists to say which event ids a meet lists, and a live-standings payload names its race
-//! through the run id an event document published, so it folds only into an event this run has read.
 
 use super::super::docs::{parse_event_document, parse_event_summary, EventDoc};
 use super::super::map::{Accumulator, ResultStats, RowContext, Writer, SOURCE_ID};
@@ -19,46 +13,34 @@ use census_domain::model::{
 use census_domain::school_index::SchoolIndex;
 use std::collections::HashMap;
 
-/// One event a document minted in this run, keyed by the run key its standings are published under.
 #[derive(Debug, Clone)]
 pub(super) struct PublishedEvent {
-    /// The published event id, which is the `ind_res_list/_doc/<id>` path segment.
     pub capture_id: u64,
     pub id: EventId,
     pub kind: EventKind,
     pub gender: Gender,
     pub round: Option<String>,
-    /// The run key the event published (`rui`), when it published one.
     pub run_id: Option<String>,
-    /// `athleticlive:<event id>`: the prefix of every row key this event mints.
     pub event_key: String,
 }
 
-/// The key one event's rows are minted under, shared by both routes that can publish its race.
 fn event_key(capture_id: u64) -> String {
     format!("athleticlive:{capture_id}")
 }
 
-/// What one fold needs beyond its own payload: the meet it belongs to and the walk's own state.
 pub(super) struct Fold<'a> {
     pub meet: &'a CanonicalMeet,
     pub target: &'a MeetTarget,
     pub observed_on: &'a str,
-    /// The school year the meet's date sits in, which every published grade is read against.
     pub school_year: SchoolYear,
     pub index: &'a SchoolIndex,
     pub resolved: &'a mut HashMap<String, Option<SchoolId>>,
     pub stats: &'a mut ResultStats,
     pub accumulator: &'a mut Accumulator,
-    /// Captures that could not be folded, in the order they were read.
     pub failures: &'a mut Vec<String>,
 }
 
 impl Fold<'_> {
-    /// The row context and the row writer for one document's rows, split in one step.
-    ///
-    /// Both borrow this fold, so they are handed out together: the context reads the meet, the
-    /// tenant and the jurisdiction, the writer owns the memo, the counters and the entities.
     fn split_for<'b>(
         &'b mut self,
         source: &'b SourceRef,
@@ -91,10 +73,6 @@ impl Fold<'_> {
     }
 }
 
-/// Fold one event document: mint its event, then map every row it publishes.
-///
-/// Returns the event it minted, or `None` when the capture names another meet, carries no event id,
-/// or does not decode; the refusal is recorded on `failures`.
 pub(super) fn absorb_document(
     fold: &mut Fold<'_>,
     path: &str,
@@ -134,7 +112,6 @@ pub(super) fn absorb_document(
     Some(event)
 }
 
-/// Mint one document's event and record the published label it was mapped from.
 fn mint_event(
     fold: &mut Fold<'_>,
     doc: &EventDoc,
@@ -191,7 +168,6 @@ fn mint_event(
     }
 }
 
-/// Map every row one document publishes through the row mapper.
 fn fold_rows(
     fold: &mut Fold<'_>,
     doc: &EventDoc,
@@ -213,12 +189,6 @@ fn fold_rows(
     }
 }
 
-/// Fold one meet's event summary: count the events it lists and return the individual ones a
-/// document is expected for.
-///
-/// Nothing is minted from the listing: the summary states an event's name and run key, not its
-/// result rows, so the document that carries them is what mints the event. `None` means the payload
-/// did not decode, so the capture is not journaled and the next run reads it again.
 pub(super) fn absorb_summary(fold: &mut Fold<'_>, path: &str, body: &str) -> Option<Vec<u64>> {
     let url = event_summary_url(fold.target.athleticlive_meet_id);
     let events = match parse_event_summary(&url, body) {
@@ -245,10 +215,6 @@ pub(super) fn absorb_summary(fold: &mut Fold<'_>, path: &str, body: &str) -> Opt
     Some(fetchable)
 }
 
-/// Fold one live-standings capture into the event its run key names.
-///
-/// Returns the rows read, or `None` when the run key is not a usable path segment or the payload
-/// does not decode; either refusal is recorded on `failures`.
 pub(super) fn absorb_standings(
     fold: &mut Fold<'_>,
     run_id: &str,

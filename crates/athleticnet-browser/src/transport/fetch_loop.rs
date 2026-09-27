@@ -1,4 +1,3 @@
-//! CDP event loop that drives one in-page fetch to completion.
 
 use std::time::Duration;
 
@@ -18,7 +17,6 @@ use crate::protocol::MAX_SOURCE_RESPONSE_BYTES;
 use crate::request::RequestSpec;
 use crate::BrowserError;
 
-/// Event streams subscribed for one browser fetch.
 pub(super) struct FetchListeners {
     requests: EventStream<EventRequestWillBeSent>,
     responses: EventStream<EventResponseReceived>,
@@ -27,9 +25,6 @@ pub(super) struct FetchListeners {
     extra: EventStream<EventResponseReceivedExtraInfo>,
 }
 
-/// Subscribe to every stream the capture loop reads.
-///
-/// Extra-info is subscribed BEFORE dispatch — it is needed for redirect detection.
 pub(super) async fn subscribe_fetch(page: &Page) -> Result<FetchListeners, BrowserError> {
     Ok(FetchListeners {
         requests: subscribe(page).await?,
@@ -40,7 +35,6 @@ pub(super) async fn subscribe_fetch(page: &Page) -> Result<FetchListeners, Brows
     })
 }
 
-/// Build the CDP call that runs the in-page fetch helper.
 fn fetch_call(
     request: &RequestSpec,
     request_body: Option<&str>,
@@ -64,8 +58,6 @@ fn fetch_call(
         .map_err(|_| BrowserError::Protocol)
 }
 
-/// Dispatch the fetch and fold CDP events until the body, the response and the
-/// evaluation result are all in, or the absolute deadline expires.
 pub(super) async fn drive_capture(
     capture: &mut FetchCapture<'_>,
     listeners: FetchListeners,

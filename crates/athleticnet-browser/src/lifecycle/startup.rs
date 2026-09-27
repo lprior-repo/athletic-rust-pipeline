@@ -1,10 +1,3 @@
-//! Constructing a live manager.
-//!
-//! Both constructors build the same shape — a command channel, the handler-event channel with its
-//! own pump task, the shared status/cooldown/gate handles, the actor's bootstrap navigation, and
-//! the actor task — and differ only in how the browser is obtained: `launch` spawns the configured
-//! executable, `connect` attaches to an existing CDP endpoint. A failed bootstrap drains the
-//! partially built manager through `shutdown` instead of dropping a live actor.
 
 use super::super::{
     actor::{Actor, ActorHandles, BrowserConnection, Command, HandlerEvent},
@@ -49,11 +42,6 @@ impl BrowserManager {
     }
 }
 
-/// Build the manager around a live browser and bootstrap it.
-///
-/// Both constructors converge here: the command channel, the handler pump, the shared
-/// status/cooldown/gate handles, the actor and its bootstrap are identical, and `launched` is the
-/// only difference that outlives construction.
 async fn finish_startup(
     browser: Browser,
     handler: Handler,
@@ -98,11 +86,6 @@ async fn finish_startup(
     finish_bootstrap(manager).await
 }
 
-/// Bootstrap a freshly built manager and drain it when the bootstrap fails.
-///
-/// A failed bootstrap MUST drain the partially built manager through `shutdown` instead of dropping
-/// a live actor: dropping aborts the actor task mid-step, while the drain revokes the gate, closes
-/// the browser and counts what it took down. The bootstrap error is the one returned either way.
 async fn finish_bootstrap(manager: BrowserManager) -> anyhow::Result<BrowserManager> {
     let (reply, result) = oneshot::channel();
     manager
@@ -126,10 +109,6 @@ async fn finish_bootstrap(manager: BrowserManager) -> anyhow::Result<BrowserMana
     Ok(manager)
 }
 
-/// Spawn the CDP handler pump with its own span.
-///
-/// `tokio::spawn` does not carry the caller's span into the task, so the pump is instrumented
-/// explicitly; the actor task is instrumented by its own `#[instrument]`.
 fn spawn_handler(
     handler: Handler,
     events: mpsc::Sender<HandlerEvent>,

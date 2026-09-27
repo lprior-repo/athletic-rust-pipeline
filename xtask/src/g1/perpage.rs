@@ -1,9 +1,7 @@
-//! The per-page table: every retained body on one line.
 
 use crate::digests::digest_head;
 use crate::pages::PageAnalysis;
 
-/// The queries the page was fetched for, sorted, joined, and cut at 60 bytes.
 fn queries_field(queries: &[String]) -> String {
     let mut queries_sorted: Vec<&str> = queries.iter().map(|s| &**s).collect();
     queries_sorted.sort();
@@ -14,7 +12,6 @@ fn queries_field(queries: &[String]) -> String {
         .to_string()
 }
 
-/// One page's line: digest, filter, count, rows, href classes, issues and queries.
 fn print_page(page: &PageAnalysis) {
     let digest = &page.digest;
     let sport_fmt = format!("{:3}", page.sport.as_deref().unwrap_or("None"));
@@ -60,7 +57,6 @@ fn print_page(page: &PageAnalysis) {
     );
 }
 
-/// The header plus one line per retained body, in directory order.
 pub(crate) fn print(per_page: &[PageAnalysis]) {
     println!(
         "per-page (digest, filter, count, rows, tf, xc, noncanon, predicted issues, candidates, parser candidates/issues):"

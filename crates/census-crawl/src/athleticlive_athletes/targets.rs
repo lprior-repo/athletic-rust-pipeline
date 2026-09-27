@@ -1,10 +1,8 @@
-//! Meet selection: which timer-published meets this adapter queries, keyed by timer meet id.
 
 use census_domain::model::{CanonicalMeet, SourceNamespace};
 use census_domain::UsJurisdiction;
 use std::collections::{BTreeSet, HashMap};
 
-/// A canonical meet plus the timer identity this adapter queries it by.
 #[derive(Debug, Clone)]
 pub struct MeetTarget {
     pub athleticlive_meet_id: u64,
@@ -15,25 +13,13 @@ pub struct MeetTarget {
     pub date: String,
 }
 
-/// Meets the adapter will query, plus what it refused to query.
 #[derive(Debug, Clone, Default)]
 pub struct MeetSelection {
     pub targets: Vec<MeetTarget>,
-    /// Timer-published meets dropped because their published date cannot be trusted.
-    ///
-    /// Tenant meet indexes carry placeholder rows (`date` in the 2220s). An athlete's graduating
-    /// class is derived from the meet date, so an implausible date would mint an implausible
-    /// class; those meets are skipped rather than guessed at.
     pub skipped_implausible: usize,
-    /// Meets dropped because no evidence placed them in a jurisdiction.
-    ///
-    /// A meet row carries its jurisdiction into every school it mints, so a meet whose venue was
-    /// never placed cannot produce a school without inventing one; the count is reported instead of
-    /// the rows being filed under a state nobody observed.
     pub skipped_unplaced: usize,
 }
 
-/// The window a meet date must fall in to be usable. Same convention as the meet-index harvest.
 const MEET_YEAR_MIN: i16 = 2015;
 const MEET_YEAR_MAX: i16 = 2030;
 
@@ -44,11 +30,6 @@ fn plausible_meet_year(date: &str) -> bool {
     }
 }
 
-/// Select meets that a timer published, keyed by their AthleticLIVE meet id.
-///
-/// Meets are deduplicated by canonical id: several tenants publishing one meet collapse to the first
-/// target, because the athlete rows are keyed by the AthleticLIVE meet id and duplicate ids would
-/// multiply requests.
 pub fn meet_targets(meets: &[CanonicalMeet], states: &[UsJurisdiction]) -> MeetSelection {
     let wanted: BTreeSet<UsJurisdiction> = states.iter().copied().collect();
     let mut seen: HashMap<u64, MeetTarget> = HashMap::new();

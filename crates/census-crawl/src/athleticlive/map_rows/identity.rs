@@ -1,10 +1,3 @@
-//! School resolution and identity minting for one mapped row.
-//!
-//! Part of [`super`]'s row mapping: `resolve_school` decides which consolidated school a published
-//! label names, never minting one, and `map_identity` turns a row's facts into the athlete and team
-//! the rest of the census keys on. `team_for` mints one team per `(school, sport, gender, school
-//! year)`, the same key the roster, association and result-file adapters use.
-
 use std::collections::BTreeMap;
 
 use super::super::map::{ResultStats, RowContext, Writer};
@@ -14,12 +7,6 @@ use census_domain::model::{
     SourceIdentity, SourceNamespace,
 };
 
-/// Resolve a row's published school label inside the meet's jurisdiction, memoising hits and misses
-/// alike: a label is resolved once per run, not once per row.
-///
-/// No school is ever minted here. A label that names no consolidated school (a club team,
-/// `Unattached`) is counted by label and skipped, because the consolidated index is where a school's
-/// existence is decided.
 pub(super) fn resolve_school(
     writer: &mut Writer<'_>,
     context: &RowContext<'_>,
@@ -46,7 +33,6 @@ pub(super) fn resolve_school(
     resolved.clone()
 }
 
-/// Mint or reuse one row's athlete and team, recording every identity channel it published.
 pub(super) fn map_identity(
     writer: &mut Writer<'_>,
     context: &RowContext<'_>,
@@ -63,12 +49,10 @@ pub(super) fn map_identity(
         note_team_ids(entry, context, identity, writer.stats);
         entry.id.clone()
     };
-    let athlete = record_athlete(writer, context, school_id, identity, gender, row_index);
-    Mapped { athlete, team }
+    let (athlete, source) = record_athlete(writer, context, school_id, identity, gender, row_index);
+    Mapped { athlete, team, source_athlete: source }
 }
 
-/// Record one row's athlete: the graded identity, the published grade as evidence, and the
-/// Athletic.net id channels the row carries.
 fn record_athlete(
     writer: &mut Writer<'_>,
     context: &RowContext<'_>,
@@ -76,26 +60,16 @@ fn record_athlete(
     identity: &RowIdentity<'_>,
     gender: Gender,
     row_index: usize,
-) -> AthleteId {
+) -> (AthleteId, SourceIdentity) {
     let grad_year = GradYear::of(identity.grade, context.school_year);
-    let source = identity.an_athlete_id.map_or_else(
-        || {
-            SourceIdentity::new(
-                SourceNamespace::TimerAthlete {
-                    provider: context.provider.to_string(),
-                },
-                format!("{}:row:{row_index}", context.event_key),
-            )
-        },
-        |id| {
-            SourceIdentity::new(
-                SourceNamespace::LegacyAthleticNet {
-                    kind: "athlete".to_string(),
-                },
-                id.to_string(),
-            )
-        },
+    let mut source = identity.an_athlete_id.map_or_else(
+        || SourceIdentity::new(
+            SourceNamespace::Other("athleticlive_result_row".to_owned()),
+            format!("{}:{}:row:{row_index}", context.provider, context.event_key),
+        ),
+        |id| SourceIdentity::new(SourceNamespace::athletic_net("athlete"), id.to_string()),
     );
+    source.url.clone_from(&context.source.url);
     let athlete_id = CanonicalAthlete::mint(school_id, identity.name, grad_year, gender, &source);
     let entry = writer
         .accumulator
@@ -103,13 +77,16 @@ fn record_athlete(
         .entry(athlete_id.as_str().to_string())
         .or_insert_with(|| {
             let mut athlete =
-                CanonicalAthlete::new(school_id, identity.name, grad_year, gender, source);
+                CanonicalAthlete::new(school_id, identity.name, grad_year, gender, source.clone());
             athlete.sports.push(context.sport);
             athlete.evidence.push(context.evidence.clone());
             athlete
         });
     if !entry.sports.contains(&context.sport) {
         entry.sports.push(context.sport);
+    }
+    if !entry.evidence.contains(context.evidence) {
+        entry.evidence.push(context.evidence.clone());
     }
     let observation = ObservedGrade {
         grade: identity.grade,
@@ -121,25 +98,15 @@ fn record_athlete(
     }
     if let Some(an_athlete_id) = identity.an_athlete_id {
         writer.stats.rows_with_athlete_id = writer.stats.rows_with_athlete_id.saturating_add(1);
-        let row = SourceIdentity::new(
-            SourceNamespace::LegacyAthleticNet {
-                kind: "athlete".to_string(),
-            },
-            an_athlete_id.to_string(),
-        );
-        if !entry.source_identities.contains(&row) {
-            entry.source_identities.push(row);
-        }
         let profile_url =
             format!("https://www.athletic.net/athlete/{an_athlete_id}/track-and-field");
         if !entry.public_profile_urls.contains(&profile_url) {
             entry.public_profile_urls.push(profile_url);
         }
     }
-    athlete_id
+    (athlete_id, source)
 }
 
-/// Record the timer and Athletic.net team ids one row publishes on its team.
 fn note_team_ids(
     team: &mut CanonicalTeam,
     context: &RowContext<'_>,
@@ -161,9 +128,7 @@ fn note_team_ids(
     if let Some(an_team_id) = identity.an_team_id {
         stats.rows_with_an_team_id = stats.rows_with_an_team_id.saturating_add(1);
         let row = SourceIdentity::new(
-            SourceNamespace::LegacyAthleticNet {
-                kind: "team".to_string(),
-            },
+            SourceNamespace::athletic_net("team"),
             an_team_id.to_string(),
         );
         if !team.source_identities.contains(&row) {
@@ -171,8 +136,6 @@ fn note_team_ids(
         }
     }
 }
-/// The team a row belongs to: one per (school, sport, gender, school year), minted on the same key
-/// the roster, association and result-file adapters use, so one team lands on one canonical team.
 fn team_for<'a>(
     teams: &'a mut BTreeMap<String, CanonicalTeam>,
     school: &SchoolId,
@@ -197,3 +160,7 @@ fn team_for<'a>(
         retained_conflicts: Vec::new(),
     })
 }
+
+#[cfg(test)]
+#[path = "identity_tests.rs"]
+mod tests;

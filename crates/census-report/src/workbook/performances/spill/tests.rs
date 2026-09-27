@@ -1,5 +1,3 @@
-//! The spill's own contract: the directory it makes under the temp dir is named for the process and
-//! does not outlive the rows.
 
 use super::*;
 

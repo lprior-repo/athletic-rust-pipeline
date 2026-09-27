@@ -1,4 +1,3 @@
-//! The fetch loop: cache lookup, robots check, per-host pacing, timeout, retry and dispatch.
 
 use super::cache::{read_cache, CacheMeta};
 use super::client::HostState;
@@ -19,15 +18,12 @@ mod cache_writer;
 
 use attempt::FetchPlan;
 
-/// Which budget map a request is charged to.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum ScopeKind {
     Family,
     Host,
 }
 
-/// The budget a request is charged to: one shared budget for a whole source family (§10), or the
-/// host's own when the run configured no family for it.
 #[derive(Clone, PartialEq, Eq)]
 enum PaceScope {
     Family(String),
@@ -50,8 +46,6 @@ impl PaceScope {
 }
 
 impl Fetcher {
-    /// The budget one request is charged to: a shared source family when the run configured one for
-    /// this host (§10), otherwise the host's own.
     fn pace_scope(&self, host: &str) -> PaceScope {
         match self.family_of(host) {
             Some(family) => PaceScope::Family(family),
@@ -59,8 +53,6 @@ impl Fetcher {
         }
     }
 
-    /// The spacing this request must observe: the family's when it is charged to one, else the
-    /// host's own entry, else the run's default.
     fn configured_delay(&self, scope: &PaceScope) -> Duration {
         match scope {
             PaceScope::Family(family) => self.family_delay(family).unwrap_or(self.default_delay),
@@ -72,7 +64,6 @@ impl Fetcher {
         }
     }
 
-    /// Serialize per budget and enforce the configured (or robots-requested) spacing.
     async fn host_gate(&self, host: &str, robots_delay: Option<Duration>) -> Arc<Mutex<()>> {
         let scope = self.pace_scope(host);
         let configured = self.configured_delay(&scope);
@@ -128,7 +119,6 @@ impl Fetcher {
             tokio::time::sleep(wait).await;
         }
     }
-    /// Core fetch logic: serve from cache, take the host's turn, then attempt once inside the timeout.
     pub(super) async fn fetch(
         &self,
         method: &str,
@@ -178,7 +168,6 @@ impl Fetcher {
         outcome
     }
 
-    /// Serve the request from the cache when a verified body is already on disk.
     async fn cached_outcome(
         &self,
         method: &str,
@@ -204,7 +193,7 @@ impl Fetcher {
             url: url.to_string(),
             method: method.to_string(),
             status: meta.status,
-            sha256: meta.key_prefix.clone(),
+            content_digest: meta.content_digest.clone(),
             bytes: meta.bytes,
             fetched_at: meta.fetched_at.clone(),
             from_cache: true,
@@ -213,7 +202,6 @@ impl Fetcher {
         }))
     }
 
-    /// Fetch the origin's robots rules and apply them to one path.
     async fn robots_gate(
         &self,
         url: &str,
@@ -253,7 +241,6 @@ impl Fetcher {
     }
 }
 
-/// Split a URL into its host, its origin and the path-and-query robots rules match.
 fn request_target(url: &str) -> Result<(String, String, String), FetchError> {
     let parsed = url::Url::parse(url).map_err(|source| FetchError::InvalidUrl {
         url: url.to_string(),

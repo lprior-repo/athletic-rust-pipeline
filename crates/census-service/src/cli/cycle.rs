@@ -1,4 +1,3 @@
-//! The `run` subcommand: the whole cycle in one command.
 
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
@@ -19,55 +18,44 @@ use publish::{
 
 #[derive(Args, Debug)]
 pub(super) struct RunArgs {
-    /// Athletic.net athlete registry: one `athlete_id` or `athlete_id,ST` per line. Omitted, the
-    /// cycle publishes whatever the store already holds.
+    #[arg(help = "Athletic.net athlete registry: one `athlete_id` or `athlete_id,ST` per line. Omitted, the cycle publishes whatever the store already holds")]
     #[arg(long)]
     input: Option<String>,
-    /// Jurisdictions for the registry, used only for lines that name no state (so exactly one).
+    #[arg(help = "Jurisdictions for the registry, used only for lines that name no state (so exactly one)")]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
-    /// Cap the athletes read from the registry, and the rows each later stage writes.
+    #[arg(help = "Cap the athletes read from the registry, and the rows each later stage writes")]
     #[arg(long)]
     limit: Option<usize>,
-    /// Graduation year the best-mark reduction and the workbook are built for (2027 = class of 2027).
+    #[arg(help = "Graduation year the best-mark reduction and the workbook are built for (2027 = class of 2027)")]
     #[arg(long, default_value_t = 2027)]
     grad_year: u16,
-    /// Restrict the best-mark reduction to the core scope, which excludes the Athletic.net source by
-    /// design. Every approved source is what a plain run reduces.
+    #[arg(help = "Restrict the best-mark reduction to the core scope, which excludes the Athletic.net source by design. Every approved source is what a plain run reduces")]
     #[arg(long)]
     core: bool,
-    /// Ignore cached HTTP bodies and re-fetch.
+    #[arg(help = "Ignore cached HTTP bodies and re-fetch")]
     #[arg(long)]
     refresh: bool,
-    /// ISO date stamped into evidence (defaults to today).
+    #[arg(help = "ISO date stamped into evidence (defaults to today)")]
     #[arg(long)]
     observed_on: Option<String>,
-    /// Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the
-    /// whole-meet route (two requests per meet) instead of the per-athlete registry route, and
-    /// needs no `--input`.
+    #[arg(help = "Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the whole-meet route (two requests per meet) instead of the per-athlete registry route, and needs no `--input`")]
     #[arg(long, value_delimiter = ',')]
     meets: Vec<i64>,
-    /// Spend the third request per meet for the per-event type and hurdle metadata.
+    #[arg(help = "Spend the third request per meet for the per-event type and hurdle metadata")]
     #[arg(long)]
     event_metadata: bool,
-    /// Cap the number of meets processed on the whole-meet route.
+    #[arg(help = "Cap the number of meets processed on the whole-meet route")]
     #[arg(long)]
     meet_limit: Option<usize>,
-    /// Workbook path (defaults to the store's own `out/` path).
+    #[arg(help = "Workbook path (defaults to the store's own `out/` path)")]
     #[arg(long)]
     out: Option<PathBuf>,
-    /// Ingress origin of the local Restate server. The local census deployment when omitted.
+    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
 }
 
-/// The whole cycle in one command: gather (when a registry is given), consolidate, publish both
-/// census scopes, reduce best marks, and write the workbook.
-///
-/// Each stage is the same code path its own subcommand uses, and every stage is resumable, so a run
-/// that fails half way is continued by re-running it rather than restarted. `--store` runs every
-/// stage in-process; without it the publishing stages are submitted to the running service, which is
-/// the only way they can run while `census-serve` holds the store.
 pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
@@ -79,7 +67,6 @@ pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
     }
 }
 
-/// The offline cycle: every stage against the store this command opened.
 async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
     let observed_on = args
         .observed_on
@@ -121,11 +108,6 @@ async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
     publish_bests_and_workbook(store, args, scope, grad_year)
 }
 
-/// The live cycle: every stage that has a service handler submitted to the running service.
-///
-/// Two stages cannot run this way, and are named rather than faked: the gather stage writes the
-/// store's own cache and journals, and the index pass has no handler on the `Census` service. Both
-/// are offline work that requires `--store` and a stopped `census-serve`.
 async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
     if args.input.is_some() || !args.meets.is_empty() {
         anyhow::bail!(
@@ -153,8 +135,6 @@ async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
     publish_bests_and_workbook_live(origin, args, scope, grad_year).await
 }
 
-/// Gather the Athletic.net rows the args name - the registry `--input`, whole meets `--meets`, or
-/// both - and print the stage's line.
 async fn gather_athleticnet(
     cli: &Cli,
     store: &Store,

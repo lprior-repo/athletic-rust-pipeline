@@ -1,34 +1,3 @@
-//! `JurisdictionCensus`: one jurisdiction's census, owned by one durable object key.
-//!
-//! The root workflow fans out one of these per jurisdiction (objective §7). The object key is the
-//! jurisdiction identity from [`WorkflowIdentity::jurisdiction`] — `jurisdiction:<state>:<season>
-//! :<revision>` — so Restate serializes invocations per jurisdiction. Two operators starting the
-//! same jurisdiction's census, or a scheduler retrying one, therefore run stages one at a time
-//! instead of racing each other into the same store rows.
-//!
-//! # Stages and resume
-//!
-//! Stages run in dependency order and each one is recorded in the object's single durable state
-//! value the moment it completes: `teams` (the jurisdiction's team index), `rosters` (the roster
-//! walk, which is where the cohort counts come from) and `meets`. A re-invocation reads that state
-//! and runs only what it still owes, so a machine that reboots mid-walk resumes at the roster it
-//! had not finished rather than at the first team. The walk itself is additionally journaled per
-//! team, which is why the stage boundary is coarse here: within a stage, the journal is the finer
-//! resume point.
-//!
-//! Snapshots are not merged here. Merging a table reads every observation of it, so a merge per
-//! jurisdiction re-read the whole corpus once per state; the national run merges once, after the
-//! fan-out, and the merge reads what the walk appended.
-//!
-//! # Attempts
-//!
-//! ADR-002 makes Restate the owner of retries: the transport performs one attempt per request, and
-//! an invocation that loses its endpoint is replayed by the node until it completes. The policy
-//! declared on the handler is therefore the only retry budget that exists, and fetches and store
-//! writes alike are retried by it — a lock contention or a compaction is exactly what a replay is
-//! for. When the invocation exhausts three attempts it *aborts* rather than pausing: the parent
-//! national workflow records the jurisdiction as a `NationalFailure` row and continues with the
-//! remaining states, so one dead jurisdiction cannot strand the national census.
 
 use std::sync::Arc;
 
@@ -48,31 +17,13 @@ mod pipeline;
 mod stage_runs;
 mod stages;
 
-/// The shared fetcher beside the normalized authorized-host list it was built with: runs naming
-/// the same hosts share one fetcher's per-host gates, while different host sets rebuild.
 type CachedFetcher = Option<(Vec<String>, Arc<Fetcher>)>;
 
 #[derive(Clone)]
 pub struct JurisdictionCensus {
     store: Arc<Store>,
     clock: Arc<dyn Clock>,
-    /// The browser lane this process acquires browser-transported hosts through, when the deployment
-    /// has one.
-    ///
-    /// It is handed in rather than built here because the ingress origin it talks to is a deployment
-    /// fact. `None` is the ordinary deployment without a lane, and it is not an error: the fetcher
-    /// installs what it was given, and the plan refuses a source that needs a lane by name
-    /// ([`BrowserLaneState`](super::plan::BrowserLaneState)) instead of spending attempts on it.
     lane: Option<BrowserLane>,
-    /// The polite fetcher, built once per process and shared by every jurisdiction.
-    ///
-    /// Shared on purpose: the fetcher owns the per-host gates and the request counters, and those are
-    /// per *origin*, not per workflow. Giving each jurisdiction its own fetcher would multiply the
-    /// traffic one origin sees by the number of jurisdictions running at once, which is precisely the
-    /// admission hole §10 names. Built lazily because it opens the cache and a TLS client, and a
-    /// service construction path that cannot report an error must not hide one. Stored beside the
-    /// normalized authorized-host list it was built with, so runs naming different hosts rebuild
-    /// instead of sharing one fetcher's gates.
     fetcher: Arc<Mutex<CachedFetcher>>,
 }
 
@@ -86,16 +37,6 @@ impl JurisdictionCensus {
         }
     }
 
-    /// Run every stage this invocation still owes, saving durable state as each completes, and
-    /// answer the stage names it ran in order.
-    ///
-    /// Which stages run is decided by durable state, not by the request: a retry after a crash
-    /// resumes at the first stage with no recorded outcome, which is what makes a re-invocation
-    /// finish work instead of repeating it.
-    ///
-    /// The run's source plan is recorded before the first stage. It is not a stage — nothing is
-    /// swept by it — so it never appears in the names answered; what it adds is the record of which
-    /// sources this machine may sweep and which it owes.
     async fn run_owed_stages(
         &self,
         ctx: &ObjectContext<'_>,
@@ -136,26 +77,6 @@ impl JurisdictionCensus {
     }
 }
 
-/// The sources this chain sweeps, by the registry slug each adapter registers under.
-///
-/// The stages below run one source's walks, and a plan that called any other applicable source
-/// sweepable would name work no stage performs: `plan` refuses the rest by name as owed. The slugs
-/// are the registry's spellings — what a plan and a refusal carry — and two tests hold them:
-/// `plan::tests::every_dispatched_slug_is_registered` checks each against the registry, so a rename
-/// cannot silently turn a swept source into a refused one, and
-/// `jurisdiction::tests::the_arms_are_the_dispatched_slugs` checks them against the union of the
-/// stage arm tables, so a slug planned here always has a walk to run it.
-///
-/// The association directory walks carry a whole state's school and coach universe and need no seed
-/// from another source, which is why they run in the first stage rather than after the roster walk.
-/// The meet walks are the ones whose own index *is* the meet list — a per-season result archive and
-/// a published schedule — so they need no seed either. A source that does need one — a school-name
-/// list, a meet id, an athlete profile — stays refused, and each of those stays owed until a stage
-/// can seed it.
-///
-/// The two result sources are the ones this run *does* seed: the results stage reads the meets this
-/// same run enumerated (`source_meets`) and pulls them through the adapter, which is why they are
-/// listed after the index walks that fill that table rather than being refused for needing a seed.
 pub(super) const DISPATCHED: &[&str] = &[
     crate::census::SOURCE,
     "wiaa",
@@ -169,10 +90,6 @@ pub(super) const DISPATCHED: &[&str] = &[
     "athleticnet",
 ];
 
-/// The report one completed run produces.
-///
-/// A stage with no recorded outcome is a bug in the stage sequence, not a source condition: the
-/// stages above fill all four before this runs, so a gap is terminal rather than a partial report.
 fn report(
     request: &JurisdictionRequest,
     identity: &WorkflowIdentity,
@@ -226,8 +143,6 @@ fn report(
     )
 )]
 impl JurisdictionCensus {
-    /// Read the durable state without starting work: an operator resuming a national run asks what a
-    /// jurisdiction already completed before deciding to run it again.
     #[handler]
     async fn state(
         &self,

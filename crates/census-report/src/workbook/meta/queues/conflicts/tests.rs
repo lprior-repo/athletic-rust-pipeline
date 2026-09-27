@@ -1,35 +1,28 @@
-//! The athlete family against the one definition of its key.
-//!
-//! The family retains the rows a key groups, and the key is `identity::athlete_flags::key` — the same
-//! function the identity lane states to a model as `name_school_cohort_agree`. A second rule derived
-//! here instead cannot be caught by either module's own tests: the lane would keep asking about the
-//! groups the queue mints, while the flag that says the rows agree on their key quietly stopped
-//! arriving. So the table below asserts the two agree row by row, case by case: reintroduce a
-//! grouping rule beside the key and the family stops matching the key's own classes.
-
 use super::*;
 
-use census_domain::model::{normalize_name, Gender, GradYear};
+use census_domain::model::{normalize_name, Gender, GradYear, SourceIdentity, SourceNamespace};
 use census_domain::UsJurisdiction;
 
 use census_review::athlete_flags::key;
 
-/// A school the table can name, minted the way the store mints one.
 fn school(name: &str) -> CanonicalSchool {
     CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0
 }
 
-/// One athlete in the table, at one school, in one cohort.
 fn athlete(name: &str, school: &CanonicalSchool, gender: Gender, year: i16) -> CanonicalAthlete {
-    CanonicalAthlete::new(
-        &school.id,
-        name,
-        GradYear::new(year).expect("a year inside the accepted window"),
-        gender,
-    )
+    let grad_year = GradYear::new(year).expect("a year inside the accepted window");
+    let source = SourceIdentity::new(
+        SourceNamespace::Other("fixture".to_string()),
+        format!(
+            "{}:{}:{}:{year}",
+            normalize_name(name),
+            school.id.as_str(),
+            gender.stable_key()
+        ),
+    );
+    CanonicalAthlete::new(&school.id, name, grad_year, gender, source)
 }
 
-/// The cases: what each table of rows is for, and the rows themselves.
 fn cases() -> Vec<(&'static str, Vec<CanonicalAthlete>)> {
     let west = school("Madison West High School");
     let east = school("Madison East High School");
@@ -91,19 +84,25 @@ fn cases() -> Vec<(&'static str, Vec<CanonicalAthlete>)> {
     ]
 }
 
-/// The family the writer publishes for one table of athlete rows.
 fn family_of(rows: &[CanonicalAthlete]) -> Family {
+    let mut index = census_domain::model::AthleteIdentityIndex::default();
+    for row in rows {
+        index.observe(row).unwrap();
+    }
+    let identities = census_domain::model::IdentityProjectionBuilder::new(index, &[], &[])
+        .unwrap().finish().unwrap();
     let store = StoreRows {
         schools: Vec::new(),
         meets: Vec::new(),
         athletes: rows.to_vec(),
+        identities,
+        school_year: census_domain::model::SchoolYear::new(2026).unwrap(),
         coaches: Vec::new(),
         verdicts: Vec::new(),
     };
     athlete_identity(&store, &HashMap::new())
 }
 
-/// The ids the key says are collisions: every member of a class the published cohort holds twice.
 fn retained_by_key(rows: &[CanonicalAthlete]) -> Vec<String> {
     let mut classes: BTreeMap<IdentityKey, Vec<&CanonicalAthlete>> = BTreeMap::new();
     for athlete in class_of_2027(rows) {
@@ -119,7 +118,6 @@ fn retained_by_key(rows: &[CanonicalAthlete]) -> Vec<String> {
     ids
 }
 
-/// The ids the writer retained, read off the family it published.
 fn retained_by_writer(rows: &[CanonicalAthlete]) -> Vec<String> {
     let mut ids: Vec<String> = family_of(rows)
         .rows
@@ -130,7 +128,6 @@ fn retained_by_writer(rows: &[CanonicalAthlete]) -> Vec<String> {
     ids
 }
 
-/// The ids of every row sharing `subject_id`'s key: the class a retained row's detail names.
 fn class_members(rows: &[CanonicalAthlete], subject_id: &str) -> Vec<String> {
     let subject = rows
         .iter()

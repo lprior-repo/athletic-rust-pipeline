@@ -2,7 +2,6 @@ use crate::census::WorkbookCheck;
 
 use super::count;
 
-/// The reconciled values the caller assembled, ready to become a [`WorkbookCheck`].
 pub(super) struct CheckAssembly<'a> {
     pub(super) names: &'a [&'a str],
     pub(super) coverage_unique_count: usize,
@@ -13,7 +12,6 @@ pub(super) struct CheckAssembly<'a> {
     pub(super) discrepancies: Vec<String>,
 }
 
-/// The four independent verdicts the check carries, kept together so the call stays readable.
 pub(super) struct CheckDecisions {
     pub(super) counts_reconciled: bool,
     pub(super) coverage_reconciled: bool,
@@ -21,7 +19,6 @@ pub(super) struct CheckDecisions {
     pub(super) export_verified: bool,
 }
 
-/// Assemble the final [`WorkbookCheck`] from intermediate reconciliation values.
 pub(super) fn build_check(parts: CheckAssembly<'_>) -> WorkbookCheck {
     WorkbookCheck {
         sheets: count(parts.names.len()),

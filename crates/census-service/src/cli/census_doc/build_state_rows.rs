@@ -1,11 +1,6 @@
-//! Build the "By state" table rows.
 
 use serde_json::{Map, Value};
 
-/// Build state rows from the parsed report.
-///
-/// `empty_map` is a zero-length map used as a fallback when a state key
-/// is absent from `by_state`.  It is created once by the caller.
 pub(super) fn build(
     by_state: &Map<String, Value>,
     schools_by_state: &Map<String, Value>,

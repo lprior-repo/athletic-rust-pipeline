@@ -1,16 +1,9 @@
-//! Mapping one schedule row onto the canonical model: the venue cell to a state, and the
-//! published meet name to its competition level.
 
 use census_domain::model::CompetitionLevel;
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
-/// Venue markers that identify one of the three states the provider times in.
-///
-/// Only unambiguous markers are listed: a venue that is not recognised stays unresolved rather than
-/// being attributed to the state the provider happens to be based in, and ambiguous names
-/// ("Augustana College" exists in Illinois and South Dakota) are deliberately absent.
 const VENUE_STATES: [(&str, UsJurisdiction); 34] = [
     ("university of minnesota", UsJurisdiction::Minnesota),
     ("macalester", UsJurisdiction::Minnesota),
@@ -48,7 +41,6 @@ const VENUE_STATES: [(&str, UsJurisdiction); 34] = [
     ("whitewater", UsJurisdiction::Wisconsin),
 ];
 
-/// Resolve a venue to a jurisdiction, or `None` when no unambiguous marker matches.
 pub fn venue_state(location: &str) -> Option<UsJurisdiction> {
     let location = location.to_ascii_lowercase();
     VENUE_STATES
@@ -57,24 +49,16 @@ pub fn venue_state(location: &str) -> Option<UsJurisdiction> {
         .map(|(_, state)| *state)
 }
 
-/// The states this provider operates in. It is asked only about school-shaped venues, and only
-/// inside its own region: seeking a venue name nationally turns "Austin HS" into a three-way tie
-/// with Indiana and Michigan, while the provider's Austin is the Minnesota one. A name that still
-/// answers in two region states is left unresolved.
 const REGION_STATES: [UsJurisdiction; 3] = [
     UsJurisdiction::Minnesota,
     UsJurisdiction::Iowa,
     UsJurisdiction::Wisconsin,
 ];
 
-/// How one schedule row's venue became a state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VenueResolution {
-    /// A recurring site the provider publishes ([`venue_state`]).
     Site(UsJurisdiction),
-    /// A venue that names a school, resolved through the consolidated school snapshot.
     School(UsJurisdiction),
-    /// Answers in more than one state, or in none: never guessed.
     Unknown,
 }
 
@@ -87,12 +71,6 @@ impl VenueResolution {
     }
 }
 
-/// The readings of a venue cell worth asking the school snapshot for.
-///
-/// Always the cell itself, plus - when it ends in a school suffix - the spelling with that suffix
-/// written out (`"Albany HS"` -> `"Albany High School"`). The shared resolver needs at least two
-/// tokens to tell "Albany" from the next Albany, so a truncated `"Albany"` would never match; the
-/// expanded spelling is what a canonical school name actually looks like.
 pub fn venue_candidates(location: &str) -> Vec<String> {
     let trimmed = location.trim();
     let mut candidates = vec![trimmed.to_string()];
@@ -119,10 +97,6 @@ pub fn venue_candidates(location: &str) -> Vec<String> {
     candidates
 }
 
-/// Resolve a venue cell to a state: the venue table first, the school snapshot second.
-///
-/// Only a single answering state is accepted, and answers are cached per venue string because a
-/// schedule repeats its sites.
 pub fn resolve_venue(
     index: &SchoolIndex,
     cache: &mut HashMap<String, VenueResolution>,
@@ -155,7 +129,6 @@ pub fn resolve_venue(
     resolution
 }
 
-/// Competition level from the meet name the provider publishes.
 pub fn level_of(name: &str) -> CompetitionLevel {
     let name = name.to_ascii_lowercase();
     let has = |needle: &str| name.contains(needle);

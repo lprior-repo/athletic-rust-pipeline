@@ -1,19 +1,3 @@
-//! Store throughput harness: append, merge-scan, and consolidate on the Fjall substrate.
-//!
-//! ```text
-//! cargo run --release --example bench_store -- --rows 200000 --batch 1000 --scan
-//! ```
-//!
-//! **Bound.** The harness appends `--rows` observations twice — once one at a time, once in
-//! `--batch`-sized batches — so the dataset is exactly `2 * --rows` observations of the `schools`
-//! table and `--rows` distinct schools, whatever the flags say. Nothing else caps the store, so a
-//! large `--rows` is a deliberate operator choice: a single append pays one `fdatasync`
-//! (`PersistMode::SyncData`) per call, which is the honest cost of the single-append phase.
-//!
-//! **Output.** `metric=<name> items=<n> unit=<unit>` lines, `metric=<name> seconds=<s>` /
-//! `metric=<name> rate=<n> unit=<unit>/s` lines for each phase, and one `json={...}` summary line.
-//! Every phase asserts the row counts it produced before reporting a rate, so a harness run can
-//! never silently measure a store that lost rows.
 
 use anyhow::{Context, Result};
 use census_domain::model::{normalize_name, CanonicalSchool, Evidence, SourceRef};
@@ -27,11 +11,9 @@ use tempfile::TempDir;
 
 const DEFAULT_ROWS: usize = 200_000;
 const DEFAULT_BATCH: usize = 1_000;
-/// Evidence source id for every synthetic row; a core adapter id so `Scope::Core` keeps the rows.
 const SOURCE_ID: &str = "bench_store";
 const OBSERVED_ON_SINGLE: &str = "2026-05-01";
 const OBSERVED_ON_BATCH: &str = "2026-05-02";
-/// The only table this harness writes.
 const TABLE: Table = Table::Schools;
 
 #[derive(Debug, Parser)]
@@ -40,18 +22,17 @@ const TABLE: Table = Table::Schools;
     about = "Fjall store throughput harness: single append, batched append, scan, consolidate"
 )]
 struct Options {
-    /// Observations per append phase; the dataset is `2 * rows` observations.
+    #[arg(help = "Observations per append phase; the dataset is `2 * rows` observations")]
     #[arg(long, default_value_t = DEFAULT_ROWS)]
     rows: usize,
-    /// Records per `append_many` call in the batched phase.
+    #[arg(help = "Records per `append_many` call in the batched phase")]
     #[arg(long, default_value_t = DEFAULT_BATCH)]
     batch: usize,
-    /// Run the scan and consolidate phases (both read every observation).
+    #[arg(help = "Run the scan and consolidate phases (both read every observation)")]
     #[arg(long, default_value_t = false)]
     scan: bool,
 }
 
-/// One measured phase: how many items moved, how long it took, and the resulting rate.
 #[derive(Debug, Clone, Copy, Serialize)]
 struct Phase {
     items: usize,
@@ -59,13 +40,11 @@ struct Phase {
     rate_per_second: f64,
 }
 
-/// Everything the append passes produced, so the summary is emitted from one place.
 #[derive(Debug, Clone, Copy)]
 struct Measured {
     single: Phase,
     batched: Phase,
     scanned: Option<(Phase, Phase)>,
-    /// Observations the store must hold once both passes ran (`2 * --rows`).
     observations: usize,
 }
 
@@ -86,8 +65,6 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// One append per row, then one `append_many` per batch, then the optional read phases. Each phase
-/// checks the row counts it produced before the next one starts.
 fn append_phases(store: &Store, dir: &TempDir, options: &Options) -> Result<Measured> {
     let single = append_one_by_one(store, &build_rows(options.rows, OBSERVED_ON_SINGLE))?;
     let observations = u64::try_from(single.items).context("row count does not fit u64")?;
@@ -115,7 +92,6 @@ fn append_phases(store: &Store, dir: &TempDir, options: &Options) -> Result<Meas
     })
 }
 
-/// Store counters, the wall time, and the machine-readable summary line.
 fn emit_summary(
     store: &Store,
     options: &Options,
@@ -152,8 +128,6 @@ fn emit_summary(
     Ok(())
 }
 
-/// `count` schools with distinct deterministic names. `observed_on` differs between the two passes
-/// so a merged row must show two evidence entries to prove both observations survived.
 fn build_rows(count: usize, observed_on: &str) -> Vec<CanonicalSchool> {
     let mut rows = Vec::with_capacity(count);
     for index in 0..count {
@@ -172,7 +146,6 @@ fn build_rows(count: usize, observed_on: &str) -> Vec<CanonicalSchool> {
     rows
 }
 
-/// One `append` per row: the durability floor of the substrate.
 fn append_one_by_one(store: &Store, rows: &[CanonicalSchool]) -> Result<Phase> {
     let started = Instant::now();
     for row in rows {
@@ -186,7 +159,6 @@ fn append_one_by_one(store: &Store, rows: &[CanonicalSchool]) -> Result<Phase> {
     )
 }
 
-/// One `append_many` per `batch` rows; the loop is bounded by `rows / batch + 1`.
 fn append_in_batches(store: &Store, rows: &[CanonicalSchool], batch: usize) -> Result<Phase> {
     let started = Instant::now();
     for chunk in rows.chunks(batch) {
@@ -202,8 +174,6 @@ fn append_in_batches(store: &Store, rows: &[CanonicalSchool], batch: usize) -> R
     )
 }
 
-/// Merge-scan every observation, then write the snapshot export. Both phases read all
-/// `2 * distinct` observations.
 fn scan_and_consolidate(store: &Store, dir: &TempDir, distinct: usize) -> Result<(Phase, Phase)> {
     let observations = distinct
         .checked_mul(2)
@@ -245,7 +215,6 @@ fn scan_and_consolidate(store: &Store, dir: &TempDir, distinct: usize) -> Result
     Ok((scan, consolidate))
 }
 
-/// The store's own count for this table must be the number of observations appended so far.
 fn expect_observations(store: &Store, expected: u64, phase: &str) -> Result<()> {
     let stats = store.stats().context("reading store stats")?;
     let found = stats
@@ -262,7 +231,6 @@ fn expect_observations(store: &Store, expected: u64, phase: &str) -> Result<()> 
     Ok(())
 }
 
-/// Time a phase, print its machine-readable lines, and return the measurement.
 fn measure(name: &str, items: usize, unit: &str, elapsed: Duration) -> Result<Phase> {
     let rate_per_second = per_second(items, elapsed)?;
     let seconds = elapsed.as_secs_f64();
@@ -276,7 +244,6 @@ fn measure(name: &str, items: usize, unit: &str, elapsed: Duration) -> Result<Ph
     })
 }
 
-/// Items per second. Item counts are converted with `try_from` rather than a lossy cast.
 fn per_second(items: usize, elapsed: Duration) -> Result<f64> {
     let items = u32::try_from(items).context("item count does not fit u32")?;
     let seconds = elapsed.as_secs_f64();

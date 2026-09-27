@@ -1,18 +1,8 @@
-//! Halves of pages, rubbish bodies, and what the seam is allowed to do with them.
-//!
-//! The directory walker fetches fragments (`LetterBtn=-1` is a legitimate empty answer) and school
-//! pages that are sometimes a JSON error, sometimes a login redirect, sometimes markup cut off
-//! mid-table. None of those may panic, and none may mint a school: an index row is only published
-//! when the row carries a numeric `orgID`, and a staff row is only published when the page printed
-//! both a role and a name. The same bytes must also always read the same way — the walker's
-//! bookkeeping keys off these reads.
 
 use super::seam_config;
 use census_crawl::wiaa::{parse_directory_letter, parse_enrollment, parse_school_page};
 use proptest::prelude::*;
 
-/// Tokens from the committed captures, in the order a scrambled or half-rendered page might carry
-/// them.
 const TOKENS: [&str; 10] = [
     "<table id=\"tblSchools\"><tbody>",
     "<tr><td>",
@@ -26,8 +16,6 @@ const TOKENS: [&str; 10] = [
     "data-cfemail=\"d3a1b1b2a1b4b6bdb7b6a193b2b1b1bca7a0b5bca1b7fdb8e2e1fda4bafda6a0\"",
 ];
 
-/// Arbitrary markup, plus markup assembled from the seam's own tokens: the shapes a truncated,
-/// scrambled or non-HTML body actually arrives in.
 fn arbitrary_markup() -> impl Strategy<Value = String> {
     prop_oneof![
         prop::collection::vec(any::<char>(), 0..512)
@@ -40,8 +28,6 @@ fn arbitrary_markup() -> impl Strategy<Value = String> {
 proptest! {
     #![proptest_config(seam_config())]
 
-    /// Arbitrary markup reads to entries or to none — never to a panic, never to an index row without
-    /// a numeric id, never to a staff row without a role or a name, and always the same way twice.
     #[test]
     fn arbitrary_markup_reads_to_entries_or_to_none(body in arbitrary_markup()) {
         let entries = parse_directory_letter(&body);

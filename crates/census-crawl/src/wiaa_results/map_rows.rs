@@ -1,5 +1,3 @@
-//! One mapped row: the school label it resolves to, the athlete entries it observes and the
-//! performance entries it mints.
 
 use super::super::Stats;
 use super::{MeetContext, RowWriter};
@@ -13,7 +11,6 @@ use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
-/// Count one result row and write its members, returning the athlete rows it produced.
 pub(super) fn record_row(
     writer: &mut RowWriter<'_>,
     context: &MeetContext<'_>,
@@ -56,7 +53,6 @@ pub(super) fn record_row(
     )
 }
 
-/// Resolve a row's published school label, memoising both hits and misses.
 fn resolve_school(
     row: &ParsedRow,
     index: &SchoolIndex,
@@ -82,7 +78,6 @@ fn resolve_school(
         .clone()
 }
 
-/// Write every member of a row: the athlete observation plus the performance entry.
 fn record_members(
     writer: &mut RowWriter<'_>,
     context: &MeetContext<'_>,
@@ -102,8 +97,7 @@ fn record_members(
         }
         athlete_rows = athlete_rows.saturating_add(1);
         let source_key = performance_key(context, row_index, leg_position);
-        let athlete_id =
-            record_athlete(writer, context, school_id, &member_name, grade, &source_key);
+        let (athlete_id, source_athlete) = record_athlete(writer, context, school_id, &member_name, grade, &source_key);
         let performance_id = CanonicalPerformance::mint(
             &athlete_id,
             &context.meet.id,
@@ -132,14 +126,13 @@ fn record_members(
                 observed_grade: Some(grade),
                 evidence: vec![evidence],
                 source_key,
-                source_athlete: None,
+                source_athlete,
                 retained_conflicts: Vec::new(),
             });
     }
     athlete_rows
 }
 
-/// Record one member's athlete (sports, observed grade, evidence) and return their id.
 fn record_athlete(
     writer: &mut RowWriter<'_>,
     context: &MeetContext<'_>,
@@ -147,7 +140,7 @@ fn record_athlete(
     member_name: &str,
     grade: Grade,
     source_key: &str,
-) -> AthleteId {
+) -> (AthleteId, SourceIdentity) {
     let grad_year = GradYear::of(grade, context.school_year);
     let source = SourceIdentity::new(
         SourceNamespace::Other("wiaa_result_row".to_string()),
@@ -193,10 +186,16 @@ fn record_athlete(
     {
         entry.evidence.push(context.evidence.clone());
     }
-    athlete_id
+    (athlete_id, entry.source.clone())
 }
 
-/// The deterministic per-row performance key: artifact, event, round and row (or relay leg).
+fn round_label(round: &Option<String>) -> &str {
+    match round {
+        Some(label) => label,
+        None => "<none>",
+    }
+}
+
 fn performance_key(
     context: &MeetContext<'_>,
     row_index: usize,
@@ -205,23 +204,22 @@ fn performance_key(
     match leg_position {
         Some(position) => format!(
             "{}:{}:{}:{}:leg{}",
-            context.artifact.stem,
+            context.artifact.url,
             context.event.label,
-            context.event.round.as_deref().unwrap_or("final"),
+            round_label(&context.event.round),
             row_index,
             position
         ),
         None => format!(
             "{}:{}:{}:{}",
-            context.artifact.stem,
+            context.artifact.url,
             context.event.label,
-            context.event.round.as_deref().unwrap_or("final"),
+            round_label(&context.event.round),
             row_index
         ),
     }
 }
 
-/// The performance evidence: the meet's, annotated when the row is a relay leg.
 fn performance_evidence(
     context: &MeetContext<'_>,
     row: &ParsedRow,

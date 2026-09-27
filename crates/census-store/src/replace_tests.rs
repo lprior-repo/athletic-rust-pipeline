@@ -1,15 +1,7 @@
-//! Tests for a batch that derives: several tables' whole content, staged and committed as one.
-//!
-//! A review pass answers a set of cases and must write what it answered and the cases' new state as
-//! one thing. Written as two single-table replacements — each atomic on its own — a crash between
-//! them leaves a verdict standing against a case that still reads as open. These tests hold the batch
-//! to that: both tables reach the database together, a replay of the same operation changes neither,
-//! and a batch that never commits leaves both as they were.
 
 use super::*;
 use serde::{Deserialize, Serialize};
 
-/// A derived table's row, as the store's own staging sees it: an `id`, and something to read back.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Row {
     id: String,
@@ -50,7 +42,6 @@ fn count(store: &Store, table: Table) -> u64 {
         .unwrap()
 }
 
-/// One review pass: the verdicts it minted and the cases it closed, in the caller's commit.
 fn derive<'s>(store: &'s Store, verdicts: &[Row], cases: &[Row]) -> StoreBatch<'s> {
     let mut batch = store.write_batch();
     batch
@@ -175,10 +166,10 @@ fn one_table_cannot_be_appended_and_replaced_in_one_batch() {
     let store = Store::open(dir.path()).unwrap();
     let mut batch = store.write_batch();
     batch
-        .append_many(Table::Schools, &[row("school-1", "appended")])
+        .append_many(Table::ReviewCases, &[row("case-1", "appended")])
         .unwrap();
 
-    let refused = batch.replace_many(Table::Schools, &[row("school-1", "replaced")]);
+    let refused = batch.replace_many(Table::ReviewCases, &[row("case-1", "replaced")]);
     assert!(
         refused.is_err(),
         "an append and a replacement disagree about what the table holds"
@@ -186,7 +177,64 @@ fn one_table_cannot_be_appended_and_replaced_in_one_batch() {
     drop(batch);
 
     assert!(
-        store.scan::<Row>(Table::Schools).unwrap().is_empty(),
+        store.scan::<Row>(Table::ReviewCases).unwrap().is_empty(),
         "and a refused call writes nothing"
     );
+}
+
+const OBSERVATION_LOGS: [Table; 9] = [
+    Table::Schools,
+    Table::Teams,
+    Table::Coaches,
+    Table::Athletes,
+    Table::Meets,
+    Table::Events,
+    Table::Performances,
+    Table::SourceMeets,
+    Table::SourceObservations,
+];
+
+#[test]
+fn observation_history_refuses_replacement_before_and_after_an_append() {
+    let dir = tempfile::tempdir().unwrap();
+    {
+        let store = Store::open(dir.path()).unwrap();
+        for table in OBSERVATION_LOGS {
+            let replacement = [row("row-1", "replacement")];
+            assert!(matches!(
+                store.replace_many(table, &replacement),
+                Err(StoreError::ObservationReplacement { .. })
+            ));
+            assert!(matches!(
+                store.replace_many::<Row>(table, &[]),
+                Err(StoreError::ObservationReplacement { .. })
+            ));
+            assert_eq!(store.walk_table(table).unwrap().rows, 0);
+            store.append(table, &row("row-1", "first")).unwrap();
+            assert!(matches!(
+                store.replace_many(table, &replacement),
+                Err(StoreError::ObservationReplacement { .. })
+            ));
+            let mut batch = store.write_batch();
+            assert!(matches!(
+                batch.replace_many(table, &replacement),
+                Err(StoreError::ObservationReplacement { .. })
+            ));
+            assert!(matches!(
+                batch.replace_many::<Row>(table, &[]),
+                Err(StoreError::ObservationReplacement { .. })
+            ));
+            batch.commit().unwrap();
+            assert_eq!(rows_of(&store, table), vec![row("row-1", "first")]);
+            store.append(table, &row("row-1", "second")).unwrap();
+            assert_eq!(store.walk_table(table).unwrap().rows, 2);
+        }
+        assert!(store.integrity().unwrap().ok);
+    }
+    let reopened = Store::open(dir.path()).unwrap();
+    for table in OBSERVATION_LOGS {
+        assert_eq!(reopened.walk_table(table).unwrap().rows, 2);
+        assert_eq!(rows_of(&reopened, table), vec![row("row-1", "second")]);
+    }
+    assert!(reopened.integrity().unwrap().ok);
 }

@@ -1,9 +1,6 @@
-//! Staff, coach and title parsing: honorific stripping, and the title → role/sport/gender
-//! rules that decide which published titles are coaching roles at all.
 
 use census_domain::model::{CoachRole, Gender, Sport};
 
-/// Strip leading honorifics so "Mr. Barry Mink" and "Barry Mink" mint the same coach identity.
 pub fn strip_honorific(value: &str) -> String {
     let parts: Vec<&str> = value.split_whitespace().collect();
     let stripped = parts
@@ -21,14 +18,6 @@ pub fn strip_honorific(value: &str) -> String {
     }
 }
 
-/// Parse the IHSA `DefaultTitle` into a `(Sport, Gender)` pair.
-///
-/// Returns `None` for non-coaching titles (AD, secretary, trainer, principal, etc.).
-///
-/// # Examples
-/// * `"Boys Cross Country Head Coach"` → `(Some(CrossCountry), Some(Boys))`
-/// * `"Girls Track & Field Head Coach"` → `(Some(OutdoorTrack), Some(Girls))`
-/// * `"Boys Athletic Director"` → `(None, None)`
 pub fn parse_coach_title(title: &str) -> Option<(Sport, Gender)> {
     let lowered = title.to_ascii_lowercase();
     if lowered.trim().is_empty() {
@@ -76,10 +65,6 @@ pub fn parse_coach_title(title: &str) -> Option<(Sport, Gender)> {
     Some((sport, gender))
 }
 
-/// Map a published role label onto our role vocabulary.
-///
-/// Returns `None` for roles that are neither a coaching role nor an athletic-director role
-/// (secretaries, trainers, principals, etc.).
 pub fn parse_role(title: &str) -> Option<CoachRole> {
     let lowered = title.to_ascii_lowercase();
 

@@ -1,21 +1,3 @@
-//! AthleticLIVE meet import (research-artifact adapter).
-//!
-//! Consumes the AthleticLIVE tenant/meet harvest produced by the source-research phase
-//! (`athleticlive-midwest-2026-meets-all.csv`, one row per tenant x meet) and turns it into
-//! canonical meets.
-//!
-//! Why this matters: 84-89% of AthleticLIVE meet documents carry an Athletic.net meet id. That
-//! makes this artifact a *bridge*: it names specific Athletic.net meets (date, venue, id) without
-//! issuing any Athletic.net request, so later targeted acquisition can address one meet directly
-//! instead of enumerating Athletic.net's meet universe.
-//!
-//! This adapter performs no HTTP. `Options::input` MUST point at the CSV; the research corpus is
-//! the source of record and is never edited here.
-//!
-//! # Layout
-//!
-//! `parse` reads the CSV and carries the harvest's vocabulary, `meets` mints the canonical meets,
-//! and this module drives the run and narrates it.
 
 use std::collections::{BTreeSet, HashSet};
 use std::path::PathBuf;
@@ -41,21 +23,17 @@ pub use results::{
 };
 pub use wire::event_doc_url;
 
-/// Adapter options (uniform across provider adapters plus `input`).
 #[derive(Debug, Clone, Default)]
 pub struct Options {
-    /// Path to `athleticlive-midwest-2026-meets-all.csv` (or the `-seeds` variant).
     pub input: Option<String>,
     pub limit: Option<usize>,
     pub refresh: bool,
     pub observed_on: String,
-    /// Restrict to these jurisdictions; empty = every state present in the file.
     pub states: Vec<UsJurisdiction>,
     pub school_names: Vec<String>,
 }
 
 impl Options {
-    /// Options for the research-corpus artifact, stamped with an observation date.
     pub fn for_input(input: impl Into<String>, observed_on: impl Into<String>) -> Self {
         Self {
             input: Some(input.into()),
@@ -65,7 +43,6 @@ impl Options {
     }
 }
 
-/// Import AthleticLIVE meets into the canonical store.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let Some(input) = options.input.as_deref() else {
         return Err(CrawlError::Invariant {
@@ -98,13 +75,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-/// Write the harvest meets that are neither already journaled nor impossibly dated.
-///
-/// Each meet's row and the entry that journals it reach the store in one commit, flushed every
-/// [`FLUSH_UNITS`] meets, so a resume can neither skip a meet whose row is missing nor re-read one
-/// the store already holds.
-///
-/// Returns how many were written and how many were refused for an impossible date.
 fn write_meets(
     ctx: &AdapterContext<'_>,
     meets: Vec<CanonicalMeet>,
@@ -140,7 +110,6 @@ fn write_meets(
     Ok((written, skipped_corrupt))
 }
 
-/// Record what the run read, kept and refused on the supplied report.
 fn note_coverage(
     report: &mut AdapterReport,
     filtered: &[MeetRow],

@@ -1,10 +1,3 @@
-//! Canonical mapping: parsed CIAC directory rows → canonical entities.
-//!
-//! The CIAC source publishes no numeric school id; the only join key is the
-//! normalized school name (a natural key derived from jurisdiction + name).
-//! The source's own school name is recorded as a source identity.
-//!
-//! Nothing here reads the network, the store or a file.
 
 use super::pages::{parse_gender, parse_sport_label};
 use super::{ASSOCIATION, HOST, SOURCE_ID, STATE};
@@ -13,13 +6,11 @@ use census_domain::model::{
     SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 
-/// One parsed school table: a list of (sport_label, coach_name) rows.
 #[derive(Debug, Clone, Default)]
 pub struct SchoolTable {
     pub rows: Vec<(String, String)>,
 }
 
-/// Parsed content from one school's staff table.
 #[derive(Debug, Clone)]
 pub struct SchoolExtract {
     pub school: CanonicalSchool,
@@ -27,9 +18,6 @@ pub struct SchoolExtract {
     pub coaches: Vec<CanonicalCoach>,
 }
 
-/// Build canonical school and coach entities from a parsed school table.
-///
-/// `observed_on` is the date stamped into the evidence row.
 pub fn school_entities(school_name: &str, table: &SchoolTable, observed_on: &str) -> SchoolExtract {
     let normalized = normalize_name(school_name);
     let (mut school, school_id) = CanonicalSchool::new(STATE, school_name, &normalized);
@@ -64,7 +52,6 @@ pub fn school_entities(school_name: &str, table: &SchoolTable, observed_on: &str
     }
 }
 
-/// One head coach from a staff-table row.
 fn sport_coach(
     school_id: &SchoolId,
     sport_label: &str,

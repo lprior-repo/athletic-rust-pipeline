@@ -1,6 +1,3 @@
-//! Fixture tests for the tournament decoders. Every fixture is a genuine response copied byte for
-//! byte from the lane's captures; each constant names the URL, the capture and the measured row
-//! counts the test pins.
 use super::map::school_year_of;
 use super::parse::{
     class_token, date_part, event_date_range, finisher_grade, member_grade, newest_term,
@@ -12,64 +9,36 @@ use census_domain::model::CentiMetres;
 use census_domain::model::CentiSeconds;
 use census_domain::model::{Grade, Mark, SchoolYear};
 
-/// Provenance: `GET https://api.ihsa.org/v1/track-field/meets`, fetched 2026-09-19 23:15.
-/// Capture: `tools/a13-ihsa/p_track-field_meets.json` (1,088 B). Measured: `count: 2`.
 const FIXTURE_MEETS: &str =
     include_str!("../../../tests/fixtures/ihsa_tournament/track_field_meets.json");
 
-/// Provenance: `GET https://api.ihsa.org/v1/track-field/meets/2026/events?gender=Boys`,
-/// fetched 2026-09-19 23:15. Capture: `tools/a13-ihsa/track-field_meets_2026_events_gender_Boys.json`
-/// (200,022 B). Measured: `meetId: 74003`, `count: 97`.
 const FIXTURE_EVENTS: &str =
     include_str!("../../../tests/fixtures/ihsa_tournament/track_field_2026_boys_events.json");
 
-/// Provenance: `GET https://api.ihsa.org/v1/track-field/events/2790204/summary`,
-/// fetched 2026-09-19 23:15. Capture: `tools/a13-ihsa/tf_event_2790204.json` (110,259 B).
-/// Measured: Boys High Jump 1A final, 20 finishers, each with `athlete.athleticNetId`.
 const FIXTURE_HJ: &str =
     include_str!("../../../tests/fixtures/ihsa_tournament/event_2790204_boys_hj_1a_finals.json");
 
-/// Provenance: `GET https://api.ihsa.org/v1/track-field/events/500937/summary`,
-/// fetched 2026-09-19 23:17. Capture: `tools/a13-ihsa/relay_500937.json` (148,085 B).
-/// Measured: Boys 4x800m Relay 1A final, 12 teams, 4 legs each (48 athlete id sets).
 const FIXTURE_RELAY: &str =
     include_str!("../../../tests/fixtures/ihsa_tournament/event_500937_boys_4x800_1a_finals.json");
 
-/// Provenance: `GET https://api.ihsa.org/v1/2025-26/statefinal/cc-qualifiers?tournamentId=688`,
-/// fetched 2026-09-19 23:16. Capture: `tools/a13-ihsa/ccq_2025_26.json` (87,567 B).
-/// Measured: boys 1A - 398 box rows, 30 team qualifiers, 42 individual-qualifier schools.
 const FIXTURE_XC_BOYS_1A: &str =
     include_str!("../../../tests/fixtures/ihsa_tournament/cc_qualifiers_2025-26_688.json");
 
-/// Provenance: `GET .../cc-qualifiers?tournamentId=689`, fetched 2026-09-19 23:20.
-/// Capture: `tools/a13-ihsa/ccq_2025_26_689.json` (87,111 B). Measured: boys 2A, 396 athletes.
 const FIXTURE_XC_BOYS_2A: &str =
     include_str!("../../../tests/fixtures/ihsa_tournament/cc_qualifiers_2025-26_689.json");
 
-/// Provenance: `GET .../cc-qualifiers?tournamentId=690`, fetched 2026-09-19 23:20.
-/// Capture: `tools/a13-ihsa/ccq_2025_26_690.json` (93,690 B). Measured: boys 3A, 420 athletes.
 const FIXTURE_XC_BOYS_3A: &str =
     include_str!("../../../tests/fixtures/ihsa_tournament/cc_qualifiers_2025-26_690.json");
 
-/// Provenance: `GET .../cc-qualifiers?tournamentId=691`, recorded 2026-09-20 09:06.
-/// Capture: `research/midwest/evidence/gaps/38/cc-qualifiers-2025-26-691.json` (79,632 B).
-/// Measured: girls 1A, 357 athletes.
 const FIXTURE_XC_GIRLS_1A: &str =
     include_str!("../../../tests/fixtures/ihsa_tournament/cc_qualifiers_2025-26_691.json");
 
-/// Provenance: `GET .../cc-qualifiers?tournamentId=688` for term 2024-25, fetched 2026-09-19 23:18.
-/// Capture: `tools/a13-ihsa/ccq_2024_25.json` (88 B). Measured: the archive holds an empty envelope
-/// for that tournament id - the term predates the lists, the id itself still answers.
 const FIXTURE_XC_EMPTY: &str =
     include_str!("../../../tests/fixtures/ihsa_tournament/cc_qualifiers_2024-25_688.json");
 
-/// Provenance: `GET .../cc-qualifiers?tournamentId=691` for term 2026-27, fetched 2026-09-19 23:19.
-/// Capture: `tools/a13-ihsa/ccq_2026_27.json` (50 B). Measured: the archive answers an error body.
 const FIXTURE_XC_ERROR: &str =
     include_str!("../../../tests/fixtures/ihsa_tournament/cc_qualifiers_archive_error.json");
 
-/// Provenance: `GET https://api.ihsa.org/v1/terms`, fetched 2026-09-19 23:16.
-/// Capture: `tools/a13-ihsa/terms.json` (131 B). Measured: `currentTerm` 2026-27, newest term 2025-26.
 const FIXTURE_TERMS: &str = include_str!("../../../tests/fixtures/ihsa_tournament/terms.json");
 
 #[test]
@@ -138,7 +107,6 @@ fn events_index_pins_97_event_rows_with_round_and_class_splits() {
     );
 }
 
-/// The published grade distribution of the captured 1A high jump final.
 fn hj_grade_counts(finishers: &[super::wire::FinisherRow]) -> Vec<(u8, usize)> {
     let mut counts: std::collections::BTreeMap<u8, usize> = std::collections::BTreeMap::new();
     for row in finishers {
@@ -454,11 +422,6 @@ fn mark_forms_seen_in_the_corpus_parse_to_canonical_marks() {
     assert_eq!(parse_mark("DNF"), None);
 }
 
-/// Every `mark` string anywhere in a real summary payload is either parsed or one of the alphabetic
-/// no-mark tokens - the parser has no unhandled numeric form in the captured corpus.
-///
-/// `expects_no_mark_token` records what the payload itself publishes: the high jump summary's
-/// `relatedRounds` carry the prelims' `"NH"` rows, while the 4x800m relay summary publishes none.
 fn assert_mark_corpus(name: &str, body: &str, minimum: usize, expects_no_mark_token: bool) {
     fn walk(value: &serde_json::Value, out: &mut Vec<String>) {
         match value {
@@ -540,7 +503,6 @@ fn grade_parser_rejects_what_is_not_a_high_school_grade() {
     assert_eq!(parse_grade(None), None);
 }
 
-/// One summary's published title is used to sanity-check that the two fixtures are different events.
 #[test]
 fn captain_summaries_are_distinct_events() {
     let hj: EventSummary = parse_summary(FIXTURE_HJ).expect("fixture must parse");
@@ -550,9 +512,6 @@ fn captain_summaries_are_distinct_events() {
     assert!(relay.event_name.contains("4x800m Relay"));
 }
 
-/// A published date is placed on the domain's Aug 1 boundary, and a date that names a year no
-/// season may open in is read as the run's own school year (the domain's documented fallback)
-/// rather than panicking or storing 1800.
 #[test]
 fn unplaceable_dates_fall_back_to_the_runs_school_year() {
     let fallback = SchoolYear::new(2025).expect("2025 is a season");

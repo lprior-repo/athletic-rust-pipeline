@@ -1,4 +1,3 @@
-//! The region itself: open the store, bind, own the endpoint task, drain, finalize.
 
 use std::future::Future;
 use std::net::SocketAddr;
@@ -21,16 +20,10 @@ use super::error::BootstrapError;
 use super::options::ServeOptions;
 use super::stop::{stop_watch, StopReason};
 
-/// Run until SIGINT/SIGTERM, then drain and finalize.
 pub async fn serve(options: ServeOptions) -> Result<DrainReport> {
     serve_until(options, std::future::pending::<()>()).await
 }
 
-/// Run until a signal or `shutdown` resolves, then drain and finalize.
-///
-/// The `anyhow::Result` here is the boundary documented at the top of this module: `census-serve`
-/// prints the chain, and the integration test drives this through
-/// `JoinSet<anyhow::Result<DrainReport>>`. One conversion, at the edge; every stage below is typed.
 pub async fn serve_until(
     options: ServeOptions,
     shutdown: impl Future<Output = ()> + Send + 'static,
@@ -40,7 +33,6 @@ pub async fn serve_until(
         .map_err(anyhow::Error::from)
 }
 
-/// The supervisor itself: open, bind, own the region, drain, finalize.
 #[tracing::instrument(skip_all)]
 pub(super) async fn supervise(
     options: ServeOptions,
@@ -88,13 +80,6 @@ pub(super) async fn supervise(
     Ok(report)
 }
 
-/// The browser lane this process acquires browser-transported hosts through, when it serves one.
-///
-/// One process owns the headed profile and it is this one, so the census reaches its own
-/// `BrowserSession` object through the deployment's ingress — the same node every CLI command
-/// addresses. A deployment that serves no lane gets no client, and that is deliberate: a fetcher
-/// holding a client for a lane nobody serves would fail every browser-transported request instead of
-/// refusing that source by name before spending anything on it.
 fn lane_client(options: &ServeOptions) -> Result<Option<BrowserLane>, BootstrapError> {
     if options.lane.is_none() {
         return Ok(None);
@@ -107,15 +92,6 @@ fn lane_client(options: &ServeOptions) -> Result<Option<BrowserLane>, BootstrapE
     Ok(Some(BrowserLane::over(client)))
 }
 
-/// Wait for whatever stops this process first, and record the reason.
-///
-/// The deadline bounds the reap *after* a stop request, never the wait for one: draining before the
-/// watch resolves would abort a healthy endpoint at the deadline and report `ServerExit`, which is
-/// exactly the fault this ordering exists to keep visible.
-///
-/// The endpoint's task ending is a stop request too. Its HTTP server returned — a panic, or an
-/// accept loop that gave up — so nothing is serving the port while the process still holds the
-/// store's exclusive lock. Swallowing that is what let a dead endpoint look like a healthy one.
 async fn await_stop(
     reason: Arc<AtomicU8>,
     over_budget: Arc<tokio::sync::Notify>,
@@ -133,8 +109,6 @@ async fn await_stop(
     }
 }
 
-/// Bind the service listener, refusing anything but a loopback address and reporting the address the
-/// kernel actually bound (a configured port 0 asks it to pick one).
 async fn bind_listener(
     options: &ServeOptions,
 ) -> Result<(tokio::net::TcpListener, SocketAddr), BootstrapError> {
@@ -155,15 +129,6 @@ async fn bind_listener(
     Ok((listener, bound))
 }
 
-/// Spawn the region-owned endpoint task.
-///
-/// Returns the sender that cancels it, and a receiver that fires if the task ends on its own. That
-/// second half is not optional: the cancel signal is the supervisor's, but a returned HTTP server is
-/// the endpoint's own event, and a supervisor that cannot see it cannot report or recover from it.
-///
-/// The cancel signal is the supervisor's, not the stop watch: the supervisor has to observe the stop
-/// request itself to know when the region may be drained, so the watch and the endpoint's cancel are
-/// deliberately two observers of one event.
 fn spawn_endpoint(
     region: &Arc<Spawner>,
     store: &Arc<Store>,
@@ -195,7 +160,6 @@ fn spawn_endpoint(
     (cancel, endpoint_done)
 }
 
-/// Open (creating if needed) the store as a region task on the blocking pool.
 #[tracing::instrument(skip_all)]
 async fn open_store(region: &Spawner, data_dir: PathBuf) -> Result<Arc<Store>, BootstrapError> {
     let outcome = region
@@ -238,8 +202,6 @@ async fn open_store(region: &Spawner, data_dir: PathBuf) -> Result<Arc<Store>, B
     }
 }
 
-/// Install a tracing subscriber once. A second call in the same process (tests) is a no-op instead
-/// of a panic.
 pub fn init_tracing() {
     use tracing_subscriber::EnvFilter;
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));

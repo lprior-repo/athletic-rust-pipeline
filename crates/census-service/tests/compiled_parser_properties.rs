@@ -1,26 +1,3 @@
-//! Property tests for the two-block Compiled export seam.
-//!
-//! `census_crawl::compiled::parse` reads the export WIAA posts for regional, sectional and
-//! state track meets when no Hy-Tek report exists: two event blocks printed side by side on one page,
-//! each with its own column header, each row read out of its own block's slice of the line. Track is a
-//! class-of-2027 source here because the right-hand heat prints every athlete's `Yr`, and the
-//! left-hand relay block prints each team's legs — with their years — beneath the team row.
-//!
-//! These properties pin what the census may assume about that arm:
-//!
-//! * **Total-ness** — arbitrary text and text woven out of the tokens this parser keys on parse to a
-//!   meet or to nothing, never a panic, and the same lines always give the same answer ([`totalness`]).
-//! * **Accounting** — the published counters cover the rows the events carry, a block's rows belong to
-//!   that block's event, and a relay row's legs are the legs printed beneath *it* ([`accounting`]).
-//! * **Append-only reading** — a page cut short yields rows the whole page starts with
-//!   ([`prefix_laws`]).
-//! * **Page furniture** — the form feed of a PDF page break, a Windows carriage return and a timer's
-//!   trailing column padding are the front end's business, never a reading's: the lines a capture
-//!   splits to, and the rows they are read into, do not move ([`lines`]).
-//!
-//! Deterministic by construction: [`seam_config`] pins 64 cases on ChaCha with the fixed seed
-//! `0x434F_4D50_494C_4544`. The bodies below are synthetic pages in the published layout; the
-//! committed capture for the same layout is documented in `crates/census-crawl/src/compiled/tests.rs`.
 #![forbid(unsafe_code)]
 
 use census_crawl::compiled::{parse, ParsedMeet, ParsedRow};
@@ -38,9 +15,6 @@ mod prefix_laws;
 #[path = "compiled_parser_properties/totalness.rs"]
 mod totalness;
 
-/// Shape of the 2026 regional exports: two event blocks per page, relay on the left with its legs
-/// printed beneath the teams, a preliminary heat on the right that carries a qualifier letter
-/// instead of points.
 const REGIONAL: &str = r#"
 05/26/2026, 09:56 PM                                  D1 Regional 8B - Appleton North
                                                        Appleton North HS  Tue, May 26, 2026
@@ -59,7 +33,6 @@ Girls' 4x800 Relay Division 1                     Finals                    Girl
 3      KIMBERLY                'A'          10:03.38           6            8    Olson, Denise           12   APPLETON EAST   13.55 q
 "#;
 
-/// One heat alone on a page: no relay block, so no line of the page carries legs.
 const HEAT: &str = r#"
 05/27/2026, 08:12 PM                                  D2 Regional 3A - Seymour
                                                        Seymour HS  Wed, May 27, 2026
@@ -70,10 +43,8 @@ Girls' 100 Meters Division 2              Prelims
 2      Thompson, Emily         12   SEYMOUR         12.74 q
 "#;
 
-/// The year a page's own date is stamped with when the print header is cropped.
 const ARCHIVE_YEAR: i16 = 2026;
 
-/// The pages this seam's laws are stated over.
 const LAYOUTS: [(&str, &str); 2] = [
     ("two-block regional page", REGIONAL),
     ("single heat page", HEAT),
@@ -92,24 +63,18 @@ fn seam_config() -> ProptestConfig {
     }
 }
 
-/// The lines a body becomes, through the same splitter the collector uses.
 fn lines(body: &str) -> Vec<String> {
     lines_from_pdf_text(body)
 }
 
-/// One line stream's parse, through the shipped entry point.
 fn parse_lines(lines: &[String]) -> Option<ParsedMeet> {
     parse(lines, source(), ARCHIVE_YEAR)
 }
 
-/// One body's parse, through the shipped entry point.
 fn parse_body(body: &str) -> Option<ParsedMeet> {
     parse_lines(&lines(body))
 }
 
-/// A row's reading, without the legs the page prints beneath it: a leg line is read after the row it
-/// belongs to, so a page cut before those lines holds the team and no legs — an enrichment that has
-/// not happened yet, not a different reading.
 fn rendered_reading(row: &ParsedRow) -> String {
     format!(
         "place={:?} name={:?} grade={:?} school={:?} mark={:?} points={:?}",
@@ -117,8 +82,6 @@ fn rendered_reading(row: &ParsedRow) -> String {
     )
 }
 
-/// Text the arbitrary bodies are woven from: markup characters, digits and words, so the readers see
-/// unbalanced tags, half-rows and page stamps rather than prose.
 fn arbitrary_body() -> impl Strategy<Value = String> {
     prop::collection::vec(
         prop_oneof![
@@ -150,8 +113,6 @@ fn arbitrary_body() -> impl Strategy<Value = String> {
     .prop_map(|parts| parts.concat())
 }
 
-/// Lines woven out of the tokens a compiled export prints, so shapes that look like blocks, column
-/// headers, rows and leg lines reach the readers in orders no capture has.
 fn shaped_body() -> impl Strategy<Value = String> {
     let tokens = prop::collection::vec(
         prop_oneof![

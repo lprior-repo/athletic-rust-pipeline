@@ -1,6 +1,3 @@
-//! Canonical mapping: one IHSA school record or staff row becomes a canonical entity. The collector
-//! reveals an address for every retained coach or athletic-director row whose staff payload advertises
-//! `HasEmail`.
 
 use super::parse::{nonempty, SchoolRecord, StaffPerson};
 use super::staff::{parse_coach_title, parse_role, strip_honorific};
@@ -11,9 +8,6 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 
-/// Convert one IHSA school record into a canonical school.
-///
-/// Returns `None` when the school name is empty.
 pub fn parse_school(
     record: &SchoolRecord,
     source_url: &str,
@@ -44,10 +38,6 @@ pub fn parse_school(
     Some((school, id))
 }
 
-/// Convert one IHSA staff person into a canonical coach, if the title is a coaching or AD role.
-///
-/// Returns `None` for office roles (secretary, trainer, principal, etc.) and for staff whose
-/// `DefaultTitle` does not map to a coaching or AD role.
 pub fn parse_coach(
     person: &StaffPerson,
     school_id: &SchoolId,

@@ -1,11 +1,4 @@
-//! The `UsJurisdiction` enum and the scope-related constants.
-//!
-//! The impl block lives in [`super::codes`]; Rust does not allow split inherent impls.
 
-/// One of the fifty US states or the District of Columbia.
-///
-/// Variants are declared in the order [`UsJurisdiction::ALL`] lists them (alphabetical by name,
-/// with the District of Columbia last), so `Ord` orders jurisdictions the way a report reads.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum UsJurisdiction {
     Alabama,
@@ -62,7 +55,6 @@ pub enum UsJurisdiction {
 }
 
 impl UsJurisdiction {
-    /// Every jurisdiction the census covers, in declaration order.
     pub const ALL: [Self; 51] = [
         Self::Alabama,
         Self::Alaska,
@@ -117,12 +109,6 @@ impl UsJurisdiction {
         Self::DistrictOfColumbia,
     ];
 
-    /// The jurisdictions a census **run** covers: the 48 continental states plus the District of
-    /// Columbia (ADR-009).
-    ///
-    /// [`Self::ALL`] is what the domain *models*; this is what a run may touch. Alaska and Hawaii
-    /// are declared above, are never acquired, and never appear in a coverage denominator — a run
-    /// set that admits them has to be written as an explicit edit here, which is the point.
     pub const CENSUS_SCOPE: [Self; 49] = [
         Self::Alabama,
         Self::Arizona,
@@ -175,7 +161,5 @@ impl UsJurisdiction {
         Self::DistrictOfColumbia,
     ];
 
-    /// The modelled jurisdictions a census run never covers, named so reports, tests and the
-    /// workflow's admission check can all assert the same rule.
     pub const EXCLUDED_FROM_CENSUS: [Self; 2] = [Self::Alaska, Self::Hawaii];
 }

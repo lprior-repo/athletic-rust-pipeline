@@ -18,12 +18,6 @@ impl Gender {
         }
     }
 
-    /// The byte spelling of this gender side inside a minted canonical id.
-    ///
-    /// An id is a persistence contract: the spelling is frozen here rather than taken from the
-    /// derived `Debug`, because renaming a variant (or a change to how it is debug-printed) would
-    /// otherwise re-mint every team, coach and event id already in the store. Changing a line below
-    /// is then a visible edit to a key, not a side effect of a derive.
     pub const fn stable_key(self) -> &'static str {
         match self {
             Self::Boys => "Boys",
@@ -43,7 +37,6 @@ pub enum Sport {
 }
 
 impl Sport {
-    /// The byte spelling of this sport inside a minted canonical id; see [`Gender::stable_key`].
     pub const fn stable_key(self) -> &'static str {
         match self {
             Self::OutdoorTrack => "OutdoorTrack",
@@ -53,7 +46,6 @@ impl Sport {
     }
 }
 
-/// A team is (school, sport, gender side, season).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalTeam {
     pub id: TeamId,
@@ -65,16 +57,11 @@ pub struct CanonicalTeam {
     pub level: Option<String>,
     pub source_identities: Vec<SourceIdentity>,
     pub evidence: Vec<Evidence>,
-    /// Canonical-id collisions this row's merge retained: another natural key minted this id, so the
-    /// row below is the one that survived and the other subject's facts were not absorbed. Empty on
-    /// every row whose fields still state the id they minted, which is every row until one collides.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retained_conflicts: Vec<RetainedConflict>,
 }
 
 impl CanonicalTeam {
-    /// One team per (school, sport, gender side, school year). The same four values always mint the
-    /// same id, so a provider re-publishing a roster upserts the team instead of duplicating it.
     pub fn mint(
         school: &SchoolId,
         sport: Sport,
@@ -93,7 +80,6 @@ impl CanonicalTeam {
     }
 }
 
-/// Meet competition level, from our own vocabulary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CompetitionLevel {

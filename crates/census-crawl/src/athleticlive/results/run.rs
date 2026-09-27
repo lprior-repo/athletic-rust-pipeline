@@ -1,8 +1,3 @@
-//! The state one result-plane walk carries across captures, and the captures it reads.
-//!
-//! Part of [`super`]: this file owns the run (the meet it files under, the school index it resolves
-//! labels against, the memo of resolved labels, the resume set and the counters), while
-//! `results::absorb` owns the folds that read a payload into it.
 
 use super::super::map::{Accumulator, ResultStats, SOURCE_ID};
 use super::super::parse::infer_level;
@@ -19,7 +14,6 @@ use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::PathBuf;
 
-/// What one walk carries across captures.
 pub(super) struct Run {
     meet: CanonicalMeet,
     target: MeetTarget,
@@ -27,28 +21,20 @@ pub(super) struct Run {
     school_year: census_domain::model::SchoolYear,
     limit: Option<usize>,
     index: SchoolIndex,
-    /// The consolidated schools the labels resolve against, kept so the append can name the school
-    /// each athlete was observed at.
     schools: Vec<CanonicalSchool>,
     resolved: HashMap<String, Option<SchoolId>>,
     stats: ResultStats,
     accumulator: Accumulator,
-    /// Captures that could not be folded, in the order they were read.
     failures: Vec<String>,
-    /// Captures a previous run already journaled, and the phase's own keys.
     done: HashSet<String>,
     resumed: usize,
-    /// The entries this walk has earned, committed with the rows they name by `append`.
     pending: Vec<(String, Value)>,
-    /// The events this run minted, keyed by the run key their standings are published under.
     by_run: BTreeMap<String, PublishedEvent>,
-    /// The individual event ids the summary listed, and the ones the documents carried.
     listed: Vec<u64>,
     read_documents: HashSet<u64>,
 }
 
 impl Run {
-    /// Open a run: the meet it files under, the index it resolves labels against, and the resume set.
     pub(super) fn new(
         ctx: &AdapterContext<'_>,
         target: &MeetTarget,
@@ -81,7 +67,6 @@ impl Run {
         })
     }
 
-    /// The fold's view of this run.
     fn fold(&mut self) -> Fold<'_> {
         Fold {
             meet: &self.meet,
@@ -96,8 +81,6 @@ impl Run {
         }
     }
 
-    /// Read the summary, then the documents, then the standings, in that order: a standings capture
-    /// can only be filed once the document that names its run key has been read.
     pub(super) fn read_captures(&mut self, options: &ResultOptions) -> CrawlResult<()> {
         if let Some(path) = options.summary.as_deref() {
             self.read_once(path, |run| {
@@ -135,11 +118,6 @@ impl Run {
         Ok(())
     }
 
-    /// Read one capture unless an earlier run journaled it, and buffer what it yielded.
-    ///
-    /// A capture that could not be folded yields `None` and is not journaled, so the next run reads
-    /// it again rather than treating the refusal as done. The entry itself is not written here: the
-    /// walk writes nothing, and `append` commits every entry with the rows the captures produced.
     fn read_once(
         &mut self,
         path: &str,
@@ -155,7 +133,6 @@ impl Run {
         Ok(())
     }
 
-    /// Fold one event document and register the event under its run key.
     fn read_document(&mut self, path: &str) -> CrawlResult<Option<Value>> {
         let body = read_capture(path)?;
         let before = self.stats.rows_read;
@@ -175,7 +152,6 @@ impl Run {
         Ok(Some(payload))
     }
 
-    /// Fold one live-standings capture into the event that published its run key.
     fn read_standings(&mut self, capture: &StandingsCapture) -> CrawlResult<Option<Value>> {
         let Some(event) = self.by_run.get(&capture.run_id).cloned() else {
             self.failures.push(format!(
@@ -192,7 +168,6 @@ impl Run {
         Ok(rows.map(|rows| json!({"role": "standings", "run": capture.run_id, "rows": rows})))
     }
 
-    /// Close the walk: hand back its entities, its entries, its refusals and its resume count.
     pub(super) fn close(mut self) -> WalkResult {
         WalkResult {
             entities: self
@@ -206,7 +181,6 @@ impl Run {
     }
 }
 
-/// Read one capture from disk.
 fn read_capture(path: &str) -> CrawlResult<String> {
     std::fs::read_to_string(path).map_err(|source| CrawlError::Io {
         path: PathBuf::from(path),
@@ -214,10 +188,6 @@ fn read_capture(path: &str) -> CrawlResult<String> {
     })
 }
 
-/// The canonical meet one target names, with the identities and evidence this route adds.
-///
-/// The meet is minted from the target's own facts — never from a result payload — so it lands on the
-/// id `meets::build_meets` wrote for the same harvest row, and the two routes describe one meet.
 fn meet_for(target: &MeetTarget, observed_on: &str) -> CanonicalMeet {
     let mut meet = CanonicalMeet::new(
         Some(target.state),
@@ -244,11 +214,6 @@ fn meet_for(target: &MeetTarget, observed_on: &str) -> CanonicalMeet {
     meet
 }
 
-/// The consolidated schools this route resolves labels against.
-///
-/// An empty index means `collect` and `consolidate` have not been run yet, which is an operator
-/// error rather than a parse failure: with no index every row would be refused, and an empty report
-/// would read as a meet that published no results.
 fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSchool>> {
     let schools: Vec<CanonicalSchool> =
         census_store::read::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;

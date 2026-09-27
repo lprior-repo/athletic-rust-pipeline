@@ -1,13 +1,8 @@
-//! What a published Athletic.net mark column means.
-//!
-//! The column is the corpus's most valuable two bytes per athlete, so the laws here are the ones
-//! that decide whether a stored mark is the mark the page printed.
 
 use super::{number_of, parse_mark, seam_config};
 use census_domain::model::{CentiSeconds, EventKind, Mark};
 use proptest::prelude::*;
 
-/// Centiseconds published in the notation both parsers read, plus the seconds they mean.
 fn render_centis(centis: u64) -> (String, f64) {
     let total = centis as f64 / 100.0;
     let hours = centis / 360_000;
@@ -23,13 +18,11 @@ fn render_centis(centis: u64) -> (String, f64) {
     (text, total)
 }
 
-/// A running-event kind: not a field event, not a multi-event.
 const RUN: EventKind = EventKind::CrossCountry;
 
 proptest! {
     #![proptest_config(seam_config())]
 
-    /// Every published time, at every shape of the notation, is the duration it prints.
     #[test]
     fn a_published_time_reads_as_the_duration_it_prints(centis in 0u64..36_000_000) {
         let (text, expected) = render_centis(centis);
@@ -39,7 +32,6 @@ proptest! {
         prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::try_from_seconds_f64(expected).expect("fixture is in range")));
     }
 
-    /// The same token, published with the automatic-timing suffix, is the same mark.
     #[test]
     fn an_automatic_suffix_marks_the_flag_not_the_mark(centis in 0u64..36_000_000) {
         let (text, expected) = render_centis(centis);

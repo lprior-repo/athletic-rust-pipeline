@@ -1,5 +1,3 @@
-//! Coverage-report tests: the reconciliation, the empty-store rule and the gap classes, over a
-//! fixture store built from canonical observations only (no network, no consolidated snapshot).
 
 use super::*;
 use census_domain::model::{
@@ -12,11 +10,6 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use tempfile::TempDir;
 
-/// The fixture spans four placed jurisdictions with distinct shapes: one with a core athlete and a
-/// measured coach, one whose athlete has no coach, one whose only athlete disagrees with its stored
-/// cohort, and one whose school universe has no cohort athlete at all. It also holds an athlete whose
-/// school was never stored and a performance whose athlete was never stored, so every gap class the
-/// report can raise is reachable from it.
 fn fixture_store() -> (TempDir, Store) {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
@@ -41,12 +34,9 @@ fn fixture_store() -> (TempDir, Store) {
         "Julian Aguilera",
         GradYear::CO2027,
         Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169"),
     );
     wi_core.evidence.push(evidence("milesplit_roster"));
-    wi_core.source_identities.push(SourceIdentity::new(
-        SourceNamespace::MilesplitAthlete,
-        "14399169",
-    ));
     wi_core
         .public_profile_urls
         .push("https://wi.milesplit.com/athletes/14399169-julian-aguilera".to_string());
@@ -61,6 +51,7 @@ fn fixture_store() -> (TempDir, Store) {
         "Rae Lindgren",
         GradYear::CO2027,
         Gender::Girls,
+        fixture_source("wi-mirror"),
     );
     wi_mirror.evidence.push(evidence("athleticlive_athletes"));
     store.append(Table::Athletes, &wi_mirror).unwrap();
@@ -70,6 +61,7 @@ fn fixture_store() -> (TempDir, Store) {
         "Nora Halvorsen",
         GradYear::CO2027,
         Gender::Girls,
+        fixture_source("mn-runner"),
     );
     mn_athlete.evidence.push(evidence("delphi_timing"));
     store.append(Table::Athletes, &mn_athlete).unwrap();
@@ -78,6 +70,7 @@ fn fixture_store() -> (TempDir, Store) {
         "Older Halvorsen",
         GradYear::new(2028).unwrap(),
         Gender::Boys,
+        fixture_source("mn-younger"),
     );
     mn_off_cohort.evidence.push(evidence("delphi_timing"));
     store.append(Table::Athletes, &mn_off_cohort).unwrap();
@@ -90,12 +83,13 @@ fn fixture_store() -> (TempDir, Store) {
         "Younger Kansan",
         GradYear::new(2028).unwrap(),
         Gender::Girls,
+        fixture_source("ks-younger"),
     );
     ks_off_cohort.evidence.push(evidence("kshsaa_results"));
     store.append(Table::Athletes, &ks_off_cohort).unwrap();
 
     let mut il_athlete =
-        CanonicalAthlete::new(&school_c_id, "Theo Vance", GradYear::CO2027, Gender::Boys);
+        CanonicalAthlete::new(&school_c_id, "Theo Vance", GradYear::CO2027, Gender::Boys, fixture_source("il-runner"));
     il_athlete.evidence.push(evidence("ihsa_results"));
     il_athlete
         .observed_grades
@@ -107,6 +101,7 @@ fn fixture_store() -> (TempDir, Store) {
         "Unplaced Runner",
         GradYear::CO2027,
         Gender::Boys,
+        fixture_source("unplaced"),
     );
     unplaced.evidence.push(evidence("ohsaa_results"));
     store.append(Table::Athletes, &unplaced).unwrap();
@@ -139,10 +134,9 @@ fn fixture_store() -> (TempDir, Store) {
     let event = CanonicalEvent::new(&meet.id, EventKind::Track100m, Gender::Boys, None, None);
     store.append(Table::Events, &event).unwrap();
     let comparable = performance(
-        &wi_core.id,
+        &wi_core,
         &event.id,
         &meet.id,
-        &school_a_id,
         EventKind::Track100m,
         Mark::TimeSeconds(CentiSeconds::new(1094)),
         "wiaa_results",
@@ -153,10 +147,9 @@ fn fixture_store() -> (TempDir, Store) {
     let missing_event =
         CanonicalEvent::new(&meet.id, EventKind::Track200m, Gender::Girls, None, None);
     let unparsed = performance(
-        &wi_mirror.id,
+        &wi_mirror,
         &missing_event.id,
         &meet.id,
-        &school_a_id,
         EventKind::Track200m,
         Mark::Raw("12.4h".to_string()),
         "athleticlive_athletes",
@@ -175,10 +168,9 @@ fn fixture_store() -> (TempDir, Store) {
     );
     store.append(Table::Events, &unmapped_event).unwrap();
     let unmapped_row = performance(
-        &wi_mirror.id,
+        &wi_mirror,
         &unmapped_event.id,
         &meet.id,
-        &school_a_id,
         EventKind::Unmapped {
             label: "Coed 200m".to_string(),
         },
@@ -189,12 +181,11 @@ fn fixture_store() -> (TempDir, Store) {
     store.append(Table::Performances, &unmapped_row).unwrap();
 
     let never_stored =
-        CanonicalAthlete::new(&school_d_id, "Never Stored", GradYear::CO2027, Gender::Boys);
+        CanonicalAthlete::new(&school_d_id, "Never Stored", GradYear::CO2027, Gender::Boys, fixture_source("never-stored"));
     let orphan = performance(
-        &never_stored.id,
+        &never_stored,
         &missing_event.id,
         &meet.id,
-        &school_d_id,
         EventKind::Track200m,
         Mark::TimeSeconds(CentiSeconds::new(2410)),
         "ohsaa_results",
@@ -203,6 +194,10 @@ fn fixture_store() -> (TempDir, Store) {
     store.append(Table::Performances, &orphan).unwrap();
 
     (dir, store)
+}
+
+fn fixture_source(id: &str) -> SourceIdentity {
+    SourceIdentity::new(SourceNamespace::Other("fixture".to_owned()), id)
 }
 
 fn evidence(source: &str) -> Evidence {
@@ -217,22 +212,20 @@ fn observed_grade(grade: u8, school_year: i16, source: &str) -> ObservedGrade {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn performance(
-    athlete: &census_domain::model::AthleteId,
+    athlete: &CanonicalAthlete,
     event: &census_domain::model::EventId,
     meet: &census_domain::model::MeetId,
-    school: &census_domain::model::SchoolId,
     kind: EventKind,
     mark: Mark,
     source: &str,
     source_key: &str,
 ) -> CanonicalPerformance {
     CanonicalPerformance {
-        id: CanonicalPerformance::mint(athlete, meet, &kind, "2026-05-01", source_key),
-        athlete: athlete.clone(),
+        id: CanonicalPerformance::mint(&athlete.id, meet, &kind, "2026-05-01", source_key),
+        athlete: athlete.id.clone(),
         team: CanonicalTeam::mint(
-            school,
+            &athlete.school,
             Sport::OutdoorTrack,
             Gender::Boys,
             SchoolYear::new(2026).expect("2026 is a season"),
@@ -249,7 +242,7 @@ fn performance(
         observed_grade: None,
         evidence: vec![evidence(source)],
         source_key: source_key.to_string(),
-        source_athlete: None,
+        source_athlete: athlete.source.clone(),
         retained_conflicts: Vec::new(),
     }
 }
@@ -262,7 +255,6 @@ fn row<'a>(report: &'a CoverageReport, code: &str) -> &'a JurisdictionCoverage {
         .unwrap()
 }
 
-/// The count of one gap class in one jurisdiction, `None` when the class was not raised there.
 fn gap(report: &CoverageReport, code: &str, class: GapClass) -> Option<usize> {
     report
         .gaps
@@ -487,11 +479,11 @@ fn a_mirror_result_plane_row_is_counted_but_never_core() {
         CanonicalSchool::new(UsJurisdiction::Ohio, "Dublin Coffman", "dublin coffman");
     store.append(Table::Schools, &school).unwrap();
     let mut core_athlete =
-        CanonicalAthlete::new(&school_id, "Core Runner", GradYear::CO2027, Gender::Boys);
+        CanonicalAthlete::new(&school_id, "Core Runner", GradYear::CO2027, Gender::Boys, fixture_source("oh-core"));
     core_athlete.evidence.push(evidence("ohsaa_results"));
     store.append(Table::Athletes, &core_athlete).unwrap();
     let mut mirror_athlete =
-        CanonicalAthlete::new(&school_id, "Mirror Runner", GradYear::CO2027, Gender::Girls);
+        CanonicalAthlete::new(&school_id, "Mirror Runner", GradYear::CO2027, Gender::Girls, fixture_source("oh-mirror"));
     mirror_athlete
         .evidence
         .push(evidence("athleticlive_results"));
@@ -509,10 +501,6 @@ fn a_mirror_result_plane_row_is_counted_but_never_core() {
     assert_eq!(core.totals.athletes, 1);
 }
 
-/// A national all-sources wave leaves rows behind for a jurisdiction a census run never covers
-/// (ADR-009): the live store's Alaska and Hawaii rows are what unbalanced the reconciliation. They
-/// publish no coverage row, so the read side has to stop at the same scope the rows stop at — and
-/// the exclusion is recorded as a note rather than disappearing.
 #[test]
 fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
     let dir = tempfile::tempdir().unwrap();
@@ -522,11 +510,11 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
         CanonicalSchool::new(UsJurisdiction::Ohio, "Dublin Coffman", "dublin coffman");
     store.append(Table::Schools, &school).unwrap();
     let mut core_athlete =
-        CanonicalAthlete::new(&school_id, "Core Runner", GradYear::CO2027, Gender::Boys);
+        CanonicalAthlete::new(&school_id, "Core Runner", GradYear::CO2027, Gender::Boys, fixture_source("oh-core"));
     core_athlete.evidence.push(evidence("ohsaa_results"));
     store.append(Table::Athletes, &core_athlete).unwrap();
     let mut mirror_athlete =
-        CanonicalAthlete::new(&school_id, "Mirror Runner", GradYear::CO2027, Gender::Girls);
+        CanonicalAthlete::new(&school_id, "Mirror Runner", GradYear::CO2027, Gender::Girls, fixture_source("oh-mirror"));
     mirror_athlete
         .evidence
         .push(evidence("athleticlive_results"));
@@ -540,6 +528,7 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
         "Denali Runner",
         GradYear::CO2027,
         Gender::Boys,
+        fixture_source("ak-runner"),
     );
     ak_athlete.evidence.push(evidence("athleticlive_athletes"));
     store.append(Table::Athletes, &ak_athlete).unwrap();
@@ -561,10 +550,9 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
     let ak_event = CanonicalEvent::new(&ak_meet.id, EventKind::Track100m, Gender::Boys, None, None);
     store.append(Table::Events, &ak_event).unwrap();
     let ak_result = performance(
-        &ak_athlete.id,
+        &ak_athlete,
         &ak_event.id,
         &ak_meet.id,
-        &ak_school_id,
         EventKind::Track100m,
         Mark::TimeSeconds(CentiSeconds::new(1142)),
         "athleticlive_results",
@@ -602,9 +590,6 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
     );
 }
 
-/// The published side is what the reconciliation guards: a row dropped from a complete report leaves
-/// the read side holding a row no row publishes, and a row invented out of nothing publishes a row
-/// nothing read. Both fail, naming the counters that disagree.
 #[test]
 fn reconcile_refuses_a_report_whose_rows_lost_or_invented_a_row() {
     let (_dir, store) = fixture_store();
@@ -629,9 +614,6 @@ fn reconcile_refuses_a_report_whose_rows_lost_or_invented_a_row() {
     );
 }
 
-/// The read side is counted from the store, not summed from the rows: a read count that drifts ahead
-/// of what the rows publish (the store's own shape moving under a fresh scan, the failure the live
-/// store hit) fails the reconciliation instead of quietly agreeing.
 #[test]
 fn reconcile_refuses_a_read_count_the_rows_do_not_publish() {
     let (_dir, store) = fixture_store();

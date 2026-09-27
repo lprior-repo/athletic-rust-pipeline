@@ -1,19 +1,3 @@
-//! The per-athlete bio route, end to end: `athleticnet::collect` driven through `Fetcher` against
-//! the anonymized capture of athlete 28872883's biography, with no socket in the run.
-//!
-//! Both (athlete, sport) request URLs are seeded into the fetcher's on-disk cache, so every request
-//! is served from disk and the run proves the whole route — the registry read, URL construction, the
-//! payload decode, the walk, the batch append and the journal — rather than the mapper alone. The
-//! fixture is the anonymized capture of `research/sources/athleticnet/samples/
-//! live-getathletebiodata-28872883-2026-09-20.json`; its cross-country half is `null` (the athlete
-//! has no XC rows), so the XC scope absorbs nothing and the TF half carries every storable row.
-//!
-//! The second run proves replay: the journal short-circuits both URLs, so no request is built, no
-//! cached body is read, and no row is appended twice.
-//!
-//! `AdapterReport::requests` is the fetcher's own count of **network** requests, so a fixture-driven
-//! run reports `0` there and names the served documents in `from_cache` — which is the point: no
-//! socket is opened by this test, and the numbers it asserts are the ones the run really spent.
 
 use std::collections::HashMap;
 use std::fs;
@@ -29,7 +13,6 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use serde_json::json;
 
-/// Reads `<crawl crate>/tests/fixtures/<source>/<file>` without linking the golden-corpus harness.
 fn fixture(source: &str, file: &str) -> Result<String> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../census-crawl/tests/fixtures")
@@ -43,12 +26,8 @@ const ATHLETE_ID: u64 = 28872883;
 const SOURCE: &str = "athleticnet";
 const FIXTURE: &str = "bio_28872883_tf.json";
 
-/// The capture's storable performance rows: the pinned number this route stores, so a silent shape
-/// change in `absorb` cannot pass as a green run.
 const PERFORMANCES: usize = 53;
 
-/// Seed the fetcher's on-disk cache for `url` under the key `Fetcher` derives
-/// (`sha256(method \x1f url \x1f body)[..16]`), so `collect` can be driven without a socket.
 fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
     use sha2::{Digest, Sha256};
 
@@ -65,7 +44,7 @@ fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
         "url": url,
         "method": "GET",
         "status": 200,
-        "sha256": format!("{:x}", Sha256::digest(body.as_bytes())),
+        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
         "fetched_at": "2026-09-22T12:00:00Z",
     });
@@ -81,17 +60,12 @@ fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
     Ok(())
 }
 
-/// The bio URL the route builds: `{BIO_ENDPOINT}?athleteId={id}&sport={sport}&level=4`.
-///
-/// The endpoint and level constants are private to the adapter, so the test spells the URL the
-/// adapter's own `every_acquisition_endpoint_is_browser_transported` test pins.
 fn bio_url(athlete_id: u64, sport: &str) -> String {
     format!(
         "https://www.athletic.net/api/v1/AthleteBio/GetAthleteBioData?athleteId={athlete_id}&sport={sport}&level=4"
     )
 }
 
-/// A run's harness: the cache every request is served from, the store it writes, and the fetcher.
 struct Harness {
     _dir: tempfile::TempDir,
     fetcher: Fetcher,
@@ -100,7 +74,6 @@ struct Harness {
 }
 
 impl Harness {
-    /// The harness for one athlete, with both (athlete, sport) documents seeded.
     fn new() -> Result<Self> {
         let dir = tempfile::tempdir().context("creating a temp dir")?;
         let cache = dir.path().join("http");
@@ -150,7 +123,6 @@ impl Harness {
     }
 }
 
-/// The store's row counts for the tables a bio run writes, plus the athlete row itself.
 fn rows(store: &Store) -> Result<(Vec<CanonicalAthlete>, Vec<CanonicalPerformance>)> {
     Ok((
         store.scan(Table::Athletes)?,

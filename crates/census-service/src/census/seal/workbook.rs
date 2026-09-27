@@ -1,7 +1,3 @@
-//! Reading the exported workbook back: what the seal can honestly check about the bytes it certifies.
-//!
-//! Every count the seal verifies is read from the store — not handed through by a caller that
-//! could lie — and every mismatch is a named discrepancy rather than a silent pass.
 
 use std::fs::File;
 use std::io::Read;
@@ -21,20 +17,12 @@ mod checks;
 mod reconcile;
 mod result;
 
-/// The three sheet names the seal requires. They are what the workbook's meta block publishes; a
-/// rename shows up here as a refusal rather than as a seal over an unverified export.
 pub const ATHLETES_SHEET: &str = "Athletes";
 pub const COVERAGE_SHEET: &str = "Coverage";
 pub const RUN_METRICS_SHEET: &str = "Run Metrics";
 
-/// The run-metrics label whose value must equal the store's cohort count.
 pub const COHORT_LABEL: &str = "class of 2027";
 
-/// Verify an exported workbook against the store's own counts.
-///
-/// The seal never trusts a caller's tally. It reads the census and coverage report from the store
-/// to get the expected athlete count and jurisdiction count, then checks the workbook's actual rows
-/// against those expectations. Every mismatch is a named discrepancy.
 pub fn inspect_workbook(
     path: &Path,
     store: &Store,
@@ -87,7 +75,6 @@ pub fn inspect_workbook(
     }))
 }
 
-/// Every non-empty row of one sheet, each row as text cells.
 fn sheet_rows(
     book: &mut calamine::Sheets<std::io::BufReader<File>>,
     name: &str,
@@ -109,16 +96,6 @@ fn sheet_rows(
     Ok(Some(rows))
 }
 
-/// The number a run-metrics row carries for `label`, when the label is written as the row's first
-/// cell and the count as any later cell.
-///
-/// The label match is case-insensitive because the sheet's own casing is the workbook writer's
-/// choice, not this command's contract.
-///
-/// The Run Metrics sheet renders two scope columns side by side (`Core` / `All sources`), each
-/// carrying its own copy of the label.  When the function finds such a row it must pick the
-/// *second* numeric cell (the All‑sources column) so the seal compares the same scope the store
-/// published — the Core count is always a subset and will never equal the store's total.
 pub fn labelled_count(rows: &[Vec<String>], label: &str) -> Option<u64> {
     rows.iter().find_map(|row| {
         let named = row.first()?.trim().to_ascii_lowercase();
@@ -141,7 +118,6 @@ pub fn labelled_count(rows: &[Vec<String>], label: &str) -> Option<u64> {
     })
 }
 
-/// The workbook's own bytes, hashed in chunks so a large export never lands in memory twice.
 pub fn file_digest(path: &Path) -> Result<String> {
     let mut file = File::open(path).with_context(|| format!("opening {}", path.display()))?;
     let mut hasher = Sha256::new();

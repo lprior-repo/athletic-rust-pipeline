@@ -1,14 +1,9 @@
-//! The identity reader against the artifact that needs it: a WIAA release whose capture drops the
-//! jump section's own header and leaves its individual rows under the relay header above them.
 
 use super::individual_identity;
 use crate::hytek::{lines_from_html, parse};
 use crate::result_file::ParsedRow;
 use census_domain::model::{EventKind, Grade, Mark, SourceRef};
 
-/// Verbatim slice of
-/// `https://www.wiaawi.org/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm` — the same
-/// capture the Hy-Tek reader's own tests read.
 const SECTIONS: &str =
     include_str!("../../../tests/fixtures/wiaa_results/d1boysstateresults-sections.htm");
 

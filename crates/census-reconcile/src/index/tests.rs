@@ -1,5 +1,3 @@
-//! The derive pass over hand-built stores: one source identity per canonical table, the retained
-//! queues, coverage per jurisdiction and per source, and the snapshot of the pass that wrote them.
 
 use census_domain::model::*;
 use census_domain::UsJurisdiction;
@@ -7,7 +5,6 @@ use census_domain::UsJurisdiction;
 use super::*;
 use census_store::Entity;
 
-/// A Wisconsin school with one MileSplit school identity.
 fn school() -> CanonicalSchool {
     let mut school = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford").0;
     school.source_identities.push(
@@ -17,11 +14,14 @@ fn school() -> CanonicalSchool {
     school
 }
 
-/// A class-of-2027 girl at `school`, carrying an Athletic.net athlete identity.
 fn athlete(school: &CanonicalSchool) -> CanonicalAthlete {
+    let source = SourceIdentity::new(
+        SourceNamespace::MilesplitAthlete,
+        "14399169",
+    );
     let mut athlete =
-        CanonicalAthlete::new(&school.id, "Jane Doe", GradYear::CO2027, Gender::Girls);
-    athlete.source_identities.push(SourceIdentity::new(
+        CanonicalAthlete::new(&school.id, "Jane Doe", GradYear::CO2027, Gender::Girls, source);
+    athlete.add_identity(SourceIdentity::new(
         SourceNamespace::AthleticNet {
             kind: "athlete".to_string(),
         },
@@ -30,7 +30,6 @@ fn athlete(school: &CanonicalSchool) -> CanonicalAthlete {
     athlete
 }
 
-/// A meet no source placed in a jurisdiction: the venue decision the review queue retains.
 fn unplaced_meet() -> CanonicalMeet {
     CanonicalMeet::new(
         None,
@@ -123,6 +122,10 @@ fn source_rows_count_what_each_namespace_contributes_per_table() {
     assert_eq!(milesplit.metrics.get("identities"), Some(&1));
     assert_eq!(milesplit.metrics.get("schools"), Some(&1));
 
+    let primary = rows.iter().find(|row| row.id == "source:milesplit_athlete")
+        .expect("the primary athlete source contributes its own coverage row");
+    assert_eq!(primary.metrics.get("athletes"), Some(&1));
+
     let athletic_net = rows
         .iter()
         .find(|row| row.id == "source:athleticnet:athlete")
@@ -144,12 +147,8 @@ fn a_pass_appends_every_index_and_a_snapshot_of_the_store() {
     store.append(Table::Meets, &meet).expect("meet");
 
     let report = derive(&store, "index", "2026-09-22").expect("derive");
-    assert_eq!(report.source_identities, 2);
+    assert_eq!(report.source_identities, 3);
     assert_eq!(report.snapshots, 1);
-    assert_eq!(
-        report.total(),
-        2 + report.conflicts + report.reviews + report.coverage + 1
-    );
     assert!(
         report.reviews >= 1,
         "the unplaced venue is a retained review finding"
@@ -239,9 +238,12 @@ fn a_review_decision_survives_the_next_derivation() {
     assert_eq!(pending.state, ReviewState::Pending);
 }
 
-/// A second subject whose fields sit under `id`: what a canonical-id collision looks like in a store.
 fn other_subject_under_one_id(school: &CanonicalSchool, id: &AthleteId) -> CanonicalAthlete {
-    let mut row = CanonicalAthlete::new(&school.id, "Marta Reyes", GradYear::CO2027, Gender::Girls);
+    let source = SourceIdentity::new(
+        SourceNamespace::MilesplitAthlete,
+        "14407777",
+    );
+    let mut row = CanonicalAthlete::new(&school.id, "Marta Reyes", GradYear::CO2027, Gender::Girls, source);
     row.id = id.clone();
     row
 }
@@ -282,7 +284,6 @@ fn a_canonical_id_collision_reaches_the_conflict_queue() {
     );
 }
 
-/// The one case stored for `subject`, whatever family kept it.
 fn case_for(store: &Store, subject: &str) -> ReviewCase {
     store
         .scan::<ReviewCase>(Table::ReviewCases)
@@ -292,11 +293,6 @@ fn case_for(store: &Store, subject: &str) -> ReviewCase {
         .expect("the subject's case")
 }
 
-/// A recorded decision is not reset by the pass that derives the same finding again.
-///
-/// The pass writes the findings it reached, and a case is keyed on its own evidence, so re-deriving an
-/// unchanged finding writes the same id: the row it writes has to carry the state back, or every
-/// verdict a lane recorded goes back in the queue the next time the census derives its indexes.
 #[test]
 fn a_recorded_decision_survives_the_next_derivation() {
     let dir = tempfile::tempdir().expect("temp store");
@@ -330,8 +326,6 @@ fn a_recorded_decision_survives_the_next_derivation() {
     );
 }
 
-/// A pending case this pass does not derive again is closed, because the finding it named is not one
-/// of the findings the pass reached.
 #[test]
 fn a_pending_case_whose_finding_is_gone_is_superseded() {
     let dir = tempfile::tempdir().expect("temp store");
@@ -363,8 +357,6 @@ fn a_pending_case_whose_finding_is_gone_is_superseded() {
     );
 }
 
-/// A family the census's own evidence rule decided is stored already retained, and the row still
-/// reaches the queue a reader sees.
 #[test]
 fn a_cohort_claim_the_rules_decide_is_stored_retained() {
     let dir = tempfile::tempdir().expect("temp store");

@@ -1,31 +1,15 @@
-//! The case and the spacing a provider prints its page furniture in, and what that furniture is
-//! allowed to decide.
-//!
-//! RaceDay exports come from several meet managers' installs of the same product, and the archive
-//! carries both `Place` and `PLACE`, both a padded ` Ada Bell ` cell and a flush one, and both `D2`
-//! and `Division 2` in a race title. None of that is a fact about the race: the census keys columns on
-//! their labels and the side on the words of the title, so a page typed in another case — or padded by
-//! another manager's stylesheet — must read to the very same athletes, schools and finishes.
-//!
-//! Both laws are stated over pages built from the shapes this seam commits: `DECLINED_ROW`'s
-//! five-column grid, the capture's `<span>`-wrapped header labels, and one title per spelling of a
-//! division. The cells come from the published values of both — `Ada Bell`/`Whitewater`/`19:02.10`
-//! from the declined-row page, `Aaron Thomas`/`05:21.42` from the Racine sectional capture.
 
 use super::{parse_body, rendered_rows, seam_config, ParsedMeet};
 use census_domain::model::Gender;
 use proptest::prelude::*;
 
-/// The five columns of a finish list, in the order the committed capture prints them.
 const LABELS: [&str; 5] = ["Place", "Name", "Year", "Team Name", "Finish"];
 
-/// Athlete cells taken from the committed capture and the lane's own pages.
 const NAMES: [&str; 4] = ["Ada Bell", "Jack Hefty", "Aaron Thomas", "Zachary Haleem"];
 const SCHOOLS: [&str; 3] = ["Whitewater", "East Troy", "Seymour"];
 const YEARS: [&str; 3] = ["9", "11", "12"];
 const FINISHES: [&str; 4] = ["05:21.42", "17:13.69", "19:02.10", "20:11.44"];
 
-/// One athlete row of a generated page.
 #[derive(Debug)]
 struct Athlete {
     place: String,
@@ -36,7 +20,6 @@ struct Athlete {
 }
 
 impl Athlete {
-    /// The five cells in the order the layout prints them.
     fn cells(&self) -> [&str; 5] {
         [
             &self.place,
@@ -48,7 +31,6 @@ impl Athlete {
     }
 }
 
-/// One athlete row per case, placed in the order the grid prints them.
 fn athletes() -> impl Strategy<Value = Vec<Athlete>> {
     prop::collection::vec(
         (
@@ -73,13 +55,10 @@ fn athletes() -> impl Strategy<Value = Vec<Athlete>> {
     })
 }
 
-/// A cell the way a manager's stylesheet pads it: blanks and a no-break space around the value.
 fn padded(cell: &str) -> String {
     format!("  &nbsp;\u{a0}{cell}&nbsp;  ")
 }
 
-/// One export page: the wrapped header labels the capture prints, the grid rows `DECLINED_ROW`
-/// prints, and `labels_upper`/`cells_padded` choosing how the page is written.
 fn page(title: &str, rows: &[Athlete], labels_upper: bool, cells_padded: bool) -> String {
     let mut body =
         String::from("<html><body>\n<h3 id=\"section-2\"><span class=\"react-tooltip-wrapper\">");
@@ -115,8 +94,6 @@ fn page(title: &str, rows: &[Athlete], labels_upper: bool, cells_padded: bool) -
     body
 }
 
-/// One race title: the division written the way `abbreviated` writes it, the side that ran, and
-/// `upper` choosing the case the side is printed in.
 fn title(division: u8, girls: bool, upper: bool, abbreviated: bool) -> String {
     let side = if girls { "Girls" } else { "Boys" };
     let side = if upper {
@@ -132,12 +109,10 @@ fn title(division: u8, girls: bool, upper: bool, abbreviated: bool) -> String {
     format!("{head} - {side} Race Team Finish List-XC")
 }
 
-/// A page's parse, or the reason it is not a meet.
 fn meet(page: &str) -> Result<ParsedMeet, TestCaseError> {
     parse_body(page).map_err(|error| TestCaseError::fail(format!("the page is a meet: {error:?}")))
 }
 
-/// The law: the page's case and padding decide nothing about the readings it yields.
 fn same_readings(plain: &str, decorated: &str, rows: usize) -> Result<(), TestCaseError> {
     let plain = meet(plain)?;
     let decorated = meet(decorated)?;
@@ -157,9 +132,6 @@ fn same_readings(plain: &str, decorated: &str, rows: usize) -> Result<(), TestCa
 proptest! {
     #![proptest_config(seam_config())]
 
-    /// A column is its label's words, not their case, and a cell is its value, not the blanks a
-    /// stylesheet pads it with: the manager who SHOUTS a header or pads a cell publishes the same
-    /// finish list as the one who does not.
     #[test]
     fn label_case_and_cell_padding_do_not_move_a_reading(rows in athletes()) {
         let race = title(2, false, false, true);
@@ -170,8 +142,6 @@ proptest! {
         )?;
     }
 
-    /// A race is classified from the words the page prints, not from how it capitalises them, and the
-    /// two spellings the archive uses for a division name the same division.
     #[test]
     fn a_race_is_classified_from_its_words(
         division in 1u8..4,

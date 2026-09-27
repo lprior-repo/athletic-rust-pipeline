@@ -1,9 +1,3 @@
-//! The eight checks, in the order [`super::run`] prints them.
-//!
-//! A check that cannot be measured — a `cargo metadata` that fails, an unreadable file — is reported
-//! as that check's own failure line rather than as a hard error, so one broken input cannot hide the
-//! other six verdicts. Checks 1 and 3 read the declarations; 2 and 5 the registry; 4, 6 and 7 the
-//! tree.
 
 use anyhow::Result;
 use census_domain::UsJurisdiction;
@@ -14,20 +8,14 @@ use super::tree;
 use super::Check;
 use crate::retry;
 
-/// The retry ceiling §9 and ADR-002 fix for a handler attribute.
 const ATTRIBUTE_CEILING: u64 = 3;
 
-/// The retry ceiling §9 and ADR-002 fix for an inner `RunRetryPolicy`.
 const INNER_CEILING: u64 = 1;
 
-/// How many jurisdictions `UsJurisdiction::ALL` models: the fifty states and the District of
-/// Columbia.
 const MODELLED: usize = 51;
 
-/// One check: the number it prints under, the name it prints, and the function that measures it.
 type Entry = (usize, &'static str, fn() -> Result<Check>);
 
-/// Every check, numbered as the module documentation orders them.
 pub(super) fn all() -> Vec<Check> {
     let table: [Entry; 8] = [
         (1, "census scope", census_scope),
@@ -45,7 +33,6 @@ pub(super) fn all() -> Vec<Check> {
         .collect()
 }
 
-/// Run one check, turning a hard error into that check's own failure line.
 fn guarded(number: usize, name: &'static str, check: fn() -> Result<Check>) -> Check {
     match check() {
         Ok(check) => check,
@@ -58,20 +45,6 @@ fn guarded(number: usize, name: &'static str, check: fn() -> Result<Check>) -> C
     }
 }
 
-/// Check 1: the run scope is every jurisdiction the domain models except the two it excludes.
-///
-/// The expected list is derived from [`UsJurisdiction::ALL`] and
-/// [`UsJurisdiction::EXCLUDED_FROM_CENSUS`], so the assertion reads as the rule it is ("the contiguous
-/// market") rather than as a second list of forty-nine names to keep in step with the enum, and the
-/// exclusion rule has one declaration in the tree instead of two.
-///
-/// The comparison is name-for-name and in order: a one-for-one substitution or a reordering keeps set
-/// equality and still changes which jurisdictions a run covers, so only the exact list passes. A reader
-/// who reorders the constant because "the set is the same" has changed the order every census identity
-/// digest is taken in.
-///
-/// `UsJurisdiction::is_in_census_scope` is the gate every acquisition path asks, so it is checked
-/// against the same constant: two spellings of one rule drift, and this is where that shows.
 fn census_scope() -> Result<Check> {
     const NAME: &str = "census scope";
     let declared: BTreeSet<UsJurisdiction> = UsJurisdiction::CENSUS_SCOPE.into_iter().collect();
@@ -113,7 +86,6 @@ fn census_scope() -> Result<Check> {
     Ok(Check::violated(1, NAME, detail, failures))
 }
 
-/// Check 3: every `max_attempts` site in production code is at or below its ceiling.
 fn retry_ceilings() -> Result<Check> {
     const NAME: &str = "retry ceilings";
     let sites = retry::sites()?;
@@ -130,18 +102,14 @@ fn retry_ceilings() -> Result<Check> {
     Ok(Check::violated(3, NAME, detail, failures))
 }
 
-/// A jurisdiction list for a failure line, in the order the set held.
 fn list(states: &[UsJurisdiction]) -> String {
     states.iter().map(spell).collect::<Vec<String>>().join(", ")
 }
 
-/// One jurisdiction as `<code> <name>`.
 fn spell(state: &UsJurisdiction) -> String {
     format!("{} {}", state.code(), state.name())
 }
 
-/// `UsJurisdiction::ALL` without the jurisdictions `UsJurisdiction::EXCLUDED_FROM_CENSUS` names: the
-/// list `CENSUS_SCOPE` has to reproduce exactly, in this order.
 fn expected_scope() -> Vec<UsJurisdiction> {
     UsJurisdiction::ALL
         .iter()
@@ -150,12 +118,6 @@ fn expected_scope() -> Vec<UsJurisdiction> {
         .collect()
 }
 
-/// The failure line for the first place `declared` and `expected` disagree, or `None` when they agree
-/// name-for-name and in order.
-///
-/// The first difference is named rather than the two lists: a scope that was substituted or reordered
-/// is one edit, and a reader who sees `index 12` looks at twelve rather than at forty-nine names. A
-/// difference in length is reported as counts, because there is no element to point at.
 fn scope_mismatch(declared: &[UsJurisdiction], expected: &[UsJurisdiction]) -> Option<String> {
     if declared == expected {
         return None;
@@ -191,7 +153,6 @@ mod tests {
     use super::{expected_scope, scope_mismatch};
     use census_domain::UsJurisdiction;
 
-    /// The declared constant is what the check measures, so the real list has to pass it.
     #[test]
     fn the_declared_scope_matches_expectations() {
         assert_eq!(
@@ -200,8 +161,6 @@ mod tests {
         );
     }
 
-    /// A one-for-one substitution keeps the length and the set size and still changes which
-    /// jurisdiction a run covers: the case set equality cannot see.
     #[test]
     fn a_substitution_is_reported_at_its_index() {
         let expected = expected_scope();
@@ -216,8 +175,6 @@ mod tests {
         );
     }
 
-    /// The same jurisdictions in another order are a different scope: the census identity digest is
-    /// taken in this order.
     #[test]
     fn a_reordering_is_reported() {
         let expected = expected_scope();
@@ -230,8 +187,6 @@ mod tests {
         );
     }
 
-    /// A list that stops early lost a jurisdiction: a length, not an element, so the line carries
-    /// counts instead of an index.
     #[test]
     fn a_short_list_is_reported_as_counts() {
         let expected = expected_scope();

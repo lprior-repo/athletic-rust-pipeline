@@ -1,10 +1,3 @@
-//! Tests for bounded checkpoints, atomic commits, and recovery guarantees.
-//!
-//! These tests prove:
-//! 1. One checkpoint writes both tables in one commit (one receipt).
-//! 2. A replayed checkpoint writes nothing (Application::Repeated).
-//! 3. Multiple chunks produce multiple receipts.
-//! 4. Resume-after-crash: cases closed in a prior checkpoint are not re-asked.
 
 use census_domain::model::{
     CanonicalAthlete, CanonicalSchool, Gender, GradYear, ReviewCase, ReviewState,
@@ -15,7 +8,6 @@ use census_store::{Store, Table};
 
 use super::{reconcile_athletes, ReviewFamily, ReviewOptions};
 
-/// Build a test verdict record.
 fn verdict_row(id: &str, case_id: &str, subject_id: &str) -> ReviewVerdictRecord {
     ReviewVerdictRecord {
         id: id.to_string(),
@@ -34,7 +26,6 @@ fn verdict_row(id: &str, case_id: &str, subject_id: &str) -> ReviewVerdictRecord
     }
 }
 
-/// Build a test case row.
 fn case_row(id: &str, state: ReviewState) -> ReviewCase {
     ReviewCase {
         id: id.to_string(),
@@ -173,11 +164,6 @@ fn resume_after_crash_does_not_reask_closed_cases() {
     );
 }
 
-/// Invariant: every ReviewCases row whose state is not Pending has a matching IdentityVerdicts row
-/// keyed by its case id. This must hold after any pass that writes verdicts and case updates.
-///
-/// reconcile_athletes decides N cases and must write N verdicts and N resolved cases in one
-/// atomic commit, so a crash cannot leave a resolved case with no verdict (or vice versa).
 #[test]
 fn reconcile_athletes_writes_both_tables_in_one_commit() {
     let dir = tempfile::tempdir().expect("temp dir");
@@ -198,16 +184,10 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() {
     .0
     .id;
 
-    let mut a = CanonicalAthlete::new(&school_a, "Jordan Smith", GradYear::CO2027, Gender::Boys);
-    let mut b = CanonicalAthlete::new(&school_b, "Jordan Smith", GradYear::CO2027, Gender::Boys);
-    a.source_identities.push(SourceIdentity::new(
-        SourceNamespace::MilesplitAthlete,
-        "14399169",
-    ));
-    b.source_identities.push(SourceIdentity::new(
-        SourceNamespace::MilesplitAthlete,
-        "14399169",
-    ));
+    let source_a = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
+    let mut a = CanonicalAthlete::new(&school_a, "Jordan Smith", GradYear::CO2027, Gender::Boys, source_a);
+    let source_b = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
+    let mut b = CanonicalAthlete::new(&school_b, "Jordan Smith", GradYear::CO2027, Gender::Boys, source_b);
     store
         .append_many(Table::Athletes, &[a.clone(), b.clone()])
         .expect("athletes written");

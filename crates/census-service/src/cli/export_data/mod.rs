@@ -1,13 +1,3 @@
-//! Export the canonical Midwest census snapshots into CSV data products.
-//!
-//! Input : `<store-out>/{athletes,schools,coaches,meets}.jsonl` (consolidated snapshots)
-//! Output: `<data>/canonical-*.csv`, `athleticnet-athlete-seeds.csv`, `recruiting-co2027.csv`
-//!
-//! Usage: `census-service <global-args> export-data --store-out <DIR> --data <DIR>`
-//!
-//! Everything here is a projection of the consolidated store; nothing is re-derived or guessed.
-//! Athletic.net ids come only from `legacy_athletic_net` identities that a
-//! non-Athletic.net source published.
 
 pub mod athletes;
 pub mod coaches;
@@ -24,19 +14,18 @@ use std::path::PathBuf;
 
 use census_store::read::read_rows;
 
-/// Arguments for the `export-data` subcommand.
 #[derive(Debug, Args)]
+#[command(about = "Arguments for the `export-data` subcommand")]
 pub(super) struct ExportDataArgs {
-    /// Directory containing the consolidated `*.jsonl` snapshots (athletes, schools, coaches, meets).
+    #[arg(help = "Directory containing the consolidated `*.jsonl` snapshots (athletes, schools, coaches, meets)")]
     #[arg(long)]
     pub(super) store_out: PathBuf,
 
-    /// Directory where the CSV data products are written.
+    #[arg(help = "Directory where the CSV data products are written")]
     #[arg(long)]
     pub(super) data: PathBuf,
 }
 
-/// The four JSONL tables the export projects from.
 struct ExportTables<'a> {
     schools: &'a [serde_json::Value],
     athletes: &'a [serde_json::Value],
@@ -44,7 +33,6 @@ struct ExportTables<'a> {
     meets: &'a [serde_json::Value],
 }
 
-/// What the export counted, as reported back to the caller.
 struct ExportCounts {
     co27: usize,
     multi: usize,
@@ -52,8 +40,6 @@ struct ExportCounts {
     with_email: usize,
 }
 
-/// Run the export-data subcommand.
-/// Print the final summary statistics.
 fn print_summary(
     store_out: &std::path::Path,
     data: &std::path::Path,

@@ -4,7 +4,6 @@ use std::cell::Cell;
 use std::future::{ready, Ready};
 use std::rc::Rc;
 
-/// A sampler that walks a script of outcomes, then repeats its last one.
 fn scripted(
     script: Vec<NavigationOutcome>,
 ) -> impl FnMut() -> Ready<Result<NavigationOutcome, BrowserError>> {

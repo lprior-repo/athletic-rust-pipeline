@@ -1,5 +1,3 @@
-//! The evidence records: which retained bodies they claim, how each record ended, and the tallies the
-//! report prints for both.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -10,45 +8,29 @@ use serde_json::Value;
 use crate::counts::bump;
 use crate::pyrepr::{fmt_dict, json_bool_to_str};
 
-/// One page of one evidence record: what query fetched it and which documents it points at.
 #[derive(Clone)]
 pub(crate) struct EvidenceEntry {
-    /// The query the page was fetched for, when the record names one.
     pub(crate) query: Option<String>,
-    /// The sport the page was fetched for, as the query recorded it.
     pub(crate) sport: Option<String>,
-    /// The response body's byte count as the record states it, for the mismatch check.
     pub(crate) bytes: Option<String>,
-    /// The digest of the parser's record over these bytes, when the page has one.
     pub(crate) parsed: Option<String>,
 }
 
-/// One evidence record, reduced to what the cross-check against page verdicts needs.
 pub(crate) struct EvidenceRecord {
-    /// The record's file stem.
     pub(crate) name: String,
-    /// The record's own `complete` flag (absent reads as false).
     pub(crate) complete: bool,
-    /// The `message` of each failure the record reported.
     pub(crate) failure_messages: Vec<String>,
-    /// The parsed digest of each page, `None` when a page carries none.
     pub(crate) pages_with_parsed: Vec<Option<String>>,
 }
 
-/// Every evidence record's contribution: the body join, the tallies and the records themselves.
 #[derive(Default)]
 pub(crate) struct EvidenceIndex {
-    /// Body digest -> the entries whose page response carries that digest.
     pub(crate) join: BTreeMap<String, Vec<EvidenceEntry>>,
-    /// The records' `complete` flag as the report prints it, counted.
     pub(crate) record_complete: IndexMap<String, usize>,
-    /// Failure messages as `code: message  [http=...]`, counted.
     pub(crate) failures: IndexMap<String, usize>,
-    /// One entry per record, in directory order.
     pub(crate) records: Vec<EvidenceRecord>,
 }
 
-/// One failure as the summary line prints it: `code: message  [http=status,status]`.
 fn failure_key(failure: &Value) -> String {
     if let Some(obj) = failure.as_object() {
         let code = obj.get("code").and_then(|v| v.as_str()).unwrap_or("");
@@ -74,7 +56,6 @@ fn failure_key(failure: &Value) -> String {
     }
 }
 
-/// The `message` of each failure object, or the raw JSON of a failure that is not an object.
 fn failure_messages(rec: &Value) -> Vec<String> {
     rec.get("failures")
         .and_then(|v| v.as_array())
@@ -95,7 +76,6 @@ fn failure_messages(rec: &Value) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// The `parsed` digest of each page, `None` when a page carries none.
 fn pages_with_parsed(rec: &Value) -> Vec<Option<String>> {
     rec.get("pages")
         .and_then(|v| v.as_array())
@@ -112,7 +92,6 @@ fn pages_with_parsed(rec: &Value) -> Vec<Option<String>> {
 }
 
 impl EvidenceIndex {
-    /// Count the record's `complete` flag as the report prints it.
     fn absorb_complete(&mut self, rec: &Value) {
         if let Some(cv) = rec.get("complete") {
             bump(
@@ -124,7 +103,6 @@ impl EvidenceIndex {
         }
     }
 
-    /// Count every failure message the record reported.
     fn absorb_failures(&mut self, rec: &Value) {
         if let Some(failures_arr) = rec.get("failures") {
             if let Some(arr) = failures_arr.as_array() {
@@ -135,7 +113,6 @@ impl EvidenceIndex {
         }
     }
 
-    /// Index every page of the record under the digest of the body it was fetched from.
     fn absorb_pages(&mut self, rec: &Value) {
         if let Some(pages) = rec.get("pages") {
             if let Some(pages_arr) = pages.as_array() {
@@ -177,7 +154,6 @@ impl EvidenceIndex {
         }
     }
 
-    /// Keep the record itself for the cross-check against page verdicts.
     fn absorb_record(&mut self, name: &str, rec: &Value) {
         let complete = rec
             .get("complete")
@@ -191,7 +167,6 @@ impl EvidenceIndex {
         });
     }
 
-    /// Take everything one evidence record contributes.
     fn absorb(&mut self, name: &str, rec: &Value) {
         self.absorb_complete(rec);
         self.absorb_failures(rec);
@@ -199,7 +174,6 @@ impl EvidenceIndex {
         self.absorb_record(name, rec);
     }
 
-    /// The evidence summary: the complete flag tally and the failure messages by count.
     pub(crate) fn print_summary(&self) {
         let complete_items: Vec<_> = self
             .record_complete
@@ -221,7 +195,6 @@ impl EvidenceIndex {
     }
 }
 
-/// Read every evidence record: a record whose bytes are not JSON is skipped, as it always was.
 pub(crate) fn index(
     evidence_files: &[(String, String)],
 ) -> Result<EvidenceIndex, Box<dyn std::error::Error>> {

@@ -1,7 +1,5 @@
 use super::*;
 
-/// Build a fetcher whose cache lives in a throwaway directory. Authorization is the only
-/// property under test here, so no request is ever issued.
 fn fetcher_with(authorized: Vec<String>) -> (Fetcher, tempfile::TempDir) {
     let dir = tempfile::tempdir().expect("tempdir");
     let fetcher = Fetcher::new(
@@ -120,7 +118,6 @@ fn cache_key_pins_the_on_disk_cache_layout() {
     );
 }
 
-/// A body that does not match its metadata digest is a cache miss, never served as evidence.
 #[tokio::test]
 async fn a_corrupted_cache_body_is_rejected_not_served() {
     let dir = tempfile::tempdir().expect("temp dir");
@@ -141,7 +138,6 @@ async fn a_corrupted_cache_body_is_rejected_not_served() {
         url: "https://example.com/teams".to_string(),
         method: "GET".to_string(),
         status: 200,
-        key_prefix: "deadbeef".to_string(),
         content_digest: content_digest(body),
         bytes: body.len(),
         fetched_at: "2025-01-01T00:00:00Z".to_string(),
@@ -163,9 +159,6 @@ async fn a_corrupted_cache_body_is_rejected_not_served() {
     assert!(result.is_none(), "corrupted body must be a cache miss");
 }
 
-/// A robots.txt body that is completely empty (as might happen on a 5xx with no body) yields
-/// `fetched: true` with no rules — the host is treated as having rules but none were parsed.
-/// This is the "unknown" outcome: we fetched, we just don't know the rules.
 #[test]
 fn an_empty_robots_body_is_fetched_but_has_no_rules() {
     let rules = parse_robots("");
@@ -176,14 +169,12 @@ fn an_empty_robots_body_is_fetched_but_has_no_rules() {
     assert!(rules.allows("/"));
 }
 
-/// A robots.txt body with only comments and whitespace is parsed as fetched with no rules.
 #[test]
 fn a_comment_only_robots_body_is_fetched_but_has_no_rules() {
     let rules = parse_robots("# just a comment\n  \n# nothing useful\n");
     assert!(rules.was_fetched(), "a comment-only body is still fetched");
 }
 
-/// §45: the physical count is derived from the other two, so a cached run cannot claim traffic.
 #[test]
 fn a_cache_hit_is_not_a_physical_request() {
     let stats = FetchStats {
@@ -195,7 +186,6 @@ fn a_cache_hit_is_not_a_physical_request() {
     assert_eq!(stats.useful_records_per_physical_request(9), Some(3.0));
 }
 
-/// §45: records per request is absent when no request reached the origin, never infinite.
 #[test]
 fn the_efficiency_ratio_is_absent_without_physical_requests() {
     let stats = FetchStats::default();
@@ -203,7 +193,6 @@ fn the_efficiency_ratio_is_absent_without_physical_requests() {
     assert_eq!(stats.useful_records_per_physical_request(4_000), None);
 }
 
-/// §45: a percentile is the edge of the bucket that covers it, and the mean is exact.
 #[test]
 fn latency_percentiles_are_bucket_upper_bounds() {
     let mut stats = FetchStats::default();
@@ -223,7 +212,6 @@ fn latency_percentiles_are_bucket_upper_bounds() {
     assert_eq!(stats.latency_percentile_ms(100), Some(30_000));
 }
 
-/// A percentile of no samples is absent rather than zero: nothing was measured.
 #[test]
 fn a_percentile_of_no_samples_is_absent() {
     let stats = FetchStats::default();
@@ -232,8 +220,6 @@ fn a_percentile_of_no_samples_is_absent() {
     assert_eq!(stats.latency_percentile_ms(99), None);
 }
 
-/// §45: a per-source row is the origin, so two pages of one host cannot become two rows — and a URL
-/// the parser refuses is still counted, under its own text rather than dropped.
 #[test]
 fn a_source_row_is_the_origin_not_the_page() {
     assert_eq!(
@@ -245,7 +231,6 @@ fn a_source_row_is_the_origin_not_the_page() {
     assert_eq!(host_of("not-a-url"), "not-a-url");
 }
 
-/// §45: a challenge is counted apart from failures, and only for the kind a person must clear.
 #[tokio::test]
 async fn a_human_required_condition_is_counted_as_a_challenge() {
     let (fetcher, _dir) = fetcher_with(Vec::new());

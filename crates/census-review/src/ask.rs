@@ -1,4 +1,3 @@
-//! Asking one retained case: the request, the batch that came back, and how it was triaged.
 
 use census_domain::model::{ReviewCase, ReviewVerdict};
 
@@ -7,21 +6,15 @@ use super::packets::SubjectIndex;
 use super::verdicts::{triage, Adjudication};
 use super::ReviewFamily;
 
-/// What asking one retained case produced.
 pub(super) enum Answer {
-    /// The store no longer holds the case's subject.
     NoSubject,
-    /// The model request failed outright.
     Failed(ModelError),
-    /// The model answered: the verdicts worth keeping, each with what validation made of it, and how
-    /// many the batch dropped.
     Answered {
         verdicts: Vec<(ReviewVerdict, Adjudication)>,
         dropped: usize,
     },
 }
 
-/// Ask one case's subject and triage the batch that came back.
 pub(super) async fn ask_case(
     client: &ModelClient,
     subjects: &SubjectIndex,

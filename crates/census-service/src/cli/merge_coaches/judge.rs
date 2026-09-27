@@ -1,8 +1,6 @@
-//! Row validation: judge whether a row is importable, plus helper checks.
 
 use super::{email_re, phone_re, url_re, vacant_re, Row, PERSONAL_MAIL};
 
-/// Judge a row for importability. Returns `None` when valid, `Some(reason)` when rejected.
 pub(super) fn judge(row: &Row, state: &str) -> Option<String> {
     if let Some(r) = check_state(row, state) {
         return Some(r);
@@ -156,7 +154,6 @@ fn check_email_fields(row: &Row) -> Option<String> {
     None
 }
 
-/// Check whether a name field contains a placeholder / vacant value.
 pub(super) fn check_placeholder(name: &str) -> Option<String> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
@@ -169,7 +166,6 @@ pub(super) fn check_placeholder(name: &str) -> Option<String> {
     }
 }
 
-/// Mirror the Rust parser: a label resolves when it names a sport by substring.
 pub(super) fn resolves_sport(text: &str) -> bool {
     let lowered = text.to_lowercase();
     lowered.contains("track")

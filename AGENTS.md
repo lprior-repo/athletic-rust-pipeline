@@ -8,9 +8,61 @@ Primary instruction document for any person or coding agent working here. Read t
 A Class-of-2027 high-school Track & Field / Cross Country recruiting census over the run scope of
 ADR-009: the 48 contiguous states plus D.C. A qualified
 source graph feeds durable acquisition, acquisition produces evidence, evidence lands in Fjall, a
-deterministic merge proposes canonical identities, the local Qwen lane adjudicates only what Rust
-cannot, and the result is projected into an Excel workbook a recruiter can filter. The workbook is a
-projection; the durable evidence system is the census.
+deterministic merge proposes canonical identities, and the local Qwen lane advises only where Rust
+cannot resolve uncertainty. Rust adjudicates; models do not establish identity. The result is
+projected into an Excel workbook a recruiter can filter. The workbook is a projection; the durable
+evidence system is the census.
+
+## Required delivery contract
+
+- Build a production-grade, fully Rust pipeline that processes every real row from both input
+  workbook sheets. Preserve the original workbook unchanged, retain stable source-row identities,
+  and reconcile every input row to an explicit outcome, including unresolved `REVIEW`.
+- Discover athlete information across as many relevant sources as can be found: Athletic.net,
+  MileSplit, DirectAthletics, relevant TFRRS records, AthleticLIVE, state associations, timing
+  companies, meet organizers, school and team websites, and linked results in HTML, structured
+  data, PDFs and spreadsheets. Continuously discover additional relevant sources through school,
+  team, meet and results links, subject to bounded work and source policy.
+- Acquire team rosters and meet results once and reuse them across applicable athletes. Maintain a
+  shared local evidence index so workbook rows do not repeat searches, downloads, parsing or
+  unchanged model reviews.
+- Track source coverage, pagination, retrieval failures, unsupported formats and unfinished
+  discovery explicitly. Incomplete coverage must never become a definitive no-match result or a
+  claim of exhaustive coverage. Source failure is not evidence of athlete absence.
+- Verify Class-of-2027 identity and distinguish Track & Field from Cross Country participation.
+  Return source profile links, verified marks and traceable evidence.
+- Resolve cross-source identities using corroborated school, location, graduation-year, season
+  and participation evidence. Never merge on name alone or count syndicated copies as independent
+  corroboration. Preserve provider-specific athlete IDs and URLs, conflicting observations and
+  provenance for every accepted fact; identity decisions must remain reversible.
+- Deduplicate performances without losing source references. Compare marks only within compatible
+  events and conditions. Distinguish source-declared PRs from best observed marks when coverage is
+  incomplete; retain historical school/team affiliation and legitimate rounds, heats and attempts.
+- Use one canonical implementation per responsibility and one shared workflow. Source adapters own
+  acquisition and format differences, but all sources feed the same domain types, identity rules,
+  performance normalization, review process and output logic. Remove legacy compatibility,
+  duplicate business logic, ad hoc exceptions and competing execution paths. Model legitimate
+  source differences and athlete edge cases explicitly.
+- Perform reliable discovery, extraction, normalization, matching, contradiction detection and mark
+  calculation deterministically before invoking AI. Clean deterministic matches bypass AI.
+- Treat the local Qwen llama.cpp servers on the RTX 5090 and RTX 3090 as scarce review capacity.
+  Unresolved identities and cross-source conflicts receive independent reviews from both servers,
+  using the permitted full local row and prepared, source-linked evidence. Acceptance requires
+  sufficient corroboration, satisfaction of deterministic rules and reviewer agreement. Agreement
+  cannot replace evidence; unresolved uncertainty remains `REVIEW`.
+- Keep admissions data and model review local. Do not expose private workbook rows to cloud models,
+  development-agent prompts, public logs, committed fixtures or remote services.
+- Use locally hosted, non-Docker Restate with its Rust SDK for durable orchestration, idempotent
+  operations and crash recovery. Restate is the sole retry owner; transport performs one attempt.
+  The repository's stricter three-total-attempt ceiling remains within the requested maximum of
+  three retries after the initial attempt. Preserve every source row, candidate, observation,
+  decision and exhausted failure under stable logical identities.
+- Export accepted identities, graduation evidence, sport classifications, source links, verified
+  marks, coverage status and review reasons. Publish snapshot-bound workbook and audit artifacts
+  atomically; never replace a valid published bundle with a partial one.
+- Existing F01–F15 corrections, named regression acceptances and all 17 durability scenarios remain
+  delivery obligations. A change in staffing or sequencing does not narrow the requested scope.
+
 
 ## Read first
 
@@ -20,7 +72,7 @@ projection; the durable evidence system is the census.
 2. `docs/adr/README.md` — decisions that may not be silently re-litigated.
 3. `docs/migration/module-map.md` — the module inventory and the crate cut being executed.
 4. `crates/census-service/README.md` and `xtask/README.md` — the two crate-root READMEs that exist;
-   the other crates document themselves in their module headers.
+   keep additional architecture, domain and operating rationale in separate documentation, not code.
 5. `docs/OPERATIONS.md` — operations runbook; successor to the superseded `HANDOFF.md`.
 6. `docs/FJALL_BACKUP.md` — Fjall backup and restore procedures.
 7. `docs/deployment-lifecycle.md` — deployment and lifecycle management.
@@ -75,11 +127,38 @@ contract changes; Main applies them.
 
 ## Coding standards (binding)
 
-All coding standards are in `ARCHITECTURE.md` — the binding document.
-This section names the relevant §-numbers for quick lookup: §37 (no unwrap/expect/panic),
-§38 (size budgets), §39 (thiserror), §42 (supervised shutdown), §43 (async outcomes),
-§44 (tracing), §55 (gates), §56 (forbid/deny), §61-§62 (cache policy).
-Rust only: no Python, no shell scripts as pipeline steps.
+The standards in `ARCHITECTURE.md` and the following requirements are binding:
+
+- **Zero code comments, permanently.** Do not add or retain comments in project-owned source,
+  tests, examples, benchmarks or generated project-code templates. This includes ordinary line and
+  block comments, Rust doc comments (`///`, `//!`, `/** */`, `/*! */`) and documentation attributes
+  used to move prose back into code. Express intent through names, types, functions, errors and
+  tests. Maintain design rationale separately. A blocking lexical check must enforce this rule;
+  comment-like bytes inside strings or captured source evidence must not be mistaken for comments.
+- Apply Scott Wlaschin's type-design principles: validated newtypes, private fields, checked
+  constructors, exhaustive algebraic data types and explicit state transitions. Separate raw
+  observations, validated evidence, candidate identities and accepted matches. Make illegal states
+  unrepresentable wherever practical.
+- Apply Holzmann-style discipline: bounded work, simple control flow, checked arithmetic, explicit
+  resource limits and complete error handling. Forbid project-owned unsafe code and input-triggered
+  panics. Keep `#![forbid(unsafe_code)]` and `#![deny(unused_must_use)]` workspace-wide.
+- Files stay within 300 lines; production functions within 60 logical lines, hot paths within 25.
+  Decompose long orchestration into named stages rather than suppressing checks.
+- Use `thiserror` inside production crates, `anyhow` only at CLI/composition boundaries, and
+  structured `tracing` in production paths. Preserve async outcomes and supervise shutdown with
+  explicit drain accounting.
+- Cache only immutable successes; quarantine poisoned objects and retain failures rather than
+  silently falling back. Admission is per remote origin and counts physical requests, not workflows.
+- Optimize measured end-to-end throughput on the 16-core/32-thread, 128-GB machine through streaming,
+  shared caches, bounded parallelism, buffer reuse and minimal copying, allocation, contention and
+  repeated I/O. Use Toyota Production System principles: eliminate rework, constrain work in
+  progress, expose defects immediately, apply backpressure and improve the measured bottleneck.
+  Performance claims require measurements; more agents or files changed are not throughput proof.
+- Rust only: no Python and no shell scripts as pipeline steps.
+
+Relevant architecture references: §37 (panic/error discipline), §38 (size budgets), §39 (errors),
+§42 (supervised shutdown), §43 (async outcomes), §44 (tracing), §55 (gates), §56 (forbid/deny),
+§61-§62 (cache policy).
 
 ## Source policy
 
@@ -87,6 +166,46 @@ Robots and per-origin admission are honored. No CAPTCHA, authentication, or payw
 Athletic.net is acquired through the headed persistent-profile browser lane (§26-§28) with a
 `HumanRequired` handoff when a challenge appears. Never collect athlete personal contact data; never
 infer GPA (§36). A §69 stop condition for one source is persisted and the census continues elsewhere.
+
+## Delivery workflow and release gates
+
+1. Synchronize incoming `main` changes while preserving local work and coordinating every writer.
+   Freeze shared interfaces before parallel implementation.
+2. Keep 2–4 useful subagents once implementation is underway. The requested four-worker allocation
+   is one `gpu5090-coder`, one `gpu3090-coder` and two `deepseek-flash` evidence workers. Main scopes
+   and schedules their work; never create filler assignments to maintain activity. Keep coding to
+   coherent, non-overlapping slices. One owner retains a slice through implementation, caller
+   migration and verification.
+3. Main handles shared contracts, identity acceptance and durability. Use local Qwen for bounded
+   caller migrations and fixture work, and Flash for specific evidence collection, not repeated
+   architecture audits. Workers must not invent mirrored types, edit outside ownership, silently
+   change interfaces or reactivate finished peers.
+4. Compile and run focused tests after each integrated slice, before dependent work expands.
+   The previous “finish all F01–F15 before any checks” restriction is superseded. Existing defects
+   are blockers to repair, not permission to defer verification or weaken a gate.
+5. Finish one working end-to-end workbook-to-evidence-to-output path first, then extend coverage
+   through the same implementation. Measure verified slices completed and defects escaping review,
+   not agent activity or files changed.
+6. Make testing a release gate. Exercise every defined state transition, source contract, acceptance
+   rule, boundary and recovery path. Every discovered defect gains a regression test.
+
+Required release evidence includes:
+
+- Adversarial identity fixtures, cross-source conflicts, syndicated duplicates, schema changes,
+  pagination gaps, incompatible marks and complete input/output reconciliation.
+- Property tests, parser fuzzing, concurrency and cancellation, duplicate delivery, fault injection,
+  crash recovery, retry exhaustion and malformed model responses.
+- Critical-logic mutation testing, representative load tests, throughput and resource measurements,
+  strict formatting and Clippy, dependency auditing, and adversarial security and async-Rust review.
+- Real execution of the named durability scenarios against isolated local-disk scratch state.
+  Simulated success, a narrowed test or a passing build does not prove the intended fault.
+- Exercise changed CLI, Restate and export paths; verify generated artifacts against durable
+  evidence and confirm the original workbook remains unchanged.
+
+Unresolved accuracy, data-loss or recovery failures block release. Record exact commands, observed
+results, coverage limits and remaining blockers. Never claim completion, exhaustive coverage or a
+valid seal without the corresponding evidence.
+
 
 ## How to add work
 

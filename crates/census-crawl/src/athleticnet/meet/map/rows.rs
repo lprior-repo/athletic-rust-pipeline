@@ -1,5 +1,3 @@
-//! The rows of one block: the individual results, the relay squads and their legs, and the mints
-//! each row needs before it can be stored.
 
 use super::super::read::{grade_of, meet_mark};
 use super::super::store::{athlete, store, AthleteRow};
@@ -7,39 +5,31 @@ use super::super::wire::{FlatRow, PublishedLeg};
 use super::MeetCtx;
 use crate::athleticnet::map::{school_for, PerformanceInput};
 use crate::athleticnet::parse::timing_of;
-use census_domain::model::{AthleteId, EventKind, Gender, Grade, Mark, SchoolId};
+use census_domain::model::{AthleteId, EventKind, Gender, Grade, Mark, SchoolId, SourceIdentity};
 use std::collections::BTreeMap;
 
-/// What every row of one results block shares.
 pub(super) struct Block<'a> {
     pub(super) kind: &'a EventKind,
     pub(super) gender: Gender,
-    /// The label the canonical event carries.
     pub(super) label: &'a str,
-    /// The event type (`"T"`/`"F"`) the metadata document declares, when it was spent.
     pub(super) type_hint: Option<&'a str>,
-    /// The division the block publishes (or the payload's division table resolves).
     pub(super) division: Option<String>,
-    /// The round the block publishes, normalised.
     pub(super) round: Option<String>,
 }
 
-/// What one performance row contributes, once its identities are resolved.
 pub(super) struct Entry<'a> {
     pub(super) school: &'a SchoolId,
     pub(super) athlete: &'a AthleteId,
+    pub(super) source_athlete: SourceIdentity,
     pub(super) mark: Mark,
     pub(super) auto: bool,
     pub(super) place: Option<&'a str>,
     pub(super) grade: Grade,
-    /// The result identity, in the form the bio path mints for the same published result.
     pub(super) source_key: String,
-    /// The leg's 1-based position in its relay, when the row is a relay leg.
     pub(super) leg: Option<usize>,
 }
 
 impl MeetCtx<'_> {
-    /// One individual row, in the order the walk refuses it: school, athlete id, grade, name, mark.
     pub(super) fn individual_row(&mut self, block: &Block<'_>, row: &FlatRow) {
         let Some(school) = self.school(row) else {
             return;
@@ -63,10 +53,11 @@ impl MeetCtx<'_> {
             self.counts.rows_no_mark = self.counts.rows_no_mark.saturating_add(1);
             return;
         };
-        let athlete_id = self.athlete_of(provider_id, &school, &name, grade, block.gender);
+        let (athlete_id, source_athlete) = self.athlete_of(provider_id, &school, &name, grade, block.gender);
         let entry = Entry {
             school: &school,
             athlete: &athlete_id,
+            source_athlete,
             mark,
             auto,
             place: row.place.as_deref(),
@@ -78,8 +69,6 @@ impl MeetCtx<'_> {
         self.counts.rows_stored = self.counts.rows_stored.saturating_add(1);
     }
 
-    /// One relay squad row: the squad's mark and place belong to every leg it publishes, and the
-    /// squad's own padded name is never attributed to a person.
     pub(super) fn relay_row(
         &mut self,
         block: &Block<'_>,
@@ -119,8 +108,6 @@ impl MeetCtx<'_> {
         }
     }
 
-    /// One relay leg of a squad whose mark this walk already read: the squad's mark and place are
-    /// the leg's, the leg's own identity is its athlete id and its 1-based position.
     #[allow(clippy::too_many_arguments)]
     fn relay_leg(
         &mut self,
@@ -145,10 +132,11 @@ impl MeetCtx<'_> {
             self.counts.legs_no_grade = self.counts.legs_no_grade.saturating_add(1);
             return;
         };
-        let athlete_id = self.athlete_of(provider_id, school, name, grade, block.gender);
+        let (athlete_id, source_athlete) = self.athlete_of(provider_id, school, name, grade, block.gender);
         let entry = Entry {
             school,
             athlete: &athlete_id,
+            source_athlete,
             mark: mark.clone(),
             auto,
             place: row.place.as_deref(),
@@ -160,8 +148,6 @@ impl MeetCtx<'_> {
         self.counts.legs_stored = self.counts.legs_stored.saturating_add(1);
     }
 
-    /// The canonical school a row names. A row whose team id the payload's team list does not name
-    /// is counted by `school_for` itself, exactly as the bio path counts it.
     fn school(&mut self, row: &FlatRow) -> Option<SchoolId> {
         let Some(team_id) = row.team_id else {
             self.stats.rows_unknown_school = self.stats.rows_unknown_school.saturating_add(1);
@@ -180,7 +166,6 @@ impl MeetCtx<'_> {
         )
     }
 
-    /// The athlete a row names, minted once per (athlete id, school).
     fn athlete_of(
         &mut self,
         provider_id: i64,
@@ -188,7 +173,7 @@ impl MeetCtx<'_> {
         name: &str,
         grade: Grade,
         gender: Gender,
-    ) -> AthleteId {
+    ) -> (AthleteId, SourceIdentity) {
         athlete(
             self.accumulated,
             self.source,
@@ -205,10 +190,10 @@ impl MeetCtx<'_> {
         )
     }
 
-    /// Store one performance against the event its own division and round belong to.
     fn store_row(&mut self, block: &Block<'_>, entry: Entry<'_>) {
         let input = PerformanceInput {
             athlete: entry.athlete,
+            source_athlete: entry.source_athlete,
             school: entry.school,
             meet: &self.meet,
             kind: block.kind,

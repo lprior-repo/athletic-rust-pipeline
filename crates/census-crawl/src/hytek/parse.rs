@@ -1,8 +1,3 @@
-//! Section and row reading for the Hy-Tek fixed-column report.
-//!
-//! One results section states its own layout in its header line, and every row beneath it is read
-//! against that layout: place left of the first labelled column, the school or name text columns
-//! sliced to the next numeric anchor, the mark and its trailing wind, heat and points columns.
 
 use crate::result_file::{ParsedRow, RelayLeg};
 use crate::{CrawlError, CrawlResult};
@@ -37,8 +32,6 @@ pub(super) fn place_prefix_regex() -> CrawlResult<&'static Regex> {
         })
 }
 
-/// Columns that carry a result mark, in the order a mark is taken when a row publishes several.
-/// `Seed` is deliberately absent: an entry mark is not a performance.
 const MARK_LABELS: [&str; 10] = [
     "Finals",
     "Time",
@@ -52,18 +45,13 @@ const MARK_LABELS: [&str; 10] = [
     "Distance",
 ];
 
-/// The column layout of the section currently being read.
 #[derive(Debug, Clone, Default)]
 pub(super) struct Section {
     columns: Vec<Column>,
-    /// Round implied by the section's mark column (`Prelims` → `preliminaries`).
     pub(super) round: Option<&'static str>,
 }
 
 impl Section {
-    /// Read a section header. Returns `None` for anything that is not a results header: the line
-    /// must begin with a text column and publish at least one mark column, which keeps team-score
-    /// and split tables out of the row stream.
     pub(super) fn from_header(header: &str) -> Option<Section> {
         let trimmed = header.trim_start();
         if !TEXT_LABELS.iter().any(|label| trimmed.starts_with(label)) {
@@ -91,8 +79,6 @@ impl Section {
         self.columns.iter().find(|column| column.label == label)
     }
 
-    /// The token printed under `column`: numeric columns are right-aligned to the label's edge, so
-    /// the match is on the token that ends there.
     fn numeric_token_for<'a>(&self, tokens: &[Token<'a>], column: &Column) -> Option<Token<'a>> {
         let edge = column.end.saturating_add(1);
         tokens
@@ -107,8 +93,6 @@ impl Section {
             .and_then(|column| self.numeric_token_for(tokens, column))
     }
 
-    /// Where the value of the next numeric column starts — the end boundary of the text column that
-    /// precedes it.
     fn next_numeric_start(&self, tokens: &[Token<'_>], offset: usize) -> Option<usize> {
         self.columns
             .iter()
@@ -169,10 +153,6 @@ pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Opti
     })
 }
 
-/// Place, name, school and grade of one row — the identity columns every layout publishes.
-///
-/// `None` is the line that is not an athlete row: a row whose section names no school column, a
-/// blank or bracketed school, or a name that does not read as one.
 fn row_identity(
     line: &str,
     tokens: &[Token<'_>],

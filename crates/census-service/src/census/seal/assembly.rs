@@ -1,10 +1,3 @@
-//! The evidence §70's seal certifies, assembled from the store, the classifier and the run's journal.
-//!
-//! Split out of `seal.rs` to keep both files inside the one-page budget: this module says *where*
-//! every count is read from — the store's own ledger, the coverage classifier's report, the
-//! workbook's bytes, or the run's journal — while `seal.rs` keeps the ladder and the refusal.
-//! Nothing here decides whether the evidence holds: that is the seal's own comparison, and every
-//! count here is read rather than claimed.
 
 use census_domain::model::{ReviewCase, SourceAccessCondition};
 
@@ -16,7 +9,6 @@ use crate::census::{
 use census_report::report::{Census, CoverageReport};
 use census_store::{StoreStats, Table};
 
-/// Everything §70 asks the census to prove, from the store, the classifier and the run's journal.
 pub(super) fn assemble(
     coverage: &CoverageReport,
     census: &Census,
@@ -36,13 +28,6 @@ pub(super) fn assemble(
     }
 }
 
-/// The work §70 leaves open: two counts only the run's journal can answer, two the store's own rows.
-///
-/// The two halves are not interchangeable. A jurisdiction's stages and a source object's accepted
-/// observations live in the workflow journal, which only the service can read; the cohort decisions
-/// and identity candidates are retained review cases, which the store is the authority on. A count
-/// nobody took is `None`, and `None` keeps its item open: that is what makes an offline seal refuse
-/// rather than certify a completion it never checked.
 fn open_work(cases: &[ReviewCase], journal: JournalCounts) -> OpenWork {
     OpenWork {
         jurisdiction_sweeps: journal.jurisdiction_sweeps,
@@ -52,9 +37,6 @@ fn open_work(cases: &[ReviewCase], journal: JournalCounts) -> OpenWork {
     }
 }
 
-/// The store-side counts §70 certifies, each read from the census and the coverage report it came
-/// from rather than from a caller's tally. The report's `read` counters are the rows it published
-/// under the run's scope and cohort, which is why the count taken from one says so in its name.
 fn seal_counts(census: &Census, coverage: &CoverageReport) -> SealCounts {
     SealCounts {
         jurisdiction_buckets: count(census.by_state.len()),
@@ -67,8 +49,6 @@ fn seal_counts(census: &Census, coverage: &CoverageReport) -> SealCounts {
     }
 }
 
-/// The retained findings §70 publishes: the classifier's gaps, the store's own row counts, and the
-/// counts only the caller's journal can answer.
 fn retained_findings(
     coverage: &CoverageReport,
     stats: &StoreStats,

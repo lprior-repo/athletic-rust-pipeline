@@ -1,38 +1,3 @@
-//! Restate service surface: durable handlers over the same [`Store`] the batch CLI drives.
-//!
-//! Ten definitions, one per durability need. Restate derives the service names from the struct
-//! names, so these are the wire names: **`Census`**, **`Consolidate`**, **`Report`**, **`Bests`**,
-//! **`Workbook`**, **`Ingest`**, **`Sweep`**, **`JurisdictionCensus`**, **`NationalCensus`**,
-//! **`BrowserSession`**. Renaming a struct is a breaking API change; add a
-//! `#[handler(name = "...")]` instead.
-//!
-//! * `Census` — request/response over the store: `status`, `open_work`, `seal`.
-//! * `Consolidate`, `Report`, `Bests`, `Workbook` — one workflow per heavy job, each addressed by a
-//!   [`run_key`] the caller chooses. The job runs as a region task on the blocking pool — started
-//!   through the shell's [`Spawner`], behind a semaphore sized by `--max-concurrent`, inside
-//!   `ctx.run` under a single-attempt run policy — so a restart replays the journal value instead
-//!   of redoing a completed pass, and a shutdown drain owns the job even when the invocation that
-//!   started it was cancelled.
-//! * `Ingest` — a virtual object keyed by endpoint (`mshsl`, `wiha`, …). Restate serializes
-//!   invocations per key, which is what makes the per-endpoint cursor and window bookkeeping safe
-//!   against concurrent writers.
-//! * `Sweep` — a workflow that observes the ingest objects over N windows, sleeps durably between
-//!   them, and leaves early when its `stop` signal is resolved.
-//! * `JurisdictionCensus` — a virtual object keyed by jurisdiction identity
-//!   (`jurisdiction:<state>:<season>:<revision>`). It runs that state's census stages — team index,
-//!   roster walk, meet census, results — recording each in durable state as it completes, so a
-//!   re-invocation resumes at the stage it still owes. Snapshot consolidation runs once in the
-//!   national workflow, not per jurisdiction.
-//! * `NationalCensus` — the root workflow (`national:<season>:<scope>:<revision>`). It fans out one
-//!   `JurisdictionCensus` call per state and folds the reports into one national report, listing
-//!   failed states as rows instead of failing the run.
-//! * `BrowserSession` — the one headed profile, keyed [`SESSION_KEY`]: `fetch` posts a single page
-//!   request to the engine and answers with its classification. It is bound only when the
-//!   deployment was started with `--browser-profile`, because one process owns the profile: a
-//!   second manager would be a corruption path rather than a second lane.
-//!
-//! Handler bodies stay thin; the work sits in free functions that take `&Store`, so the interesting
-//! behaviour is testable without a Restate runtime.
 
 use athleticnet_browser::clock::SystemClock;
 use athleticnet_browser::BrowserSettings;
@@ -47,19 +12,6 @@ use tokio::sync::Semaphore;
 
 use crate::census::CollectOptions;
 use census_store::clock::Clock;
-/// The workflow key one job run is addressed by: `<job>:<part>…:<generation>`.
-///
-/// The key names the job instance. A resubmission with the same semantic parts and the same
-/// generation attaches to the retained result rather than running the job again — this is what
-/// the key buys: the durability of the job does not depend on the client staying up.
-///
-/// A different generation (a fresh operator-visible `--generation` or `--run-id`) produces a new
-/// key even when the semantic parts are identical, so an operator can ask for a fresh run of a
-/// request whose result is already available. The default generation is `"1"`, which preserves
-/// the attach-on-rerun behaviour for clients that do not specify one.
-///
-/// It lives here, next to the workflow definitions, so the batch CLI and the harness that drives
-/// the deployment cannot key the same job two different ways.
 pub fn run_key(job: &str, parts: &[&str], generation: &str) -> String {
     let mut key = job.to_string();
     for part in parts {
@@ -70,11 +22,6 @@ pub fn run_key(job: &str, parts: &[&str], generation: &str) -> String {
     key.push_str(generation);
     key
 }
-/// The default generation a client uses when the operator does not specify one.
-///
-/// The same default across all callers means a rerun of the same request attaches to the existing
-/// workflow, while a new `--generation` value (or a new `--run-id`) produces a fresh key and
-/// starts a new run even when the semantic request is identical.
 pub const DEFAULT_GENERATION: &str = "1";
 
 mod browser_session;
@@ -139,21 +86,13 @@ pub use publish::{
 };
 pub use sweep::{Sweep, SweepClient, SweepIngressClient};
 
-/// Signal `Sweep::interrupt` resolves to stop a running sweep.
 pub const STOP_SIGNAL: &str = "stop";
-/// State key: the endpoint's whole durable state, written as one value so a partially updated
-/// endpoint (cursor advanced but totals not, or the reverse) cannot exist.
 const KEY_STATE: &str = "state";
 
 pub use limits::{
     MAX_LIMIT_PER_STATE, MAX_ROWS_PER_REQUEST, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS,
 };
 
-/// The collection options one jurisdiction's walk runs under.
-///
-/// A zero concurrency or an over-ceiling roster limit is terminal: the request itself is wrong, and
-/// replaying it would fail identically. The remaining knobs ride through as the caller set them,
-/// with the collection date defaulting to today when the request does not name one.
 pub(super) fn options_for_request(
     request: &JurisdictionRequest,
     today: &str,
@@ -169,6 +108,8 @@ pub(super) fn options_for_request(
             .into());
         }
     }
+    let revision = std::num::NonZeroU32::new(request.revision.get())
+        .ok_or_else(|| TerminalError::new("revision must be at least 1"))?;
     Ok(CollectOptions {
         jurisdictions: vec![request.jurisdiction],
         limit_per_state: request.limit_per_state,
@@ -180,6 +121,7 @@ pub(super) fn options_for_request(
             .observed_on
             .clone()
             .unwrap_or_else(|| today.to_string()),
+        revision,
     })
 }
 
@@ -187,21 +129,6 @@ pub(super) use journaled::{journaled_today, journaled_today_workflow};
 
 use limits::census_service;
 
-/// Build the endpoint the HTTP server serves. Service names come from the struct names: `Census`,
-/// `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`,
-/// `NationalCensus`, and - when the deployment serves one - `BrowserSession`.
-///
-/// The `region` is the shell's spawner: every blocking job these services run is started through it,
-/// so a shrunk service surface still leaves nothing running that the drain does not own.
-///
-/// `serves_lane` is the headed profile this endpoint serves. `None` binds no `BrowserSession`, and a
-/// census client that calls it anyway reads Restate's own "service not found" rather than opening a
-/// second browser: who owns the profile is a deployment decision, never a fallback.
-///
-/// `uses_lane` is the client the census reaches that profile through, and it exists only when the
-/// deployment has a lane at all. Installing it on the census fetcher is what makes a
-/// browser-transported source ordinary work: the plan asks the fetcher
-/// ([`BrowserLaneState::of`]), so without it the source is refused by name instead of swept.
 #[tracing::instrument(skip_all, fields(max_concurrent))]
 pub fn build_endpoint(
     store: Arc<Store>,

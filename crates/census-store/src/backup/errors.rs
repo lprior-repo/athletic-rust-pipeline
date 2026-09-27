@@ -1,8 +1,3 @@
-//! The refusals and I/O failures a backup or a restore reports, each naming what it refused.
-//!
-//! A refusal is not a guess the caller can work around: every function below hands back the path, or
-//! the object kind, that did not meet the condition, so the operator reads *what* was refused and not
-//! only that something was.
 
 use std::fs;
 use std::io;
@@ -10,14 +5,12 @@ use std::path::Path;
 
 use crate::StoreError;
 
-/// A refusal: the request did not meet a condition this module will not guess around.
 pub(super) fn refused(detail: impl Into<String>) -> StoreError {
     StoreError::Refused {
         detail: detail.into(),
     }
 }
 
-/// An I/O failure against a named path.
 pub(super) fn io_err(path: &Path, source: io::Error) -> StoreError {
     StoreError::Io {
         path: path.to_path_buf(),
@@ -25,7 +18,6 @@ pub(super) fn io_err(path: &Path, source: io::Error) -> StoreError {
     }
 }
 
-/// What a filesystem object is, for a refusal message that says what was refused.
 pub(super) fn object_kind(kind: fs::FileType) -> &'static str {
     if kind.is_symlink() {
         "a symlink"
@@ -38,7 +30,6 @@ pub(super) fn object_kind(kind: fs::FileType) -> &'static str {
     }
 }
 
-/// The non-regular, non-directory kinds a unix filesystem can hand a walker.
 #[cfg(unix)]
 fn special_kind(kind: fs::FileType) -> &'static str {
     use std::os::unix::fs::FileTypeExt;

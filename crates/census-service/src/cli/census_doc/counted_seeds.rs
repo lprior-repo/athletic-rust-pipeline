@@ -1,4 +1,3 @@
-//! Distinct Athletic.net ids the external sources published, straight off the snapshots.
 
 use std::collections::BTreeSet;
 use std::path::Path;
@@ -8,7 +7,6 @@ use anyhow::{Context, Result};
 use super::ns_key::ns_key;
 use census_store::read::read_rows;
 
-/// Data extracted from the athlete and meet JSONL snapshots.
 pub(crate) struct Seeds {
     pub(super) athletes: usize,
     pub(super) multisource: usize,
@@ -16,12 +14,6 @@ pub(crate) struct Seeds {
     pub(super) distinct_athletic_net_meet_ids: usize,
 }
 
-/// The rows of one snapshot the census document counts.
-///
-/// An absent file is an error here rather than an empty table: [`read_rows`] treats a snapshot that
-/// has never been published as no rows, which is what an adapter wants before `consolidate` has run,
-/// while this document is written after one. Counting a missing `athletes.jsonl` as zero athletes
-/// would publish a number that contradicts the report sitting beside it.
 fn snapshot_rows(path: &Path) -> Result<Vec<serde_json::Value>> {
     if !path.exists() {
         anyhow::bail!(
@@ -32,7 +24,6 @@ fn snapshot_rows(path: &Path) -> Result<Vec<serde_json::Value>> {
     read_rows(path).with_context(|| format!("reading {}", path.display()))
 }
 
-/// Process athlete rows: count total athletes, distinct AN athlete IDs, and multisource count.
 fn count_athletes(rows: &[serde_json::Value]) -> (usize, usize, usize) {
     let mut an_athletes = BTreeSet::new();
     let mut athletes = 0usize;
@@ -63,7 +54,6 @@ fn count_athletes(rows: &[serde_json::Value]) -> (usize, usize, usize) {
     (athletes, multisource, an_athletes.len())
 }
 
-/// Process meet rows: count distinct AN meet IDs.
 fn count_meet_ids(rows: &[serde_json::Value]) -> usize {
     let mut an_meets = BTreeSet::new();
     for row in rows {

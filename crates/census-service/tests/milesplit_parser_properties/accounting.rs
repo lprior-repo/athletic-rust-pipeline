@@ -1,19 +1,9 @@
-//! A `/raw` body's report, checked against itself and against the column map it documents.
-//!
-//! The measured column map (see `sources/milesplit/raw_rows/columns.rs`) is reproduced here as a
-//! builder, so these laws are read off the documented layout rather than off one capture's bytes:
-//! a row built to the published columns must be accepted, and a row one column too wide must be
-//! *reported* rather than silently misread. That pair is the guarantee the run report's "lines
-//! dropped by the column map" counter rests on.
 
 use super::{
     parse_meet_index, parse_meet_result_files, parse_raw, OH_FILE_LIST, OH_RAW, OH_RAW_ROWS,
     OH_RAW_URL,
 };
 
-/// One fixed-width result line, built to the published column map: place `0..4`, a blank, athlete
-/// `5..30`, a blank, grade `31..33`, a blank, team `34..74`, the separator at `74`, the mark
-/// `75..84`, and the heat cell closing the line at `90..92`.
 fn row_line(name: &str, grade: &str, team: &str, mark: &str) -> String {
     format!(
         "{:>4} {name:<25} {grade:>2} {team:<40} {mark:>9}{:6}{:>2}",
@@ -27,7 +17,6 @@ fn row_line(name: &str, grade: &str, team: &str, mark: &str) -> String {
     )
 }
 
-/// The capture with `line` published as one more row of its last section.
 fn with_row(body: &str, line: &str) -> String {
     body.replacen("</pre>", &format!("\n{line}\n</pre>"), 1)
 }
@@ -80,10 +69,6 @@ fn a_row_built_to_the_published_columns_is_accepted() {
     );
 }
 
-/// A row whose mark is one character too long, encoded the way the vendor's fixed-width writer
-/// encodes one: right-aligned into the nine-column cell, so the mark's own first character lands in
-/// the separator column beside it. This is the case `columns.rs` names as the reason the separator
-/// guard exists.
 fn row_with_overflowing_mark() -> String {
     const MARK: &str = "1:23:45.67";
     const CELL_END: usize = 84;

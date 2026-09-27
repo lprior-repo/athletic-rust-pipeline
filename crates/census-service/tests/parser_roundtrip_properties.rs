@@ -1,22 +1,3 @@
-//! Property tests for the `wiaa_results` parse seam.
-//!
-//! `census_crawl::wiaa_results::parse_result_body` is the one entry point every artifact
-//! (HTML release, plain-text report, RaceDay export, PDF, unknown extension) goes through. These
-//! properties pin what the census is allowed to rely on:
-//!
-//! * **Dispatch** — `artifact_format(extension, body)` and `parse_result_body` agree: every fixture
-//!   is sniffed into the format that parses it, and that format yields the expected shape (events,
-//!   rows, athlete identities, marks) — see [`shapes`].
-//! * **Prefix stability** — a garbage tail appended to a well-formed body never changes the part
-//!   already parsed, and a truncated body parses to a prefix of the full one — see [`prefix_laws`].
-//! * **Total-ness** — arbitrary bytes, empty bodies and non-report markup return `None` or a meet,
-//!   never a panic, and the same bytes always give the same answer — see [`edges`].
-//!
-//! Deterministic by construction: [`seam_config`] pins 64 cases on ChaCha with the fixed seed
-//! `0x004D_4552_475F_4944`. Every fixture below is a verbatim slice of a published WIAA release.
-//!
-//! `ArtifactFormat::Pdf` shells out to `pdftotext`; the properties that touch it assert only what
-//! holds with and without that tool installed (a body the tool cannot read is not a meet).
 
 #![forbid(unsafe_code)]
 
@@ -46,7 +27,6 @@ const TRACKSIDE_HTML: &str =
     include_str!("../../census-crawl/tests/fixtures/wiaa_results/trackside-regional.htm");
 const RACEDAY_HTML: &str =
     include_str!("../../census-crawl/tests/fixtures/wiaa_results/racinesectionalb-finish-list.htm");
-/// A page from the same archive that is not a result file: link markup, no meet.
 const ARCHIVE_HTML: &str = "<html><body><h3>2025 Track &amp; Field State Results</h3>\
      <ul><li>Division 1 - <a href=\"/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm\">Boys</a>\
      </li></ul></body></html>";
@@ -60,7 +40,6 @@ const FORMATS: [ArtifactFormat; 5] = [
     ArtifactFormat::Unparsed,
 ];
 
-/// `(fixture name, body, the format the archive publishes it as)`.
 const FIXTURES: [(&str, &str, ArtifactFormat); 6] = [
     (
         "d1boysstateresults-dash.htm",
@@ -116,8 +95,6 @@ fn extension(fixture: &str) -> &str {
     fixture.rsplit('.').next().unwrap_or_default()
 }
 
-/// Hostile-but-plausible tail text. `<` and `>` are excluded so a tail can never open a tag: the
-/// `<pre>`-block rule is pinned by its own test, not by luck.
 fn tail(max_len: usize) -> impl Strategy<Value = String> {
     const CHARS: &[u8] = b"abcxyz0123456789 .-!#@()/:;'\"&=+*[]{}|~\n\t";
     prop::collection::vec(prop::sample::select(CHARS), 1..=max_len)
@@ -128,13 +105,6 @@ fn tail_blocks() -> impl Strategy<Value = Vec<String>> {
     prop::collection::vec(tail(24), 1..=3)
 }
 
-/// The parse of a shorter body must survive as a prefix of the parse of a longer one: the meet
-/// identity comes from the header, rows and events are only ever appended, and a later line can
-/// add nothing to a section that is already closed.
-///
-/// Two things a longer body legitimately moves, and this predicate therefore ignores:
-/// `round`, which a later marker line re-labels on the still-open section, and `legs`, which a
-/// following `1) Name 11` line appends to the relay row the open section ends with.
 fn prefix_survives(shorter: &ParsedMeet, longer: &ParsedMeet) -> Result<(), TestCaseError> {
     if (
         shorter.name.as_str(),
@@ -207,7 +177,6 @@ fn prefix_survives(shorter: &ParsedMeet, longer: &ParsedMeet) -> Result<(), Test
     Ok(())
 }
 
-/// Everything about an event that a later line cannot move: `round` is deliberately absent.
 fn same_event(shorter: &ParsedEvent, longer: &ParsedEvent) -> bool {
     shorter.label == longer.label
         && shorter.kind == longer.kind
@@ -215,8 +184,6 @@ fn same_event(shorter: &ParsedEvent, longer: &ParsedEvent) -> bool {
         && shorter.division == longer.division
 }
 
-/// The row a still-open section ends with: every published column is fixed, and only relay legs
-/// may have been appended.
 fn legs_grew(shorter: &ParsedRow, longer: &ParsedRow) -> bool {
     longer.place == shorter.place
         && longer.name == shorter.name
@@ -272,8 +239,6 @@ fn the_two_hytek_front_ends_agree_on_the_same_report() {
     );
 }
 
-/// The prefix predicate is what the tail and truncation properties assert through, so it has to
-/// reject an edited parse rather than accept everything.
 #[test]
 fn the_prefix_predicate_rejects_an_edited_parse() {
     let full =

@@ -1,36 +1,3 @@
-//! AthleticLIVE athlete-index adapter.
-//!
-//! AthleticLIVE is the white-label live-results platform many Midwest timers run. Its public
-//! Elasticsearch endpoint `search.athletic.live/athlete_list/_search` indexes one document per
-//! athlete-entry at a meet, and those documents carry, per row:
-//!
-//! - the competitor's name, sex, and **grade** (`y`),
-//! - the **Athletic.net athlete id** (`ani`) when the operator linked the meet,
-//! - the school name plus AthleticLIVE team id (`t.i`) and **Athletic.net team id** (`t.ani`).
-//!
-//! That makes this the second independent athlete source in the census (MileSplit rosters are the
-//! first) and, more importantly, a source of *Athletic.net profile seeds*: for every row with an
-//! `ani`, the profile URL is deterministic
-//! (`https://www.athletic.net/athlete/{id}/track-and-field`), so no Athletic.net enumeration or
-//! search is required to acquire that athlete's history.
-//!
-//! Query shape (verified 2026-09-20 against meets 73566 and 75742):
-//!
-//! ```text
-//! POST https://search.athletic.live/athlete_list/_search
-//! {"size":2000,"from":0,
-//!  "query":{"bool":{"filter":[{"terms":{"mi":[<AthleticLIVE meet ids>]}},
-//!                             {"terms":{"y":["11","12","JR","SR"]}}]}},
-//!  "_source":["i","n","y","g","mi","ani","t"]}
-//! ```
-//!
-//! `y` is a keyword and accepts the numeric encoding (`"11"`) used by track meets; letter encodings
-//! (`JR`/`SR`) appear on some cross-country meets and are filtered for as well. Grade is interpreted
-//! against the meet date's school year, never against "today": grade 11 at a 2025-26 meet is class of
-//! 2027, grade 12 at a 2026-27 meet is also class of 2027, and both are retained as observations.
-//!
-//! Elasticsearch caps `from + size` at 10,000, so meet batches are split when a batch exceeds the
-//! window, and pagination restarts at the top of each split.
 
 use std::collections::{HashMap, VecDeque};
 
@@ -54,27 +21,21 @@ pub use parse::{AthleteHit, HitTeam};
 pub use targets::{meet_targets, MeetSelection, MeetTarget};
 pub use tokens::{gender_from_token, grade_from_token, school_year_for_date, sport_for};
 
-/// Elasticsearch result window: `from + size` may not exceed this.
 const RESULT_WINDOW: usize = 10_000;
-/// Rows per page.
 const PAGE_SIZE: usize = 2_000;
-/// Meet ids per query.
 const MEETS_PER_BATCH: usize = 40;
 
 const ENDPOINT: &str = "https://search.athletic.live/athlete_list/_search";
 
-/// Adapter options (uniform across provider adapters).
 #[derive(Debug, Clone, Default)]
 pub struct Options {
     pub limit: Option<usize>,
     pub refresh: bool,
     pub observed_on: String,
-    /// Restrict to meets in these jurisdictions; empty = every state present in the meet log.
     pub states: Vec<UsJurisdiction>,
     pub school_names: Vec<String>,
 }
 
-/// Build the Elasticsearch query for a batch of meet ids.
 pub fn batch_query(meet_ids: &[u64], from: usize) -> Value {
     json!({
         "size": PAGE_SIZE,
@@ -88,7 +49,6 @@ pub fn batch_query(meet_ids: &[u64], from: usize) -> Value {
     })
 }
 
-/// Collect athlete rows for every timer-published meet and emit canonical entities.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let meets: Vec<CanonicalMeet> = ctx.store.scan(Table::Meets)?;
     if meets.is_empty() {
@@ -144,7 +104,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-/// Read the fetcher totals after the walk and note what the run produced.
 async fn finish_run(
     ctx: &AdapterContext<'_>,
     options: &Options,

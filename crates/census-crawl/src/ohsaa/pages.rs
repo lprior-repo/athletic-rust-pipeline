@@ -1,6 +1,3 @@
-//! Pure parsing: the per-school sports-information table and athletic-department page.
-//!
-//! Captured text in, parsed rows out; no I/O, no store access.
 
 use super::map::{AdPage, CoachEntry};
 use super::parse::{
@@ -8,7 +5,6 @@ use super::parse::{
 };
 use census_domain::model::Sport;
 
-/// Map a sport label to a Sport variant.
 pub fn parse_sport_label(label: &str) -> Option<Sport> {
     let cleaned = collapse_whitespace(&decode_entities(label));
     match cleaned.as_str() {
@@ -18,9 +14,6 @@ pub fn parse_sport_label(label: &str) -> Option<Sport> {
     }
 }
 
-/// Parse a coach cell (e.g. `<a href="mailto:..." class="fieldValue">Joe DePalma (Div-I)</a>`).
-///
-/// Returns `None` for "N/A", "TBA", or empty cells.
 pub fn parse_coach_cell(cell_html: &str) -> Option<CoachEntry> {
     let cleaned = collapse_whitespace(&decode_entities(&strip_tags(cell_html)));
     if cleaned == "N/A" || cleaned.starts_with("TBA") || cleaned.is_empty() {
@@ -49,9 +42,6 @@ pub fn parse_coach_cell(cell_html: &str) -> Option<CoachEntry> {
     Some(CoachEntry { name, email })
 }
 
-/// Parse the sports-information table for TF/XC sections.
-///
-/// Returns tuples of (sport_label, boys_coach, girls_coach).
 pub fn parse_sports_table(html: &str) -> Vec<(String, Option<CoachEntry>, Option<CoachEntry>)> {
     let Some(table_start) = html.find("informationSportHeaderRow") else {
         return Vec::new();
@@ -93,7 +83,6 @@ pub fn parse_sports_table(html: &str) -> Vec<(String, Option<CoachEntry>, Option
     sections
 }
 
-/// Extract text from the Nth `<td>` in a row (no tag stripping yet).
 fn extract_td_text(row: &str, index: usize) -> String {
     let mut count = 0;
     let mut rest = row;
@@ -113,9 +102,6 @@ fn extract_td_text(row: &str, index: usize) -> String {
     String::new()
 }
 
-/// Parse the athletic department table.
-///
-/// Returns the Athletic Director (first "Athletic Director:" row) and skips
 pub fn parse_ad_page(html: &str) -> AdPage {
     let mut ad = AdPage::default();
     let mut rows: Vec<&str> = Vec::new();
@@ -163,18 +149,11 @@ pub fn parse_ad_page(html: &str) -> AdPage {
     ad
 }
 
-/// `true` when a subheader names a value column rather than a person role.
-///
-/// Phone and fax labels arrive with the number inside the same span (`Phone: (614) 718-8142`).
 fn is_value_label(label: &str) -> bool {
     let lowered = label.trim().to_ascii_lowercase();
     lowered.starts_with("email") || lowered.starts_with("phone") || lowered.starts_with("fax")
 }
 
-/// Map a subheader label to a role, or `None` when it names no person role.
-///
-/// Labels carry trailing colons and the association writes plural forms
-/// (`Assistant Athletic Secretaries:`), so the match is prefix-based after stripping the colon.
 fn classify_role(label: &str) -> Option<&'static str> {
     let lowered = label
         .trim()
@@ -202,7 +181,6 @@ fn classify_role(label: &str) -> Option<&'static str> {
     }
 }
 
-/// Extract subheader labels (span with athleticDepartmentSubheader class) from a label row.
 fn extract_subheader_labels(row: &str) -> Vec<String> {
     let mut labels = Vec::new();
     let mut iter = 0usize;
@@ -227,7 +205,6 @@ fn extract_subheader_labels(row: &str) -> Vec<String> {
     labels
 }
 
-/// Extract the name value (first `<span class="fieldValue">`) from a data row.
 fn extract_field_name(row: &str) -> String {
     let Some((_, after)) = row.split_once("<span class=\"fieldValue\">") else {
         return String::new();
@@ -238,7 +215,6 @@ fn extract_field_name(row: &str) -> String {
     }
 }
 
-/// Extract the email from a mailto: href in the data row.
 fn extract_field_email(row: &str) -> Option<String> {
     if let Some((_, after)) = row.split_once("href=\"mailto:") {
         let end = after.find('"').unwrap_or(after.len());

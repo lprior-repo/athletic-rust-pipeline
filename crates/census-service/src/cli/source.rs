@@ -1,8 +1,3 @@
-//! The fetch-facing tools: the polite-fetcher probe, the registered state sites, and the report a
-//! walk prints for the hosts that refused it.
-//!
-//! These are offline tools with their own store open, not census stages: the stages that walk a source
-//! host for the census live in [`super::gather`].
 
 use anyhow::Result;
 use census_crawl::milesplit::Site;
@@ -12,7 +7,6 @@ use census_store::Store;
 
 use super::{build_fetcher, Cli};
 
-/// List the registered MileSplit state sites.
 pub(super) fn run_sites() -> Result<()> {
     for jurisdiction in UsJurisdiction::ALL {
         let site = Site::for_jurisdiction(jurisdiction);
@@ -21,7 +15,6 @@ pub(super) fn run_sites() -> Result<()> {
     Ok(())
 }
 
-/// Fetch a single URL through the polite fetcher (robots-enforced, cached).
 pub(super) async fn run_fetch(cli: &Cli, store: &Store, url: &str, refresh: bool) -> Result<()> {
     let fetcher = build_fetcher(cli, store)?;
     let outcome = fetcher
@@ -33,20 +26,14 @@ pub(super) async fn run_fetch(cli: &Cli, store: &Store, url: &str, refresh: bool
             },
         )
         .await?;
-    println!(
-        "status={} bytes={} from_cache={} sha256={} fetched_at={}",
-        outcome.status, outcome.bytes, outcome.from_cache, outcome.sha256, outcome.fetched_at
+    tracing::info!(
+        status = outcome.status, bytes = outcome.bytes, from_cache = outcome.from_cache,
+        content_digest = %outcome.content_digest, fetched_at = %outcome.fetched_at,
+        url = %outcome.url, "source fetched"
     );
-    println!("url={}", outcome.url);
     Ok(())
 }
 
-/// Print one `\t`-separated line per blocked host, named with the kind of condition that stopped the
-/// walk (§69).
-///
-/// Plain text on purpose — the machine-readable copy is the report's own `access_conditions` — and
-/// read off the fetcher rather than the report so a walk that failed *after* the block still names
-/// the host that refused it. A blocked host is printed even when no kind is attached to it.
 pub(super) async fn print_blocked_hosts(fetcher: &Fetcher) {
     let conditions = fetcher.access_conditions().await;
     let now = census_crawl::net::now_iso8601();

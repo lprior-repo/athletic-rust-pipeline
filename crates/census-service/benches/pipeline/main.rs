@@ -1,15 +1,3 @@
-//! National-scale measurement of the three stages a census run pays per unit of work: parsing one
-//! captured result file, resolving the school labels a result file publishes, and reading the
-//! performance observations a run wrote back out of the store.
-//!
-//! ```text
-//! cargo bench -p census-service --bench pipeline
-//! ```
-//!
-//! Bodies come from `tests/fixtures/**`; everything else is synthetic and deterministic, built from
-//! the constants here — no entropy, the clock or the network — so a run is reproducible from this
-//! file alone. No rate is reported for a corpus that lost its shape: each group refuses to measure
-//! unless its recipe's claims hold. `-- --warm-up-time 1 --measurement-time 2` bounds a full run.
 
 mod fixtures;
 
@@ -30,27 +18,18 @@ use std::path::PathBuf;
 
 use self::fixtures::{fixture, performance_observations};
 
-/// Group ids. Stable, and unique per bench: a reported id is `<group>/<bench>`.
 const RESULT_FILE_GROUP: &str = "pipeline/result_file";
 const LABEL_GROUP: &str = "pipeline/school_labels";
 const MERGE_GROUP: &str = "pipeline/merge";
 
-/// The committed artifact the parse group replays: the largest Hy-Tek HTML release in the corpus
-/// (32 parsed rows, 0 skipped, per the committed golden), read through the classifier and dispatch
-/// `wiaa_results::run` uses, stamped `ARCHIVE_YEAR`.
 const RESULT_FILE: &str = "d1boysstateresults-dash.htm";
 const RESULT_DIR: &str = "wiaa_results";
 const ARCHIVE_YEAR: i16 = 2025;
 
-/// The synthetic national snapshot: 100 schools in every jurisdiction, each published under its
-/// canonical and uppercase spelling, and every fourth one also as its relay squad (`<school> A`).
 const SCHOOLS_PER_JURISDICTION: usize = 100;
 const SCHOOL_PREFIX: &str = "Benchmark Academy";
 const SQUAD_LABEL_EVERY: usize = 4;
 
-/// The synthetic store batch: 5_000 performances observed four times each, over one championship
-/// meet per jurisdiction. The first observation of each carries the fields the read-time merge has
-/// to keep; the later ones contradict every one of them.
 const PERFORMANCES: usize = 5_000;
 const OBSERVATIONS_PER_PERFORMANCE: usize = 4;
 const MEET_NAME: &str = "Benchmark State Championships";
@@ -60,7 +39,6 @@ fn main() {
     or_fatal(run());
 }
 
-/// Measure every group; a corpus that lost its shape stops the run before any rate is reported.
 fn run() -> Result<()> {
     let mut criterion = Criterion::default().configure_from_args();
     bench_result_file(&mut criterion)?;
@@ -70,10 +48,6 @@ fn run() -> Result<()> {
     Ok(())
 }
 
-/// The value, or the benchmark stops with the reason on stderr.
-///
-/// A bench has no caller to return to, and a number produced from a corpus that lost its shape is
-/// worse than no number, so a failed step reports and exits instead of unwrapping.
 fn or_fatal<T, E: std::fmt::Display>(result: Result<T, E>) -> T {
     match result {
         Ok(value) => value,
@@ -84,10 +58,6 @@ fn or_fatal<T, E: std::fmt::Display>(result: Result<T, E>) -> T {
     }
 }
 
-/// `pipeline/result_file`: what the archive run pays per captured artifact — the format decision
-/// the runner makes before a parser is chosen, then the parse into the `result_file` shape the
-/// mapper consumes. Elements are the result rows the parse publishes, so the rate is rows/s of the
-/// stage that turns the largest captured release into a meet.
 fn bench_result_file(criterion: &mut Criterion) -> Result<()> {
     let body = fixture(RESULT_DIR, RESULT_FILE)?;
     let format = artifact_format("htm", Some(&body));
@@ -116,15 +86,6 @@ fn bench_result_file(criterion: &mut Criterion) -> Result<()> {
     Ok(())
 }
 
-/// `pipeline/school_labels`: what the read-time resolver costs over a national school snapshot —
-/// `SchoolIndex::from_schools` over every school, then `SchoolIndex::resolve` over the labels one
-/// result file publishes, plus one label per jurisdiction taken from a school of another
-/// jurisdiction, which must stay unresolved.
-///
-/// Sizes: 100 schools in each of the 49 jurisdictions (CENSUS_SCOPE) keeps every state's
-/// bucket equal, so no jurisdiction dominates the lookup mix, and 49 × 100 is the order of
-/// a national snapshot.
-/// Elements are the labels, so the rate is label resolutions per second.
 fn bench_school_labels(criterion: &mut Criterion) -> Result<()> {
     let mut schools = Vec::new();
     let mut labels: Vec<(UsJurisdiction, String, Option<SchoolId>)> = Vec::new();
@@ -177,13 +138,6 @@ fn bench_school_labels(criterion: &mut Criterion) -> Result<()> {
     Ok(())
 }
 
-/// `pipeline/merge`: what reading the performance table back costs at national volume — the key
-/// walk, the JSON decode, `Entity::merge` over four observations per performance, `Entity::publish`
-/// and, for `consolidate`, the materialized JSONL snapshot plus the store flush.
-///
-/// Sizes: 20_000 appended observations folding to 5_000 performances is the read the report, the
-/// workbook and the bests reducer each pay over one session's results. Elements are the appended
-/// observations, so `consolidate` carries the snapshot write and its `SyncAll` on top.
 fn bench_merge(criterion: &mut Criterion) -> Result<()> {
     let dir = tempfile::tempdir().context("creating the temporary store directory")?;
     let store = Store::open(dir.path()).context("opening the temporary census store")?;

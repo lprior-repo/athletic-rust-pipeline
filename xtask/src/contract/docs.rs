@@ -1,18 +1,6 @@
-//! Check 7's reference extraction: the Markdown documents the front doors name.
-//!
-//! The front doors are the two index documents a reader or a working agent is handed first, and both
-//! name the documents they expect to be opened. A reference that no longer resolves is a broken
-//! promise the compiler cannot see, and the list is taken from the documents themselves rather than
-//! from a list here, because a list here would be one more thing to keep in step with the tree.
 
-/// The index documents whose references are checked, relative to the repository root.
 pub(super) const INDEXES: [&str; 2] = ["README.md", "AGENTS.md"];
 
-/// Every Markdown path one index document names in backticks, sorted and deduplicated.
-///
-/// A reference is resolved by the caller against the directory of the document that names it. A
-/// backticked token that is not a Markdown path — a glob, a placeholder to fill in
-/// (`fixtures/<name>/README.md`), a command line — is skipped: it names a shape, not a file.
 pub(super) fn references(text: &str) -> Vec<String> {
     let mut found: Vec<String> = Vec::new();
     let mut rest = text;
@@ -32,7 +20,6 @@ pub(super) fn references(text: &str) -> Vec<String> {
     found
 }
 
-/// Whether a backticked token names a Markdown document rather than a shape to fill in.
 fn names_document(token: &str) -> bool {
     token.ends_with(".md")
         && !token

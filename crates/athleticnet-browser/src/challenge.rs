@@ -3,10 +3,6 @@ use reqwest::header::{HeaderMap, CONTENT_TYPE};
 
 const MAX_CHALLENGE_SCAN_BYTES: usize = 128 * 1024;
 
-/// The challenge verdict for a whole captured response: the header signal or the body signal.
-///
-/// The two signals are read together here, in the crate that owns them, so that the profile gate,
-/// the cooldown and every downstream receipt read one answer instead of composing their own.
 pub fn response_challenge(response: &BrowserResponse) -> bool {
     let media = response
         .headers

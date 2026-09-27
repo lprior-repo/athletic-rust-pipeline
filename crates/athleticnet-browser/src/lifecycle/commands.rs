@@ -1,9 +1,3 @@
-//! The manager's command surface.
-//!
-//! Every method here forwards one command to the actor and, where the actor answers, maps the
-//! reply channel closing into the matching `BrowserError`. The read-only methods (`is_alive`,
-//! `status`, `gated_error`, `mark_human_required`) work on the shared snapshot and the profile
-//! gate without touching the actor.
 
 use super::super::{actor::Command, BrowserError, BrowserOutcome, BrowserState, BrowserStatus};
 use super::status::{read_status, remaining_ms, usable_manager, write_state};
@@ -11,11 +5,6 @@ use super::BrowserManager;
 use tokio::sync::oneshot;
 
 impl BrowserManager {
-    /// True while the actor task can still serve commands.
-    ///
-    /// A closed command channel means the actor exited (browser gone or a fatal
-    /// error); a terminal `Stopped` status means the same. Either way the
-    /// runtime rebuilds the manager instead of reusing a dead handle.
     pub fn is_alive(&self) -> bool {
         if self.tx.is_closed() {
             return false;
@@ -25,10 +14,6 @@ impl BrowserManager {
             .map_or(true, |status| usable_manager(status.state))
     }
 
-    /// One request, answered with the transport's classified outcome.
-    ///
-    /// The return type is total on purpose: a closed gate, a dead actor and a full queue are all
-    /// outcomes that carry a verdict, so a caller has no error path of its own left to classify.
     pub async fn fetch(&self, request: crate::request::RequestSpec) -> BrowserOutcome {
         if !self.gate.is_ready() {
             return BrowserOutcome::failed(self.gated_error());
@@ -80,9 +65,6 @@ impl BrowserManager {
         result.await.map_err(|_| BrowserError::Transport)?
     }
 
-    /// Operator-requested relaunch: re-arm the one-shot recovery latch and
-    /// re-run the bootstrap navigation. Each explicit call is one bounded
-    /// attempt; a session that latches again escalates back to human action.
     pub async fn restart(&self) -> Result<BrowserStatus, BrowserError> {
         let (reply, result) = oneshot::channel();
         self.tx

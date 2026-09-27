@@ -18,11 +18,6 @@ use document::{bootstrap_events, navigation_deadline, BootstrapEvents, DocumentS
 pub(crate) use observer::start_observer;
 use observer::{load_observation, Observation};
 
-/// Chromium reports `net::ERR_ABORTED` for a request the browser itself
-/// superseded, which includes the original document of a redirect chain. The
-/// rankings source canonicalises navigations (it strips a trailing slash and a
-/// `page=1` query), so a redirect-free URL is not always available and the
-/// abandoned first document MUST NOT latch a transport failure.
 pub(super) const REDIRECT_ABORT: &str = "net::ERR_ABORTED";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -34,21 +29,8 @@ pub(crate) enum NavigationOutcome {
     Pending,
 }
 
-/// How often a settling wait re-samples a challenged tab. One sample costs two evaluations in the
-/// tab, so the interval is what keeps a wait measured in tens of seconds cheap.
 const CHALLENGE_POLL: Duration = Duration::from_millis(250);
 
-/// Bootstrap a page to the target origin. Collects events, captures body,
-/// classifies outcome, and signals challenge via gate.revoke().
-///
-/// A challenged classification is not yet a verdict: a managed interstitial usually clears itself
-/// by running its platform script, which mints the clearance cookie and reloads the tab.
-/// `challenge_wait` is the budget for that settlement, so what this returns is the page's answer
-/// after waiting rather than the first interstitial that happened to be served.
-///
-/// Does NOT call gate.try_open — that is the actor's sole responsibility.
-/// Does NOT store observation — the observer handles all observation persistence.
-/// Gate starts closed; bootstrap MUST run while closed.
 pub(crate) async fn bootstrap(
     page: &Page,
     target: &Url,
@@ -79,15 +61,6 @@ pub(crate) async fn bootstrap(
     .await
 }
 
-/// Re-sample a challenged tab until it stops reporting a challenge, or the budget runs out.
-///
-/// The sample is [`inspect`], which reads the document the tab is showing *now*: the observer
-/// replaces a page's observation when the tab loads another document, so a challenge that its own
-/// script cleared reads here as the page it became. A challenge that outlasts the budget is
-/// reported as challenged, which is the latch that asks a human for the step.
-///
-/// The injected clock supplies the deadline and tokio's timer the waits, so a paused test drives
-/// the whole budget without real time passing.
 async fn settle<F, Fut>(
     clock: &dyn Clock,
     budget: Duration,
@@ -113,7 +86,6 @@ where
     }
 }
 
-/// Resolve the frame every captured event is judged against.
 async fn resolve_main_frame(page: &Page) -> Result<FrameId, BrowserError> {
     page.mainframe()
         .await
@@ -121,10 +93,6 @@ async fn resolve_main_frame(page: &Page) -> Result<FrameId, BrowserError> {
         .ok_or(BrowserError::Unavailable)
 }
 
-/// The half of a navigation loop that does not change while it runs.
-///
-/// The mutable half — the event streams and the document — stays a separate argument, so the loop
-/// body reads as one `select!` over the things that move.
 struct NavigationLoop<'a> {
     page: &'a Page,
     target: &'a Url,
@@ -135,12 +103,6 @@ struct NavigationLoop<'a> {
 }
 
 impl NavigationLoop<'_> {
-    /// Drive the navigation and its event streams until the document is complete or the deadline
-    /// expires.
-    ///
-    /// One absolute deadline governs the whole loop: every pass recomputes the remaining budget, so
-    /// a stream that keeps producing events cannot extend the navigation, and the `sleep` arm is
-    /// what turns the deadline into `BrowserError::Timeout`.
     async fn run(
         &self,
         events: &mut BootstrapEvents,
@@ -186,12 +148,6 @@ impl NavigationLoop<'_> {
     }
 }
 
-/// Inspect a page's current navigation state. Classifies outcome and
-/// signals challenge via gate.revoke().
-///
-/// Does NOT call gate.try_open — that is the actor's sole responsibility.
-/// Gate starts closed; inspect MUST run while closed.
-/// If page is still loading, returns Pending so actor waits/retries.
 pub(crate) async fn inspect(
     page: &Page,
     origin: &Url,

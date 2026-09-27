@@ -1,12 +1,9 @@
-//! The page-level tallies: what the bytes say about each page, what the parser says about the same
-//! bytes, and the verdict totals those two readings add up to.
 
 use indexmap::IndexMap;
 
 use crate::counts::{count_len, len_count, tally};
 use crate::pages::PageAnalysis;
 
-/// The page's parser verdicts, sorted and deduplicated.
 fn distinct_verdicts(page: &PageAnalysis) -> Vec<String> {
     let mut v = page.parser_verdicts.clone();
     v.sort();
@@ -14,22 +11,18 @@ fn distinct_verdicts(page: &PageAnalysis) -> Vec<String> {
     v
 }
 
-/// Whether the page carries any row issue.
 fn has_row_issues(page: &PageAnalysis) -> bool {
     page.row_issues.values().sum::<usize>() > 0
 }
 
-/// Whether a page's distinct parser verdicts are exactly `only`.
 fn verdicts_are(page: &PageAnalysis, only: &str) -> bool {
     distinct_verdicts(page) == [only.to_string()]
 }
 
-/// Whether any of the page's parser verdicts is `verdict`.
 fn has_verdict(page: &PageAnalysis, verdict: &str) -> bool {
     page.parser_verdicts.iter().any(|v| v == verdict)
 }
 
-/// Pages whose parser record reported issues.
 fn parser_issue_pages(per_page: &[PageAnalysis]) -> usize {
     per_page
         .iter()
@@ -37,7 +30,6 @@ fn parser_issue_pages(per_page: &[PageAnalysis]) -> usize {
         .count()
 }
 
-/// The bytes-only recount: page kinds as the rows and the envelope's own pager classify them.
 pub(crate) fn print_recount(per_page: &[PageAnalysis]) {
     let pages_carrying_candidate_rows: usize = per_page.iter().filter(|p| p.candidates > 0).count();
     let row_issue_pages: usize = per_page.iter().filter(|p| has_row_issues(p)).count();
@@ -83,7 +75,6 @@ pub(crate) fn print_recount(per_page: &[PageAnalysis]) {
     );
 }
 
-/// The same page kinds as the parser's own records classify them.
 pub(crate) fn print_parser(per_page: &[PageAnalysis]) {
     let parser_short_pages: usize = per_page
         .iter()
@@ -127,7 +118,6 @@ pub(crate) fn print_parser(per_page: &[PageAnalysis]) {
     );
 }
 
-/// Add the parser-verdict tallies and the row-issue tallies to the verdict map.
 pub(crate) fn populate_totals(
     per_page: &[PageAnalysis],
     verdict_totals: &mut IndexMap<String, usize>,
@@ -166,7 +156,6 @@ pub(crate) fn populate_totals(
     }
 }
 
-/// The issue composition of the pages the parser flagged.
 pub(crate) fn print_issue_classes(per_page: &[PageAnalysis]) {
     let only_noncanonical: usize = per_page
         .iter()
@@ -200,7 +189,6 @@ pub(crate) fn print_issue_classes(per_page: &[PageAnalysis]) {
     println!("    both_or_other={}", both_or_other);
 }
 
-/// Pages carrying rows of both sports in one response.
 pub(crate) fn print_co_mingled(per_page: &[PageAnalysis]) {
     let co_mingled: usize = per_page
         .iter()
@@ -222,7 +210,6 @@ pub(crate) fn print_co_mingled(per_page: &[PageAnalysis]) {
     );
 }
 
-/// Mid-pagination versus last-page-and-short, over the pages the parser flagged.
 pub(crate) fn print_pagination(per_page: &[PageAnalysis]) {
     let with_next: usize = per_page
         .iter()

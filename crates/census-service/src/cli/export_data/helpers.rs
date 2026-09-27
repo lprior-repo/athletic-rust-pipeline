@@ -1,11 +1,7 @@
-//! Field extraction from the JSONL records the export projects: namespaces, identities, evidence
-//! sources and sports. The rows themselves come from the store's snapshot reader.
 
 use serde_json::Value;
 use std::collections::BTreeSet;
 
-/// `legacy_athletic_net:athlete` identity key from a namespace value.
-/// `{legacy_athletic_net: {kind: athlete}}` -> `legacy_athletic_net:athlete`.
 pub fn ns_key(namespace: &Value) -> String {
     match namespace {
         Value::String(s) => s.clone(),
@@ -32,7 +28,6 @@ pub fn ns_key(namespace: &Value) -> String {
     }
 }
 
-/// Extract identity tuples (ns_key, id, url) from a record's `source_identities`.
 pub fn identities(record: &Value) -> Vec<(String, String, String)> {
     let mut out = Vec::new();
     if let Some(idents) = record.get("source_identities").and_then(|v| v.as_array()) {
@@ -55,7 +50,6 @@ pub fn identities(record: &Value) -> Vec<(String, String, String)> {
     out
 }
 
-/// Pick the identity id for a given prefix (and optional kind suffix).
 pub fn pick(record: &Value, prefix: &str, kind: Option<&str>) -> String {
     for (key, ident, _url) in identities(record) {
         if key == prefix {
@@ -70,7 +64,6 @@ pub fn pick(record: &Value, prefix: &str, kind: Option<&str>) -> String {
     String::new()
 }
 
-/// Semicolon-separated, sorted evidence source ids.
 pub fn sources(record: &Value) -> String {
     let mut set = BTreeSet::new();
     if let Some(evidence) = record.get("evidence").and_then(|v| v.as_array()) {
@@ -87,7 +80,6 @@ pub fn sources(record: &Value) -> String {
     items.join(";")
 }
 
-/// Semicolon-separated sports list.
 pub fn sports(record: &Value) -> String {
     if let Some(sports) = record.get("sports").and_then(|v| v.as_array()) {
         let items: Vec<String> = sports

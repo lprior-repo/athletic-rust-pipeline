@@ -1,7 +1,6 @@
-//! The lattice's rules, on values only: no store, no network, no clock.
 
 use census_domain::model::{
-    ReviewCase, ReviewState, COHORT_DECISION_FAMILIES, COHORT_IDENTITY_CONFIDENCE_FAMILY,
+    ReviewCase, ReviewState, COHORT_DECISION_FAMILIES, IDENTITY_UNVERIFIED_FAMILY,
     COHORT_UNVERIFIED_FAMILY, UNRESOLVED_VENUE_FAMILY,
 };
 
@@ -9,8 +8,6 @@ use sha2::{Digest, Sha256};
 
 use super::*;
 
-/// Evidence that satisfies every §70 item: 51 jurisdiction buckets, a workbook that carries the
-/// cohort, and retained findings that are non-zero on purpose (findings never block a seal).
 fn evidence() -> SealEvidence {
     SealEvidence {
         open: OpenWork {
@@ -65,31 +62,24 @@ fn evidence() -> SealEvidence {
     }
 }
 
-/// The state every seal test starts from: the phase a census must be in to complete.
 fn exporting() -> CensusState {
     CensusState::Exporting
 }
 
-/// Seal any state. A refusal leaves the state where it was, so the caller sees the lattice it
-/// started from rather than a half-completed one.
 fn seal_from(mut state: CensusState, evidence: SealEvidence) -> Result<CensusState, SealError> {
     let outcome = state.seal(evidence);
     outcome.map(|()| state)
 }
 
-/// Seal from the export phase: the phase a census must reach before it can complete.
 fn seal_from_export(evidence: SealEvidence) -> Result<CensusState, SealError> {
     seal_from(exporting(), evidence)
 }
 
-/// Advance a copy of `state`, so a refused advance is visible as an error and the original state
-/// survives to be probed again.
 fn advance_of(state: &CensusState, to: Phase) -> Result<CensusState, SealError> {
     let mut probe = state.clone();
     probe.advance(to).map(|()| probe)
 }
 
-/// Walk the lattice from discovery to the phase before completion.
 fn walk_to(phase: Phase) -> CensusState {
     let mut state = CensusState::Discovering;
     while state.phase() != phase {
@@ -214,11 +204,6 @@ fn every_open_decision_refuses_the_seal_by_name() {
     }
 }
 
-/// A measurement nobody took is not a zero.
-///
-/// The store path of `census-service seal` cannot read the workflow journal, so it reports those
-/// fields as `None`. It used to report `0`, and the seal certified §70 items it had never checked -
-/// the exact failure this rule exists to make impossible.
 #[test]
 fn unmeasured_open_work_refuses_the_seal_by_name() {
     let cases = [
@@ -276,8 +261,6 @@ fn unmeasured_open_work_refuses_the_seal_by_name() {
     }
 }
 
-/// The default is *unmeasured*, not terminal: a caller that forgets a field gets a refusal instead
-/// of a seal, and all four items are named at once.
 #[test]
 fn the_default_open_work_is_unmeasured_and_refuses() {
     let mut packet = evidence();
@@ -431,11 +414,6 @@ fn the_seal_digest_is_stable_and_moves_with_the_counts() {
     );
 }
 
-/// The digest body is a wire format, not an implementation detail: a stored digest is re-rendered
-/// from the same evidence and compared, so every field's name, order and separator is a promise to
-/// the seals already written. The body below is `seal_digest.rs`'s format string transcribed field
-/// by field, so a field that is moved, renamed or dropped fails here with both strings side by side
-/// instead of as one opaque hash that cannot say which field moved.
 #[test]
 fn the_digest_is_pinned_field_by_field() {
     let body = "census-seal-v6\n\
@@ -488,9 +466,6 @@ fn the_digest_is_pinned_field_by_field() {
     );
 }
 
-/// A seal written before the renames carries its state-rollup and performance counts under the old
-/// names. A recorded seal is reported rather than re-derived, so an old `seal.json` has to read: each
-/// alias is the promise, and the digest it carries stays the digest it was written with.
 #[test]
 fn a_seal_counted_before_the_rename_still_reads() {
     let recorded = r#"{"jurisdictions":51,"schools":18047,"meets":11007,"athletes":1226212,
@@ -509,7 +484,6 @@ fn sealing_twice_returns_the_same_seal() {
     assert_eq!(once, twice, "a sealed census does not mint a second digest");
 }
 
-/// The digest one sealed state carries.
 fn digest_of(state: &CensusState) -> String {
     state.sealed().expect("the state is sealed").digest.clone()
 }
@@ -543,8 +517,6 @@ fn the_seal_binds_the_workbook_it_certifies() {
     );
 }
 
-/// A jurisdiction that recorded every stage and left no roster behind is terminal; one that is
-/// missing a stage, or that owes rosters a host refused, is not.
 #[test]
 fn a_jurisdiction_is_terminal_only_when_every_stage_ran() {
     let complete = JurisdictionStages {
@@ -576,8 +548,6 @@ fn a_jurisdiction_is_terminal_only_when_every_stage_ran() {
     }
 }
 
-/// The names an operator reads are the pieces the object has no outcome for, in the order it runs
-/// them — so `open-work` says what the next run would do, not merely that something is owed.
 #[test]
 fn owing_names_each_unfinished_piece_in_run_order() {
     assert_eq!(
@@ -593,8 +563,6 @@ fn owing_names_each_unfinished_piece_in_run_order() {
     assert_eq!(blocked.owing(), vec!["blocked rosters"]);
 }
 
-/// A read that failed is not a sweep that finished, and an object that never ran is not one that
-/// owes nothing: both carry a record with no stage outcome, and both count.
 #[test]
 fn unread_jurisdictions_count_as_owing() {
     let terminal = JurisdictionStages {
@@ -610,8 +578,6 @@ fn unread_jurisdictions_count_as_owing() {
     );
 }
 
-/// A source object is owed until it has accepted an observation or completed a window: the first
-/// says its rows are durable, the second that the walk which owns it finished posting.
 #[test]
 fn a_source_object_is_owed_until_it_accepts_an_observation_or_completes_a_window() {
     let written = SourceObject {
@@ -644,9 +610,6 @@ fn a_source_object_is_owed_until_it_accepts_an_observation_or_completes_a_window
     );
 }
 
-/// The names the owed count cannot carry: an object whose walk finished without appending a row is
-/// terminal, so it is not owed — and it still has to be recorded, or "read and empty" and "never
-/// read" are the same seal.
 #[test]
 fn the_objects_that_finished_empty_are_named_rather_than_owed() {
     let written = SourceObject {
@@ -678,12 +641,6 @@ fn the_objects_that_finished_empty_are_named_rather_than_owed() {
     );
 }
 
-/// The state a cohort case starts in is what makes this item attainable, so the item counts only the
-/// cases a later answer is actually owed for.
-///
-/// [`ReviewCase::minted`] is the pass's own constructor: every family the census's rules decide is
-/// minted terminal, and the cohort families are two of those. A case that starts `Pending` in a cohort
-/// family is therefore a decision the run genuinely owes, which is what this item is for.
 #[test]
 fn the_pass_mints_no_cohort_case_a_decision_is_owed_for() {
     let minted: Vec<ReviewCase> = COHORT_DECISION_FAMILIES
@@ -711,7 +668,6 @@ fn the_pass_mints_no_cohort_case_a_decision_is_owed_for() {
     );
 }
 
-/// A cohort decision is owed while its case has no verdict, whatever put the athlete in the queue.
 #[test]
 fn a_pending_cohort_case_is_owed_a_decision() {
     let unverified = ReviewCase::pending(
@@ -721,7 +677,7 @@ fn a_pending_cohort_case_is_owed_a_decision() {
         "no cohort evidence",
     );
     let low_confidence = ReviewCase::pending(
-        COHORT_IDENTITY_CONFIDENCE_FAMILY,
+        IDENTITY_UNVERIFIED_FAMILY,
         "athlete:2",
         "B Runner (Somewhere High)",
         "identity confidence 65 below the high bar of 85",
@@ -729,8 +685,6 @@ fn a_pending_cohort_case_is_owed_a_decision() {
     assert_eq!(owed_cohort_decisions(&[unverified, low_confidence]), 2);
 }
 
-/// A verdict is the decision, including the one that declines to decide: `Retained` is the lane
-/// saying the evidence does not settle it, and the case stays visible in the workbook either way.
 #[test]
 fn a_decided_cohort_case_is_not_owed_again() {
     let mut resolved = ReviewCase::pending(
@@ -741,7 +695,7 @@ fn a_decided_cohort_case_is_not_owed_again() {
     );
     resolved.state = ReviewState::Resolved;
     let mut retained = ReviewCase::pending(
-        COHORT_IDENTITY_CONFIDENCE_FAMILY,
+        IDENTITY_UNVERIFIED_FAMILY,
         "athlete:2",
         "B Runner (Somewhere High)",
         "identity confidence 65 below the high bar of 85",
@@ -750,8 +704,6 @@ fn a_decided_cohort_case_is_not_owed_again() {
     assert_eq!(owed_cohort_decisions(&[resolved, retained]), 0);
 }
 
-/// Every retained case without a verdict is an open identity candidate, whichever family kept it:
-/// the item is about the decision, and only a verdict is one.
 #[test]
 fn every_pending_case_is_an_open_identity_candidate() {
     let pending = ReviewCase::pending(
@@ -770,8 +722,6 @@ fn every_pending_case_is_an_open_identity_candidate() {
     assert_eq!(owed_identity_candidates(&[pending, decided]), 1);
 }
 
-/// Another lane's open case is that lane's work, not a cohort decision: the seal counts a
-/// jurisdiction question once, under the item that owns it.
 #[test]
 fn another_lanes_pending_case_is_not_a_cohort_decision() {
     let venue = ReviewCase::pending(

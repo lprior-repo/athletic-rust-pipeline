@@ -1,14 +1,3 @@
-//! `browser-session`: the one headed profile the `census-serve` endpoint owns.
-//!
-//! The lane is process state, not journaled state. The profile is the resource a challenge is
-//! about, so exactly one process drives it, and these verbs are the whole operator surface:
-//! launch it, read it, drain it, post one request. Every one of them addresses the running service
-//! rather than the store, because the endpoint is the process that holds both.
-//!
-//! `fetch` is what the census's own acquisition path does in code; an operator runs it here to
-//! prove the lane answers, to read one page by hand, or to reproduce a capture without a full run.
-//! It posts the plain action - one GET at the URL - because the census builds its own ranking
-//! actions in code, and a CLI cannot cite a body it did not construct.
 
 use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
@@ -24,13 +13,13 @@ use census_service::restate_services::{
 use super::Cli;
 use census_service::ingress;
 
-/// `census-service browser-session <verb>`
 #[derive(Debug, Args)]
+#[command(about = "`census-service browser-session <verb>`")]
 pub(super) struct BrowserSessionArgs {
-    /// Ingress origin of the local Restate server. The local census deployment when omitted.
+    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
-    /// Profile key the endpoint serves. A deployment serves one profile, so this is its key.
+    #[arg(help = "Profile key the endpoint serves. A deployment serves one profile, so this is its key")]
     #[arg(long, default_value_t = SESSION_KEY.to_string())]
     key: String,
     #[command(subcommand)]
@@ -39,25 +28,25 @@ pub(super) struct BrowserSessionArgs {
 
 #[derive(Debug, Subcommand)]
 enum LaneVerb {
-    /// Launch the profile, or report the manager already live on it.
+    #[command(about = "Launch the profile, or report the manager already live on it")]
     Start,
-    /// Read whether the lane is running and what the engine says about the profile.
+    #[command(about = "Read whether the lane is running and what the engine says about the profile")]
     Status,
-    /// Drain the lane and report the tasks it took down.
+    #[command(about = "Drain the lane and report the tasks it took down")]
     Stop,
-    /// Post one page request through the lane and print the transport's classified answer.
+    #[command(about = "Post one page request through the lane and print the transport's classified answer")]
     Fetch(FetchArgs),
 }
 
 #[derive(Debug, Args)]
 struct FetchArgs {
-    /// Page to read, e.g. `https://www.athletic.net/api/v1/...`.
+    #[arg(help = "Page to read, e.g. `https://www.athletic.net/api/v1/...`")]
     #[arg(long, value_name = "URL")]
     url: String,
-    /// The citation this read is filed under: what a receipt will name as the semantic URL.
+    #[arg(help = "The citation this read is filed under: what a receipt will name as the semantic URL")]
     #[arg(long, value_name = "TEXT")]
     semantic_url: String,
-    /// Print the whole outcome as JSON instead of a summary line.
+    #[arg(help = "Print the whole outcome as JSON instead of a summary line")]
     #[arg(long)]
     json: bool,
 }
@@ -77,8 +66,6 @@ pub(super) async fn run_browser_session(cli: &Cli, args: &BrowserSessionArgs) ->
     Ok(())
 }
 
-/// Launch the profile. The one verb here that is a job rather than a read: it starts a browser, runs
-/// the bootstrap navigation and waits for the profile gate.
 async fn start_lane(origin: &str, key: &str) -> Result<BrowserSessionStatus> {
     let lane = BrowserSessionIngressClient::from_client(ingress::job_client(origin)?, key);
     let status: BrowserSessionStatus = lane
@@ -92,7 +79,6 @@ async fn start_lane(origin: &str, key: &str) -> Result<BrowserSessionStatus> {
     Ok(status)
 }
 
-/// Read whether the lane is running, and what the engine says about it when it is.
 async fn read_lane(origin: &str, key: &str) -> Result<BrowserSessionStatus> {
     let lane = BrowserSessionIngressClient::from_client(ingress::client(origin)?, key);
     let status: BrowserSessionStatus = lane
@@ -106,7 +92,6 @@ async fn read_lane(origin: &str, key: &str) -> Result<BrowserSessionStatus> {
     Ok(status)
 }
 
-/// Drain the lane and report the counters it took down.
 async fn stop_lane(origin: &str, key: &str) -> Result<BrowserSessionDrain> {
     let lane = BrowserSessionIngressClient::from_client(ingress::client(origin)?, key);
     let drained: BrowserSessionDrain = lane
@@ -120,7 +105,6 @@ async fn stop_lane(origin: &str, key: &str) -> Result<BrowserSessionDrain> {
     Ok(drained)
 }
 
-/// Post one page request through the lane and hand back the transport's classified answer.
 async fn fetch_page(origin: &str, key: &str, fetch: &FetchArgs) -> Result<BrowserOutcome> {
     let url = Url::parse(&fetch.url).with_context(|| format!("{} is not a URL", fetch.url))?;
     let spec = RequestSpec {
@@ -140,7 +124,6 @@ async fn fetch_page(origin: &str, key: &str, fetch: &FetchArgs) -> Result<Browse
     Ok(outcome)
 }
 
-/// The profile's reading: the process fact first, then the engine's own status when there is one.
 fn print_status(status: &BrowserSessionStatus) {
     println!(
         "profile {}: {}",
@@ -161,8 +144,6 @@ fn print_status(status: &BrowserSessionStatus) {
     }
 }
 
-/// Every counter the engine reported, printed whole: a §42 accounting reads the residue, and a
-/// summary that dropped one would read as a drain that never had it.
 fn print_drain(drained: &BrowserSessionDrain) {
     let drain = &drained.drain;
     println!(
@@ -182,8 +163,6 @@ fn print_drain(drained: &BrowserSessionDrain) {
     }
 }
 
-/// The classified answer: the verdict travels with the capture, so this prints the engine's reading
-/// instead of re-deriving one from the body.
 fn print_outcome(outcome: &BrowserOutcome, json: bool) -> Result<()> {
     if json {
         println!("{}", serde_json::to_string_pretty(outcome)?);

@@ -1,5 +1,3 @@
-//! The arms whose payload is a roster, a coach directory or a state association's own pages.
-//! One function per registry slug, each marshalling [`ProviderArgs`] into its adapter's `Options`.
 
 use anyhow::{bail, Result};
 use census_crawl::{self as providers, AdapterContext, AdapterReport};
@@ -9,10 +7,6 @@ use std::path::Path;
 
 use super::super::ProviderArgs;
 
-/// The researched coach-contact artifact, addressed by its registry slug.
-///
-/// `--input` names the CSV; the dedicated `import-coaches` subcommand takes the same file. The
-/// import is an artifact read, so it issues no HTTP request.
 pub(crate) fn coach_contacts_report(
     store: &Store,
     args: &ProviderArgs,
@@ -209,8 +203,6 @@ pub(crate) async fn mpa_report(
     .await?)
 }
 
-/// The RIIL directory publishes every school in one page and takes no state or name restriction, so
-/// its `Options` carries neither.
 pub(crate) async fn riil_report(
     context: &AdapterContext<'_>,
     args: &ProviderArgs,

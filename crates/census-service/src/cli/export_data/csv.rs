@@ -1,7 +1,3 @@
-//! CSV writing utility.
-//!
-//! Excel-class applications evaluate fields starting with `=`, `+`, `-`, or `@` as formulas, so a
-//! leading apostrophe is the standard control for the third-party text in these data products.
 
 use anyhow::Result;
 use census_store::read::{csv_failure, publish_atomically};
@@ -9,17 +5,11 @@ use census_store::{StoreError, StoreResult};
 use std::borrow::Cow;
 use std::path::Path;
 
-/// Write a CSV file with the given header and rows.
-///
-/// Published by rename like every other artifact this repository emits: the export is read by the
-/// census document, which opens these tables expecting a complete one, and an in-place write that a
-/// crash interrupted leaves a short file the next document pass takes for the real thing.
 pub fn write_csv(path: &Path, header: &[&str], rows: &[Vec<String>]) -> Result<()> {
     publish_atomically(path, |temporary| write_body(temporary, path, header, rows))?;
     Ok(())
 }
 
-/// Escape third-party text only when a spreadsheet could interpret its first character.
 fn escape_field(field: &str) -> Cow<'_, str> {
     let needs_escape = match field.as_bytes().first().copied() {
         Some(b'=' | b'+' | b'@' | b'\t' | b'\r') => true,
@@ -33,7 +23,6 @@ fn escape_field(field: &str) -> Cow<'_, str> {
     }
 }
 
-/// Encode the table into `temporary`, the file [`publish_atomically`] renames to `published`.
 fn write_body(
     temporary: &Path,
     published: &Path,

@@ -1,21 +1,3 @@
-//! The `Coaches` sheet (objective §53): one row per canonical coach in the store.
-//!
-//! Published columns, in this order: School ID, School, School City, State, Sport, Coach, Role,
-//! Professional Email, Personal Email, Phone, Athletic Director, AD Professional Email, Official
-//! Source URL, Observed Date.
-//!
-//! Every cell is a stored field:
-//!
-//! * `Sport` is the coach's own `Sport` binding spelled the way the domain spells it, and
-//!   `school_wide` for the school-wide roles (`CanonicalCoach::sport` is `None` for an athletic
-//!   director) — the same label the census's own coach-sport counter uses;
-//! * `Role` is the coach's `CoachRole`;
-//! * consumer mailboxes are retained in `Personal Email` and published alongside professional
-//!   addresses; a blank means no source published an address;
-//! * `Athletic Director` and `AD Professional Email` name the school's own AD row, so a coach row and
-//!   an AD row for one school cite each other;
-//! * `Official Source URL` is the first evidence source URL stored for the coach, else the first
-//!   source-identity URL; `Observed Date` is the newest date in the coach's evidence.
 
 use crate::report::ReportResult;
 use census_domain::model::CanonicalCoach;
@@ -23,11 +5,9 @@ use census_domain::model::CanonicalCoach;
 use super::super::cells::{row, Cell};
 use super::dataset::Dataset;
 
-/// The worksheet name, as objective §53 publishes it.
 pub(super) const TITLE: &str = "Coaches";
 
-/// The sheet's column headers, in published order.
-pub(super) const HEADERS: [&str; 14] = [
+pub(super) const HEADERS: [&str; 16] = [
     "School ID",
     "School",
     "School City",
@@ -42,12 +22,12 @@ pub(super) const HEADERS: [&str; 14] = [
     "AD Professional Email",
     "Official Source URL",
     "Observed Date",
+    "Declared Tenure",
+    "Assessment School Year",
 ];
 
-/// Column widths, one per header.
-pub(super) const WIDTHS: [u16; 14] = [20, 30, 20, 8, 14, 26, 16, 32, 32, 18, 26, 32, 40, 14];
+pub(super) const WIDTHS: [u16; 16] = [20, 30, 20, 8, 14, 26, 16, 32, 32, 18, 26, 32, 40, 14, 24, 22];
 
-/// The `Coaches` sheet, ordered by state, school, sport, role, then coach.
 pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
     let mut ordered: Vec<(&CanonicalCoach, SortKey)> = dataset
         .coaches
@@ -62,7 +42,6 @@ pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
     Ok(rows)
 }
 
-/// The five fields the sheet orders by.
 type SortKey = (String, String, String, String, String);
 
 fn sort_key(dataset: &Dataset, coach: &CanonicalCoach) -> SortKey {
@@ -75,12 +54,11 @@ fn sort_key(dataset: &Dataset, coach: &CanonicalCoach) -> SortKey {
     )
 }
 
-/// One coach's published row.
 fn row_for(dataset: &Dataset, coach: &CanonicalCoach) -> Vec<Cell> {
     let director = dataset
         .contacts
         .get(coach.school.as_str())
-        .and_then(|contacts| contacts.director.as_ref());
+        .and_then(|contacts| contacts.director());
     row!(
         Cell::text(coach.school.as_str()),
         Cell::text(dataset.school_name(coach.school.as_str())),
@@ -104,23 +82,34 @@ fn row_for(dataset: &Dataset, coach: &CanonicalCoach) -> Vec<Cell> {
         ),
         Cell::text(official_url(coach)),
         Cell::text(observed_date(coach)),
+        Cell::text(tenure_label(coach, dataset.school_year)),
+        Cell::text(dataset.school_year.short()),
     )
 }
 
-/// The coach's sport binding, or `school_wide` for a role that is not bound to one sport.
+fn tenure_label(coach: &CanonicalCoach, school_year: census_domain::model::SchoolYear) -> &'static str {
+    use census_domain::model::{CoachTenure, TenureAssessmentError};
+    match coach.tenure_state(school_year) {
+        Ok(CoachTenure::Current { .. }) => "current_declared",
+        Ok(CoachTenure::Former { .. }) => "former_declared",
+        Ok(CoachTenure::Unknown) => "unknown",
+        Err(TenureAssessmentError::Conflict) => "tenure_conflict",
+        Err(TenureAssessmentError::InvalidEvidence { .. }) => "invalid_tenure_evidence",
+    }
+}
+
 fn sport_label(coach: &CanonicalCoach) -> String {
-    coach
-        .sport
-        .map(|sport| sport.stable_key().to_string())
-        .unwrap_or_else(|| "school_wide".to_string())
+    match (coach.sport, coach.role) {
+        (Some(sport), _) => sport.stable_key().to_owned(),
+        (None, census_domain::model::CoachRole::AthleticDirector) => "school_wide".to_owned(),
+        (None, _) => "unknown".to_owned(),
+    }
 }
 
 fn role_label(coach: &CanonicalCoach) -> String {
     coach.role.stable_key().to_string()
 }
 
-/// The document the contact was read from: a stored evidence source URL, else the source identity's
-/// own URL.
 fn official_url(coach: &CanonicalCoach) -> String {
     coach
         .evidence
@@ -135,7 +124,6 @@ fn official_url(coach: &CanonicalCoach) -> String {
         .unwrap_or_default()
 }
 
-/// The newest ISO-8601 observation date in the coach's evidence; blank when no evidence carries one.
 fn observed_date(coach: &CanonicalCoach) -> String {
     coach
         .evidence

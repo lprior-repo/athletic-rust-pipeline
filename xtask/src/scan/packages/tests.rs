@@ -1,8 +1,3 @@
-//! The walker's own judgements: which directories are product roots, and which files of a root are
-//! scanned.
-//!
-//! The fixtures are real directories, because the walker asks the filesystem which roots exist — a
-//! table asserted against source text would pass while `roots` still walked the wrong set.
 
 use super::*;
 use crate::scan::root_files;
@@ -10,8 +5,6 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 
-/// A scratch directory, removed when the test ends, named for the process so that tests running in
-/// parallel cannot share one.
 struct Fixture {
     path: PathBuf,
 }
@@ -24,14 +17,12 @@ impl Fixture {
         Self { path }
     }
 
-    /// Create `relative` as a directory, parents included, and return it.
     fn dir(&self, relative: &str) -> PathBuf {
         let path = self.path.join(relative);
         fs::create_dir_all(&path).expect("a fixture directory is creatable");
         path
     }
 
-    /// Create `relative` as a file, parents included, and return it.
     fn file(&self, relative: &str) -> PathBuf {
         let path = self.path.join(relative);
         if let Some(parent) = path.parent() {
@@ -48,7 +39,6 @@ impl Drop for Fixture {
     }
 }
 
-/// The roots as `(file name, harness)` pairs, so an assertion names what the walker took.
 fn walked(roots: &[Root]) -> BTreeMap<String, bool> {
     roots
         .iter()
@@ -64,7 +54,6 @@ fn walked(roots: &[Root]) -> BTreeMap<String, bool> {
         .collect()
 }
 
-/// The scanned file names of one root, relative to it.
 fn scanned(root: &Root) -> Vec<String> {
     root_files("pkg", root)
         .expect("a fixture root is listable")

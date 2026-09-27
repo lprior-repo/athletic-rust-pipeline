@@ -1,8 +1,3 @@
-//! What a census must prove about itself before §48 lets it complete.
-//!
-//! One value per acceptance item of §70, plus the numbers the seal certifies. Nothing here reads a
-//! store or a report: the caller that holds those assembles the evidence, keeping these rules
-//! testable on their own values.
 
 use serde::{Deserialize, Serialize};
 
@@ -10,47 +5,25 @@ mod recorded;
 
 pub use recorded::{GapTally, OpenWork, RetainedFindings, SealCounts, WorkbookCheck};
 
-/// The acceptance items of §70, in the order that list states them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AcceptanceItem {
-    /// Every configured jurisdiction has terminal source sweeps.
     JurisdictionSweepsTerminal,
-    /// Every discovered source object has a terminal acquisition state.
     SourceObjectsTerminal,
-    /// Every potential cohort athlete has a terminal cohort decision.
     CohortDecisionsTerminal,
-    /// Every identity candidate has a terminal deterministic or model-assisted decision.
     IdentityCandidatesTerminal,
-    /// Every unresolved conflict is retained.
-    ///
-    /// Satisfied by *recording* the count, never by refusing over it, so it never appears in
-    /// [`SealEvidence::open_items`]: a seal refused over a kept finding teaches operators to hide
-    /// findings.
     ConflictsRetained,
-    /// Every retry-exhausted operation is represented. What the store can represent of that is the
-    /// access condition that stopped the lane, which [`RetainedFindings::access_conditions`] counts and
-    /// splits; the exhaustion itself is an invocation state, not a stored row. Retained like
-    /// [`Self::ConflictsRetained`].
     RetriesRepresented,
-    /// Successful evidence is durable.
     EvidenceDurable,
-    /// Performance and PR calculations are reproducible.
     CalculationsReproducible,
-    /// Every workbook athlete maps to canonical stored evidence.
     WorkbookMapped,
-    /// Workbook counts reconcile against the store.
     WorkbookCountsReconcile,
-    /// The source coverage report reconciles.
     CoverageReportReconciles,
-    /// Run metrics reconcile.
     RunMetricsReconcile,
-    /// Final export verification passes.
     ExportVerified,
 }
 
 impl AcceptanceItem {
-    /// Every item, in declaration order — the list a status command prints.
     pub const ALL: [AcceptanceItem; 13] = [
         AcceptanceItem::JurisdictionSweepsTerminal,
         AcceptanceItem::SourceObjectsTerminal,
@@ -67,7 +40,6 @@ impl AcceptanceItem {
         AcceptanceItem::ExportVerified,
     ];
 
-    /// The name a refusal prints, matching §70's wording.
     pub const fn as_str(self) -> &'static str {
         match self {
             AcceptanceItem::JurisdictionSweepsTerminal => "jurisdiction sweeps are terminal",
@@ -87,7 +59,6 @@ impl AcceptanceItem {
     }
 }
 
-/// Everything §70 asks a census to prove about itself before it may be sealed.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SealEvidence {
     pub open: OpenWork,
@@ -98,8 +69,6 @@ pub struct SealEvidence {
 }
 
 impl SealEvidence {
-    /// One open-work measurement, or the statement that the caller could not take it: a refusal has
-    /// to name a number, and "not measured" is the honest answer when there is none.
     fn outstanding_of(count: Option<u64>, message: &str) -> String {
         match count {
             Some(count) => format!("{count} {message}"),
@@ -109,8 +78,6 @@ impl SealEvidence {
         }
     }
 
-    /// The §70 items this evidence does not satisfy, in declaration order. Retained findings are
-    /// deliberately absent: refusing a seal over a kept one would push an operator to hide it.
     pub fn open_items(&self) -> Vec<AcceptanceItem> {
         let mut open = Vec::new();
         if self.open.jurisdiction_sweeps != Some(0) {
@@ -149,7 +116,6 @@ impl SealEvidence {
         open
     }
 
-    /// The measurement behind one item, so a refusal names a number rather than a category.
     pub fn detail(&self, item: AcceptanceItem) -> String {
         match item {
             AcceptanceItem::WorkbookMapped
@@ -193,8 +159,6 @@ impl SealEvidence {
         }
     }
 
-    /// The measurements the workbook check supplies: what the exported bytes did or did not show.
-    /// Reached only for the five items `detail` sends here; every other item is measured above.
     fn workbook_detail(&self, item: AcceptanceItem) -> String {
         match item {
             AcceptanceItem::WorkbookMapped => format!(
@@ -218,7 +182,6 @@ impl SealEvidence {
         }
     }
 
-    /// The seal this evidence grants. Callers reach it through `CensusState::seal`.
     pub(super) fn into_seal(self) -> SealedCensus {
         let digest = super::seal_digest::render(&self);
         SealedCensus {
@@ -231,7 +194,6 @@ impl SealEvidence {
     }
 }
 
-/// A sealed census: the counts it certifies, the findings it keeps, and its digest.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SealedCensus {
     pub counts: SealCounts,

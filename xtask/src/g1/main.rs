@@ -1,10 +1,3 @@
-//! Counted inventory of live athletic.net /Search.aspx/runSearch response bodies (G1 slice).
-//!
-//! Read-only. Every number printed here is measured over the verbatim bytes the pipeline
-//! retained, not over a re-fetch.
-//!
-//! This file is the binary's argument handling; [`audit::run`] owns the run and each module below
-//! holds one of the responsibilities that run has.
 
 mod audit;
 mod counts;

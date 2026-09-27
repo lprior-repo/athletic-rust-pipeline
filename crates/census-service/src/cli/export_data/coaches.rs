@@ -1,10 +1,8 @@
-//! Canonical coaches CSV export.
 
 use crate::cli::export_data::{csv::write_csv, helpers::*};
 use serde_json::Value;
 use std::collections::HashMap;
 
-/// Extract source URL from a coach's evidence.
 fn coach_url(c: &Value) -> String {
     c.get("evidence")
         .and_then(|v| v.as_array())
@@ -19,7 +17,6 @@ fn coach_url(c: &Value) -> String {
         .to_string()
 }
 
-/// Extract latest observed_on date from a coach's evidence.
 fn coach_observed(c: &Value) -> String {
     c.get("evidence")
         .and_then(|v| v.as_array())
@@ -33,7 +30,6 @@ fn coach_observed(c: &Value) -> String {
         .to_string()
 }
 
-/// Get school field value.
 fn school_field(sch: &Value, field: &str) -> String {
     sch.get(field)
         .and_then(|v| v.as_str())
@@ -41,7 +37,6 @@ fn school_field(sch: &Value, field: &str) -> String {
         .to_string()
 }
 
-/// Build a single coach row from a JSON Value.
 fn build_coach_row(c: &Value, by_school: &HashMap<&str, &Value>) -> Vec<String> {
     let sch = by_school
         .get(c.get("school").and_then(|v| v.as_str()).unwrap_or(""))
@@ -65,7 +60,6 @@ fn build_coach_row(c: &Value, by_school: &HashMap<&str, &Value>) -> Vec<String> 
     ]
 }
 
-/// Helper to extract a string field from a Value.
 fn field_str(v: &Value, key: &str) -> String {
     v.get(key)
         .and_then(|v| v.as_str())
@@ -73,7 +67,6 @@ fn field_str(v: &Value, key: &str) -> String {
         .to_string()
 }
 
-/// Build and write canonical-coaches.csv.
 pub fn write_canonical_coaches(
     coaches: &[Value],
     by_school: &HashMap<&str, &Value>,

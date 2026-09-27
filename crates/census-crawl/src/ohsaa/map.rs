@@ -1,8 +1,3 @@
-//! Canonical mapping: parsed rows -> canonical entities from `census_domain::model`.
-//!
-//! Nothing here reads the network, the store or a file: it takes the parsed rows from
-//! [`super::parse`] and [`super::pages`] and returns the canonical types, which keeps it
-//! unit-testable and reusable by the durable services.
 
 use super::pages::{parse_ad_page, parse_sport_label, parse_sports_table};
 use super::parse::{nonempty, sport_key, strip_honorific};
@@ -12,14 +7,10 @@ use census_domain::model::{
     SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 
-/// One row of the search result table.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SearchResult {
-    /// ALL-CAPS school name as published (e.g. "DUBLIN COFFMAN").
     pub name: String,
-    /// City from the second column (e.g. "Dublin").
     pub city: String,
-    /// OHSAA numeric school id (e.g. "474").
     pub ohsaa_id: String,
 }
 
@@ -35,21 +26,18 @@ impl SearchResult {
     }
 }
 
-/// One coach extracted from a sports-information cell.
 #[derive(Debug, Clone)]
 pub struct CoachEntry {
     pub name: String,
     pub email: Option<String>,
 }
 
-/// Parsed content from an athletic department page.
 #[derive(Debug, Clone, Default)]
 pub struct AdPage {
     pub director: Option<(String, Option<String>)>,
     pub office_roles: Vec<(String, String)>,
 }
 
-/// Canonical entities for one school.
 #[derive(Debug, Clone)]
 pub struct SchoolExtract {
     pub school: CanonicalSchool,
@@ -57,8 +45,6 @@ pub struct SchoolExtract {
     pub coaches: Vec<CanonicalCoach>,
 }
 
-/// Build canonical school and coach entities from a school's search result,
-/// sports page, and AD page.
 pub fn school_entities(
     result: &SearchResult,
     sports_html: &str,
@@ -112,7 +98,6 @@ pub fn school_entities(
     }
 }
 
-/// Canonical school row for one search result, with its OHSAA identity and page evidence.
 fn school_from_result(result: &SearchResult, observed_on: &str) -> (CanonicalSchool, SchoolId) {
     let page_url = result.page_url();
     let (mut school, school_id) =
@@ -135,7 +120,6 @@ fn school_from_result(result: &SearchResult, observed_on: &str) -> (CanonicalSch
     (school, school_id)
 }
 
-/// The athletic director named on the AD page, if the page names one.
 fn ad_coach(
     director: Option<(String, Option<String>)>,
     result: &SearchResult,
@@ -170,7 +154,6 @@ fn ad_coach(
     Some(coach)
 }
 
-/// One head coach from a sports-table cell: `gender` and `gender_key` say which side it is.
 fn sport_coach(
     result: &SearchResult,
     school_id: &SchoolId,

@@ -1,21 +1,12 @@
-//! Read the response body inside the size cap, and hash what was read.
-//!
-//! Streams the body chunk-by-chunk so that no single allocation can exceed
-//! `MAX_BODY_BYTES` by more than one chunk. The declared-length pre-check is
-//! kept as an early-out for well-behaved servers.
-
 use crate::net::FetchError;
 use crate::net::MAX_BODY_BYTES;
 use futures::StreamExt;
 use sha2::{Digest, Sha256};
 
-/// Read the response body inside the size cap, and hash what was read.
-///
-/// Returns the body, the 16-byte key prefix, and the full 32-byte content digest (hex).
 pub(super) async fn read_checked_body(
     response: reqwest::Response,
     url: &str,
-) -> Result<(Vec<u8>, String, String), FetchError> {
+) -> Result<(Vec<u8>, String), FetchError> {
     let declared = response
         .headers()
         .get(reqwest::header::CONTENT_LENGTH)
@@ -48,13 +39,5 @@ pub(super) async fn read_checked_body(
         hasher.update(&chunk);
         body.extend_from_slice(&chunk);
     }
-    let digest = hasher.finalize();
-    let key_hex: String = digest
-        .get(..16)
-        .unwrap_or(digest.as_slice())
-        .iter()
-        .map(|b| format!("{b:02x}"))
-        .collect();
-    let content_hex: String = digest.iter().map(|b| format!("{b:02x}")).collect();
-    Ok((body, key_hex, content_hex))
+    Ok((body, format!("{:x}", hasher.finalize())))
 }

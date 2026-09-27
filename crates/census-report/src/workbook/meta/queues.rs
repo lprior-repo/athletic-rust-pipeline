@@ -1,21 +1,7 @@
-//! The retained queues: conflicts between rows the merge kept separate, and the material a human or
-//! the review model still has to adjudicate.
-//!
-//! Both queues render retained rows rather than dropping them or collapsing them into a count: a
-//! school another school's normalized name collides with, an athlete whose own grade observations
-//! disagree about the graduating class, or a meet whose venue was never placed.
-//! Each family prints one row per retained subject — the same subject ids the store holds — so the
-//! operator acts on rows instead of on a number. The families themselves live in `conflicts` and
-//! `review`; this module holds the labels, the family lists and the row shapes their sheets share.
-//!
-//! The families are deliberately narrow: a row appears here because a *stored* field is unresolved,
-//! never because a heuristic disliked it. Cohort-family rows are scoped to the published class of
-//! 2027 (the cohort the census document counts); school and meet rows cover the whole table, because
-//! neither carries a cohort.
 
 use census_domain::model::{
     CanonicalAthlete, GradYear, ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY,
-    COHORT_EVIDENCE_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY,
+    COHORT_EVIDENCE_FAMILY, IDENTITY_UNVERIFIED_FAMILY, COHORT_UNVERIFIED_FAMILY,
     CONTACT_CONFLICT_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
     UNRESOLVED_VENUE_FAMILY,
 };
@@ -32,15 +18,12 @@ mod conflicts;
 mod review;
 
 use conflicts::{athlete_identity, cohort_evidence, contact_conflicts, school_identity};
-use review::{cohort_unverified, low_confidence, unresolved_schools, unresolved_venues};
+use review::{cohort_unverified, identity_unverified, unresolved_schools, unresolved_venues};
 
-/// Widths for the retained-conflict sheet: family, state, subject id, subject, detail.
 pub(super) const CONFLICT_WIDTHS: [u16; 5] = [34, 12, 34, 44, 96];
 
-/// Widths for the review sheet: family, state, subject id, subject, answer, confidence, detail.
 pub(super) const REVIEW_WIDTHS: [u16; 7] = [34, 12, 34, 44, 24, 12, 96];
 
-/// Render the retained conflicts: one row per subject the merge kept separate (§54's `Conflicts`).
 pub(super) fn conflicts_sheet(conflicts: &[Family], rows: &StoreRows) -> Vec<Vec<Cell>> {
     let mut cells = vec![row!("Family", "State", "Subject ID", "Subject", "Detail")];
     for family in conflicts {
@@ -58,7 +41,6 @@ pub(super) fn conflicts_sheet(conflicts: &[Family], rows: &StoreRows) -> Vec<Vec
     cells
 }
 
-/// Render the retained review families and the durable model verdicts (§54's `Review`).
 pub(super) fn review_sheet(review: &[Family], rows: &StoreRows) -> Vec<Vec<Cell>> {
     let mut cells = vec![row!(
         "Family",
@@ -91,9 +73,6 @@ pub(super) fn review_sheet(review: &[Family], rows: &StoreRows) -> Vec<Vec<Cell>
     cells
 }
 
-/// The jurisdiction a retained subject sits in: a school's own state, or the school an athlete's row
-/// names. The subject id is a stored id, so this is a lookup and never a guess: a subject the store
-/// cannot place prints no state rather than a wrong one.
 fn state_for_subject_id(subject_id: &str, rows: &StoreRows) -> Cell {
     rows.schools
         .iter()
@@ -195,21 +174,15 @@ fn state_for_subject(family: &str, subject_id: &str, rows: &StoreRows) -> Cell {
     }
 }
 
-/// Family labels, shared with the reconciliation block on `Run Metrics`.
-///
-/// The names themselves live with the record they label (`census_domain::model`), so the lane that
-/// matches a retained case by name, the workbook that prints it and the seal that counts it cannot
-/// drift apart.
 pub(super) const COHORT_EVIDENCE: &str = COHORT_EVIDENCE_FAMILY;
 pub(super) const ATHLETE_IDENTITY: &str = ATHLETE_IDENTITY_FAMILY;
 pub(super) const SCHOOL_IDENTITY: &str = SCHOOL_IDENTITY_FAMILY;
 pub(super) const CONTACT_CONFLICT: &str = CONTACT_CONFLICT_FAMILY;
 pub(super) const COHORT_UNVERIFIED: &str = COHORT_UNVERIFIED_FAMILY;
-pub(super) const LOW_CONFIDENCE: &str = COHORT_IDENTITY_CONFIDENCE_FAMILY;
+pub(super) const IDENTITY_UNVERIFIED: &str = IDENTITY_UNVERIFIED_FAMILY;
 pub(super) const UNRESOLVED_VENUE: &str = UNRESOLVED_VENUE_FAMILY;
 pub(super) const UNRESOLVED_SCHOOL: &str = UNRESOLVED_SCHOOL_FAMILY;
 
-/// Every conflict family the store retains.
 pub(super) fn conflict_families(rows: &StoreRows, names: &HashMap<&str, &str>) -> Vec<Family> {
     vec![
         cohort_evidence(rows, names),
@@ -219,24 +192,21 @@ pub(super) fn conflict_families(rows: &StoreRows, names: &HashMap<&str, &str>) -
     ]
 }
 
-/// Every review family the store retains.
-pub(super) fn review_families(rows: &StoreRows, names: &HashMap<&str, &str>) -> Vec<Family> {
-    vec![
+pub(super) fn review_families(rows: &StoreRows, names: &HashMap<&str, &str>) -> ReportResult<Vec<Family>> {
+    Ok(vec![
         cohort_unverified(rows, names),
-        low_confidence(rows, names),
+        identity_unverified(rows, names)?,
         unresolved_venues(&rows.meets),
         unresolved_schools(&rows.schools),
-    ]
+    ])
 }
 
-/// The published cohort's athlete rows: the same class the census document counts.
 fn class_of_2027(athletes: &[CanonicalAthlete]) -> impl Iterator<Item = &CanonicalAthlete> + '_ {
     athletes
         .iter()
         .filter(|athlete| athlete.grad_year == GradYear::CO2027)
 }
 
-/// One retained row: the subject's id and name, and why the row is unresolved.
 fn queue_row(id: &str, subject: String, detail: String) -> QueueRow {
     QueueRow {
         subject_id: id.to_string(),
@@ -245,26 +215,27 @@ fn queue_row(id: &str, subject: String, detail: String) -> QueueRow {
     }
 }
 
-/// The retained rows of both queues as `(family label, row)` pairs: the durable record the store's
-/// `conflicts` and `review_cases` tables hold, read through the same families the sheets render, so
-/// the store and the workbook can never name different findings.
 pub fn retained_records(store: &Store) -> ReportResult<RetainedRecords> {
-    let rows = StoreRows::read(store, Scope::AllSources)?;
+    use census_store::clock::Clock;
+    let today = census_store::clock::SystemClock.today();
+    let school_year = census_domain::model::SchoolYear::from_date(&today)
+        .ok_or_else(|| crate::report::ReportError::Invariant {
+            detail: format!("cannot determine contact school year from {today}"),
+        })?;
+    let rows = StoreRows::read(store, Scope::AllSources, school_year)?;
     let names = school_name_index(&rows.schools);
     Ok(RetainedRecords {
         conflicts: labelled(conflict_families(&rows, &names)),
-        reviews: labelled(review_families(&rows, &names)),
+        reviews: labelled(review_families(&rows, &names)?),
     })
 }
 
-/// The retained conflicts and reviews, each row paired with the family that produced it.
 #[derive(Debug, Default)]
 pub struct RetainedRecords {
     pub conflicts: Vec<(&'static str, QueueRow)>,
     pub reviews: Vec<(&'static str, QueueRow)>,
 }
 
-/// Flatten families into `(label, row)` pairs, keeping the family order the sheets use.
 fn labelled(families: Vec<Family>) -> Vec<(&'static str, QueueRow)> {
     let mut out = Vec::new();
     for family in families {

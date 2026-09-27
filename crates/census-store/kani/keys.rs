@@ -1,24 +1,12 @@
-//! Kani proof harnesses for the observation-key encoding (`store::keys`) and the store's id bound.
-//!
-//! A key is `<table>\0<id>\0<sequence:u64 big-endian>` and `split_observation_key` recovers the
-//! triple from that fixed-width tail. `kani::any::<String>()` has no `Arbitrary` impl, so the id
-//! arrives as a bounded byte array through hex encoding — a total, branch-free bijection that
-//! keeps every byte visible and never introduces replacement characters, so the round trip is
-//! provable for all byte values including NUL.
 
 use crate::keys::{observation_id, observation_key, split_observation_key};
 use crate::keys::table_prefix;
 use crate::{Table, MAX_ID_BYTES};
 
-/// Bound on the symbolic id.
 const ID_BYTES: usize = 8;
 
-/// Bound on the raw byte string handed to `split_observation_key`.
 const RAW_KEY_BYTES: usize = 24;
-/// Hex lookup table for branch-free byte→char mapping.
 const HEX: [u8; 16] = *b"0123456789abcdef";
-/// Build the observation key bytes from an id as raw bytes (no String round-trip).
-/// This avoids CBMC's opaque `String::as_bytes()` model.
 fn build_key(table: Table, id_bytes: &[u8], sequence: u64) -> Vec<u8> {
     let mut out = table_prefix(table);
     out.extend_from_slice(id_bytes);
@@ -27,7 +15,6 @@ fn build_key(table: Table, id_bytes: &[u8], sequence: u64) -> Vec<u8> {
     out
 }
 
-/// Generate a hex-encoded id as raw bytes — total, branch-free bijection.
 fn any_id_bytes() -> [u8; ID_BYTES * 2] {
     let bytes: [u8; ID_BYTES] = kani::any();
     let mut out = [0u8; ID_BYTES * 2];
@@ -38,7 +25,6 @@ fn any_id_bytes() -> [u8; ID_BYTES * 2] {
     out
 }
 
-/// Round trip over every table, an arbitrary id and an arbitrary sequence.
 #[kani::proof]
 #[kani::unwind(48)]
 fn check_observation_key_round_trip() {
@@ -64,7 +50,6 @@ fn check_observation_key_round_trip() {
     kani::cover!(sequence == u64::MAX, "max sequence is reachable");
 }
 
-/// A NUL byte inside the id survives the round trip.
 #[kani::proof]
 #[kani::unwind(48)]
 fn check_observation_key_null_byte_id() {
@@ -81,8 +66,6 @@ fn check_observation_key_null_byte_id() {
         assert_eq!(sequence_back, sequence);
     }
 }
-/// A parser that searched backwards for a NUL misparsed exactly these, which is why the sequence is
-/// the fixed-width tail.
 #[kani::proof]
 #[kani::unwind(48)]
 fn check_observation_key_zero_and_max_sequence() {
@@ -99,8 +82,6 @@ fn check_observation_key_zero_and_max_sequence() {
     }
 }
 
-/// `split_observation_key` is total on arbitrary bytes, and when it answers, it answered about the
-/// fixed-width tail it was actually given.
 #[kani::proof]
 #[kani::unwind(48)]
 fn check_split_key_reads_fixed_width_tail() {
@@ -137,9 +118,6 @@ fn check_split_key_reads_fixed_width_tail() {
     );
 }
 
-/// The id contract `observation_id` enforces on a serialized observation: non-empty, at most
-/// `MAX_ID_BYTES`, and carried through verbatim. Fjall asserts keys stay under 64 KiB, so this
-/// bound is what keeps an over-long id from reaching the keyspace.
 #[kani::proof]
 #[kani::unwind(48)]
 fn check_observation_id_bounds() {

@@ -1,14 +1,7 @@
-//! Append-only reading: what a body cut short is allowed to yield.
-//!
-//! Schedule pages reach the census through a resuming walk and half-written downloads, and the walk
-//! journals the rows it read. Rows are read in document order and each row is read once, so a body cut
-//! short can only yield rows the whole body starts with — never a competition day the missing bytes
-//! would have contradicted.
 
 use super::{rendered_rows, rows, seam_config, PAGES, SEASON};
 use proptest::prelude::*;
 
-/// The law: a body cut after `cut` characters parses to rows the whole body starts with.
 fn prefix_holds(name: &str, body: &str, cut: usize) -> Result<(), TestCaseError> {
     let full =
         rows(body, SEASON).map_err(|error| TestCaseError::fail(format!("{name}: {error:?}")))?;

@@ -1,10 +1,3 @@
-//! Truncated pages, error bodies and what the seam is allowed to do with them.
-//!
-//! The listing is fetched page by page and a school page is fetched per school, so most of what
-//! arrives is not a complete page: a cut-off `views-row`, a JSON error body, a login redirect or a
-//! snapshot with the administration grid missing. None of those may panic, none may mint a school
-//! without a slug, and the same bytes must always read the same way — the walker's bookkeeping keys
-//! off these reads.
 
 use super::seam_config;
 use census_crawl::mshsl::{
@@ -12,8 +5,6 @@ use census_crawl::mshsl::{
 };
 use proptest::prelude::*;
 
-/// Tokens from the committed captures, in the order a scrambled or half-rendered page might carry
-/// them.
 const TOKENS: [&str; 10] = [
     "<div class=\"views-row\">",
     "<a href=\"/schools/aitkin-high-school\" class=\"school-teaser__title\">Aitkin High School</a>",
@@ -27,8 +18,6 @@ const TOKENS: [&str; 10] = [
     "<a href=\"mailto:?email-protection#d3a1b1b2a1b4b6bdb7b6a193b2b1b1bca7a0b5bca1b7fdb8e2e1fda4bafda6a0\">",
 ];
 
-/// Arbitrary markup, plus markup assembled from the seam's own tokens: the shapes a truncated,
-/// scrambled or non-HTML body actually arrives in.
 fn arbitrary_markup() -> impl Strategy<Value = String> {
     prop_oneof![
         prop::collection::vec(any::<char>(), 0..512)
@@ -41,8 +30,6 @@ fn arbitrary_markup() -> impl Strategy<Value = String> {
 proptest! {
     #![proptest_config(seam_config())]
 
-    /// Arbitrary markup reads to schools, entries and pager decisions or to none — never to a panic,
-    /// never to a school without a slug, and always the same way twice.
     #[test]
     fn arbitrary_markup_reads_to_schools_or_to_none(body in arbitrary_markup()) {
         let rows = parse_school_list(&body);

@@ -1,5 +1,3 @@
-//! What the two queues say: a finding keys its row, and evidence that changed mints a new case
-//! instead of borrowing the answer given about the old one.
 
 use super::super::review_record::REVIEW_POLICY_REVISION;
 use super::super::*;
@@ -177,8 +175,6 @@ fn a_findings_membership_is_part_of_its_evidence() {
     );
 }
 
-/// A family the census's own rules decide is minted decided: the case is not a question anyone is
-/// holding open, and the row still reaches the workbook's queues.
 #[test]
 fn a_rule_decided_family_is_minted_retained() {
     let cohort = ReviewCase::minted(
@@ -209,7 +205,6 @@ fn a_rule_decided_family_is_minted_retained() {
     assert_eq!(venue.state, ReviewState::Pending);
 }
 
-/// The cohort families are decided by the rule the row is read through, not by a later answer.
 #[test]
 fn a_cohort_claim_its_evidence_does_not_raise_is_minted_retained() {
     for family in COHORT_DECISION_FAMILIES {

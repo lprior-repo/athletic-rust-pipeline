@@ -1,14 +1,8 @@
-//! Publication: `report*.json` and the flat `census-by-state*.csv` next to the logs.
 
 use super::{io_error, Census, ReportError, ReportResult, Scope, StateCensus};
 use census_store::read::publish_atomically;
 use census_store::{Store, StoreError, StoreResult};
 
-/// Write the census JSON and a flat per-state CSV next to the consolidated logs.
-///
-/// Both are published by rename: the body is staged in a temporary beside the destination and the
-/// rename is the publication, so a reader that opens either name sees the artifact this run wrote or
-/// the one before it, never the truncated file an interrupted in-place write leaves.
 pub fn write_census(
     store: &Store,
     census: &Census,
@@ -31,9 +25,6 @@ pub fn write_census(
     Ok((json_path, csv_path))
 }
 
-/// Write `bytes` into `temporary`, the file [`publish_atomically`] renames to `published`: the body
-/// stages beside the destination, so the rename is the publication and a refused body leaves the
-/// published artifact exactly as it was.
 fn write_body(
     temporary: &std::path::Path,
     published: &std::path::Path,
@@ -45,7 +36,6 @@ fn write_body(
     })
 }
 
-/// The flat per-state CSV: the header, one line per jurisdiction, and the `TOTAL` line.
 fn census_csv(census: &Census) -> String {
     let mut csv = String::from(
         "state,schools,athletes,co2027,co2027_boys,co2027_girls,co2027_profile_url,co2027_grade_evidence,co2027_multisource,co2027_with_coach,co2027_with_coach_email,coaches,coaches_with_email\n",
@@ -64,7 +54,6 @@ fn census_csv(census: &Census) -> String {
     csv
 }
 
-/// One CSV line: the printed label, then the row's thirteen counters in header order.
 fn csv_row(label: &str, row: &StateCensus) -> String {
     format!(
         "{},{},{},{},{},{},{},{},{},{},{},{},{}\n",

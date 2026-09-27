@@ -1,25 +1,11 @@
-//! Dump one or more Excel sheets to stdout as `column=value` rows.
-//!
-//! one line per non-empty row.  Each line carries `column=value` pairs in column order (A, B, C,
-//! …), with every cell value truncated to 240 characters.  Empty rows are silently skipped.
-//!
-//! ## Usage
-//!
-//! ```text
-//! cargo run -p xtask -- dump-sheet <workbook.xlsx> <sheet> [<sheet> ...]
-//! ```
-//!
-//! The command does **not** materialise sheets that were not named on the command line.
 
 #![forbid(unsafe_code)]
 
 use anyhow::Context;
 use calamine::{DataType, Reader};
 use std::path::Path;
-/// Maximum length for a cell value in the output.
 const MAX_CELL_LEN: usize = 240;
 
-/// Dump the named sheet(s) from the workbook to stdout.
 pub fn run(workbook_path: &Path, sheet_names: &[String]) -> anyhow::Result<()> {
     let mut book = calamine::open_workbook_auto(workbook_path)
         .with_context(|| format!("opening workbook {}", workbook_path.display()))?;
@@ -74,13 +60,11 @@ pub fn run(workbook_path: &Path, sheet_names: &[String]) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Whether any cell in the row carries a non-empty string.
 fn row_has_text(row: &[impl calamine::DataType]) -> bool {
     row.iter()
         .any(|cell| cell.as_string().is_some_and(|s| !s.is_empty()))
 }
 
-/// Truncate `s` to `max` chars (if longer), appending `…`.
 fn truncate(s: &str, max: usize) -> String {
     if s.chars().count() > max {
         let truncated: String = s.chars().take(max).collect();

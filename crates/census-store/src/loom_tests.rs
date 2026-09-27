@@ -1,38 +1,17 @@
-//! Model checks for the store's sequence allocation.
-//!
-//! The property the keyspace rests on — two writers never share a sequence — belongs to one atomic
-//! reservation, so it is checked on that reservation: the same [`SequenceCounter`] the store
-//! reserves through, instantiated with `loom`'s instrumented atomic, run over the schedules `loom`
-//! explores. Nothing here opens a store: the keyspace, the batch and the durability mode are
-//! fjall's, and the one thing concurrent writers contend on is the counter.
-//!
-//! What the reservations are checked for is exactly what the keys need: the runs tile the sequence
-//! space — each starting where the last ended, so no sequence is handed out twice and none is
-//! skipped — in every interleaving the model explores. A counter with one sequence left is checked
-//! too: the reservation that cannot fit must be refused rather than wrap onto a sequence already
-//! spent, because the row written under a spent sequence would overwrite the observation stored there.
-
 use loom::sync::atomic::{AtomicU64, Ordering};
-use loom::sync::Arc;
+use loom::sync::{Arc, Mutex};
 use loom::thread;
 
-use super::sequences::{Reserve, SequenceCounter};
+use super::sequences::{Reserved, SequenceCounter, SequenceValue};
+use super::{StoreError, StoreResult, Table, MAX_ROWS_PER_TABLE};
 
-/// `loom`'s half of [`Reserve`]: the same reservation, on an atomic the model can schedule.
-impl Reserve for AtomicU64 {
+impl SequenceValue for AtomicU64 {
     fn starting_at(start: u64) -> Self {
         AtomicU64::new(start)
     }
 
-    fn reserve(&self, count: u64) -> Option<u64> {
-        let mut current = self.load(Ordering::Relaxed);
-        loop {
-            let next = current.checked_add(count)?;
-            match self.compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed) {
-                Ok(_) => return Some(current),
-                Err(observed) => current = observed,
-            }
-        }
+    fn publish(&self, mark: u64) {
+        self.store(mark, Ordering::Relaxed);
     }
 
     fn next(&self) -> u64 {
@@ -40,81 +19,92 @@ impl Reserve for AtomicU64 {
     }
 }
 
+struct Model {
+    append: Mutex<()>,
+    sequence: SequenceCounter<AtomicU64>,
+}
+
+fn model(start: u64) -> Arc<Model> {
+    Arc::new(Model {
+        append: Mutex::new(()),
+        sequence: SequenceCounter::starting_at(start),
+    })
+}
+
+fn commit(state: &Arc<Model>, count: u64) -> thread::JoinHandle<StoreResult<Reserved>> {
+    let state = Arc::clone(state);
+    thread::spawn(move || {
+        let _append = state.append.lock().unwrap();
+        let range = state.sequence.plan(Table::Schools, count)?;
+        state.sequence.publish(range.mark);
+        Ok(range)
+    })
+}
+
 #[test]
-fn concurrent_writers_tile_the_sequence_space() {
+fn committed_writers_tile_the_sequence_space() {
     let mut builder = loom::model::Builder::new();
     builder.max_threads = 4;
     builder.preemption_bound = Some(2);
     builder.check(|| {
-        let counter = Arc::new(SequenceCounter::<AtomicU64>::starting_at(0));
-        let writer = |count: u64| {
-            let counter = Arc::clone(&counter);
-            thread::spawn(move || (counter.reserve(count), count))
-        };
-        let first = writer(2);
-        let empty = writer(0);
-        let second = writer(3);
-
-        let mut reservations = [
-            first.join().expect("writer finished"),
-            empty.join().expect("writer finished"),
-            second.join().expect("writer finished"),
-        ]
-        .map(|(start, count)| {
-            (
-                start.expect("a run this far from the counter's end always fits"),
-                count,
-            )
+        let state = model(0);
+        let first = commit(&state, 2);
+        let empty = commit(&state, 0);
+        let second = commit(&state, 3);
+        let mut ranges = [first, empty, second].map(|writer| {
+            let range = writer.join().unwrap().unwrap();
+            (range.base, range.mark - range.base)
         });
-        reservations.sort_unstable();
-
-        let mut next = 0;
-        for (start, count) in reservations {
-            assert_eq!(
-                start, next,
-                "a reservation did not continue where the previous one ended"
-            );
-            next += count;
-        }
-        assert_eq!(
-            next, 5,
-            "the counter handed out a sequence nobody asked for"
-        );
-        assert_eq!(
-            counter.next(),
-            5,
-            "the counter does not sit at the end of what it handed out"
-        );
+        ranges.sort_unstable();
+        let end = ranges.into_iter().fold(0, |end, (base, count)| {
+            assert_eq!(base, end);
+            end + count
+        });
+        assert_eq!(end, 5);
+        assert_eq!(state.sequence.next(), end);
     });
 }
 
 #[test]
-fn a_reservation_that_would_wrap_is_refused() {
+fn competing_writers_cannot_cross_the_row_ceiling() {
     let mut builder = loom::model::Builder::new();
     builder.max_threads = 3;
     builder.preemption_bound = Some(2);
     builder.check(|| {
-        let counter = Arc::new(SequenceCounter::<AtomicU64>::starting_at(u64::MAX - 1));
-        let writer = |count: u64| {
-            let counter = Arc::clone(&counter);
-            thread::spawn(move || counter.reserve(count))
-        };
-        let single = writer(1);
-        let pair = writer(2);
+        let state = model(MAX_ROWS_PER_TABLE - 1);
+        let left = commit(&state, 1);
+        let right = commit(&state, 1);
+        let outcomes = [left, right].map(|writer| writer.join().unwrap());
+        assert_eq!(outcomes.iter().filter(|outcome| outcome.is_ok()).count(), 1);
+        assert_eq!(
+            outcomes
+                .iter()
+                .filter(|outcome| matches!(outcome, Err(StoreError::TooManyRows { .. })))
+                .count(),
+            1
+        );
+        assert_eq!(state.sequence.next(), MAX_ROWS_PER_TABLE);
+    });
+}
 
-        let reservations = [
-            single.join().expect("writer finished"),
-            pair.join().expect("writer finished"),
-        ];
-        assert_eq!(
-            reservations.iter().filter(|start| start.is_some()).count(),
-            1,
-            "exactly one of the two runs fits in the counter's last sequence: {reservations:?}"
-        );
-        assert_eq!(
-            counter.next(),
-            u64::MAX,
-            "the counter did not stop at the last sequence it handed out"
-        );
+#[test]
+fn an_unpublished_plan_leaves_no_sequence_gap() {
+    let mut builder = loom::model::Builder::new();
+    builder.max_threads = 3;
+    builder.preemption_bound = Some(2);
+    builder.check(|| {
+        let state = model(0);
+        let abandoned = Arc::clone(&state);
+        let planner = thread::spawn(move || {
+            let _append = abandoned.append.lock().unwrap();
+            abandoned.sequence.plan(Table::Schools, 2)
+        });
+        let writer = commit(&state, 3);
+        let planned = planner.join().unwrap().unwrap();
+        let committed = writer.join().unwrap().unwrap();
+        assert!(planned.base == 0 || planned.base == 3);
+        assert_eq!(committed.base, 0);
+        assert_eq!(committed.mark, 3);
+        assert_eq!(state.sequence.next(), 3);
     });
 }

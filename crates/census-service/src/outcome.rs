@@ -1,30 +1,14 @@
-/// Outcome lattice at async boundaries: classifies `tokio::task::JoinError` and inner results
-/// into a four-state enum so every boundary has a single, testable policy decision point.
-///
-/// The wire semantics are preserved: `Cancelled` stays terminal (a cancelled `ctx.run` is a
-/// region shutdown or abort, not a retryable fault). `Panicked` is also terminal because
-/// replaying the journal value that panicked would panic again.
 use tokio::task::JoinError;
 
-/// The four possible outcomes of an async boundary.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Outcome<T, E> {
-    /// The job completed successfully.
     Ok(T),
-    /// The job returned an application error.
     Err(E),
-    /// The task was cancelled (abort, shutdown, or deadline).
     Cancelled,
-    /// The task panicked.
     Panicked,
 }
 
 impl<T, E> Outcome<T, E> {
-    /// Classify a `JoinResult` from `JoinSet::join_next()` or `spawn_blocking`.
-    ///
-    /// `Ok(Ok(v))` → `Ok(v)`. `Ok(Err(e))` → `Err(e)`. `Err(join)` → `Panicked` if
-    /// `join.is_panic()` (replaying the same journal value would panic again), otherwise
-    /// `Cancelled` (the task was aborted, shut down, or timed out — not a retryable fault).
     pub fn from_join(inner: Result<Result<T, E>, JoinError>) -> Self {
         match inner {
             Ok(Ok(value)) => Self::Ok(value),
@@ -35,21 +19,14 @@ impl<T, E> Outcome<T, E> {
     }
 }
 
-/// Classification for drain reporting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DrainState {
-    /// Completed successfully.
     Completed,
-    /// Cancelled (abort or shutdown).
     Cancelled,
-    /// Panicked.
     Panicked,
 }
 
 impl DrainState {
-    /// Classify one join result from `JoinSet::join_next()` for the drain report. The `None` arm
-    /// ("no joinable task left") belongs to the caller's loop and never reaches this classifier,
-    /// so this match is total over the results that do.
     pub fn from_join(joined: Result<(), JoinError>) -> Self {
         match joined {
             Ok(()) => Self::Completed,

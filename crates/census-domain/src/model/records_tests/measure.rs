@@ -1,5 +1,3 @@
-//! What the measurement rows say: one row per subject, one snapshot per pass, one condition per host
-//! and kind.
 
 use super::super::*;
 

@@ -13,12 +13,6 @@ mod map_rows;
 
 use map_rows::record_row;
 
-/// One parsed meet and the run facts its rows are filed under: the artifact it came from, the sport
-/// the walk is reading, the school year admission accepted, and the day the body was observed.
-///
-/// Bundled rather than passed one by one because `sport` sits next to `school_year` at every call
-/// site and they mean entirely different things: the field names carry a distinction the argument
-/// order cannot.
 pub(super) struct AbsorbedMeet<'a> {
     pub(super) parsed: &'a ParsedMeet,
     pub(super) artifact: &'a ArchiveArtifact,
@@ -60,10 +54,6 @@ pub(super) fn absorb(read: AbsorbedMeet<'_>, mut writer: RowWriter<'_>) -> usize
     athlete_rows
 }
 
-/// The run-level aggregates one meet's rows are written into.
-///
-/// The caller builds this from the four disjoint borrows of the run it already holds, so the four
-/// writes `absorb` performs are named at the call site instead of being counted positionally.
 pub(super) struct RowWriter<'a> {
     pub(super) index: &'a SchoolIndex,
     pub(super) resolved: &'a mut HashMap<String, Option<SchoolId>>,
@@ -71,7 +61,6 @@ pub(super) struct RowWriter<'a> {
     pub(super) accumulator: &'a mut Accumulator,
 }
 
-/// One (meet, event) pair the row helpers write against.
 struct MeetContext<'a> {
     artifact: &'a ArchiveArtifact,
     meet: &'a CanonicalMeet,
@@ -83,11 +72,6 @@ struct MeetContext<'a> {
     event_id: &'a EventId,
 }
 
-/// Build the meet and the evidence every event and row of it shares.
-///
-/// The files never state a timing method. WIAA tournament rounds (regional, sectional, state) are
-/// fully automatic per association policy, so the meet's level is the provenance; anything that
-/// does not read as a tournament round stays `Unknown` rather than inheriting a "fast" guess.
 fn meet_for(
     parsed: &ParsedMeet,
     artifact: &ArchiveArtifact,
@@ -112,7 +96,7 @@ fn meet_for(
     meet.source_urls.push(artifact.url.clone());
     meet.source_identities.push(SourceIdentity::new(
         SourceNamespace::Other("wiaa_result_file".to_string()),
-        artifact.stem.clone(),
+        artifact.url.clone(),
     ));
     let mut meet_evidence = Evidence::parsed(
         SourceRef::new("wiaa_results", Some(artifact.url.clone())),
@@ -133,7 +117,6 @@ fn meet_for(
     (meet, meet_evidence, timing)
 }
 
-/// Record one parsed event and return the event id its rows reference.
 fn record_event(
     writer: &mut RowWriter<'_>,
     meet: &CanonicalMeet,
@@ -163,7 +146,6 @@ fn record_event(
     event_id
 }
 
-/// Keep the meet once every event of it has been recorded.
 fn keep_meet(writer: &mut RowWriter<'_>, meet: CanonicalMeet) {
     writer
         .accumulator

@@ -1,20 +1,3 @@
-//! The whole-meet pull, end to end: `athleticnet::collect` driven through `Fetcher` against the
-//! genuine probe capture of meet 634313, with no socket in the run.
-//!
-//! The two (and, with `event_metadata`, three) request URLs are seeded into the fetcher's on-disk
-//! cache, so every request is served from disk and the run proves the whole route — URL
-//! construction, the `anettokens` header path, the journal, the walk, and the store append —
-//! rather than the mapper alone. The fixture bodies are the anonymous captures of
-//! `research/sources/athleticnet/samples/anon-{meetdata,allresults,eventdiv}-634313.json`, whose
-//! measured shape is pinned in `crates/census-crawl/src/athleticnet/meet/tests.rs` and in that module's doc:
-//! 758 published rows, 72 relay squads, 288 legs, 903 storable performances.
-//!
-//! Both routes are exercised: the registry route is *not* reached, because `Options.meets` is set,
-//! and a second run over the same store proves the journal short-circuits the request pair.
-//!
-//! `AdapterReport::requests` is the fetcher's own count of **network** requests, so a fixture-driven
-//! run reports `0` there and names the served documents in `from_cache` — which is the point: no
-//! socket is opened by this test, and the numbers it asserts are the ones the run really spent.
 
 use std::collections::HashMap;
 use std::fs;
@@ -32,8 +15,6 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use serde_json::json;
 
-/// Reads `<crawl crate>/tests/fixtures/<source>/<file>` without linking the golden-corpus harness:
-/// this test needs one fixture per request and none of `common`'s golden machinery.
 fn fixture(source: &str, file: &str) -> Result<String> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../census-crawl/tests/fixtures")
@@ -46,8 +27,6 @@ const OBSERVED_ON: &str = "2026-09-22";
 const MEET_ID: i64 = 634313;
 const SOURCE: &str = "athleticnet";
 
-/// Seed the fetcher's on-disk cache for `url` under the key `Fetcher` derives
-/// (`sha256(method \x1f url \x1f body)[..16]`), so `collect` can be driven without a socket.
 fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
     use sha2::{Digest, Sha256};
 
@@ -64,7 +43,7 @@ fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
         "url": url,
         "method": "GET",
         "status": 200,
-        "sha256": format!("{:x}", Sha256::digest(body.as_bytes())),
+        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
         "fetched_at": "2026-09-22T12:00:00Z",
     });
@@ -80,7 +59,6 @@ fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
     Ok(())
 }
 
-/// A run's harness: the cache every request is served from, the store it writes, and the fetcher.
 struct Harness {
     _dir: tempfile::TempDir,
     fetcher: Fetcher,
@@ -88,7 +66,6 @@ struct Harness {
 }
 
 impl Harness {
-    /// The harness for one meet, with the metadata document seeded only when `event_metadata`.
     fn new(event_metadata: bool) -> Result<Self> {
         let dir = tempfile::tempdir().context("creating a temp dir")?;
         let cache = dir.path().join("http");

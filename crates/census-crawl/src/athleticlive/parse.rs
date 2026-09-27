@@ -1,11 +1,8 @@
-//! The harvest's own vocabulary and its CSV reader: how AthleticLIVE writes a state, a date and a
-//! competition level, and the column accessors every row is read through.
 
 use crate::{CrawlError, CrawlResult};
 use census_domain::model::CompetitionLevel;
 use census_domain::UsJurisdiction;
 
-/// One parsed row of the AthleticLIVE harvest.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MeetRow {
     pub tenant: String,
@@ -19,11 +16,6 @@ pub struct MeetRow {
     pub has_results: bool,
 }
 
-/// True when a date's year is outside a plausible high-school competition window.
-///
-/// The harvest contains a small tail of corrupt timestamps (for example `2222-08-23`); they are
-/// imported as published and counted in the report rather than dropped, so the corruption stays
-/// visible downstream.
 pub fn implausible_year(date: &str) -> bool {
     match date.get(..4).and_then(|y| y.parse::<u16>().ok()) {
         Some(year) => !(2015..=2030).contains(&year),
@@ -31,7 +23,6 @@ pub fn implausible_year(date: &str) -> bool {
     }
 }
 
-/// Take the `YYYY-MM-DD` prefix of an ISO timestamp; reject anything else.
 fn date_prefix(value: &str) -> Option<String> {
     let head = value.trim().get(..10)?;
     let mut parts = head.split('-');
@@ -50,10 +41,6 @@ fn date_prefix(value: &str) -> Option<String> {
     Some(head.to_string())
 }
 
-/// Competition level inferred from meet-name vocabulary.
-///
-/// Deliberately shallow: only unambiguous markers are honoured, everything else stays `Unknown`
-/// rather than guessing. The meet name remains the primary evidence for a later cross-source join.
 pub fn infer_level(name: &str) -> CompetitionLevel {
     let lowered = name.to_ascii_lowercase();
     let has = |needle: &str| lowered.contains(needle);
@@ -82,11 +69,8 @@ pub fn infer_level(name: &str) -> CompetitionLevel {
     }
 }
 
-/// Identity the harvest's shape errors carry: the CSV is the adapter's source of record and
-/// `Options::input` names the operator's copy of it.
 const HARVEST_LABEL: &str = "athleticlive harvest CSV";
 
-/// A harvest shape error, tagged with the artifact it was read from.
 fn harvest_schema(detail: String) -> CrawlError {
     CrawlError::Schema {
         url: HARVEST_LABEL.to_string(),
@@ -94,7 +78,6 @@ fn harvest_schema(detail: String) -> CrawlError {
     }
 }
 
-/// One row's column value: the index of `want` resolved against this row's own fields.
 fn field<'a>(columns: &[String], fields: &'a [String], want: &str) -> Option<&'a str> {
     columns
         .iter()
@@ -103,7 +86,6 @@ fn field<'a>(columns: &[String], fields: &'a [String], want: &str) -> Option<&'a
         .map(|value| value.trim())
 }
 
-/// The columns every harvest row must carry.
 fn require_columns(columns: &[String]) -> CrawlResult<()> {
     for required in ["tenant", "athleticlive_meet_id", "name", "state", "start"] {
         let present = columns
@@ -118,7 +100,6 @@ fn require_columns(columns: &[String]) -> CrawlResult<()> {
     Ok(())
 }
 
-/// A column every row must publish: its trimmed value, or the row's refusal.
 fn required_field(
     columns: &[String],
     fields: &[String],
@@ -131,22 +112,18 @@ fn required_field(
     }
 }
 
-/// A row's optional text column, blank values dropped.
 fn non_empty(columns: &[String], fields: &[String], want: &str) -> Option<String> {
     field(columns, fields, want)
         .filter(|value| !value.is_empty())
         .map(str::to_string)
 }
 
-/// A row's Athletic.net meet id, when the row publishes one.
 fn athleticnet_id(columns: &[String], fields: &[String]) -> Option<String> {
     field(columns, fields, "athleticnet_meet_id")
         .filter(|value| !value.is_empty() && value.chars().all(|c| c.is_ascii_digit()))
         .map(str::to_string)
 }
 
-/// Parse the AthleticLIVE harvest CSV. Column order is irrelevant; unknown columns are ignored and
-/// the optional columns of the `-seeds` variant are tolerated.
 pub fn parse_meets_csv(body: &str) -> CrawlResult<Vec<MeetRow>> {
     let mut lines = body.lines().filter(|line| !line.trim().is_empty());
     let Some(header) = lines.next() else {
@@ -167,7 +144,6 @@ pub fn parse_meets_csv(body: &str) -> CrawlResult<Vec<MeetRow>> {
     Ok(rows)
 }
 
-/// One harvested row, or `None` when the row publishes no usable state or start date.
 fn meet_row(
     columns: &[String],
     fields: &[String],
@@ -200,7 +176,6 @@ fn meet_row(
     }))
 }
 
-/// Minimal RFC 4180 record splitter (the harvest quotes timer-credit HTML, so this is required).
 fn split_csv_record(line: &str) -> Vec<String> {
     let mut fields = Vec::new();
     let mut current = String::new();

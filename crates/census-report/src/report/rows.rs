@@ -1,5 +1,3 @@
-//! Row assembly primitives: the state buckets, school indexes and per-athlete tallies the
-//! projection drives.
 
 use super::notes::bump;
 use super::{SportsBreakdown, StateCensus};
@@ -14,8 +12,6 @@ fn is_track_or_xc(sport: Sport) -> bool {
     )
 }
 
-/// Row counts behind the `ALL` row and the report notes. `athletes` is measured after the
-/// [`Scope`](super::Scope) filter, so the notes describe the rows the report actually used.
 pub(super) struct RowCounts {
     pub(super) schools: usize,
     pub(super) athletes: usize,
@@ -44,7 +40,6 @@ impl RowCounts {
     }
 }
 
-/// Class-of-2027 counters that are not per-state.
 #[derive(Default)]
 pub(super) struct Co2027Rollup {
     pub(super) sports: SportsBreakdown,
@@ -54,7 +49,6 @@ pub(super) struct Co2027Rollup {
     pub(super) athletic_net_urls: usize,
 }
 
-/// Athlete-derived census counters.
 #[derive(Default)]
 pub(super) struct AthleteRollup {
     pub(super) by_state: BTreeMap<JurisdictionBucket, StateCensus>,
@@ -62,7 +56,6 @@ pub(super) struct AthleteRollup {
     pub(super) co2027: Co2027Rollup,
 }
 
-/// Coach-derived census counters.
 #[derive(Default)]
 pub(super) struct CoachRollup {
     pub(super) by_state: BTreeMap<JurisdictionBucket, (usize, usize)>,
@@ -71,7 +64,6 @@ pub(super) struct CoachRollup {
     pub(super) sources: BTreeMap<String, usize>,
 }
 
-/// School id -> (a track/XC coach, whether any track/XC coach brings a published email).
 pub(super) fn school_coach_index(
     coaches: &[CanonicalCoach],
 ) -> HashMap<&str, (&CanonicalCoach, bool)> {
@@ -88,7 +80,6 @@ pub(super) fn school_coach_index(
     index
 }
 
-/// Track/XC breakdown for one class-of-2027 athlete.
 fn tally_sports(sports: &mut SportsBreakdown, athlete: &CanonicalAthlete) {
     let indoor = athlete.sports.contains(&Sport::IndoorTrack);
     let outdoor = athlete.sports.contains(&Sport::OutdoorTrack);
@@ -102,7 +93,6 @@ fn tally_sports(sports: &mut SportsBreakdown, athlete: &CanonicalAthlete) {
     }
 }
 
-/// Class-of-2027 counting for one athlete, over exactly the cohort the per-state buckets count.
 pub(super) fn tally_co2027(
     entry: &mut StateCensus,
     co: &mut Co2027Rollup,
@@ -128,9 +118,7 @@ pub(super) fn tally_co2027(
                 .or_default(),
         );
     }
-    let distinct: BTreeSet<String> = athlete
-        .source_identities
-        .iter()
+    let distinct: BTreeSet<String> = athlete.identities()
         .map(|identity| identity.namespace.to_string())
         .collect();
     if distinct.len() > 1 {
@@ -156,7 +144,6 @@ pub(super) fn tally_co2027(
     tally_sports(&mut co.sports, athlete);
 }
 
-/// `school_wide` for a coach who covers a whole school, else the lowercased sport name.
 pub(super) fn coach_sport(coach: &CanonicalCoach) -> String {
     coach
         .sport

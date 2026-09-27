@@ -1,11 +1,3 @@
-//! The ingress half of the census subcommands: the running deployment answers, the store is never
-//! opened.
-//!
-//! Every function announces the exact handler it is about to call before calling it, so a returned
-//! number can be traced to the service that produced it — and so the mode is visible in a transcript
-//! rather than inferred from which flags were passed. The replies are read by field name: a name a
-//! reply does not carry is an error rather than a zero, because a totals line that printed `0` for a
-//! renamed field would read as an empty census.
 
 use anyhow::{Context, Result};
 use census_report::report::Scope;
@@ -20,7 +12,6 @@ use std::path::Path;
 
 use crate::ingress;
 
-/// `Census/status`: the store's per-table counters, counted by the service.
 pub(super) fn status(origin: &str) -> Result<()> {
     let (endpoint, client) = ingress::client(origin)?;
     ingress::announce(&endpoint, "Census", "status");
@@ -38,7 +29,6 @@ pub(super) fn status(origin: &str) -> Result<()> {
     Ok(())
 }
 
-/// `Report/run` over every source.
 pub(super) fn coverage(origin: &str) -> Result<()> {
     let (endpoint, client) = ingress::job_client(origin)?;
     ingress::announce(&endpoint, "Report", "run");
@@ -60,7 +50,6 @@ pub(super) fn coverage(origin: &str) -> Result<()> {
     totals_line(&scope, &totals)
 }
 
-/// `Workbook/run` for the requested cohort.
 pub(super) fn workbook(
     origin: &str,
     out: Option<&Path>,
@@ -93,7 +82,6 @@ pub(super) fn workbook(
     Ok(())
 }
 
-/// The report totals line, in the labels the offline `report` prints for the same numbers.
 fn totals_line(scope: &str, totals: &Value) -> Result<()> {
     println!(
         "scope={scope} totals: schools={} athletes={} co2027={} (boys={} girls={}) profile_url={} multisource={} coaches={}",
@@ -109,7 +97,6 @@ fn totals_line(scope: &str, totals: &Value) -> Result<()> {
     Ok(())
 }
 
-/// One totals field from the wire reply.
 fn count(totals: &Value, key: &str) -> Result<u64> {
     totals
         .get(key)
@@ -117,10 +104,6 @@ fn count(totals: &Value, key: &str) -> Result<u64> {
         .with_context(|| format!("the report reply's totals carry no `{key}` count"))
 }
 
-/// One table's row count as `Census/status` reports it.
-///
-/// The handler lists every table it knows, including the ones holding no rows, so a miss here means
-/// the deployment does not have that table at all rather than that it is empty.
 fn rows(status: &StatusReply, table: Table) -> u64 {
     status
         .tables
@@ -129,8 +112,6 @@ fn rows(status: &StatusReply, table: Table) -> u64 {
         .map_or(0, |count| count.rows)
 }
 
-/// Cohort fields are `i16`; the flag is an `i32` so the offline child reports its own range error,
-/// and this conversion has to reproduce that message for the wire request.
 fn school_year(grad_year: i32) -> Result<i16> {
     i16::try_from(grad_year)
         .with_context(|| format!("--grad-year {grad_year} is not a representable year"))

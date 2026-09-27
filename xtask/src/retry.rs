@@ -1,93 +1,38 @@
-//! The retry ceilings: where every `max_attempts` is declared, and how many attempts it asks for.
-//!
-//! §9 and ADR-002 fix retry ownership: exactly one retry owner, the Restate invocation, and a
-//! transport that performs one attempt. The two are declared in two different places, so they are
-//! measured as two classes:
-//!
-//! * the **handler attribute** — `invocation_retry_policy(.., max_attempts = N, ..)` on a
-//!   `#[restate_sdk::service|object|workflow]` definition, the invocation ceiling;
-//! * the **inner policy** — `RunRetryPolicy::new().max_attempts(N)` on one `ctx.run` effect, which is
-//!   where an act that must not be re-issued says so with `1`.
-//!
-//! The declaration is a literal in the attribute form: the Restate macro accepts an integer literal
-//! only (`restate-sdk-macros`'s `parse_u64` rejects paths and expressions). The builder takes any
-//! `u32` expression, so `.max_attempts(n)` or `.max_attempts(1 + 3)` hides its number from any pattern
-//! that reads literals — which is why every mention the two grammars do *not* claim is reported as a
-//! site of its own instead of being skipped. The scan fails closed on the spellings it cannot read.
-//!
-//! A third grammar keeps the H2 class out: the bare `ctx.run` absence gate. The ceilings above only
-//! read `max_attempts` sites, so an effect that declares no policy at all is invisible to them — and
-//! a bare `ctx.run` is the common violation, a second in-process retry the journal cannot account
-//! for. Every `ctx.run` effect therefore has to carry a chained `.retry_policy(` inside its own
-//! call, and a site without one fails listing file and line.
-//!
-//! The walk and the masking are [`crate::scan`]'s: this module adds three grammars and nothing else.
-//! A second file walk would be a second parser to keep in step with the `#[cfg(test)]` cut, the
-//! test-file skip and the string/comment mask.
 
 use crate::scan::{self, Rules};
 use anyhow::Result;
 use regex::Regex;
 
-/// The handler-attribute form: `max_attempts = 3`, with the raw-identifier spelling allowed.
-///
-/// The leading `\b` is load-bearing: the grammar must not read the tail of a longer option name. The
-/// retry policy carries one of those — `on_max_attempts = "pause"`, the action taken at the ceiling —
-/// and a net that matched its last eleven characters would demand an integer where the SDK's grammar
-/// states an action. The word boundary leaves `on_max_attempts` to its own name.
 const ATTRIBUTE: &str = r"\b(?:r#)?max_attempts\s*=\s*([0-9][0-9A-Za-z_]*)";
 
-/// The inner-policy form: `.max_attempts(1)`.
 const BUILDER: &str = r"\.(?:r#)?max_attempts\s*\(\s*([0-9][0-9A-Za-z_]*)\s*\)";
 
-/// Every mention of the option name, whatever follows it: the coverage net.
 const MENTION: &str = r"\b(?:r#)?max_attempts";
 
-/// The journaled effect: `ctx` then `.run(`, wherever the chain breaks the line.
-///
-/// Most sites split the receiver from the call (`ctx` at the end of one line, `.run(` opening the
-/// next), so the grammar reads `ctx`, whitespace, `.`, `run`, `(` rather than one spelling. A
-/// generated Restate client also owns a method named `run` (`client.run(Json(..))`), but its
-/// receiver is never `ctx` alone, so it is not a journaled effect and the grammar leaves it alone.
 const CTX_RUN: &str = r"ctx\s*\.\s*run\s*\(";
 
-/// The chained policy that keeps one `ctx.run` to a single attempt.
 const CHAINED_POLICY: &str = r"\.retry_policy\s*\(";
 
-/// How far past a `ctx.run` site its chained `.retry_policy(` may sit.
-///
-/// The longest chain the tree declares today spans thirteen lines (the census seal), so forty
-/// leaves room for a closure to grow while every lookahead stays statically bounded. The window is
-/// cut short where the next site starts, so one effect's policy can never cover another effect's
-/// absence; a window that cannot be read fails as bare rather than passing as covered.
 const RUN_LOOKAHEAD_LINES: usize = 40;
 
-/// The numeric suffixes Rust accepts on an integer literal.
 const SUFFIXES: [&str; 12] = [
     "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize",
 ];
 
-/// One `max_attempts` site: where it is (`<package>:<path>:<line>`) and what it declares.
 #[derive(Debug)]
 pub(crate) struct Site {
     pub(crate) at: String,
     pub(crate) attempts: u64,
 }
 
-/// Every site the tree declares, split by class.
 #[derive(Debug, Default)]
 pub(crate) struct Sites {
-    /// Handler-attribute sites.
     pub(crate) attribute: Vec<Site>,
-    /// Inner `RunRetryPolicy` builder sites.
     pub(crate) builder: Vec<Site>,
-    /// Mentions neither grammar claims, as site labels: the fail-closed half.
     pub(crate) unclaimed: Vec<String>,
-    /// `ctx.run` sites with no chained `.retry_policy(` inside their own call, as site labels.
     pub(crate) bare_runs: Vec<String>,
 }
 
-/// Every `max_attempts` site in the scanned packages' production code, plus every bare `ctx.run`.
 pub(crate) fn sites() -> Result<Sites> {
     let rules = Rules::compile()?;
     let grammars = Grammars::compile()?;
@@ -111,7 +56,6 @@ pub(crate) fn sites() -> Result<Sites> {
     Ok(sites)
 }
 
-/// Every site above its ceiling, as one line each; empty when both ceilings hold.
 pub(crate) fn violations(
     sites: &Sites,
     attribute_ceiling: u64,
@@ -147,11 +91,6 @@ pub(crate) fn violations(
     failures
 }
 
-/// A Rust integer literal as a number: radix prefixes, digit separators and type suffixes accepted.
-///
-/// `None` when the token is not an integer at all. `restate-sdk-macros` accepts every one of those
-/// spellings (`syn`'s `parse_lit_int` normalises `0x`/`0o`/`0b` and strips the suffix before
-/// `base10_parse`), so a ceiling that only read `3` would miss `0x3` — and `0x3` is three attempts.
 pub(crate) fn parse_attempts(token: &str) -> Option<u64> {
     let digits = SUFFIXES
         .iter()
@@ -170,7 +109,6 @@ pub(crate) fn parse_attempts(token: &str) -> Option<u64> {
     u64::from_str_radix(digits, radix).ok()
 }
 
-/// The two grammars plus the coverage net, compiled once.
 struct Grammars {
     attribute: Regex,
     builder: Regex,
@@ -186,11 +124,6 @@ impl Grammars {
         })
     }
 
-    /// Record both grammars' matches on one line and return how many mentions they claimed.
-    ///
-    /// A match whose value the normaliser refuses is a site that was seen and not understood: it is
-    /// recorded as unclaimed rather than dropped, so a ceiling can never pass because a spelling was
-    /// unfamiliar.
     fn claim(&self, at: &str, line: &str, sites: &mut Sites) -> usize {
         let attribute = Self::record(
             &self.attribute,
@@ -208,7 +141,6 @@ impl Grammars {
         ))
     }
 
-    /// One grammar's matches on one line, as sites.
     fn record(
         pattern: &Regex,
         at: &str,
@@ -234,7 +166,6 @@ impl Grammars {
     }
 }
 
-/// The absence-gate grammars: the journaled effect and its chained policy, compiled once.
 struct RunGrammars {
     effect: Regex,
     policy: Regex,
@@ -249,17 +180,12 @@ impl RunGrammars {
     }
 }
 
-/// One `ctx.run` effect: the byte span of the match and the 1-based line it opens on.
 struct RunEffect {
     start: usize,
     end: usize,
     line: usize,
 }
 
-/// The byte offset opening 1-based `line`: the text length when fewer lines remain.
-///
-/// An offset this returns always opens a line (past a `\n`, or zero), so a window cut with it
-/// never splits a character.
 fn line_start(text: &str, line: usize) -> usize {
     if line <= 1 {
         return 0;
@@ -276,13 +202,6 @@ fn line_start(text: &str, line: usize) -> usize {
     text.len()
 }
 
-/// Every bare `ctx.run` site in one file's masked production lines, as `<label>:<line>`.
-///
-/// The effect grammar runs over the lines joined with `\n`, so `ctx` at the end of one line still
-/// meets the `.run(` that opens the next. Masking already blanked comments and string literals, so
-/// prose quoting the shape is not an effect. A site is bare when no `.retry_policy(` follows it
-/// inside its own chained call: the forty lines after the site, cut short where the next site
-/// starts. A window that cannot be read is bare rather than covered, so the gate fails closed.
 fn bare_runs_in(label: &str, masked: &[String], grammars: &RunGrammars) -> Vec<String> {
     let joined = masked.join("\n");
     let mut effects = Vec::new();
@@ -318,7 +237,6 @@ fn bare_runs_in(label: &str, masked: &[String], grammars: &RunGrammars) -> Vec<S
 mod tests {
     use super::{bare_runs_in, parse_attempts, violations, Grammars, RunGrammars, Site, Sites};
 
-    /// One attribute site and one builder site, at the given values.
     fn sites(attribute: u64, builder: u64) -> Sites {
         Sites {
             attribute: vec![Site {
@@ -334,8 +252,6 @@ mod tests {
         }
     }
 
-    /// Masked production lines, as [`crate::scan::masked_production`] hands them over: comments and
-    /// literals already blanked, one entry per line.
     fn masked_of(text: &str) -> Vec<String> {
         text.lines().map(str::to_string).collect()
     }
@@ -381,8 +297,6 @@ mod tests {
         );
     }
 
-    /// The ceiling action is an option with a name of its own: `on_max_attempts` is neither a mention
-    /// nor a site, so in a spread definition attribute only the `max_attempts = 3` line is counted.
     #[test]
     fn the_ceiling_action_option_is_not_an_attempt_site() {
         let grammars = Grammars::compile().expect("the grammars compile");

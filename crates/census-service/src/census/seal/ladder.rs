@@ -1,9 +1,3 @@
-//! The ladder a seal walks, and the workbook it certifies.
-//!
-//! Both answers come from the store's own artifacts rather than from a caller: [`reached_phase`]
-//! enters a phase only when the artifact that phase produces exists, and [`workbook_path`] resolves
-//! which export that artifact is. They are split out of `seal.rs` for the §38 line budget; nothing
-//! about either rule lives here that `seal.rs`'s assembly needs to be read beside.
 
 use std::path::{Path, PathBuf};
 
@@ -13,11 +7,6 @@ use super::{table_rows, CensusState};
 use crate::census::Phase;
 use census_store::{Store, StoreStats, Table};
 
-/// Which phase the store's own artifacts put this census in.
-///
-/// Each step is entered only when the artifact that phase produces exists, so the ladder a seal
-/// walks is the pipeline's recorded progress and not a caller's claim. The conditions are monotone:
-/// a later artifact cannot exist without the earlier ones, so the walk cannot skip a phase.
 pub(super) fn reached_phase(stats: &StoreStats, workbook: &Path) -> Result<CensusState> {
     let steps = [
         (Phase::Acquiring, stats.observations > 0),
@@ -42,7 +31,6 @@ pub(super) fn reached_phase(stats: &StoreStats, workbook: &Path) -> Result<Censu
     Ok(state)
 }
 
-/// The workbook this run certifies: the named path, or the newest export in the store's out dir.
 pub(super) fn workbook_path(store: &Store, named: Option<&Path>) -> Result<Option<PathBuf>> {
     if let Some(path) = named {
         if !path.exists() {

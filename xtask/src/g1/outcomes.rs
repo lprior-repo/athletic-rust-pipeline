@@ -1,4 +1,3 @@
-//! The cross-check between the pipeline's own record verdicts and the page verdicts in the bytes.
 
 use std::collections::BTreeMap;
 
@@ -8,44 +7,28 @@ use serde_json::Value;
 use crate::counts::tally;
 use crate::evidence::EvidenceRecord;
 
-/// One record the page verdicts do not explain: what it claimed and what the bytes showed.
 struct Unexplained {
-    /// The record's file stem.
     name: String,
-    /// Whether the record reported itself incomplete.
     failed: bool,
-    /// Whether a page it holds has a parsed record with issues.
     has_issue: bool,
-    /// Whether one of its failures was a short page.
     has_short: bool,
-    /// The record's failure messages.
     messages: Vec<String>,
 }
 
-/// The four flags one record's verdict reads off its own record.
 struct RecordState {
-    /// The record reported itself incomplete.
     failed: bool,
-    /// A page it holds has a parsed record that reported issues.
     has_issue: bool,
-    /// A failure message names unrelated result rows.
     row_issue_failure: bool,
-    /// A failure message names a walk that ended early.
     short_failure: bool,
 }
 
-/// The record-level verdicts, and the records they leave unexplained.
 #[derive(Default)]
 pub(crate) struct Outcomes {
-    /// `complete` / `failed` and the per-record combinations, counted.
     crosscheck: IndexMap<String, usize>,
-    /// The guard that rejected each failed record, counted.
     failure_classes: IndexMap<String, usize>,
-    /// The records no page verdict explains, in record order.
     unexplained: Vec<Unexplained>,
 }
 
-/// Whether any page of the record has a parsed record that reported issues.
 fn own_parse_has_row_issues(
     rec: &EvidenceRecord,
     parsed_records: &BTreeMap<String, Value>,
@@ -64,7 +47,6 @@ fn own_parse_has_row_issues(
     })
 }
 
-/// A Python boolean name, as the report prints it.
 fn py_bool(b: bool) -> &'static str {
     if b {
         "True"
@@ -74,7 +56,6 @@ fn py_bool(b: bool) -> &'static str {
 }
 
 impl RecordState {
-    /// Read one record's four flags.
     fn of(rec: &EvidenceRecord, parsed_records: &BTreeMap<String, Value>) -> Self {
         let failed = !rec.complete;
         let has_issue = own_parse_has_row_issues(rec, parsed_records);
@@ -94,7 +75,6 @@ impl RecordState {
         }
     }
 
-    /// The cross-check key for what the record's own parser said about its pages.
     fn own_parse_key(&self) -> String {
         format!(
             "  {}:own_parse_has_row_issues={}",
@@ -103,7 +83,6 @@ impl RecordState {
         )
     }
 
-    /// The unexplained entry this record contributes.
     fn unexplained(&self, rec: &EvidenceRecord, has_short: bool) -> Unexplained {
         Unexplained {
             name: rec.name.clone(),
@@ -115,7 +94,6 @@ impl RecordState {
     }
 }
 
-/// A failed record: which failure shapes it carried, and the class they add up to.
 fn record_failure(out: &mut Outcomes, rec: &EvidenceRecord, state: &RecordState) {
     let row_issue_key = format!(
         "  failed:row_issue_failure={}",
@@ -142,7 +120,6 @@ fn record_failure(out: &mut Outcomes, rec: &EvidenceRecord, state: &RecordState)
     tally(&mut out.failure_classes, &classes.join("+"), 1);
 }
 
-/// Take one record's contribution to the cross-check.
 fn absorb_record(
     out: &mut Outcomes,
     rec: &EvidenceRecord,
@@ -170,7 +147,6 @@ fn absorb_record(
     }
 }
 
-/// Cross-check every evidence record against the page verdicts, in record order.
 pub(crate) fn crosscheck(
     records: &[EvidenceRecord],
     parsed_records: &BTreeMap<String, Value>,
@@ -182,7 +158,6 @@ pub(crate) fn crosscheck(
     out
 }
 
-/// The record outcomes, keyed as the report prints them.
 pub(crate) fn print_crosscheck(out: &Outcomes) {
     println!("  record outcomes (the pipeline's own complete/failures) vs page verdicts:");
     let mut rc_items: Vec<_> = out
@@ -196,7 +171,6 @@ pub(crate) fn print_crosscheck(out: &Outcomes) {
     }
 }
 
-/// The rejected-record classes, most frequent first.
 pub(crate) fn print_failure_classes(out: &Outcomes) {
     println!("  rejected-record classes (which guard killed the query):");
     let mut fc_items: Vec<_> = out
@@ -210,7 +184,6 @@ pub(crate) fn print_failure_classes(out: &Outcomes) {
     }
 }
 
-/// The first four records no page verdict explains.
 pub(crate) fn print_unexplained(out: &Outcomes) {
     for item in out.unexplained.iter().take(4) {
         let short_name = item

@@ -1,18 +1,3 @@
-//! The `Performances_00N` sheets: every performance the census holds, one row per mark.
-//!
-//! The objective (§52) asks the recruiting workbook for *every available performance*, which is more
-//! rows than one Excel worksheet holds: a sheet is capped at 1,048,576 rows. The rows are therefore
-//! partitioned into `Performances_001`, `Performances_002`, … — every sheet repeats the column header
-//! and carries at most [`DATA_ROWS_PER_SHEET`] data rows, which is Excel's cap minus the header minus
-//! a [`PARTITION_MARGIN`]-row margin. A row is never truncated: a budget that cannot hold one is a
-//! rejection that names it, not a quietly shorter sheet.
-//!
-//! The rows themselves — the join, their order, and what each column prints — are [`join`]'s and
-//! [`rows`]' job, and handing them over sorted without holding the whole table is [`spill`]'s; this
-//! module only decides where the sheet boundaries fall and writes them out. The rows arrive through
-//! [`PerformanceRows`], which spills them to disk and hands them over one school-name range at a
-//! time, and each row goes into its sheet as it arrives, so the peak is a range's sorted rows plus the
-//! row in flight rather than the whole census.
 
 use crate::report::{ReportError, ReportResult, Scope};
 use census_store::Store;
@@ -28,21 +13,14 @@ mod spill;
 use rows::PerformanceRow;
 use spill::PerformanceRows;
 
-/// Rows one Excel worksheet holds.
 const EXCEL_ROWS_PER_SHEET: usize = 1_048_576;
 
-/// The column header, which every partition repeats above its own rows.
 const HEADER_ROWS: usize = 1;
 
-/// Rows held back from Excel's cap on purpose: the data budget stays a round number, and the last
-/// row a partition writes sits [`PARTITION_MARGIN`] rows clear of the cap.
 const PARTITION_MARGIN: usize = 48_575;
 
-/// Data rows one `Performances_00N` sheet holds: `1_048_576 - 1 - 48_575`.
 const DATA_ROWS_PER_SHEET: usize = EXCEL_ROWS_PER_SHEET - HEADER_ROWS - PARTITION_MARGIN;
 
-/// The §52 columns in the objective's order, each with the width it is written at. The header row and
-/// the column widths both come from here, so the two can never disagree.
 const COLUMNS: [(&str, u16); 20] = [
     ("Canonical Result ID", 22),
     ("Athlete ID", 14),
@@ -66,27 +44,14 @@ const COLUMNS: [(&str, u16); 20] = [
     ("Source URL", 44),
 ];
 
-/// The population declaration for the performance sheets.
-///
-/// Carries the cohort scope, athlete count, performance row count, and the rule that earlier-season
-/// and out-of-state performances for cohort athletes are included by design — so the row count
-/// reconciles with the seal.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct PerformanceSheetPopulation {
-    /// The graduating class the sheet covers, or `None` for "all cohorts".
     pub(super) cohort_year: Option<i16>,
-    /// Evidence scope: `core` or `all_sources`.
     pub(super) scope: Scope,
-    /// Cohort athletes the sheet draws from.
     pub(super) cohort_athletes: usize,
-    /// Total performance rows written across all partitions.
     pub(super) total_rows: usize,
 }
 
-/// Write the §52 `Performances_00N` sheets and return a population declaration.
-///
-/// `grad_year` restricts the sheet to the cohort: only performances whose athlete falls within
-/// the graduating-class filter appear, while every captured season for those athletes stays intact.
 pub(super) fn write_performance_sheets(
     book: &mut Workbook,
     path: &Path,
@@ -104,14 +69,6 @@ pub(super) fn write_performance_sheets(
     })
 }
 
-/// Write `rows` into `book`, `per_sheet` data rows to a sheet, one row at a time: no sheet's cells and
-/// no partition of the rows are ever held whole.
-///
-/// `per_sheet` is a parameter rather than the constant alone so the split is provable at test scale,
-/// and so a budget that holds nothing is reachable and rejected instead of silently dropping rows.
-///
-/// Only the partition tests call this counted-eliding form; production goes through
-/// [`write_partitions_with_count`] and declares the population it wrote.
 #[cfg(test)]
 fn write_partitions(
     book: &mut Workbook,
@@ -122,7 +79,6 @@ fn write_partitions(
     write_partitions_with_count(book, path, rows, per_sheet).map(|_| ())
 }
 
-/// Same as [`write_partitions`], but returns the total row count for population declaration.
 fn write_partitions_with_count(
     book: &mut Workbook,
     path: &Path,
@@ -168,7 +124,6 @@ fn write_partitions_with_count(
     Ok(total_rows)
 }
 
-/// The header row every partition repeats, in [`COLUMNS`] order.
 fn header() -> Vec<Cell> {
     COLUMNS
         .iter()
@@ -176,14 +131,10 @@ fn header() -> Vec<Cell> {
         .collect()
 }
 
-/// The name of the `index`-th partition, zero-padded as §52 publishes it. The padding is a minimum
-/// width, so `Performances_1000` follows `Performances_999` instead of colliding with it.
 fn sheet_name(index: usize) -> String {
     format!("Performances_{:03}", index.saturating_add(1))
 }
 
-/// The rejection for a budget that cannot hold a row: the first row that would have been written is
-/// named, so nothing is dropped quietly.
 fn no_budget(row: Option<&PerformanceRow>) -> ReportError {
     let first = row
         .map(|row| row.id.as_str())

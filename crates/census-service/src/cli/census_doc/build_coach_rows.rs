@@ -1,4 +1,3 @@
-//! Build the "Coach coverage" table rows.
 
 use std::collections::{BTreeMap, HashMap};
 

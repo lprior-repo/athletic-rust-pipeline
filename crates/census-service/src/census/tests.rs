@@ -1,10 +1,7 @@
-//! Tests for the §45 transport account: the reading a run's client counters become in a report.
 
 use super::TransportReport;
 use census_crawl::net::{FetchStats, HostTraffic};
 
-/// §45: the account reads the client's counters once, and its per-source rows account for the
-/// traffic rather than approximating it.
 #[test]
 fn the_transport_report_reads_the_counters_once() {
     let mut stats = FetchStats {

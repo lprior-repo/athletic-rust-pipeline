@@ -1,17 +1,3 @@
-//! Compatibility guard for the pinned CDP client's generated protocol model.
-//!
-//! Chromium 151 replaced `Network.ClientSecurityState.privateNetworkRequestPolicy` with
-//! `localNetworkAccessRequestPolicy`. The pinned `chromiumoxide_cdp 0.9.1` model still
-//! requires the historical field, so every `Network.requestWillBeSentExtraInfo` frame
-//! failed to deserialize, the client dropped the frame, and the pipeline lost the
-//! extra-info events it reads for redirect and challenge-header detection. The local
-//! patch in `vendor/chromiumoxide_cdp` (wired through `[patch.crates-io]`) makes that one
-//! field optional; this test fails if the model drifts back or the patch stops applying.
-//!
-//! Recovered from commit 278a298 which deleted this test and its fixture.
-//! The fixture is a sanitized copy of a real frame captured from the lane's headed
-//! Chromium 151 session; all cookie values, tokens, and session identifiers are
-//! replaced, so the file carries the frame's shape and none of its credentials.
 use chromiumoxide::cdp::browser_protocol::network::EventRequestWillBeSentExtraInfo;
 
 const FRAME: &str = include_str!("fixtures/cdp/request_will_be_sent_extra_info.json");

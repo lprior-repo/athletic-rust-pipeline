@@ -1,19 +1,7 @@
-//! The result-plane run: the captures an operator supplies, the entities they yield, and the report.
-//!
-//! The adapter issues no request. It folds captures of the three wire routes
-//! ([`super::wire`] holds the measured cost of each): one event document per event, one event
-//! summary per meet, and — for a race whose event document is missing — one live-standings payload
-//! per run key. Every capture is read from a path the operator supplies, and the route URL it was
-//! served from is stamped into the evidence it writes.
-//!
-//! Layout: this file owns the entry point, the run state and the table appends; `results::absorb`
-//! owns the three document-level folds, `map_rows` the row-level one, and `results::tests` proves
-//! what the captures measure.
-
 use super::map::{DocumentEntities, ResultStats, SOURCE_ID};
 use crate::athleticlive_athletes::MeetTarget;
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use census_domain::model::{CanonicalSchool, SourceNamespace};
+use census_domain::model::CanonicalSchool;
 use census_store::Table;
 
 mod absorb;
@@ -26,40 +14,25 @@ pub use manifest::{collect_manifest, ManifestOptions};
 
 use run::Run;
 
-/// The journal phase of the result-plane route, with the capture layout encoded in the name: a
-/// parser change that alters what an already-journaled capture yields bumps this, so those captures
-/// are read again instead of being skipped as done.
 const PHASE: &str = "athleticlive_results_v1";
 
-/// A captured live-standings payload, paired with the run key whose race it publishes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StandingsCapture {
-    /// The run key the event published (`rui`: `4-1`, `19-1`).
     pub run_id: String,
-    /// Path to the captured body of `liveRunStandings/<runId>.json`.
     pub path: String,
 }
 
-/// What a result-plane run is asked for: one meet, and the captures of it that were made.
 #[derive(Debug, Clone, Default)]
 pub struct ResultOptions {
-    /// The meet the captures belong to, as the harvest publishes it. Required: the meet is minted
-    /// from these facts, never from a result payload.
     pub meet: Option<MeetTarget>,
-    /// Path to a captured `meet_<meetId>/event_summary.json`.
     pub summary: Option<String>,
-    /// Paths to captured event documents (`ind_res_list/_doc/<eventId>`), in the order to read them.
     pub documents: Vec<String>,
-    /// Captured live standings, each paired with the event's run key.
     pub standings: Vec<StandingsCapture>,
-    /// Observation date stamped on every evidence row.
     pub observed_on: String,
-    /// Read at most this many event documents.
     pub limit: Option<usize>,
 }
 
 impl ResultOptions {
-    /// Options for one meet's captures, stamped with an observation date.
     pub fn for_meet(meet: MeetTarget, observed_on: impl Into<String>) -> Self {
         Self {
             meet: Some(meet),
@@ -69,7 +42,6 @@ impl ResultOptions {
     }
 }
 
-/// Canonical entities one run wrote, by table.
 #[derive(Debug, Default, Clone, Copy)]
 struct EntityCounts {
     meets: usize,
@@ -79,7 +51,6 @@ struct EntityCounts {
     performances: usize,
 }
 
-/// Everything the closing notes need, once the walk is over.
 struct RunSummary<'a> {
     stats: &'a ResultStats,
     counts: EntityCounts,
@@ -87,7 +58,6 @@ struct RunSummary<'a> {
     resumed: usize,
 }
 
-/// Read every supplied capture and write what they yield.
 pub async fn collect(
     ctx: &AdapterContext<'_>,
     options: &ResultOptions,
@@ -103,14 +73,7 @@ pub async fn collect(
     let mut report = AdapterReport::new(SOURCE_ID, "result rows");
     let mut run = Run::new(ctx, target, options)?;
     run.read_captures(options)?;
-    let mut walk = run.close();
-    crate::stamp_source_athletes(
-        &SourceNamespace::LegacyAthleticNet {
-            kind: "athlete".to_string(),
-        },
-        &walk.entities.athletes,
-        &mut walk.entities.performances,
-    );
+    let walk = run.close();
     let counts = append(ctx, &walk.entities, &walk.schools, walk.entries)?;
     finish(
         &mut report,
@@ -124,20 +87,14 @@ pub async fn collect(
     Ok(report)
 }
 
-/// What a finished walk hands back: the entities it accumulated, the entries its captures earned,
-/// what it refused, and how many captures an earlier run had already journaled.
 pub(super) struct WalkResult {
     pub(super) entities: DocumentEntities,
-    /// The consolidated schools the walk resolved its labels against.
     pub(super) schools: Vec<CanonicalSchool>,
-    /// One entry per capture read, keyed by the capture's path: `append` writes them.
     pub(super) entries: Vec<(String, serde_json::Value)>,
     pub(super) failures: Vec<String>,
     pub(super) resumed: usize,
 }
 
-/// Append one batch: every table, the athlete observations, and the entries naming the captures
-/// they came from, in one commit.
 fn append(
     ctx: &AdapterContext<'_>,
     entities: &DocumentEntities,
@@ -149,13 +106,7 @@ fn append(
     page.append_many(Table::Events, &entities.events)?;
     page.append_many(Table::Teams, &entities.teams)?;
     page.append_many(Table::Athletes, &entities.athletes)?;
-    ctx.observe_athletes(
-        &SourceNamespace::LegacyAthleticNet {
-            kind: "athlete".to_string(),
-        },
-        &entities.athletes,
-        schools,
-    )?;
+    page.append_many(Table::SourceObservations, &ctx.athlete_observations(&entities.athletes, schools))?;
     page.append_many(Table::Performances, &entities.performances)?;
     for (path, payload) in &entries {
         page.journal_done(PHASE, path, payload)?;
@@ -170,7 +121,6 @@ fn append(
     })
 }
 
-/// Close the report: the row ledger, the entity counts, the captures that failed, and the scope.
 fn finish(report: &mut AdapterReport, summary: RunSummary<'_>) {
     let counts = summary.counts;
     report.rows = u64::try_from(summary.stats.rows_mapped).unwrap_or(u64::MAX);

@@ -1,17 +1,8 @@
-//! The MileSplit arm: five capture shapes behind one source label, told apart by their file names.
-//!
-//! MileSplit needs the most context of any arm here - a roster page names no team, and a `/raw` body
-//! names neither its meet nor its result set - so both readers resolve the missing half out of the
-//! index captures sitting in the same corpus directory. The name grammar that decides which capture
-//! is which ([`roster_fixture`], [`raw_fixture`]) lives beside the arms that read it, so a captured
-//! file the verb cannot place is reported as unhandled rather than replayed as the wrong shape.
 
 use crate::replay::{ensure_rows, unmapped, Capture};
 use anyhow::{ensure, Context, Result};
 use census_crawl::milesplit;
 
-/// A MileSplit capture: a site's team index, a state results index, a roster (resolved through its
-/// site's index), a meet's result-file page, or a `/raw` body.
 pub(super) fn capture(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     if let Some(site) = file.strip_suffix("_teams_index.html") {
@@ -26,11 +17,12 @@ pub(super) fn capture(capture: &Capture<'_>) -> Result<String> {
     }
     if let Some((site, team_id)) = roster_fixture(file) {
         let team = index_team(&site, &team_id, capture)?;
-        let roster = milesplit::parse_roster(body, team)?;
+        let parsed = milesplit::parse_roster(body, team)?;
+        let roster = parsed.roster().context("roster quarantined: no readable athletes")?;
         ensure_rows(file, roster.athletes.len(), "athletes")?;
         return Ok(format!(
-            "roster site={site} team={team_id} athletes={}",
-            roster.athletes.len()
+            "roster site={site} team={team_id} athletes={} rejected={}",
+            roster.athletes.len(), parsed.rejections().len()
         ));
     }
     if let Some((site, meet_id, rsid)) = raw_fixture(file) {
@@ -66,8 +58,6 @@ pub(super) fn capture(capture: &Capture<'_>) -> Result<String> {
     unmapped("milesplit", file)
 }
 
-/// A `/raw` body: its URL is the one the meet's own results page lists for that result set, so the
-/// reader is handed the URL `milesplit::tests` spells out for this same capture.
 fn raw(capture: &Capture<'_>, site: &str, meet_id: &str, rsid: &str) -> Result<String> {
     let index_file = format!("{site}_results_index.html");
     let index = capture.corpus.get(&index_file).with_context(|| {
@@ -99,8 +89,6 @@ fn raw(capture: &Capture<'_>, site: &str, meet_id: &str, rsid: &str) -> Result<S
     ))
 }
 
-/// The team a roster capture belongs to, resolved out of its site's own index capture: a roster
-/// page publishes no team id, exactly as `parity_national::roster_fixture` resolves it.
 fn index_team(site: &str, team_id: &str, capture: &Capture<'_>) -> Result<milesplit::TeamRef> {
     let index_file = format!("{site}_teams_index.html");
     let index = capture.corpus.get(&index_file).with_context(|| {
@@ -112,10 +100,6 @@ fn index_team(site: &str, team_id: &str, capture: &Capture<'_>) -> Result<milesp
         .with_context(|| format!("team {team_id} is not in the {index_file} capture"))
 }
 
-/// A roster capture's site prefix and team id: `wi_roster_52649.html` → `("wi", "52649")`.
-///
-/// A three-part name is the bare form; a fourth part is the slug the site publishes after the id
-/// (`oh_roster_10002_mason.html`). Anything else is no roster capture at all.
 fn roster_fixture(file: &str) -> Option<(String, String)> {
     let parts: Vec<&str> = file
         .strip_suffix(".html")?
@@ -130,19 +114,14 @@ fn roster_fixture(file: &str) -> Option<(String, String)> {
     }
 }
 
-/// The results-page template a capture's name declares.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ResultsTemplate {
-    /// `_results.html`: the `meetResultFiles` literal.
     Literal,
-    /// `_results_legacy.html`: the `<select id="ddResultsPage">` select.
     Legacy,
-    /// `_results_inline.html`: no file list, the page is its own one result set.
     Inline,
 }
 
 impl ResultsTemplate {
-    /// The tag the capture's name carries for this template.
     fn name(self) -> &'static str {
         match self {
             Self::Literal => "literal",
@@ -152,12 +131,6 @@ impl ResultsTemplate {
     }
 }
 
-/// A captured results page's site prefix, meet id and the template its name declares:
-/// `oh_meet_770621_results.html` → the literal, `dc_meet_735841_results_legacy.html` → the legacy
-/// select, `dc_meet_764735_results_inline.html` → the inline page.
-///
-/// The site prefix is the name the capture was filed under, which for a `www`-served page is the
-/// jurisdiction its meet belongs to rather than the host that answered.
 fn results_fixture(file: &str) -> Option<(String, String, ResultsTemplate)> {
     let stem = file.strip_suffix(".html")?;
     let (stem, template) = if let Some(stem) = stem.strip_suffix("_results") {
@@ -175,8 +148,6 @@ fn results_fixture(file: &str) -> Option<(String, String, ResultsTemplate)> {
         .then(|| (site.to_string(), meet_id.to_string(), template))
 }
 
-/// A `/raw` capture's site prefix, meet id and result-set id:
-/// `oh_meet_770621_rs1321880_raw.html` → `("oh", "770621", "1321880")`.
 fn raw_fixture(file: &str) -> Option<(String, String, String)> {
     let parts: Vec<&str> = file
         .strip_suffix("_raw.html")?

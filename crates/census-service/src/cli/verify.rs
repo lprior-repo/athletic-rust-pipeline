@@ -1,8 +1,3 @@
-//! `census-service verify`: check workbook data rows against the store.
-//!
-//! The seal proves that meta-sheet counts agree with the store. Verify goes further: it reads the
-//! Athletes and Performances sheets, maps columns by header name (never by position), samples at
-//! most 5 000 rows, and asserts that each sampled row exists in the store with matching data.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -17,20 +12,18 @@ use census_reconcile::verify::{
 };
 use census_store::Store;
 
-/// `census-service verify`
 #[derive(Debug, Args)]
+#[command(about = "`census-service verify`")]
 pub struct VerifyArgs {
-    /// The workbook to verify. Defaults to the newest `out/*.xlsx`.
+    #[arg(help = "The workbook to verify. Defaults to the newest `out/*.xlsx`")]
     #[arg(long)]
     pub workbook: Option<PathBuf>,
 
-    /// Sampling stride: check every k-th data row. Larger values check fewer rows.
-    /// At most 5 000 samples per sheet regardless of k.
+    #[arg(help = "Sampling stride: check every k-th data row. Larger values check fewer rows. At most 5 000 samples per sheet regardless of k")]
     #[arg(long, default_value_t = 10)]
     pub sample_every: usize,
 }
 
-/// Find the newest `.xlsx` file in the store's `out` directory.
 fn find_workbook(store: &Store, _args: &VerifyArgs) -> Result<PathBuf> {
     let out_dir = store.out_dir();
     let mut candidates: Vec<PathBuf> = Vec::new();
@@ -57,7 +50,6 @@ fn find_workbook(store: &Store, _args: &VerifyArgs) -> Result<PathBuf> {
         .ok_or_else(|| anyhow::anyhow!("no .xlsx workbook found in {}", out_dir.display()))
 }
 
-/// Read all sheets from the workbook into a map of name → rows.
 fn read_workbook_sheets(path: &std::path::Path) -> Result<HashMap<String, Vec<Vec<String>>>> {
     let mut book = calamine::open_workbook_auto(path)
         .with_context(|| format!("opening {}", path.display()))?;
@@ -87,7 +79,6 @@ fn read_workbook_sheets(path: &std::path::Path) -> Result<HashMap<String, Vec<Ve
     Ok(sheets)
 }
 
-/// Verify the Athletes sheet: validate headers, map columns, sample, check against store.
 fn verify_athletes_sheet(
     sheets: &HashMap<String, Vec<Vec<String>>>,
     store: &Store,
@@ -131,7 +122,6 @@ fn verify_athletes_sheet(
     Ok((athletes_total, athletes_check))
 }
 
-/// Verify the Performances sheets: validate headers, map columns, sample, check against store.
 fn verify_performances_sheets(
     sheets: &HashMap<String, Vec<Vec<String>>>,
     store: &Store,
@@ -167,7 +157,6 @@ fn verify_performances_sheets(
     Ok((perf_total, perf_check))
 }
 
-/// Run the verification: read workbook sheets, sample rows, and check each against the store.
 pub fn run_verify(store: &Store, args: &VerifyArgs) -> Result<()> {
     let workbook_path = match &args.workbook {
         Some(path) => path.clone(),

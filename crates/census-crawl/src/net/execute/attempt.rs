@@ -1,4 +1,3 @@
-//! One attempt of the fetch loop: the plan it runs from, and the verdict its response earns.
 
 pub(super) use super::attempt_helper::blocking_kind;
 use super::attempt_helper::retry_after_secs;
@@ -12,7 +11,6 @@ use std::time::Instant;
 use tokio::sync::Mutex;
 use tracing::warn;
 
-/// Everything an attempt needs: the request's coordinates plus the cache paths it reads and writes.
 pub(super) struct FetchPlan<'a> {
     pub(super) method: &'a str,
     pub(super) url: &'a str,
@@ -26,10 +24,6 @@ pub(super) struct FetchPlan<'a> {
 }
 
 impl Fetcher {
-    /// Send one request. The durable layer owns retries (ADR-002): a failure returns an error, and
-    /// Restate replays the step under a policy the journal can account for. An in-process retry loop
-    /// here would spend a second budget no operator can see, and the backoff would be lost on any
-    /// restart — so the transport attempts exactly once, as the ADR's Decision states.
     pub(super) async fn fetch_once(
         &self,
         gate: Arc<Mutex<()>>,
@@ -40,8 +34,6 @@ impl Fetcher {
         self.attempt_once(plan).await
     }
 
-    /// One attempt: send the request, count it, record what the host said about access, and read the
-    /// response's verdict.
     async fn attempt_once(&self, plan: &FetchPlan<'_>) -> Result<FetchOutcome, FetchError> {
         let response = self.dispatch(plan).await?;
         let status = response.status().as_u16();
@@ -64,7 +56,6 @@ impl Fetcher {
         }
     }
 
-    /// Process a 200 response: read body, cache, update stats, return outcome.
     async fn process_ok(
         &self,
         plan: &FetchPlan<'_>,
@@ -82,11 +73,6 @@ impl Fetcher {
         .await
     }
 
-    /// Handle a 404: cache the evidence, then return `Ok` or `Err` depending on `allow_not_found`.
-    ///
-    /// The body and metadata are always cached — a 404 is a real answer the run should remember.
-    /// When `allow_not_found` is `true`, the caller expects the 404 as a normal outcome.
-    /// When `false`, the caller wants a 404 to propagate as an error.
     async fn handle_404(
         &self,
         plan: &FetchPlan<'_>,
@@ -118,12 +104,6 @@ impl Fetcher {
         }
     }
 
-    /// Count the request once. A 200 or 404 body is counted when `cache_and_record` writes it;
-    /// every status that never reaches that path (304, 5xx, 429) is counted here instead.
-    ///
-    /// The browser lane's seat counts through the same call: one request, counted once, whichever
-    /// transport carried it. The per-provider row (§45) is keyed by the plan's host, which is why
-    /// this path can key by host directly while `cache_and_record` derives one from its URL.
     pub(super) async fn count_request(&self, host: &str, status: u16) {
         if status == 200 || status == 404 {
             return;
@@ -134,16 +114,6 @@ impl Fetcher {
         entry.requests = entry.requests.saturating_add(1);
     }
 
-    /// Record one attempt's cost: how long the transport took, and what a refusal was.
-    ///
-    /// Measured from after the host gate, so the number is transport latency and not the wait for a
-    /// slot (§44 keeps `latency` and `queue_wait` apart). The refusal kinds are classified here
-    /// because this is the only place that sees a whole attempt: a 429 and a timeout are the two
-    /// outcomes §45 counts apart from `errors`, and a response served from the cache never reaches
-    /// this point at all — which is what keeps that latency out of the physical-request percentiles.
-    ///
-    /// Lives beside `count_request` rather than in the loop that calls it: both are the attempt's
-    /// accounting, and the two together are what keeps `execute.rs` inside its file budget.
     pub(super) async fn record_transport(
         &self,
         started: Instant,
@@ -163,11 +133,6 @@ impl Fetcher {
         }
     }
 
-    /// Conditional GET: publish the cached body with refreshed timestamps.
-    ///
-    /// A 304 whose body has vanished from disk is an error, not a re-fetch: there is nothing to
-    /// publish, and whether to send the request again is the durable policy's call, not this
-    /// function's.
     async fn replay_cached(&self, plan: &FetchPlan<'_>) -> Result<FetchOutcome, FetchError> {
         if let Some(meta) = plan.cached {
             if let Ok(bytes) = std::fs::read(plan.body_path) {
@@ -190,7 +155,7 @@ impl Fetcher {
                     url: plan.url.to_string(),
                     method: plan.method.to_string(),
                     status: meta.status,
-                    sha256: meta.key_prefix.clone(),
+                    content_digest: meta.content_digest.clone(),
                     bytes: meta.bytes,
                     fetched_at: refreshed.fetched_at,
                     from_cache: false,

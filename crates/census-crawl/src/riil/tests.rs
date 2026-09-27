@@ -1,9 +1,7 @@
-//! Unit tests over the fixture for parsing and mapping.
 
 use super::pages::{parse_directory, parse_sport_label};
 use census_domain::model::{Gender, Sport};
 
-/// Fixture HTML bytes captured from `https://riil.org/Directory.aspx`.
 const FIXTURE: &str = include_str!("fixture.html");
 
 #[test]

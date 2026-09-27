@@ -1,16 +1,10 @@
-//! Section-level formatting helpers for the census document.
-//!
-//! Each function returns a single Markdown string (heading + body) so the
-//! caller can append it verbatim to the document buffer.
 
 use super::{fmt_comma, fmt_pct};
 
-/// Convert a usize to f64 safely; uses f64::MAX on overflow.
 fn to_f64(val: usize) -> f64 {
     u32::try_from(val).map_or(f64::MAX, f64::from)
 }
 
-/// Build the "Totals" table body (without the heading).
 pub(super) fn totals_body(totals: &super::data_loader::Totals) -> String {
     let total_schools = totals.total_schools;
     let total_athletes = totals.total_athletes;
@@ -40,7 +34,6 @@ pub(super) fn totals_body(totals: &super::data_loader::Totals) -> String {
     )
 }
 
-/// Build the "Athletic.net identities" bullet section.
 pub(super) fn athletic_net_identities(
     seeds: &crate::cli::census_doc::counted_seeds::Seeds,
     co2027_len: usize,
@@ -63,7 +56,6 @@ pub(super) fn athletic_net_identities(
     )
 }
 
-/// Build the "Coach coverage" bullet.
 pub(super) fn coach_coverage_bullet(
     recruiting_len: usize,
     rec_coach: usize,
@@ -79,12 +71,10 @@ pub(super) fn coach_coverage_bullet(
     )
 }
 
-/// Format one measured-answer row.
 fn answer_row(question: &str, answer: &str) -> String {
     format!("| {question} | {answer} |")
 }
 
-/// Build the measured answers table body for Q3 (share with AN profile).
 fn q3_row(with_an: usize, co2027_len: usize) -> String {
     if co2027_len > 0 {
         answer_row(
@@ -101,7 +91,6 @@ fn q3_row(with_an: usize, co2027_len: usize) -> String {
     }
 }
 
-/// Build the measured answers table body for Q5 (share with identified coach).
 fn q5_row(rec_coach: usize, recruiting_len: usize) -> String {
     if recruiting_len > 0 {
         answer_row(
@@ -118,7 +107,6 @@ fn q5_row(rec_coach: usize, recruiting_len: usize) -> String {
     }
 }
 
-/// Build the measured answers table body for Q6 (share with coach/AD email).
 fn q6_row(rec_email: usize, rec_ad: usize, recruiting_len: usize) -> String {
     if recruiting_len > 0 {
         answer_row(
@@ -137,7 +125,6 @@ fn q6_row(rec_email: usize, rec_ad: usize, recruiting_len: usize) -> String {
     }
 }
 
-/// The counts the "Measured answers" table reports alongside the counted seeds.
 pub(super) struct MeasuredCounts {
     pub(super) total_co2027: u64,
     pub(super) total_athletes: u64,
@@ -149,7 +136,6 @@ pub(super) struct MeasuredCounts {
     pub(super) rec_ad: usize,
 }
 
-/// Build the "Measured answers" Q1–Q9 table body.
 pub(super) fn measured_answers(
     seeds: &crate::cli::census_doc::counted_seeds::Seeds,
     counts: &MeasuredCounts,
@@ -203,7 +189,6 @@ pub(super) fn measured_answers(
     .join("\n")
 }
 
-/// Build the "Limits and honest gaps" bullet section.
 pub(super) fn limits() -> String {
     [
         "The measurement covers what the runbooks in `tools/run_pipeline.sh` executed on 2026-09-20; it is a snapshot, not a season-long census.".to_string(),
@@ -213,7 +198,6 @@ pub(super) fn limits() -> String {
     .join("\n- ")
 }
 
-/// Build the "Reproduce" code block.
 pub(super) fn reproduce() -> String {
     [
         "```bash".to_string(),

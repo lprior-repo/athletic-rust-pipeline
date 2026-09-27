@@ -1,69 +1,53 @@
-//! Field-level evidence from one bounded staff record; never concatenate different staff cards.
-use super::{normalize, FragmentRow};
+use census_domain::model::{ContactClaimEvidence, ContactProofField, RawContactRow};
+use super::normalize;
 use scraper::{Html, Selector};
-use serde::Serialize;
-use sha2::{Digest, Sha256};
 
 const MAX_SPAN: usize = 4096;
 
-#[derive(Debug, Clone, Serialize)]
-pub struct ClaimEvidence {
-    pub field: String,
-    pub value: String,
-    pub person: String,
-    pub role: String,
-    pub sport: String,
-    pub school: String,
-    pub state: String,
-    pub source_url: String,
-    pub retrieved_at: String,
-    pub claimed_observed_on: String,
-    pub source_sha256: String,
-    pub span: String,
-}
-
 pub(super) struct PageClaims {
-    pub fields: Vec<ClaimEvidence>,
+    pub fields: Vec<ContactClaimEvidence>,
     pub found: bool,
     pub contradicted: bool,
 }
 
 struct ClaimContext<'a> {
-    row: &'a FragmentRow,
+    row: &'a RawContactRow,
     url: &'a str,
-    retrieved_at: &'a str,
-    digest: &'a str,
+    fetched_at: &'a str,
+    source_sha256: &'a str,
 }
 
 pub(super) fn inspect(
-    text: &str, row: &FragmentRow, url: &str, retrieved_at: &str,
+    text: &str, row: &RawContactRow, url: &str,
+    source_sha256: &str, fetched_at: &str,
 ) -> anyhow::Result<PageClaims> {
     let (spans, heading) = spans(text)?;
     let school = normalize(&row.school);
-    let digest = format!("{:x}", Sha256::digest(text.as_bytes()));
-    let context = ClaimContext { row, url, retrieved_at, digest: &digest };
+    let context = ClaimContext { row, url, fetched_at, source_sha256 };
     let mut result = PageClaims { fields: Vec::new(), found: false, contradicted: false };
-    spans.iter().filter(|span| span.len() <= MAX_SPAN).for_each(|span| {
-        let flat = normalize(span);
+    for span in spans {
+        if span.len() > MAX_SPAN { continue; }
+        let flat = normalize(&span);
         [false, true].into_iter().for_each(|director| {
             let (person, email) = if director { (&row.ad_name, &row.ad_email) }
                 else { (&row.coach_name, &row.public_professional_email) };
             if person.is_empty() || !contains(&flat, &normalize(person)) { return; }
-            result.found = true;
-            let role_ok = role_matches(&flat, row, director);
-            result.contradicted |= contradicts(&flat, row, director);
-            let institution = !school.is_empty()
-                && (contains(&flat, &school) || contains(&heading, &school))
-                && jurisdiction_matches(&flat, &heading, &row.state);
-            if !institution || !role_ok { return; }
+            let row_ok = if director {
+                contains(&flat, "athletic director")
+            } else {
+                role_matches(&flat, row) && jurisdiction_matches(&flat, &heading, &row.state)
+            };
+            if !row_ok { return; }
+            let contradicts = if director { false } else { self_contradicts(&flat, row) };
+            result.contradicted |= contradicts;
             let name_field = if director { "ad_name" } else { "coach_name" };
-            result.fields.push(evidence(name_field, person, person, span, &context));
+            result.fields.push(evidence(field_to_enum(name_field), person, person, &span, &context));
             if !email.is_empty() && contains(&flat, &normalize(email)) {
                 let email_field = if director { "ad_email" } else { "public_professional_email" };
-                result.fields.push(evidence(email_field, email, person, span, &context));
+                result.fields.push(evidence(field_to_enum(email_field), email, person, &span, &context));
             }
         });
-    });
+    }
     Ok(result)
 }
 
@@ -96,30 +80,27 @@ fn contains(text: &str, value: &str) -> bool {
     })
 }
 
-fn role_matches(span: &str, row: &FragmentRow, director: bool) -> bool {
-    if director { return contains(span, "athletic director"); }
-    let role = normalize(&row.role);
-    contains(span, "coach") && program_matches(span, row)
+fn role_matches(flat: &str, row: &RawContactRow) -> bool {
+    contains(flat, "coach") && program_matches(flat, row)
         && ["head", "assistant", "boys", "girls"].into_iter()
-            .all(|part| !contains(&role, part) || contains(span, part))
-        && !(contains(&role, "head") && !contains(&role, "assistant") && contains(span, "assistant"))
+            .all(|part| !contains(flat, part) || contains(flat, part))
+        && !(contains(flat, "head") && !contains(flat, "assistant") && contains(flat, "assistant"))
 }
 
-fn program_matches(span: &str, row: &FragmentRow) -> bool {
+fn program_matches(flat: &str, row: &RawContactRow) -> bool {
     let sport = normalize(&row.sport);
     if sport.contains("cross") || contains(&sport, "xc") {
-        return contains(span, "cross country") || contains(span, "cross-country") || contains(span, "xc");
+        return contains(flat, "cross country") || contains(flat, "cross-country") || contains(flat, "xc");
     }
-    sport.contains("track") && contains(span, "track")
+    sport.contains("track") && contains(flat, "track")
 }
 
-fn contradicts(span: &str, row: &FragmentRow, director: bool) -> bool {
-    if director { return !contains(span, "athletic director") && contains(span, "coach"); }
-    (!program_matches(span, row)
-        && ["basketball", "football", "soccer", "volleyball", "baseball", "swimming"]
-            .into_iter().any(|sport| contains(span, sport)))
-        || (contains(span, "athletic director") && !contains(span, "coach"))
-        || (contains(&normalize(&row.role), "head") && contains(span, "assistant"))
+fn self_contradicts(flat: &str, row: &RawContactRow) -> bool {
+    let negation_marker = contains(flat, "former")
+        || contains(flat, "not current")
+        || contains(flat, "no longer");
+    let role = normalize(&row.role);
+    negation_marker && contains(flat, &role) && contains(flat, "coach")
 }
 
 fn jurisdiction_matches(span: &str, heading: &str, state: &str) -> bool {
@@ -130,13 +111,24 @@ fn jurisdiction_matches(span: &str, heading: &str, state: &str) -> bool {
     })
 }
 
-fn evidence(field: &str, value: &str, person: &str, span: &str, context: &ClaimContext<'_>) -> ClaimEvidence {
+fn field_to_enum(field: &str) -> ContactProofField {
+    match field {
+        "coach_name" => ContactProofField::CoachName,
+        "public_professional_email" => ContactProofField::PublicProfessionalEmail,
+        "ad_name" => ContactProofField::AdName,
+        "ad_email" => ContactProofField::AdEmail,
+        _ => unreachable!("only coach_name/ad_name/public_professional_email/ad_email reach here"),
+    }
+}
+
+fn evidence(field: ContactProofField, value: &str, person: &str, span: &str, context: &ClaimContext<'_>) -> ContactClaimEvidence {
     let row = context.row;
-    ClaimEvidence {
-        field: field.to_string(), value: value.to_string(), person: person.to_string(),
-        role: if field.starts_with("ad_") { "Athletic Director".to_string() } else { row.role.clone() },
+    let role = if field == ContactProofField::AdName { "Athletic Director".to_string() } else { row.role.clone() };
+    ContactClaimEvidence {
+        field, value: value.to_string(), person: person.to_string(), role,
         sport: row.sport.clone(), school: row.school.clone(), state: row.state.clone(),
-        source_url: context.url.to_string(), retrieved_at: context.retrieved_at.to_string(),
-        claimed_observed_on: row.last_observed.clone(), source_sha256: context.digest.to_string(), span: span.to_string(),
+        source_url: context.url.to_string(), claimed_observed_on: row.last_observed.clone(),
+        source_sha256: context.source_sha256.to_string(), fetched_at: context.fetched_at.to_string(),
+        span: span.to_string(),
     }
 }

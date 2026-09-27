@@ -1,14 +1,3 @@
-//! The persistent profile the transport drives: how it is configured, how that configuration is
-//! validated, and the durable state the manager reports for it.
-//!
-//! One `profile_dir` belongs to one manager (see the crate docs), so these settings are the whole
-//! description of the identity a lane runs under: the executable that is launched, the origin that
-//! is read, how many tabs the pool may hold, and the two timeouts one attempt is bounded by.
-//!
-//! [`BrowserState`] and [`BrowserStatus`] are the answer about that profile after it has been
-//! driven. The state is what the lifecycle latches and what the profile gate revokes, and it is not
-//! a caller's to reinterpret: `Challenged` and `HumanRequired` mean the profile needs a human step
-//! before it serves traffic, not that another invocation is worth making.
 
 use serde::{Deserialize, Serialize};
 use std::{path::PathBuf, time::Duration};

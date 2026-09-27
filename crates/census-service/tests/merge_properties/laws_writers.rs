@@ -1,9 +1,3 @@
-//! First-writer-wins, identity preservation and hole filling.
-//!
-//! Every scalar a merge *does* replace is a documented hole fill rather than an overwrite: the
-//! meet `level` is written only when the row itself says `Unknown`, and the athlete
-//! `identity_confidence` is derived from the cohort the observations agree on. Everything else —
-//! the names a canonical record was minted from included — belongs to the first writer.
 
 use super::*;
 use census_domain::model::NaturalKey;
@@ -54,8 +48,6 @@ proptest! {
         prop_assert_eq!(&reversed.co_op, &(co_op | other_co_op));
     }
 
-    /// A name that extends the kept name as its prefix ("Nicolet" -> "Nicolet High School") is the
-    /// more specific legal name and replaces it; a shorter prefix of the kept name never does.
     #[test]
     fn school_name_keeps_the_longer_prefix_extension(
         short in word(8),
@@ -145,8 +137,6 @@ proptest! {
         prop_assert_eq!(&reversed.location, &Some(other));
     }
 
-    /// One subject under two observations: the alias is absorbed and the name the row was minted from
-    /// is not, because a name is what the id is derived from and rewriting it would rewrite identity.
     #[test]
     fn athlete_merge_unions_known_names_under_one_natural_key(base in athlete(), alias in word(20)) {
         let mut athlete = base.clone();
@@ -161,9 +151,6 @@ proptest! {
         prop_assert!(athlete.retained_conflicts.is_empty());
     }
 
-    /// Two rows that share an id but not a natural key are an id collision, not one subject: the row
-    /// already there keeps every field it holds — its name and its known names included — and the
-    /// finding is recorded for an operator rather than absorbed into a third subject.
     #[test]
     fn athlete_merge_records_a_second_name_instead_of_absorbing_it(
         base in athlete(),

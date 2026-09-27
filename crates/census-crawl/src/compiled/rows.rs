@@ -1,5 +1,3 @@
-//! Row reading: the row a block's cells describe, the relay legs printed beneath a relay row, and
-//! the mark a row publishes.
 
 use regex::Regex;
 use std::sync::LazyLock;
@@ -12,7 +10,6 @@ use crate::{CrawlError, CrawlResult};
 use super::layout::Block;
 use super::{ParsedEvent, ParsedRow, RelayLeg};
 
-/// The qualifier letter a preliminary row carries after its mark (`12.30 Q`).
 static QUALIFIER: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"\s+[Qq]$"));
 static RELAY_LEG: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(\d+)\)\s+([^\d]+?)\s+(\d{1,2}|Fr|So|Jr|Sr)\b"));
@@ -93,8 +90,6 @@ pub(super) fn parse_row(
     })
 }
 
-/// Attach the relay legs a relay row prints beneath it. `None` means the leg pattern is
-/// unavailable, which makes the file unreadable rather than legless.
 pub(super) fn attach_legs(line: &str, block: &Block, event: &mut ParsedEvent) -> Option<bool> {
     if !block.kind.is_relay() {
         return Some(false);
@@ -130,8 +125,6 @@ pub(super) fn attach_legs(line: &str, block: &Block, event: &mut ParsedEvent) ->
     Some(found)
 }
 
-/// Read the published mark: qualifier letters are not part of it, and jumps and throws publish feet
-/// and inches rather than a time.
 fn mark_for(kind: &EventKind, token: &str) -> Option<Mark> {
     let token = token.trim();
     if hytek::NO_MARK.contains(&token.to_ascii_uppercase().as_str()) {

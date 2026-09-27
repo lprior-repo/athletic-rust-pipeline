@@ -1,18 +1,8 @@
-//! The store's append counters and the HTTP cache snapshot.
-//!
-//! `store_counters` iterates the LSM-tree stats and prints one row per table plus the total
-//! observations and on-disk byte count. `cache_block` walks the HTTP cache directory and counts
-//! `.meta.json` response headers and `.body` payload sizes so a resumed run reports the full
-//! cache rather than only what this process fetched.
-//!
-//! Both blocks use [`count_cell`] to format counters as Excel-friendly numeric cells when the
-//! value fits in a `u32`, and as plain text otherwise.
 
 use crate::report::{io_error, ReportResult};
 use crate::workbook::cells::{row, Cell};
 use census_store::Store;
 
-/// The store's append counters: one row per table, then the totals the LSM tree reports.
 pub(super) fn store_counters(store: &Store) -> ReportResult<Vec<Vec<Cell>>> {
     let stats = store.stats()?;
     let mut cells = vec![row!("Store table", "Observations")];
@@ -27,8 +17,6 @@ pub(super) fn store_counters(store: &Store) -> ReportResult<Vec<Vec<Cell>>> {
     Ok(cells)
 }
 
-/// What the HTTP cache holds: one entry per response already fetched, so a resumed run reports the
-/// whole cache rather than only what this process fetched.
 pub(super) fn cache_block(store: &Store) -> ReportResult<Vec<Vec<Cell>>> {
     let dir = store.http_cache_dir();
     let entries = std::fs::read_dir(&dir).map_err(|source| io_error(&dir, source))?;
@@ -57,8 +45,6 @@ pub(super) fn cache_block(store: &Store) -> ReportResult<Vec<Vec<Cell>>> {
     ])
 }
 
-/// A counter as the number an Excel cell holds: exact through `u32`, and printed as text above it,
-/// where a cell could no longer hold the value exactly.
 fn count_cell(value: u64) -> Cell {
     match u32::try_from(value) {
         Ok(value) => Cell::Number(f64::from(value)),

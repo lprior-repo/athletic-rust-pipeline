@@ -1,5 +1,3 @@
-//! Minting the canonical entities one meet's rows hang off: the meet itself, its athletes, its
-//! events, and the performance rows.
 
 use super::super::map::{ensure_team, profile_url, Accumulator, PerformanceInput};
 use super::read::meet_date;
@@ -11,18 +9,10 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 
-/// The published meet's own page, the form the sibling AthleticLIVE adapter links it with.
 pub(super) fn meet_url(meet_id: i64) -> String {
     format!("https://www.athletic.net/TrackAndField/meet/{meet_id}/info")
 }
 
-/// Mint or find the canonical meet, on the same key the athlete-bio path mints it with.
-///
-/// The level stays [`CompetitionLevel::Unknown`] exactly as the bio path mints it: the bio
-/// payload's copy of the same meet publishes no level at all, and one meet must not carry two
-/// levels depending on which path read it. (`tfDivisions[].LevelMask` is `4` and the team list's
-/// `LevelName` is `"High School"` on this capture; no capture maps a mask value onto the platform's
-/// levels, so neither is read as one.)
 pub(super) fn meet_row(
     meet: &MeetData,
     state: UsJurisdiction,
@@ -80,7 +70,6 @@ pub(super) fn meet_row(
         .clone()
 }
 
-/// One row's athlete identity facts.
 pub(super) struct AthleteRow<'a> {
     pub(super) provider_id: i64,
     pub(super) school: &'a SchoolId,
@@ -91,17 +80,12 @@ pub(super) struct AthleteRow<'a> {
     pub(super) sport: Sport,
 }
 
-/// Mint or find the athlete a row names, keyed per (athlete id, school).
-///
-/// The bio path assigns the identity's whole observed-grade and evidence vectors because one payload
-/// describes one athlete; a meet payload names the same athlete from several rows, so the identity
-/// is minted on first sight and every further row only adds an observation it does not carry yet.
 pub(super) fn athlete(
     accumulated: &mut Accumulator,
     source: &SourceRef,
     observed_on: &str,
     row: AthleteRow<'_>,
-) -> AthleteId {
+) -> (AthleteId, SourceIdentity) {
     let key = format!("{}:{}", row.provider_id, row.school.as_str());
     let observation = ObservedGrade {
         grade: row.grade,
@@ -115,7 +99,7 @@ pub(super) fn athlete(
         if !athlete.sports.contains(&row.sport) {
             athlete.sports.push(row.sport);
         }
-        return athlete.id.clone();
+        return (athlete.id.clone(), athlete.source.clone());
     }
     let profile = u64::try_from(row.provider_id).ok().map(profile_url);
     let mut athlete = CanonicalAthlete::new(
@@ -137,18 +121,11 @@ pub(super) fn athlete(
     athlete
         .evidence
         .push(Evidence::parsed(source.clone(), observed_on));
-    let id = athlete.id.clone();
+    let subject = (athlete.id.clone(), athlete.source.clone());
     accumulated.athletes.insert(key, athlete);
-    id
+    subject
 }
 
-/// Store one performance against the event its own division **and round** belong to.
-///
-/// The bio path's `store_performance` dedupes events on (meet, kind, gender, division) — a key that
-/// omits the round — so the meet path does not reuse it: a meet payload publishes prelims and finals
-/// of the same event, and the domain's event identity includes the round (this capture carries 4
-/// such pairs, so 49 event identities against 45 round-less keys). The team mint *is* shared, and the
-/// performance row is assembled exactly as the bio path assembles it.
 pub(super) fn store(
     accumulated: &mut Accumulator,
     source: &SourceRef,
@@ -187,13 +164,12 @@ pub(super) fn store(
                 observed_grade: input.grade,
                 evidence: vec![evidence],
                 source_key: input.source_key,
-                source_athlete: None,
+                source_athlete: input.source_athlete,
                 retained_conflicts: Vec::new(),
             }
         });
 }
 
-/// The event a performance belongs to: the bio path's mint, deduped **with** the round.
 fn event_of(
     accumulated: &mut Accumulator,
     source: &SourceRef,

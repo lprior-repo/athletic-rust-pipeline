@@ -1,12 +1,9 @@
-//! The printed sections that summarise the whole run: the header, the link inventory, the verdict
-//! totals, the page filter, the interstitial markers and the digest/byte mismatches.
 
 use indexmap::IndexMap;
 
 use crate::digests::digest_head;
 use crate::pyrepr::fmt_dict;
 
-/// The run's header: the label and how many files each input directory held.
 pub(crate) fn print_header(label: &str, raw: usize, evidence: usize, parsed: usize) {
     println!(
         "== {} ==\nraw bodies: {}  evidence records: {}  parsed records: {}",
@@ -14,7 +11,6 @@ pub(crate) fn print_header(label: &str, raw: usize, evidence: usize, parsed: usi
     );
 }
 
-/// The link inventory: one line per key, in the order the report fixed.
 pub(crate) fn print_link_inventory(link_totals: &IndexMap<String, usize>) {
     println!("link inventory:");
     for key in &[
@@ -34,18 +30,15 @@ pub(crate) fn print_link_inventory(link_totals: &IndexMap<String, usize>) {
     }
 }
 
-/// The envelope-count-against-rows tally.
 pub(crate) fn print_count_vs_rows(count_vs_rows: &IndexMap<String, usize>) {
     let cvr_items: Vec<_> = count_vs_rows.iter().map(|(k, v)| (k.clone(), *v)).collect();
     println!("count vs rows: {}", fmt_dict(&cvr_items));
 }
 
-/// The header of the page-verdict section that follows it.
 pub(crate) fn print_verdict_header() {
     println!("page verdicts:");
 }
 
-/// Every page verdict, keyed as the report prints them.
 pub(crate) fn print_verdict_totals(verdict_totals: &IndexMap<String, usize>) {
     println!("verdict totals:");
     let mut vt_items: Vec<_> = verdict_totals
@@ -58,7 +51,6 @@ pub(crate) fn print_verdict_totals(verdict_totals: &IndexMap<String, usize>) {
     }
 }
 
-/// The sport each retained body was fetched for.
 pub(crate) fn print_page_filter(filter_totals: &IndexMap<String, usize>) {
     let pf_items: Vec<_> = filter_totals.iter().map(|(k, v)| (k.clone(), *v)).collect();
     println!(
@@ -67,7 +59,6 @@ pub(crate) fn print_page_filter(filter_totals: &IndexMap<String, usize>) {
     );
 }
 
-/// The interstitial markers found in the retained bodies.
 pub(crate) fn print_interstitials(interstitials: &IndexMap<String, usize>) {
     if interstitials.is_empty() {
         println!("interstitial markers: none");
@@ -77,7 +68,6 @@ pub(crate) fn print_interstitials(interstitials: &IndexMap<String, usize>) {
     }
 }
 
-/// The names that are not their bodies' digests, and the records that misstate a byte count.
 pub(crate) fn print_mismatches(
     digest_mismatch: &[(String, String)],
     byte_mismatch: &[(String, String, usize)],

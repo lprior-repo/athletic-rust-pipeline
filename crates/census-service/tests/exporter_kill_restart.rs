@@ -2,7 +2,8 @@ use calamine::Reader;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
-    GradYear, Grade, Id, Mark, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
+    GradYear, Grade, Id, Mark, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
+    Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -86,11 +87,16 @@ fn build_corpus(n: usize) -> Corpus {
         c.meets.push(meet);
         c.schools.push(school);
         for s in 0..ATH_PER_SCHOOL {
+            let source = SourceIdentity::new(
+                SourceNamespace::Other("fixture".to_string()),
+                format!("athlete-{i}-{s}"),
+            );
             let a = CanonicalAthlete::new(
                 &sid,
                 format!("Killer {i}-{s}"),
                 GradYear::CO2027,
                 Gender::Boys,
+                source.clone(),
             );
             let aid = a.id.clone();
             let ev = CanonicalEvent::new(&mid, EventKind::Track100m, Gender::Boys, None, None);
@@ -122,7 +128,7 @@ fn build_corpus(n: usize) -> Corpus {
                 observed_grade: Some(Grade::new(11).unwrap()),
                 evidence: vec![evidence()],
                 source_key: format!("kill-{i}-{s}"),
-                source_athlete: None,
+                source_athlete: source,
                 retained_conflicts: Vec::new(),
             });
         }

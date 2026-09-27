@@ -1,12 +1,4 @@
-//! The markup primitives every reader in this tree shares.
-//!
-//! The crate parses HTML with each adapter's own primitives (see `ohsaa::parse`,
-//! `wiaa::primitives`): there is no shared HTML tree, so these are deliberately minimal and
-//! structural — one cell by its `data-label`, a fragment's links and attributes, and the text
-//! runs a fragment publishes.
 
-/// Every text run a fragment publishes, in document order: tags dropped, entities decoded, whitespace
-/// collapsed, empty runs skipped.
 pub(super) fn text_runs(fragment: &str) -> impl Iterator<Item = String> + '_ {
     fragment
         .split('<')
@@ -22,10 +14,6 @@ pub(super) fn text_runs(fragment: &str) -> impl Iterator<Item = String> + '_ {
         })
 }
 
-/// The content of the cell the row marks with `data-label="<label>"`, up to the next cell.
-///
-/// Cells are addressed by label rather than by position: the host renders the same row with and
-/// without its extra `Conv`/`Wind` columns, and a positional reader would mis-assign the mark.
 pub(super) fn cell<'a>(row: &'a str, label: &str) -> Option<&'a str> {
     let marker = format!("data-label=\"{label}\"");
     let start = row.find(&marker)?.checked_add(marker.len())?;
@@ -35,7 +23,6 @@ pub(super) fn cell<'a>(row: &'a str, label: &str) -> Option<&'a str> {
     body.get(..end)
 }
 
-/// Every `<a href=…>text</a>` in a fragment, as (href, display text).
 pub(super) fn links(fragment: &str) -> Vec<(&str, String)> {
     let mut found = Vec::new();
     for piece in fragment.split("<a ").skip(1) {
@@ -53,7 +40,6 @@ pub(super) fn links(fragment: &str) -> Vec<(&str, String)> {
     found
 }
 
-/// The value of one attribute inside a tag fragment.
 pub(super) fn attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
     let marker = format!("{name}=\"");
     let start = tag.find(&marker)?.checked_add(marker.len())?;
@@ -61,12 +47,10 @@ pub(super) fn attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
     after.get(..after.find('"')?)
 }
 
-/// A cell's or fragment's text: tags removed, entities decoded, whitespace collapsed.
 pub(super) fn text_of(fragment: &str) -> String {
     collapse_whitespace(&decode_entities(&strip_tags(fragment)))
 }
 
-/// Remove HTML tags, keeping one space where a tag separated two words.
 fn strip_tags(fragment: &str) -> String {
     let mut result = String::with_capacity(fragment.len());
     let mut in_tag = false;
@@ -87,7 +71,6 @@ fn strip_tags(fragment: &str) -> String {
     collapse_whitespace(&result)
 }
 
-/// Decode the entities the host escapes its cell text with (`&amp;`, `&quot;`, `&#39;`, `&nbsp;`).
 pub(super) fn decode_entities(value: &str) -> String {
     let mut result = String::with_capacity(value.len());
     let mut chars = value.chars();
@@ -131,7 +114,6 @@ pub(super) fn decode_entities(value: &str) -> String {
     result
 }
 
-/// The character a numeric entity names (`#39`, `#x27`).
 fn numeric_entity(entity: &str) -> Option<char> {
     let digits = entity.strip_prefix('#')?;
     let code = match digits.strip_prefix(['x', 'X']) {
@@ -141,7 +123,6 @@ fn numeric_entity(entity: &str) -> Option<char> {
     char::from_u32(code)
 }
 
-/// Collapse every run of whitespace to one space and trim the ends.
 pub(super) fn collapse_whitespace(value: &str) -> String {
     let mut result = String::with_capacity(value.len());
     let mut previous_space = false;

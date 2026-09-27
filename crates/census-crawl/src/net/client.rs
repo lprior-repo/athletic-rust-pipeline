@@ -1,4 +1,3 @@
-//! Client construction and the per-host pacing state.
 
 use super::{FetchError, FetchStats, Fetcher, DEFAULT_USER_AGENT, REQUEST_TIMEOUT_SECS};
 use std::collections::HashMap;
@@ -7,13 +6,8 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 
-/// Per-host politeness state.
 pub(super) struct HostState {
     pub(super) gate: Arc<Mutex<()>>,
-    /// When the next request to this host may start (reserved before sleeping so that the spacing
-    /// holds even when several tasks queue behind the gate). A `tokio::time::Instant` because that
-    /// is what the clock capability hands out, which is what lets `tokio::time::pause` drive the
-    /// pacing in tests.
     pub(super) next_allowed: Option<tokio::time::Instant>,
     pub(super) delay: Duration,
 }
@@ -33,7 +27,7 @@ impl Fetcher {
         })?;
         let user_agent = user_agent.unwrap_or_else(|| DEFAULT_USER_AGENT.to_string());
         let client = reqwest::Client::builder()
-            .user_agent(user_agent.clone())
+            .user_agent(user_agent)
             .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
             .connect_timeout(Duration::from_secs(15))
             .redirect(reqwest::redirect::Policy::limited(5))
@@ -42,7 +36,6 @@ impl Fetcher {
         Ok(Self {
             client,
             cache_dir,
-            user_agent,
             default_delay,
             host_delays,
             family_delays: HashMap::new(),

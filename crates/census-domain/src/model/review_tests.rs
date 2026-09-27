@@ -1,5 +1,3 @@
-//! What the review lane's vocabulary must guarantee: a model cannot widen the question, widen its
-//! answer, or claim a proposal it did not make.
 
 use super::*;
 

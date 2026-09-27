@@ -1,19 +1,6 @@
-//! Blanking of Rust string literals, character literals and comments.
-//!
-//! HTML, CSS and JavaScript payloads live in string literals in this tree and they read like Rust
-//! indexing to a regex: `selector("a[href]")`, `headers[name] = value;` inside an injected script,
-//! and `r"(?is)<t[hd]..` capture patterns. The same goes for a doc comment that quotes a construct:
-//! the text is not the construct.
-//!
-//! Conservative by construction: anything not recognised as a string, character literal or comment
-//! stays visible, so an unparsed form can only keep a hit, never hide one. `/* */` depth and
-//! raw-string hashes carry across the lines of one file. Every metric that reads Rust *syntax*
-//! (indexing, the brace walk, the `max_attempts` sites) masks first; the per-line construct counts
-//! keep their historical unmasked semantics so their recorded baselines do not move.
 
 use regex::Regex;
 
-/// Blanking state that carries from one line of a file to the next.
 #[derive(Default)]
 pub(crate) struct CodeMask {
     block_depth: u32,
@@ -21,7 +8,6 @@ pub(crate) struct CodeMask {
 }
 
 impl CodeMask {
-    /// Every line of one file, masked, carrying raw-string and block-comment state across lines.
     pub(crate) fn apply_all(&mut self, lines: &[String], char_literal: &Regex) -> Vec<String> {
         lines
             .iter()
@@ -29,7 +15,6 @@ impl CodeMask {
             .collect()
     }
 
-    /// Mask one line, carrying raw-string and block-comment state into the next line.
     fn apply(&mut self, line: &str, char_literal: &Regex) -> String {
         let chars: Vec<char> = line.chars().collect();
         let mut masked = chars.clone();
@@ -46,7 +31,6 @@ impl CodeMask {
         masked.into_iter().collect()
     }
 
-    /// Mask whatever construct starts at `index`, or step one character past it.
     fn advance(
         &mut self,
         line: &[char],
@@ -164,11 +148,6 @@ impl CodeMask {
     }
 }
 
-/// Whether the next nested comment opener wins over the next comment closer.
-///
-/// This is `production_scan.py`'s `0 <= nested < close or close < 0` spelled out: a nested `/*` wins
-/// unless a `*/` comes first, and a `*/` with no `/*` left on the line always closes. Neither present
-/// ends the walk.
 fn opens_first(nested: Option<usize>, close: Option<usize>) -> bool {
     match (nested, close) {
         (Some(next), Some(end)) => next < end,
@@ -177,7 +156,6 @@ fn opens_first(nested: Option<usize>, close: Option<usize>) -> bool {
     }
 }
 
-/// The terminator that closes a raw string with `hashes` hashes: `"` and then that many `#`.
 fn terminator(hashes: usize) -> Vec<char> {
     let mut terminator: Vec<char> = Vec::with_capacity(hashes.saturating_add(1));
     terminator.push('"');
@@ -185,7 +163,6 @@ fn terminator(hashes: usize) -> Vec<char> {
     terminator
 }
 
-/// Whether `needle` occurs at `index`.
 fn starts_with(line: &[char], index: usize, needle: &[char]) -> bool {
     needle
         .iter()
@@ -193,7 +170,6 @@ fn starts_with(line: &[char], index: usize, needle: &[char]) -> bool {
         .all(|(offset, expected)| line.get(index.saturating_add(offset)) == Some(expected))
 }
 
-/// The first position at or after `index` where `needle` occurs.
 fn find_from(line: &[char], index: usize, needle: &[char]) -> Option<usize> {
     let first = *needle.first()?;
     let mut position = index;
@@ -206,8 +182,6 @@ fn find_from(line: &[char], index: usize, needle: &[char]) -> Option<usize> {
     None
 }
 
-/// Whether the character before `index` continues an identifier, which makes an `r` an identifier's
-/// last letter rather than the start of a raw string.
 fn continues_identifier(line: &[char], index: usize) -> bool {
     index > 0
         && line
@@ -215,7 +189,6 @@ fn continues_identifier(line: &[char], index: usize) -> bool {
             .is_some_and(|char| char.is_alphanumeric() || *char == '_')
 }
 
-/// Blank `masked[start..end]`, clamped to the line's length.
 fn blank(masked: &mut [char], start: usize, end: usize) {
     let limit = end.min(masked.len());
     let mut position = start;

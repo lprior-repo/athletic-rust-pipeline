@@ -12,9 +12,6 @@ pub struct CanonicalEvent {
     pub round: Option<String>,
     pub source_labels: Vec<SourceEventLabel>,
     pub evidence: Vec<Evidence>,
-    /// Canonical-id collisions this row's merge retained: another natural key minted this id, so the
-    /// row below is the one that survived and the other subject's facts were not absorbed. Empty on
-    /// every row whose fields still state the id they minted, which is every row until one collides.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retained_conflicts: Vec<RetainedConflict>,
 }
@@ -56,22 +53,15 @@ impl CanonicalEvent {
     }
 }
 
-/// A mark's unit context. Track marks are times (or points for combined events), field marks are
-/// distances/heights in metric or imperial notation, exactly as published by the source.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Mark {
-    /// Centiseconds (hundredths of a second).
     TimeSeconds(CentiSeconds),
-    /// Centimetres, converted from the published imperial/metric value.
     DistanceMetres(CentiMetres),
-    /// A field mark preserved in the source's own notation (e.g. `5' 4"`, `42-06.5`).
     FieldImperial {
         feet_mark: String,
         metres: CentiMetres,
     },
-    /// Centi-points (hundredths of a point).
     Points(CentiPoints),
-    /// Published verbatim, not yet parsed.
     Raw(String),
 }
 
@@ -106,22 +96,11 @@ pub struct CanonicalPerformance {
     pub round: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timing: Option<TimingMethod>,
-    /// The athlete's grade at the moment of this performance, when the source publishes it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub observed_grade: Option<Grade>,
     pub evidence: Vec<Evidence>,
-    /// Provider-local result key, used for idempotent upserts.
     pub source_key: String,
-    /// The source's own athlete object this row was read from, when the adapter knew it: the §31 key
-    /// (`namespace`, provider athlete id) the athlete row carries for the pass that minted this
-    /// performance. Held here rather than looked up later because it is what makes this row's athlete
-    /// reversible — a canonical athlete that turns out to be two people is told apart from what each
-    /// source said, without reading the provider again.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub source_athlete: Option<SourceIdentity>,
-    /// Canonical-id collisions this row's merge retained: another natural key minted this id, so the
-    /// row below is the one that survived and the other subject's facts were not absorbed. Empty on
-    /// every row whose fields still state the id they minted, which is every row until one collides.
+    pub source_athlete: SourceIdentity,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retained_conflicts: Vec<RetainedConflict>,
 }
@@ -135,10 +114,6 @@ pub enum TimingMethod {
 }
 
 impl TimingMethod {
-    /// The byte spelling of this method inside a persisted row; see [`Gender::stable_key`].
-    ///
-    /// The workbook and bests rows carry this text, so it is written here rather than taken from
-    /// `Debug`: renaming a variant would otherwise change a published cell.
     pub const fn stable_key(self) -> &'static str {
         match self {
             Self::Fat => "Fat",

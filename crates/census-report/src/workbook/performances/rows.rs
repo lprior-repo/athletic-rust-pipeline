@@ -1,27 +1,8 @@
-//! The §52 row: one row per stored performance, and the order the sheets publish.
-//!
-//! [`PerformanceRow`] is assembled by [`super::join`], which copies the athlete (name, graduation
-//! year), the athlete's school, the meet (name, venue state) and the event (label, round) out of the
-//! canonical rows the store holds, all under the requested scope. [`PerformanceRow::cells`] is the
-//! one place a cell is formatted: `Mark` is the source's own notation (`10.94`, `4:41.23`, `5' 4"`),
-//! `Normalized Mark` is the same mark on its own comparable scale (seconds, metres or points) and
-//! stays blank for a mark the census has not parsed yet, `Sport` is the event family the `Best
-//! results` sheet already publishes, `Timing`, `Wind`, `Round` and `Place` are the performance's own
-//! published conditions, and `Source`, `Source ResultID` and `Source URL` are the observation the row
-//! rests on: the lexicographically first source that observed it, the provider-local result key, and
-//! that source's URL.
-//!
-//! Relay legs are included. They are deliberately not personal bests (see [`crate::bests`]), but §52
-//! asks for every performance, and a 4x400 leg is one.
 
 use super::super::cells::{row, Cell};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
-/// One §52 row, joined and formatted; the sheet writer only copies these fields out.
-///
-/// The fields are `pub(super)` so the module's tests can assert the join column by column; nothing
-/// outside this module tree reads them.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub(super) struct PerformanceRow {
     pub(super) id: String,
@@ -47,7 +28,6 @@ pub(super) struct PerformanceRow {
 }
 
 impl PerformanceRow {
-    /// The row's cells, in [`COLUMNS`](super::COLUMNS) order.
     pub(super) fn cells(&self) -> Vec<Cell> {
         row!(
             Cell::text(self.id.clone()),
@@ -78,11 +58,6 @@ impl PerformanceRow {
     }
 }
 
-/// The order the sheets publish and therefore the order they are cut into partitions: school, date,
-/// athlete, event, then the unique performance id, which breaks every remaining tie.
-///
-/// School name comes first so a contiguous slice of the school-name universe is a contiguous slice of
-/// this order, which is what lets [`super::spill`] sort one range at a time.
 pub(super) fn sheet_order(left: &PerformanceRow, right: &PerformanceRow) -> Ordering {
     left.school
         .cmp(&right.school)

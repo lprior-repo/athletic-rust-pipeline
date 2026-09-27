@@ -1,5 +1,3 @@
-//! The page driver: walk the lines, re-anchor on each event header and column header, and read the
-//! rows every block owns into the meet it builds.
 
 use census_domain::model::SourceRef;
 
@@ -10,10 +8,6 @@ use super::layout::{block_starts, build_blocks, column_anchors, rebind_columns, 
 use super::rows::{attach_legs, parse_row, starts_like_a_row};
 use super::{ParsedEvent, ParsedMeet};
 
-/// Parse a Compiled export.
-///
-/// `archive_year` supplies the year when the print header carries no readable date, which happens
-/// when a page stamp is cropped out of the PDF.
 pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<ParsedMeet> {
     let (name, date) = header(lines)?;
     let date = date.unwrap_or_else(|| archive_year.to_string());
@@ -58,10 +52,6 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
     })
 }
 
-/// Every block's reading of one line, as the number of rows read and the number skipped.
-///
-/// A block's `index` names the event it built, so this lookup always resolves; a file that somehow
-/// lost the pairing is left to the next layout instead of being read against the wrong event.
 fn read_blocks(line: &str, blocks: &[Block], events: &mut [ParsedEvent]) -> Option<(usize, usize)> {
     let line_tokens = tokens(line);
     let mut parsed = 0usize;

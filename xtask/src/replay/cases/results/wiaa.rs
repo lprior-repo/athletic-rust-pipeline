@@ -1,18 +1,9 @@
-//! The WIAA arm: a Hy-Tek, RaceDay, or plain result file, read through the adapter's own reader.
-//!
-//! Two inputs a result file cannot state about itself are supplied here the way the crate's own
-//! tests and `benches/core/fixtures.rs` supply them over these same captures: the format, decided
-//! from the file's extension and body by the adapter's classifier, and the season, read from the
-//! fixture's own record under `tests/golden/`.
 
 use crate::replay::Capture;
 use anyhow::{bail, Context, Result};
 use census_crawl::wiaa_results;
 use census_domain::model::SourceRef;
 
-/// One WIAA result file: the format from its extension and body, the season from its fixture
-/// record, and the body through `wiaa_results::parse_result_body` - the call the crate's own tests
-/// and `benches/core/fixtures.rs` make over these same captures.
 pub(super) fn result_file(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     let extension = file.rsplit('.').next().unwrap_or_default();

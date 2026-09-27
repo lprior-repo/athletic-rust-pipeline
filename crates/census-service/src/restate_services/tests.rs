@@ -52,8 +52,6 @@ fn cohort_label_names_the_reduction() {
     assert_eq!(cohort_label(None), "all");
 }
 
-/// Physical rows and receipts a store holds: counted from the keys the keyspaces carry, not from a
-/// row ledger a writer maintains for itself.
 fn physical(store: &Store, table: Table) -> (u64, u64) {
     (
         store.walk_table(table).unwrap().rows,
@@ -220,8 +218,6 @@ fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_re
     assert!(matches!(panicked, Err(JobError::Terminal { .. })));
 }
 
-/// The national request every fan-out test varies: season 2026-27 at revision 1, the CLI's default
-/// concurrency, and no roster ceiling.
 fn national_request(jurisdictions: Vec<UsJurisdiction>) -> NationalRequest {
     NationalRequest {
         season: SchoolYear::new(2026).expect("2026 is a season"),
@@ -354,8 +350,6 @@ fn a_walk_with_no_concurrency_is_refused() {
     );
 }
 
-/// One jurisdiction's report as `JurisdictionCensus` returns it: seven teams, five rosters walked,
-/// eleven athletes of whom three are in the 2027 cohort — enough to see the summary's own arithmetic.
 fn answered_report() -> JurisdictionReport {
     JurisdictionReport {
         identity: "jurisdiction:WI:2026-27:1".to_string(),
@@ -387,9 +381,6 @@ fn answered_report() -> JurisdictionReport {
     }
 }
 
-/// §69: a state that could not be walked is a *row* in the national report, not an abort, and one
-/// state's outage must not cost the fan-out the states that did answer. This is the whole of that
-/// decision, so it is tested without a Restate context.
 #[test]
 fn a_state_that_did_not_answer_becomes_a_failure_row_and_the_run_keeps_its_summaries() {
     let key = "jurisdiction:IA:2026-27:1";
@@ -439,12 +430,6 @@ fn a_state_that_did_not_answer_becomes_a_failure_row_and_the_run_keeps_its_summa
     );
 }
 
-/// A surface that only renders under a browser session, as a literal descriptor.
-///
-/// Synthetic on purpose: no registry entry declares `TransportKind::Browser` today (the only
-/// mentions are `sources/registry.rs:58` and the derivation at `:179`), so the real applicability
-/// table cannot reach this branch at all. The origin is deliberately not the artifact placeholder,
-/// because `access_class()` reads that first and would classify the descriptor as `Artifact`.
 static BROWSER_ONLY: SourceDescriptor = SourceDescriptor {
     slug: "browser-only",
     provider: "a surface that only renders in a session",
@@ -469,20 +454,6 @@ static BROWSER_ONLY: SourceDescriptor = SourceDescriptor {
     },
 };
 
-/// A source this machine cannot run is owed, not gone: the refusal is evidence, and it never
-/// reaches the path the invocation retry owns.
-///
-/// Three claims, in the order the run depends on them. The refusal names the source, the acquisition
-/// it would have taken and what is missing. It is not one of the units a dispatcher may fetch — and
-/// the fetch path is the only place a `CrawlError` arises, so it is the only thing
-/// `JobError::Transient` (the invocation retry's one feed, `support.rs:20`) can be built from, which
-/// is what keeps a missing lane out of the three-attempt ceiling at `census.rs:46`. And the record it
-/// leaves is the real one: a source object that has accepted nothing, counted by
-/// `owed_source_objects` — the same function `open_work.rs` folds into the seal's `source_objects`,
-/// so while the refusal stands the census cannot seal.
-///
-/// The lane-configured plan is the control: the same source becomes an ordinary sweepable unit and
-/// nothing is owed, so what changed is this machine, not the source.
 #[test]
 fn a_refused_source_is_owed_evidence_and_is_never_dispatched() {
     assert_eq!(
@@ -551,11 +522,6 @@ fn a_refused_source_is_owed_evidence_and_is_never_dispatched() {
     );
 }
 
-/// FetchError variants that retryable() says are retryable: all become Transient.
-///
-/// The transport classified these as transient, and the census honours that verdict.
-/// Transport cannot be constructed without a reqwest::Error, so we verify retryable()
-/// returns true and confirm the other variants' classification through collect_error.
 #[test]
 fn fetch_error_retryable_variants_become_transient() {
     use census_crawl::net::FetchError;
@@ -623,11 +589,6 @@ fn fetch_error_retryable_variants_become_transient() {
     assert!(matches!(browser_retryable, JobError::Transient { .. }));
 }
 
-/// FetchError variants that retryable() says are NOT retryable: all become Terminal.
-///
-/// Robots, TooLarge, BrowserLane { retryable: false }, InvalidUrl, Decode, Encode, Client,
-/// and Invariant are deterministic — the same input reproduces the same failure, so retry
-/// cannot help. The defect was that these fell through to Transient.
 #[test]
 fn fetch_error_nonretryable_variants_become_terminal() {
     use census_crawl::net::FetchError;
@@ -677,8 +638,6 @@ fn fetch_error_nonretryable_variants_become_terminal() {
     assert!(matches!(http_403, JobError::Terminal { .. }));
 }
 
-/// Non-fetch CrawlError variants: Schema, Decode, Domain, Arithmetic, Io, RegexInit are all
-/// terminal because reading the same bytes again does not make them less wrong.
 #[test]
 fn non_fetch_crawl_errors_are_terminal() {
     let schema = collect_error(CrawlError::Schema {
@@ -716,11 +675,6 @@ fn non_fetch_crawl_errors_are_terminal() {
     assert!(matches!(encode, JobError::Terminal { .. }));
 }
 
-/// Every deterministic StoreError classifies Terminal; only environmental ones are Transient.
-///
-/// The defect was that everything except Invariant was transient. CounterOverflow, JournalTooLarge,
-/// Decode, Json, SnapshotRow, TooManyRows, Refused, and Legacy are deterministic — retrying with
-/// the same input cannot fix them.
 #[test]
 fn deterministic_store_errors_classify_terminal() {
     let error = JobError::from(StoreError::CounterOverflow);
@@ -776,11 +730,6 @@ fn deterministic_store_errors_classify_terminal() {
     assert!(matches!(error, JobError::Terminal { .. }));
 }
 
-/// Only environmental StoreError variants are Transient.
-///
-/// Open, Flush, Read, Write all wrap `fjall::Error` and share the same transient classification;
-/// Io wraps `std::io::Error`. Testing Io covers the pattern — the match arm for all five is
-/// identical: `Self::Transient { message }`.
 #[test]
 fn environmental_store_errors_classify_transient() {
     let error = JobError::from(StoreError::Io {
@@ -790,10 +739,6 @@ fn environmental_store_errors_classify_transient() {
     assert!(matches!(error, JobError::Transient { .. }));
 }
 
-/// run_key: identical semantic requests with the same generation produce identical keys.
-///
-/// Two calls with the same job, parts, and generation must produce the same key, so a rerun
-/// attaches to the existing workflow.
 #[test]
 fn identical_semantic_requests_with_same_generation_attach() {
     let key_a = run_key("report", &["core"], DEFAULT_GENERATION);
@@ -815,10 +760,6 @@ fn identical_semantic_requests_with_same_generation_attach() {
     assert_eq!(key_e, "consolidate:1");
 }
 
-/// run_key: same semantic parts but different generation produces a different key.
-///
-/// This is the disambiguation guarantee: an operator who specifies a new `--generation` (or
-/// `--run-id`) can start a fresh run even when the same request is already completed.
 #[test]
 fn same_semantics_different_generation_produces_new_key() {
     let key_default = run_key("report", &["core"], DEFAULT_GENERATION);
@@ -837,7 +778,6 @@ fn same_semantics_different_generation_produces_new_key() {
     );
 }
 
-/// run_key: differing semantic parts produce different keys regardless of generation.
 #[test]
 fn differing_semantic_parts_produce_different_keys() {
     assert_ne!(
@@ -891,10 +831,6 @@ fn differing_semantic_parts_produce_different_keys() {
     );
 }
 
-/// run_key is independent of wall-clock time and always ends with the generation.
-///
-/// The key shape is `<job>:<parts>:<generation>`. The last segment is always the generation,
-/// not a timestamp.
 #[test]
 fn run_key_is_independent_of_wall_clock() {
     let key = run_key("report", &["core"], DEFAULT_GENERATION);
@@ -926,9 +862,6 @@ fn run_key_is_independent_of_wall_clock() {
     assert_eq!(segments3[1], "1");
 }
 
-/// The disposition at the boundary: a deterministic failure reaches the handler as a terminal
-/// error and a transient failure stays retryable. The old code used `?` directly, which let the
-/// SDK's blanket From<StdError> convert JobError::Terminal to a retryable HandlerError.
 #[test]
 fn classification_survives_through_job_error() {
     use super::job_error;
@@ -950,9 +883,6 @@ fn classification_survives_through_job_error() {
     );
 }
 
-/// End-to-end: CrawlError flows through collect_error + job_error to HandlerError with correct
-/// classification. This is the boundary test the handler depends on — the old `?` path lost
-/// terminal classification through the SDK's blanket From<StdError>.
 #[test]
 fn crawl_error_survives_through_collect_error_and_job_error() {
     use super::job_error;

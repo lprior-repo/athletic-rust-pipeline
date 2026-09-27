@@ -1,8 +1,3 @@
-//! Unit tests for the `review` subcommand's argument handling.
-//!
-//! The lane pairing is pure argument logic, but it is the part an operator gets wrong: the two
-//! local lanes serve different quantization filenames, so a pass that silently asked the second
-//! lane for the first lane's model would fail every request for the rest of the run.
 
 use super::review::{families_of, lane_pairs};
 

@@ -1,4 +1,3 @@
-//! Prefix stability: tails append, truncation shortens, neither rewrites what was parsed.
 
 use super::*;
 

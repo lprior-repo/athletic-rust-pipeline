@@ -1,11 +1,3 @@
-//! Mutation-killing tests for the observation rows ([`super`]).
-//!
-//! Three facts the carrier exists for. The row is keyed by the provider's own object id rather than
-//! the canonical row it was read beside — otherwise a merge that turns out to be wrong cannot be
-//! reversed from the store. A second sighting of one object appends evidence that reads back merged
-//! into the row the first sighting wrote, with the first spelling kept and the later page only filling
-//! blanks. And the two object kinds share one table, which only works while the enum's tag rides
-//! inside the map that carries `id` where the key encoder reads it.
 
 use crate::{Store, Table};
 use census_domain::model::{
@@ -14,15 +6,12 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 
-/// The namespace a WIAA directory row is filed under.
 fn wiaa() -> SourceNamespace {
     SourceNamespace::AssociationSchool {
         association: "wiaa".to_string(),
     }
 }
 
-/// The canonical row a WIAA school page mints: the provider identity the observation is keyed by, the
-/// name the directory spells, and the page the values were read from.
 fn school_row(org_id: &str, name: &str) -> CanonicalSchool {
     let (mut school, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name));
@@ -35,7 +24,6 @@ fn school_row(org_id: &str, name: &str) -> CanonicalSchool {
     school
 }
 
-/// The observation of one school page, or a panic naming the identity that should have minted it.
 fn observed(school: &CanonicalSchool, observed_on: &str) -> SourceSchoolObservation {
     let Some(row) = SourceSchoolObservation::of_school(&wiaa(), school, observed_on) else {
         panic!("a row carrying the source's identity has to mint an observation");
@@ -43,7 +31,6 @@ fn observed(school: &CanonicalSchool, observed_on: &str) -> SourceSchoolObservat
     row
 }
 
-/// An athlete observation, which the table carries beside the school ones.
 fn athlete_row() -> SourceObservation {
     SourceObservation::Athlete(SourceAthleteObservation::new(
         SourceNamespace::MilesplitAthlete,
@@ -84,9 +71,6 @@ fn an_observation_is_keyed_by_the_providers_own_id() {
     );
 }
 
-/// A page whose row carries no identity for the source that published it has no key to file an
-/// observation under. Minting one from the canonical id would hand the row the very thing it exists to
-/// outlive, so the mint refuses instead.
 #[test]
 fn a_row_without_the_sources_identity_mints_nothing() {
     let school = school_row("5151", "Abbotsford High School");
@@ -100,9 +84,6 @@ fn a_row_without_the_sources_identity_mints_nothing() {
     );
 }
 
-/// Two sightings of one directory object are two rows of evidence under one id: the table holds both,
-/// a read hands back one, and the read keeps the first sighting's spelling while the later page fills
-/// what it left blank.
 #[test]
 fn two_sightings_of_one_school_share_one_row_and_keep_both_sequences() {
     let Ok(dir) = tempfile::tempdir() else {
@@ -156,10 +137,6 @@ fn two_sightings_of_one_school_share_one_row_and_keep_both_sequences() {
     );
 }
 
-/// The store keys a row by the `id` of its serialized form, so an observation enum that wrapped its
-/// payload instead of tagging it would append a school row no scan could read back and a second kind
-/// that silently never decodes. Both kinds in one table is the property that asserts the tag rides
-/// inside the map.
 #[test]
 fn both_object_kinds_live_in_one_table() {
     let Ok(dir) = tempfile::tempdir() else {
@@ -196,8 +173,6 @@ fn both_object_kinds_live_in_one_table() {
     );
 }
 
-/// The athlete observation is a real row, not a shape the enum merely names: an athlete's school
-/// survives as the source published it, and the id stays where the store's key encoder reads it.
 #[test]
 fn an_athlete_observation_keeps_the_cohort_evidence_it_was_minted_with() {
     let athlete = SourceAthleteObservation::new(

@@ -1,8 +1,3 @@
-//! The staging directory a backup or a restore is built in, and the single rename that publishes it.
-//!
-//! Publication is a rename, so a generation is either wholly there or not there at all: a run that
-//! fails leaves the destination exactly as it found it, including when the destination holds the only
-//! good backup, which is moved aside in one rename and deleted only after the new one lands.
 
 use std::fs;
 use std::io;
@@ -14,16 +9,8 @@ use super::errors::{io_err, refused};
 use super::files::fsync_dir;
 use crate::StoreResult;
 
-/// How many times a staging directory name is tried before giving up. A collision needs another
-/// process to have created the same name in the same nanosecond, so one retry is already generous.
 const STAGING_ATTEMPTS: usize = 4;
 
-/// A directory a generation is built in, beside the destination it will be renamed onto.
-///
-/// Nothing at the destination changes until [`Generation::publish`] renames the finished directory over
-/// it in one step. A generation that is dropped before that is removed, so a failed backup or restore
-/// leaves the destination exactly as it found it - including the case the destination already holds the
-/// only good backup, which is never rewritten file by file.
 pub(super) struct Generation {
     path: PathBuf,
     to: PathBuf,
@@ -32,7 +19,6 @@ pub(super) struct Generation {
 }
 
 impl Generation {
-    /// Create a fresh staging directory beside `to`, named `<prefix><token>`.
     pub(super) fn create(to: &Path, prefix: &str) -> StoreResult<Self> {
         let parent = parent_of(to);
         for _ in 0..STAGING_ATTEMPTS {
@@ -56,17 +42,10 @@ impl Generation {
         )))
     }
 
-    /// Where the generation is being built.
     pub(super) fn path(&self) -> &Path {
         &self.path
     }
 
-    /// Rename the finished generation onto the destination, replacing a previous one whole.
-    ///
-    /// A generation that is already there is moved aside in one rename first and deleted last, so the
-    /// window in which the destination holds no generation is a single rename wide, and the previous
-    /// generation is never edited in place. If the publish itself fails, the generation that was there
-    /// is put back.
     pub(super) fn publish(mut self) -> StoreResult<()> {
         fsync_dir(&self.path)?;
         let superseded = self.move_superseded_aside()?;
@@ -96,7 +75,6 @@ impl Generation {
         Ok(())
     }
 
-    /// Move whatever the destination holds now out of the way; it is deleted only after the publish.
     fn move_superseded_aside(&self) -> StoreResult<Option<PathBuf>> {
         match fs::symlink_metadata(&self.to) {
             Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
@@ -127,7 +105,6 @@ impl Drop for Generation {
     }
 }
 
-/// The directory a sibling of `path` belongs in.
 pub(super) fn parent_of(path: &Path) -> &Path {
     match path.parent() {
         Some(parent) if !parent.as_os_str().is_empty() => parent,
@@ -135,7 +112,6 @@ pub(super) fn parent_of(path: &Path) -> &Path {
     }
 }
 
-/// A token that does not repeat within a process, and is very unlikely to repeat across two.
 fn unique_token() -> String {
     static NEXT: AtomicU64 = AtomicU64::new(0);
     let count = NEXT.fetch_add(1, Ordering::Relaxed);

@@ -1,5 +1,3 @@
-//! Tests for the durable per-table sequence marks: the `meta` rows that let an open resume every
-//! table without walking one, and the one scan a store written before them pays.
 
 use std::sync::Arc;
 
@@ -12,8 +10,6 @@ fn school(name: &str) -> CanonicalSchool {
     CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0
 }
 
-/// One observation of `name` carrying `source` as its evidence, so an entity that was observed twice
-/// shows both observations once they are merged by a scan.
 fn observed(name: &str, source: &str, at: &str) -> CanonicalSchool {
     let mut row = school(name);
     row.evidence
@@ -21,14 +17,11 @@ fn observed(name: &str, source: &str, at: &str) -> CanonicalSchool {
     row
 }
 
-/// A table's mark as the store holds it, read the way an operator reads `meta`.
 fn mark(store: &Store, table: Table) -> Option<u64> {
     let value = store.meta.get(mark_key(table)).unwrap()?;
     Some(std::str::from_utf8(&value).unwrap().trim().parse().unwrap())
 }
 
-/// The sequence a table's next append will use, as [`Store::stats`] reports it: the pointer a reopen
-/// seeds from, which is what a mark is.
 fn counter(store: &Store, table: Table) -> u64 {
     store
         .stats()

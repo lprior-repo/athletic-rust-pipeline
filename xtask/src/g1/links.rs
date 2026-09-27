@@ -1,8 +1,6 @@
-//! Athlete-href classification: one href in, one class token out.
 
 use regex::Regex;
 
-/// Site-absolute prefixes an athlete href may carry before its path.
 static ABS_PREFIXES: &[&str] = &[
     "https://www.athletic.net",
     "https://athletic.net",
@@ -10,7 +8,6 @@ static ABS_PREFIXES: &[&str] = &[
     "http://athletic.net",
 ];
 
-/// The path part of an href: no site-absolute prefix, no query, no fragment.
 pub(crate) fn path_of(href: &str) -> &str {
     let mut value = href;
     for prefix in ABS_PREFIXES {
@@ -25,7 +22,6 @@ pub(crate) fn path_of(href: &str) -> &str {
     value.split('#').next().unwrap_or(value)
 }
 
-/// How one href classifies: a class token, plus the sport token for the canonical sported forms.
 pub(crate) fn link_class(
     href: &str,
     athlete_re: &Regex,

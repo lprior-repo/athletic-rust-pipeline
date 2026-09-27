@@ -1,18 +1,9 @@
-//! Shared status-snapshot accessors.
-//!
-//! The manager and the actor's submodules both read and write the one status snapshot, so these
-//! accessors stay on the `lifecycle` path: `browser::state` reaches them as
-//! `lifecycle::{read_status, remaining_ms, write_state}`. Every accessor recovers the poisoned
-//! inner value, because a panic in one holder must not turn every later status read into a second
-//! panic.
 
 use super::super::{BrowserState, BrowserStatus};
 use crate::clock::Clock;
 use std::sync::{Mutex, RwLock};
 use tokio::time::Instant;
 
-/// A manager reporting a terminal `Stopped` status can never serve another
-/// command, so the runtime rebuilds it rather than reusing a dead handle.
 pub(super) fn usable_manager(state: BrowserState) -> bool {
     state != BrowserState::Stopped
 }

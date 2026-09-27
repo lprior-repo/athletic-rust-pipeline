@@ -4,6 +4,11 @@ use census_domain::model::{
     SourceIdentity, SourceNamespace, Sport,
 };
 use census_domain::UsJurisdiction;
+
+fn fixture_source(id: &str) -> SourceIdentity {
+    SourceIdentity::new(SourceNamespace::Other("fixture".to_string()), id)
+}
+
 #[test]
 fn core_scope_keeps_only_non_athletic_net_evidence() {
     let dir = tempfile::tempdir().unwrap();
@@ -12,19 +17,35 @@ fn core_scope_keeps_only_non_athletic_net_evidence() {
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     store.append(Table::Schools, &school).unwrap();
 
-    let mut mirrored =
-        CanonicalAthlete::new(&school_id, "Mirror Only", GradYear::CO2027, Gender::Boys);
+    let mut mirrored = CanonicalAthlete::new(
+        &school_id,
+        "Mirror Only",
+        GradYear::CO2027,
+        Gender::Boys,
+        fixture_source("mirror-only"),
+    );
     mirrored.evidence.push(Evidence::parsed(
         census_domain::model::SourceRef::new("athleticlive_athletes", None),
         "2026-09-20",
     ));
-    let mut host = CanonicalAthlete::new(&school_id, "Host Only", GradYear::CO2027, Gender::Boys);
+    let mut host = CanonicalAthlete::new(
+        &school_id,
+        "Host Only",
+        GradYear::CO2027,
+        Gender::Boys,
+        fixture_source("host-only"),
+    );
     host.evidence.push(Evidence::parsed(
         census_domain::model::SourceRef::new("athleticnet", None),
         "2026-09-20",
     ));
-    let mut core_athlete =
-        CanonicalAthlete::new(&school_id, "Core Athlete", GradYear::CO2027, Gender::Boys);
+    let mut core_athlete = CanonicalAthlete::new(
+        &school_id,
+        "Core Athlete",
+        GradYear::CO2027,
+        Gender::Boys,
+        fixture_source("core-athlete"),
+    );
     core_athlete.evidence.push(Evidence::parsed(
         census_domain::model::SourceRef::new("athleticlive_athletes", None),
         "2026-09-20",
@@ -55,11 +76,8 @@ fn census_counts_class_of_2027_with_evidence() {
         "Julian Aguilera",
         GradYear::CO2027,
         Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169"),
     );
-    athlete.source_identities.push(SourceIdentity::new(
-        SourceNamespace::MilesplitAthlete,
-        "14399169",
-    ));
     athlete
         .public_profile_urls
         .push("https://wi.milesplit.com/athletes/14399169-julian-aguilera".to_string());
@@ -106,6 +124,7 @@ fn census_reads_merged_observations_without_consolidating() {
         "Julian Aguilera",
         GradYear::CO2027,
         Gender::Boys,
+        fixture_source("julian-aguilera"),
     );
     store.append(Table::Athletes, &athlete).unwrap();
     store.append(Table::Athletes, &athlete).unwrap();
@@ -162,13 +181,19 @@ fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() {
         CanonicalSchool::new(UsJurisdiction::Hawaii, "Honolulu Prep", "honolulu-prep");
     store.append(Table::Schools, &in_scope).unwrap();
     store.append(Table::Schools, &out_of_scope).unwrap();
-    let in_scope_athlete =
-        CanonicalAthlete::new(&in_scope_id, "In Scope", GradYear::CO2027, Gender::Boys);
+    let in_scope_athlete = CanonicalAthlete::new(
+        &in_scope_id,
+        "In Scope",
+        GradYear::CO2027,
+        Gender::Boys,
+        fixture_source("in-scope"),
+    );
     let out_of_scope_athlete = CanonicalAthlete::new(
         &out_of_scope_id,
         "Out Of Scope",
         GradYear::CO2027,
         Gender::Boys,
+        fixture_source("out-of-scope"),
     );
     store.append(Table::Athletes, &in_scope_athlete).unwrap();
     store

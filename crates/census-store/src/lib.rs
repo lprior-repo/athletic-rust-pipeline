@@ -1,59 +1,3 @@
-//! Fjall-backed entity store: append-only observations, deduplicated snapshots, resume journal.
-//!
-//! Collection is interrupted constantly (politeness delays, network, operator), so every adapter
-//! appends observations instead of rewriting state. The substrate is [Fjall](https://fjall-rs.github.io),
-//! an embedded LSM-tree key-value store in safe Rust: writes land in a write-ahead journal and a
-//! memtable, and are compacted into immutable sorted tables, so an interrupted run costs at most the
-//! observations that were never flushed — never a rewritten snapshot.
-//!
-//! # Keyspace layout
-//!
-//! ```text
-//! entities: <table>\0<entity-id>\0<sequence:u64 big-endian>   -> observation JSON
-//! journal:  <phase>\0<key>                                    -> {key, at, payload}
-//! meta:     <name>                                            -> small JSON/scalar
-//! meta:     sequence:<table>                                  -> next observation sequence
-//! ```
-//!
-//! Observations are append-only: appending the same entity twice writes two rows, and
-//! [`Store::consolidate`] merges them through [`Entity::merge`], which is exactly the guarantee the
-//! JSONL journals used to provide. The sequence component is **big-endian** so byte order is
-//! numerical order, and it is seeded from the table's *mark* — the `sequence:<table>` row its last
-//! append committed in the same batch as the observations that spent the sequences — so reopening a
-//! database never reuses a sequence number, never overwrites an observation, and never walks a table
-//! to find out where to resume.
-//!
-//! # Marks
-//!
-//! A table's mark is the sequence its next append will use, so it is also the number a reopen seeds
-//! that table's counter from. It is written by the batch it accounts for, which is what keeps the two
-//! from disagreeing, and the writers that advance it commit in reservation order (see
-//! `Store::lock_appends`), which is what keeps it from ever moving backwards.
-//!
-//! A database written before marks existed holds none. The open that misses one derives it with the
-//! one scan this store has always done, commits the result in one durable batch, and is the last open
-//! that reads that table: see `sequences::Counters::seeded`. A mark that is present but unreadable
-//! fails the open with [`StoreError::Invariant`] rather than being guessed at.
-//!
-//! # Durability
-//!
-//! Batches are committed to the journal with [`PersistMode::SyncData`] (`fdatasync`), which is the
-//! cheapest mode that survives a machine crash. [`Store::flush`] upgrades this to
-//! [`PersistMode::SyncAll`] and is called at consolidation and at shutdown. A lost tail costs
-//! re-running an adapter, and the resume journal is durable per completed unit of work, so a
-//! resumed run does not repeat finished work.
-//!
-//! # Legacy journals
-//!
-//! Databases created before the Fjall substrate keep their rows in `<store>/entities/*.jsonl` and
-//! their resume ledger in `<store>/journal/*.jsonl`. [`Store::import_legacy`] imports both exactly
-//! once (recorded under `meta`), skipping the import when the marker is present, so a partially
-//! imported database finishes importing with the next call without duplicating observations.
-//!
-//! Opening a store does not import: [`Store::open`] is a read, so a verb that only measures a legacy
-//! root — a status, an integrity check, a backup — does not migrate the corpus as a side effect. The
-//! paths that have decided to migrate call [`Store::import_legacy`] themselves: the offline census
-//! run, the `import-legacy` verb, and the service bootstrap that owns the store for the live route.
 
 #![forbid(unsafe_code)]
 
@@ -62,11 +6,6 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-/// Unified cache for the LSM tree. The machine has 129 GiB RAM but this process shares it
-/// with a browser and text editor. The store holds ~7.7 GiB logical data (1.46 GiB on disk)
-/// across 13 keyspaces, so 1 GiB holds index and filter blocks for the hot tables without
-/// crowding out the page cache, which is what actually serves this workload: a whole `index`
-/// pass was measured reading 20.5 TiB out of it with only 18 MiB of real disk reads.
 const CACHE_BYTES: u64 = 1024 * 1024 * 1024;
 
 const DB_DIR: &str = "fjall";
@@ -99,33 +38,19 @@ pub use table::{
     MAX_ROWS_PER_TABLE,
 };
 pub use write_batch::StoreBatch;
+pub use read::StoreSnapshot;
 
-/// What one [`Store::consolidate`] call produced: the number of rows written.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Consolidated {
     pub rows: usize,
 }
 
-/// Per-table rows and the database's on-disk footprint. The figures come from the store's own durable
-/// ledger — exact counts rather than LSM `approximate_len` estimates — so a status command reports
-/// what the store holds without scanning millions of rows.
-///
-/// `tables` counts rows: for an append-only table the observations it has committed, for a derived
-/// table the rows it currently materializes. `appended` counts observations alone, so it is zero for
-/// every derived table, and `observations` sums it — evidence the store holds, never state it derived.
-/// None of the three is the sequence pointer, which a batch that reserved and failed to commit leaves
-/// ahead of the rows the store holds.
 #[derive(Debug, Clone, Serialize)]
 pub struct StoreStats {
-    /// Rows each table holds, in [`Table::ALL`] order.
     pub tables: Vec<(String, u64)>,
-    /// Observations each table has appended; zero for a table that derives its rows instead.
     pub appended: Vec<(String, u64)>,
-    /// Observations the append-only tables hold: the sum of `appended`.
     pub observations: u64,
-    /// LSM-tree level sizes as fjall reports them: SST files only, no write-ahead journal.
     pub bytes_on_disk: u64,
-    /// Recursive size of the store root, journal, HTTP cache and outputs included.
     pub store_bytes: u64,
 }
 
@@ -135,13 +60,8 @@ pub struct Store {
     entities: Keyspace,
     journal: Keyspace,
     meta: Keyspace,
-    /// One row per applied operation, keyed by the caller's operation id: the receipt an append and
-    /// its acknowledgement can be reconciled against. See [`crate::Receipt`].
     receipts: Keyspace,
-    /// Next observation sequence per table; seeded from each table's durable mark at open.
     sequences: sequences::Counters,
-    /// Orders the batches that advance a table's mark, so the mark no batch can be overtaken by one
-    /// that reserved later. See [`Store::lock_appends`].
     appends: Mutex<()>,
 }
 
@@ -167,7 +87,6 @@ impl Store {
         Ok(store)
     }
 }
-/// Create the HTTP cache and output directories.
 fn ensure_dirs(root: &Path) -> StoreResult<()> {
     for sub in ["http", "out"] {
         let dir = root.join(sub);
@@ -179,7 +98,6 @@ fn ensure_dirs(root: &Path) -> StoreResult<()> {
     Ok(())
 }
 
-/// Open the database and all keyspaces, seed the counters.
 fn open_keyspaces(
     root: &Path,
 ) -> StoreResult<(
@@ -229,8 +147,6 @@ impl Store {
         self.root.join("out")
     }
 
-    /// Where a pre-Fjall store kept this table's append log. Reads no longer come from here; the
-    /// path survives as the one-time import source and as the materialized export location.
     pub fn table_path(&self, table: Table) -> PathBuf {
         self.root
             .join("entities")
@@ -241,6 +157,9 @@ impl Store {
         self.db
             .persist(PersistMode::SyncAll)
             .map_err(|source| StoreError::Flush { source })
+    }
+    pub fn snapshot(&self) -> StoreSnapshot<'_> {
+        StoreSnapshot::new(self.db.snapshot(), &self.entities, &self.root)
     }
 }
 #[cfg(test)]

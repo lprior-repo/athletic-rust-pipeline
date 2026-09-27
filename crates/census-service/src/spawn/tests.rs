@@ -1,5 +1,3 @@
-//! Unit tests for the region spawner: the counting discipline, the outcome classification, and
-//! the fact that a drain owns everything the region started.
 
 use std::future::pending;
 

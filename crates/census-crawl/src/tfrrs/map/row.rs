@@ -1,4 +1,3 @@
-//! The three decisions one list row's own facts rest on: its grade, its mark and its key.
 
 use super::state::Stats;
 use crate::tfrrs::parse::{
@@ -35,12 +34,6 @@ pub(super) fn grade_for(
     }
 }
 
-/// The mark a row publishes in the domain's own notation: a running mark as seconds, a field mark
-/// in the host's own feet–inches notation beside its metric value.
-///
-/// The host's `Conv` column, when the row publishes one, is the host's own metric conversion and
-/// wins over this reader's arithmetic; a field mark in no notation this reader can place stays
-/// [`Mark::Raw`] rather than being guessed at.
 pub(super) fn mark_of(mark: &ParsedMark, conv_metres: Option<f64>) -> Option<Mark> {
     match mark {
         ParsedMark::Time(token) => clock_seconds(token).map(Mark::TimeSeconds),
@@ -61,13 +54,6 @@ pub(super) fn mark_of(mark: &ParsedMark, conv_metres: Option<f64>) -> Option<Mar
     }
 }
 
-/// The provider-local key of one listed mark.
-///
-/// View-independent on purpose: the same mark appears in the unfiltered list and in every grade view
-/// of it, and both must upsert one performance. The columns a mark is identified by are its
-/// date, the meet the row names (its numeric id when the row links one), the event (the host's own
-/// standard-event handle when the section publishes one, its printed label otherwise), the
-/// athlete's numeric id, the published mark and its place.
 pub(super) fn source_key(
     date: &PublishedDate,
     meet: &ParsedMeet,

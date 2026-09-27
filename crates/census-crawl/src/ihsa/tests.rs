@@ -1,28 +1,9 @@
 use super::*;
 
-/// Fixture: trimmed subset of the real `GET /v1/schools` response.
-///
-/// **Provenance** — URL:
-/// `https://api.ihsa.org/v1/schools`
-/// (the single request returns all 828 member schools; this is a 3-school trimmed subset.)
-/// **Capture file**:
-/// `tools/a29-coach/il-sample.json` (the school list portion).
 const FIXTURE_SCHOOLS: &str = include_str!("../../tests/fixtures/ihsa/v1_schools.json");
 
-/// Fixture: real `GET /v1/schools/0101/staff2` response (Abingdon-Avon HS).
-///
-/// **Provenance** — URL:
-/// `https://api.ihsa.org/v1/schools/0101/staff2`
-/// **Capture file**:
-/// `tools/a29-coach/il-sample.json` (Abingdon-Avon entry, SchoolID 0101).
 const FIXTURE_STAFF_RICH: &str = include_str!("../../tests/fixtures/ihsa/staff2_coach_rich.json");
 
-/// Fixture: real `GET /v1/schools/0430/staff2` response (Unity Christian HS).
-///
-/// **Provenance** — URL:
-/// `https://api.ihsa.org/v1/schools/0430/staff2`
-/// **Capture file**:
-/// `tools/a29-coach/il-sample.json` (Unity Christian entry, SchoolID 0430).
 const FIXTURE_STAFF_OFFICE: &str =
     include_str!("../../tests/fixtures/ihsa/staff2_office_only.json");
 

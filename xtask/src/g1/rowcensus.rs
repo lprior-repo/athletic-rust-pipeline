@@ -1,5 +1,3 @@
-//! What one raw body's rows add up to: the link inventory, the count-against-rows comparison, the
-//! row-issue tally, the parser join and the class samples.
 
 use std::collections::{BTreeMap, HashSet};
 
@@ -13,21 +11,14 @@ use crate::parser_join::{self, ParserView};
 use crate::rows::{analyse_row, RowAnalysis, RowRegexes};
 use crate::samples;
 
-/// One body's rows, each analysed, and the counts the link inventory and the page entry read off them.
 struct RowTotals {
-    /// One analysis per row, in document order.
     analyses: Vec<RowAnalysis>,
-    /// Rows that are same-sport candidates with no issue.
     candidates: usize,
-    /// Noncanonical athlete hrefs across the rows.
     noncanonical: usize,
-    /// Canonical track-and-field athlete hrefs.
     tf_hrefs: usize,
-    /// Canonical cross-country athlete hrefs.
     xc_hrefs: usize,
 }
 
-/// The link inventory's keys, in the order the report prints them, all starting at zero.
 pub(crate) fn link_total_slots() -> IndexMap<String, usize> {
     let mut link_totals: IndexMap<String, usize> = IndexMap::new();
     for k in &[
@@ -46,7 +37,6 @@ pub(crate) fn link_total_slots() -> IndexMap<String, usize> {
     link_totals
 }
 
-/// Analyse every row of one body.
 fn row_totals(rows: &[&str], sport: Option<&str>, re: &RowRegexes<'_>) -> RowTotals {
     let analyses: Vec<RowAnalysis> = rows.iter().map(|r| analyse_row(r, sport, re)).collect();
     let candidates = analyses.iter().filter(|a| a.candidate).count();
@@ -70,7 +60,6 @@ fn row_totals(rows: &[&str], sport: Option<&str>, re: &RowRegexes<'_>) -> RowTot
     }
 }
 
-/// Add one body's rows and links to the link inventory.
 fn add_link_totals(totals: &mut IndexMap<String, usize>, rows_len: usize, rows: &RowTotals) {
     let with_href = rows
         .analyses
@@ -99,7 +88,6 @@ fn add_link_totals(totals: &mut IndexMap<String, usize>, rows_len: usize, rows: 
     tally(totals, "rows_candidate_predicted", rows.candidates);
 }
 
-/// Count where the envelope count sits relative to the page's rows.
 fn record_count_vs_rows(
     count: Option<i64>,
     rows_len: usize,
@@ -116,7 +104,6 @@ fn record_count_vs_rows(
     }
 }
 
-/// The row issue messages, counted.
 fn row_issue_tally(row_analyses: &[RowAnalysis]) -> IndexMap<String, usize> {
     let mut row_issues_map: IndexMap<String, usize> = IndexMap::new();
     for issue in row_analyses.iter().flat_map(|a| a.issues.iter()) {
@@ -125,7 +112,6 @@ fn row_issue_tally(row_analyses: &[RowAnalysis]) -> IndexMap<String, usize> {
     row_issues_map
 }
 
-/// The distinct queries the body was fetched for.
 fn queries_of(entries: &[EvidenceEntry]) -> Vec<String> {
     entries
         .iter()
@@ -135,7 +121,6 @@ fn queries_of(entries: &[EvidenceEntry]) -> Vec<String> {
         .collect()
 }
 
-/// One body's line of the per-page table.
 fn page_entry(body: &Body<'_>, rows: &RowTotals, parser: ParserView) -> PageAnalysis {
     PageAnalysis {
         digest: body.digest.to_string(),
@@ -157,7 +142,6 @@ fn page_entry(body: &Body<'_>, rows: &RowTotals, parser: ParserView) -> PageAnal
     }
 }
 
-/// Keep the samples this body contributes: its noncanonical hrefs, and its over-counted page.
 fn push_samples(out: &mut PageScan, body: &Body<'_>, rows: &RowTotals, limit: usize) {
     samples::push_noncanonical(&mut out.class_samples, body.digest, &rows.analyses, limit);
     if let Some(c) = body.count {
@@ -175,7 +159,6 @@ fn push_samples(out: &mut PageScan, body: &Body<'_>, rows: &RowTotals, limit: us
     }
 }
 
-/// Analyse one parsed body: its rows, its links, its count comparison, its parser join and samples.
 pub(crate) fn analyse_body(
     out: &mut PageScan,
     body: &Body<'_>,

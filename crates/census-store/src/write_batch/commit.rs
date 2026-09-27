@@ -1,28 +1,17 @@
 use fjall::{OwnedWriteBatch, PersistMode};
 
-use super::super::batch::{drop_unnamed, refuse_over_bound, stage_derived_encoded};
+use super::super::batch::{drop_unnamed, stage_derived_encoded};
 use super::super::keys::observation_key;
 use super::super::receipt::{self, Application, Decision};
+use super::super::sequences::Reserved;
 use super::super::{StorageMode, Store, StoreError, StoreResult};
 use super::{Page, Replacement, StoreBatch};
 
 impl StoreBatch<'_> {
-    /// Commit every buffered append and journal entry as one batch, one durability boundary.
     pub fn commit(self) -> StoreResult<()> {
         self.commit_inner(None).map(|_| ())
     }
 
-    /// Commit the batch as one application of `operation`, whose payload digests to `digest`.
-    ///
-    /// The receipt reaches the database in the same commit as the rows and journal entries it
-    /// names — so the store never holds rows no receipt covers, which is the state a crash between
-    /// two commits would leave and the state a replay appends again. A commit that finds the
-    /// operation already applied under the same digest writes nothing at all — no row, no counter
-    /// movement, no journal entry — and answers [`Application::Repeated`]; one that finds the id
-    /// applied under a different digest is refused, because the same id cannot name two payloads.
-    ///
-    /// The id, the digest and what the store already holds are checked inside the append lock, so
-    /// two callers offering one operation cannot both read an absent receipt and both write one.
     pub fn commit_once(self, operation: &str, digest: &str) -> StoreResult<Application> {
         receipt::refuse_over_operation(operation, digest)?;
         self.commit_inner(Some((operation, digest)))?
@@ -33,13 +22,6 @@ impl StoreBatch<'_> {
             })
     }
 
-    /// The one commit path: `once` carries the operation a receipted commit records.
-    ///
-    /// The reservation, the batch and the commit are one critical section of the append lock, for
-    /// the reason `Store::append_many` states: the writer that reserves first commits first, so no
-    /// batch can leave a table's mark below observations an earlier batch stored above it.
-    ///
-    /// `Ok(None)` means the batch held nothing to write, which only an unreceipted batch can be.
     fn commit_inner(self, once: Option<(&str, &str)>) -> StoreResult<Option<Application>> {
         if self.is_empty() && once.is_none() {
             return Ok(None);
@@ -52,37 +34,31 @@ impl StoreBatch<'_> {
         if matches!(written, Some(Application::Repeated(_))) {
             return Ok(written);
         }
-        check_bound(&pages, store)?;
-        write_pages(pages, store, &mut batch)?;
+        let reservations: Vec<_> = pages
+            .iter()
+            .map(|page| {
+                let count =
+                    u64::try_from(page.records.len()).map_err(|_| StoreError::CounterOverflow)?;
+                store.sequences.plan(page.table, count)
+            })
+            .collect::<StoreResult<_>>()?;
+        write_pages_staged(&pages, &reservations, store, &mut batch)?;
         write_journal(journal, store, &mut batch);
         write_replacements(replacements, store, &mut batch)?;
         batch
             .durability(Some(PersistMode::SyncData))
             .commit()
             .map_err(|source| StoreError::Write { source })?;
+        pages
+            .iter()
+            .zip(&reservations)
+            .try_for_each(|(page, reservation)| {
+                store.sequences.publish(page.table, reservation.mark)
+            })?;
         Ok(written)
     }
 }
 
-/// Check that no page would exceed the table's row ceiling once its reservation moves.
-fn check_bound(pages: &[Page], store: &Store) -> StoreResult<()> {
-    for page in pages {
-        let count = u64::try_from(page.records.len()).map_err(|_| StoreError::CounterOverflow)?;
-        let reached = store
-            .sequences
-            .next_sequence(page.table)
-            .checked_add(count)
-            .ok_or(StoreError::CounterOverflow)?;
-        refuse_over_bound(page.table, reached)?;
-    }
-    Ok(())
-}
-
-/// Decide the receipt a receipted commit records, and buffer it on `batch`.
-///
-/// Returns `Some(Application::Repeated(standing))` when the operation is a replay,
-/// `Some(Application::Written(receipt))` when a fresh receipt is buffered, and `None` for an
-/// unreceipted commit — which writes no receipt at all.
 fn prepare_receipt(
     pages: &[Page],
     store: &Store,
@@ -116,39 +92,42 @@ fn prepare_receipt(
     }
 }
 
-/// Write all buffered pages into `batch`, consuming the page list.
-fn write_pages(pages: Vec<Page>, store: &Store, batch: &mut OwnedWriteBatch) -> StoreResult<()> {
-    for page in pages {
-        let table = page.table;
+fn write_pages_staged(
+    pages: &[Page],
+    reservations: &[Reserved],
+    store: &Store,
+    batch: &mut OwnedWriteBatch,
+) -> StoreResult<()> {
+    for (page, reservation) in pages.iter().zip(reservations.iter()) {
         let count = u64::try_from(page.records.len()).map_err(|_| StoreError::CounterOverflow)?;
-        let reserved = store.reserve(table, count)?;
-        for (offset, (id, value)) in page.records.into_iter().enumerate() {
+        for (offset, (id, value)) in page.records.iter().enumerate() {
             let offset = u64::try_from(offset).map_err(|_| StoreError::CounterOverflow)?;
-            let sequence = reserved
+            let sequence = reservation
                 .base
                 .checked_add(offset)
                 .ok_or(StoreError::CounterOverflow)?;
             batch.insert(
                 &store.entities,
-                observation_key(table, &id, sequence),
+                observation_key(page.table, id, sequence),
                 value,
             );
         }
-        store.put_mark(batch, table, reserved.mark);
-        let rows = store.count(table)?.saturating_add(count);
-        store.put_row_mark(batch, table, rows);
+        store.put_mark(batch, page.table, reservation.mark);
+        let rows = store
+            .count(page.table)?
+            .checked_add(count)
+            .ok_or(StoreError::CounterOverflow)?;
+        store.put_row_mark(batch, page.table, rows);
     }
     Ok(())
 }
 
-/// Write all buffered journal entries into `batch`.
 fn write_journal(journal: Vec<(Vec<u8>, Vec<u8>)>, store: &Store, batch: &mut OwnedWriteBatch) {
     for (key, value) in journal {
         batch.insert(&store.journal, key, value);
     }
 }
 
-/// Write all buffered replacements into `batch`, with each table's derived row count.
 fn write_replacements(
     replacements: Vec<Replacement>,
     store: &Store,

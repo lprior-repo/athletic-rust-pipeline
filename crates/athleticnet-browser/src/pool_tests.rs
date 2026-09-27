@@ -1,10 +1,3 @@
-//! What a caller still waiting in the queue is told when the browser dies under it.
-//!
-//! §59 asks for the kill-browser leg explicitly: kill the browser mid-flight and the in-flight
-//! requests must come back *explicitly unavailable*, never as an answer. The actor does that by
-//! rejecting its whole queue when the handler it was talking to goes away, so this file pins the
-//! one thing that decision has to guarantee — every waiter leaves with a failure it can classify,
-//! and none of them is left waiting for a reply that will never come.
 
 use std::collections::VecDeque;
 
@@ -15,7 +8,6 @@ use super::{reject_pending, Pending};
 use crate::request::{RequestAction, RequestSpec};
 use crate::{BrowserError, BrowserOutcome, Verdict};
 
-/// One queued request, with the receiver its caller would be waiting on.
 fn waiting() -> (Pending, oneshot::Receiver<BrowserOutcome>) {
     let (reply, answer) = oneshot::channel();
     let request = RequestSpec {

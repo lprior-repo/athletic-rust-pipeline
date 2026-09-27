@@ -1,34 +1,3 @@
-//! `BrowserSession`: the one headed profile, served.
-//!
-//! The census never opens a browser. `census_crawl::net::bridge::BrowserLane` posts a
-//! [`RequestSpec`] to this object's `fetch` handler over the ingress client and reads a
-//! [`BrowserOutcome`] back, so the census keeps the evidence shape it already has while exactly one
-//! process owns the profile (§26-§28). The spec and the answer are the engine's own wire types, byte
-//! for byte what the census mirrors: the two sides are proved to agree by the committed fixtures
-//! under `fixtures/wire/`, not by a second definition here.
-//!
-//! # What this object does not do
-//!
-//! * **It does not classify.** Page capture, challenge detection and the `Retry-After` reading all
-//!   happen in the engine and travel in the answer. A reader here that scanned a body again could
-//!   disagree with the gate the transport already revoked.
-//! * **It does not retry.** `fetch` attempts once: the census's durable layer owns retries
-//!   (ADR-002), and its client leaves a verdict that says "another invocation is worth making" as an
-//!   error for that layer to replay. The object's own retry policy is therefore one attempt.
-//! * **It does not work around a challenge.** A challenged profile reports `HumanRequired` as data;
-//!   that is a stop condition for the source, not an obstacle to route around.
-//!
-//! # Rules an operator and a deployment follow
-//!
-//! * **One manager per profile directory.** The engine validates the directory but does not lock it,
-//!   so a second manager is a corruption path rather than a second lane. Run one `census-serve`
-//!   endpoint against a store; the key is [`SESSION_KEY`] because there is one profile.
-//! * **A restart does not restart the lane.** The live manager is process state, not journaled
-//!   state: after the endpoint restarts, `status` reports not running and `fetch` refuses until
-//!   `start` is called again. That is deliberate - launching a headed browser is an operator
-//!   decision, and a replay must never do it twice.
-//! * **`stop` reports the engine's own drain.** [`DrainReport`] counters come back whole, so a run's
-//!   §42 accounting includes the lane's tasks rather than assuming they stopped.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -41,20 +10,13 @@ use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex as AsyncMutex;
 
-/// The key the endpoint serves: one profile, so one key. The census's client addresses the same one.
 pub const SESSION_KEY: &str = "profile-0";
 
-/// `BrowserSession`: one headed profile behind one object key.
 #[derive(Clone)]
 pub struct BrowserSession {
     settings: Arc<BrowserSettings>,
     clock: Arc<dyn EngineClock>,
-    /// Process state, deliberately not journaled. A replay must not launch a second browser, so the
-    /// live handle lives here and `start` refuses when one is already held.
     manager: Arc<AsyncMutex<Option<Arc<BrowserManager>>>>,
-    /// Process state, deliberately not journaled: it guards the launch window itself, so two
-    /// concurrent `start` calls cannot both pass the live-handle check and put two managers on
-    /// the one profile.
     starting: Arc<AtomicBool>,
 }
 
@@ -68,7 +30,6 @@ impl BrowserSession {
         }
     }
 
-    /// The live manager, or the terminal refusal that says how to get one.
     async fn live(&self) -> Result<Arc<BrowserManager>, HandlerError> {
         self.manager.lock().await.clone().ok_or_else(|| {
             TerminalError::new(
@@ -79,7 +40,6 @@ impl BrowserSession {
         })
     }
 
-    /// The operator-facing reading: whether a manager is live, and what the engine says about it.
     async fn reading(&self, key: &str) -> BrowserSessionStatus {
         let Some(manager) = self.manager.lock().await.clone() else {
             return BrowserSessionStatus {
@@ -102,8 +62,6 @@ impl BrowserSession {
     }
 }
 
-/// What an operator reads back: `running` is the process fact, `status` the engine's reading of the
-/// profile, and `error` the reason there is no reading.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BrowserSessionStatus {
     pub key: String,
@@ -112,7 +70,6 @@ pub struct BrowserSessionStatus {
     pub error: Option<String>,
 }
 
-/// What `stop` drained: the engine's own counters, plus the error the drain itself reported.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BrowserSessionDrain {
     pub key: String,
@@ -120,8 +77,6 @@ pub struct BrowserSessionDrain {
     pub error: Option<String>,
 }
 
-/// [`DrainReport`] on the wire, field for field: the engine's report is not itself serializable, and
-/// a summary here that dropped a counter would hide exactly the tasks a §42 accounting looks for.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DrainCounts {
     pub accepted: u64,
@@ -153,8 +108,6 @@ impl From<DrainReport> for DrainCounts {
     invocation_retry_policy(max_attempts = 1, on_max_attempts = "pause")
 )]
 impl BrowserSession {
-    /// The one handler the census calls. Shared: the engine's tab pool is the concurrency control,
-    /// and serializing invocations here would cap the lane at one page at a time.
     #[handler]
     #[tracing::instrument(skip_all, fields(profile = ctx.key(), url = %request.url))]
     async fn fetch(
@@ -170,8 +123,6 @@ impl BrowserSession {
         Ok(outcome)
     }
 
-    /// The profile's reading. Never an error for an unstarted lane: "not running" is a state an
-    /// operator asks for on purpose.
     #[handler]
     #[tracing::instrument(skip_all, fields(profile = ctx.key()))]
     async fn status(
@@ -181,11 +132,6 @@ impl BrowserSession {
         Ok(Json(self.reading(ctx.key()).await))
     }
 
-    /// Launch the profile, or refuse when one is already live or launching.
-    ///
-    /// A second `start` while a manager is held or a launch is in flight is a terminal error,
-    /// never a silent no-op: one process owns the profile and a second manager is a corruption
-    /// path, not a second lane.
     #[handler]
     #[tracing::instrument(skip_all, fields(profile = ctx.key()))]
     async fn start(
@@ -229,7 +175,6 @@ impl BrowserSession {
         Ok(Json(self.reading(&key).await))
     }
 
-    /// Drain the profile and report what it took down.
     #[handler]
     #[tracing::instrument(skip_all, fields(profile = ctx.key()))]
     async fn stop(

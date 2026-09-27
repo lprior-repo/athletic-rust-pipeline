@@ -1,15 +1,6 @@
 use super::*;
 use census_domain::UsJurisdiction;
 
-/// Trimmed fixture: 5 real KSHSAA records extracted from the full directory capture.
-///
-/// **Provenance** — URL:
-/// `https://kshsaa-api.kshsaa.org/directory/search/name/a/`
-/// (the `a` endpoint returns the full ~526-school directory; the capture below is a
-/// trimmed subset of that single response.)
-/// **Capture file**:
-/// `/home/lewis/Downloads/midwest-tfxc-source-research/tools/a29-coach/ks-full.json`
-/// (HTTP 200, captured via browser devtools / network monitor).
 const FIXTURE: &str = include_str!("../../tests/fixtures/ks/kshsaa_directory_a.json");
 
 #[test]

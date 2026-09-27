@@ -1,8 +1,3 @@
-//! The bio walk: one request per (athlete, sport) pair, absorbed into the run's accumulator, then
-//! appended and journaled per unit so a re-run resumes without re-reading what is already stored.
-//!
-//! Split out of the parent module when that file passed the repository's file budget; the dispatch,
-//! the resume reads and the accumulator append stay there.
 
 use super::{store_accumulated, RunState};
 use crate::athleticnet::absorb::absorb;
@@ -16,9 +11,6 @@ use census_domain::school_index::SchoolIndex;
 use serde_json::json;
 use std::collections::HashSet;
 
-/// Append the batch's rows, then journal its units: the page commits once, and the journal entries
-/// ride in that same commit, so a re-run can neither see rows whose units it re-reads nor skip a unit
-/// whose rows are missing.
 pub(super) fn flush_batch(ctx: &AdapterContext<'_>, run: &mut RunState) -> CrawlResult<()> {
     if run.pending.is_empty() {
         return Ok(());
@@ -33,7 +25,6 @@ pub(super) fn flush_batch(ctx: &AdapterContext<'_>, run: &mut RunState) -> Crawl
     Ok(())
 }
 
-/// Absorb every pending (athlete, sport) payload into the run's accumulation.
 pub(super) async fn absorb_targets(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -93,7 +84,6 @@ pub(super) async fn absorb_targets(
     Ok(())
 }
 
-/// Fetch and decode one (athlete, sport) payload, or `None` when it could not be read.
 async fn fetch_bio(
     ctx: &AdapterContext<'_>,
     target: &Target,

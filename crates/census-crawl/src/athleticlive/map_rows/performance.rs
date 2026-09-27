@@ -1,25 +1,17 @@
-//! Writing one mapped row's performance: the key it is minted under, its mark, and its evidence.
-//!
-//! Part of [`super`]'s row mapping. The key is the event's own key plus the athlete, so an event
-//! document and a live-standings payload publishing one race agree on the performance they mint even
-//! though the two payloads number their rows differently.
 
 use super::super::map::{RowContext, Writer};
 use super::Mapped;
 use census_domain::model::{CanonicalPerformance, Evidence, Grade, Mark, TimingMethod};
 
-/// What one mapped row contributes to its performance.
 pub(super) struct PerformanceFacts {
     pub(super) mark: Mark,
     pub(super) wind_mps: Option<f64>,
     pub(super) place: Option<u16>,
     pub(super) heat: Option<String>,
     pub(super) grade: Grade,
-    /// The row's position in the payload, quoted in the performance's evidence note.
     pub(super) row: usize,
 }
 
-/// Write one row's performance, keyed so both routes that publish the same race agree on its id.
 pub(super) fn write_performance(
     writer: &mut Writer<'_>,
     context: &RowContext<'_>,
@@ -55,12 +47,11 @@ pub(super) fn write_performance(
             observed_grade: Some(facts.grade),
             evidence: vec![evidence],
             source_key,
-            source_athlete: None,
+            source_athlete: mapped.source_athlete.clone(),
             retained_conflicts: Vec::new(),
         });
 }
 
-/// The performance's evidence: the document's, annotated with the row's own grade cell.
 fn performance_evidence(context: &RowContext<'_>, facts: &PerformanceFacts) -> Evidence {
     let mut evidence = context.evidence.clone();
     evidence.note = Some(format!(

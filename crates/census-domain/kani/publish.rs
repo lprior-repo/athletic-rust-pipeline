@@ -1,22 +1,11 @@
-//! Kani proof harnesses for `published_email` and `normalize_name`.
-//!
-//! `kani::any::<String>()` has no `Arbitrary` impl, so the arbitrary address is built from a
-//! bounded byte array. The address bytes are assumed printable ASCII: that is the input contract
-//! exercised by the symbolic harness, and it keeps UTF-8 decoding out of CBMC. `normalize_name` is
-//! exercised through value tables rather than symbolically: it calls `str::to_lowercase`, which
-//! pulls the Unicode case-mapping tables into the harness, and the concrete harness whose only
-//! input is `"Cafe"` was still inside CBMC after four minutes on this machine.
 
 use crate::model::{
     published_email, CanonicalCoach, CanonicalSchool, CoachRole, Gender, MailboxKind,
     CONSUMER_MAIL_DOMAINS, normalize_name,
 };
 
-/// Address bytes handed to the symbolic harness: long enough for `local@domain.tld` and for the
-/// `.<consumer>` subdomain case.
 const ADDRESS_BYTES: usize = 12;
 
-/// An arbitrary address over printable ASCII.
 fn any_address() -> String {
     let bytes: [u8; ADDRESS_BYTES] = kani::any();
     let mut address = String::with_capacity(ADDRESS_BYTES);
@@ -28,8 +17,6 @@ fn any_address() -> String {
     address
 }
 
-/// `published_email` never panics for printable ASCII and returns `Some` exactly when the trimmed
-/// address has a non-empty local part and domain.
 #[kani::proof]
 #[kani::unwind(64)]
 fn check_published_email_printable_ascii_contract() {
@@ -51,7 +38,6 @@ fn check_published_email_printable_ascii_contract() {
     }
 }
 
-/// Every listed consumer domain is personal, while a domain outside the list is professional.
 #[kani::proof]
 #[kani::unwind(64)]
 fn check_published_email_classifies_domains() {
@@ -96,7 +82,6 @@ fn check_published_email_classifies_domains() {
     );
 }
 
-/// Empty local parts, empty domains and missing separators are malformed.
 #[kani::proof]
 #[kani::unwind(64)]
 fn check_published_email_malformed() {
@@ -119,8 +104,6 @@ fn proof_coach() -> CanonicalCoach {
     )
 }
 
-/// A published address occupies exactly one field, selected by its domain rather than its caller's
-/// initial field.
 #[kani::proof]
 #[kani::unwind(64)]
 fn check_set_published_email_routes_by_kind() {
@@ -151,7 +134,6 @@ fn check_set_published_email_routes_by_kind() {
     }
 }
 
-/// Routing an address again is a no-op.
 #[kani::proof]
 #[kani::unwind(64)]
 fn check_set_published_email_idempotent() {
@@ -163,8 +145,6 @@ fn check_set_published_email_idempotent() {
     assert_eq!(coach, once, "routing the same address twice must be idempotent");
 }
 
-/// The comparison key folds case and diacritics: an accented and an unaccented spelling of the
-/// same name produce the same key, and that key is the ASCII lowercase form.
 #[kani::proof]
 #[kani::unwind(64)]
 fn check_normalize_diacritics() {
@@ -177,8 +157,6 @@ fn check_normalize_diacritics() {
     assert_eq!(normalize_name("MADRID"), "madrid");
 }
 
-/// The key is canonical in shape: lowercase ASCII alphanumerics separated by single spaces, with no
-/// leading or trailing space.
 #[kani::proof]
 #[kani::unwind(64)]
 fn check_normalize_shape() {
@@ -205,7 +183,6 @@ fn check_normalize_shape() {
     }
 }
 
-/// Re-normalizing a key does not change it, for the name shapes the report carries.
 #[kani::proof]
 #[kani::unwind(64)]
 fn check_normalize_idempotent() {
@@ -231,14 +208,6 @@ fn check_normalize_idempotent() {
     }
 }
 
-/// A name whose normalized form ends in a second type suffix has to reach the same key as the name
-/// without it: `"x school school"` normalizes to `"x"` in one call, so a second call is the
-/// identity.
-///
-/// This is the repeated-suffix arm of the idempotency claim the pack publishes. It was a live
-/// counterexample in the first pass (`"x school school"` normalized to `"x school"`, which
-/// normalized again to `"x"`, and `SchoolId::mint` keys on that string); `normalize_name` now
-/// strips type suffixes until none applies, which is the fixpoint this harness asserts.
 #[kani::proof]
 #[kani::unwind(64)]
 fn check_normalize_idempotent_repeated_suffix() {

@@ -1,7 +1,3 @@
-//! Store backup implementation.
-//!
-//! A backup is a **cold** copy: the database must be closed, and this module proves it is before it
-//! copies anything. See the module docs of [`super`] for why fjall 3.1.10 offers no alternative.
 
 use std::fs::{self, File};
 use std::io;
@@ -15,24 +11,6 @@ use super::{BackupReport, Manifest, MANIFEST_PATH, MANIFEST_VERSION, STAGING_PRE
 use crate::{Store, StoreError, StoreResult};
 
 impl Store {
-    /// Copy the closed store at `from` into `to` and write `backup.json` beside it.
-    ///
-    /// `from` is a store *root* - the directory [`Store::open`] was given - and it must not be open:
-    /// this refuses a store whose database lock is held, because a recursive copy of an open LSM tree
-    /// is not a snapshot and this function will not label one as a backup. Stop the writer (the
-    /// endpoint serving the root), then back up the stopped store; `tools/ops-backup-drill.sh` does the
-    /// same thing by hand.
-    ///
-    /// The generation is built in a staging directory beside `to` and renamed onto it once every file
-    /// and the manifest are written, fsynced and digested. `to` may not exist, may be an empty
-    /// directory, or may hold an earlier backup - which is replaced whole, never edited in place - and
-    /// any other destination is refused. A run that fails leaves `to` exactly as it was.
-    ///
-    /// The finished copy is opened once before it is published: a generation that is not a store is not
-    /// a backup, and that open is also where each table's row count is taken for the manifest. The copy
-    /// is a faithful *store*, not necessarily a byte image of the source - the open may settle or
-    /// migrate the copy (fjall recovery, a legacy import whose marker travels with it) - and the
-    /// manifest's digests describe the bytes that were published.
     pub fn backup(from: &Path, to: &Path) -> StoreResult<BackupReport> {
         let start = std::time::Instant::now();
         let _closed = ClosedStore::acquire(from)?;
@@ -59,16 +37,7 @@ impl Store {
     }
 }
 
-/// The database's advisory lock, held for as long as the store must stay closed.
-///
-/// fjall takes `fjall/lock` with `std::fs::File::try_lock` when it opens a database
-/// (`fjall-3.1.10/src/locked_file.rs:49-80`, taken at `src/db.rs:569`, `src/db.rs:815`), so taking the
-/// same lock on the same file is exactly the question "is this database open?" - for another process
-/// and for this one, since `flock` locks an open file description and a second open of the same file
-/// is a second description. A held lock refuses the backup; a lock that is free is held until this
-/// guard drops.
 struct ClosedStore {
-    /// Dropping the file releases the lock.
     _lock: File,
 }
 
@@ -111,12 +80,6 @@ impl ClosedStore {
     }
 }
 
-/// Open the finished generation as a store and count what its keyspaces hold.
-///
-/// Two things happen here, in this order, and the order matters: the copy is proven to be a store
-/// rather than a directory of files, and its per-table row counts are taken from the keyspace itself.
-/// It runs before the digests are taken, so the manifest describes the bytes that were published even
-/// when this open wrote to the copy.
 fn count_published_generation(
     generation: &Path,
 ) -> StoreResult<std::collections::BTreeMap<String, u64>> {
@@ -131,10 +94,6 @@ fn count_published_generation(
     Ok(counts)
 }
 
-/// Refuse a destination a generation cannot be published onto.
-///
-/// An absent directory is created by the publish rename; an empty one or an earlier backup is replaced
-/// whole; anything else is refused rather than written into.
 fn check_backup_destination(from: &Path, to: &Path) -> StoreResult<()> {
     if to.starts_with(from) {
         return Err(refused(format!(

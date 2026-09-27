@@ -1,26 +1,8 @@
-//! Rendering the seal digest: the bytes that identify one census.
-//!
-//! Deterministic by construction. The gap tallies are sorted before rendering, so gap order is not
-//! evidence; the open-work counts are `Some(0)` wherever a seal exists, because a `None` (unmeasured)
-//! keeps an acceptance item open and no seal can carry one; and the workbook's own sha256 is
-//! included, so two exports with the same row count cannot share a seal.
-//!
-//! The version prefix is `v6`, and it moves when the body's meaning moves rather than its shape: v5
-//! renamed the cohort's performance count, which had read as a count of performances rather than of
-//! the cohort's; v4 renamed the state rollup's row count to `jurisdiction_buckets`, which had read as
-//! a count of placed jurisdictions while the rollup always carries an unplaced row too; v3 renamed the
-//! access-condition count, which had said it counted per-attempt exhaustion; v2 spelled
-//! `source_failures` as a bare integer, and that field is now tri-state; v1 was the first body. This
-//! version adds the source objects that finished their walk empty to the retained findings: without
-//! them a seal that named them and a seal that could not shared a digest. A digest written by an older
-//! seal cannot be compared with a current one, and the prefix is what makes that visible instead of
-//! silently producing a different number for the same evidence.
 
 use sha2::{Digest, Sha256};
 
 use super::SealEvidence;
 
-/// A digest over the certified numbers, the retained findings and the workbook bytes.
 pub(super) fn render(evidence: &SealEvidence) -> String {
     let counts = evidence.counts;
     let mut gaps = evidence.retained.gaps.clone();

@@ -1,10 +1,3 @@
-//! The seam walk's own judgements: which file is which module, which line references what, and
-//! which region of a file counts as production.
-//!
-//! The last of those is the scanner's `production_lines`, asserted here rather than in the scanner
-//! because the seam check is what depends on the answer: a `#[cfg(test)] mod tests` cuts the region
-//! while a `#[cfg(test)]` that gates `use` re-exports does not, and a walk that got that backwards
-//! would either hide production references or report test-only edges.
 
 use super::parse::{crates_in_line, refs_in_line};
 use super::walk::top_module;

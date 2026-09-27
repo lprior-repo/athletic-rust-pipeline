@@ -1,9 +1,3 @@
-//! `new-source`: generate a source adapter in the directory-module layout.
-//!
-//! The layout is the decomposition target: `mod.rs` (adapter entry point), `parse.rs` (pure), `map.rs`
-//! (canonical mapping), a module README, and the fixture directory's README. The generated code
-//! compiles and does nothing on purpose: `collect` bails, and `parse.rs` carries a fixture-driven
-//! test that starts biting the moment a capture lands next to it.
 
 use crate::paths;
 use crate::templates::{adapter_module, adapter_readme, fixture_readme, map_module, parse_module};
@@ -11,7 +5,6 @@ use anyhow::{bail, Context, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Keywords that cannot name a module.
 const KEYWORDS: &[&str] = &[
     "abstract", "as", "async", "await", "become", "box", "break", "const", "continue", "crate",
     "do", "dyn", "else", "enum", "extern", "false", "final", "fn", "for", "gen", "if", "impl",
@@ -20,8 +13,6 @@ const KEYWORDS: &[&str] = &[
     "union", "unsafe", "unsized", "use", "virtual", "where", "while", "yield",
 ];
 
-/// One scaffold: where the module directory, the fixture directory and the colliding flat module
-/// live.
 struct Layout {
     name: String,
     adapter: PathBuf,
@@ -30,7 +21,6 @@ struct Layout {
 }
 
 impl Layout {
-    /// Resolve every path for `name`.
     fn resolve(name: String) -> Self {
         Self {
             adapter: paths::adapters_dir().join(&name),
@@ -40,8 +30,6 @@ impl Layout {
         }
     }
 
-    /// Refuse before writing anything: an adapter directory, a flat module or a fixture directory of
-    /// the same name already belongs to somebody.
     fn refuse(&self) -> Result<()> {
         for path in [&self.adapter, &self.flat_module, &self.fixtures] {
             if fs::symlink_metadata(path).is_ok() {
@@ -55,7 +43,6 @@ impl Layout {
         Ok(())
     }
 
-    /// Every file the scaffold writes, with its body.
     fn files(&self) -> Vec<(PathBuf, String)> {
         let name = self.name.as_str();
         vec![
@@ -68,7 +55,6 @@ impl Layout {
     }
 }
 
-/// Generate one adapter scaffold and register its module.
 pub fn new_source(requested: &str) -> Result<()> {
     let name = module_name(requested)?;
     if name != requested {
@@ -94,8 +80,6 @@ pub fn new_source(requested: &str) -> Result<()> {
     Ok(())
 }
 
-/// The name as a module identifier: `probe-scaffold` and `probe_scaffold` both name `probe_scaffold`,
-/// because the fixture directory and the nextest filter follow the module name.
 fn module_name(requested: &str) -> Result<String> {
     let name = requested.trim().replace('-', "_");
     let starts_well = name
@@ -117,7 +101,6 @@ fn module_name(requested: &str) -> Result<String> {
     Ok(name)
 }
 
-/// Write every file, stopping at the first failure and naming what already landed.
 fn write_files(files: &[(PathBuf, String)]) -> Result<Vec<PathBuf>> {
     let mut created: Vec<PathBuf> = Vec::with_capacity(files.len());
     for (path, body) in files {
@@ -139,7 +122,6 @@ fn write_files(files: &[(PathBuf, String)]) -> Result<Vec<PathBuf>> {
     Ok(created)
 }
 
-/// Write one file, creating its directory first.
 fn write_one(path: &Path, body: &str) -> Result<()> {
     let Some(parent) = path.parent() else {
         bail!("{} has no parent directory", paths::relative(path));
@@ -148,8 +130,6 @@ fn write_one(path: &Path, body: &str) -> Result<()> {
     fs::write(path, body).with_context(|| format!("writing {}", paths::relative(path)))
 }
 
-/// Append `pub mod <name>;` after the last declaration in the crawl crate's module list, unless it is
-/// already declared. Returns whether the file changed.
 fn register_module(name: &str) -> Result<bool> {
     let path = paths::adapters_dir().join("lib.rs");
     let text =

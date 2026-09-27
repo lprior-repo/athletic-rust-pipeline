@@ -1,13 +1,3 @@
-//! Cross-country: the archive's state-finalist lists, and the rows they mint.
-//!
-//! The lists are entry lists, not results: they publish no mark, no per-athlete place and no date, so
-//! a run mints the athletes and the teams that qualified as teams, and stores no performance. The one
-//! field the list leaves implicit is gender — the tournament id it answers for is a single class's
-//! boys or girls list — so that gender is recorded as a derived observation naming the id.
-//!
-//! The route reads `/v1/terms` once and then the six tournament ids of the newest completed term. A
-//! term the archive does not hold answers with `{"error": "Archive not available for term ..."}`;
-//! that body is a note, never an error, because the request did what it was asked.
 
 use super::journal::Journal;
 use super::map::{joined_name, school_year_of_term, AthleteRow, Mapper, XcList};
@@ -18,10 +8,6 @@ use super::wire::{QualifierAthlete, QualifiersEnvelope};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{Gender, SchoolId, SchoolYear, Sport};
 
-/// The cross-country state-final tournaments the archive answers for: three classes, two genders.
-///
-/// Measured against `2025-26`: ids 688-690 are the boys 1A/2A/3A lists and 691-693 the girls, and the
-/// id is also the only place the list's gender is stated.
 const TOURNAMENTS: [(u32, &str, Gender); 6] = [
     (688, "1A", Gender::Boys),
     (689, "2A", Gender::Boys),
@@ -31,18 +17,15 @@ const TOURNAMENTS: [(u32, &str, Gender); 6] = [
     (693, "3A", Gender::Girls),
 ];
 
-/// The handles this route shares with the walk it is a part of.
 pub(super) struct Route<'a, 'b> {
     pub(super) ctx: &'a AdapterContext<'a>,
     pub(super) report: &'b mut AdapterReport,
     pub(super) mapper: &'b mut Mapper<'a>,
     pub(super) journal: &'b mut Journal,
-    /// Bumped for every list the journal already held, so a resumed run says so.
     pub(super) resumed: &'b mut usize,
 }
 
 impl Route<'_, '_> {
-    /// Walk the archive's cross-country state-finalist lists for the newest term it holds.
     pub(super) async fn walk(&mut self) -> CrawlResult<()> {
         let Some(term) = requests::newest_term(self.ctx, self.report).await else {
             return Ok(());
@@ -59,7 +42,6 @@ impl Route<'_, '_> {
         Ok(())
     }
 
-    /// Read one tournament's entry list.
     async fn list(
         &mut self,
         term: &str,
@@ -102,10 +84,6 @@ impl Route<'_, '_> {
 }
 
 impl<'a> Mapper<'a> {
-    /// Mint the athletes one cross-country state-finalist list publishes.
-    ///
-    /// Team qualifiers come first, then the individuals who qualified without their team: both carry
-    /// the school's own id, so both resolve onto the same canonical school.
     pub(super) fn absorb_qualifiers(
         &mut self,
         envelope: &QualifiersEnvelope,
@@ -141,10 +119,6 @@ impl<'a> Mapper<'a> {
         }
     }
 
-    /// Mint one qualifying athlete of a cross-country list.
-    ///
-    /// The entry number is unique within the tournament that publishes it, so it is filed under the
-    /// association's own namespace with the tournament id in front of it.
     fn qualifier(
         &mut self,
         school: &SchoolId,

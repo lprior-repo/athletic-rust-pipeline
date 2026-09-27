@@ -1,4 +1,5 @@
-use super::{claims, ClaimEvidence, FragmentRow, Verdict};
+use census_domain::model::{ContactClaimEvidence, RawContactRow};
+use super::{claims, Verdict};
 
 #[derive(Debug, Clone, Default)]
 pub(super) struct RowEvidence {
@@ -9,7 +10,7 @@ pub(super) struct RowEvidence {
     pub robots: bool,
     pub failed: bool,
     pub script: bool,
-    pub claims: Vec<ClaimEvidence>,
+    pub claims: Vec<ContactClaimEvidence>,
     required: usize,
     verified: [bool; 4],
 }
@@ -17,20 +18,22 @@ pub(super) struct RowEvidence {
 const FIELDS: [&str; 4] = ["coach_name", "public_professional_email", "ad_name", "ad_email"];
 
 impl RowEvidence {
-    pub fn absorb(&mut self, text: &str, row: &FragmentRow, url: &str, at: &str) -> anyhow::Result<()> {
+    pub fn absorb(&mut self, text: &str, row: &RawContactRow, url: &str, fetched_at: &str, source_sha256: &str) -> anyhow::Result<()> {
         self.body = true;
         self.script |= text.to_ascii_lowercase().contains("<script");
-        self.required = row.values().iter().filter(|value| !value.trim().is_empty()).count();
-        let page = claims::inspect(text, row, url, at)?;
+        self.required = [&row.coach_name, &row.public_professional_email, &row.ad_name, &row.ad_email]
+            .iter().filter(|value| !value.trim().is_empty()).count();
+        let page = claims::inspect(text, row, url, source_sha256, fetched_at)?;
         self.found |= page.found;
         self.contradicted |= page.contradicted;
         page.fields.into_iter().for_each(|claim| {
-            if let Some(index) = FIELDS.iter().position(|field| *field == claim.field) {
+            let field_str = contact_proof_field_str(claim.field);
+            if let Some(index) = FIELDS.iter().position(|field| *field == field_str) {
                 self.verified[index] = true;
             }
             self.claims.push(claim);
         });
-        self.role_near = eligible_claim(row, at) && self.required > 0
+        self.role_near = eligible_claim(row, fetched_at) && self.required > 0
             && self.verified.iter().filter(|value| **value).count() == self.required;
         Ok(())
     }
@@ -50,7 +53,16 @@ impl RowEvidence {
     }
 }
 
-fn eligible_claim(row: &FragmentRow, at: &str) -> bool {
+fn contact_proof_field_str(field: census_domain::model::ContactProofField) -> &'static str {
+    match field {
+        census_domain::model::ContactProofField::CoachName => "coach_name",
+        census_domain::model::ContactProofField::PublicProfessionalEmail => "public_professional_email",
+        census_domain::model::ContactProofField::AdName => "ad_name",
+        census_domain::model::ContactProofField::AdEmail => "ad_email",
+    }
+}
+
+fn eligible_claim(row: &RawContactRow, at: &str) -> bool {
     let role = super::normalize(&row.role);
     let person = (role.contains("coach") && !row.coach_name.trim().is_empty())
         || (role.contains("director") && !row.ad_name.trim().is_empty());

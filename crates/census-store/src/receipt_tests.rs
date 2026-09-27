@@ -1,5 +1,3 @@
-//! Tests for receipted commits: one operation, one commit, one receipt — and what a replay of that
-//! operation does to the rows, the counters and the journal beside it.
 
 use super::*;
 use census_domain::model::*;
@@ -12,7 +10,6 @@ fn school(name: &str) -> CanonicalSchool {
     CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0
 }
 
-/// One observation of `name` carrying `source` as its evidence.
 fn observed(name: &str, source: &str, at: &str) -> CanonicalSchool {
     let mut row = school(name);
     row.evidence
@@ -27,7 +24,6 @@ fn page() -> Vec<CanonicalSchool> {
     ]
 }
 
-/// Rows a table holds, as [`Store::stats`] reports them.
 fn rows(store: &Store, table: Table) -> u64 {
     store
         .stats()
@@ -39,7 +35,6 @@ fn rows(store: &Store, table: Table) -> u64 {
         .unwrap()
 }
 
-/// The sequence a table's next append will use: the pointer a replay must not move.
 fn counter(store: &Store, table: Table) -> u64 {
     store
         .stats()
@@ -51,8 +46,6 @@ fn counter(store: &Store, table: Table) -> u64 {
         .unwrap()
 }
 
-/// Apply one operation through one batch: its page, its journal entry and its receipt commit
-/// together, exactly as the ingest path applies a posted page.
 fn apply(
     store: &Store,
     operation: &str,

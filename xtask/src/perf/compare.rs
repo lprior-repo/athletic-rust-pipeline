@@ -1,11 +1,9 @@
-//! Comparison logic: environment compatibility and throughput regression detection.
 
 use super::env;
 use super::{GroupMeasurement, PerfBaseline};
 use anyhow::{bail, Result};
 use std::collections::BTreeMap;
 
-/// Validate environment compatibility between baseline and current measurements.
 pub fn check_environment(
     baseline: &PerfBaseline,
     _current_data: &BTreeMap<String, GroupMeasurement>,
@@ -46,7 +44,6 @@ pub fn check_environment(
     Ok(())
 }
 
-/// Compare throughput per group against the baseline; returns error on regression.
 pub fn check_throughput(
     baseline: &PerfBaseline,
     current_data: &BTreeMap<String, GroupMeasurement>,
@@ -92,10 +89,6 @@ pub fn check_throughput(
     Ok(())
 }
 
-/// Compute the throughput delta between baseline and current values.
-/// Returns `Err(failure_msg)` if either value is non-finite, `Ok(None)` if
-/// either value is `None` (throughput not declared), and `Ok(Some((delta, old, new)))`
-/// when both values are present and finite.
 fn compute_delta(
     group: &str,
     baseline: Option<f64>,
@@ -116,7 +109,6 @@ fn compute_delta(
     Ok(Some((d, old, new)))
 }
 
-/// Check a single group's throughput against the baseline.
 fn check_group<'a>(
     groups: &'a BTreeMap<String, GroupMeasurement>,
     group: &str,
@@ -164,7 +156,6 @@ fn check_group<'a>(
     }
 }
 
-/// Result of checking a single benchmark group.
 struct GroupCheckResult {
     max_delta: Option<f64>,
     failure: Option<String>,

@@ -1,4 +1,3 @@
-//! Unit tests for the `mpa` adapter: fixtures in, parsed rows out.
 
 use super::*;
 use census_domain::model::Sport;

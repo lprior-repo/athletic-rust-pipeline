@@ -1,16 +1,8 @@
-//! The seam between the lane's roster and the state a finding is minted in.
-//!
-//! A case the lane can ask about has to start `Pending` or the lane never sees it, and a case the
-//! census's own rules have already decided must not start `Pending` or it holds the seal open for work
-//! nothing can do. Both halves are one list each, so the two are checked against each other here
-//! rather than in either crate alone: `census-domain` owns the mint rule and this crate owns the
-//! roster, and neither can see the other's list.
 
 use census_domain::model::{ReviewCase, ReviewState, COHORT_DECISION_FAMILIES};
 
 use super::ReviewFamily;
 
-/// Every family the lane asks about is minted pending, and reads back as the family it was minted as.
 #[test]
 fn an_askable_family_is_minted_pending_and_names_itself() {
     for family in ReviewFamily::askable() {
@@ -39,11 +31,6 @@ fn an_askable_family_is_minted_pending_and_names_itself() {
     }
 }
 
-/// The families the census's own rules decide are minted retained, and no lane asks about them: their
-/// finding is published, not owed.
-///
-/// The domain owns the list — the evidence rule is what decides a cohort claim — so the test walks the
-/// domain's own names rather than restating them.
 #[test]
 fn the_families_the_census_decides_are_minted_retained_and_asked_about_by_nobody() {
     for family in COHORT_DECISION_FAMILIES {

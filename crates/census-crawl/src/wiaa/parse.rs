@@ -1,7 +1,3 @@
-//! Pure parsing for the WIAA directory: one-letter index rows and one school page.
-//!
-//! No I/O and no store access: every function takes captured HTML and returns a parsed row
-//! shape. Canonical entities are minted in [`super::map`].
 
 use super::primitives::{
     attribute_value, cell_email, clean, element_bodies, element_text, find_from, labelled_texts,
@@ -9,56 +5,40 @@ use super::primitives::{
 };
 use super::{HOST, SCHOOL_PATH};
 
-/// One row of the per-letter school index (`#tblSchools`).
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct IndexEntry {
-    /// WIAA `OrganizationID` — the provider's stable school key.
     pub org_id: String,
-    /// Full school name from the row's `title` attribute (`<h5>` is CSS-truncated for long names).
     pub name: String,
-    /// `High School` / `Middle School`.
     pub level: String,
-    /// City the school is listed under.
     pub city: String,
 }
 
 impl IndexEntry {
-    /// The school page URL this row links to.
     pub fn page_url(&self) -> String {
         format!("{HOST}{SCHOOL_PATH}?orgID={}", self.org_id)
     }
 }
 
-/// One row of `#tblAdminList`.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct StaffRow {
-    /// Published role label, e.g. `Athletic Director` or `AD Admin Assistant`.
     pub role: String,
     pub name: String,
-    /// Decoded address, `None` when the cell carries no address.
     pub email: Option<String>,
 }
 
-/// One row of `#tblCoachList`.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct CoachRow {
-    /// Published sport label, e.g. `Boys Track and Field`.
     pub sport: String,
     pub name: String,
-    /// Published role label; observed as `Head Coach` on every row of this surface.
     pub role: String,
     pub email: Option<String>,
 }
 
-/// The parsed content of one school page.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SchoolPage {
-    /// `<label class="JumboMain">` — the school's own name.
     pub name: String,
     pub level: Option<String>,
     pub city: Option<String>,
-    /// `Conference (Default)`. WIAA's conference field is what the canonical model calls
-    /// `classification`.
     pub conference: Option<String>,
     pub enrollment: Option<u32>,
     pub website: Option<String>,
@@ -66,10 +46,6 @@ pub struct SchoolPage {
     pub coaches: Vec<CoachRow>,
 }
 
-/// WIAA `OrganizationID`s listed by one letter fragment, in page order.
-///
-/// Returns an empty vector for an empty or unrecognised payload — the `LetterBtn=-1` fragment is a
-/// legitimate empty response, not an error.
 pub fn parse_directory_letter(html: &str) -> Vec<IndexEntry> {
     let Some(table) = table_slice(html, "tblSchools") else {
         return Vec::new();
@@ -98,7 +74,6 @@ pub fn parse_directory_letter(html: &str) -> Vec<IndexEntry> {
     out
 }
 
-/// `orgID` from a row's `GetDirectorySchool` link.
 fn row_org_id(row: &str) -> Option<String> {
     let marker = "GetDirectorySchool?orgID=";
     let start = find_from(row, marker, 0)?.checked_add(marker.len())?;
@@ -114,7 +89,6 @@ fn row_org_id(row: &str) -> Option<String> {
     }
 }
 
-/// Value of the `<span>Label</span><h5 …>Value</h5>` pattern used by the school identity block.
 fn labeled_value(html: &str, label: &str) -> Option<String> {
     let marker = format!("<span>{label}</span>");
     let start = find_from(html, &marker, 0)?.checked_add(marker.len())?;
@@ -122,14 +96,12 @@ fn labeled_value(html: &str, label: &str) -> Option<String> {
     meaningful(&value)
 }
 
-/// Text of the first non-empty `<label class="<class>">…</label>`.
 fn label_text(html: &str, class: &str) -> Option<String> {
     labelled_texts(html, class)
         .into_iter()
         .find_map(|value| meaningful(&value))
 }
 
-/// `Enrollment (<school year>)` → the `School:` total.
 pub fn parse_enrollment(html: &str) -> Option<u32> {
     let label = "<span>School:</span>";
     let at = find_from(html, "<span>Enrollment (", 0)?;
@@ -138,8 +110,6 @@ pub fn parse_enrollment(html: &str) -> Option<u32> {
     value.trim().parse::<u32>().ok()
 }
 
-/// href of the anchor ending in `marker` (the school page's `Website` button). Anything that is not
-/// an absolute http(s) URL is ignored rather than stored as a website.
 fn anchor_href_before(html: &str, marker: &str) -> Option<String> {
     let at = find_from(html, marker, 0)?;
     let before = html.get(..at)?;
@@ -154,7 +124,6 @@ fn anchor_href_before(html: &str, marker: &str) -> Option<String> {
     }
 }
 
-/// Name of the person in a table cell: the `<b>` element when present, otherwise the whole cell.
 fn cell_person(cell: &str) -> String {
     element_text(cell, "b", 0)
         .map(|(text, _)| text)
@@ -162,9 +131,6 @@ fn cell_person(cell: &str) -> String {
         .unwrap_or_else(|| strip_tags(cell))
 }
 
-/// Parse one `GetDirectorySchool` page. A payload that is not a directory page (empty body, JSON
-/// error, truncated HTML) yields a default page rather than an error, so it can neither panic nor
-/// mint a school.
 pub fn parse_school_page(html: &str) -> SchoolPage {
     let mut admins = Vec::new();
     if let Some(table) = table_slice(html, "tblAdminList") {

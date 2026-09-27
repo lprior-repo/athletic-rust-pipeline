@@ -1,4 +1,3 @@
-//! Kani proof harnesses for `GradYear::of` cohort derivation and `ObservedGrade::grad_year`.
 
 use crate::model::{Grade, GradYear, ObservedGrade, SchoolYear, SourceRef};
 
@@ -6,14 +5,6 @@ fn any_source_ref() -> SourceRef {
     SourceRef::new("kani", None)
 }
 
-/// The cohort formula holds exactly, and an in-domain observation always derives a `GradYear` that
-/// `GradYear::new` accepts.
-///
-/// The premise is the school years a cohort can actually be observed in. The previous version of
-/// this harness assumed `school_year` up to 2040 while claiming the derived class stays inside
-/// `2020..=2040`; that claim is false (grade 9 in 2040 derives 2044) and CBMC produced exactly that
-/// counterexample against the delivered harness. `of` is `start_year + 13 - grade`, so `y <= 2027`
-/// with `grade in 9..=12` derives `2021..=2031`, which is what the two assertions below pin.
 #[kani::proof]
 #[kani::unwind(16)]
 fn check_gradyear_of_formula() {
@@ -43,7 +34,6 @@ fn check_gradyear_of_formula() {
     kani::cover!(school_year.get() == 2027, "school_year upper bound is reachable");
 }
 
-/// The known cohort anchors from the model docs.
 #[kani::proof]
 #[kani::unwind(16)]
 fn check_gradyear_of_known_values() {
@@ -59,13 +49,6 @@ fn check_gradyear_of_known_values() {
     assert!(GradYear::of(g9, sy25) == GradYear::new(2029).expect("2029 is in domain"));
 }
 
-/// Every season the domain admits derives its class by the saturating formula, for every grade.
-///
-/// A season now exists only through [`SchoolYear::new`], so the school year reaching
-/// [`GradYear::of`] is always inside `MIN_START_YEAR..=MAX_START_YEAR`: the `i16::MIN`/`i16::MAX`
-/// observation years this harness used to feed in cannot be constructed at all. The window is
-/// quantified here and the constructor's refusal of the years outside it is asserted beside it,
-/// which is what the saturated store was standing in for.
 #[kani::proof]
 #[kani::unwind(16)]
 fn check_gradyear_of_saturating() {
@@ -102,7 +85,6 @@ fn check_gradyear_of_saturating() {
     );
 }
 
-/// `ObservedGrade::grad_year` is exactly the cohort derivation of its own grade and school year.
 #[kani::proof]
 #[kani::unwind(16)]
 fn check_observed_grade_grad_year() {

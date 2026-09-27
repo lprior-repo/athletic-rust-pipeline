@@ -1,9 +1,3 @@
-//! The census stages that walk a source host: cached team indexes, the MileSplit meet index and the
-//! roster walk, plus the coach-contact CSV import.
-//!
-//! Each stage runs two ways. Offline it walks the host in-process and owns the store; live it submits
-//! the state's own jurisdiction object through the ingress, so the walk runs against the store the
-//! running service already holds.
 
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
@@ -21,18 +15,16 @@ use super::{build_fetcher, resolve_states, school_year, Cli, Route};
 
 #[derive(Args, Debug)]
 pub(super) struct TeamsArgs {
-    /// Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted).
-    /// Default: WI.
+    #[arg(help = "Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted). Default: WI")]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
-    /// Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be
-    /// combined with `--states`.
+    #[arg(help = "Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`")]
     #[arg(long)]
     all_states: bool,
-    /// Season start year: 2026 is the 2026-27 season, the same convention as `--school-year`.
+    #[arg(help = "Season start year: 2026 is the 2026-27 season, the same convention as `--school-year`")]
     #[arg(long, default_value_t = 2026)]
     season: i16,
-    /// Ignore caches and re-read every page (robots still enforced).
+    #[arg(help = "Ignore caches and re-read every page (robots still enforced)")]
     #[arg(long)]
     refresh: bool,
     #[command(flatten)]
@@ -41,25 +33,22 @@ pub(super) struct TeamsArgs {
 
 #[derive(Args, Debug)]
 pub(super) struct MeetsArgs {
-    /// Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted).
-    /// Default: WI.
+    #[arg(help = "Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted). Default: WI")]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
-    /// Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be
-    /// combined with `--states`.
+    #[arg(help = "Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`")]
     #[arg(long)]
     all_states: bool,
-    /// Season start year, the same convention as `--school-year` (2026 = the 2026-27 season).
+    #[arg(help = "Season start year, the same convention as `--school-year` (2026 = the 2026-27 season)")]
     #[arg(long, default_value_t = 2026)]
     year: u16,
-    /// Ignore caches and re-read every page (robots still enforced).
+    #[arg(help = "Ignore caches and re-read every page (robots still enforced)")]
     #[arg(long)]
     refresh: bool,
     #[command(flatten)]
     flags: WorkflowFlags,
 }
 
-/// One state's line for `teams`: the counts its own stage wrote.
 fn teams_line(report: &JurisdictionReport) -> String {
     format!(
         "{}\tteams={} rosters={} meets={} co2027={}",
@@ -71,7 +60,6 @@ fn teams_line(report: &JurisdictionReport) -> String {
     )
 }
 
-/// One state's line for `meets`: the counts its own stage wrote.
 fn meets_line(report: &JurisdictionReport) -> String {
     let meets = &report.meets;
     format!(
@@ -87,16 +75,6 @@ fn meets_line(report: &JurisdictionReport) -> String {
     )
 }
 
-/// Fetch (and cache) team indexes for the given states.
-///
-/// Offline it walks each state's index in-process; live it asks that state's own jurisdiction object,
-/// which runs the full jurisdiction census (all owed stages) through the store the service already
-/// holds and reports one line per state.
-///
-/// Staging-only on the offline route: the walk bypasses the plan fingerprint and the `Ingest`
-/// operation-id receipts and windows, so nothing it writes is visible to seal item 2 or to
-/// open-work measurement. Nothing in the batch chain above routes yet; measured coverage comes
-/// only from the live path through the service.
 pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
     let jurisdictions = resolve_states(args.all_states, &args.states)?;
     match cli.route(args.flags.ingress.as_deref())? {
@@ -139,16 +117,6 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
     }
 }
 
-/// Enumerate every published meet in each state's results index and store the rows.
-///
-/// Offline it walks each state's index in-process; live it asks that state's own jurisdiction object,
-/// which runs the full jurisdiction census (all owed stages) through the store the service already
-/// holds.
-///
-/// Staging-only on the offline route: the walk bypasses the plan fingerprint and the `Ingest`
-/// operation-id receipts and windows, so nothing it writes is visible to seal item 2 or to
-/// open-work measurement. Nothing in the batch chain above routes yet; measured coverage comes
-/// only from the live path through the service.
 pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
     let jurisdictions = resolve_states(args.all_states, &args.states)?;
     match cli.route(args.flags.ingress.as_deref())? {
@@ -208,37 +176,34 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
 
 #[derive(Args, Debug)]
 pub(super) struct CollectArgs {
-    /// Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted).
-    /// Default: WI.
+    #[arg(help = "Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted). Default: WI")]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
-    /// Walk the census run scope: the 48 continental states plus DC (ADR-009). Cannot be
-    /// combined with `--states`.
+    #[arg(help = "Walk the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`")]
     #[arg(long)]
     all_states: bool,
-    /// Cap the number of rosters fetched per state (for smoke runs).
+    #[arg(help = "Cap the number of rosters fetched per state (for smoke runs)")]
     #[arg(long)]
     limit_per_state: Option<usize>,
-    /// Concurrent in-flight requests per state (per-host politeness still applies).
+    #[arg(help = "Concurrent in-flight requests per state (per-host politeness still applies)")]
     #[arg(long, default_value_t = 4)]
     concurrency: usize,
-    /// How many state hosts to walk simultaneously.
+    #[arg(help = "How many state hosts to walk simultaneously")]
     #[arg(long, default_value_t = 4)]
     state_concurrency: usize,
-    /// Ignore caches and re-fetch (robots still enforced).
+    #[arg(help = "Ignore caches and re-fetch (robots still enforced)")]
     #[arg(long)]
     refresh: bool,
-    /// School year the rosters belong to, as its starting calendar year (2026 = 2026-27).
+    #[arg(help = "School year the rosters belong to, as its starting calendar year (2026 = 2026-27)")]
     #[arg(long, default_value_t = 2026)]
     school_year: i16,
-    /// ISO date stamped into evidence (defaults to today).
+    #[arg(help = "ISO date stamped into evidence (defaults to today)")]
     #[arg(long)]
     observed_on: Option<String>,
     #[command(flatten)]
     flags: WorkflowFlags,
 }
 
-/// Build the census options: the codes are already validated by clap's parser.
 fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
     Ok(census::CollectOptions {
         jurisdictions: resolve_states(args.all_states, &args.states)?,
@@ -249,24 +214,12 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
         school_year: SchoolYear::new(args.school_year).ok_or_else(|| {
             anyhow::anyhow!("--school-year {} is not a school year", args.school_year)
         })?,
-        observed_on: args
-            .observed_on
-            .clone()
-            .unwrap_or_else(census_crawl::net::today_iso),
+        observed_on: args.observed_on.clone().map_or_else(census_crawl::net::today_iso, |date| date),
+        revision: std::num::NonZeroU32::new(args.flags.revision)
+            .ok_or_else(|| anyhow::anyhow!("--revision must be greater than zero"))?,
     })
 }
 
-/// Walk rosters and emit canonical entities for the given states.
-///
-/// Offline it drives the walk in-process; live it asks each state's own jurisdiction object, which
-/// runs the full jurisdiction census (all owed stages) through the store the service already holds.
-/// Both paths read the same [`census::CollectOptions`], so the two cannot disagree about which states
-/// a run covers.
-///
-/// Staging-only on the offline route: the walk bypasses the plan fingerprint and the `Ingest`
-/// operation-id receipts and windows, so nothing it writes is visible to seal item 2 or to
-/// open-work measurement. Nothing in the batch chain above routes yet; measured coverage comes
-/// only from the live path through the service.
 pub(super) async fn run_collect(cli: &Cli, args: &CollectArgs) -> Result<()> {
     let options = collect_options(args)?;
     match cli.route(args.flags.ingress.as_deref())? {
@@ -303,7 +256,6 @@ pub(super) async fn run_collect(cli: &Cli, args: &CollectArgs) -> Result<()> {
     }
 }
 
-/// Import the researched official coach-contact CSV into canonical entities.
 pub(super) fn run_import_coaches(
     store: &Store,
     csv: &Path,

@@ -1,12 +1,3 @@
-//! The wire two crates read, pinned to committed bytes.
-//!
-//! `fixtures/wire/athleticnet-browser-capture.json` and `athleticnet-browser-failure.json` are
-//! authored here, from this crate's own serialization, and are read byte for byte by the census
-//! mirror's test. A field added, renamed, dropped, reordered or reclassified on either side fails
-//! one of these assertions - which is the point: the outcome vocabulary is one contract, not two
-//! similar ones.
-//!
-//! These tests use the public API only, because that is all a mirror can see.
 
 use athleticnet_browser::clock::{Clock, ClockError};
 use athleticnet_browser::{BrowserError, BrowserOutcome, BrowserResponse, Verdict};
@@ -14,11 +5,8 @@ use reqwest::header::{HeaderMap, HeaderValue};
 use reqwest::StatusCode;
 use std::path::PathBuf;
 
-/// The instant the fixtures were authored at, so `fetched_at_ms` is an exact pin.
 const FIXTURE_FETCHED_AT_MS: u64 = 1_758_542_400_000;
 
-/// A clock fixed at [`FIXTURE_FETCHED_AT_MS`]: timing the transport takes itself must be
-/// reproducible for the fixture to pin anything.
 struct FixedClock;
 
 impl Clock for FixedClock {
@@ -47,10 +35,6 @@ fn pretty<T: serde::Serialize>(value: &T) -> String {
     encoded
 }
 
-/// The response the capture fixture pins: a challenge page, refused with `Retry-After`.
-///
-/// The challenge is carried by the body, not by `cf-mitigated`, so a reader that can observe
-/// `"challenge": true` has proved the base64 body survived the wire intact.
 fn challenged_response() -> BrowserResponse {
     let mut headers = HeaderMap::new();
     headers.append(

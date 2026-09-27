@@ -1,11 +1,3 @@
-//! Render `synthesis/10-measured-census.md` from the pipeline's own snapshots.
-//!
-//! Reads `<store-out>/report.json`, `<store-out>/athletes.jsonl`,
-//! `<store-out>/meets.jsonl`, and the CSVs in `<research>/data/`. Outputs
-//! a Markdown census document that is byte-identical to `tools/make_census_doc.py`.
-//!
-//! This subcommand does not open the Fjall store — it is a pure report
-//! generator, so it bypasses the store in [`super::run`].
 
 mod assemble_document;
 mod build_coach_rows;
@@ -24,14 +16,14 @@ use clap::Args;
 
 pub(crate) use self::counted_seeds::Seeds;
 
-/// Arguments for the `census-doc` subcommand.
 #[derive(Args, Debug)]
+#[command(about = "Arguments for the `census-doc` subcommand")]
 pub(super) struct CensusDocArgs {
-    /// Directory containing `report.json`, `athletes.jsonl`, and `meets.jsonl`.
+    #[arg(help = "Directory containing `report.json`, `athletes.jsonl`, and `meets.jsonl`")]
     #[arg(long)]
     pub(super) store_out: PathBuf,
 
-    /// Research root directory containing `data/` and `synthesis/`.
+    #[arg(help = "Research root directory containing `data/` and `synthesis/`")]
     #[arg(long)]
     pub(super) research: PathBuf,
 }
@@ -54,7 +46,6 @@ fn md_table(headers: &[&str], rows: &[Vec<String>]) -> String {
     out
 }
 
-/// Format a number with comma separators.
 fn fmt_comma(n: usize) -> String {
     let s = n.to_string();
     let chars: Vec<char> = s.chars().rev().collect();
@@ -68,7 +59,6 @@ fn fmt_comma(n: usize) -> String {
     result
 }
 
-/// Format a percentage with one decimal place.
 fn fmt_pct(numerator: f64, denominator: f64) -> String {
     if denominator == 0.0 {
         "n/a".to_string()
@@ -77,12 +67,10 @@ fn fmt_pct(numerator: f64, denominator: f64) -> String {
     }
 }
 
-/// Convert u64 to usize safely; returns MAX on overflow.
 fn usize_from_u64(v: u64) -> usize {
     usize::try_from(v).unwrap_or(usize::MAX)
 }
 
-/// Build the sports BTreeMap from the report.
 fn build_sports_map(report: &serde_json::Value) -> std::collections::BTreeMap<String, usize> {
     report
         .get("class_of_2027_sports")
@@ -146,7 +134,6 @@ pub(super) fn run_census_doc(args: &CensusDocArgs) -> Result<()> {
     Ok(())
 }
 
-/// Build the summary JSON string.
 fn make_summary(
     report: &serde_json::Value,
     out_path: &Path,

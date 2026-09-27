@@ -1,12 +1,3 @@
-//! TEMPORARY (StorageModeC self-heal corpus evidence): walks every table of a store root and prints the
-//! four facts the repair is judged by, beside the ledger count the store keeps for the same table.
-//!
-//! Run with the root named, against a copy or the live root:
-//! `WALK_ROOT=<dir> cargo test -p census-service --test corpus_walk -- --ignored --nocapture`
-//!
-//! Ignored by default: it is an operator instrument over a root the operator names, and an unset
-//! `WALK_ROOT` is not a failing claim about the code. Deleted once the before/after numbers are
-//! recorded; nothing else imports it.
 
 use census_store::{StorageMode, Store, Table};
 use std::collections::HashMap;

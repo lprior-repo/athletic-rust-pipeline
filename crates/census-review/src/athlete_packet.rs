@@ -1,18 +1,3 @@
-//! The athlete-identity family's question, built from the store: the two canonical rows a case
-//! compares, and the flags the store computes before a model sees anything.
-//!
-//! The merge retained the finding because it kept two rows apart under one key: the same school, the
-//! same normalized name and the same graduating class, differing in the gender component the
-//! canonical athlete id is minted from. The retained case's detail names the ids it collided with,
-//! but ids in prose are not a key, so this module rebuilds the group from the store's own fields with
-//! the rule the conflict family groups by, and compares the case's subject with the first other row
-//! of that group.
-//!
-//! Every flag is computed from the canonical rows alone, in [`super::athlete_flags`], and stated in
-//! the packet: the model is asked what the flags leave open, never asked to notice a contradiction
-//! itself. Each side's own evidence — the provider ids the row is known by, its name, its school, the
-//! grade observations that imply a class, its gender and the profile URLs the providers published —
-//! rides with it, so the comparison is made on what the store holds.
 
 use std::collections::{BTreeMap, HashMap};
 
@@ -24,17 +9,13 @@ use super::athlete_flags::{flags, key, IdentityKey};
 use super::families::IDENTITY_FIELD;
 use super::packets::{case_fact, fact, index_by_id};
 
-/// Which side of the comparison a fact belongs to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Side {
-    /// The case's subject: the row the operator was pointed at.
     Subject,
-    /// The row it collided with.
     Other,
 }
 
 impl Side {
-    /// The fact-name prefix the packet states this side under.
     const fn prefix(self) -> &'static str {
         match self {
             Self::Subject => "side_a",
@@ -43,54 +24,52 @@ impl Side {
     }
 }
 
-/// The athlete table as the lane reads it: every row by id, and the rows the merge kept apart.
 #[derive(Debug, Default)]
 pub(super) struct AthleteIndex {
     rows: HashMap<String, CanonicalAthlete>,
-    /// Canonical ids sharing one merge key with this id, when more than one row holds that key.
-    groups: HashMap<String, Vec<String>>,
+    group_index: HashMap<String, usize>,
+    groups: Vec<Vec<String>>,
 }
 
 impl AthleteIndex {
-    /// Index the table: rows by their id, and the groups a case can be retained from.
     pub(super) fn read(rows: Vec<CanonicalAthlete>) -> Self {
         let mut by_key: BTreeMap<IdentityKey, Vec<String>> = BTreeMap::new();
         for row in &rows {
             by_key.entry(key(row)).or_default().push(row.id.to_string());
         }
-        let mut groups: HashMap<String, Vec<String>> = HashMap::new();
+        let mut group_index = HashMap::new();
+        let mut groups = Vec::new();
         for mut ids in by_key.into_values() {
             if ids.len() < 2 {
                 continue;
             }
             ids.sort();
-            for id in &ids {
-                groups.insert(id.clone(), ids.clone());
+            let idx = groups.len();
+            groups.push(ids);
+            for id in groups[idx].iter() {
+                group_index.insert(id.clone(), idx);
             }
         }
         Self {
             rows: index_by_id(rows, |row| row.id.to_string()),
+            group_index,
             groups,
         }
     }
 
-    /// The two rows a case compares, and the whole group they came from.
-    ///
-    /// `None` when the store no longer holds both: the finding the case names is gone, so the lane
-    /// leaves the case alone rather than inventing a side to compare with.
     pub(super) fn compare(
         &self,
         subject_id: &str,
     ) -> Option<(&CanonicalAthlete, &CanonicalAthlete, &[String])> {
         let subject = self.rows.get(subject_id)?;
-        let group = self.groups.get(subject_id)?;
+        let idx = self.group_index.get(subject_id)?;
+        let group = &self.groups[*idx];
         let other_id = group.iter().find(|id| id.as_str() != subject_id)?;
         let other = self.rows.get(other_id)?;
         Some((subject, other, group))
     }
 }
 
-/// The question one athlete case asks: two rows, their own evidence, and the store's flags.
 pub(super) fn packet(
     case: &ReviewCase,
     subject: &CanonicalAthlete,
@@ -115,8 +94,6 @@ pub(super) fn packet(
     packet
 }
 
-/// One row as the packet states it: the fields the merge keyed it on, the grade observations that
-/// imply its class, and every provider identity it carries.
 fn side_facts(side: Side, row: &CanonicalAthlete) -> Vec<ReviewEvidenceFact> {
     let prefix = side.prefix();
     let field = |name: &str| format!("{prefix}_{name}");
@@ -150,16 +127,12 @@ fn side_facts(side: Side, row: &CanonicalAthlete) -> Vec<ReviewEvidenceFact> {
     facts
 }
 
-/// The row's provider identities in a stable order, so two stores holding the same evidence state it
-/// the same way whatever order the observations were appended in.
 fn identities(row: &CanonicalAthlete) -> Vec<&SourceIdentity> {
-    let mut identities: Vec<&SourceIdentity> = row.source_identities.iter().collect();
+    let mut identities: Vec<&SourceIdentity> = row.identities().collect();
     identities.sort_by(|a, b| a.namespace.cmp(&b.namespace).then_with(|| a.id.cmp(&b.id)));
     identities
 }
 
-/// The row's grade observations in a stable order: implied class, grade, then the source that
-/// observed it.
 fn observations(row: &CanonicalAthlete) -> Vec<&ObservedGrade> {
     let mut observations: Vec<&ObservedGrade> = row.observed_grades.iter().collect();
     observations.sort_by(|a, b| {
@@ -172,8 +145,6 @@ fn observations(row: &CanonicalAthlete) -> Vec<&ObservedGrade> {
     observations
 }
 
-/// One observation as the packet states it: what was seen, in which school year, and what class it
-/// implies.
 fn observation_text(observation: &ObservedGrade) -> String {
     format!(
         "grade {} in {} implies {} (from {})",

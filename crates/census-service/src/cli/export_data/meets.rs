@@ -1,9 +1,7 @@
-//! Canonical meets CSV export.
 
 use crate::cli::export_data::{csv::write_csv, helpers::*};
 use serde_json::Value;
 
-/// Build a single meet row from a JSON Value.
 fn build_meet_row(m: &Value) -> Vec<String> {
     let an = pick(m, "legacy_athletic_net", Some("meet"));
     let an_url = m
@@ -46,7 +44,6 @@ fn build_meet_row(m: &Value) -> Vec<String> {
     ]
 }
 
-/// Build and write canonical-meets.csv.
 pub fn write_canonical_meets(meets: &[Value], data: &std::path::Path) -> anyhow::Result<()> {
     let meet_rows: Vec<Vec<String>> = meets.iter().map(build_meet_row).collect();
 

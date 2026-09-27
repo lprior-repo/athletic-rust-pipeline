@@ -1,16 +1,3 @@
-//! Benchmark execution: run `cargo bench` targets and parse output.
-//!
-//! Criterion 0.8 does not support `--output-format json`; it only supports
-//! `"criterion"` (default, ANSI-coloured terminal output) and `"bencher"`
-//! (machine-parseable text).  The wrapper below uses the bencher format plus
-//! `--noplot` to produce clean stdout.
-//!
-//! The bencher lines look like:
-//!   `test census/parse/hynek_lines_from_html ... bench:    12,345 ns/iter (+/- 1,234)`
-//!
-//! Wall time is extracted from the bench field; throughput comes from the
-//! Criterion-saved `benchmark.json` files in the output directory
-//! (`target/criterion/<bench>/...`).
 
 use super::{Cmd, GroupMeasurement};
 use anyhow::{bail, Context, Result};
@@ -18,28 +5,18 @@ use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::path::Path;
 
-/// The throughput a bench declares, as Criterion writes it into
-/// `target/criterion/<bench>/<group>/<fn>/new/benchmark.json` under the `throughput` key:
-/// `{"Elements": 4096}`.
-///
-/// Only element counts are read. A bench declaring bytes or bits measures something this gate does
-/// not compare, so such a file fails to deserialize and the group keeps its wall time with no
-/// throughput rather than a number nothing can be compared against.
 #[derive(Debug, Deserialize)]
 struct DeclaredThroughput {
     #[serde(rename = "Elements")]
     elements: u64,
 }
 
-/// The part of that file the gate reads: the group the measurement belongs to and the throughput the
-/// bench declared. `function_id` is deliberately absent - the group is the unit the baseline records.
 #[derive(Debug, Deserialize)]
 struct BenchmarkFile {
     group_id: String,
     throughput: Option<DeclaredThroughput>,
 }
 
-/// Run both bench targets through the shell wrapper and parse the output into per-group data.
 pub fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
     let mut groups = BTreeMap::new();
 
@@ -76,11 +53,6 @@ pub fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
     Ok(groups)
 }
 
-/// Turn one bench target's per-group wall times and declared throughputs into measurements.
-///
-/// Counts are converted through `u32` so the arithmetic needs no `as` cast, as in
-/// `census_crawl::net::FetchStats::useful_records_per_physical_request`: a count past four billion
-/// does not occur in a benchmark run, and refusing beats reporting an approximate figure.
 fn group_measurements(
     group_times: BTreeMap<String, Vec<f64>>,
     throughput_map: &BTreeMap<String, u64>,
@@ -114,7 +86,6 @@ fn group_measurements(
     Ok(())
 }
 
-/// Extract peak RSS from the wrapper's `peak_rss_kib=` line in the output.
 fn read_peak_rss(output: &str) -> Option<u64> {
     output
         .lines()
@@ -122,11 +93,6 @@ fn read_peak_rss(output: &str) -> Option<u64> {
         .and_then(|v| v.parse::<u64>().ok())
 }
 
-/// Generate the shell script that wraps `cargo bench` and captures peak RSS via `/usr/bin/time -v`.
-///
-/// Uses a unique tempfile per invocation (mktemp) to avoid collisions with parallel runs.
-/// If `/usr/bin/time` is absent, the peak RSS field is omitted (the baseline records "not measured"
-/// with the reason).
 fn wrapper_script(bench_name: &str) -> String {
     format!(
         r#"set -e
@@ -157,12 +123,6 @@ rm -f /tmp/time-output.txt
     )
 }
 
-/// Parse a single bencher line into (group name, median wall time in nanoseconds).
-///
-/// Bencher format (Criterion 0.8):
-///   `test <group>/<function> ... bench: <N,NNN> <unit>/iter (+/- <N,NNN>)`
-///
-/// `<unit>` is one of `ns`, `μs`/`µs`, `ms`, `s`.
 pub(crate) fn parse_bencher_line(line: &str) -> Result<(String, f64)> {
     let name = line
         .split_once(" ... bench:")
@@ -194,7 +154,6 @@ pub(crate) fn parse_bencher_line(line: &str) -> Result<(String, f64)> {
     Ok((name.to_string(), ns_per_iter * ns))
 }
 
-/// Convert a bencher unit suffix to nanoseconds-per-unit.
 fn parse_bencher_unit(unit: &str) -> Result<f64> {
     match unit {
         "ns" => Ok(1.0),
@@ -205,12 +164,6 @@ fn parse_bencher_unit(unit: &str) -> Result<f64> {
     }
 }
 
-/// Walk the Criterion output directory and collect throughput declarations.
-///
-/// Criterion writes one `benchmark.json` per benchmark function, each containing
-/// the BenchmarkId with its group_id and declared throughput.  We return the
-/// first throughput per group (all functions in the same group share the group-level
-/// `.throughput()` declaration).
 fn read_throughputs(dir: &Path) -> Result<BTreeMap<String, u64>> {
     let mut result = BTreeMap::new();
 

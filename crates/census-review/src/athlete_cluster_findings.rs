@@ -1,9 +1,3 @@
-//! The store as one reconciliation pass observes it: every canonical athlete row reduced to the
-//! facts the comparisons need, the provider objects those rows are known by, and the two findings
-//! that read off the two directions of that relation.
-//!
-//! Split from the pass itself so each file stays inside the source budget — this file is the model,
-//! and `athlete_clusters` is the decision and the write.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -18,7 +12,6 @@ use super::athlete_clusters::RULE_REVIEWER;
 use crate::athlete_verdict::HardContradiction;
 use crate::families::IDENTITY_FIELD;
 
-/// One canonical athlete row, reduced to the facts this pass compares.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Row {
     id: String,
@@ -51,7 +44,6 @@ impl Row {
         }
     }
 
-    /// The line the store names this row by.
     fn line(&self) -> String {
         format!(
             "{} at {} (class {}, {:?})",
@@ -59,13 +51,11 @@ impl Row {
         )
     }
 
-    /// Whether two rows say the same athlete: a transfer moves the school and changes nothing else.
     fn agrees_with(&self, other: &Self) -> bool {
         self.name == other.name && self.grad_year == other.grad_year && self.gender == other.gender
     }
 }
 
-/// The store read this pass makes: each row's objects, and the rows each object is named by.
 #[derive(Debug, Default)]
 pub(super) struct Observed {
     schools: BTreeMap<String, String>,
@@ -92,20 +82,17 @@ impl Observed {
 
     fn absorb(&mut self, row: &CanonicalAthlete) {
         let id = row.id.as_str().to_string();
-        for identity in &row.source_identities {
-            self.objects_of
-                .entry((id.clone(), identity.namespace.clone()))
-                .or_default()
-                .insert(identity.id.clone());
-            self.by_object
-                .entry((identity.namespace.clone(), identity.id.clone()))
-                .or_default()
-                .insert(id.clone());
-        }
+        for identity in row.identities() { self.objects_of
+            .entry((id.clone(), identity.namespace.clone()))
+            .or_default()
+            .insert(identity.id.clone());
+        self.by_object
+            .entry((identity.namespace.clone(), identity.id.clone()))
+            .or_default()
+            .insert(id.clone()); }
         self.rows.insert(id, Row::of(row, &self.schools));
     }
 
-    /// Every provider object more than one canonical row is known by.
     pub(super) fn spans(&self) -> Vec<Span> {
         self.by_object
             .iter()
@@ -131,7 +118,6 @@ impl Observed {
         })
     }
 
-    /// Every row carrying more than one object of one namespace.
     pub(super) fn aliases(&self) -> Vec<Alias> {
         self.objects_of
             .iter()
@@ -148,7 +134,6 @@ impl Observed {
     }
 }
 
-/// One provider object more than one canonical row is known by.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Span {
     namespace: SourceNamespace,
@@ -157,7 +142,6 @@ pub(super) struct Span {
 }
 
 impl Span {
-    /// Whether every row the object names says the same athlete.
     pub(super) fn agrees(&self) -> bool {
         let mut rows = self.rows.iter();
         let Some(first) = rows.next() else {
@@ -165,7 +149,6 @@ impl Span {
         };
         rows.all(|row| first.agrees_with(row))
     }
-    /// A contradiction that must block a deterministic `same_person` merge.
     pub(super) fn hard_contradiction(&self) -> Option<HardContradiction> {
         let first = self.rows.first()?;
         let grade_differs = self.rows.iter().skip(1).any(|row| {
@@ -227,7 +210,6 @@ impl Span {
         case.member_ids = members;
         Some(case)
     }
-    /// The decision the agreement rule states, as the athlete family's own answer.
     pub(super) fn verdict(&self, case: &ReviewCase, observed_at: &str) -> ReviewVerdictRecord {
         ReviewVerdictRecord {
             id: case.id.clone(),
@@ -252,7 +234,6 @@ impl Span {
     }
 }
 
-/// One canonical row carrying more than one object of one namespace.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Alias {
     row: Row,

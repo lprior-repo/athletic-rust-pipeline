@@ -1,8 +1,3 @@
-//! The meet walk: one request pair per listed meet, absorbed into the run's accumulator, with the
-//! page flush that keeps a meet's rows and the journal entries naming its requests in one commit.
-//!
-//! Split out of the parent module when that file passed the repository's file budget; the dispatch,
-//! the run state and the page flush stay there.
 
 use super::super::absorb_meet;
 use super::{Documents, MeetRun, MeetUrls};
@@ -16,7 +11,6 @@ use census_domain::model::SourceRef;
 use census_domain::school_index::SchoolIndex;
 
 impl MeetRun {
-    /// The meets, one request pair at a time.
     pub(super) async fn pull(
         &mut self,
         ctx: &AdapterContext<'_>,
@@ -53,7 +47,6 @@ impl MeetRun {
         Ok(rows)
     }
 
-    /// The documents of one meet, or `None` when one of them could not be read.
     async fn documents(
         &mut self,
         ctx: &AdapterContext<'_>,
@@ -78,7 +71,6 @@ impl MeetRun {
         }))
     }
 
-    /// The third request's decoded document, or `None` when it was not spent or could not be read.
     async fn metadata(
         &mut self,
         ctx: &AdapterContext<'_>,
@@ -97,7 +89,6 @@ impl MeetRun {
         Ok(Some(EventMetadata::new(&document)))
     }
 
-    /// Walk one meet's documents into the accumulator, and narrate what the walk counted.
     fn absorb(
         &mut self,
         documents: &Documents,
@@ -130,7 +121,6 @@ impl MeetRun {
         (stored, counts)
     }
 
-    /// Fetch and decode one document, or `None` when it could not be read.
     async fn fetch<T: serde::de::DeserializeOwned>(
         &mut self,
         ctx: &AdapterContext<'_>,

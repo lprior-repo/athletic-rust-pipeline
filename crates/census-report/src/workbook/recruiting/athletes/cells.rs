@@ -1,15 +1,12 @@
-//! Pure cell helpers — no `Dataset` dependency.
 
 use super::super::super::cells::{row, Cell};
 use super::super::columns::{flag, published};
 use super::rules::PR_EVENTS;
-use crate::bests::{mark_text, mark_value};
+use crate::bests::SharedSelection;
 use crate::workbook::recruiting::profiles::Profiles;
-use crate::workbook::recruiting::prs::PrRow;
 use crate::workbook::ReportResult;
 use census_domain::model::{CanonicalAthlete, Sport};
 
-/// The XC, Indoor, and Outdoor sport-flag columns.
 pub(super) fn participation_flags(athlete: &CanonicalAthlete) -> Vec<Cell> {
     row!(
         flag(athlete.sports.contains(&Sport::CrossCountry)),
@@ -18,75 +15,79 @@ pub(super) fn participation_flags(athlete: &CanonicalAthlete) -> Vec<Cell> {
     )
 }
 
-/// `TF` — `yes` when the athlete's sports include `IndoorTrack` or `OutdoorTrack`, blank otherwise.
 pub(super) fn tf_flag(athlete: &CanonicalAthlete) -> Vec<Cell> {
     vec![flag(athlete.sports.iter().any(|sport| {
         matches!(sport, Sport::IndoorTrack | Sport::OutdoorTrack)
     }))]
 }
 
-/// The distinct event names the athlete has a stored performance in, in canonical order,
-/// joined with `; `. Blank when none.
-pub(super) fn event_list(_athlete: &CanonicalAthlete, prs: &[&PrRow]) -> Vec<Cell> {
+pub(super) fn event_list(_athlete: &CanonicalAthlete, prs: &[&SharedSelection]) -> Vec<Cell> {
     if prs.is_empty() {
         return vec![Cell::Empty];
     }
-    let mut event_set = std::collections::BTreeSet::new();
-    for pr in prs {
-        event_set.insert(&pr.event);
-    }
-    let events: Vec<String> = PR_EVENTS
-        .iter()
-        .filter(|e| event_set.contains(&e.to_string()))
-        .map(|e| pr_event_name(e))
+    let events: std::collections::BTreeSet<_> = prs.iter()
+        .map(|pr| pr.key.event_kind.stable_key())
         .collect();
-    vec![Cell::text(events.join("; "))]
+    let names: Vec<_> = events.iter().map(|event| pr_event_name(event)).collect();
+    vec![Cell::text(names.join("; "))]
 }
 
-/// The athlete's PRs in canonical event order, formatted `Event Mark`, joined with `; `,
-/// capped at 10 entries with a trailing `...` when more exist. Blank when none.
-pub(super) fn headline_pr_summary(_athlete: &CanonicalAthlete, prs: &[&PrRow]) -> Vec<Cell> {
+pub(super) fn headline_pr_summary(_athlete: &CanonicalAthlete, prs: &[&SharedSelection]) -> Vec<Cell> {
     if prs.is_empty() {
         return vec![Cell::Empty];
     }
-    let mut mark_map: std::collections::HashMap<&str, String> = std::collections::HashMap::new();
-    for pr in prs {
-        mark_map.entry(pr.event.as_str()).or_insert_with(|| {
-            format!(
-                "{} {}",
-                pr_event_name(&pr.event),
-                mark_text(&pr.source_mark)
-            )
-        });
+    let mut text = String::new();
+    for (index, pr) in prs.iter().take(10).enumerate() {
+        if index != 0 {
+            text.push_str("; ");
+        }
+        append_qualified_mark(&mut text, pr);
     }
-    let entries: Vec<String> = PR_EVENTS
-        .iter()
-        .filter_map(|e| mark_map.get(*e))
-        .cloned()
-        .collect();
-    let truncated = if entries.len() > 10 {
-        let truncated: Vec<String> = entries.into_iter().take(10).collect();
-        truncated.join("; ") + "; ..."
-    } else {
-        entries.join("; ")
+    if prs.len() > 10 {
+        text.push_str("; additional classified marks in PRs");
+    }
+    vec![Cell::text(text)]
+}
+
+pub(super) fn pr_event_cells(prs: &[&SharedSelection]) -> Vec<Cell> {
+    PR_EVENTS.iter().map(|event| event_cell(prs, event)).collect()
+}
+
+fn event_cell(prs: &[&SharedSelection], event: &str) -> Cell {
+    let mut selected = prs.iter().copied()
+        .filter(|pr| pr.key.event_kind.stable_key() == event);
+    let Some(first) = selected.next() else {
+        return Cell::Empty;
     };
-    vec![Cell::text(truncated)]
+    let Some(second) = selected.next() else {
+        return first.normalized.map_or_else(|| Cell::text(first.mark_text()), Cell::Number);
+    };
+    let mut text = String::new();
+    append_qualified_mark(&mut text, first);
+    for pr in std::iter::once(second).chain(selected) {
+        text.push_str("; ");
+        append_qualified_mark(&mut text, pr);
+    }
+    Cell::text(text)
 }
 
-/// The nineteen supported per-event PR columns, in canonical order.
-pub(super) fn pr_event_cells(prs: &[&PrRow]) -> Vec<Cell> {
-    PR_EVENTS
-        .iter()
-        .map(|event| {
-            prs.iter()
-                .find(|pr| pr.event == *event)
-                .and_then(|pr| mark_value(&pr.source_mark))
-                .map_or(Cell::Empty, Cell::Number)
-        })
-        .collect()
+fn append_qualified_mark(text: &mut String, pr: &SharedSelection) {
+    text.push_str(pr_event_name(&pr.key.event_kind.stable_key()));
+    text.push(' ');
+    text.push_str(&pr.mark_text());
+    text.push_str(" [");
+    text.push_str(pr.key.surface.label());
+    text.push_str(", ");
+    text.push_str(pr.key.wind_class.label());
+    text.push_str(", ");
+    text.push_str(pr.key.timing.label());
+    if let Some(context) = &pr.key.context {
+        text.push_str(", event ");
+        text.push_str(context.as_str());
+    }
+    text.push(']');
 }
 
-/// The `Performance count` and `Meet count` columns.
 pub(super) fn participation_metrics(
     tally: Option<&crate::workbook::recruiting::facts::AthleteTally>,
 ) -> ReportResult<Vec<Cell>> {
@@ -96,7 +97,6 @@ pub(super) fn participation_metrics(
     ])
 }
 
-/// The three profile-URL columns, in the order [`Profiles`] splits them.
 pub(super) fn profile_cells(profiles: Profiles) -> Vec<Cell> {
     row!(
         published(profiles.athletic_net),
@@ -105,20 +105,16 @@ pub(super) fn profile_cells(profiles: Profiles) -> Vec<Cell> {
     )
 }
 
-/// `Public Recruiting GPA` — always blank. `census-domain` has no GPA observation entity,
-/// objective §36 forbids inferring one.
 pub(super) fn public_recruiting_gpa() -> Vec<Cell> {
     vec![Cell::Empty]
 }
 
-/// `GPA Source` — always blank. A GPA may only appear next to a `GPA Source` naming where it came from.
 pub(super) fn gpa_source() -> Vec<Cell> {
     vec![Cell::Empty]
 }
 
-/// Derive a human-readable event name from a `PR_EVENTS` key.
-pub(super) fn pr_event_name(key: &str) -> String {
-    let name = match key {
+pub(super) fn pr_event_name(key: &str) -> &str {
+    match key {
         "Track100m" => "100m",
         "Track200m" => "200m",
         "Track400m" => "400m",
@@ -139,6 +135,5 @@ pub(super) fn pr_event_name(key: &str) -> String {
         "Javelin" => "Javelin",
         "CrossCountry" => "XC",
         other => other,
-    };
-    name.to_string()
+    }
 }

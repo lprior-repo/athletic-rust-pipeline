@@ -1,6 +1,3 @@
-//! What the workflow commands must report: a failed jurisdiction exits non-zero, a blocked row
-//! owes the index it did not walk, and a total is unknown rather than smaller when a row predates
-//! its denominator.
 
 use super::*;
 use census_service::restate_services::{JurisdictionSummary, NationalFailure};
@@ -19,7 +16,6 @@ fn summary(jurisdiction: UsJurisdiction, teams: usize) -> JurisdictionSummary {
     }
 }
 
-/// A state whose host refused requests: a few rosters walked, the rest of the index owed.
 fn blocked_summary(jurisdiction: UsJurisdiction, teams: usize) -> JurisdictionSummary {
     JurisdictionSummary {
         rosters_done: 49,
@@ -86,8 +82,6 @@ fn a_national_report_prints_every_jurisdiction_row_it_is_given() {
     );
 }
 
-/// The row an operator reads when a state's host refused requests: the numbers must add up to the
-/// index, so a blocked state cannot be mistaken for a small one.
 #[test]
 fn a_blocked_row_owes_the_index_it_did_not_walk() {
     let row = blocked_summary(UsJurisdiction::Texas, 2423);

@@ -5,26 +5,14 @@ use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport,
 };
 
-/// Verbatim byte range of the 2026-09-19 capture `wi-list-A.html`
-/// (`GET https://schools.wiaawi.org/Directory/School/DirectoryLetter?LetterBtn=A`, HTTP 200,
-/// 127,772 bytes): the "Showing 39 schools…" banner plus the `#tblSchools` header and its first
-/// six data rows, unmodified.
 const INDEX_A: &str = include_str!("../../tests/fixtures/wiaa/directory_letter_a.html");
 
-/// Verbatim byte range 109,601-148,863 of the capture `wi-school-1.html`
-/// (`GET https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1`, HTTP 200,
-/// 179,419 bytes): the jumbotron, the identity block, the website buttons, `#tblAdminList` and
-/// `#tblCoachList`.
 const SCHOOL_ABBOTSFORD: &str =
     include_str!("../../tests/fixtures/wiaa/school_org1_abbotsford.html");
 
-/// Verbatim byte range 109,601-163,662 of the capture `wi-school-135.html` (`GET …?orgID=135`,
-/// HTTP 200, 200,357 bytes). Carries an `AD Admin Assistant` row that must never be imported.
 const SCHOOL_GET: &str =
     include_str!("../../tests/fixtures/wiaa/school_org135_gale_ettrick_trempealeau.html");
 
-/// Verbatim byte range 109,601-128,994 of the capture `wi-school-5151.html` (`GET …?orgID=5151`,
-/// HTTP 200, 149,086 bytes). Two directors and zero coach rows.
 const SCHOOL_SAILS: &str =
     include_str!("../../tests/fixtures/wiaa/school_org5151_sails_charter.html");
 
@@ -428,7 +416,6 @@ fn honorifics_are_stripped_from_person_names() {
     assert_eq!(strip_honorific("   "), "");
 }
 
-/// Measured, not assumed: the fill rate below is what the captured pages actually publish.
 #[test]
 fn measured_email_fill_rate_on_captured_pages() {
     let mut rows = 0usize;

@@ -1,16 +1,3 @@
-//! Seal the census, or refuse and name the §70 item that blocked it.
-//!
-//! The seal is the one place the pipeline is allowed to call a census finished, and it may only
-//! certify what it read. Every count it rests on comes from the store, the coverage classifier or
-//! the workbook's own bytes — with two exceptions: jurisdiction sweeps that still owe a stage, and
-//! source objects that have accepted nothing. Those are properties of the durable run, recorded in
-//! the run's own objects, so only the service can measure them.
-//!
-//! That is the whole difference between the two ways to run this command, and it is not a
-//! preference. Offline, the store is opened here and those two counts come back *unmeasured*, which
-//! keeps their items open: the seal refuses over them rather than certifying a completion it never
-//! checked. Through `--ingress`, `Census/seal` reads the run's objects as well, and a census whose
-//! work is finished is one that can actually seal.
 
 use std::path::PathBuf;
 
@@ -26,48 +13,35 @@ use census_store::Store;
 use super::{scope_of, Cli, Route};
 use census_service::ingress;
 
-/// `census-service seal`
-///
-/// The export phase reads the workbook's own meta sheets: `Coverage` must carry every jurisdiction
-/// the classifier produced, and `Run Metrics` must name the cohort the store counted. A workbook
-/// that disagrees with the store refuses the seal and says which number disagreed.
 #[derive(Debug, Args)]
+#[command(about = "`census-service seal`", long_about = "`census-service seal`\n\nThe export phase reads the workbook's own meta sheets: `Coverage` must carry every jurisdiction the classifier produced, and `Run Metrics` must name the cohort the store counted. A workbook that disagrees with the store refuses the seal and says which number disagreed.")]
 pub(super) struct SealArgs {
-    /// Graduation year of the cohort being certified.
+    #[arg(help = "Graduation year of the cohort being certified")]
     #[arg(long, default_value_t = 2027)]
     grad_year: i16,
-    /// Certify the core scope instead of every approved source.
+    #[arg(help = "Certify the core scope instead of every approved source")]
     #[arg(long)]
     core: bool,
-    /// The workbook to certify. Defaults to the newest `out/*.xlsx`.
+    #[arg(help = "The workbook to certify. Defaults to the newest `out/*.xlsx`")]
     #[arg(long)]
     workbook: Option<PathBuf>,
-    /// Write the seal to `out/seal.json` so a later run reads it instead of re-deriving it.
+    #[arg(help = "Write the seal to `out/seal.json` so a later run reads it instead of re-deriving it")]
     #[arg(long)]
     write: bool,
-    /// Drive the running service instead of opening the store here: the only route that measures the
-    /// run's own open work, and therefore the only one a finished census can seal through.
+    #[arg(help = "Drive the running service instead of opening the store here: the only route that measures the run's own open work, and therefore the only one a finished census can seal through")]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
-    /// Season start year of the run whose journal supplies those counts. Online only.
+    #[arg(help = "Season start year of the run whose journal supplies those counts. Online only")]
     #[arg(long, default_value_t = 2026)]
     season: i16,
-    /// Run revision of that run: the one it was submitted under, not a new one. Online only.
+    #[arg(help = "Run revision of that run: the one it was submitted under, not a new one. Online only")]
     #[arg(long, default_value_t = 1)]
     revision: u32,
-    /// Ingest object key to read, e.g. `milesplit_wi`. Repeatable, because an object key is the
-    /// caller's to choose and the service cannot enumerate them: naming none leaves §70 item 2
-    /// unmeasured rather than reporting it as zero. Online only.
+    #[arg(help = "Ingest object key to read, e.g. `milesplit_wi`. Repeatable, because an object key is the caller's to choose and the service cannot enumerate them: naming none leaves §70 item 2 unmeasured rather than reporting it as zero. Online only")]
     #[arg(long = "source-object", value_name = "KEY")]
     source_objects: Vec<String>,
 }
 
-/// Seal the census from the store here or from the run's objects through the service.
-///
-/// Staging-only on the offline route: the store-side assembly bypasses the plan fingerprint and
-/// the `Ingest` operation-id receipts and windows, so it stays invisible to seal item 2 and to
-/// open-work measurement. Nothing in the batch chain above routes yet; measured coverage comes
-/// only from the live path through the service.
 #[tracing::instrument(skip_all, fields(command = "seal"))]
 pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
@@ -90,12 +64,6 @@ pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
     }
 }
 
-/// The store-side request: what the store holds, and no journal counts, because this route never
-/// reads the run's objects.
-///
-/// Staging-only by construction: without the run's objects the journal-backed counts stay
-/// unmeasured, so seal item 2 and open-work measurement cannot see this route. Measured coverage
-/// comes only from the live path through the service.
 fn store_request(args: &SealArgs) -> seal::SealRequest {
     seal::SealRequest {
         grad_year: args.grad_year,
@@ -107,7 +75,6 @@ fn store_request(args: &SealArgs) -> seal::SealRequest {
     }
 }
 
-/// The same run, addressed over the wire: the service measures what only it can read.
 fn wire_request(args: &SealArgs) -> SealRequest {
     SealRequest {
         grad_year: args.grad_year,
@@ -123,11 +90,6 @@ fn wire_request(args: &SealArgs) -> SealRequest {
     }
 }
 
-/// The ladder as an operator reads it, from whichever side assembled it.
-///
-/// The two routes produce one shape on purpose: a seal that refused offline and a seal that refused
-/// over the wire must print the same names, or an operator has to learn two vocabularies for one
-/// census.
 struct Ladder {
     recorded: Option<(String, String)>,
     phase: String,
@@ -141,7 +103,6 @@ struct Ladder {
 }
 
 impl Ladder {
-    /// The shape of an assembly this process ran.
     fn of_outcome(outcome: &SealOutcome) -> Self {
         let mut open = Vec::with_capacity(outcome.evidence.open_items().len());
         for item in outcome.evidence.open_items() {
@@ -163,7 +124,6 @@ impl Ladder {
         }
     }
 
-    /// The shape of an assembly the service ran and sent back.
     fn of_reply(reply: &SealReply) -> Self {
         Self {
             recorded: reply.recorded.as_ref().map(wire_ref),
@@ -191,10 +151,6 @@ fn wire_ref(seal: &census_service::restate_services::SealRef) -> (String, String
     (seal.digest.clone(), seal.sealed_on.clone())
 }
 
-/// Print what the seal certified, or refuse the run naming the item that stopped it.
-///
-/// The refusal is printed before the exit status is set: an operator reads the item that blocked the
-/// seal, not a stack trace.
 fn present(ladder: &Ladder) -> Result<()> {
     if let Some((digest, day)) = &ladder.recorded {
         println!("recorded seal: {digest} on {day}");
@@ -225,7 +181,6 @@ fn present(ladder: &Ladder) -> Result<()> {
     Ok(())
 }
 
-/// Every §70 item still unmet, in ladder order.
 fn report_open(open: &[(String, String)]) {
     if open.is_empty() {
         println!("acceptance: every §70 item is satisfied");
@@ -236,7 +191,6 @@ fn report_open(open: &[(String, String)]) {
     }
 }
 
-/// The counts the seal certified, and what the census retains without resolving.
 fn report_certified(ladder: &Ladder) {
     println!(
         "  cohort {} of {} athletes, {} schools, {} meets, {} cohort performances, {} coaches",

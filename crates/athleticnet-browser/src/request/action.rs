@@ -49,7 +49,6 @@ impl RequestSpec {
     }
 }
 
-/// Convert an optional grade into RankingsQParamsInner, borrowing from the action.
 fn rankings_q_params(grade: &Option<u8>, page: u32) -> RankingsQParamsInner<'_> {
     let grades = match grade {
         Some(g) => std::slice::from_ref(g),

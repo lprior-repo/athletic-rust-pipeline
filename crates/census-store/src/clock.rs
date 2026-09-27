@@ -1,21 +1,9 @@
-/// Clock capability: the application's single source of time, kept behind a trait so deterministic
-/// replay is possible: tests substitute a fixed date, production uses the system clock.
-///
-/// `today()` returns an ISO-8601 date (`YYYY-MM-DD`). `today_iso8601()` returns full ISO-8601
-/// datetime. `now()` returns a monotonic instant for elapsed-time tracking — uses
-/// `tokio::time::Instant` so `tokio::time::pause` drives it in tests.
-///
-/// The clock the application is allowed to read.
 pub trait Clock: Send + Sync {
-    /// ISO-8601 date, `YYYY-MM-DD`.
     fn today(&self) -> String;
-    /// ISO-8601 datetime with timezone, `YYYY-MM-DDTHH:MM:SSZ`.
     fn today_iso8601(&self) -> String;
-    /// Monotonic instant for elapsed-time tracking.
     fn now(&self) -> tokio::time::Instant;
 }
 
-/// System clock implementation.
 pub struct SystemClock;
 
 impl Clock for SystemClock {

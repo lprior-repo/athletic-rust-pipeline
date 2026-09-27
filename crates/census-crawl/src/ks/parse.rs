@@ -1,4 +1,3 @@
-//! One KSHSAA record as a canonical school and its athletic-director coach.
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef,
@@ -7,7 +6,6 @@ use census_domain::UsJurisdiction;
 
 use super::wire::KshsaaRecord;
 
-/// Convert one KSHSAA record into a canonical school, if the name is non-empty.
 pub fn parse_school(
     record: &KshsaaRecord,
     source_url: &str,
@@ -40,9 +38,6 @@ pub fn parse_school(
     Some((school, id))
 }
 
-/// Convert one KSHSAA record into an athletic-director coach entity.
-///
-/// Returns `None` when the AD name is empty or missing.
 pub fn parse_ad_coach(
     record: &KshsaaRecord,
     school_id: &SchoolId,
@@ -71,7 +66,6 @@ pub fn parse_ad_coach(
     Some(coach)
 }
 
-/// Strip leading honorifics ("Mr.", "Dr.", "Coach", etc.) from a person name.
 fn strip_honorific(value: &str) -> String {
     let mut parts: Vec<&str> = value.split_whitespace().collect();
     while let Some(first) = parts.first() {
@@ -92,7 +86,6 @@ fn strip_honorific(value: &str) -> String {
     }
 }
 
-/// Convert a non-empty trimmed string into `Some`, or `None`.
 fn nonempty(value: &str) -> Option<String> {
     let value = value.trim();
     if value.is_empty() {

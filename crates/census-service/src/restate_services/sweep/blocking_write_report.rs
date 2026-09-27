@@ -9,7 +9,6 @@ use crate::spawn::Spawner;
 use super::super::{blocking, JobError};
 use super::{write_sweep_report, SweepReport};
 
-/// Persist the sweep report through the blocking pool, updating `report_path` on success.
 pub(super) async fn blocking_write_report(
     spawner: Arc<Spawner>,
     store: Arc<Store>,

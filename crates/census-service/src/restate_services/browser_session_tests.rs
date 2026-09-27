@@ -1,9 +1,3 @@
-//! Colocated tests for the lane's operator surface: the wire shapes an operator reads, and the
-//! unstarted reading a deployment must produce after a restart (the manager is process state).
-//!
-//! Nothing here launches a browser. The transport's own contract is proved by the committed
-//! `fixtures/wire/` captures, read on both sides of the lane; what is proved here is that this
-//! object's replies carry the engine's counters and states without re-encoding them.
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -31,8 +25,6 @@ fn session() -> anyhow::Result<BrowserSession> {
     Ok(BrowserSession::new(settings()?, Arc::new(SystemClock)))
 }
 
-/// Every counter the engine reports survives the move onto the wire: a §42 accounting reads
-/// `remaining`, a failure report reads the rest, and a dropped field would read as zero.
 #[test]
 fn drain_counts_keep_every_counter() {
     let report = DrainReport {
@@ -54,8 +46,6 @@ fn drain_counts_keep_every_counter() {
     assert_eq!(counts.remaining, 0);
 }
 
-/// The replies an operator's client parses: field names are the client's contract, so a rename is a
-/// breaking change and has to fail here rather than in a deployment.
 #[test]
 fn operator_replies_round_trip() -> anyhow::Result<()> {
     let status = BrowserSessionStatus {
@@ -94,15 +84,11 @@ fn operator_replies_round_trip() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// The key the census's client addresses. The two crates agree by this string, so it is asserted
-/// rather than compared at a call site.
 #[test]
 fn the_key_names_the_one_profile() {
     assert_eq!(SESSION_KEY, "profile-0");
 }
 
-/// After an endpoint restart there is no manager, and that is a state rather than a failure: the
-/// reading says so, and `fetch` refuses instead of launching a browser the operator did not ask for.
 #[tokio::test]
 async fn an_unstarted_lane_reads_as_not_running_and_refuses_fetches() -> anyhow::Result<()> {
     let session = session()?;

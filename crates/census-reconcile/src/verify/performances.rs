@@ -1,12 +1,3 @@
-//! The Performances sheets' row-level check: every sampled row's athlete, event and mark must
-//! resolve the way the sheet prints them.
-//!
-//! The sheet prints the event by the label the census mints for its kind (`ShotPut`, `Track1600m`)
-//! and the mark in the published notation ([`mark_text`]), so the check resolves both through the
-//! store instead of comparing a printed label against a set of ids — the same rule the Athletes
-//! sheet's School cell gets, for the same reason. An event the store holds no row for has no label
-//! to print, and the sheet leaves that cell empty (`PerformanceRow::event_label`'s
-//! `unwrap_or_default`) — the check resolves an empty cell the same way.
 
 use std::collections::{HashMap, HashSet};
 
@@ -16,8 +7,6 @@ use census_store::{Store, Table};
 
 use super::compare::{field, Discrepancy, EntityCheck};
 
-/// Verify performances: every sampled row's athlete, event and mark must resolve the way the sheet
-/// prints them.
 pub fn verify_performances(
     store: &Store,
     rows: &[Vec<String>],
@@ -49,7 +38,6 @@ pub fn verify_performances(
     })
 }
 
-/// Every event row's printed label, by event id: the sheet writes `kind.stable_key()`.
 fn event_labels(store: &Store) -> Result<HashMap<String, String>, Discrepancy> {
     let events: Vec<CanonicalEvent> = store.scan(Table::Events).map_err(|source| Discrepancy {
         message: format!("reading events from store: {source}"),
@@ -65,7 +53,6 @@ fn event_labels(store: &Store) -> Result<HashMap<String, String>, Discrepancy> {
         .collect())
 }
 
-/// The lookup a sampled row is checked against: (athlete id, event label, published mark).
 fn performance_lookup(
     performances: &[CanonicalPerformance],
     event_labels: &HashMap<String, String>,
@@ -82,13 +69,10 @@ fn performance_lookup(
         .collect()
 }
 
-/// The label the sheet prints for `event_id`: the event's kind label, or the empty cell the sheet
-/// leaves when the store holds no event row.
 fn event_label(event_id: &str, labels: &HashMap<String, String>) -> String {
     labels.get(event_id).cloned().unwrap_or_default()
 }
 
-/// Check one sampled performance row against the store lookup.
 fn check_performance_row(
     idx: usize,
     row: &[String],

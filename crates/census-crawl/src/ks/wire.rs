@@ -1,11 +1,6 @@
-//! The KSHSAA directory JSON wire shape and its reader.
 use crate::{CrawlError, CrawlResult};
 use serde::Deserialize;
 
-/// One record from the KSHSAA directory JSON.
-///
-/// We only deserialize the fields we need. Everything else is silently ignored — including phone
-/// fields that some sources publish but this adapter must never touch.
 #[derive(Debug, Clone, Deserialize)]
 #[allow(dead_code)]
 pub struct KshsaaRecord {
@@ -40,9 +35,6 @@ pub struct KshsaaRecord {
     pub principal_name: Option<String>,
 }
 
-/// Parse the JSON envelope returned by the KSHSAA directory API.
-///
-/// The response is a flat JSON array — no nesting. Returns the parsed records in API order.
 pub fn parse_records(body: &str) -> CrawlResult<Vec<KshsaaRecord>> {
     let records: Vec<KshsaaRecord> =
         serde_json::from_str(body).map_err(|source| CrawlError::Decode {

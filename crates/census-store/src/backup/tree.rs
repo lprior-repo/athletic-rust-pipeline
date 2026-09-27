@@ -1,8 +1,3 @@
-//! The store tree walk: which directories a backup carries, and the objects it refuses to carry.
-//!
-//! The walk is where a backup decides what a store *is* on disk, so it is also where the refusal
-//! lives: every root and every entry is stat'd with `symlink_metadata`, and an object that is not a
-//! real directory or a regular file is refused by path rather than followed, read, or skipped.
 
 use std::fs;
 use std::io;
@@ -12,31 +7,18 @@ use super::errors::{io_err, object_kind, refused};
 use super::files::copy_file;
 use crate::StoreResult;
 
-/// The store root's durable material, in the order a backup carries it: the database, the pre-Fjall
-/// logs it was imported from, the resume journal, the response cache and the exported artifacts.
 pub(super) const STORE_ROOTS: [&str; 5] = ["fjall", "entities", "journal", "http", "out"];
 
-/// fjall's advisory lock file, inside the database directory (`fjall-3.1.10/src/file.rs:11`).
 pub(super) const LOCK_FILE: &str = "lock";
 
-/// The database directory inside a store root.
 pub(super) const DB_DIR: &str = "fjall";
 
-/// What a tree walk copied.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(super) struct Copied {
-    /// Regular files copied.
     pub files: u64,
-    /// Bytes written.
     pub bytes: u64,
 }
 
-/// Copy the store's durable roots from `from` into the fresh directory `dst`.
-///
-/// Only regular files and real directories are copied. Every other object - a symlink, a fifo, a
-/// socket, a device node - is **refused by path** rather than followed or read: a backup copies what
-/// the store itself holds, and a symlink in the tree would either copy something outside it or send a
-/// walker somewhere that never terminates.
 pub(super) fn copy_tree(from: &Path, dst: &Path) -> StoreResult<Copied> {
     let mut copied = Copied::default();
     for root in STORE_ROOTS {
@@ -58,7 +40,6 @@ pub(super) fn copy_tree(from: &Path, dst: &Path) -> StoreResult<Copied> {
     Ok(copied)
 }
 
-/// Copy one directory tree, one regular file at a time.
 fn copy_dir(src: &Path, dst: &Path, copied: &mut Copied) -> StoreResult<()> {
     fs::create_dir_all(dst).map_err(|source| io_err(dst, source))?;
     let entries = fs::read_dir(src).map_err(|source| io_err(src, source))?;

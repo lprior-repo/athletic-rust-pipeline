@@ -1,10 +1,3 @@
-//! The whole-meet walk, over the anonymous probe capture of meet 634313
-//! (`research/sources/athleticnet/samples/anon-*.json`, copied byte-for-byte into
-//! `tests/fixtures/athleticnet/`).
-//!
-//! Every number asserted here was measured from that capture, not chosen: 49 blocks, 758 published
-//! rows of which 72 are relay squads, 288 relay legs, a 12-entry team list naming 10 schools, and a
-//! metadata document declaring 36 events (24 track, 12 field, 4 of them hurdles).
 
 use super::super::map::{Accumulator, Stats};
 use super::super::parse::gender_of;
@@ -26,14 +19,10 @@ const ALL_RESULTS: &str =
     include_str!("../../../tests/fixtures/athleticnet/meet_634313_allresults.json");
 const EVENT_DIV: &str =
     include_str!("../../../tests/fixtures/athleticnet/meet_634313_eventdiv.json");
-/// The one derived document in the fixture set: the genuine meet capture with `Location.State`
-/// dropped, so the refusal branch for a meet the payload does not place is reachable at all. The
-/// results document is the genuine one and is never read on this path.
 const MEET_DATA_WITHOUT_STATE: &str =
     include_str!("../../../tests/fixtures/athleticnet/meet_634313_meetdata_nostate.derived.json");
 const OBSERVED_ON: &str = "2026-09-22";
 
-/// What the walk made of the capture.
 struct Walk {
     meet: MeetData,
     counts: super::count::MeetStats,
@@ -75,7 +64,6 @@ fn absorb(meet: &MeetData, results: &AllResults, metadata: Option<&EventMetadata
     }
 }
 
-/// Every performance the walk stored, in a stable order.
 fn performances(walk: &Walk) -> Vec<&census_domain::model::CanonicalPerformance> {
     let mut rows: Vec<_> = walk.accumulated.performances.values().collect();
     rows.sort_by(|left, right| left.source_key.cmp(&right.source_key));
@@ -301,7 +289,6 @@ fn a_relay_squad_becomes_one_performance_per_leg_and_never_a_person() {
     );
 }
 
-/// The leg position a performance's own evidence records, when it is a relay leg.
 fn leg_position(row: &census_domain::model::CanonicalPerformance) -> Option<u8> {
     let note = row.evidence.first()?.note.as_deref()?;
     note.strip_prefix("relay leg ")?

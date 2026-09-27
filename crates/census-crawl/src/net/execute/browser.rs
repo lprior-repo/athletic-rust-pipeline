@@ -1,19 +1,3 @@
-//! The browser lane's seat in the fetch loop: the hosts it takes, and what its answer becomes here.
-//!
-//! The lane is a transport, not a side channel: a browser-transported host reaches this seat after
-//! the same cache lookup, the same robots gate and the same per-host pacing an HTTP request does, and
-//! the evidence written here has the shape the HTTP lane's `cache_and_record` writes for a
-//! response body. What is deliberately *not* shared is the transport's own status decision: the
-//! pipeline's browser manager already made one inside the crate, so a capture that is not the
-//! source's answer is refused by name here, never minted as evidence.
-//!
-//! Nothing in this module re-derives a verdict. The transport classifies; this seat records what the
-//! classification means for the census — a retryable failure stays retryable, a human requirement
-//! becomes a row — and hands the answer on. What stays here is the entry, the accept path and the
-//! evidence; the two verdicts a lane call can carry that are not an answer live next door, in
-//! [`refusal`].
-//!
-//! Evidence building is extracted to [`evidence`]: decoding, hashing, caching, and outcome construction.
 
 use super::attempt::{blocking_kind, FetchPlan};
 use crate::net::bridge::{Action, BrowserCapture, BrowserOutcome, RequestSpec};
@@ -25,19 +9,11 @@ use tokio::sync::Mutex;
 mod evidence;
 mod refusal;
 
-#[cfg(test)]
-use crate::net::bridge::{BrowserError, Verdict};
 
 #[cfg(test)]
 use base64::engine::general_purpose::STANDARD as BASE64;
-#[cfg(test)]
-use sha2::Sha256;
 
 impl Fetcher {
-    /// Fetch one browser-transported target through the lane.
-    ///
-    /// The seat sits where [`Fetcher::fetch_once`] sits, and takes the same turn: the cache, the
-    /// robots gate and the host's turn have all been settled by the caller before either runs.
     pub(super) async fn fetch_browser(
         &self,
         gate: Arc<Mutex<()>>,
@@ -86,12 +62,6 @@ impl Fetcher {
         }
     }
 
-    /// Refuse a target the registry routes to a lane this process does not have installed.
-    ///
-    /// `None` is not "fetch it over HTTP instead": attempting the other transport quietly is the
-    /// thing §69 exists to prevent, so the refusal names what is missing and records the
-    /// applicability row — a lane that is not there yet may be there later, which is why this row
-    /// expires where the human-requirement row does not.
     async fn refuse_without_lane(&self, plan: &FetchPlan<'_>) -> Result<FetchOutcome, FetchError> {
         let detail = format!(
             "no browser lane is installed in this process, so {} cannot be fetched here",
@@ -112,11 +82,6 @@ impl Fetcher {
         })
     }
 
-    /// Accept one capture that is the source's answer, and read the status it carries.
-    ///
-    /// The statuses are read as the HTTP seat reads them: `200` and an allowed `404` are evidence, a
-    /// `304` cannot come from a transport that sends no conditional headers, and every other status
-    /// is graded once, by [`Fetcher::status_error`].
     async fn accept_capture(
         &self,
         plan: &FetchPlan<'_>,

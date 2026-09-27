@@ -1,23 +1,13 @@
-//! Published-payload decoding: the wire shapes both IHSA endpoints return, their envelope
-//! decoders, and the address parser for the per-person email reveal.
-//!
-//! No store access and no canonical mapping: entities are minted in [`super::map`].
 
 use crate::{CrawlError, CrawlResult};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Envelope returned by `GET /v1/schools`.
 #[derive(Debug, Clone, Deserialize)]
 pub struct SchoolsEnvelope {
     pub data: Vec<SchoolRecord>,
 }
 
-/// One row from `/v1/schools`.
-///
-/// We only deserialize the fields we need. Everything else is silently ignored — including
-/// address, latitude/longitude, color, and other fields that some sources publish but this
-/// adapter must never touch.
 #[derive(Debug, Clone, Deserialize)]
 #[allow(dead_code)]
 pub struct SchoolRecord {
@@ -50,7 +40,6 @@ pub struct SchoolRecord {
     pub url: Option<String>,
 }
 
-/// One person from the `/staff2` endpoint.
 #[derive(Debug, Clone, Deserialize)]
 #[allow(dead_code)]
 pub struct StaffPerson {
@@ -80,14 +69,6 @@ pub struct StaffPerson {
     pub email: Option<String>,
 }
 
-/// People named by a `GET /v1/schools/{id}/staff2` payload.
-///
-/// Staff arrive under `data`, grouped by category (`"Administration"`, `"Boys Athletics - Head
-/// Coaches"`, …). The category list belongs to the association, not to us, so every array under
-/// `data` is flattened whatever its label. A person holds several roles and can be listed under
-/// several titles ("Boys Athletic Director" and `"IHSA Official Representative"` are the same
-/// administrator here), so identity is `(PersonID, DefaultTitle)`: every role survives, exact
-/// repeats do not.
 pub fn parse_staff(body: &str) -> CrawlResult<Vec<StaffPerson>> {
     #[derive(Deserialize)]
     struct Envelope {
@@ -107,7 +88,6 @@ pub fn parse_staff(body: &str) -> CrawlResult<Vec<StaffPerson>> {
     Ok(people)
 }
 
-/// Non-empty trimmed string → `Some`, or `None`.
 pub(super) fn nonempty(value: &str) -> Option<String> {
     let trimmed = value.trim();
     if trimmed.is_empty() {
@@ -117,7 +97,6 @@ pub(super) fn nonempty(value: &str) -> Option<String> {
     }
 }
 
-/// Parse the JSON envelope returned by `GET /v1/schools`.
 pub fn parse_schools(body: &str) -> CrawlResult<Vec<SchoolRecord>> {
     let envelope: SchoolsEnvelope =
         serde_json::from_str(body).map_err(|source| CrawlError::Decode {
@@ -127,10 +106,6 @@ pub fn parse_schools(body: &str) -> CrawlResult<Vec<SchoolRecord>> {
     Ok(envelope.data)
 }
 
-/// Parse the body of `GET /v1/schools/{id}/staff/{PersonID}/email` (`{"email":"…"}`).
-///
-/// The endpoint is the school directory's "Show email" reveal. An empty or placeholder address
-/// yields `None` so the caller never stores a non-address.
 pub fn parse_email(body: &str) -> Option<String> {
     #[derive(Deserialize)]
     struct EmailEnvelope {

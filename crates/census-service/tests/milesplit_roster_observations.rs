@@ -1,18 +1,3 @@
-//! What a roster pass leaves behind: one source observation per athlete MileSplit published, keyed by
-//! MileSplit's own athlete id, carrying the school the source placed the athlete at and the name it
-//! spelled.
-//!
-//! The walk is driven through the crate's own entry point — `census::collect_state_rosters`, the same
-//! call the jurisdiction workflow's roster stage makes — over the committed WI captures seeded into
-//! the fetcher's cache, so no socket is opened. The index fixture and the roster fixture are the
-//! captured pair: `wi_teams_index.html` lists team `52649` first and `wi_roster_52649.html` is that
-//! team's page. The walk is handed exactly that one team, so which school the observations name is
-//! decided by the fixture rather than by the order a concurrent walk happens to finish in.
-//!
-//! Every expectation below comes out of the capture through MileSplit's own parser (`parse_roster`),
-//! and every assertion reads the store's `SourceObservations` rows: delete the `observe_athletes_of`
-//! call in `census/sweep/roster.rs` and this test fails on the first count.
-
 use census_crawl::milesplit::{self, Site};
 use census_crawl::net::Fetcher;
 use census_domain::model::{
@@ -33,8 +18,6 @@ const WI_TEAMS_FIXTURE: &str =
 const WI_ROSTER_FIXTURE: &str =
     include_str!("../../census-crawl/tests/fixtures/milesplit/wi_roster_52649.html");
 
-/// Seed the fetcher's on-disk cache for `url`, so the walk runs with no socket: the key is
-/// `sha256(method \x1f url \x1f body)[..16]`, the form `net::cache` writes.
 fn seed_cache(cache: &Path, url: &str, body: &str) {
     let mut hasher = Sha256::new();
     hasher.update(b"GET");
@@ -53,10 +36,10 @@ fn seed_cache(cache: &Path, url: &str, body: &str) {
         "url": url,
         "method": "GET",
         "status": 200,
-        "sha256": format!("{:x}", Sha256::digest(body.as_bytes())),
+        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
         "fetched_at": "2026-09-20T00:00:00Z",
-        "content_type": "application/json",
+        "content_type": "text/html; charset=utf-8",
     });
     std::fs::write(cache.join(format!("{key}.meta.json")), meta.to_string()).expect("cache meta");
 }
@@ -85,15 +68,7 @@ async fn a_roster_pass_files_an_observation_per_published_athlete() {
         Vec::new(),
     )
     .expect("building the fetcher");
-    let options = CollectOptions {
-        jurisdictions: vec![UsJurisdiction::Wisconsin],
-        limit_per_state: None,
-        concurrency: 1,
-        state_concurrency: 1,
-        refresh: false,
-        school_year: SchoolYear::new(2026).expect("2026 is a season"),
-        observed_on: OBSERVED_ON.to_string(),
-    };
+    let options = collect_options();
     let progress = census::collect_state_rosters(
         &fetcher,
         &store,
@@ -105,12 +80,13 @@ async fn a_roster_pass_files_an_observation_per_published_athlete() {
     .expect("the roster pass completes");
     assert_eq!(progress.errors, Vec::<String>::new());
     assert_eq!(
-        progress.rosters_done, 1,
+        progress.rosters_committed, 1,
         "the pass read the one team it was given"
     );
 
-    let roster = milesplit::parse_roster(WI_ROSTER_FIXTURE, first.clone())
+    let parsed = milesplit::parse_roster(WI_ROSTER_FIXTURE, first.clone())
         .expect("the roster fixture parses");
+    let roster = parsed.roster().expect("the roster fixture has readable athletes");
     let published: BTreeMap<String, (&str, &str)> = roster
         .athletes
         .iter()
@@ -181,11 +157,8 @@ async fn a_roster_pass_files_an_observation_per_published_athlete() {
     let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes).expect("athletes read");
     assert_eq!(athletes.len(), published.len());
     for athlete in &athletes {
-        let identity = athlete
-            .source_identities
-            .iter()
-            .find(|identity| identity.namespace == SourceNamespace::MilesplitAthlete)
-            .expect("the athlete row carries the provider's own id");
+        let identity = &athlete.source;
+        assert_eq!(identity.namespace, SourceNamespace::MilesplitAthlete);
         assert!(
             filed.contains_key(identity.id.as_str()),
             "the observation and the canonical row name the same provider object: {}",
@@ -203,4 +176,59 @@ async fn a_roster_pass_files_an_observation_per_published_athlete() {
         observation.profile_url.as_deref(),
         Some(sample.profile_url.as_str())
     );
+}
+
+fn collect_options() -> CollectOptions {
+    CollectOptions {
+        jurisdictions: vec![UsJurisdiction::Wisconsin],
+        limit_per_state: None,
+        concurrency: 1,
+        state_concurrency: 1,
+        refresh: false,
+        school_year: SchoolYear::new(2026).expect("valid year"),
+        observed_on: OBSERVED_ON.to_string(),
+        revision: std::num::NonZeroU32::MIN,
+    }
+}
+
+#[tokio::test]
+async fn partial_and_quarantined_rosters_remain_incomplete_after_reopening() {
+    let partial = WI_ROSTER_FIXTURE.replacen(
+        "column-grad-year\">2027", "column-grad-year\">invalid", 1);
+    for (body, accepted) in [(partial.as_str(), 24), ("<html>unrecognized page</html>", 0)] {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store = Store::open(dir.path()).expect("store");
+        let team = milesplit::parse_team_index(WI_TEAMS_FIXTURE).expect("index").remove(0);
+        seed_cache(&store.http_cache_dir(), &format!("{}/roster", team.url), body);
+        let fetcher = Fetcher::new(store.http_cache_dir(), None, Duration::from_millis(1),
+            std::collections::HashMap::new(), Vec::new()).expect("fetcher");
+        let options = collect_options();
+        let first = census::collect_state_rosters(&fetcher, &store, std::slice::from_ref(&team),
+            &options, UsJurisdiction::Wisconsin).await.expect("persisting source outcome");
+        assert_eq!(first.rosters_committed, 0);
+        assert_eq!(first.rosters_remaining, 1);
+        assert_eq!(first.athletes, accepted);
+        assert_eq!(first.errors.len(), 1);
+        let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes).expect("athletes");
+        assert_eq!(athletes.len(), accepted);
+        let observations: Vec<SourceObservation> = store.scan(Table::SourceObservations).expect("observations");
+        assert_eq!(observations.iter().filter(|row| matches!(row, SourceObservation::Athlete(_))).count(),
+            accepted);
+        let expected_observations = accepted + usize::from(accepted != 0);
+        assert_eq!(observations.len(), expected_observations);
+        drop(store);
+        let reopened = Store::open(dir.path()).expect("reopening durable outcomes");
+        let resumed = census::collect_state_rosters(&fetcher, &reopened, std::slice::from_ref(&team),
+            &options, UsJurisdiction::Wisconsin).await.expect("resuming");
+        assert_eq!(resumed.errors, first.errors);
+        assert_eq!(resumed.rosters_committed, 0);
+        assert_eq!(resumed.rosters_remaining, 1);
+        assert_eq!(resumed.rosters_skipped, 1);
+        assert_eq!(resumed.athletes, accepted);
+        let persisted: Vec<SourceObservation> = reopened.scan(Table::SourceObservations).expect("observations");
+        assert_eq!(persisted.len(), expected_observations);
+        let stats = fetcher.stats().await;
+        assert_eq!(stats.requests, 0);
+        assert_eq!(stats.cache_hits, 1);
+    }
 }

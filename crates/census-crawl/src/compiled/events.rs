@@ -1,5 +1,3 @@
-//! An event header line's own vocabulary: the event number some exports print ahead of the name,
-//! the round the header ends with, and the gender/label/division the header names.
 
 use regex::Regex;
 use std::sync::LazyLock;
@@ -8,7 +6,6 @@ use census_domain::model::Gender;
 
 use crate::{CrawlError, CrawlResult};
 
-/// Event numbers that some exports print ahead of the event name (`#22 Girls' 4x800 Relay`).
 static EVENT_NUMBER: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"^\s*#\s?\d+\s+"));
 static ROUND_TAIL: LazyLock<Result<Regex, regex::Error>> =
@@ -44,8 +41,6 @@ fn event_label() -> CrawlResult<&'static Regex> {
         })
 }
 
-/// Gender, label, division and round of an event header block such as
-/// `Girls' 4x800 Relay Division 1          Finals`.
 pub(super) fn event_of(slice: &str) -> Option<(Gender, String, Option<String>, Option<String>)> {
     let trimmed = event_number().ok()?.replace(slice.trim(), "");
     let trimmed = trimmed.trim();

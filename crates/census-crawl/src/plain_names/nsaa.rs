@@ -1,9 +1,3 @@
-//! Nebraska (NSAA): the directory screen's option list and its per-school `<h1>` blocks.
-//!
-//! `GET https://secure.nsaahome.org/nsaaforms/direxportscreen.php` returns the request form plus
-//! the `<option>` list of all **312** member schools; `?session=&school=<name>` returns one
-//! school's full record. NSAA publishes no numeric school id, so the published school name *is*
-//! the provider key space.
 
 use super::parse::{clean_text, nonempty, without_comments};
 use super::NSAA_FORM_URL;
@@ -12,38 +6,25 @@ use census_domain::model::{Gender, Sport};
 use regex::Regex;
 use std::sync::LazyLock;
 
-/// What one NSAA directory row describes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NsaaRow {
-    /// A sport row: the school's head coach for that sport and gender side.
     SportCoach { sport: Sport, gender: Gender },
-    /// A school-wide athletic/activities-director row.
     AthleticDirector,
 }
 
-/// One published row of a school's staff/coach table.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NsaaRole {
-    /// Published row label, e.g. `Track & Field (Girls)` or `AD Secretary`.
     pub label: String,
-    /// Published name cell, verbatim (still carrying any co-op annotation).
     pub name: String,
-    /// The row carries the directory's co-op highlight (`class="table-info"`).
     pub co_op: bool,
 }
 
-/// One NSAA member school: metadata plus every published staff/coach row.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NsaaSchool {
-    /// Published school name — NSAA's only identity key.
     pub name: String,
-    /// City from the `City, NE <zip>` line.
     pub city: Option<String>,
-    /// `Enrollment:` figure.
     pub enrollment: Option<u32>,
-    /// `Homepage:` link.
     pub homepage: Option<String>,
-    /// Staff/coach rows in published order.
     pub roles: Vec<NsaaRole>,
 }
 
@@ -97,7 +78,6 @@ fn nsaa_homepage_regex() -> CrawlResult<&'static Regex> {
         })
 }
 
-/// The directory screen's bulk sentinel: renders every school, so it is never a school name.
 pub(super) const NSAA_ALL_SCHOOLS: &str = "View all schools";
 
 static NSAA_OPTION_REGEX: LazyLock<Result<Regex, regex::Error>> =
@@ -112,20 +92,11 @@ fn nsaa_option_regex() -> CrawlResult<&'static Regex> {
         })
 }
 
-/// One-school request URL, e.g. `…/direxportscreen.php?session=&school=Adams+Central` (form-urlencoded
-/// by the `url` crate — `+` for space, hyphens literal; the server decodes both forms identically).
-///
-/// This is the route the adapter walks: the screen's bulk form renders all 312 schools in one body
-/// and needs ~49 s to do it, while this single-school view answers in ~0.3 s.
 pub fn nsaa_school_url(name: &str) -> String {
     let encoded: String = url::form_urlencoded::byte_serialize(name.as_bytes()).collect();
     format!("{NSAA_FORM_URL}?session=&school={encoded}")
 }
 
-/// The 312 member-school names from the directory form's `<option>` list.
-///
-/// The list carries two non-school entries — a `disabled` placeholder and the `View all schools`
-/// bulk sentinel — and no `value` attributes, so the option text is the key space.
 pub fn parse_nsaa_school_names(html: &str) -> CrawlResult<Vec<String>> {
     let html = without_comments(html)?;
     let html: &str = &html;
@@ -150,7 +121,6 @@ pub fn parse_nsaa_school_names(html: &str) -> CrawlResult<Vec<String>> {
     Ok(names)
 }
 
-/// Every `<tr>` staff/coach row of one school block, in published order.
 fn nsaa_roles(block: &str) -> CrawlResult<Vec<NsaaRole>> {
     let mut roles: Vec<NsaaRole> = Vec::new();
     for capture in nsaa_row_regex()?.captures_iter(block) {
@@ -173,10 +143,6 @@ fn nsaa_roles(block: &str) -> CrawlResult<Vec<NsaaRole>> {
     Ok(roles)
 }
 
-/// Parse a directory response into one [`NsaaSchool`] per `<h1 class="mt-3">` block.
-///
-/// One school view carries a single block; the screen's bulk form carries all 312 in the same
-/// markup, so the same parser serves both.
 pub fn parse_nsaa_directory(html: &str) -> CrawlResult<Vec<NsaaSchool>> {
     let html = without_comments(html)?;
     let html: &str = &html;

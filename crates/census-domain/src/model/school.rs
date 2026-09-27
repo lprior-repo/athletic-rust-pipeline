@@ -23,19 +23,11 @@ pub struct CanonicalSchool {
     pub aliases: Vec<String>,
     pub source_identities: Vec<SourceIdentity>,
     pub evidence: Vec<Evidence>,
-    /// Canonical-id collisions this row's merge retained: another natural key minted this id, so the
-    /// row below is the one that survived and the other subject's facts were not absorbed. Empty on
-    /// every row whose fields still state the id they minted, which is every row until one collides.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retained_conflicts: Vec<RetainedConflict>,
 }
 
 impl CanonicalSchool {
-    /// Build a school from its natural key (jurisdiction + normalized name) so that id minting is
-    /// deterministic and identical no matter which adapter saw the school first.
-    ///
-    /// The key carries the jurisdiction's USPS code — byte-identical to the uppercase state string
-    /// this parameter used to hold — so typing the parameter re-mints no school id.
     pub fn mint(state: UsJurisdiction, name: &str, normalized_name: &str) -> SchoolId {
         let _ = name;
         let compressed: String = normalized_name

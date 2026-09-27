@@ -50,8 +50,6 @@ pub(super) struct Actor {
     pub(super) capture_sequence: u64,
     pub(super) launched: bool,
     pub(super) clock: Arc<dyn Clock>,
-    /// What this actor still owes: queued requests it rejects, plus the tasks it joins at
-    /// `close_browser`. Handed to the runtime as the region's drain certificate.
     pub(super) region: DrainReport,
 }
 
@@ -98,9 +96,6 @@ pub(super) struct JobResult {
     pub(super) result: Result<BrowserResponse, BrowserError>,
 }
 
-/// The shared handles the actor is built with: the readiness/cooldown state the manager reads too,
-/// the profile gate that admits navigations, and the clock the actor timestamps with. The manager
-/// hands these same `Arc`s to its handlers, so they travel as one value instead of four arguments.
 pub(super) struct ActorHandles {
     pub(super) status: Arc<RwLock<BrowserStatus>>,
     pub(super) cooldown_until: Arc<Mutex<Option<Instant>>>,
@@ -152,7 +147,6 @@ impl Actor {
         }
     }
 
-    /// Returns the next capture nonce, incrementing the per-Actor sequence.
     pub(super) fn next_capture_nonce(&mut self) -> u64 {
         let nonce = self.capture_sequence;
         self.capture_sequence = self.capture_sequence.wrapping_add(1);

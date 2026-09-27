@@ -30,8 +30,6 @@ const AITKIN_TF_GIRLS: &str =
 
 const OBSERVED_ON: &str = "2026-09-20";
 
-/// Seed the fetcher's on-disk cache for `url` under the key `Fetcher` derives
-/// (`sha256(method \x1f url \x1f body)[..16]`), so `collect` can be driven end to end with no socket.
 fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
@@ -47,7 +45,7 @@ fn seed_cache(cache_dir: &std::path::Path, url: &str, body: &str) {
         "url": url,
         "method": "GET",
         "status": 200,
-        "sha256": format!("{:x}", Sha256::digest(body.as_bytes())),
+        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
         "fetched_at": "2026-09-20T14:39:00Z",
     });
@@ -66,9 +64,6 @@ fn listing_row<'a>(rows: &'a [SchoolListRow], slug: &str) -> &'a SchoolListRow {
         .expect("fixture row")
 }
 
-/// A listing row for a school whose listing page was not captured: the school's own page supplies the
-/// name and the slug is the real one (page 0 of the capture stops at Aitkin, so later schools are
-/// reached on their own pages).
 fn detail_row(slug: &str, detail: &SchoolDetail) -> SchoolListRow {
     SchoolListRow {
         slug: slug.to_string(),
@@ -77,8 +72,6 @@ fn detail_row(slug: &str, detail: &SchoolDetail) -> SchoolListRow {
     }
 }
 
-/// The listing row the crawl would have seen: the captured one when page 0 holds the school, else a
-/// row built from the school's own page.
 fn row_for(rows: &[SchoolListRow], slug: &str, detail: &SchoolDetail) -> SchoolListRow {
     rows.iter()
         .find(|row| row.slug == slug)

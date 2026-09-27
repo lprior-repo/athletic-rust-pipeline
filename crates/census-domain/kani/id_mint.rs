@@ -1,30 +1,6 @@
-//! Kani proof harnesses for `Id::mint`.
-//!
-//! Every input is concrete on purpose: `Id::mint` runs SHA-256 over its parts, so a symbolic part
-//! would put the compression function's 64 rounds into the solver, and no harness can quantify
-//! over hash output. What these harnesses do quantify over is the persisted shape of an id:
-//! determinism, the `<prefix>_<16 lowercase hex>` format, distinctness for different natural keys,
-//! and the exact digest - ids are written to the store, so a change to the scheme re-keys every
-//! stored row and has to be caught here.
-//!
-//! `#[kani::unwind(64)]`: sha2's `soft::compress` folds over a 64-byte block, so the delivered
-//! `unwind(8)` failed its own unwinding assertion ("unwinding assertion loop 0") before reaching a
-//! single assertion. 64 is the block size; nothing here needs more.
 
 use crate::model::{Id, tag};
 
-/// `sha2` selects its backend at runtime through `cpufeatures`, which probes the CPU with
-/// `__cpuid_count` - inline asm, and `cargo kani` refuses to reason about it:
-///
-/// ```text
-/// Failed Checks: TerminatorKind::InlineAsm is not currently supported by Kani
-///  File: ".../core_arch/src/x86/cpuid.rs", line 75, in std::arch::x86_64::__cpuid_count
-/// ```
-///
-/// Stubbing the probe to "no features" leaves `Id::mint` itself untouched and drops the hash down
-/// to sha2's pure-Rust soft backend - the implementation that defines the digest on every target.
-/// The SHA-NI backend is an acceleration of the same function and is out of reach for Kani, so it
-/// stays unverified; nothing about it can change an id, or the two backends would disagree.
 fn cpuid_without_features(_leaf: u32, _sub_leaf: u32) -> core::arch::x86_64::CpuidResult {
     core::arch::x86_64::CpuidResult {
         eax: 0,
@@ -34,11 +10,6 @@ fn cpuid_without_features(_leaf: u32, _sub_leaf: u32) -> core::arch::x86_64::Cpu
     }
 }
 
-/// `<prefix>_<16 lowercase hex chars>`.
-///
-/// The messages are deliberately literal: interpolating the id into the panic path drags
-/// `fmt::Debug for str` (escaping, byte walking) into every loop iteration, which is what made the
-/// unwinding bound climb. The conditions are unchanged.
 fn assert_id_shape(id: &str, prefix: &str) {
     assert_eq!(id.len(), prefix.len() + 17, "bad id length");
     assert!(id.starts_with(prefix), "id lost its prefix");
@@ -55,7 +26,6 @@ fn assert_id_shape(id: &str, prefix: &str) {
     }
 }
 
-/// Output format: `<prefix>_<16 hex chars>`.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
@@ -68,7 +38,6 @@ fn check_id_mint_format() {
     );
 }
 
-/// Each entity kind mints under its own prefix, and the prefix is not part of the digest tail.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
@@ -78,8 +47,6 @@ fn check_id_mint_tag_prefix() {
     assert_id_shape(Id::<tag::Athlete>::mint("at", &["same", "parts"]).as_str(), "at");
 }
 
-/// Determinism, and separation by natural key: the same parts mint the same id, different parts or a
-/// different prefix mint a different one.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
@@ -105,8 +72,6 @@ fn check_id_mint_deterministic() {
     );
 }
 
-/// The digest is the persisted identity of a row: this pins today's value so a change to the hash
-/// domain (prefix, separator byte, part order, digest width) cannot pass unnoticed.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
@@ -117,8 +82,6 @@ fn check_id_mint_golden_value() {
     );
 }
 
-/// `as_str` and `Display` are the same bytes - evidence lines, wire payloads and store keys all
-/// carry the id text, and they must not disagree.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]

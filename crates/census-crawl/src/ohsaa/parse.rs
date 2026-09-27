@@ -1,7 +1,3 @@
-//! Pure parsing: text primitives, the school search page, and coach-name cleaning.
-//!
-//! Everything here takes captured text and returns parsed rows, so the module is
-//! fixture-testable and reusable by the durable services.
 
 use super::map::SearchResult;
 use census_domain::model::{normalize_name, Sport};
@@ -24,7 +20,6 @@ pub(super) fn collapse_whitespace(value: &str) -> String {
     result.trim().to_string()
 }
 
-/// Remove HTML tags, decode entities, and collapse whitespace.
 pub(super) fn strip_tags(fragment: &str) -> String {
     let mut result = String::with_capacity(fragment.len());
     let mut in_tag = false;
@@ -45,7 +40,6 @@ pub(super) fn strip_tags(fragment: &str) -> String {
     collapse_whitespace(&result)
 }
 
-/// Decode `&amp;`, `&lt;`, `&gt;`, `&quot;`, `&#39;`, and `&#NNN;`.
 pub(super) fn decode_entities(value: &str) -> String {
     let mut result = String::with_capacity(value.len());
     let mut chars = value.chars();
@@ -121,10 +115,6 @@ pub(super) fn valid_email(value: &str) -> Option<String> {
     }
 }
 
-/// Parse the school search result table.
-///
-/// Returns unique rows deduplicated by `ohsaaId`. The OHSAA search page emits
-/// multiple identical rows for every autocomplete suggestion that matches.
 pub fn parse_search(html: &str) -> Vec<SearchResult> {
     let mut results = Vec::new();
     let mut seen_ids: HashSet<String> = HashSet::new();
@@ -180,10 +170,6 @@ fn extract_cell_text(row: &str, index: usize) -> String {
     }
 }
 
-/// Resolve a school name to a unique OHSAA id using the search results.
-///
-/// Returns the first unique `SearchResult` matching the normalised name,
-/// or `None` if no match. Notes ambiguity in the provided vector.
 pub fn resolve_school_name(
     search_html: &str,
     query: &str,
@@ -231,7 +217,6 @@ pub fn resolve_school_name(
     results.into_iter().next()
 }
 
-/// Strip leading honorifics so "Coach Barry Mink" and "Barry Mink" mint the same coach.
 pub fn strip_honorific(value: &str) -> String {
     let trimmed = value.trim();
     let lower = trimmed.to_lowercase();
@@ -248,7 +233,6 @@ pub fn strip_honorific(value: &str) -> String {
     trimmed.to_string()
 }
 
-/// Short sport label for identity key.
 pub(super) fn sport_key(sport: &Sport) -> &str {
     match sport {
         Sport::CrossCountry => "xc",

@@ -1,5 +1,3 @@
-//! Published-payload decoding: the wire structs Athletic.net returns, and the token readers
-//! that turn a published mark, timing flag, round or grade letter into platform vocabulary.
 
 use crate::hytek::{parse_field_mark, parse_time, NO_MARK};
 use census_domain::model::CentiPoints;
@@ -7,7 +5,6 @@ use census_domain::model::{EventKind, Gender, Mark, Sport, TimingMethod};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
-/// One athlete bio payload. Fields the adapter does not read are not declared.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Bio {
     pub athlete: BioAthlete,
@@ -35,7 +32,6 @@ pub struct BioAthlete {
     pub first_name: String,
     #[serde(rename = "LastName", default)]
     pub last_name: String,
-    /// `"M"` or `"F"`.
     #[serde(rename = "Gender", default)]
     pub gender: String,
     #[serde(rename = "SchoolID", default)]
@@ -43,7 +39,6 @@ pub struct BioAthlete {
 }
 
 impl BioAthlete {
-    /// `"First Last"`, trimmed; empty when the payload names nobody.
     pub fn name(&self) -> String {
         format!("{} {}", self.first_name.trim(), self.last_name.trim())
             .trim()
@@ -63,13 +58,11 @@ pub struct BioSeason {
     pub school_id: i64,
     #[serde(rename = "IDSeason")]
     pub season_id: i16,
-    /// `"2026 Indoor"`, `"2026 Outdoor"`, `"2026 Cross Country"`.
     #[serde(rename = "Display", default)]
     pub display: String,
 }
 
 impl BioSeason {
-    /// The indoor/outdoor split, or `None` when the display does not publish one.
     pub(super) fn sport(&self) -> Option<Sport> {
         let display = self.display.to_ascii_lowercase();
         if display.contains("indoor") {
@@ -96,7 +89,6 @@ pub struct BioEvent {
 pub struct BioMeet {
     #[serde(rename = "MeetName", default)]
     pub name: String,
-    /// `"2025-05-03T00:00:00"`.
     #[serde(rename = "EndDate", default)]
     pub end_date: String,
 }
@@ -107,27 +99,19 @@ impl BioMeet {
     }
 }
 
-/// The `YYYY-MM-DD` date a published timestamp carries (`"2026-05-15T00:00:00"`), or `None` when
-/// the column is not a plain date.
-///
-/// Shared with the whole-meet path, whose `MeetDate`/`EndDate` are published in the same shape.
 pub(super) fn published_date(raw: &str) -> Option<&str> {
     let date = raw.split('T').next().unwrap_or_default().trim();
     (date.len() == 10 && date.as_bytes().get(4) == Some(&b'-')).then_some(date)
 }
 
-/// One track & field result.
 #[derive(Debug, Clone, Deserialize)]
 pub struct TfRow {
     #[serde(rename = "IDResult")]
     pub id: i64,
-    /// `"1:17.80a"` (auto-timed, trailing `a`), `"11.32a"`, `"20.51m"`, `"DNS"`.
     #[serde(rename = "Result", default)]
     pub result: String,
-    /// `1` for fully automatic timing.
     #[serde(rename = "FAT", default)]
     pub fat: i64,
-    /// Published as a string here and as a number in cross country.
     #[serde(rename = "Place", default, deserialize_with = "optional_text")]
     pub place: Option<String>,
     #[serde(rename = "Round", default)]
@@ -144,7 +128,6 @@ pub struct TfRow {
     pub meet_id: Option<i64>,
     #[serde(rename = "SeasonID", default)]
     pub season_id: Option<i16>,
-    /// `"2025-05-02T00:00:00"`.
     #[serde(rename = "ResultDate", default)]
     pub result_date: Option<String>,
 }
@@ -160,8 +143,6 @@ impl TfRow {
     }
 }
 
-/// One cross-country result. Cross country publishes no event id (the distance replaces it) and no
-/// result date (the meet's end date is the published date).
 #[derive(Debug, Clone, Deserialize)]
 pub struct XcRow {
     #[serde(rename = "IDResult")]
@@ -178,12 +159,10 @@ pub struct XcRow {
     pub meet_id: Option<i64>,
     #[serde(rename = "SeasonID", default)]
     pub season_id: Option<i16>,
-    /// Course distance in metres (`5000`), published beside the cross-country time.
     #[serde(rename = "Distance", default)]
     pub distance: Option<i64>,
 }
 
-/// `Place` is a string on the track payload and a number on the cross-country one.
 pub(super) fn optional_text<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -201,12 +180,6 @@ where
     })
 }
 
-/// The mark a published result token denotes, plus whether it was fully automatic, or `None` when
-/// the token is not a mark at all.
-///
-/// Athletic.net publishes times and field marks with a trailing `a` when the mark is automatic,
-/// qualifier suffixes (`q`/`Q`/`p`/`P`) beside the mark, and no-mark words (`DNS`, `ND`, `FOUL`) in
-/// the same column. A no-mark row yields no performance.
 pub fn parse_mark(kind: &EventKind, published: &str) -> Option<(Mark, bool)> {
     let (token, auto) = published_token(published)?;
     let mark = match kind {
@@ -223,12 +196,6 @@ pub fn parse_mark(kind: &EventKind, published: &str) -> Option<(Mark, bool)> {
     Some((mark, auto))
 }
 
-/// The token a published mark column carries, and whether it was automatic, or `None` when the
-/// column holds a no-mark word or nothing numeric.
-///
-/// Split out of [`parse_mark`] because the whole-meet path reads the same column for events whose
-/// own label maps to no kind: there the published event type decides whether the token is a time or
-/// a field mark.
 pub(super) fn published_token(published: &str) -> Option<(&str, bool)> {
     let trimmed = published.trim();
     if trimmed.is_empty() || NO_MARK.contains(&trimmed.to_ascii_uppercase().as_str()) {
@@ -244,8 +211,6 @@ pub(super) fn published_token(published: &str) -> Option<(&str, bool)> {
         .then_some((token, auto))
 }
 
-/// Drop the `m` Athletic.net prints on metric field marks (`12.34m`), so the shared field parser
-/// sees the bare figure it expects. Only a token that is otherwise a plain number is shortened.
 pub(super) fn metric_bare(token: &str) -> &str {
     match token.strip_suffix(['m', 'M']) {
         Some(head) if head.trim().parse::<f64>().is_ok() => head.trim(),
@@ -253,8 +218,6 @@ pub(super) fn metric_bare(token: &str) -> &str {
     }
 }
 
-/// Timing method: the published automatic-timing flag and the `a` suffix both mean fully
-/// automatic; a bare mark is hand-timed.
 pub(super) fn timing_of(fat: i64, auto: bool) -> Option<TimingMethod> {
     if fat == 1 || auto {
         Some(TimingMethod::Fat)

@@ -1,11 +1,9 @@
-use crate::coachverify::verdict::{FragmentOutcome, RowOutcome};
+use census_domain::model::{CONTACT_COLUMNS, ContactClaimEvidence, RawContactRow};
 use std::path::Path;
 
 use super::fetch::verify_one_fragment;
-use super::FragmentRow;
 
-/// Read one fragment CSV: the 11 columns positionally, an optional 12th `verify` cell ignored.
-pub fn read_fragment(path: &Path) -> anyhow::Result<Vec<FragmentRow>> {
+pub fn read_fragment(path: &Path) -> anyhow::Result<Vec<RawContactRow>> {
     use anyhow::Context;
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(true)
@@ -15,12 +13,12 @@ pub fn read_fragment(path: &Path) -> anyhow::Result<Vec<FragmentRow>> {
     let mut rows = Vec::new();
     for record in reader.records() {
         let record = record.with_context(|| format!("read fragment row in {path:?}"))?;
-        let cell = |index: usize| record.get(index).unwrap_or_default().trim().to_string();
-        if cell(0) == "school" && cell(2) == "state" {
+        if record.iter().next() == Some("school") && record.get(2) == Some("state") {
             continue;
         }
+        let cell = |index: usize| record.get(index).unwrap_or_default().trim().to_string();
         let source_urls: Vec<String> = cell(9).split_whitespace().map(str::to_string).collect();
-        rows.push(FragmentRow {
+        rows.push(RawContactRow {
             school: cell(0),
             city: cell(1),
             state: cell(2),
@@ -37,67 +35,63 @@ pub fn read_fragment(path: &Path) -> anyhow::Result<Vec<FragmentRow>> {
     Ok(rows)
 }
 
-/// Write a verified fragment: the 11 columns plus the recomputed verdict.
-///
-/// The rows are built under a temporary and renamed onto `path`, so a reader (or a concurrent
-/// fragment) never observes a half-written state file.
-pub fn write_fragment(path: &Path, outcomes: &[RowOutcome]) -> anyhow::Result<()> {
-    census_store::read::publish_atomically(path, |temporary| {
-        write_fragment_body(temporary, path, outcomes)
-    })?;
-    Ok(())
-}
-
-/// Write the verified fragment's rows to `temporary`; publication renames it onto `published`.
-///
-/// Same shape as the input fragment: `merge-coaches` reads these columns and nothing else, and a
-/// row that did not ship is simply absent. The verdict per row lives in `--csv`, per fragment in
-/// the freeze log and manifest.
-fn write_fragment_body(
-    temporary: &Path,
-    published: &Path,
-    outcomes: &[RowOutcome],
-) -> census_store::StoreResult<()> {
-    let mut writer = csv::WriterBuilder::new()
-        .from_path(temporary)
-        .map_err(|error| census_store::read::csv_failure(published, error))?;
-    writer
-        .write_record(super::FRAGMENT_COLUMNS)
-        .map_err(|error| census_store::read::csv_failure(published, error))?;
-    for outcome in outcomes.iter().filter(|outcome| outcome.verdict.shipped()) {
-        let row = &outcome.row;
-        writer
-            .write_record([
-                row.school.as_str(),
-                row.city.as_str(),
-                row.state.as_str(),
-                row.sport.as_str(),
-                row.role.as_str(),
-                row.coach_name.as_str(),
-                row.public_professional_email.as_str(),
-                row.ad_name.as_str(),
-                row.ad_email.as_str(),
-                row.source_urls.join(" ").as_str(),
-                row.last_observed.as_str(),
-            ])
-            .map_err(|error| census_store::read::csv_failure(published, error))?;
+fn read_evidence_jsonl(path: &Path) -> anyhow::Result<Vec<ContactClaimEvidence>> {
+    use anyhow::Context;
+    use std::io::BufRead;
+    let file = std::fs::File::open(path).with_context(|| format!("open evidence {path:?}"))?;
+    let reader = std::io::BufReader::new(file);
+    let mut claims = Vec::new();
+    for line in reader.lines() {
+        let line = line.with_context(|| format!("read evidence line from {path:?}"))?;
+        let claim: ContactClaimEvidence = serde_json::from_str(&line)
+            .with_context(|| format!("parse evidence from {path:?}"))?;
+        claims.push(claim);
     }
-    writer
-        .flush()
-        .map_err(|source| census_store::StoreError::Io {
-            path: published.to_path_buf(),
-            source,
-        })
+    Ok(claims)
 }
 
-/// The name a verified fragment keeps: the input directory becomes a prefix, so the two coach
-/// fragment trees (`coach-fragments/` and `coach-fragments-ad/`) cannot overwrite each other's
-/// same-named state files.
+pub fn write_fragment(path: &Path, outcomes: &[super::RowOutcome]) -> anyhow::Result<()> {
+    use census_store::read::publish_atomically;
+    Ok(publish_atomically(path, |temporary| {
+        let mut writer = csv::WriterBuilder::new()
+            .from_path(temporary)
+            .map_err(|error| census_store::read::csv_failure(path, error))?;
+        writer
+            .write_record(CONTACT_COLUMNS)
+            .map_err(|error| census_store::read::csv_failure(path, error))?;
+        for outcome in outcomes.iter().filter(|outcome| outcome.verdict.shipped()) {
+            let row = &outcome.row;
+            writer
+                .write_record([
+                    &row.school, &row.city, &row.state, &row.sport, &row.role,
+                    &row.coach_name, &row.public_professional_email, &row.ad_name,
+                    &row.ad_email, &row.source_urls.join(" "), &row.last_observed,
+                ])
+                .map_err(|error| census_store::read::csv_failure(path, error))?;
+        }
+        writer
+            .flush()
+            .map_err(|source| census_store::StoreError::Io {
+                path: path.to_path_buf(),
+                source,
+            })
+    })?)
+}
+
+pub fn read_fragment_evidence(path: &Path, row: &RawContactRow) -> anyhow::Result<Vec<ContactClaimEvidence>> {
+    let file_name = fragment_file_name(path);
+    let evidence_path = path.with_file_name(format!("{}.evidence.jsonl", file_name));
+    let claims = read_evidence_jsonl(&evidence_path)?;
+    Ok(claims.into_iter().filter(|c| {
+        c.school == row.school && c.role == row.role && c.person == row.coach_name
+    }).collect())
+}
+
 pub fn fragment_file_name(path: &Path) -> String {
     let file = path
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "fragment.csv".to_string());
+        .unwrap_or_else(|| "contacts.csv".to_string());
     match path
         .parent()
         .and_then(Path::file_name)
@@ -108,12 +102,11 @@ pub fn fragment_file_name(path: &Path) -> String {
     }
 }
 
-/// Run the whole gate over one fragment and write its verified copy.
 pub async fn verify_fragment(
     fetcher: &census_crawl::net::Fetcher,
     path: &Path,
     out_dir: &Path,
     options: &super::GateOptions,
-) -> anyhow::Result<FragmentOutcome> {
+) -> anyhow::Result<super::verdict::FragmentOutcome> {
     verify_one_fragment(fetcher, path, out_dir, options).await
 }

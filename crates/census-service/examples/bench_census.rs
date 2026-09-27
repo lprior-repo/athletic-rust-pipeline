@@ -1,22 +1,3 @@
-//! Census throughput harness: a deterministic synthetic corpus through the whole pipeline.
-//!
-//! ```text
-//! cargo run --release --example bench_census -- --schools 500
-//! ```
-//!
-//! **Bound.** The corpus is exactly `--schools` schools, one team and one meet per school
-//! (`--schools` each), `8` athletes per school, one event per athlete, and two performances per
-//! athlete — `35 * --schools` appended rows in total. After the merge the distinct count is `27` per
-//! school (school, team, meet, 8 athletes, 16 performances) plus its deduplicated events, at most 6
-//! per meet; the run reports and asserts the exact number. Nothing else caps the corpus, so
-//! `--schools` is the dataset bound.
-//!
-//! **Determinism.** Every value comes from a seeded 32-bit LCG, so two runs with the same
-//! `--schools` build byte-identical corpora and their measurements are comparable.
-//!
-//! **Output.** `metric=<name> items=<n> unit=<unit>`, `metric=<name> seconds=<s>`,
-//! `metric=<name> rate=<n> unit=<unit>/s`, and one `json={...}` summary line. Every phase asserts
-//! the counts it produced before reporting its rate.
 
 #[path = "bench_census/corpus.rs"]
 mod corpus;
@@ -45,12 +26,11 @@ const DEFAULT_SCHOOLS: usize = 500;
     about = "Synthetic-corpus throughput harness: append, consolidate, census, bests, workbook"
 )]
 struct Options {
-    /// Schools in the synthetic corpus; athletes, meets and performances scale from this.
+    #[arg(help = "Schools in the synthetic corpus; athletes, meets and performances scale from this")]
     #[arg(long, default_value_t = DEFAULT_SCHOOLS)]
     schools: usize,
 }
 
-/// One measured phase: how many items moved, how long it took, and the resulting rate.
 #[derive(Debug, Clone, Copy, Serialize)]
 struct Phase {
     items: usize,
@@ -101,7 +81,6 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Time a phase, print its machine-readable lines, and return the measurement.
 fn measure(name: &str, items: usize, unit: &str, elapsed: Duration) -> Result<Phase> {
     let rate_per_second = per_second(items, elapsed)?;
     let seconds = elapsed.as_secs_f64();
@@ -115,7 +94,6 @@ fn measure(name: &str, items: usize, unit: &str, elapsed: Duration) -> Result<Ph
     })
 }
 
-/// Items per second. Item counts are converted with `try_from` rather than a lossy cast.
 fn per_second(items: usize, elapsed: Duration) -> Result<f64> {
     let items = u32::try_from(items).context("item count does not fit u32")?;
     let seconds = elapsed.as_secs_f64();

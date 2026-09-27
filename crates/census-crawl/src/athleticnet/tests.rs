@@ -10,13 +10,6 @@ fn payload(body: &str) -> Bio {
     serde_json::from_str(body).expect("a payload this adapter reads")
 }
 
-/// Every endpoint this adapter acquires through is a host the registry routes to the browser lane.
-///
-/// The transport is the registry's declaration and not the caller's request — `execute` reads
-/// `transport_for_host` for every URL, and a host no descriptor claims keeps the plain HTTP path — so
-/// this test is what keeps a direct-HTTP request from creeping back into the route. Both the
-/// constants and the URLs the route actually builds are checked, because a route that spelled its own
-/// URL would route by that spelling's host and not by these constants.
 #[test]
 fn every_acquisition_endpoint_is_browser_transported() {
     let mut urls = vec![BIO_ENDPOINT.to_string()];

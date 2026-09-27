@@ -89,7 +89,7 @@ fn tenants_publishing_one_meet_merge_into_one_canonical_meet() {
     let an: Vec<&SourceIdentity> = classic
         .source_identities
         .iter()
-        .filter(|i| matches!(i.namespace, SourceNamespace::LegacyAthleticNet { .. }))
+        .filter(|identity| identity.namespace == SourceNamespace::athletic_net("meet"))
         .collect();
     assert_eq!(an.len(), 1, "the Athletic.net meet id is deduplicated");
     assert_eq!(an[0].id, "259955");

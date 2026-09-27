@@ -1,7 +1,3 @@
-//! Fuzz target for the Compiled parser (WIAA compiled results).
-//!
-//! Exercises `compiled::parse`.
-//! Input: lines of a compiled result file.
 
 #![no_main]
 

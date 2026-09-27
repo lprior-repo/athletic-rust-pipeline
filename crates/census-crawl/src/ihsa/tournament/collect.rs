@@ -1,12 +1,3 @@
-//! The walk: the meets index and its own change signal, one summary per event that publishes
-//! results, then the archive's cross-country state-finalist lists.
-//!
-//! The request budget is the index's shape, not a choice: `GET /v1/track-field/meets` answers two
-//! state-final meets (boys, girls) per season, each meet's events index answers one row per
-//! class x round x event instance (97 for the captured boys meet), and an event's summary is read
-//! only when its index row says `hasResults`. A season therefore costs a measured ~200 requests, and
-//! a re-run of an unchanged season costs one: the index publishes `LastRefreshedAt` per meet and the
-//! journal keeps it.
 
 use super::journal::Journal;
 use super::map::{school_year_of, EventContext, Mapper};
@@ -19,13 +10,8 @@ use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{CanonicalMeet, Sport};
 use census_domain::UsJurisdiction;
 
-/// The adapter this walk files evidence under (its registry slug).
 const SOURCE: &str = "ihsa";
 
-/// Collect the IHSA's state-final track & field results and cross-country state-finalist lists.
-///
-/// `limit` bounds the meets walked, which is the unit the meets index publishes; the qualifier lists
-/// are read whatever the limit, since they are six requests and not per-meet work.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let before = ctx.fetcher.stats().await;
     let mut run = Run::new(ctx, options)?;
@@ -38,10 +24,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     run.finish().await
 }
 
-/// One run's state: the store handle, the mapping sinks, the journal and the tallies.
-///
-/// Tallies saturate: they feed diagnostics only, so an impossible overflow floors instead of
-/// panicking or wrapping silently.
 struct Run<'a> {
     ctx: &'a AdapterContext<'a>,
     options: &'a Options,
@@ -57,7 +39,6 @@ struct Run<'a> {
 }
 
 impl<'a> Run<'a> {
-    /// Open a run: the journal's resume points and the store's schools.
     fn new(ctx: &'a AdapterContext<'a>, options: &'a Options) -> CrawlResult<Self> {
         Ok(Self {
             ctx,
@@ -74,9 +55,6 @@ impl<'a> Run<'a> {
         })
     }
 
-    /// Whether the operator's jurisdiction filter admits Illinois.
-    ///
-    /// A run scoped to other states spends no request here; the note says why the report is empty.
     fn in_scope(&mut self) -> bool {
         if self.options.states.is_empty() || self.options.states.contains(&UsJurisdiction::Illinois)
         {
@@ -94,10 +72,6 @@ impl<'a> Run<'a> {
         false
     }
 
-    /// Whether the index's own change signal says this meet is already read.
-    ///
-    /// A meet the index publishes no `LastRefreshedAt` for is re-read every run: without a signal the
-    /// only honest answer is that its state is unknown.
     fn unchanged(&self, row: &MeetRow) -> bool {
         let Some(current) = row.last_refreshed_at.as_deref() else {
             return false;
@@ -108,7 +82,6 @@ impl<'a> Run<'a> {
             .is_some_and(|recorded| recorded.as_deref() == Some(current))
     }
 
-    /// Walk the meets index, then the cross-country lists.
     async fn walk(&mut self) -> CrawlResult<()> {
         let Some(rows) = requests::meets_index(self.ctx, &mut self.report).await else {
             return Ok(());
@@ -131,11 +104,6 @@ impl<'a> Run<'a> {
         .await
     }
 
-    /// Walk one meet: its events index, then one summary per event that publishes results.
-    ///
-    /// The meet's journal entry is written only when every request it needs landed, so a run that
-    /// loses one summary leaves the whole meet for the next run rather than recording a half-read
-    /// state the change signal would then skip.
     async fn meet(&mut self, row: &MeetRow) -> CrawlResult<()> {
         if self.unchanged(row) {
             self.skipped_meets = self.skipped_meets.saturating_add(1);
@@ -162,9 +130,6 @@ impl<'a> Run<'a> {
         Ok(())
     }
 
-    /// Mint one event row per index row, then read and map the summary of every one with results.
-    ///
-    /// Returns the number of index rows minted and whether every summary request landed.
     async fn walk_events(
         &mut self,
         rows: &[EventRow],
@@ -202,7 +167,6 @@ impl<'a> Run<'a> {
         (rows.len(), complete)
     }
 
-    /// Append what the run accumulated and report it.
     async fn finish(mut self) -> CrawlResult<AdapterReport> {
         let stats = self.mapper.stats();
         let entries = self.journal.take_pending();

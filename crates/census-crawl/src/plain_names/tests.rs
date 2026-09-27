@@ -5,27 +5,6 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
-/// Fixture provenance — every file is a real capture (or, for `ND_PAGE_NO_AD`, one documented
-/// deletion from one).
-///
-/// * `ND_INDEX` — `GET https://ndhsaa.com/schools`, HTTP 200, capture
-///   `tools/a29-coach/nd-schools.html` (2026-09-19 23:23 CDT), 169 member-school anchors.
-/// * `ND_PAGE` — `GET https://ndhsaa.com/schools/1045/west-fargo-sheyenne`, HTTP 200, capture
-///   `tools/a29-coach/nd-1045-west-fargo-sheyenne.html` (2026-09-19 23:24 CDT).
-/// * `ND_PAGE_NO_AD` — `GET https://ndhsaa.com/schools/1378/mandan-classical-academy`, live GET
-///   HTTP 200 2026-09-20T14:23:43Z, minus the one `Athletic Director: …` paragraph: the provider
-///   publishes an AD for every sampled member school (33/33 in research reports 25 & 37, 4/4 in
-///   this session's live probes), so the no-AD shape is reproduced by deleting that line.
-/// * `NSAA_PAGE` — the directory screen's bulk POST (`session= `, `school=View all schools`,
-///   `submit=See School Info`), live HTTP 200 1,085,584 B 2026-09-20T14:24:47Z (byte-identical to
-///   `tools/ne/nsaa_directory_all_2026-09-19.html`), sliced to its first 8 school blocks. The same
-///   `NsaaSchool` markup appears one school at a time in `NSAA_SCHOOL_GET`.
-/// * `NSAA_FORM` — `GET https://secure.nsaahome.org/nsaaforms/direxportscreen.php`, live HTTP 200
-///   11,585 B 2026-09-20T14:36:10Z: the request form plus the 314 `<option>` entries (312 schools
-///   + a disabled placeholder + the "View all schools" sentinel).
-/// * `NSAA_SCHOOL_GET` — `GET …?session=&school=Adams%20Central`, live HTTP 200 15,579 B
-///   2026-09-20T14:36:12Z: one school, one `<h1 class="mt-3">` block, the same 34 rows as the
-///   bulk block for Adams Central.
 const ND_INDEX: &str = include_str!("../../tests/fixtures/plain_names/nd_schools_index.html");
 const ND_PAGE: &str = include_str!("../../tests/fixtures/plain_names/nd_school_page.html");
 const ND_PAGE_NO_AD: &str =
@@ -51,13 +30,10 @@ fn mandan_classical() -> NdSchoolRef {
     }
 }
 
-/// The request URL the adapter would have used for a fixture school: evidence always cites the
-/// per-school request that produced the row, never the directory form that listed it.
 fn url_of(school: &NsaaSchool) -> String {
     nsaa_school_url(&school.name)
 }
 
-/// Every string field of an entity, so a test can prove a value cannot leak from *any* field.
 fn serialized<T: serde::Serialize>(value: &T) -> String {
     serde_json::to_string(value).expect("entity serializes")
 }

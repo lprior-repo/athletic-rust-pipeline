@@ -1,7 +1,3 @@
-//! Resolve schools from the CIAC directory page.
-//!
-//! The directory is a single GET of the directory page.
-//! This module fetches it, parses it, and returns the list of school extracts.
 
 use super::map::{school_entities, SchoolExtract};
 use super::pages::parse_directory;
@@ -10,7 +6,6 @@ use crate::net::FetchOptions;
 use crate::AdapterReport;
 use crate::{AdapterContext, CrawlResult};
 
-/// Fetch the directory page, parse it, and return school extracts for processing.
 pub async fn resolve_schools(
     ctx: &AdapterContext<'_>,
     options: &Options,

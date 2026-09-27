@@ -1,9 +1,3 @@
-//! The measured pipeline phases: one append pass over the corpus, the merged snapshot it is read
-//! back through, and one timed pass per reader — both census scopes, the best-mark reduction and
-//! the workbook.
-//!
-//! Every phase times its own work, reports the measurement through `measure`, and asserts the
-//! counts it produced against the corpus before its rate is trusted.
 
 use anyhow::{Context, Result};
 use census_report::report::{self, Scope};
@@ -17,10 +11,8 @@ use tempfile::TempDir;
 use super::corpus::{Corpus, PERFORMANCES_PER_ATHLETE};
 use super::{measure, Phase};
 
-/// Rows per `append_many` call; keeps one batch bounded regardless of corpus size.
 const APPEND_BATCH: usize = 1_000;
 
-/// Append every table, then require the store's own observation counts to match the corpus.
 pub(super) fn append_corpus(store: &Store, corpus: &Corpus) -> Result<Phase> {
     let started = Instant::now();
     append_all(store, Table::Schools, &corpus.schools)?;
@@ -34,7 +26,6 @@ pub(super) fn append_corpus(store: &Store, corpus: &Corpus) -> Result<Phase> {
     Ok(phase)
 }
 
-/// One `append_many` per `APPEND_BATCH` rows.
 fn append_all<T: Serialize>(store: &Store, table: Table, rows: &[T]) -> Result<()> {
     for chunk in rows.chunks(APPEND_BATCH) {
         store
@@ -71,7 +62,6 @@ fn expect_observations(store: &Store, corpus: &Corpus) -> Result<()> {
     Ok(())
 }
 
-/// Merge every append log into `out/`, then require the merged counts to match the corpus.
 pub(super) fn consolidate_phase(store: &Store, corpus: &Corpus) -> Result<Phase> {
     let started = Instant::now();
     let counts = census::consolidate(store).context("consolidating the append logs")?;
@@ -86,7 +76,6 @@ pub(super) fn consolidate_phase(store: &Store, corpus: &Corpus) -> Result<Phase>
     Ok(phase)
 }
 
-/// Rows over the seven real tables.
 fn merged_rows(counts: &[(String, usize)]) -> usize {
     counts
         .iter()
@@ -108,7 +97,6 @@ fn ensure_count(counts: &[(String, usize)], table: &str, expected: usize) -> Res
     Ok(())
 }
 
-/// Both report scopes over the same consolidated snapshot.
 pub(super) fn census_phases(store: &Store, cohort: usize) -> Result<(Phase, Phase)> {
     let started = Instant::now();
     let core = report::build_census(store, Scope::Core).context("building the core census")?;
@@ -136,7 +124,6 @@ pub(super) fn census_phases(store: &Store, cohort: usize) -> Result<(Phase, Phas
     Ok((core_phase, all_sources_phase))
 }
 
-/// Reduce best marks and require exactly one row per athlete, each resting on both marks.
 pub(super) fn bests_phase(
     store: &Store,
     athletes: usize,
@@ -170,8 +157,6 @@ pub(super) fn bests_phase(
     Ok((phase, rows.len()))
 }
 
-/// Build the workbook into the temporary directory and check the artifact is a real xlsx. The item
-/// count is the number of merged rows the workbook reads, not the append count.
 pub(super) fn workbook_phase(store: &Store, dir: &TempDir, entities: usize) -> Result<Phase> {
     let out = dir.path().join("synthetic-census.xlsx");
     let started = Instant::now();
@@ -182,6 +167,7 @@ pub(super) fn workbook_phase(store: &Store, dir: &TempDir, entities: usize) -> R
             out: Some(out.clone()),
             limit: None,
             scope: Scope::Core,
+            school_year: None,
         },
     )
     .context("building the workbook")?;

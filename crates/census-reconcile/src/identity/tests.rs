@@ -1,11 +1,8 @@
-//! Identity behavior: the wire form, the purity that makes a retry reuse the same address, and the
-//! two bounds that keep a provider's id space from deciding how long an identity gets.
 
 use super::{scope_digest, Revision, WorkflowIdentity, MAX_IDENTITY_BYTES, MAX_PART_BYTES};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
-/// The season the 2026-2027 census runs in, as the objective's `{season}` field spells it.
 fn season() -> SchoolYear {
     SchoolYear::new(2026).expect("2026 is a season")
 }
@@ -32,10 +29,6 @@ fn national_identity_matches_the_documented_form() {
     );
 }
 
-/// The scope is what a re-submission is checked against, so it has to be *in* the identity rather than
-/// in an operator's memory: a revision already journalled under one jurisdiction set must not absorb a
-/// submission naming another, and the same set must reproduce its identity byte for byte, which is what
-/// lets a retry attach instead of duplicating a fan-out.
 #[test]
 fn a_changed_scope_is_a_changed_run_and_the_same_scope_reproduces_its_identity() {
     let both = [UsJurisdiction::Iowa, UsJurisdiction::Wisconsin];
@@ -58,8 +51,6 @@ fn a_changed_scope_is_a_changed_run_and_the_same_scope_reproduces_its_identity()
     );
 }
 
-/// The digest is taken in `CENSUS_SCOPE` order, over the set: naming the same states in another order
-/// cannot move an existing run to a new identity, while adding, removing or replacing a state must.
 #[test]
 fn the_scope_digest_is_order_stable_over_a_set() {
     let forward = [
@@ -91,8 +82,6 @@ fn the_scope_digest_is_order_stable_over_a_set() {
     );
 }
 
-/// The scope field is a fixed-width digest, so the whole identity stays inside the ceiling a store key
-/// can carry however many states a caller names.
 #[test]
 fn a_full_scope_identity_fits_the_ceiling() {
     for jurisdictions in [

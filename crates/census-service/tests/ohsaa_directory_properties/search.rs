@@ -1,18 +1,9 @@
-//! The school search table: how many rows it prints, and which school a printed name resolves to.
-//!
-//! The search page is the only door into the OHSAA directory. Every row is `<td>NAME</td><td>City
-//! </td><td><a href="/Outside/Schedule?ohsaaId=<digits>">View</a></td>`, and the autocomplete emits
-//! one identical row per suggestion that matches, so the same school arrives many times. The laws:
-//! the id published is the id the row's own link carried, a school printed twice is published once
-//! with its first row's name and city, and a name the caller holds — in whatever case and however
-//! spaced — resolves to the school whose row printed it.
 
 use super::seam_config;
 use census_crawl::ohsaa::{parse_search, resolve_school_name};
 use census_domain::model::normalize_name;
 use proptest::prelude::*;
 
-/// School names as the search page publishes them, and the cities they are listed under.
 const SCHOOLS: [&str; 4] = [
     "DUBLIN COFFMAN",
     "DUBLIN JEROME",
@@ -21,7 +12,6 @@ const SCHOOLS: [&str; 4] = [
 ];
 const CITIES: [&str; 3] = ["Dublin", "Dublin", "Dublin"];
 
-/// One `<tr>` of the result table.
 #[derive(Debug, Clone)]
 struct Match {
     id: u32,
@@ -29,8 +19,6 @@ struct Match {
     city: String,
 }
 
-/// A search page's rows, in document order — the same school can arrive more than once, as it does
-/// for every autocomplete suggestion that matches.
 fn matches() -> impl Strategy<Value = Vec<Match>> {
     prop::collection::vec(
         (
@@ -51,7 +39,6 @@ fn matches() -> impl Strategy<Value = Vec<Match>> {
     })
 }
 
-/// The result table markup `search_dublin_coffman.html` prints.
 fn render_search(rows: &[Match]) -> String {
     let mut body = String::from("<table class=\"table\" id=\"tblSearchResults\"><tbody>\n");
     for row in rows {
@@ -65,7 +52,6 @@ fn render_search(rows: &[Match]) -> String {
     body
 }
 
-/// Each id once, with the first row that printed it.
 fn unique_by_id(rows: &[Match]) -> Vec<&Match> {
     let mut out: Vec<&Match> = Vec::new();
     for row in rows {
@@ -76,8 +62,6 @@ fn unique_by_id(rows: &[Match]) -> Vec<&Match> {
     out
 }
 
-/// The rows whose ids are distinct and whose names normalise to distinct values: the shape a search
-/// page has to hold for one printed name to name one school.
 fn distinct_candidates(rows: &[Match]) -> Vec<Match> {
     let mut out: Vec<Match> = Vec::new();
     for row in unique_by_id(rows) {
@@ -90,8 +74,6 @@ fn distinct_candidates(rows: &[Match]) -> Vec<Match> {
     out
 }
 
-/// The same name the way a caller's spreadsheet holds it: upper case, lower case, or spaced by
-/// blanks the association never prints.
 fn restyle(name: &str, style: usize) -> String {
     match style {
         1 => name.to_ascii_uppercase(),
@@ -104,8 +86,6 @@ fn restyle(name: &str, style: usize) -> String {
 proptest! {
     #![proptest_config(seam_config())]
 
-    /// A result row publishes its own id, name and city, and a school the page prints twice is
-    /// published once with its first row's cells: the id is the key the rest of the crawl resolves by.
     #[test]
     fn a_school_listed_twice_is_published_once(rows in matches()) {
         let published = parse_search(&render_search(&rows));
@@ -119,9 +99,6 @@ proptest! {
         }
     }
 
-    /// A name the caller holds resolves to the school that printed it — the query's case and blank
-    /// runs are the caller's business, not the school's identity — and one exact match is not an
-    /// ambiguity.
     #[test]
     fn a_printed_name_resolves_to_the_school_that_printed_it(
         rows in matches(),

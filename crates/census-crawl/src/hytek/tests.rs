@@ -2,10 +2,6 @@ use super::*;
 use census_domain::model::CentiSeconds;
 use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
 
-/// Verbatim slices of
-/// `https://www.wiaawi.org/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm`
-/// (WIAA Division 1 boys state championships, 2025-06-06, PrimeTime Timing): the report header
-/// plus the 100 m dash section, and the header plus the 4x100 relay and shot put sections.
 const DASH: &str = include_str!("../../tests/fixtures/wiaa_results/d1boysstateresults-dash.htm");
 const SECTIONS: &str =
     include_str!("../../tests/fixtures/wiaa_results/d1boysstateresults-sections.htm");
@@ -265,7 +261,6 @@ fn a_file_without_a_meet_header_is_skipped_rather_than_guessed() {
     assert_eq!(super::parse(&lines, source()), None);
 }
 
-/// The same report the HTML fixture came from, as the plain-text file Hy-Tek also publishes.
 const DASH_TEXT: &str =
     include_str!("../../tests/fixtures/wiaa_results/d1boysstateresults-dash.txt");
 

@@ -1,4 +1,3 @@
-//! State machine folding CDP events for one in-page fetch.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -16,7 +15,6 @@ use crate::challenge::html_body_challenge;
 use crate::request::RequestSpec;
 use crate::{gate::ProfileGate, BrowserError, BrowserResponse};
 
-/// One decoded capture event from the fetch's CDP streams.
 pub(super) enum FetchEvent {
     Evaluation(Result<FetchResult, BrowserError>),
     Request(Arc<EventRequestWillBeSent>),
@@ -28,7 +26,6 @@ pub(super) enum FetchEvent {
     Timer,
 }
 
-/// Capture state for one browser fetch.
 pub(super) struct FetchCapture<'a> {
     pub(super) page: &'a Page,
     pub(super) gate: &'a ProfileGate,
@@ -45,7 +42,6 @@ pub(super) struct FetchCapture<'a> {
 }
 
 impl<'a> FetchCapture<'a> {
-    /// Fresh capture state for one request.
     pub(super) fn new(
         page: &'a Page,
         gate: &'a ProfileGate,
@@ -68,12 +64,10 @@ impl<'a> FetchCapture<'a> {
         }
     }
 
-    /// True while the in-page fetch has not reported its result yet.
     pub(super) fn awaiting_evaluation(&self) -> bool {
         self.evaluation_result.is_none()
     }
 
-    /// Fold one capture event into the state.
     pub(super) async fn apply(
         &mut self,
         event: FetchEvent,
@@ -92,10 +86,6 @@ impl<'a> FetchCapture<'a> {
         Ok(())
     }
 
-    /// True once the loop has nothing left to wait for.
-    ///
-    /// The payload limit is fatal on its own: the JS helper reported it, so no
-    /// response can arrive.
     pub(super) fn complete(&self) -> Result<bool, BrowserError> {
         if let Some(result) = self.evaluation_result.as_ref() {
             if !result.ok && result.error.as_deref() == Some("payload_limit") {
@@ -108,7 +98,6 @@ impl<'a> FetchCapture<'a> {
         Ok(self.evaluation_result.as_ref().is_some_and(|r| !r.ok) && self.loading_finished)
     }
 
-    /// Confirm the request and adopt a response that arrived before it.
     async fn on_request(
         &mut self,
         event: Arc<EventRequestWillBeSent>,
@@ -155,7 +144,6 @@ impl<'a> FetchCapture<'a> {
         Ok(())
     }
 
-    /// Adopt the response of the confirmed request, or hold it until then.
     fn on_response(&mut self, event: Arc<EventResponseReceived>) -> Result<(), BrowserError> {
         if self
             .request_id
@@ -177,9 +165,6 @@ impl<'a> FetchCapture<'a> {
         Ok(())
     }
 
-    /// Record the redirect status of the confirmed request.
-    ///
-    /// Correlated with the confirmed request — redirect status only matters for it.
     fn on_extra_info(&mut self, event: &EventResponseReceivedExtraInfo) {
         if let Some(current_id) = &self.request_id {
             if current_id == &event.request_id && (300..400).contains(&event.status_code) {
@@ -188,7 +173,6 @@ impl<'a> FetchCapture<'a> {
         }
     }
 
-    /// Note the loading-finished event of the confirmed request.
     fn on_finished(&mut self, event: Arc<EventLoadingFinished>) {
         if self
             .request_id
@@ -204,7 +188,6 @@ impl<'a> FetchCapture<'a> {
         }
     }
 
-    /// Reject the fetch when the confirmed request failed.
     fn on_failed(&mut self, event: &EventLoadingFailed) -> Result<(), BrowserError> {
         if self.request_id.as_ref() == Some(&event.request_id) {
             if self.redirect_status.take().is_some() {
@@ -216,7 +199,6 @@ impl<'a> FetchCapture<'a> {
     }
 }
 
-/// Require complete loading, then validate the capture and build the response.
 pub(super) async fn complete_fetch(
     capture: FetchCapture<'_>,
 ) -> Result<BrowserResponse, BrowserError> {

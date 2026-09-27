@@ -1,7 +1,3 @@
-//! Fuzz target for the RaceDay Scoring parser.
-//!
-//! Exercises `raceday::parse`.
-//! Input: raw HTML body of a RaceDay result page.
 
 #![no_main]
 

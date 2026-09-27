@@ -1,6 +1,3 @@
-//! Tests for the jurisdiction value: totality of the table, code/name round trips, and the
-//! rejections that keep the census at the modelled 50 states plus DC, of which all but Alaska and
-//! Hawaii are admitted as the run scope.
 
 use crate::error::DomainError;
 use crate::jurisdiction::{
@@ -99,9 +96,6 @@ fn census_scope_is_the_contiguous_states_and_dc() {
     }
 }
 
-/// CENSUS_SCOPE must match ALL minus EXCLUDED name-for-name, in order — not just by set
-/// membership. A one-for-one substitution would pass the count-and-sort check but silently
-/// change which state is covered.
 #[test]
 fn census_scope_is_all_minus_excluded_in_order() {
     let expected: Vec<_> = UsJurisdiction::ALL

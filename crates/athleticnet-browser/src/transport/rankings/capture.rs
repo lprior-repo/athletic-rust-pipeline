@@ -79,7 +79,6 @@ async fn process_binding_event(
     Ok(None)
 }
 
-/// Decode one binding payload and check it is ours: nonce, kind and route.
 fn binding_package(
     event: &EventBindingCalled,
     context: &CaptureContext<'_>,
@@ -111,9 +110,6 @@ fn binding_package(
     Some(package)
 }
 
-/// Parse a routed payload, revoking the gate for the errors that carry evidence.
-///
-/// `None` means "this payload is not a rankings capture", not a failure.
 fn resolve_binding(
     package: &serde_json::Value,
     context: &CaptureContext<'_>,
@@ -136,10 +132,6 @@ fn resolve_binding(
     }
 }
 
-/// The requested page is behind page one — click through to it once.
-///
-/// Page one is only consumed when it is one ahead of the requested page and no
-/// previous payload has already spent the flag.
 async fn click_through_first_page(
     context: &CaptureContext<'_>,
     request_page: u32,
@@ -188,7 +180,6 @@ fn observe_response_event(
         gate.revoke();
     }
 }
-/// Validate route: origin, API path, and method (GET=NavInfo, POST=GetRankings).
 fn validate_route(url: &str, origin: &str, kind: RankingsCapture, method: &str) -> bool {
     let parsed = match url::Url::parse(url) {
         Ok(value) => value,

@@ -1,5 +1,3 @@
-//! What the store already knows before a model runs: the flags, and the packet facts that carry
-//! them.
 
 use super::*;
 
@@ -53,16 +51,13 @@ fn the_flags_state_what_the_store_already_knows_before_the_model_runs() {
 
 #[test]
 fn provider_objects_that_differ_are_stated_and_never_called_a_shared_one() {
-    let (boys, mut girls, _) = rows();
-    girls
-        .source_identities
-        .retain(|identity| identity.namespace != SourceNamespace::MilesplitAthlete);
-    known_as(
-        &mut girls,
-        SourceNamespace::MilesplitAthlete,
-        "14399170",
-        None,
-    );
+    let (boys, girls, _) = rows();
+    let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399170");
+    let girls = CanonicalAthlete {
+        id: CanonicalAthlete::mint(&girls.school, &girls.canonical_name, girls.grad_year, girls.gender, &source),
+        source,
+        ..girls
+    };
 
     let stated_flags: Vec<(FlagKind, String)> = flags(&boys, &girls)
         .into_iter()

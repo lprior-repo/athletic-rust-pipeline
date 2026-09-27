@@ -8,10 +8,6 @@ static CF_HREF: LazyLock<Option<Regex>> =
 static CF_ATTR: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::new(r#"data-cfemail="([0-9a-fA-F]+)""#).ok());
 
-/// Decode a Cloudflare-obfuscated address: the first byte is the XOR key for the rest.
-///
-/// Returns `None` for anything that is not a decodable hex payload (odd length, non-hex, empty result,
-/// non-UTF-8, or longer than `MAX_CFEMAIL_HEX`).
 pub fn decode_cfemail(encoded: &str) -> Option<String> {
     let hex = encoded.trim();
     if hex.is_empty() || hex.len() > MAX_CFEMAIL_HEX || !hex.len().is_multiple_of(2) {
@@ -34,10 +30,6 @@ pub fn decode_cfemail(encoded: &str) -> Option<String> {
     (!address.is_empty()).then_some(address)
 }
 
-/// Every Cloudflare-obfuscated address inside one HTML fragment, decoded and de-duplicated.
-///
-/// Both forms are read: the `email-protection#<hex>` href the server renders and the
-/// `data-cfemail="<hex>"` attribute a DOM snapshot can carry.
 pub fn decode_cfemail_fragment(fragment: &str) -> Vec<String> {
     let mut addresses: Vec<String> = Vec::new();
     for pattern in [CF_HREF.as_ref(), CF_ATTR.as_ref()].into_iter().flatten() {
@@ -56,7 +48,6 @@ pub fn decode_cfemail_fragment(fragment: &str) -> Vec<String> {
     addresses
 }
 
-/// Decode the HTML entities MSHSL uses in names.
 fn decode_entities(value: &str) -> String {
     value
         .replace("&#039;", "'")
@@ -71,7 +62,6 @@ fn decode_entities(value: &str) -> String {
         .replace("&amp;", "&")
 }
 
-/// Collapse whitespace and decode entities.
 pub(super) fn clean(value: &str) -> String {
     decode_entities(value)
         .split_whitespace()
@@ -79,7 +69,6 @@ pub(super) fn clean(value: &str) -> String {
         .join(" ")
 }
 
-/// Strip leading honorifics so "Mr. Barry Mink" and "Barry Mink" mint the same coach identity.
 pub fn strip_honorific(value: &str) -> String {
     let mut parts: Vec<&str> = value.split_whitespace().collect();
     while let Some(first) = parts.first() {

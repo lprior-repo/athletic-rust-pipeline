@@ -1,27 +1,16 @@
-//! Process-memory ceiling: the service watches its own resident set and stops when it passes the
-//! budget, so an unbounded stage costs a drained, resumable restart instead of the operator's swap.
-//!
-//! The reading comes from `/proc/self/status` (`VmRSS`): no dependency, no privileged API, and the
-//! same figure `ps` reports. Adapters are what actually keep the working set small — the legacy
-//! import commits in chunks, a roster is appended as it is parsed — and this guard is the backstop
-//! that makes "the process stayed inside its budget" an assertion rather than a hope.
 
 use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::sync::Notify;
 
-/// How often the resident set is sampled. Long enough to cost nothing, short enough that a runaway
-/// stage is caught while the machine is still responsive.
 pub(super) const SAMPLE_INTERVAL: Duration = Duration::from_secs(5);
 
-/// The resident set of this process in bytes, or `None` on a platform that does not report one.
 pub(super) fn resident_bytes() -> Option<u64> {
     let status = std::fs::read_to_string("/proc/self/status").ok()?;
     parse_vm_rss_kib(&status).map(|kib| kib.saturating_mul(1024))
 }
 
-/// The `VmRSS` line of `/proc/self/status` — `VmRSS:\t  123456 kB` — in kibibytes.
 fn parse_vm_rss_kib(status: &str) -> Option<u64> {
     let rest = status
         .lines()
@@ -29,10 +18,6 @@ fn parse_vm_rss_kib(status: &str) -> Option<u64> {
     rest.split_whitespace().next()?.parse::<u64>().ok()
 }
 
-/// Watch the resident set and trip `over_budget` once it passes `budget_bytes`.
-///
-/// Returns after tripping, or immediately when the platform reports no resident set; the caller owns
-/// the task, so a stop request cancels the wait rather than leaving an orphan watcher.
 pub(super) async fn watch_memory_with(
     reader: impl Fn() -> Option<u64>,
     budget_bytes: u64,
@@ -58,7 +43,6 @@ pub(super) async fn watch_memory_with(
     }
 }
 
-/// Watch the real process resident set against `budget_bytes`.
 #[tracing::instrument(skip_all, fields(
     budget_gib = budget_bytes / (1024 * 1024 * 1024),
     interval = ?super::guard::SAMPLE_INTERVAL

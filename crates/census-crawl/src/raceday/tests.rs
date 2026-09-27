@@ -1,8 +1,5 @@
 use super::*;
 
-/// Verbatim `<h3>` + finish-list table from
-/// `https://www.wiaawi.org/Portals/0/PDF/Results/Cross_Country/2023/racinesectionalb.htm`
-/// (WIAA Division 2 Racine sectional, boys race, 2023).
 const FINISH_LIST: &str =
     include_str!("../../tests/fixtures/wiaa_results/racinesectionalb-finish-list.htm");
 
@@ -116,8 +113,6 @@ fn the_published_row_counters_are_the_rows_the_reader_took() -> anyhow::Result<(
     Ok(())
 }
 
-/// A one-table export whose second row carries no athlete name: a grid row the layout cannot read
-/// as a performance, beside one it can.
 const DECLINED_ROW: &str = r#"
 <h3>WIAA D3 XC Sectionals - Girls Race Team Finish List-XC</h3>
 <table class="data-display">
@@ -166,9 +161,6 @@ fn divisions_parse_from_both_spellings() {
     assert_eq!(division_of("Boys Race"), None);
 }
 
-/// A one-table export where a team-member-place column carries numeric values (e.g. `5`) that
-/// are also parseable as times. The finish-time column is identified by its header label, not by
-/// position, so the parser yields the finish time, not the placement.
 const PLACE_AS_TIME_FIXTURE: &str = r#"
 <h3>Test XC Sectionals - Boys Race Team Finish List-XC</h3>
 <table class="data-display">
@@ -227,8 +219,6 @@ fn a_placement_value_is_not_mistaken_for_a_finish_time() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// A multi-table export: one valid table and one table with no time column.
-/// The valid table's rows are parsed; the no-time-column table's rows are rejected.
 const MULTI_TABLE_NO_TIME_FIXTURE: &str = r#"
 <h3>Test XC Sectionals - Boys Race Team Finish List-XC</h3>
 <table class="data-display">

@@ -1,10 +1,3 @@
-//! Total-ness: what a mark parser does with text no page would ever publish.
-//!
-//! Marks arrive from scraped pages, so the input space is not the vendor's notation — it is whatever
-//! bytes are in the cell. Two things must hold for every input: the parser answers or refuses
-//! instead of panicking, and whatever it accepts is a *real* mark. The second is not pedantry: a
-//! mark of `inf` metres or `NaN` seconds compares as better than every real one, so one poisoned
-//! cell would silently win every personal best from then on.
 
 use super::{arbitrary_token, metres_of, parse_field_mark, parse_time, seam_config, shaped_token};
 use proptest::prelude::*;
@@ -24,7 +17,6 @@ proptest! {
         let _ = parse_field_mark(&token);
     }
 
-    /// A time that is accepted is a duration a stopwatch could have produced.
     #[test]
     fn an_accepted_time_is_finite_and_non_negative(token in shaped_token()) {
         if let Some(seconds) = parse_time(&token) {
@@ -35,7 +27,6 @@ proptest! {
         }
     }
 
-    /// A mark that is accepted is a distance a person could have jumped or thrown.
     #[test]
     fn an_accepted_mark_is_finite_and_positive(token in shaped_token()) {
         if let Some(mark) = parse_field_mark(&token) {

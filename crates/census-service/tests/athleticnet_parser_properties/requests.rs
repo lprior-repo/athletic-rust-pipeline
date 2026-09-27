@@ -1,9 +1,3 @@
-//! The three requests one meet costs, and what they must be able to promise.
-//!
-//! These URLs are the census's most expensive traffic: every one of them is a page of an athlete
-//! history. Two things must hold before a request goes out: it names the meet it was built from, and
-//! it goes to the host that serves that meet — a URL that drifts to another endpoint or another host
-//! spends a request on the wrong page, and nothing downstream can tell.
 
 use super::{meet_requests, metadata_request};
 

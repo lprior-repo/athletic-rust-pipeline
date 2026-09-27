@@ -1,4 +1,3 @@
-//! Tests for the fixed-point mark newtypes: ordering, round-trip, and float pitfalls.
 
 use crate::model::{CentiMetres, CentiPoints, CentiSeconds};
 

@@ -1,245 +1,160 @@
-//! The head coaches one school's coach rows leave behind, indexed by contact slot and side of a team.
-//!
-//! One program arrives as several rows: a boys' and a girls' head coach of the same sport, a
-//! re-observation that published a new address, a row the source never bound to a side of a team.
-//! This module resolves each `(slot, side)` bucket to the one row the contact ladder reads, records
-//! every bucket whose rows disagree, and marks the buckets the precedence order cannot separate —
-//! the rows that share the newest observation and agree on whether they published an address, and
-//! still disagree about who the coach is.
+use std::collections::BTreeMap;
 
-use census_domain::model::{CanonicalCoach, Gender};
-use std::cmp::Reverse;
+use census_domain::model::{
+    assess_coach_tenure, CanonicalCoach, CoachId, CoachTenure, Gender, SchoolYear,
+    TenureAssessmentError,
+};
 
-use super::{role_label, Disagreement, Named, Slot};
+use super::normalise::{role_label, Named};
+use super::{ContactState, Disagreement, Slot};
 
-/// One side of one slot, as the coach rows resolved it: the row precedence picked, and whether the
-/// rows of that side disagree in a way the precedence order cannot separate.
 #[derive(Debug, Default, Clone)]
-pub(super) struct Side {
-    /// The row the precedence order resolved this side to, when the side has a row at all.
-    pub(super) row: Option<Named>,
-    /// The bucket holds rows the precedence order cannot separate, so [`Side::row`] is only the
-    /// name-and-id tie-break's choice rather than an evidenced one.
-    pub(super) undecided: bool,
+pub(in crate::workbook::recruiting) enum Outcome {
+    Current(Named),
+    Conflict,
+    TenureConflict,
+    InvalidEvidence,
+    #[default]
+    Unknown,
 }
 
-/// The four sides a coach row can be published for.
-#[derive(Debug, Default, Clone)]
-struct Sides {
-    boys: Side,
-    girls: Side,
-    mixed: Side,
-    unknown: Side,
-}
-
-impl Sides {
-    /// Record the row one side resolved to.
-    fn set(&mut self, side: Gender, named: Named) {
-        self.side_mut(side).row = Some(named);
-    }
-
-    /// Record that one side's rows cannot be separated by the precedence order.
-    fn undecide(&mut self, side: Gender) {
-        self.side_mut(side).undecided = true;
-    }
-
-    /// The row the athlete reaches first: their own side, then a side-less row, then an unplaced
-    /// one, then boys, then girls.
-    fn resolve(&self, side: Gender) -> Option<&Side> {
-        [
-            side,
-            Gender::Mixed,
-            Gender::Unknown,
-            Gender::Boys,
-            Gender::Girls,
-        ]
-        .into_iter()
-        .map(|candidate| self.side(candidate))
-        .find(|bucket| bucket.row.is_some())
-    }
-
-    fn side(&self, side: Gender) -> &Side {
-        match side {
-            Gender::Boys => &self.boys,
-            Gender::Girls => &self.girls,
-            Gender::Mixed => &self.mixed,
-            Gender::Unknown => &self.unknown,
+impl Outcome {
+    pub(in crate::workbook::recruiting) fn named(&self) -> Option<&Named> {
+        match self {
+            Self::Current(named) => Some(named),
+            _ => None,
         }
     }
 
-    fn side_mut(&mut self, side: Gender) -> &mut Side {
-        match side {
-            Gender::Boys => &mut self.boys,
-            Gender::Girls => &mut self.girls,
-            Gender::Mixed => &mut self.mixed,
-            Gender::Unknown => &mut self.unknown,
+    pub(super) fn blocker(&self) -> Option<ContactState> {
+        match self {
+            Self::Conflict => Some(ContactState::ContactConflict),
+            Self::TenureConflict => Some(ContactState::ContactTenureConflict),
+            Self::InvalidEvidence => Some(ContactState::ContactEvidenceInvalid),
+            Self::Current(_) | Self::Unknown => None,
+        }
+    }
+
+    fn combine(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::TenureConflict, _) | (_, Self::TenureConflict) => Self::TenureConflict,
+            (Self::Conflict, _) | (_, Self::Conflict) => Self::Conflict,
+            (Self::Current(_), Self::Current(_)) => Self::Conflict,
+            (current @ Self::Current(_), _) | (_, current @ Self::Current(_)) => current,
+            (Self::InvalidEvidence, _) | (_, Self::InvalidEvidence) => Self::InvalidEvidence,
+            _ => Self::Unknown,
         }
     }
 }
 
-/// A school's head coaches, bucketed per slot and side.
 #[derive(Debug, Default, Clone)]
 pub(in crate::workbook::recruiting) struct Heads {
-    track: Sides,
-    cross_country: Sides,
-    school_wide: Sides,
-    conflicts: usize,
+    scopes: BTreeMap<(Slot, Gender), Outcome>,
     disagreements: Vec<Disagreement>,
 }
 
 impl Heads {
-    /// Record the coach one `(slot, side)` bucket resolved to.
-    pub(super) fn set(&mut self, slot: Slot, side: Gender, named: Named) {
-        if let Some(sides) = self.sides_mut(slot) {
-            sides.set(side, named);
+    pub(super) fn insert(
+        &mut self, school: &str, slot: Slot, side: Gender,
+        rows: &[&CanonicalCoach], school_year: SchoolYear,
+    ) {
+        let outcome = resolve(rows, school_year);
+        if matches!(outcome, Outcome::Conflict | Outcome::TenureConflict) {
+            let state = match outcome {
+                Outcome::TenureConflict => ContactState::ContactTenureConflict,
+                _ => ContactState::ContactConflict,
+            };
+            self.disagreements.push(Disagreement {
+                school: school.to_owned(), role: role_label(slot, side), state,
+                rows: describe(rows, school_year),
+            });
         }
+        self.scopes.insert((slot, side), outcome);
     }
 
-    /// Record that one `(slot, side)` bucket holds rows that disagree about the contact: the bucket
-    /// is counted, marked undecided when the precedence order cannot separate its rows, and
-    /// described for the retained conflict queue.
-    pub(super) fn disagree(
-        &mut self,
-        school: &str,
-        slot: Slot,
-        side: Gender,
-        rows: &[&CanonicalCoach],
-        undecided: bool,
-    ) {
-        if let Some(sides) = self.sides_mut(slot) {
-            if undecided {
-                sides.undecide(side);
+    pub(in crate::workbook::recruiting) fn conflicts(&self) -> usize {
+        self.disagreements.len()
+    }
+
+    pub(super) fn resolve(&self, slot: Slot, side: Gender) -> &Outcome {
+        if matches!(side, Gender::Boys | Gender::Girls) {
+            if let Some(outcome) = self.scopes.get(&(slot, side)) {
+                if !matches!(outcome, Outcome::Unknown) {
+                    return outcome;
+                }
             }
         }
-        self.conflicts = self.conflicts.saturating_add(1);
-        self.disagreements.push(Disagreement {
-            school: school.to_string(),
-            role: role_label(slot, side),
-            decided: !undecided,
-            rows: describe(rows.iter().copied()),
-        });
+        self.scopes.get(&(slot, Gender::Mixed)).unwrap_or(&Outcome::Unknown)
     }
 
-    /// Buckets whose rows disagree about a head coach.
-    pub(in crate::workbook::recruiting) fn conflicts(&self) -> usize {
-        self.conflicts
-    }
-
-    /// The side of one slot the athlete reaches, with the row precedence resolved it to.
-    pub(super) fn resolve(&self, slot: Slot, side: Gender) -> Option<&Side> {
-        self.sides(slot)?.resolve(side)
-    }
-
-    /// Every bucket whose rows disagree, in slot and side order.
     pub(super) fn into_disagreements(self) -> Vec<Disagreement> {
         self.disagreements
     }
-
-    fn sides(&self, slot: Slot) -> Option<&Sides> {
-        match slot {
-            Slot::Track => Some(&self.track),
-            Slot::CrossCountry => Some(&self.cross_country),
-            Slot::SchoolWide | Slot::UnknownSport => Some(&self.school_wide),
-            Slot::Director => None,
-        }
-    }
-
-    fn sides_mut(&mut self, slot: Slot) -> Option<&mut Sides> {
-        match slot {
-            Slot::Track => Some(&mut self.track),
-            Slot::CrossCountry => Some(&mut self.cross_country),
-            Slot::SchoolWide => Some(&mut self.school_wide),
-            Slot::Director => None,
-        }
-    }
 }
 
-/// Whether a bucket holds rows the precedence order cannot separate: the rows that share the newest
-/// observation and agree on whether they published an address, yet disagree about the coach's name
-/// or the address they published. Two rows that agree on both are one observation, not a conflict.
-pub(super) fn undecided<'a>(rows: impl Iterator<Item = &'a CanonicalCoach>) -> bool {
-    let rows: Vec<&CanonicalCoach> = rows.collect();
-    let Some(best) = rows.iter().map(|row| evidence_key(row)).max() else {
-        return false;
-    };
-    let mut identities: Vec<(&str, Option<&str>)> = Vec::new();
-    for row in rows {
-        if evidence_key(row) != best {
-            continue;
-        }
-        let identity = (row.name.as_str(), coach_email(row));
-        if !identities.contains(&identity) {
-            identities.push(identity);
-        }
-    }
-    identities.len() > 1
-}
-
-/// The preferred published address, with the consumer mailbox as an explicit fallback.
-fn coach_email(coach: &CanonicalCoach) -> Option<&str> {
-    coach
-        .professional_email
-        .as_deref()
-        .or(coach.personal_email.as_deref())
-}
-
-/// The evidence precedence compares whether the row published an address, then its newest date.
-fn evidence_key(coach: &CanonicalCoach) -> (bool, &str) {
-    (coach_email(coach).is_some(), observed_on(coach))
-}
-
-/// The newest `Evidence.observed_on` one row carries, blank when it carries no evidence.
-pub(super) fn observed_on(coach: &CanonicalCoach) -> &str {
-    coach
-        .evidence
-        .iter()
-        .map(|evidence| evidence.observed_on.as_str())
-        .max()
-        .unwrap_or_default()
-}
-
-/// The row one `(slot, side)` bucket resolves to: a row that published a professional address, or
-/// its personal fallback, wins over one that published none; newer evidence then decides.
-pub(super) fn resolve<'a>(
-    rows: impl Iterator<Item = &'a CanonicalCoach>,
-) -> Option<&'a CanonicalCoach> {
-    rows.min_by(|left, right| rank(left).cmp(&rank(right)))
-}
-
-/// Whether a `(slot, side)` bucket's rows publish two or more different addresses.
-pub(super) fn conflicting<'a>(rows: impl Iterator<Item = &'a CanonicalCoach>) -> bool {
-    let mut addresses: Vec<&str> = Vec::new();
-    for row in rows {
-        let Some(address) = coach_email(row) else {
-            continue;
-        };
-        if addresses.contains(&address) {
-            continue;
-        }
-        addresses.push(address);
-        if addresses.len() > 1 {
-            return true;
-        }
-    }
-    false
-}
-
-/// The total order a bucket resolves by: an address before no address, then newest observation,
-/// then coach name and id.
-fn rank(coach: &CanonicalCoach) -> (Reverse<bool>, Reverse<&str>, &str, &str) {
-    (
-        Reverse(coach_email(coach).is_some()),
-        Reverse(observed_on(coach)),
-        coach.name.as_str(),
-        coach.id.as_str(),
-    )
-}
-
-/// Every row of one bucket, including a personal address when that is all it published.
-fn describe<'a>(rows: impl Iterator<Item = &'a CanonicalCoach>) -> Vec<String> {
-    rows.map(|row| {
-        let address = coach_email(row).unwrap_or("no published address");
-        format!("{}: {} (observed {})", row.name, address, observed_on(row))
+pub(super) fn resolve(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Outcome {
+    owners(rows).into_values().fold(Outcome::Unknown, |outcome, owner| {
+        outcome.combine(resolve_owner(&owner, school_year))
     })
-    .collect()
+}
+
+pub(super) fn individuals(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Vec<Named> {
+    owners(rows).into_values().filter_map(|owner| match resolve_owner(&owner, school_year) {
+        Outcome::Current(named) => Some(named),
+        _ => None,
+    }).collect()
+}
+
+fn owners<'a>(rows: &[&'a CanonicalCoach]) -> BTreeMap<&'a CoachId, Vec<&'a CanonicalCoach>> {
+    let mut owners: BTreeMap<&CoachId, Vec<&CanonicalCoach>> = BTreeMap::new();
+    for coach in rows {
+        owners.entry(&coach.id).or_default().push(coach);
+    }
+    owners
+}
+
+fn resolve_owner(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Outcome {
+    let evidence = rows.iter().flat_map(|coach| &coach.tenure_evidence);
+    match assess_coach_tenure(evidence, school_year) {
+        Err(TenureAssessmentError::Conflict) => return Outcome::TenureConflict,
+        Err(TenureAssessmentError::InvalidEvidence { .. }) => return Outcome::InvalidEvidence,
+        Ok(CoachTenure::Former { .. } | CoachTenure::Unknown) => return Outcome::Unknown,
+        Ok(CoachTenure::Current { .. }) => {}
+    }
+    let mut named: Option<Named> = None;
+    for coach in rows.iter().filter(|coach| current_row(coach, school_year)) {
+        match named.as_mut() {
+            Some(named) => {
+                if !named.merge(coach) {
+                    return Outcome::Conflict;
+                }
+            }
+            None => {
+                let Some(current) = Named::of(coach) else {
+                    return Outcome::InvalidEvidence;
+                };
+                named = Some(current);
+            }
+        }
+    }
+    match named {
+        Some(named) => Outcome::Current(named),
+        None => Outcome::InvalidEvidence,
+    }
+}
+
+fn current_row(coach: &CanonicalCoach, school_year: SchoolYear) -> bool {
+    coach.tenure_evidence.iter().any(|fact| {
+        matches!(fact.tenure, CoachTenure::Current { school_year: year } if year == school_year)
+    })
+}
+
+fn describe(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Vec<String> {
+    let mut descriptions: Vec<_> = rows.iter().map(|coach| {
+        format!("{} [{}]: professional={:?}; personal={:?}; tenure={:?}",
+            coach.name, coach.id, coach.professional_email, coach.personal_email,
+            coach.tenure_state(school_year))
+    }).collect();
+    descriptions.sort();
+    descriptions
 }

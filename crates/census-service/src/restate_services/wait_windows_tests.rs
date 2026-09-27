@@ -3,9 +3,6 @@ mod wait_windows_tests {
     use super::*;
     use std::cell::{Cell, RefCell};
 
-    /// A scripted stand-in for the durable wait. It records every window it was asked to wait — the
-    /// assertion that matters, since a loop that stopped waiting cannot fail a test that only counts
-    /// windows.
     struct ScriptedWindows {
         cut_short_at: Option<u32>,
         calls: Cell<u32>,
@@ -35,10 +32,6 @@ mod wait_windows_tests {
         }
     }
 
-    /// A zero-second window is a wait of zero length, not a skipped wait. The pre-fix code awaited
-    /// `ctx.signal` alone for `window_seconds == 0`, so with no signal the future never resolved and
-    /// the call never returned; a later repair deleted the sleep entirely. That is why this asserts
-    /// the waits themselves: three windows must mean three waits.
     #[tokio::test]
     async fn a_zero_second_window_waits_once_per_window() {
         let waits = ScriptedWindows::new(None);
@@ -56,7 +49,6 @@ mod wait_windows_tests {
         );
     }
 
-    /// A stop signal that has already arrived ends the sweep inside its first window.
     #[tokio::test]
     async fn an_arrived_signal_cuts_the_first_window_short() {
         let waits = ScriptedWindows::new(Some(0));
@@ -71,7 +63,6 @@ mod wait_windows_tests {
         );
     }
 
-    /// A signal arriving mid-sweep keeps the windows already observed.
     #[tokio::test]
     async fn a_signal_mid_sweep_keeps_the_windows_observed_so_far() {
         let waits = ScriptedWindows::new(Some(2));
@@ -82,7 +73,6 @@ mod wait_windows_tests {
         assert_eq!(waits.windows_waited(), vec![30, 30, 30]);
     }
 
-    /// Every window carries the requested duration, and exhausting them is not an interruption.
     #[tokio::test]
     async fn all_windows_elapse_without_a_signal() {
         let waits = ScriptedWindows::new(None);
@@ -93,7 +83,6 @@ mod wait_windows_tests {
         assert_eq!(waits.windows_waited(), vec![42, 42, 42]);
     }
 
-    /// No windows means no waits at all.
     #[tokio::test]
     async fn zero_windows_waits_for_nothing() {
         let waits = ScriptedWindows::new(None);

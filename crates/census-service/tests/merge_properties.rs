@@ -1,33 +1,3 @@
-//! Property tests for the read-time merge algebra (`Entity::merge` in `store/entities.rs`).
-//!
-//! Laws pinned here, each one read off the merge bodies they constrain:
-//!
-//! * **Idempotency** — absorbing a second identical observation changes nothing.
-//! * **Union commutativity** — `source_identities`, `evidence`, `aliases`, `known_names`, `sports`,
-//!   `source_urls` and `source_labels` are sets, so merge order cannot leak into a row.
-//! * **Source identity reversibility** — those unions are *exact*: the `source_identities` a merge
-//!   leaves are the two sides' union and nothing else, `identity_in` answers from the merged row for
-//!   every namespace either side named, and a refused merge absorbs no identity while its finding
-//!   names both sides' provider objects.
-//! * **First-writer-wins** — an option a row already carries is never replaced (`level`, `city`,
-//!   `enrollment`, …). Every law is checked in both directions, so it is the *first* writer that
-//!   survives rather than one fixed side. The meet `level` is the documented exception: `Unknown`
-//!   is a hole the other side fills. A coach's contacts are first-writer-wins *per published field*:
-//!   a merge reads each side's raw address through `publish`, so the first writer of a kind keeps
-//!   that field and the second fills only the kind it left empty.
-//! * **Identity preservation** — merge never rewrites the name a canonical record was minted from
-//!   (`school.name`, `school.normalized_name`, `athlete.canonical_name`); variants land in
-//!   `aliases` / `known_names` instead.
-//! * **Coach contact policy** — `publish` keeps each valid address and routes it by domain through
-//!   `census_domain::model::published_email`, placing consumer mailboxes in `personal_email`.
-//! * **Athlete cohort rule** — an observation that disagrees with `grad_year` lowers
-//!   `identity_confidence` to `LOW`, agreement raises it to `HIGH`, and no observation leaves it
-//!   alone.
-//!
-//! Deterministic by construction: [`law_config`] pins 64 cases on ChaCha with the fixed seed
-//! `0x004D_4552_475F_4944`, so a failing case is reproducible from the seed alone. The laws live in
-//! [`laws_unions`], [`laws_source_identity`], [`laws_writers`] and [`contact_policy`].
-
 #![forbid(unsafe_code)]
 
 use census_domain::model::{
@@ -59,7 +29,6 @@ fn law_config() -> ProptestConfig {
     }
 }
 
-/// A lowercase word. The values only need to be printable and distinct.
 fn word(max: usize) -> impl Strategy<Value = String> {
     prop::collection::vec(b'a'..=b'z', 1..=max)
         .prop_map(|bytes| bytes.into_iter().map(char::from).collect())
@@ -108,7 +77,6 @@ fn level() -> impl Strategy<Value = CompetitionLevel> {
     ]
 }
 
-/// An external id in `namespace`, distinct from the identities the base value already carries.
 fn peer_identity(namespace: SourceNamespace) -> impl Strategy<Value = SourceIdentity> {
     word(8).prop_map(move |suffix| SourceIdentity::new(namespace.clone(), format!("peer-{suffix}")))
 }
@@ -117,7 +85,6 @@ fn evidence() -> impl Strategy<Value = Evidence> {
     word(8).prop_map(|id| Evidence::parsed(SourceRef::new(format!("src-{id}"), None), "2026-01-01"))
 }
 
-/// A published mailbox, sometimes padded, sometimes not a mailbox at all.
 fn mailbox() -> impl Strategy<Value = String> {
     let domain = prop_oneof![
         Just("school.wi.us"),
@@ -173,8 +140,6 @@ fn coach() -> impl Strategy<Value = CanonicalCoach> {
         })
 }
 
-/// The fields a coach row publishes for one source's raw address: the address trimmed, in the field
-/// its own domain kind names, and nothing at all when the source text is not a mailbox.
 fn published_slots(address: &str) -> (Option<String>, Option<String>) {
     match published_email(address) {
         Some((address, MailboxKind::Professional)) => (Some(address), None),
@@ -183,7 +148,6 @@ fn published_slots(address: &str) -> (Option<String>, Option<String>) {
     }
 }
 
-/// The fields two raw addresses leave behind, the first side winning the field it fills.
 fn merged_slots(
     first: &(Option<String>, Option<String>),
     second: &(Option<String>, Option<String>),
@@ -194,7 +158,6 @@ fn merged_slots(
     )
 }
 
-/// The same coach, carrying an address exactly as a source published it.
 fn coach_with_email(address: String) -> CanonicalCoach {
     let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
     let mut coach = CanonicalCoach::new(
@@ -217,7 +180,11 @@ fn athlete() -> impl Strategy<Value = CanonicalAthlete> {
         prop::collection::vec(sport(), 0..=2),
     )
         .prop_map(|(school, name, grad_year, gender, mut sports)| {
-            let mut athlete = CanonicalAthlete::new(&school.id, name, grad_year, gender);
+            let source = SourceIdentity::new(
+                SourceNamespace::Other("fixture".to_string()),
+                format!("athlete-{name}"),
+            );
+            let mut athlete = CanonicalAthlete::new(&school.id, name, grad_year, gender, source);
             sports.sort();
             sports.dedup();
             athlete.sports = sports;
@@ -243,8 +210,6 @@ fn event() -> impl Strategy<Value = CanonicalEvent> {
         .prop_map(|(meet, kind, gender)| CanonicalEvent::new(&meet.id, kind, gender, None, None))
 }
 
-/// Set equality for the de-duplicated vectors `union_vec` produces: equal length plus mutual
-/// containment is enough, because neither side can repeat an element.
 fn same_members<T: PartialEq + std::fmt::Debug>(left: &[T], right: &[T]) -> bool {
     left.len() == right.len() && left.iter().all(|item| right.contains(item))
 }

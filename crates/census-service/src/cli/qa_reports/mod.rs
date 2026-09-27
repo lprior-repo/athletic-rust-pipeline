@@ -1,12 +1,3 @@
-//! The `qa-reports` subcommand: verify every assignment report exists, carries the required schema
-//! headings, starts with the correct numbered header, has a `Status:` line near the top, and that
-//! each gap-phase follow-up (31–46) has a non-empty evidence directory.
-//!
-//! The research workspace root is supplied via `--research`; from there the tool looks for
-//! `research/midwest/*.md`, `research/midwest/evidence/gaps/<N>/`, and
-//! `synthesis/09-gap-phase-consolidation-2026-09-20.md`.
-//!
-//! Exit code 0 = all present and schema-complete; 1 = problems listed. Read-only.
 
 pub mod check;
 pub mod constants;
@@ -15,16 +6,14 @@ use anyhow::{bail, Result};
 use clap::Args;
 use std::path::PathBuf;
 
-/// What `qa-reports` was asked to verify.
 #[derive(Args, Debug)]
+#[command(about = "What `qa-reports` was asked to verify")]
 pub(super) struct QaReportsArgs {
-    /// Research workspace root (where `research/midwest/` and `synthesis/` live).
+    #[arg(help = "Research workspace root (where `research/midwest/` and `synthesis/` live)")]
     #[arg(long, value_name = "DIR")]
     research: PathBuf,
 }
 
-/// Run the qa-reports subcommand.
-/// Report results and exit if problems exist.
 fn print_and_exit(ok_count: usize, problems: &[String]) {
     println!(
         "\nreports present: {ok_count}/{}",
@@ -92,7 +81,6 @@ pub(super) fn run_qa_reports(args: &QaReportsArgs) -> Result<()> {
 mod tests {
     use super::constants::*;
 
-    /// Verify the 46 entries cover 1–46 with no gaps or duplicates.
     #[test]
     fn expected_numbers_1_to_46() {
         let mut prev = 0usize;
@@ -103,7 +91,6 @@ mod tests {
         assert_eq!(prev, 46, "last entry is {prev}, expected 46");
     }
 
-    /// Verify every filename matches the expected NNN-slug.md pattern.
     #[test]
     fn expected_filenames_valid() {
         for (num, fname) in EXPECTED {
@@ -116,7 +103,6 @@ mod tests {
         }
     }
 
-    /// Verify each required section compiles into a valid regex.
     #[test]
     fn required_sections_compile() {
         for name in REQUIRED_SECTIONS {
@@ -127,7 +113,6 @@ mod tests {
         }
     }
 
-    /// Verify section_re matches an actual heading from a report.
     #[test]
     fn section_re_matches_actual_heading() {
         let text = "## Source";

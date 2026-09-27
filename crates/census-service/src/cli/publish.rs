@@ -1,11 +1,3 @@
-//! The publishing subcommands: consolidate the append log, build the census, reduce best
-//! marks and write the workbook.
-//!
-//! `report`, `bests` and `workbook` build census artifacts and run either way: with `--store` they
-//! build them in-process against the store, and without it they ask the running census service for the
-//! same work, which is the only path open while `census-serve` holds the store. `consolidate` and
-//! `index` merge and derive the store's own files and are offline tools — they require the writer to
-//! be stopped.
 
 use anyhow::{Context, Result};
 use census_report::report;
@@ -17,7 +9,6 @@ use std::path::PathBuf;
 
 use super::{cohort_label, live, school_year, scope_of, Cli, Route};
 
-/// Merge append observations into `out/*.jsonl` snapshots.
 pub(super) fn run_consolidate(store: &Store) -> Result<()> {
     let counts = census_service::census::consolidate(store)?;
     for (table, count) in counts {
@@ -26,7 +17,6 @@ pub(super) fn run_consolidate(store: &Store) -> Result<()> {
     Ok(())
 }
 
-/// Print the one-line census totals for `census`.
 fn print_totals(census: &report::Census) {
     println!(
         "scope={} totals: schools={} athletes={} co2027={} (boys={} girls={}) profile_url={} multisource={} coaches={}",
@@ -42,7 +32,6 @@ fn print_totals(census: &report::Census) {
     );
 }
 
-/// Compute the measured census from the store.
 pub(super) fn run_report(store: &Store, print: bool, core: bool) -> Result<()> {
     let scope = if core {
         report::Scope::Core
@@ -62,19 +51,17 @@ pub(super) fn run_report(store: &Store, print: bool, core: bool) -> Result<()> {
 
 #[derive(Args, Debug)]
 pub(super) struct ReportArgs {
-    /// Print the census JSON to stdout as well as writing files.
+    #[arg(help = "Print the census JSON to stdout as well as writing files")]
     #[arg(long)]
     print: bool,
-    /// Restrict the census to core evidence: Athletic.net and the AthleticLIVE derivative are
-    /// excluded, exactly as they are when those adapters are never registered.
+    #[arg(help = "Restrict the census to core evidence: Athletic.net and the AthleticLIVE derivative are excluded, exactly as they are when those adapters are never registered")]
     #[arg(long)]
     core: bool,
-    /// Ingress origin of the local Restate server. The local census deployment when omitted.
+    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
 }
 
-/// Compute the measured census: in-process with `--store`, through the service without it.
 pub(super) async fn run_census_report(cli: &Cli, args: &ReportArgs) -> Result<()> {
     let scope = if args.core {
         report::Scope::Core
@@ -98,25 +85,20 @@ pub(super) async fn run_census_report(cli: &Cli, args: &ReportArgs) -> Result<()
 
 #[derive(Args, Debug)]
 pub(super) struct BestsArgs {
-    /// Graduation year the cohort is selected by (2027 = the class of 2027).
+    #[arg(help = "Graduation year the cohort is selected by (2027 = the class of 2027)")]
     #[arg(long, default_value_t = 2027, conflicts_with = "all")]
     grad_year: u16,
-    /// Keep only the first N rows of the reduction.
+    #[arg(help = "Keep only the first N rows of the reduction")]
     #[arg(long)]
     limit: Option<usize>,
-    /// Reduce every athlete in the core scope instead of one graduating class.
+    #[arg(help = "Reduce every athlete in the core scope instead of one graduating class")]
     #[arg(long)]
     all: bool,
-    /// Ingress origin of the local Restate server. The local census deployment when omitted.
+    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
 }
 
-/// One best mark per `(athlete, event)` for one cohort, written as `out/best-results-<cohort>.*`.
-///
-/// The reduction is core-scoped, exactly as the workbook's best-results sheet is: Athletic.net and
-/// the AthleticLIVE derivative contribute nothing. `--all` widens the cohort to every athlete in that
-/// scope instead of one graduating class, and clap rejects it alongside `--grad-year`.
 pub(super) async fn run_bests(cli: &Cli, args: &BestsArgs) -> Result<()> {
     let grad_year = if args.all {
         None
@@ -140,7 +122,6 @@ pub(super) async fn run_bests(cli: &Cli, args: &BestsArgs) -> Result<()> {
     }
 }
 
-/// The in-process reduction, with the store this command opened itself.
 fn run_bests_offline(store: &Store, args: &BestsArgs, grad_year: Option<i16>) -> Result<()> {
     let options = bests::Options {
         scope: report::Scope::Core,
@@ -150,7 +131,7 @@ fn run_bests_offline(store: &Store, args: &BestsArgs, grad_year: Option<i16>) ->
     let rows = bests::build(store, &options).context("reducing the best marks")?;
     let cohort = cohort_label(grad_year);
     let (jsonl, csv) =
-        bests::write(store, &rows, &cohort).context("writing the best-mark sidecars")?;
+        bests::write(&store.out_dir(), &rows, &cohort).context("writing the best-mark sidecars")?;
     println!("cohort={cohort} rows={}", rows.len());
     println!("wrote {}", jsonl.display());
     println!("wrote {}", csv.display());
@@ -159,24 +140,23 @@ fn run_bests_offline(store: &Store, args: &BestsArgs, grad_year: Option<i16>) ->
 
 #[derive(Args, Debug)]
 pub(super) struct WorkbookArgs {
-    /// Where to write the `.xlsx` (defaults to `<store>/out/census-service-<generated-on>.xlsx`).
+    #[arg(help = "Where to write the `.xlsx` (defaults to `<store>/out/census-service-<generated-on>.xlsx`)")]
     #[arg(long)]
     out: Option<PathBuf>,
-    /// Graduation year used for the cohort sheets (2027 = the class of 2027).
+    #[arg(help = "Graduation year used for the cohort sheets (2027 = the class of 2027)")]
     #[arg(long, default_value_t = 2027)]
     grad_year: u16,
-    /// Cap the per-athlete best-mark sheet at N rows.
+    #[arg(help = "Cap the per-athlete best-mark sheet at N rows")]
     #[arg(long)]
     limit: Option<usize>,
-    /// Reduce the best-results sheet over the core scope instead of every approved source.
+    #[arg(help = "Reduce the best-results sheet over the core scope instead of every approved source")]
     #[arg(long)]
     core: bool,
-    /// Ingress origin of the local Restate server. The local census deployment when omitted.
+    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
 }
 
-/// The census workbook and its sidecars, written by the crate's own Rust writer.
 pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
     let grad_year = school_year(args.grad_year)?;
     match cli.route(args.ingress.as_deref())? {
@@ -186,6 +166,7 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
                 out: args.out.clone(),
                 limit: args.limit,
                 scope: scope_of(args.core),
+                school_year: None,
             };
             let store = Store::open(root)?;
             let path = workbook::build(&store, &options).context("building the census workbook")?;
@@ -209,7 +190,6 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
     }
 }
 
-/// Derive the durable indexes and report what the pass appended.
 pub(super) fn run_index(store: &Store) -> Result<()> {
     let finished_on = census_crawl::net::today_iso();
     let report = census_reconcile::index::derive(store, "index", &finished_on)

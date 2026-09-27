@@ -1,6 +1,4 @@
 use crate::BrowserError;
-/// Verified browser-realm interceptor prototype.
-/// Replaces __RANKINGS_CAPTURE_CONFIG__ with serde_json-serialized config.
 const INTERCEPTOR_TEMPLATE: &str = r#"(() => {
   const config = __RANKINGS_CAPTURE_CONFIG__;
   if (window !== window.top) return;
@@ -98,7 +96,6 @@ const INTERCEPTOR_TEMPLATE: &str = r#"(() => {
   };
 })();"#;
 
-/// Interceptor config serialized as JSON for the JS prototype.
 #[derive(serde::Serialize)]
 struct InterceptorConfig<'a> {
     origin: &'a str,
@@ -107,7 +104,6 @@ struct InterceptorConfig<'a> {
 }
 pub(crate) const BINDING_NAME: &str = "retainRankingResponse";
 
-/// Build the interceptor script with serialized config.
 pub(crate) fn build_interceptor_script(origin: &str, nonce: u64) -> Result<String, BrowserError> {
     let config = InterceptorConfig {
         origin,

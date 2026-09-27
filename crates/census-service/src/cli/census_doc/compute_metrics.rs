@@ -1,8 +1,6 @@
-//! Compute Co2027 and recruiting metrics from CSV rows.
 
 use std::collections::HashMap;
 
-/// Metrics derived from the Co2027 and recruiting CSVs.
 pub(crate) struct Metrics {
     pub(super) with_an: usize,
     pub(super) with_ms: usize,

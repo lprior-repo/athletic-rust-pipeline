@@ -1,23 +1,7 @@
-//! Pure layout dispatch for WIAA result artifacts.
-//!
-//! This module exposes a single public entry point — [`parse_result_body`] — that routes an
-//! artifact body to the correct parser based on its declared format. It is the seam the fuzz
-//! lane needs: no network, no file I/O, no clock, no randomness. The only side effect is the
-//! external `pdftotext` call for `ArtifactFormat::Pdf`, which the caller can handle separately
-//! if pure dispatch is required.
 
 use super::classify::ArtifactFormat;
 use crate::result_file::ParsedMeet;
 
-/// Dispatch one artifact body to the parser its format selects.
-///
-/// This is the pure seam the fuzz lane needs: given raw bytes and a declared format, the function
-/// routes to the correct parser without any network, file, or clock dependency. For
-/// [`ArtifactFormat::Pdf`] the external `pdftotext` tool is invoked (returning `None` on failure);
-/// all other arms are purely in-process.
-///
-/// The `body` parameter is raw bytes — for text formats the function decodes via
-/// `from_utf8_lossy`, and for PDF it is passed directly to `pdftotext`.
 pub fn parse_result_body(
     body: &[u8],
     format: ArtifactFormat,
@@ -55,12 +39,6 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 
-/// Read a PDF release with the vendor parsers, most specific first.
-///
-/// The WIAA archive publishes PDFs from several timers: Hy-Tek's own reports, the "Compiled" export
-/// the association posts for meets without a Hy-Tek file, and cross-country files from Hy-Tek block
-/// and AccuRace layouts. Each parser states its own header requirement, so the first one that
-/// returns events owns the file and the runner reports which layout won.
 pub(super) fn parse_pdf(
     text: &str,
     source: SourceRef,
@@ -79,13 +57,6 @@ pub(super) fn parse_pdf(
     (None, None)
 }
 
-/// Read a PDF release through `pdftotext -layout`.
-///
-/// The PDF is streamed in and the text out, so no temporary file is written; the writer runs on its
-/// own thread because a large PDF exceeds the pipe buffer while the parent is still reading.
-///
-/// Nothing here opens a file: the tool itself is what the [`CrawlError::Io`] diagnostics name, and
-/// a tool that is missing or that exits non-zero is an error the caller reports rather than a meet.
 pub(super) fn pdftotext(body: &[u8]) -> CrawlResult<String> {
     let mut child = spawn_pdftotext()?;
     let Some(mut stdin) = child.stdin.take() else {
@@ -106,7 +77,6 @@ pub(super) fn pdftotext(body: &[u8]) -> CrawlResult<String> {
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
-/// Start `pdftotext -layout`, reading the PDF from stdin and writing the text to stdout.
 fn spawn_pdftotext() -> CrawlResult<Child> {
     Command::new("pdftotext")
         .args(["-layout", "-", "-"])
@@ -117,7 +87,6 @@ fn spawn_pdftotext() -> CrawlResult<Child> {
         .map_err(pdftotext_failed)
 }
 
-/// The failure one `pdftotext` step reports: the tool itself is the path the diagnostic names.
 fn pdftotext_failed(source: std::io::Error) -> CrawlError {
     CrawlError::Io {
         path: PathBuf::from("pdftotext"),

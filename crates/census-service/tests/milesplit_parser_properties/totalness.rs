@@ -1,9 +1,3 @@
-//! Total-ness and determinism: the two laws every consumer of these parsers is allowed to assume.
-//!
-//! A parser that panics on a malformed page takes the whole run down with it — a census walk is
-//! hundreds of pages nobody has read — and a parser that answers differently on the same bytes
-//! makes a journaled rerun meaningless. Both are asserted over arbitrary text and over text woven
-//! out of the tokens these parsers key on.
 
 use super::{
     arbitrary_body, parse_meet_index, parse_meet_result_files, parse_raw, seam_config, shaped_body,
@@ -11,7 +5,6 @@ use super::{
 };
 use proptest::prelude::*;
 
-/// A parser's answer with the error rendered, so two runs are compared as values.
 fn answer<T: std::fmt::Debug>(result: Result<T, impl std::fmt::Display>) -> Result<T, String> {
     result.map_err(|error| error.to_string())
 }
@@ -53,8 +46,6 @@ proptest! {
         );
     }
 
-    /// A URL the reader accepts always names a meet and a result set of a validated jurisdiction:
-    /// the arm can request it, or it was never accepted.
     #[test]
     fn an_accepted_result_url_is_addressable(meet in 1u32..100_000, rsid in 1u32..10_000_000) {
         let url = format!(
@@ -65,7 +56,6 @@ proptest! {
         prop_assert_eq!(parsed.rsid, rsid.to_string());
     }
 
-    /// The `/formatted` route serves an empty JS shell, so a URL for it is never accepted.
     #[test]
     fn a_formatted_result_url_is_refused(meet in 1u32..100_000, rsid in 1u32..10_000_000) {
         let url = format!(

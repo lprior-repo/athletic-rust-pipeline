@@ -1,8 +1,3 @@
-//! The results stage's tests: the seed rule, which is the only decision this stage makes.
-//!
-//! The arms are the adapters' own contracts and are tested where they live. What is tested here is
-//! which of this run's rows name an Athletic.net meet, because a wrong answer either requests a meet
-//! that does not exist there or silently drops meets the run did enumerate.
 
 use census_crawl::net::Fetcher;
 use census_crawl::AdapterContext;
@@ -14,7 +9,6 @@ use super::{arm_for, athleticnet_meet_ids, athleticnet_meets, meet_id_in, Result
 use census_crawl::milesplit::is_results_page;
 use census_store::Store;
 
-/// A row as a meet walk writes one, with only the fields the seed rule reads varied.
 fn row(source: &str, id: &str, url: &str, jurisdiction: UsJurisdiction) -> SourceMeetRef {
     SourceMeetRef {
         id: SourceMeetRef::row_id(source, id),
@@ -124,8 +118,6 @@ fn only_a_milesplit_results_page_is_read_by_the_result_set_arm() {
     assert!(!is_results_page("not a url"));
 }
 
-/// A store and fetcher pair over a fresh directory, for the one decision the arm makes before it
-/// reaches the adapter.
 fn scratch() -> (tempfile::TempDir, Store, Fetcher) {
     let dir = tempfile::tempdir().expect("temp dir");
     let store = Store::open(dir.path().join("store")).expect("store");
@@ -151,14 +143,6 @@ fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> AdapterContext<'a> {
     }
 }
 
-/// A jurisdiction whose rows name no Athletic.net meet has nothing to pull, and that is not a
-/// failure.
-///
-/// The adapter reads an empty `--meets` as its registry route and refuses for lack of an operator
-/// registry file, which is not an argument this stage can supply. Measured 2026-09-24: that refusal
-/// failed all forty-nine jurisdictions of the previous national run at its results stage, because
-/// only the states whose own sources publish Athletic.net links select anything here. An empty
-/// selection is the run's coverage, and the zero row count is what records it.
 #[tokio::test]
 async fn a_selection_that_names_no_meet_is_not_a_pull() {
     let (_dir, store, fetcher) = scratch();

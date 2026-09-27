@@ -1,5 +1,3 @@
-//! The row walk: one payload's track and cross-country rows, resolved to the identifiers the
-//! performance store needs, then stored or counted as refused.
 
 use super::Ctx;
 use crate::athleticnet::map::{grade_in, meet_for, store_performance, PerformanceInput};
@@ -10,7 +8,6 @@ use census_domain::model::{
 };
 use std::collections::HashMap;
 
-/// One row, resolved to the identifiers the performance store needs.
 struct ResolvedRow<'a> {
     kind: EventKind,
     sport: Sport,
@@ -25,7 +22,6 @@ struct ResolvedRow<'a> {
 }
 
 impl<'a> Ctx<'a> {
-    /// Walk one payload's track rows, returning how many performances were stored.
     pub(super) fn track_rows(&mut self, bio: &Bio, athlete_id: &AthleteId, gender: Gender) -> u64 {
         let labels: HashMap<i64, &str> = bio
             .events
@@ -43,7 +39,6 @@ impl<'a> Ctx<'a> {
         rows
     }
 
-    /// Walk one payload's cross-country rows, returning how many performances were stored.
     pub(super) fn cross_rows(&mut self, bio: &Bio, athlete_id: &AthleteId, gender: Gender) -> u64 {
         let mut rows = 0u64;
         for row in bio.results_xc.iter().flatten() {
@@ -55,7 +50,6 @@ impl<'a> Ctx<'a> {
         rows
     }
 
-    /// Resolve one track row, counting why a row is refused; `None` when it stores nothing.
     fn resolve_tf_row<'b>(
         &mut self,
         bio: &'b Bio,
@@ -107,7 +101,6 @@ impl<'a> Ctx<'a> {
         })
     }
 
-    /// Resolve one cross-country row, counting why a row is refused; `None` when it stores nothing.
     fn resolve_xc_row<'b>(&mut self, bio: &'b Bio, row: &'b XcRow) -> Option<ResolvedRow<'b>> {
         self.stats.rows_seen = self.stats.rows_seen.saturating_add(1);
         let Some(season_id) = row.season_id else {
@@ -150,8 +143,6 @@ impl<'a> Ctx<'a> {
         })
     }
 
-    /// The season a track row publishes and its indoor/outdoor split, counting a season the
-    /// payload omits.
     fn row_season(&mut self, row: &TfRow) -> Option<(i16, Sport)> {
         let Some(season_id) = row.season_id else {
             self.stats.rows_no_season = self.stats.rows_no_season.saturating_add(1);
@@ -174,7 +165,6 @@ impl<'a> Ctx<'a> {
         Some((season_id, sport))
     }
 
-    /// Store one resolved track row's performance and count it absorbed.
     fn store_tf_row(
         &mut self,
         row: &TfRow,
@@ -189,6 +179,7 @@ impl<'a> Ctx<'a> {
             self.observed_on,
             PerformanceInput {
                 athlete: athlete_id,
+                source_athlete: self.source_athlete.clone(),
                 school: &resolved.school,
                 meet: &resolved.meet,
                 kind: &resolved.kind,
@@ -210,7 +201,6 @@ impl<'a> Ctx<'a> {
         self.stats.rows_absorbed = self.stats.rows_absorbed.saturating_add(1);
     }
 
-    /// Store one resolved cross-country row's performance and count it absorbed.
     fn store_xc_row(
         &mut self,
         row: &XcRow,
@@ -225,6 +215,7 @@ impl<'a> Ctx<'a> {
             self.observed_on,
             PerformanceInput {
                 athlete: athlete_id,
+                source_athlete: self.source_athlete.clone(),
                 school: &resolved.school,
                 meet: &resolved.meet,
                 kind: &resolved.kind,

@@ -1,13 +1,3 @@
-//! Model checks for the region ledger.
-//!
-//! The counters and the task set share one lock; the set's entries are tokio's and cannot enter a
-//! model. What is modeled is everything the report promises about *counting*: the same [`Ledger`]
-//! the spawner counts through, behind a lock, with workers accepting and finishing units and an
-//! observer checking the identity in between.
-//!
-//! A unit is accepted in one locked step and classified in another, exactly as the spawner does it
-//! (accept when the unit is handed to the set, classify when it is reaped), so an observation taken
-//! between the two is a state a running region really passes through, not an artificial one.
 
 use loom::sync::{Arc, Mutex};
 use loom::thread;
@@ -16,8 +6,6 @@ use super::ledger::Ledger;
 use super::TaskReport;
 use crate::outcome::DrainState;
 
-/// The ledger next to the count of units the region's set still holds — the two numbers the report's
-/// identity relates.
 #[derive(Default)]
 struct Region {
     ledger: Ledger,
@@ -69,7 +57,6 @@ fn accepted_units_are_counted_exactly_once() {
     });
 }
 
-/// Every accepted unit is either finished or still in flight — never both, never neither.
 fn check_identity(region: &Mutex<Region>) {
     let held = region.lock().expect("region lock");
     let report = held.ledger.report();

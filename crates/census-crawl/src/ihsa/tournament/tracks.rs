@@ -1,14 +1,3 @@
-//! Track & field: the meet and event index rows, and one summary's finisher rows.
-//!
-//! The index path and the summary path mint the same event identity: the class and the round are read
-//! from the event row's own `classDivision` and `round` fields, so the published name only has to
-//! yield the event itself. An individual row hangs one performance on the athlete it names; a relay
-//! row publishes `members[]` instead — four legs carrying their own Athletic.net ids — and its own mark
-//! is the team's, not any leg's, so the legs are minted as athletes and no performance is invented for
-//! a mark no single athlete ran.
-//!
-//! Nothing reaches the store from here: rows land in the run's accumulator and are appended once, at
-//! the end of the walk.
 
 use super::map::{published_gender, unmapped, AthleteRow, EventContext, Mapper, PerformanceRow};
 use super::parse::{
@@ -22,10 +11,6 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 
 impl<'a> Mapper<'a> {
-    /// The meet one index row publishes, kept once its events are known.
-    ///
-    /// `MeetId` is the Athletic.net Live meet id — the index publishes `74003`, the page is
-    /// `https://live.athletic.net/meets/74003` — so the meet carries that identity and the page.
     pub(super) fn meet(
         &mut self,
         row: &MeetRow,
@@ -58,10 +43,6 @@ impl<'a> Mapper<'a> {
         meet
     }
 
-    /// The event one index row publishes.
-    ///
-    /// The event's own fields carry the class and the round, so the published name only has to yield
-    /// the event itself; a name the ontology cannot place is kept as `Unmapped` with that name.
     pub(super) fn event(
         &mut self,
         meet: &CanonicalMeet,
@@ -89,7 +70,6 @@ impl<'a> Mapper<'a> {
         event
     }
 
-    /// Map one event summary's finisher rows.
     pub(super) fn absorb_summary(
         &mut self,
         summary: &EventSummary,
@@ -106,10 +86,6 @@ impl<'a> Mapper<'a> {
         }
     }
 
-    /// Store one placed individual's performance.
-    ///
-    /// The row is dropped, and counted, when the payload leaves out a field the performance cannot be
-    /// keyed or valued by: a school it names, a grade, or a mark.
     fn individual(&mut self, row: &FinisherRow, context: &EventContext<'_>, url: &str, row_index: usize) {
         let Some(school) =
             self.school(row.ihsa_school_id.as_deref(), row.team_name.as_deref(), url)
@@ -120,7 +96,7 @@ impl<'a> Mapper<'a> {
         let name = reference
             .and_then(|who| who.name.as_deref())
             .or(row.athlete_name.as_deref());
-        let Some(athlete) = self.athlete(
+        let Some(subject) = self.athlete(
             AthleteRow {
                 name,
                 grade: finisher_grade(row),
@@ -142,14 +118,13 @@ impl<'a> Mapper<'a> {
             self.stats.rows_no_mark = self.stats.rows_no_mark.saturating_add(1);
             return;
         };
-        self.place(&school, &athlete, mark, row, context, url);
+        self.place(&school, subject, mark, row, context, url);
     }
 
-    /// Store the performance of one individual row that has an athlete, a school and a mark.
     fn place(
         &mut self,
         school: &SchoolId,
-        athlete: &AthleteId,
+        subject: (AthleteId, SourceIdentity),
         mark: Mark,
         row: &FinisherRow,
         context: &EventContext<'_>,
@@ -163,9 +138,9 @@ impl<'a> Mapper<'a> {
             row.team.as_ref(),
             url,
         );
-        let source_key = format!("{}:{}", context.event.id.as_str(), athlete.as_str());
+        let source_key = format!("{}:{}", context.event.id.as_str(), subject.0.as_str());
         self.performance(
-            athlete,
+            subject,
             &team,
             context,
             PerformanceRow {
@@ -179,7 +154,6 @@ impl<'a> Mapper<'a> {
         );
     }
 
-    /// Mint a relay row's legs: four athletes, and no performance row for the team's own mark.
     fn relay(&mut self, row: &FinisherRow, context: &EventContext<'_>, url: &str, row_index: usize) {
         let Some(school) =
             self.school(row.ihsa_school_id.as_deref(), row.team_name.as_deref(), url)

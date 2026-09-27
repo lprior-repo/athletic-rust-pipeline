@@ -2,8 +2,6 @@
 mod tests_inner {
     use super::super::*;
 
-    /// The rule Bound publishes: `Disallow: /*directory` has to refuse a directory path that does
-    /// not begin with one, which a prefix matcher would walk straight through.
     #[test]
     fn a_mid_path_wildcard_disallow_refuses_the_match() {
         let rules = parse_robots("User-agent: *\nDisallow: /*directory\n");

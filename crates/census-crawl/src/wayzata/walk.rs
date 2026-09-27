@@ -1,8 +1,3 @@
-//! The Wayzata schedule walk: fetch each sport/season page, tally its competition rows, resolve
-//! their venues and mint the core meets the run writes.
-//!
-//! Split out of the parent module's `collect` when that file outgrew the repository's 300-line
-//! budget; the adapter entry point and the shared request counters stay in `mod.rs`.
 
 use super::map::{level_of, resolve_venue, VenueResolution};
 use super::parse::{schedule_rows, schedule_url, MeetRow, ScheduleSport};
@@ -15,7 +10,6 @@ use census_store::Table;
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
-/// What one schedule walk counted, per page, row, venue resolution and bucket.
 #[derive(Debug, Default)]
 struct Stats {
     pages: usize,
@@ -28,12 +22,10 @@ struct Stats {
     unresolved_venues: BTreeMap<String, usize>,
 }
 
-/// `usize` -> `u64` for the report counters, saturating where the value cannot fit.
 fn count(value: usize) -> u64 {
     u64::try_from(value).unwrap_or(u64::MAX)
 }
 
-/// The schedule URLs this parser version has already journalled, so they need no second walk.
 pub(super) fn completed_pages(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
     Ok(ctx
         .store
@@ -52,19 +44,16 @@ pub(super) fn completed_pages(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<S
         .collect())
 }
 
-/// The mutable run state one schedule walk threads through its page and row helpers.
 pub(super) struct Walk {
     observed_on: String,
     stats: Stats,
     meets: BTreeMap<String, CanonicalMeet>,
     venue_cache: HashMap<String, VenueResolution>,
-    /// The page entries this run has earned, committed in `finish` with the meets they minted.
     pending: Vec<(String, serde_json::Value)>,
     report: AdapterReport,
 }
 
 impl Walk {
-    /// A walk minting meets observed on `observed_on`.
     pub(super) fn new(observed_on: String) -> Self {
         Self {
             observed_on,
@@ -76,7 +65,6 @@ impl Walk {
         }
     }
 
-    /// Walk both sports' seasons, minting one core meet per competition row.
     pub(super) async fn run(
         &mut self,
         ctx: &AdapterContext<'_>,
@@ -124,8 +112,6 @@ impl Walk {
         Ok(())
     }
 
-    /// Count one competition row: its venue resolution, level bucket and sport bucket. The venue's
-    /// state comes back for the meet the row mints.
     fn tally_row(
         &mut self,
         row: &MeetRow,
@@ -165,7 +151,6 @@ impl Walk {
         state
     }
 
-    /// Mint the core meet one competition row describes, keeping the first minted for its identity.
     fn mint_meet(
         &mut self,
         row: &MeetRow,
@@ -204,7 +189,6 @@ impl Walk {
             .or_insert(meet);
     }
 
-    /// Write the minted meets and emit the run's summary lines.
     pub(super) async fn finish(
         self,
         ctx: &AdapterContext<'_>,
@@ -234,14 +218,12 @@ impl Walk {
     }
 }
 
-/// The row date's month, or `0` for a date that is not `YYYY-MM-DD`.
 fn month_of(date: &str) -> u8 {
     date.get(5..7)
         .and_then(|month| month.parse::<u8>().ok())
         .unwrap_or(0)
 }
 
-/// The four end-of-run summary lines: page/row/meet counts, venue states, levels and sports.
 fn note_summary(report: &mut AdapterReport, stats: &Stats, meets: usize) {
     report.note(format!(
         "schedules: {} pages read, {} competition rows, {meets} core meets minted",

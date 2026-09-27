@@ -1,5 +1,3 @@
-//! What the lane must guarantee before a model's answer can be recorded: the family decides the
-//! field, validation decides the value, and a refusal is a visible outcome rather than a silent one.
 
 use super::packets::{case_fact, fact};
 use super::*;
@@ -7,9 +5,6 @@ use census_domain::model::{
     ReviewCase, ReviewPacket, ReviewVerdict, ReviewVerdictKind, VerdictBatch,
 };
 
-/// The case the school fixture files. The packet and the verdict that answers it are both minted from
-/// these inputs, so a policy revision that re-mints case ids cannot leave the fixture verdict naming a
-/// case the packet never asked about — which is what `sanitize` counts as a dropped verdict.
 fn school_case() -> ReviewCase {
     ReviewCase::pending(
         "School jurisdiction unresolved",
@@ -31,7 +26,6 @@ fn school_packet(state: Option<&str>) -> ReviewPacket {
     packet
 }
 
-/// The meet fixture's case, minted once for the same reason as [`school_case`].
 fn meet_case() -> ReviewCase {
     ReviewCase::pending(
         "Meet venue unresolved",
@@ -134,7 +128,6 @@ fn a_family_parses_from_the_cli_spelling() {
     );
 }
 
-/// The decision a value admits.
 fn decided(field: &str, value: &str) -> Adjudication {
     Adjudication::Decided(Admitted {
         field: field.to_string(),

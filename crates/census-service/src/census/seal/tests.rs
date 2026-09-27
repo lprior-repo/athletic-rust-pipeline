@@ -1,15 +1,9 @@
-//! The seal command's workbook checks, on workbooks this module writes and reads back.
-//!
-//! The reconciliation rules are the point: a workbook that disagrees with the store must refuse the
-//! seal and name the number that disagreed, because a seal over an unverified export is worse than
-//! no seal at all.
-
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use census_domain::model::{
     AccessBlockKind, CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool,
-    CompetitionLevel, Gender, GradYear, SourceAccessCondition,
+    CompetitionLevel, Gender, GradYear, SourceAccessCondition, SourceIdentity, SourceNamespace,
 };
 use census_domain::UsJurisdiction;
 use census_report::report::Scope;
@@ -24,11 +18,8 @@ use super::workbook::{
 };
 use crate::census::Phase;
 
-/// The coverage report always publishes rows for all jurisdictions in CENSUS_SCOPE (49) plus
-/// the unplaced row, so the expected jurisdiction count is always 50 regardless of seeded data.
 const EXPECTED_JURISDICTIONS: u32 = 50;
 
-/// All US jurisdictions in census-scope order (ADR-009) — 49 contiguous states + DC.
 fn all_jurisdictions() -> [UsJurisdiction; 51] {
     [
         UsJurisdiction::Alabama,
@@ -85,7 +76,6 @@ fn all_jurisdictions() -> [UsJurisdiction; 51] {
     ]
 }
 
-/// Write workbooks with all 50 unique jurisdictions in the coverage sheet.
 fn write_coverage_sheets(
     book: &mut Xlsx,
     n_jurisdictions: u32,
@@ -106,10 +96,6 @@ fn write_coverage_sheets(
     Ok(())
 }
 
-/// Seed a store with schools, athletes (of a specific grad year), coaches, meets, and coverage.
-/// Returns the store and the path where the workbook was written.
-/// `athlete_count` is the number of class_of_2027 athletes; the workbook will have 50 unique
-/// jurisdictions in Coverage and `cohort` in Run Metrics.
 fn seed_and_workbook(
     dir: &Path,
     athlete_count: u32,
@@ -152,6 +138,10 @@ fn seed_and_workbook(
             } else {
                 Gender::Girls
             },
+            SourceIdentity::new(
+                SourceNamespace::Other("fixture".to_string()),
+                format!("athlete-{i}"),
+            ),
         );
         store.append(Table::Athletes, &athlete)?;
     }
@@ -205,8 +195,6 @@ fn seed_and_workbook(
     Ok((store, path))
 }
 
-/// Write a simple workbook: header-only Athletes, `jurisdictions` copies of "WI" in Coverage,
-/// and Run Metrics with the given cohort value.
 fn simple_workbook(dir: &Path, cohort: Option<u64>, jurisdictions: u32) -> Result<PathBuf> {
     let path = dir.join("census-service-test.xlsx");
     let mut book = Xlsx::new();
@@ -233,8 +221,6 @@ fn simple_workbook(dir: &Path, cohort: Option<u64>, jurisdictions: u32) -> Resul
     Ok(path)
 }
 
-/// Write a workbook with duplicated jurisdictions: the first jurisdiction appears `dupe_count` times,
-/// then `n_unique` additional unique jurisdictions.
 fn workbook_with_dupes(
     dir: &Path,
     cohort: Option<u64>,
@@ -443,10 +429,6 @@ fn the_label_match_ignores_case_and_reads_a_grouped_number() {
     assert_eq!(labelled_count(&[], COHORT_LABEL), None);
 }
 
-/// Store stats naming the artifacts the ladder's steps require.
-///
-/// `appended` stays empty: the ladder reads the row counts and the running observation total, not
-/// the per-table sequence pointers, so the fixture names only the figures under test.
 fn stats_with(snapshots: u64, review: u64, coverage: u64, observations: u64) -> StoreStats {
     StoreStats {
         tables: vec![
@@ -490,10 +472,6 @@ fn a_workbook_is_what_lifts_the_ladder_into_exporting() {
     );
 }
 
-/// The access conditions the seal publishes are the store's own rows, split by what each kind means
-/// for the lane: a refusal ends the work the host was asked for, a throttle is bounded by a cooldown.
-/// The browser lane's two kinds are both here: a profile that wants a person is a refusal (no cooldown
-/// ends it), while a machine with no lane is bounded by the lane's cooldown like any throttle.
 #[test]
 fn access_conditions_split_into_refusals_and_throttles() {
     let rows = vec![
@@ -518,7 +496,6 @@ fn access_conditions_split_into_refusals_and_throttles() {
     );
 }
 
-/// One retained access condition of the given kind.
 fn condition(kind: AccessBlockKind, host: &str) -> SourceAccessCondition {
     SourceAccessCondition::new(
         "milesplit",

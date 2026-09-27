@@ -1,11 +1,9 @@
-//! Athletes CSV export: canonical-athletes-co2027.csv and athleticnet-athlete-seeds.csv.
 
 use crate::cli::export_data::csv::write_csv;
 use crate::cli::export_data::helpers::*;
 use serde_json::Value;
 use std::collections::{BTreeSet, HashMap};
 
-/// Build observed_grades string from an athlete record.
 fn build_observed(a: &Value) -> String {
     if let Some(grades) = a.get("observed_grades").and_then(|v| v.as_array()) {
         let mut items: Vec<String> = grades
@@ -36,7 +34,6 @@ fn build_observed(a: &Value) -> String {
     }
 }
 
-/// Build a seeds row from athlete data.
 fn build_seed_row(an_id: &str, an_url: &str, ms_id: &str, a: &Value, sch: &Value) -> Vec<String> {
     let an_url_final = if !an_url.is_empty() {
         an_url.to_string()
@@ -69,12 +66,10 @@ fn build_seed_row(an_id: &str, an_url: &str, ms_id: &str, a: &Value, sch: &Value
     ]
 }
 
-/// Get school lookup for a school ID.
 fn get_school<'a>(by_school: &'a HashMap<&str, &'a Value>, school_id: &str) -> &'a Value {
     by_school.get(school_id).copied().unwrap_or(&Value::Null)
 }
 
-/// Write the seeds CSV file.
 fn write_seeds_csv(path: &std::path::Path, rows: &[Vec<String>]) -> anyhow::Result<()> {
     write_csv(
         path,
@@ -96,7 +91,6 @@ fn write_seeds_csv(path: &std::path::Path, rows: &[Vec<String>]) -> anyhow::Resu
     )
 }
 
-/// Process a single athlete for seeds and co2027 rows.
 struct AthleteProcess {
     multi: bool,
     is_co27: bool,
@@ -108,7 +102,6 @@ struct AthleteProcess {
     observed: String,
 }
 
-/// Process one athlete: extract fields and check multi-source.
 fn process_athlete(a: &Value) -> AthleteProcess {
     let idents = identities(a);
     let namespaces: Vec<String> = idents
@@ -150,7 +143,6 @@ fn process_athlete(a: &Value) -> AthleteProcess {
     }
 }
 
-/// Build a co2027 row from athlete data.
 fn build_co2027_row(a: &Value, sch: &Value, process: AthleteProcess) -> Vec<String> {
     let AthleteProcess {
         an_id,
@@ -196,7 +188,6 @@ fn build_co2027_row(a: &Value, sch: &Value, process: AthleteProcess) -> Vec<Stri
     ]
 }
 
-/// Helper to extract a string field from a Value.
 fn field_str(v: &Value, key: &str) -> String {
     v.get(key)
         .and_then(|v| v.as_str())
@@ -216,9 +207,6 @@ fn school_str(sch: &Value, field: &str) -> String {
         .to_string()
 }
 
-/// Build and write co2027 and seeds CSV files.
-///
-/// Returns (co27_count, multi_source_count).
 pub fn write_athletes(
     athletes: &[Value],
     by_school: &HashMap<&str, &Value>,

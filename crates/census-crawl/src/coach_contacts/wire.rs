@@ -1,5 +1,3 @@
-//! The dataset's wire shapes: one CSV row, the entities a row yields, and the source coordinates
-//! (namespace, provider key, URL, evidence reference) a row carries.
 
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, SourceNamespace, SourceRef,
@@ -8,7 +6,6 @@ use serde::Deserialize;
 
 use super::parse::{clean, nonempty};
 
-/// One row of the contact dataset. Field names are the published CSV header.
 #[derive(Debug, Clone, Deserialize)]
 pub struct CoachContactRow {
     pub school: String,
@@ -33,15 +30,12 @@ pub struct CoachContactRow {
     pub last_observed: String,
 }
 
-/// A school plus the coaches derived from one CSV row.
 #[derive(Debug, Clone)]
 pub struct RowEntities {
     pub school: CanonicalSchool,
     pub coaches: Vec<CanonicalCoach>,
 }
 
-/// The association namespace a captured contact URL belongs to, so that the school identity carries
-/// the origin's own key space rather than a bare name.
 fn namespace_for_url(url: &str) -> SourceNamespace {
     let host = url
         .split("://")
@@ -77,8 +71,6 @@ fn namespace_for_url(url: &str) -> SourceNamespace {
     }
 }
 
-/// Provider key extracted from a captured URL when the provider uses one (WIAA `orgID`, IHSA
-/// `/schools/<id>/…`). `None` means the provider is name-keyed, which is recorded as such.
 fn identity_key(url: &str) -> Option<String> {
     let query_key = |name: &str| -> Option<String> {
         url.split(['?', '&'])
@@ -105,8 +97,6 @@ fn identity_key(url: &str) -> Option<String> {
     None
 }
 
-/// The source coordinates one CSV row carries: when it was observed, the provider namespace and
-/// identity key, the row's URL, and the evidence reference every entity cites.
 pub(super) struct RowSource {
     pub(super) observed_on: String,
     pub(super) namespace: SourceNamespace,
@@ -116,7 +106,6 @@ pub(super) struct RowSource {
 }
 
 impl RowSource {
-    /// Read one row's source coordinates; `school_name` keys the identity when the row has no URL.
     pub(super) fn of(row: &CoachContactRow, default_observed_on: &str, school_name: &str) -> Self {
         let observed_on = if row.last_observed.trim().is_empty() {
             default_observed_on.to_string()

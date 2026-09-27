@@ -1,14 +1,7 @@
-//! One field mark, written every way the vendor writes it, reading as one mark.
-//!
-//! A mark's *value* is what the corpus compares; its `feet_mark` is kept verbatim because it is what
-//! the source published. The law is that the several spellings of five foot six — and of a jump
-//! tie-break's `J` prefix, which is not part of the mark — agree on both the value and the metric
-//! conversion, and that a plain metre figure is a distance mark of its own.
 
 use super::{metres_of, parse_field_mark};
 use census_domain::model::{CentiMetres, Mark};
 
-/// Inches in a foot, per the conversion the parser applies.
 const INCH_METRES: f64 = 0.0254;
 
 #[test]

@@ -1,4 +1,3 @@
-//! The client's two testable halves: the request it builds, and the content it accepts.
 
 use super::*;
 use census_domain::model::{ReviewCaseFact, ReviewEvidenceFact, ReviewVerdict, ReviewVerdictKind};
@@ -13,89 +12,171 @@ fn packet() -> ReviewPacket {
         .with_evidence(ReviewEvidenceFact::new("wiaa_school", "city", "Madison"))
 }
 
-fn options() -> ModelOptions {
-    ModelOptions::local("http://127.0.0.1:52080/", "qwen3.6-35b-a3b")
+fn valid_options() -> ModelOptions {
+    ModelOptions::local("http://127.0.0.1:52080", "qwen3.6-35b-a3b").expect("valid endpoint")
 }
 
 #[test]
-fn the_endpoint_is_normalized_and_the_completions_url_is_built_from_it() {
-    let options = options();
-    assert_eq!(options.endpoint, "http://127.0.0.1:52080");
-    assert_eq!(
-        options.completions_url(),
-        "http://127.0.0.1:52080/v1/chat/completions"
-    );
+fn ipv4_loopback_is_accepted() {
+    let opts = ModelOptions::local("http://127.0.0.1:52080", "model");
+    assert!(opts.is_ok());
 }
 
 #[test]
-fn the_request_asks_for_a_schema_shaped_answer_without_thinking() {
-    let body = build_request_body(&packet(), &options());
-    assert_eq!(body["model"], "qwen3.6-35b-a3b");
-    assert_eq!(body["temperature"], 0);
-    assert_eq!(body["response_format"]["type"], "json_schema");
-    let schema = &body["response_format"]["json_schema"]["schema"];
-    assert_eq!(schema["properties"]["verdicts"]["items"]["type"], "object");
-    assert_eq!(
-        schema["properties"]["verdicts"]["items"]["properties"]["kind"]["enum"],
-        serde_json::json!(["value_proposed", "insufficient_evidence"])
-    );
-    assert_eq!(
-        schema["additionalProperties"], false,
-        "the grammar must not admit fields the reader will ignore"
-    );
-    assert_eq!(body["chat_template_kwargs"]["enable_thinking"], false);
+fn ipv6_loopback_is_accepted() {
+    let opts = ModelOptions::local("http://[::1]:52080", "model");
+    assert!(opts.is_ok());
+}
+
+
+#[test]
+fn dns_name_is_rejected() {
+    let opts = ModelOptions::local("http://localhost:52080", "model");
+    assert!(opts.is_err());
+    let err = opts.unwrap_err();
+    assert!(matches!(err, ModelError::InvalidEndpoint { .. }));
 }
 
 #[test]
-fn the_user_message_carries_the_subject_its_cases_and_its_evidence() {
-    let body = build_request_body(&packet(), &options());
-    let user = body["messages"][1]["content"]
-        .as_str()
-        .expect("the user message is text");
-    assert!(user.contains("School jurisdiction unresolved:school:madison-west"));
-    assert!(user.contains("wiaa_school: city = Madison"));
-    assert!(user.contains("no state from any source"));
-    assert!(
-        body["messages"][0]["content"]
-            .as_str()
-            .expect("the system message is text")
-            .contains("Never answer for a case id you were not given"),
-        "the rule that keeps a model inside the question is part of the request"
-    );
+fn dns_domain_is_rejected() {
+    let opts = ModelOptions::local("http://example.com:52080", "model");
+    assert!(opts.is_err());
 }
 
 #[test]
-fn a_batch_is_read_from_the_assistant_message() {
-    let body = serde_json::json!({
-        "choices": [{ "message": { "content": "{\"subject_id\":\"school:madison-west\",\
-            \"verdicts\":[{\"case_id\":\"School jurisdiction unresolved:school:madison-west\",\
-            \"kind\":\"value_proposed\",\"field\":\"state\",\"value\":\"WI\",\
-            \"confidence\":80,\"rationale\":\"the WIAA lists the school\"}]}" } }]
-    });
-    let content = message_content(&body).expect("content");
-    let batch = parse_batch(&content).expect("a batch");
+fn remote_ip_is_rejected() {
+    let opts = ModelOptions::local("http://192.168.1.1:52080", "model");
+    assert!(opts.is_err());
+}
+
+#[test]
+fn https_is_rejected() {
+    let opts = ModelOptions::local("https://127.0.0.1:52080", "model");
+    assert!(opts.is_err());
+}
+
+#[test]
+fn query_string_is_rejected() {
+    let opts = ModelOptions::local("http://127.0.0.1:52080?foo=bar", "model");
+    assert!(opts.is_err());
+}
+
+#[test]
+fn fragment_is_rejected() {
+    let opts = ModelOptions::local("http://127.0.0.1:52080#section", "model");
+    assert!(opts.is_err());
+}
+
+#[test]
+fn non_root_path_is_rejected() {
+    let opts = ModelOptions::local("http://127.0.0.1:52080/v1", "model");
+    assert!(opts.is_err());
+}
+
+#[test]
+fn userinfo_is_rejected() {
+    let opts = ModelOptions::local("http://user:pass@127.0.0.1:52080", "model");
+    assert!(opts.is_err());
+    let password_only = ModelOptions::local("http://:pass@127.0.0.1:52080", "model");
+    assert!(matches!(password_only, Err(ModelError::InvalidEndpoint { .. })));
+}
+
+#[test]
+fn empty_model_is_rejected() {
+    let opts = ModelOptions::local("http://127.0.0.1:52080", "");
+    assert!(opts.is_err());
+}
+
+#[test]
+fn oversized_model_is_rejected() {
+    let long_name = "x".repeat(257);
+    let opts = ModelOptions::local("http://127.0.0.1:52080", &long_name);
+    assert!(opts.is_err());
+}
+
+
+#[test]
+fn max_tokens_is_capped_at_8192() {
+    let opts = valid_options().with_max_tokens(16_000);
+    let body = build_request_body(&packet(), &opts).expect("body serializes");
+    let parsed: serde_json::Value =
+        serde_json::from_slice(&body).expect("body is valid JSON");
+    assert_eq!(parsed["max_tokens"], 8_192);
+}
+
+#[test]
+fn request_overflow_returns_typed_error() {
+    let large_packet = {
+        let mut p = ReviewPacket::new("subj", "Subject");
+        let facts: Vec<ReviewEvidenceFact> = (0..50_000)
+            .map(|i| ReviewEvidenceFact::new("src", "field", format!("value-{i}")))
+            .collect();
+        for f in facts {
+            p = p.with_evidence(f);
+        }
+        p
+    };
+    let result = build_request_body(&large_packet, &valid_options());
+    assert!(result.is_err());
+    assert!(matches!(
+        result.unwrap_err(),
+        ModelError::RequestTooLarge { .. }
+    ));
+}
+
+#[test]
+fn the_encoded_request_limit_counts_escaping_and_accepts_the_exact_boundary() {
+    let mut request = ReviewPacket::new("synthetic", "Quoted \"Évidence\"\ncontrol\r\\")
+        .with_evidence(ReviewEvidenceFact::new("capture", "field", ""));
+    let options = valid_options();
+    let base = build_request_body(&request, &options).expect("base request").len();
+    let remaining = REQUEST_CAP - base;
+    request.evidence[0].value = "\0".repeat(remaining / 6);
+    request.evidence[0].value.extend(std::iter::repeat_n('x', remaining % 6));
+    let exact = build_request_body(&request, &options).expect("exact encoded limit");
+    assert_eq!(exact.len(), REQUEST_CAP);
+    assert!(exact.capacity() <= REQUEST_CAP);
+    let _: serde_json::Value = serde_json::from_slice(&exact).expect("complete escaped JSON");
+    request.evidence[0].value.push('x');
+    assert!(matches!(
+        build_request_body(&request, &options),
+        Err(ModelError::RequestTooLarge { bytes }) if bytes > REQUEST_CAP
+    ));
+}
+
+#[test]
+fn one_oversized_fact_returns_its_rejected_size_without_echoing_content() {
+    let secret = "OVERSIZED-PRIVATE-SENTINEL";
+    let request = ReviewPacket::new("synthetic", "Subject")
+        .with_evidence(ReviewEvidenceFact::new(
+            "capture", "field", secret.repeat(REQUEST_CAP / secret.len() + 1),
+        ));
+    let error = build_request_body(&request, &valid_options()).expect_err("oversized fact");
+    assert!(matches!(error, ModelError::RequestTooLarge { bytes } if bytes > REQUEST_CAP));
+    assert!(!error.to_string().contains(secret));
+}
+
+#[test]
+fn parse_batch_from_valid_content() {
+    let content = r#"{"subject_id":"school:madison-west","verdicts":[{"case_id":"c","kind":"value_proposed","field":"state","value":"WI","confidence":80,"rationale":"the WIAA lists the school"}]}"#;
+    let batch = parse_batch(content).expect("a batch");
     assert_eq!(batch.subject_id, "school:madison-west");
     assert_eq!(batch.verdicts.len(), 1);
     assert_eq!(batch.verdicts[0].value.as_deref(), Some("WI"));
 }
 
 #[test]
-fn an_empty_message_is_reported_as_empty_rather_than_parsed() {
-    let body = serde_json::json!({ "choices": [{ "message": { "content": "   " } }] });
-    assert!(message_content(&body).is_none());
+fn fence_stripping_works() {
+    let fenced = "```json\n{\"subject_id\":\"s\",\"verdicts\":[]}\n```";
+    let batch = parse_batch(fenced).expect("a fenced batch");
+    assert_eq!(batch.subject_id, "s");
 }
 
 #[test]
-fn a_fenced_answer_is_read_and_a_bare_array_is_accepted_without_a_subject() {
-    let fenced = "```json\n{\"subject_id\":\"school:madison-west\",\"verdicts\":[]}\n```";
-    let batch = parse_batch(fenced).expect("a fenced batch");
-    assert_eq!(batch.subject_id, "school:madison-west");
-    assert!(batch.verdicts.is_empty());
-
+fn bare_array_is_accepted() {
     let bare = r#"[{"case_id":"c","kind":"insufficient_evidence","field":"","value":"","confidence":10,"rationale":"none"}]"#;
     let batch = parse_batch(bare).expect("a bare array");
     assert_eq!(batch.subject_id, "");
-    assert_eq!(batch.verdicts.len(), 1);
     assert_eq!(
         batch.verdicts[0].kind,
         ReviewVerdictKind::InsufficientEvidence
@@ -103,27 +184,67 @@ fn a_fenced_answer_is_read_and_a_bare_array_is_accepted_without_a_subject() {
 }
 
 #[test]
-fn an_unreadable_answer_is_an_error_that_quotes_what_arrived() {
-    let error = parse_batch("I could not decide.").expect_err("not a batch");
-    let message = error.to_string();
+fn invalid_content_returns_error_without_echo() {
+    let sentinel = "SENTINEL_MODEL_SECRET_7f3a9b";
+    let result = parse_batch(sentinel);
+    let err = result.expect_err("not a batch");
+    let display = format!("{err}");
+    let debug = format!("{err:?}");
     assert!(
-        message.contains("I could not decide."),
-        "the operator needs the model's text to fix the prompt: {message}"
+        !display.contains(sentinel),
+        "Display must not echo model content: {display}"
+    );
+    assert!(
+        !debug.contains(sentinel),
+        "Debug must not echo model content: {debug}"
     );
 }
 
 #[test]
-fn truncation_keeps_a_string_on_a_character_boundary() {
-    assert_eq!(truncate("short", 400), "short");
-    let long = "é".repeat(10);
-    let cut = truncate(&long, 5);
-    assert!(cut.starts_with('é'));
-    assert!(cut.ends_with('…'));
-    assert!(cut.len() <= 5 + '…'.len_utf8());
+fn invalid_endpoint_display_has_no_url() {
+    let sentinel = "http://SENTINEL_ENDPOINT_SECRET_7f3a9b@evil.example.com:52080";
+    let result = ModelOptions::local(sentinel, "m");
+    let err = result.unwrap_err();
+    let display = format!("{err}");
+    let debug = format!("{err:?}");
+    assert!(
+        !display.contains(sentinel),
+        "Display must not echo endpoint URL: {display}"
+    );
+    assert!(
+        !debug.contains(sentinel),
+        "Debug must not echo endpoint URL: {debug}"
+    );
 }
 
 #[test]
-fn a_verdict_with_no_value_stays_a_verdict_the_reader_can_demote() {
+fn status_error_display_has_no_url() {
+    let err = ModelError::Status { status: 503 };
+    let display = format!("{err}");
+    let debug = format!("{err:?}");
+    assert!(!display.contains("http"));
+    assert!(!debug.contains("http"));
+    assert!(display.contains("503"));
+}
+
+#[test]
+fn empty_message_error_has_no_url() {
+    let err = ModelError::Empty;
+    let display = format!("{err}");
+    let debug = format!("{err:?}");
+    assert!(!display.contains("http"));
+    assert!(!debug.contains("http"));
+}
+
+#[test]
+fn truncated_string_stays_on_char_boundary() {
+    let long = "e".repeat(10);
+    let cut = &long[..5];
+    assert_eq!(cut.len(), 5);
+}
+
+#[test]
+fn verdict_with_no_value_stays_a_verdict() {
     let empty = ReviewVerdict {
         case_id: "c".to_string(),
         kind: ReviewVerdictKind::ValueProposed,

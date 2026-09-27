@@ -1,30 +1,3 @@
-//! Golden-corpus parity for the source-artifact slice of the census: the AthleticLIVE harvest and
-//! athlete adapters, the MileSplit HTML adapter, the coach-contact CSV and the Athletic.net bio
-//! surface.
-//!
-//! A decomposition refactor may move code between functions and files, but it may not change a
-//! single published parse result. Every case below parses committed bytes and compares the
-//! serialized result byte-for-byte with `tests/golden/<source>__<case>.json`, then hashes the whole
-//! case list into one aggregate digest per source. The digest is the coverage guard: a case that
-//! stops being asserted, or a fixture that stops being walked, changes the digest and fails the
-//! test instead of silently shrinking the corpus.
-//!
-//! Fixtures walked here:
-//!
-//! * `tests/fixtures/athleticlive/` — every file, through `parse_meets_csv` → `build_meets` and
-//!   through the adapter's own `collect` over a scratch store.
-//! * `tests/fixtures/athleticlive_athletes/` — every file, through `meet_targets` / `batch_query` /
-//!   `build_entities` exactly the way the adapter's `#[cfg(test)]` module reads it.
-//! * `tests/fixtures/milesplit/` — every file, through `parse_team_index` / `parse_roster` /
-//!   `roster_entities`, plus `fetch_team_index` / `fetch_roster` served from the seeded cache.
-//! * `tests/fixtures/coach_contacts_sample.csv` — the fixtures root's `coach_contacts*` captures,
-//!   through `row_entities` and `import_csv`.
-//! * `crates/census-crawl/src/athleticnet.rs` — no fixture directory exists for this adapter, so its cases
-//!   replay the registry, mark tokens and bio payloads its own `#[cfg(test)]` module captures
-//!   inline. No fixture file is invented for it.
-//!
-//! Seeding: `GOLDEN_UPDATE=1 cargo nextest run -p census-service --test parity_national` rewrites
-//! the goldens; the comparison run never sets it.
 
 mod common;
 
@@ -43,17 +16,14 @@ use std::collections::{BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-/// Observation date and school year the adapters are driven with; every golden below encodes them.
 const OBSERVED_ON: &str = "2026-09-20";
 const SCHOOL_YEAR: SchoolYear = SchoolYear::new(2026).expect("2026 is a season");
 
 
-/// A scratch store plus a fetcher over its HTTP cache — the same wiring `main` builds.
 struct Harness {
     store: Store,
     fetcher: Fetcher,
     cache: PathBuf,
-    /// Declared last: the store closes before the directory that owns it disappears.
     _root: tempfile::TempDir,
 }
 
@@ -83,13 +53,6 @@ impl Harness {
         }
     }
 
-    /// Serve `body` for `method url` out of the fetcher's own cache, so an adapter that fetches
-    /// still runs against committed bytes with no socket ever opening: the fetcher is cache-first
-    /// and returns a cached 200 before it parses the URL, checks robots or takes a host turn.
-    ///
-    /// The key mirrors the cache's on-disk contract — SHA-256 of `method`, `url` and the request
-    /// body joined by `0x1f`, truncated to the leading 16 bytes in hex. A drift in that key makes
-    /// the fetch a live request, which the callers below detect via `FetchStats::requests`.
     fn seed(&self, method: &str, url: &str, body_text: &str, content_type: &str) -> Result<()> {
         let mut hasher = Sha256::new();
         hasher.update(method.as_bytes());
@@ -107,7 +70,7 @@ impl Harness {
             "url": url,
             "method": method,
             "status": 200,
-            "sha256": hex_prefix(body_hasher)?,
+            "content_digest": format!("{:x}", body_hasher.finalize()),
             "bytes": body_text.len(),
             "fetched_at": "2026-09-20T00:00:00Z",
             "content_type": content_type,
@@ -118,7 +81,6 @@ impl Harness {
     }
 }
 
-/// Hex of the leading 16 bytes of a SHA-256 digest, the cache key form `net` uses.
 fn hex_prefix(hasher: Sha256) -> Result<String> {
     let digest = hasher.finalize();
     let head = digest
@@ -128,7 +90,6 @@ fn hex_prefix(hasher: Sha256) -> Result<String> {
 }
 
 
-/// Asserts one case against its golden and records its digest for the source's aggregate.
 fn case(cases: &mut Vec<(String, String)>, name: &str, value: &Value) -> Result<()> {
     common::assert_golden(name, value).with_context(|| format!("golden case `{name}`"))?;
     let digest = common::digest(value).with_context(|| format!("digesting case `{name}`"))?;
@@ -136,13 +97,11 @@ fn case(cases: &mut Vec<(String, String)>, name: &str, value: &Value) -> Result<
     Ok(())
 }
 
-/// The per-source aggregate: every case name with the digest of its value, hashed as one document.
 fn digest_all(source: &str, cases: &[(String, String)]) -> Result<()> {
     common::assert_golden(&format!("{source}__digest"), &serde_json::to_value(cases)?)
         .with_context(|| format!("aggregate digest for {source}"))
 }
 
-/// The fixture stem a golden case name is built from: `wi_roster_52649.html` → `wi_roster_52649`.
 fn file_stem(name: &str) -> Result<String> {
     Path::new(name)
         .file_stem()
@@ -220,7 +179,6 @@ async fn athleticlive_harvest_parity() -> Result<()> {
 }
 
 
-/// The rows an `athlete_list` response carries: `hits.hits[]._source`.
 fn hits_from_response(body: &str) -> Result<Vec<AthleteHit>> {
     let value: Value = serde_json::from_str(body).context("an athlete_list response is JSON")?;
     let hits = value
@@ -234,8 +192,6 @@ fn hits_from_response(body: &str) -> Result<Vec<AthleteHit>> {
     serde_json::from_value(Value::Array(sources)).context("the hits decode as athlete rows")
 }
 
-/// The meet the athlete capture belongs to: AthleticLIVE meet 73566 (Abilene Invitational), the
-/// way the `athleticlive` adapter publishes it before this adapter selects it.
 fn captured_meet() -> CanonicalMeet {
     let mut meet = CanonicalMeet::new(
         Some(UsJurisdiction::Kansas),
@@ -410,10 +366,6 @@ fn roster_json(roster: &milesplit::Roster) -> Value {
     })
 }
 
-/// A roster capture's site prefix and team id: `wi_roster_52649.html` → `("wi", "52649")`.
-///
-/// Returns `None` for names this shape does not describe, so an unrecognised capture is reported
-/// instead of being quietly skipped.
 fn roster_fixture(name: &str) -> Option<(String, String)> {
     let parts: Vec<&str> = name
         .strip_suffix(".html")?
@@ -490,8 +442,9 @@ async fn milesplit_html_parity() -> Result<()> {
             .with_context(|| format!("team {team_id} is not in the {index_file} capture"))?
             .clone();
 
-        let roster = milesplit::parse_roster(&body, team.clone())
+        let parsed = milesplit::parse_roster(&body, team.clone())
             .with_context(|| format!("parsing {SOURCE}/{file}"))?;
+        let roster = parsed.roster().context("captured roster was quarantined")?;
         if roster.athletes.is_empty() {
             bail!("{SOURCE}/{file} carries no athletes to assert");
         }
@@ -535,13 +488,9 @@ async fn milesplit_html_parity() -> Result<()> {
             milesplit::fetch_roster(&harness.fetcher, &team, &FetchOptions::default())
                 .await
                 .with_context(|| format!("fetching {roster_url}"))?;
-        if fetched_roster != roster {
-            bail!(
-                "fetch_roster returned {} athletes, parse_roster returned {} for {file}",
-                fetched_roster.athletes.len(),
-                roster.athletes.len()
-            );
-        }
+        ensure!(fetched_roster.verdict == parsed,
+            "the fetched roster and rejected-row evidence disagree with the parser for {file}");
+        let fetched_rows = fetched_roster.verdict.roster().context("fetched roster was quarantined")?;
         let stats = harness.fetcher.stats().await;
         if stats.requests != 0 {
             bail!(
@@ -556,7 +505,7 @@ async fn milesplit_html_parity() -> Result<()> {
                 "file": file,
                 "cache_hits": stats.cache_hits,
                 "teams": fetched_teams.iter().map(team_json).collect::<Vec<Value>>(),
-                "roster": roster_json(&fetched_roster),
+                "roster": roster_json(fetched_rows),
             }),
         )?;
     }
@@ -665,12 +614,8 @@ async fn coach_contacts_csv_parity() -> Result<()> {
 }
 
 
-/// The registry the adapter's own tests read (comments, blank lines, a repeat, a per-line state and
-/// a bare id the default fills in).
 const REGISTRY: &str = "# season 2026\n28127170,AK\n\n26631105\n28127170,AK\n";
 
-/// Registries the adapter refuses rather than guesses about: two candidate states, a state that is
-/// not a postal code, a line that is not an id, and a third column.
 const REFUSED_REGISTRIES: [(&str, &[UsJurisdiction]); 4] = [
     (
         "28127170\n",
@@ -681,8 +626,6 @@ const REFUSED_REGISTRIES: [(&str, &[UsJurisdiction]); 4] = [
     ("28127170,AK,extra\n", &[]),
 ];
 
-/// The published mark tokens the adapter's own tests cover: auto-timed, hand-timed, qualifier
-/// suffix, imperial field mark, metric field mark, points, and the no-mark words.
 const MARK_TOKENS: [(EventKind, &str); 11] = [
     (EventKind::Track800m, "1:17.80a"),
     (EventKind::Track3200m, "9:41.23"),
@@ -697,7 +640,6 @@ const MARK_TOKENS: [(EventKind, &str); 11] = [
     (EventKind::Track1600m, ""),
 ];
 
-/// A track-payload capture: a string place, an event id, a result date and a null `resultsXC`.
 const BIO_TRACK_FIELD: &str = r#"{
   "athlete": {"IDAthlete": 28127170, "FirstName": "Natalia", "LastName": "Casillas",
               "Gender": "F", "SchoolID": 13850},
@@ -720,7 +662,6 @@ const BIO_TRACK_FIELD: &str = r#"{
   "resultsXC": null
 }"#;
 
-/// A cross-country capture: a numeric place, a course distance, no result date and no `eventsTF`.
 const BIO_CROSS_COUNTRY: &str = r#"{
   "athlete": {"IDAthlete": 28127170, "FirstName": "Natalia", "LastName": "Casillas",
               "Gender": "F", "SchoolID": 13850},

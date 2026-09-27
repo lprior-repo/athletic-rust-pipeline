@@ -1,30 +1,23 @@
-//! Centi-points (hundredths of a point).
 
 use serde::{de, Deserialize, Deserializer, Serialize};
 
-/// Centi-points (hundredths of a point).  Range: ±21 474 836pts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Default)]
 #[serde(transparent)]
 pub struct CentiPoints(i32);
 
 impl CentiPoints {
-    /// Wrap an exact centi-point count.
     pub const fn new(centi_points: i32) -> Self {
         Self(centi_points)
     }
 
-    /// Scale a value already known to be in points into centi-points, refusing NaN, infinity and
-    /// anything that would not fit in `i32`.
     pub fn try_from_points_f64(v: f64) -> Option<Self> {
         super::checked_hundredths(v).map(Self)
     }
 
-    /// The exact centi-point count.
     pub const fn value(self) -> i32 {
         self.0
     }
 
-    /// Convert the stored integer back to points as an f64.
     pub fn as_points_f64(self) -> f64 {
         f64::from(self.0) / 100.0
     }

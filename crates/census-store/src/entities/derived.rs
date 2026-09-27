@@ -1,6 +1,3 @@
-//! `Entity` for the derived rows: what the census keeps about its own findings — identities, open
-//! conflicts, review cases, coverage, meet references, snapshots and access conditions — rather than
-//! about a school or an athlete.
 
 use census_domain::model::{
     AppliedAthleteIdentity, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase, ReviewState,
@@ -9,9 +6,6 @@ use census_domain::model::{
 
 use super::super::Entity;
 
-/// The derived rows are observations of state, not history: the newest derivation of one id replaces
-/// the earlier one, because the id already binds the subject and a stale copy of a resolved conflict
-/// or a renamed school is exactly what the derive step exists to correct.
 impl Entity for SourceObjectIdentity {
     fn entity_id(&self) -> &str {
         &self.id
@@ -37,8 +31,6 @@ impl Entity for ReviewCase {
         &self.id
     }
 
-    /// A decision survives a re-derivation: the case is re-derived as pending on every pass, and a
-    /// verdict the lane already reached must not be reset by the next one.
     fn merge(&mut self, other: Self) {
         let decided = match self.state {
             ReviewState::Pending => other.state,
@@ -64,9 +56,6 @@ impl Entity for SourceMeetRef {
         &self.id
     }
 
-    /// A meet's identity is the first sighting; a later one may only complete the row. The fields a
-    /// meet owns are never rewritten by a re-crawl, so a name correction upstream cannot silently
-    /// change which meet a stored result belongs to.
     fn merge(&mut self, other: Self) {
         if other.observed_on < self.observed_on {
             self.observed_on = other.observed_on;
@@ -101,11 +90,6 @@ impl Entity for SourceAccessCondition {
         &self.id
     }
 
-    /// Two observations of one `(kind, host)` fold to the later one, and the block never shortens.
-    ///
-    /// A re-observation that reports a nearer deadline must not unblock a host an earlier
-    /// observation blocked for longer: the conservative reading is the one that costs a run nothing
-    /// and costs the source no traffic.
     fn merge(&mut self, other: Self) {
         let later = other.observed_at >= self.observed_at;
         let cooldown = match (
@@ -128,9 +112,6 @@ impl Entity for SourceAccessCondition {
     }
 }
 
-/// The review lane's verdict rows: a verdict is evidence, so two records for one case never merge —
-/// the stored row is the one an operator already read. The implementation sits here rather than with
-/// the review lane because [`Entity`] is this crate's trait and the row type is `census-domain`'s.
 impl Entity for ReviewVerdictRecord {
     fn entity_id(&self) -> &str {
         &self.id

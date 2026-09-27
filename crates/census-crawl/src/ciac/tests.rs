@@ -1,4 +1,3 @@
-//! Unit tests for the `ciac` adapter: fixture in, parsed rows and canonical entities out.
 
 use super::*;
 use census_domain::model::{CoachRole, Gender, Sport};

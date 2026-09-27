@@ -1,6 +1,3 @@
-//! The adapter body: resolve the school list, walk each school's pages, append and journal.
-//!
-//! Network and store access live here and nowhere else in this module.
 
 use super::map::{school_entities, SchoolExtract, SearchResult};
 use super::pages::parse_ad_page;
@@ -16,10 +13,6 @@ mod search;
 use search::resolve_schools;
 
 
-/// Collect OHSAA schools and coaches.
-///
-/// Resumable: a school page is fetched only when `OH:<ohsaaId>` is absent from
-/// the `ohsaa_schools` journal. Both journals carry the same key.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("ohsaa", "schools");
     let observed_on = if options.observed_on.trim().is_empty() {
@@ -61,7 +54,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-/// Counters for one `collect` run, kept in a struct so each stage can update them.
 #[derive(Default)]
 struct Tally {
     processed: usize,
@@ -72,7 +64,6 @@ struct Tally {
     office_roles_skipped: usize,
 }
 
-/// Fetch options for a school page that may legitimately be absent.
 fn page_fetch_options(ctx: &AdapterContext<'_>) -> FetchOptions {
     FetchOptions {
         allow_not_found: true,
@@ -80,7 +71,6 @@ fn page_fetch_options(ctx: &AdapterContext<'_>) -> FetchOptions {
     }
 }
 
-/// The school's sports and AD pages, or `None` when the sports page could not be retrieved.
 async fn fetch_pages(
     ctx: &AdapterContext<'_>,
     sr: &SearchResult,
@@ -131,7 +121,6 @@ async fn fetch_pages(
     Some((sports_html, ad_html))
 }
 
-/// Parse one school's pages, append its rows, journal them and tally the run.
 async fn process_school(
     ctx: &AdapterContext<'_>,
     sr: &SearchResult,
@@ -154,7 +143,6 @@ async fn process_school(
     Ok(())
 }
 
-/// Append and journal one school's rows, tallying its coach and email counts.
 fn emit_school(
     ctx: &AdapterContext<'_>,
     sr: &SearchResult,
@@ -165,10 +153,8 @@ fn emit_school(
     let school_key = format!("OH:{}", sr.ohsaa_id);
     let mut batch = ctx.store.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    ctx.observe_school(
-        &SourceNamespace::association_school(ASSOCIATION),
-        &extract.school,
-    )?;
+    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(ASSOCIATION),
+    &extract.school,).as_slice())?;
     report.rows = report.rows.saturating_add(1);
     let mut coach_emails = 0u64;
     for coach in &extract.coaches {

@@ -1,8 +1,3 @@
-//! Row accounting: the published counters, the block a row belongs to, and the legs a relay row owns.
-//!
-//! The compiled page prints two events side by side and reads each one out of its own slice of the
-//! line. A row read against the neighbouring block would publish an athlete under the wrong event, and
-//! a leg line attached to the wrong team would put a runner on a relay they never ran.
 
 use super::{parse_body, LAYOUTS, REGIONAL};
 
@@ -33,9 +28,6 @@ fn the_counters_cover_the_rows_the_events_carry() {
     }
 }
 
-/// Grades are why track feeds the class-of-2027 census: the heat prints a `Yr` for every athlete and
-/// the relay block prints one per leg, and a page that stopped publishing them would fail here
-/// instead of silently gutting the cohort.
 #[test]
 fn every_row_and_leg_of_these_pages_carries_a_year() {
     for (name, body) in LAYOUTS {
@@ -59,8 +51,6 @@ fn every_row_and_leg_of_these_pages_carries_a_year() {
     }
 }
 
-/// The two blocks of a page are read against their own columns: a relay row names a team and its
-/// legs, an individual row names an athlete and never carries legs.
 #[test]
 fn a_blocks_rows_belong_to_that_blocks_event() {
     let meet = parse_body(REGIONAL).expect("the two-block page is a meet");
@@ -106,8 +96,6 @@ fn a_blocks_rows_belong_to_that_blocks_event() {
     );
 }
 
-/// The legs printed beneath a relay row are that row's: they are numbered in the order the page
-/// printed them, and a team whose legs fell outside the page keeps none.
 #[test]
 fn a_relay_rows_legs_are_the_legs_printed_beneath_it() {
     let meet = parse_body(REGIONAL).expect("the two-block page is a meet");

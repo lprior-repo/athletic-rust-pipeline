@@ -1,15 +1,7 @@
-//! Reading the retained-input directories.
-//!
-//! A dump of any of the three input kinds is a directory of `<name>.body` files, and the name is the
-//! key the report joins on (a body's name is its sha256, an evidence or parsed record's name is
-//! whatever the dump called it).
 
 use std::fs;
 use std::path::PathBuf;
 
-/// Every `<name>.body` file under each directory, as `(stem, path)` in path order.
-///
-/// A directory that does not exist contributes nothing: the caller's summary line prints `0` for it.
 pub(crate) fn read_dir(pattern_dirs: &[String]) -> Vec<(String, String)> {
     let mut out: Vec<(String, String)> = Vec::new();
     for directory in pattern_dirs {

@@ -1,8 +1,3 @@
-//! What one walk of the result-set route carries across result sets, and the unit of work it reads.
-//!
-//! Split out of [`super`] to keep both files inside the source-length budget: this file owns the run
-//! state (the school resolver, the resume set, the counters, the entities minted so far) and the
-//! per-result-set read; `super` owns the entry point, the shared types and the table appends.
 
 use super::super::fetch::fetch_result_set;
 use super::super::map::absorb_result_set;
@@ -13,25 +8,16 @@ use census_domain::model::SchoolId;
 use census_domain::school_index::SchoolIndex;
 use std::collections::{HashMap, HashSet};
 
-/// What one walk of the route carries across result sets.
 pub(super) struct Run {
     pub(super) index: SchoolIndex,
     pub(super) resolved: HashMap<String, Option<SchoolId>>,
     pub(super) stats: Stats,
     pub(super) accumulated: Accumulator,
     pub(super) done: HashSet<String>,
-    /// The entries this walk has earned, committed with the rows they name by `super::append`.
     pub(super) pending: Vec<(String, serde_json::Value)>,
 }
 
 impl Run {
-    /// Read one result set: fetch, parse, absorb, and buffer the unit of work.
-    ///
-    /// A fetch or parse failure is recorded against the result set instead of ending the walk. The
-    /// entry is not written here: the walk writes nothing, and `super::append` commits every entry
-    /// with the rows its result sets produced, so a set counts as read only once those rows are
-    /// durable — a commit the store refuses ends the walk with the store's error rather than
-    /// leaving a set marked read whose rows never landed.
     pub(super) async fn read(&mut self, ctx: &AdapterContext<'_>, reference: &ResultSetRef) {
         let key = format!("{}/{}", reference.meet_id, reference.rsid);
         if self.done.contains(&key) {
@@ -71,7 +57,6 @@ impl Run {
         self.pending.push((key, payload));
     }
 
-    /// Record an entry that is not a result-set URL; nothing is requested for it.
     pub(super) fn reject(&mut self, entry: &str) {
         self.stats
             .failures

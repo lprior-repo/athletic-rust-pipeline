@@ -5,21 +5,16 @@ use super::{
     RUN_METRICS_SHEET,
 };
 
-/// Result of coverage-sheet reconciliation.
 pub(super) struct CoverageReconcile {
     pub(super) unique_count: usize,
     pub(super) has_duplicates: bool,
 }
 
-/// Result of run-metrics-sheet reconciliation.
 pub(super) struct RunMetricsReconcile {
     pub(super) rows: Vec<Vec<String>>,
     pub(super) mapped_athletes: u64,
 }
 
-/// Read the coverage sheet, deduplicate jurisdictions, and reconcile against `expected_jurisdictions`.
-///
-/// Pushes a named discrepancy when rows are missing or counts diverge.
 pub(super) fn reconcile_coverage(
     book: &mut calamine::Sheets<std::io::BufReader<super::File>>,
     discrepancies: &mut Vec<String>,
@@ -62,9 +57,6 @@ pub(super) fn reconcile_coverage(
     }
 }
 
-/// Count the data rows in the athletes sheet and reconcile against `expected_athletes`.
-///
-/// Pushes a named discrepancy when rows are missing or counts diverge.
 pub(super) fn reconcile_athletes(
     book: &mut calamine::Sheets<std::io::BufReader<super::File>>,
     discrepancies: &mut Vec<String>,
@@ -94,9 +86,6 @@ pub(super) fn reconcile_athletes(
     }
 }
 
-/// Read the run-metrics sheet, map the cohort label to a count, and reconcile.
-///
-/// Pushes a named discrepancy when the cohort row is absent or the count diverges.
 pub(super) fn reconcile_run_metrics(
     book: &mut calamine::Sheets<std::io::BufReader<super::File>>,
     discrepancies: &mut Vec<String>,

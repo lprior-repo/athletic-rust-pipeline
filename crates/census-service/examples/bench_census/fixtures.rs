@@ -1,9 +1,3 @@
-//! The row shapes the synthetic corpus is built from: the label constants every row shares and one
-//! constructor per shape — evidence, the observed grade, the team, the meet, the event kind, the
-//! athlete's time and the lane it ran in.
-//!
-//! Each constructor is a pure function of its arguments (and of the seeded `Lcg`, for the jittered
-//! time), so the corpus is reproducible from the seed alone.
 
 use anyhow::{Context, Result};
 use census_domain::model::{
@@ -14,7 +8,6 @@ use census_domain::UsJurisdiction;
 
 use super::lcg::Lcg;
 
-/// Evidence source id for every synthetic row; a core adapter id so `Scope::Core` keeps the rows.
 pub(super) const SOURCE_ID: &str = "mshsl_results";
 pub(super) const MEET_DATE: &str = "2026-05-02";
 
@@ -26,13 +19,10 @@ pub(super) fn grade(value: u8) -> Result<Grade> {
     Grade::new(value).context("grade must be between 9 and 12")
 }
 
-/// The season every synthetic row carries. `2025` sits inside the domain's year window by
-/// construction, so the only way this fails is the constant disagreeing with the constructor.
 pub(super) fn season() -> Result<SchoolYear> {
     SchoolYear::new(2025).context("2025 is a season")
 }
 
-/// The grade-11 observation every athlete row carries for the 2025 season, from [`SOURCE_ID`].
 pub(super) fn observed_grade() -> Result<ObservedGrade> {
     Ok(ObservedGrade {
         grade: grade(11)?,
@@ -73,7 +63,6 @@ pub(super) fn meet_of(state: UsJurisdiction, index: usize) -> CanonicalMeet {
     meet
 }
 
-/// Three track events, so every meet holds a handful of distinct events rather than one.
 pub(super) fn event_kind(value: u32) -> EventKind {
     match value % 3 {
         0 => EventKind::Track800m,
@@ -82,7 +71,6 @@ pub(super) fn event_kind(value: u32) -> EventKind {
     }
 }
 
-/// A plausible time for the event, jittered from 0.00 to 4.99 seconds.
 pub(super) fn base_seconds(kind: &EventKind, rng: &mut Lcg) -> f64 {
     let base = match kind {
         EventKind::Track800m => 130.0,

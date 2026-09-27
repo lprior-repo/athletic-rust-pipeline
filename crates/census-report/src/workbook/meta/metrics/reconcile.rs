@@ -1,11 +1,3 @@
-//! The reconciliation block: each row-level tally beside the census counter it must equal.
-//!
-//! The reconciliation is the point of the sheet. Each of the other meta sheets counts what its rows
-//! are; the census document counts the same tables its own way. Both numbers are printed side by
-//! side with a `reconciled`/`DIFFERS` status, so a workbook that disagrees with `report.json` names
-//! the counter instead of leaving an operator to diff two artifacts. `DIFFERS` is reported, not
-//! raised: the store is append-only and a collection process may write between the census and this
-//! scan, which is exactly the drift a reader has to see.
 
 use crate::report::{Census, ReportResult};
 use crate::workbook::cells::{row, Cell};
@@ -13,7 +5,6 @@ use crate::workbook::cells::{row, Cell};
 use super::super::queues::SCHOOL_IDENTITY;
 use super::super::{Family, StoreRows};
 
-/// The reconciliation block: each row-level tally beside the census counter it must equal.
 pub(super) fn reconciliation(
     rows: &StoreRows,
     conflicts: &[Family],
@@ -57,7 +48,6 @@ pub(super) fn reconciliation(
     Ok(cells)
 }
 
-/// One reconciliation row: the sheet's tally beside the census counter it must equal.
 fn reconciled(label: &str, sheet: usize, census: usize) -> ReportResult<Vec<Cell>> {
     let status = if sheet == census {
         "reconciled"
@@ -72,7 +62,6 @@ fn reconciled(label: &str, sheet: usize, census: usize) -> ReportResult<Vec<Cell
     ))
 }
 
-/// How many findings one family of the queue holds.
 fn findings_of(families: &[Family], label: &str) -> usize {
     families
         .iter()

@@ -1,5 +1,3 @@
-//! What one production file contributes: forbidden-construct counts, indexing, feature gates, and
-//! the size budgets.
 
 use crate::json::count;
 use crate::scan::mask::CodeMask;
@@ -9,16 +7,12 @@ use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::path::Path;
 
-/// Line budget for one production `.rs` file.
 pub(crate) const FILE_LINE_BUDGET: usize = 300;
 
-/// Physical-line budget for one function.
 const FN_LINE_BUDGET: usize = 60;
 
-/// Logical-line budget for one function: non-blank lines that are not `//` comments.
 const FN_LOGICAL_BUDGET: usize = 25;
 
-/// Files whose name or directory marks them as test code: never production-reachable.
 pub(crate) fn is_test_file(path: &Path) -> bool {
     let named = path
         .file_name()
@@ -31,12 +25,6 @@ pub(crate) fn is_test_file(path: &Path) -> bool {
     named || under_tests
 }
 
-/// Lines before the `#[cfg(test)]` attribute that opens the file's test module.
-///
-/// A bare `#[cfg(test)]` ends the production region only when it gates a module. Files that
-/// cfg(test)-gate `use` re-exports (`crates/census-crawl/src/tfrrs/parse/mod.rs`: `#[cfg(test)] pub
-/// use season::season_from_label;`) keep every line in scope, otherwise the real production code
-/// below them is invisible to every count and to the size budgets.
 pub(crate) fn production_lines(lines: &[String], rules: &Rules) -> Vec<String> {
     for (index, line) in lines.iter().enumerate() {
         if line.trim() != "#[cfg(test)]" {
@@ -60,11 +48,6 @@ pub(crate) fn production_lines(lines: &[String], rules: &Rules) -> Vec<String> {
     lines.to_vec()
 }
 
-/// Record one file's size-budget overruns and return its count of over-25-logical-line functions.
-///
-/// The file budget is measured on every line the file holds; the function walk reads the
-/// production-reachable region, so a `#[cfg(test)] mod tests` at the end of a file cannot hide the
-/// functions above it or inflate their spans.
 pub(crate) fn file_budgets(
     label: &str,
     lines: &[String],
@@ -81,7 +64,6 @@ pub(crate) fn file_budgets(
     functions_over_logical
 }
 
-/// Count lines carrying real indexing, ignoring matches inside literals and comments.
 fn count_indexing(rules: &Rules, lines: &[String]) -> u64 {
     let mut mask = CodeMask::default();
     let masked = mask.apply_all(lines, &rules.char_literal);
@@ -93,12 +75,6 @@ fn count_indexing(rules: &Rules, lines: &[String]) -> u64 {
     )
 }
 
-/// Functions over the physical and logical line budgets.
-///
-/// Braces are counted on masked lines. A `{` that is character-literal, string-literal or comment
-/// text opens no block, and counting it left the walk's depth above zero for the rest of the file:
-/// `profile/html/state.rs`'s `decode` measured an 85-line span because of `rest.find('{')`, and every
-/// function after it was swallowed into that one span.
 fn scan_functions(rules: &Rules, production: &[String], label: &str) -> (Vec<String>, usize) {
     let mut mask = CodeMask::default();
     let masked = mask.apply_all(production, &rules.char_literal);
@@ -139,8 +115,6 @@ fn scan_functions(rules: &Rules, production: &[String], label: &str) -> (Vec<Str
     (over_60, over_logical)
 }
 
-/// The last line of the block that opens at `start`: the first line at or after it whose brace depth
-/// returns to zero, having opened at least one brace.
 fn body_end(masked: &[String], start: usize) -> usize {
     let mut depth = 0i64;
     let mut end = start;
@@ -159,7 +133,6 @@ fn body_end(masked: &[String], start: usize) -> usize {
     end
 }
 
-/// One package's accumulating counts.
 pub(crate) struct CrateScan {
     counts: BTreeMap<String, u64>,
     production_lines: usize,
@@ -167,9 +140,6 @@ pub(crate) struct CrateScan {
 }
 
 impl CrateScan {
-    /// A package with every key at zero, built from the compiled rules so the metric names have one
-    /// source of truth: a package whose source roots hold no production file still reports the full
-    /// key set, and a name added to the pattern table appears in every package's report.
     pub(crate) fn new(rules: &Rules) -> Self {
         let mut counts: BTreeMap<String, u64> = rules
             .forbidden
@@ -185,15 +155,11 @@ impl CrateScan {
         }
     }
 
-    /// Record one measured file against this package.
     pub(crate) fn add_file(&mut self, production_lines: usize) {
         self.files = self.files.saturating_add(1);
         self.production_lines = self.production_lines.saturating_add(production_lines);
     }
 
-    /// Fold one file's forbidden constructs, indexing count and feature gates in.
-    ///
-    /// Returns the disallowed feature gates as `(line number, name)` pairs for the caller to label.
     pub(crate) fn add_production(
         &mut self,
         production: &[String],
@@ -217,7 +183,6 @@ impl CrateScan {
         *slot = slot.saturating_add(value);
     }
 
-    /// Finish the package: totals in, as the JSON object the report carries.
     pub(crate) fn into_counts(self) -> Map<String, Value> {
         let mut counts = self.counts;
         counts.insert("production_lines".to_string(), count(self.production_lines));

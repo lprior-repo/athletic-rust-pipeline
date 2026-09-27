@@ -1,28 +1,21 @@
-//! The `data-display` grid: the labels of one table, the athlete rows they select, and the cells
-//! and final time read out of each row.
 
 use crate::hytek::parse_time;
 use crate::result_file::ParsedRow;
 use census_domain::model::{Grade, Mark};
 use regex::Regex;
 
-/// Why one grid row was declined, so a report can say what the row lacked rather than only that a
-/// counter moved: the athlete cell, or a time the header identifies.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct RowRejection {
     pub(super) reason: String,
 }
 
 impl RowRejection {
-    /// The row carries no cell under the table's `Name` column.
     fn no_athlete() -> Self {
         Self {
             reason: "the row carries no athlete cell".to_string(),
         }
     }
 
-    /// The row carries no time: the table's header names no time column at all, or the row's cell
-    /// under the one it names does not read as a time.
     fn no_time(column: Option<usize>) -> Self {
         let reason = match column {
             None => "the table's header names no time column",
@@ -34,9 +27,6 @@ impl RowRejection {
     }
 }
 
-/// The column labels of one table, in printing order.
-///
-/// The last header row carries one label per data column; a table with no header row yields none.
 pub(super) fn table_labels(
     table: &str,
     tags: &Regex,
@@ -56,10 +46,6 @@ pub(super) fn table_labels(
         .unwrap_or_default()
 }
 
-/// Every athlete row of one table, with the reason each data row it declined was declined.
-///
-/// A table whose header carries no `Name` column — a team summary, a split table — is not an
-/// athlete grid at all, so it has no rows to decline either.
 pub(super) fn table_rows(
     table: &str,
     labels: &[String],
@@ -116,18 +102,11 @@ pub(super) fn table_rows(
     (rows, rejected)
 }
 
-/// The row's own time: the cell under the column the table's header names as the time.
 fn final_time(cells: &[String], column: Option<usize>) -> Option<Mark> {
     let value = cells.get(column?)?.trim();
     parse_time(value).map(Mark::TimeSeconds)
 }
 
-/// The index of the column carrying the row's time, read from the table's labels.
-///
-/// A `Finish` column wins. Failing that, the last column whose label names a time — a split table
-/// prints its cumulative splits as `Mile 1`, `Mile 2`, then the time itself. A table whose header
-/// names neither carries no time this reader will take: identifying the column by position would
-/// read a `Team Member Place` of `5` as five seconds, so the rows are declined instead.
 fn finish_time_column(labels: &[String]) -> Option<usize> {
     if let Some(index) = label_index(labels, &["Finish"]) {
         return Some(index);
@@ -137,7 +116,6 @@ fn finish_time_column(labels: &[String]) -> Option<usize> {
         .rposition(|label| label.trim().to_ascii_lowercase().contains("time"))
 }
 
-/// The text of every cell of one table row, tags stripped.
 fn table_cells(row_html: &str, tags: &Regex, cell_pattern: &Regex) -> Vec<String> {
     cell_pattern
         .captures_iter(row_html)

@@ -1,15 +1,7 @@
-//! The published shape of a schedule row.
-//!
-//! A row is the provider's identity for one competition day: the season it was read for, a month and
-//! day from the page, a label for the event and its venue, and the provider's own key when it printed
-//! one. Every part of that has a consumer — the date orders the refresh, the venue places the meet in
-//! a state, the slug keys later requests — so each is asserted on the captures and on woven pages.
 
 use super::{rows, PAGES, SEASON};
 use proptest::prelude::*;
 
-/// A row's date is the season it was read for plus a month and a day the page stated, zero-padded,
-/// with nothing else in it.
 fn date_is_well_formed(date: &str, year: i16) -> bool {
     let prefix = format!("{year:04}-");
     let Some(rest) = date.strip_prefix(&prefix) else {
@@ -28,8 +20,6 @@ fn date_is_well_formed(date: &str, year: i16) -> bool {
         && (1..=31).contains(&day_number)
 }
 
-/// A label the reader published is text: stripped of tags, trimmed, and with its internal whitespace
-/// collapsed, so a venue can be looked up in the state table verbatim.
 fn is_text(label: &str) -> bool {
     !label.is_empty()
         && label == label.trim()
@@ -77,8 +67,6 @@ fn every_row_carries_a_label_and_a_venue_and_only_real_keys() {
     }
 }
 
-/// The captures publish the provider key on every competition row, and the key is what later requests
-/// are built from — a row that loses it is a meet the collector can list but never open.
 #[test]
 fn the_captures_publish_a_key_on_every_row() {
     for (name, body) in PAGES {
@@ -92,8 +80,6 @@ fn the_captures_publish_a_key_on_every_row() {
     }
 }
 
-/// The same shape laws on a page no capture has: whatever order headings and rows arrive in, a
-/// published row is still a date of the season, two text labels and a single-segment key.
 fn shape_holds(body: &str) -> Result<(), TestCaseError> {
     let Ok(parsed) = rows(body, SEASON) else {
         return Ok(());

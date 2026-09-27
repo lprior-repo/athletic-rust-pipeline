@@ -1,37 +1,27 @@
-//! The `athlete_list` search response: one document per meet-entry, and the readers
-//! for the tokens it publishes (row id, grade token, meet id, Athletic.net ids, team).
 
 use serde::Deserialize;
 use serde_json::Value;
 
-/// One `athlete_list` document.
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct AthleteHit {
-    /// Row id (per meet-entry; NOT a person key).
     #[serde(default)]
     pub i: Option<Value>,
     #[serde(default)]
     pub n: Option<String>,
-    /// Grade token: `"9".."12"`, `FR|SO|JR|SR`, occasionally blank.
     #[serde(default)]
     pub y: Option<Value>,
-    /// `"Male"` / `"Female"`.
     #[serde(default)]
     pub g: Option<String>,
-    /// AthleticLIVE meet id.
     #[serde(default)]
     pub mi: Option<Value>,
-    /// Athletic.net athlete id.
     #[serde(default)]
     pub ani: Option<Value>,
     #[serde(default)]
     pub t: Option<HitTeam>,
 }
 
-/// Team object embedded in an athlete row.
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct HitTeam {
-    /// AthleticLIVE team id.
     #[serde(default)]
     pub i: Option<Value>,
     #[serde(default)]
@@ -40,16 +30,13 @@ pub struct HitTeam {
     pub f: Option<String>,
     #[serde(default)]
     pub ab: Option<String>,
-    /// Athletic.net team id.
     #[serde(default)]
     pub ani: Option<Value>,
-    /// Cross-country marker (`1` on XC meets).
     #[serde(default)]
     pub xc: Option<Value>,
 }
 
 impl HitTeam {
-    /// School name as published: long name preferred, then short name.
     pub fn school_name(&self) -> Option<&str> {
         self.n
             .as_deref()
@@ -58,7 +45,6 @@ impl HitTeam {
     }
 }
 
-/// Numeric value from a JSON number or numeric string.
 fn as_u64(value: &Value) -> Option<u64> {
     match value {
         Value::Number(n) => n.as_u64(),

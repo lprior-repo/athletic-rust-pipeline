@@ -10,7 +10,6 @@ use super::teams::{coach_role, is_published_level, team_sport, TeamCoaches};
 use super::text::strip_honorific;
 use super::{COACH_NAMESPACE, SOURCE_ID};
 
-/// Normalise a role label: trim, drop a trailing colon, collapse inner whitespace, lowercase.
 fn normalize_label(label: &str) -> String {
     label
         .trim()
@@ -21,11 +20,6 @@ fn normalize_label(label: &str) -> String {
         .to_ascii_lowercase()
 }
 
-/// Map an Administration-block role onto an athletic-director role.
-///
-/// Exact match on purpose: the same block publishes office staff whose labels contain
-/// "activities director" ("AD Administrative Assistant", "Activities Director Secretary"), and those
-/// must never be emitted as the school's activities director.
 pub fn ad_role(label: &str) -> Option<CoachRole> {
     match normalize_label(label).as_str() {
         "activities director"
@@ -38,15 +32,10 @@ pub fn ad_role(label: &str) -> Option<CoachRole> {
     }
 }
 
-/// The provider's own key for a school: its numeric id when published, else the page slug.
 pub fn provider_key(row: &SchoolListRow, detail: &SchoolDetail) -> String {
     detail.school_id.clone().unwrap_or_else(|| row.slug.clone())
 }
 
-/// Build the canonical school for one listing row plus its detail page.
-///
-/// The id is minted from state + normalized name, so the same school seen by another adapter resolves to
-/// the same canonical id.
 pub fn school_entities(
     row: &SchoolListRow,
     detail: &SchoolDetail,
@@ -80,10 +69,6 @@ pub fn school_entities(
     Some((school, school_id))
 }
 
-/// Canonical athletic-director rows for one school page.
-///
-/// Only `Activities Director` / `Assistant Activities Director` entries are emitted; office roles are
-/// dropped here, which is the last point before the store.
 pub fn ad_coaches(
     detail: &SchoolDetail,
     school_id: &SchoolId,
@@ -131,7 +116,6 @@ pub fn ad_coaches(
     coaches
 }
 
-/// The domains this school's own contacts are published on: its AD addresses plus its website host.
 pub fn school_domains(detail: &SchoolDetail) -> Vec<String> {
     let mut domains: Vec<String> = Vec::new();
     for entry in &detail.admin {
@@ -176,18 +160,12 @@ fn host_domain(url: &str) -> Option<String> {
     (!host.is_empty()).then_some(host)
 }
 
-/// Keep an API-published coach address unless it is malformed.
-///
-/// The `_domains` parameter remains part of the mapping helper's call shape, but publication is not
-/// restricted to a school's own domains: `CanonicalCoach::set_published_email` classifies the
-/// address's mailbox kind.
 pub fn published_coach_email(address: &str, _domains: &[String]) -> Option<String> {
     let address = address.trim();
     email_domain(address)?;
     Some(address.to_string())
 }
 
-/// Canonical coach entities for the team coach payloads fetched for one school.
 pub fn coach_entities(
     teams: &[TeamCoaches],
     school_id: &SchoolId,

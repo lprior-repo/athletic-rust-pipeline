@@ -1,56 +1,3 @@
-//! The recruiting sheets of the census workbook: objective §50 `Athletes`, §51 `PRs` and §53
-//! `Coaches`.
-//!
-//! All three read one [`Dataset`] — a single scoped, cohort-filtered pass over the store's merged
-//! entity tables — so a recruiting cell can never disagree with the census report or with
-//! the `PRs` sheet, and no sheet re-derives a fact from raw source text.
-//!
-//! # Published sheet order
-//!
-//! `workbook::write_workbook` writes the objective's sheets in this order (§50-§54):
-//!
-//! ```text
-//! Athletes            §50   this module
-//! PRs                 §51   this module
-//! Performances_NNN    §52   `workbook::performances`, ≥1 sheet, 1,000,000 data rows each
-//! Coaches             §53   this module
-//! Schools, Meets, Sources, Coverage, Conflicts, Review, Run Metrics   §54  `workbook::meta`
-//! ```
-//!
-//! The §52 call sits between [`Recruiting::write_prs`] and [`Recruiting::write_coaches`], which is why
-//! this module exposes three writers over one dataset instead of a single function.
-//!
-//! # What this workbook now contains, against the legacy census sheets
-//!
-//! Objective §50-§54 supersedes part of the legacy sheet set in name and content, so the mapping is
-//! recorded here for the reviewer:
-//!
-//! | Legacy sheet | Disposition |
-//! |---|---|
-//! | `Goal & method` | retained — provenance for the run |
-//! | `Summary` | retained — the workbook-level twin of §49's per-jurisdiction denominators |
-//! | `By state - core`, `By state - all sources` | retained — §49's per-jurisdiction coverage |
-//! | `Athletic.net marginal` | retained — the §49 Athletic.net-attributable view |
-//! | `PRs` | the best-mark reduction with recruiter columns; the same reduction is emitted as text sidecars |
-//! | `Meets` | renamed `Meets summary`: the name now belongs to §54's row-level `Meets` sheet |
-//! | `Evidence mix` | retained — the evidence mix behind §54's `Sources` |
-//! | `Method notes` | retained — method provenance |
-//!
-//! Nothing was dropped: the objective's sheets are additions to the legacy set, and the two sheets
-//! whose content the objective re-specifies (`PRs` and its sidecars, `Meets summary` +
-//! `Meets`) are still present under their current names.
-//!
-//! # Scope, cohort and reconciliation
-//!
-//! The scope is the workbook run's evidence scope: `core` drops rows whose only evidence is
-//! Athletic.net or its AthleticLIVE mirror, exactly as `report` and `bests` drop them. The cohort is
-//! the run's graduating class (`Options::grad_year`), and `None` publishes every athlete in scope.
-//!
-//! After the sheets are written, [`Recruiting::reconcile`] prints each sheet's row count beside the
-//! canonical store counts it came from — the store's own table sizes, the count the scope filter kept,
-//! and, for `PRs`, the row count of the crate's independent `bests` reduction over the same store,
-//! scope and cohort. The numbers are printed rather than assumed; a `PRs` line whose `consistent`
-//! field is `false` is the signal that this sheet and the best-mark sidecars disagree.
 
 use crate::bests;
 use crate::report::{ReportResult, Scope};
@@ -62,7 +9,6 @@ use super::cells::write_sheet;
 use dataset::Dataset;
 
 mod athletes;
-mod identity;
 mod coaches;
 mod columns;
 mod contact;
@@ -74,26 +20,25 @@ mod prs;
 #[cfg(test)]
 mod tests;
 
-/// The contact disagreements the retained conflict queue renders as rows: the same buckets the
-/// `Athletes` sheet's contact ladder resolves, so the sheet that prints the state and the sheet that
-/// prints the disagreement can never name different findings.
-pub(in crate::workbook) use contact::{disagreements, Disagreement};
+pub(in crate::workbook) use contact::{coach_observations, disagreements, Disagreement};
 
-/// The three recruiting sheets, built once from one read of the store.
 pub(super) struct Recruiting {
-    /// Read only by this module and its tests: every sheet reaches the model through a method.
     dataset: Dataset,
 }
 
 impl Recruiting {
-    /// Load the recruiting read model for one workbook run.
-    pub(super) fn load(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
+    pub(super) fn load(
+        store: &Store,
+        scope: Scope,
+        grad_year: Option<i16>,
+        school_year: census_domain::model::SchoolYear,
+        prs: Vec<bests::SharedSelection>,
+    ) -> ReportResult<Self> {
         Ok(Self {
-            dataset: Dataset::load(store, scope, grad_year)?,
+            dataset: Dataset::load(store, scope, grad_year, school_year, prs)?,
         })
     }
 
-    /// The `Athletes` sheet (§50), first of the objective's sheets.
     pub(super) fn write_athletes(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
         write_sheet(
             book,
@@ -105,7 +50,6 @@ impl Recruiting {
         )
     }
 
-    /// The `PRs` sheet (§51), written immediately after `Athletes`.
     pub(super) fn write_prs(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
         write_sheet(
             book,
@@ -117,7 +61,6 @@ impl Recruiting {
         )
     }
 
-    /// The `Coaches` sheet (§53), written after the §52 performance sheets.
     pub(super) fn write_coaches(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
         write_sheet(
             book,
@@ -129,61 +72,26 @@ impl Recruiting {
         )
     }
 
-    /// The cohort athlete count from the dataset.
     pub(super) fn cohort_athletes(&self) -> usize {
         self.dataset.audit().cohort_athletes
     }
 
-    /// Print what each recruiting sheet published against the store counts behind it.
-    ///
-    /// The lines go to the run's own output, next to the path the workbook was written to, because the
-    /// operator reading a workbook needs the row counts that produced it: a `tracing` line would be
-    /// invisible whenever `RUST_LOG` is set to anything that filters `info` out.
-    ///
-    /// The `PRs` line closes the loop with the crate's own reduction: `bests` re-reads the same store
-    /// under the same scope and cohort and reports how many `(athlete, event)` rows it publishes. Two
-    /// independent implementations of one rule that agree on the count is the strongest check the
-    /// workbook can print about itself.
-    ///
-    /// The `Athletes` line carries `contact_conflicts`: how many `(slot, side)` head-coach buckets
-    /// hold rows that disagree about the school's contact — the same buckets the retained
-    /// `Conflicts` sheet prints one row per disagreement for, so the count and the sheet agree.
-    pub(super) fn reconcile(&self, store: &Store) -> ReportResult<()> {
+    pub(super) fn selected_prs(&self) -> &[bests::SharedSelection] {
+        &self.dataset.prs
+    }
+
+    pub(super) fn trace_counts(&self) {
         let audit = self.dataset.audit();
-        let canonical = bests::build(
-            store,
-            &bests::Options {
-                scope: self.dataset.scope,
-                grad_year: self.dataset.grad_year,
-                limit: None,
-            },
-        )?;
-        let scope = self.dataset.scope.as_str();
-        let cohort = self
-            .dataset
-            .grad_year
-            .map_or_else(|| "all".to_string(), |year| year.to_string());
-        println!(
-            "recruiting\t{}\trows={} in_scope={} store_athlete_rows={} contact_conflicts={} scope={scope} cohort={cohort}",
-            athletes::TITLE,
-            audit.cohort_athletes,
-            audit.scoped_athletes,
-            audit.store_athletes,
-            audit.contact_conflicts,
+        tracing::info!(
+            scope = self.dataset.scope.as_str(),
+            cohort = ?self.dataset.grad_year,
+            store_athletes = audit.store_athletes,
+            scoped_athletes = audit.scoped_athletes,
+            cohort_athletes = audit.cohort_athletes,
+            pr_rows = audit.pr_rows,
+            coach_rows = audit.coach_rows,
+            contact_conflicts = audit.contact_conflicts,
+            "recruiting projection counts"
         );
-        println!(
-            "recruiting\t{}\trows={} best_mark_rows={} consistent={} scope={scope} cohort={cohort}",
-            prs::TITLE,
-            audit.pr_rows,
-            canonical.len(),
-            audit.pr_rows == canonical.len(),
-        );
-        println!(
-            "recruiting\t{}\trows={} store_coach_rows={} scope={scope}",
-            coaches::TITLE,
-            audit.coach_rows,
-            audit.coach_rows,
-        );
-        Ok(())
     }
 }

@@ -1,6 +1,3 @@
-//! The arms whose payload is meet-shaped: a meet index, a whole-meet results file, or the
-//! schedule a meet platform publishes. One function per registry slug, each marshalling
-//! [`ProviderArgs`] into its adapter's `Options`.
 
 use anyhow::{Context, Result};
 use census_crawl::{self as providers, AdapterContext, AdapterReport};
@@ -11,12 +8,6 @@ use super::super::ProviderArgs;
 use super::DEFAULT_COLLECT_CONCURRENCY;
 use crate::cli::resolve_states;
 
-/// The MileSplit roster walk, addressed by its registry slug.
-///
-/// The dedicated `collect` subcommand carries the same options; this arm exists so a plan that
-/// names sources by slug can run every registry row through one entry point. The per-state
-/// concurrency defaults match `collect`'s, because the fetcher's per-host gate, not the task
-/// count, is what bounds traffic.
 pub(crate) async fn milesplit_report(
     context: &AdapterContext<'_>,
     args: &ProviderArgs,
@@ -28,15 +19,15 @@ pub(crate) async fn milesplit_report(
         concurrency: DEFAULT_COLLECT_CONCURRENCY,
         state_concurrency: DEFAULT_COLLECT_CONCURRENCY,
         refresh: args.refresh,
-        school_year: SchoolYear::new(2026)
-            .ok_or_else(|| anyhow::anyhow!("2026 is not a valid school year"))?,
+        school_year: context.school_year,
         observed_on,
+        revision: std::num::NonZeroU32::MIN,
     };
     let report = census::collect_milesplit(context.fetcher, context.store, &options)
         .await
         .context("milesplit collection")?;
     let mut summary = AdapterReport::new("milesplit", "athletes");
-    summary.rows = u64::try_from(report.athletes_total).unwrap_or(u64::MAX);
+    summary.rows = u64::try_from(report.athletes_total).context("observed athlete count exceeds u64")?;
     summary.requests = report.transport.requests;
     summary.from_cache = report.transport.cache_hits;
     summary.errors = report.errors;
@@ -50,22 +41,6 @@ pub(crate) async fn milesplit_report(
     Ok(summary)
 }
 
-/// The MileSplit result route, addressed by its registry slug: every meet the meet census stored for
-/// the requested states, read from its own published results page and then read whole.
-///
-/// The order is what makes a run reproducible — meets are taken by `(state, meet id)` — and `--limit`
-/// bounds the selection per state. Each meet costs one page request, which lists every result file
-/// the meet has, plus one request per file through the `/raw` route; the result sets themselves are
-/// journaled by id, so a re-run resumes at the first set it has not already read.
-///
-/// A file the page marks `isMeetPro` is **skipped**, per the source report's recommendation
-/// (`research/sources/milesplit-national/SOURCE_REPORT.md`, the cost model section): the platform
-/// serves those through its paid path, so they are counted and reported rather than requested.
-///
-/// The census does not filter meets by level, and a meet the state index lists under `hs` may still
-/// be a middle-school meet (`samples/raw-oh-770621-rs1321880.txt` is one: 8th graders). Those cost
-/// their two requests and yield no canonical athlete, because the result reader refuses a grade
-/// outside 9..=12 rather than minting one — the rows are counted in the run report, not invented.
 pub(crate) async fn milesplit_results_report(
     context: &AdapterContext<'_>,
     args: &ProviderArgs,
@@ -109,8 +84,6 @@ pub(crate) async fn milesplit_results_report(
     Ok(report)
 }
 
-/// Read the selected meets' pages, tolerating the ones whose template this build does not know (§62)
-/// and propagating the ones it could not reach (§9).
 async fn read_pages(
     context: &AdapterContext<'_>,
     selected: &[providers::milesplit::MeetPage],
@@ -124,8 +97,6 @@ async fn read_pages(
     .context("milesplit result pages")
 }
 
-/// Record what the walk did with the pages: how many it read, which it could not and for what reason,
-/// and whether a run of unreadable pages stopped it (§69, repeated malformed contract).
 fn note_pages(report: &mut AdapterReport, pages: &providers::milesplit::MeetPages) {
     report.note(format!("meet_pages_read={}", pages.pages_read));
     for (url, reason) in &pages.quarantined {
@@ -175,8 +146,6 @@ pub(crate) async fn athleticlive_report(
     .await?)
 }
 
-/// Import the result-document captures an operator staged: the manifest names the meets, and each
-/// capture is read from the path it names. This arm issues no request.
 pub(crate) async fn athleticlive_results_report(
     context: &AdapterContext<'_>,
     args: &ProviderArgs,

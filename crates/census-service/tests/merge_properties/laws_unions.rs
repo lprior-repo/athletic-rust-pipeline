@@ -1,8 +1,3 @@
-//! Idempotency and union commutativity.
-//!
-//! `Entity::merge` is called once per observation on every read of the store, so absorbing the same
-//! observation twice must be indistinguishable from absorbing it once, and the element sets a merge
-//! unions must not depend on the order in which the two observations arrived.
 
 use super::*;
 

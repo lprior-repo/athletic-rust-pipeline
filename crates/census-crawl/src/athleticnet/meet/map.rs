@@ -1,20 +1,3 @@
-//! One meet's walk: every block, and the block-level context its rows are read against. The rows
-//! themselves live in [`rows`].
-//!
-//! The walk refuses what the payload does not publish and counts every refusal:
-//!
-//! * a meet the payload does not place in one of the 51 jurisdictions (`Overseas` publishes no
-//!   state code) or does not date is dropped whole;
-//! * a block with no published gender, or whose label disagrees with the type the metadata
-//!   document declares, is counted and never walked;
-//! * a row is refused, in this order, when it has no school the payload names, no athlete id, no
-//!   grade in `9`..=`12`, no name, no readable mark, or belongs to an event whose label maps to no
-//!   platform kind while the metadata document was not spent — the last case is the only one the
-//!   third request changes, and it is why the request exists at all.
-//!
-//! Relay squads are never attributed as individual rows: the squad row's own row is skipped (its
-//! `FirstName` is `<BR>`-joined markup, its `LastName` null) and every leg the payload publishes
-//! for it becomes one performance carrying the squad's mark and place.
 
 mod rows;
 
@@ -32,7 +15,6 @@ use census_domain::UsJurisdiction;
 use rows::Block;
 use std::collections::{BTreeMap, HashMap};
 
-/// Absorb one whole meet; returns the performance rows stored and what the walk counted.
 #[allow(clippy::too_many_arguments)]
 pub(in crate::athleticnet) fn absorb_meet(
     meet: &MeetData,
@@ -87,7 +69,6 @@ pub(in crate::athleticnet) fn absorb_meet(
     (stored, counts)
 }
 
-/// The jurisdiction the meet document places the venue in, if any.
 fn meet_state(meet: &MeetData) -> Option<UsJurisdiction> {
     jurisdiction_of(
         meet.meet
@@ -97,23 +78,16 @@ fn meet_state(meet: &MeetData) -> Option<UsJurisdiction> {
     )
 }
 
-/// The season year a published meet date carries, used when the payload publishes no `SeasonID`.
 fn season_of(date: &str) -> Option<i16> {
     date.split('-').next()?.trim().parse::<i16>().ok()
 }
 
-/// The meet's own coordinates: the jurisdiction it happened in, the day it was held, and the school
-/// year its season falls in.
 struct Placement {
     state: UsJurisdiction,
     date: String,
     school_year: SchoolYear,
 }
 
-/// Place the meet in a jurisdiction, a date and a school year, counting the refusal when it cannot.
-///
-/// Every refusal is the same shape — count it under its own reason, then drop the meet whole — so a
-/// meet the payload does not place is counted once, against the first fact the payload is missing.
 fn place_meet(meet: &MeetData, counts: &mut MeetStats) -> Option<Placement> {
     let Some(state) = meet_state(meet) else {
         counts.meets_unplaced = counts.meets_unplaced.saturating_add(1);
@@ -139,7 +113,6 @@ fn place_meet(meet: &MeetData, counts: &mut MeetStats) -> Option<Placement> {
     })
 }
 
-/// The names a meet's rows resolve schools against, by the id a row carries as `TeamID`.
 fn school_names(results: &AllResults) -> HashMap<String, &str> {
     results
         .teams
@@ -148,8 +121,6 @@ fn school_names(results: &AllResults) -> HashMap<String, &str> {
         .collect()
 }
 
-/// One meet's walk: the meet it resolved, the names its rows resolve schools against, and where its
-/// rows go.
 struct MeetCtx<'a> {
     source: &'a SourceRef,
     observed_on: &'a str,
@@ -164,12 +135,9 @@ struct MeetCtx<'a> {
     school_year: SchoolYear,
     date: String,
     meet: CanonicalMeet,
-    /// School names by the id a row carries as `TeamID`, published once per meet.
     school_names: HashMap<String, &'a str>,
 }
 
-/// The kind a block's label maps to: the short code the ontology is keyed on, or the display label
-/// when the payload publishes no short code.
 fn kind_of(event: &FlatEvent) -> EventKind {
     let short = event.short.trim();
     if short.is_empty() {
@@ -180,10 +148,6 @@ fn kind_of(event: &FlatEvent) -> EventKind {
 }
 
 impl<'a> MeetCtx<'a> {
-    /// The event type the metadata document declares for an event id.
-    ///
-    /// Tied to the document's own lifetime, not to the borrow of this context: the block readers
-    /// hold the hint while they take `&mut self`.
     fn type_hint(&self, event_id: i64) -> Option<&'a str> {
         self.metadata
             .and_then(|metadata| metadata.event_type(event_id))
@@ -191,7 +155,6 @@ impl<'a> MeetCtx<'a> {
 }
 
 impl MeetCtx<'_> {
-    /// Walk every block in published order, each row into its own performance.
     fn walk(
         &mut self,
         results: &AllResults,
@@ -235,8 +198,6 @@ impl MeetCtx<'_> {
         }
     }
 
-    /// Whether the block's own label maps to no platform kind while the metadata document was not
-    /// spent: its marks are then unreadable, and the row is refused rather than guessed at.
     fn refuse_unmapped_label(&mut self, block: &Block<'_>) -> bool {
         if matches!(block.kind, EventKind::Unmapped { .. }) && block.type_hint.is_none() {
             self.counts.rows_unmapped_event = self.counts.rows_unmapped_event.saturating_add(1);
@@ -245,7 +206,6 @@ impl MeetCtx<'_> {
         false
     }
 
-    /// The division a block publishes, falling back to the payload's division table.
     fn division_of(&mut self, event: &FlatEvent, divisions: &HashMap<i64, &str>) -> Option<String> {
         let division = event
             .division

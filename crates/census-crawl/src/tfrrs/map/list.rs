@@ -1,4 +1,3 @@
-//! One performance-list page: one `CanonicalPerformance` per published mark.
 
 use super::row::{grade_for, mark_of, source_key};
 use super::state::{Absorb, AthleteFacts, ListContext, TeamFacts};
@@ -8,19 +7,18 @@ use crate::tfrrs::parse::{
 };
 use census_domain::model::{
     AthleteId, CanonicalPerformance, EventId, EventKind, Evidence, EvidenceMethod, Gender,
-    GradYear, Grade, Mark, MeetId, ObservedGrade, SchoolId, SchoolYear, Sport, TeamId,
+    GradYear, Grade, Mark, MeetId, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, Sport, TeamId,
 };
 
-/// The entities one row mints, so the record below is one straight line of fields.
 struct RowMints {
     team: TeamId,
     meet: MeetId,
     event: EventId,
     kind: EventKind,
     athlete: AthleteId,
+    source_athlete: SourceIdentity,
 }
 
-/// The row's own facts, read once so that the mint below is one straight line of calls.
 struct RowFacts<'r> {
     team: &'r ParsedTeam,
     athlete: &'r ParsedAthlete,
@@ -33,7 +31,6 @@ struct RowFacts<'r> {
 }
 
 impl<'a> Absorb<'a> {
-    /// Absorb one performance-list page.
     pub(in crate::tfrrs) fn absorb_list(&mut self, context: &ListContext<'_>, page: &ParsedList) {
         for section in &page.sections {
             self.stats.sections = self.stats.sections.saturating_add(1);
@@ -43,7 +40,6 @@ impl<'a> Absorb<'a> {
         }
     }
 
-    /// Absorb one row of a performance list.
     fn absorb_row(
         &mut self,
         context: &ListContext<'_>,
@@ -81,8 +77,6 @@ impl<'a> Absorb<'a> {
         self.stats.rows_absorbed = self.stats.rows_absorbed.saturating_add(1);
     }
 
-    /// Count a relay row's members and report whether the row is one. A relay prints surnames and no
-    /// class year, so minting an athlete from it would invent an identity: the run counts instead.
     fn count_relay(&mut self, row: &ParsedRow) -> bool {
         if row.athlete.is_some() || row.relay_members.is_empty() {
             return false;
@@ -93,7 +87,6 @@ impl<'a> Absorb<'a> {
         true
     }
 
-    /// The row's own facts, in the order a mark needs them; each absence is counted and ends the row.
     fn row_facts<'r>(
         &mut self,
         context: &ListContext<'_>,
@@ -150,7 +143,6 @@ impl<'a> Absorb<'a> {
         })
     }
 
-    /// The gender a row's section states, through the team route's own side when the row links one.
     fn gender_of(&mut self, team: &ParsedTeam, section: &ParsedSection) -> Gender {
         match team.gender.or(section.gender) {
             Some(gender) => gender,
@@ -161,7 +153,6 @@ impl<'a> Absorb<'a> {
         }
     }
 
-    /// Write the school, team, meet, event, athlete and performance one row implies.
     fn mint_row(
         &mut self,
         context: &ListContext<'_>,
@@ -201,7 +192,7 @@ impl<'a> Absorb<'a> {
             observed_grade: Some(grade),
             evidence: row_evidence(context, row),
             source_key,
-            source_athlete: None,
+            source_athlete: mints.source_athlete,
             retained_conflicts: Vec::new(),
         };
         self.accumulator
@@ -210,7 +201,6 @@ impl<'a> Absorb<'a> {
             .or_insert(performance);
     }
 
-    /// Mint the school-side entities a row implies: its team, its meet, its event and its athlete.
     fn mint_entities(
         &mut self,
         context: &ListContext<'_>,
@@ -235,7 +225,7 @@ impl<'a> Absorb<'a> {
         );
         let meet_id = self.meet_for(context.page, facts.meet, facts.date);
         let (event, kind) = self.event_for(context.page, section, &meet_id, gender);
-        let athlete_id = self.athlete_for(
+        let (athlete_id, source_athlete) = self.athlete_for(
             context.page,
             &AthleteFacts {
                 school,
@@ -259,12 +249,11 @@ impl<'a> Absorb<'a> {
             event,
             kind,
             athlete: athlete_id,
+            source_athlete,
         }
     }
 }
 
-/// The evidence one row's performance carries: the page it was read from, plus the host's own
-/// conversion note when the row published one.
 fn row_evidence(context: &ListContext<'_>, row: &ParsedRow) -> Vec<Evidence> {
     let mut evidence = vec![Evidence::parsed(
         context.page.source.clone(),

@@ -20,7 +20,6 @@ use super::REDIRECT_ABORT;
 use crate::challenge::{cf_header_challenge, html_body_challenge};
 use crate::protocol::MAX_SOURCE_RESPONSE_BYTES;
 
-/// Timeout for body capture futures.
 const BODY_CAPTURE_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Clone, Debug)]
@@ -49,12 +48,6 @@ pub(crate) struct PageObserver {
 static OBSERVATIONS: LazyLock<Mutex<HashMap<String, Observation>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-/// Start a continuous observer that monitors page navigation events.
-///
-/// Shutdown uses the stop CancellationToken (not gate.closed()) so that
-/// a challenge does not stop the continuous human/auto observer. The
-/// observer signals profile challenge by calling gate.revoke() while
-/// continuing to observe.
 pub(crate) async fn start_observer(
     page: Page,
     stop: CancellationToken,
@@ -175,8 +168,6 @@ impl PageObserver {
         }
     }
 
-    /// Fold response headers into the tracked observation, revoking on denial
-    /// or header challenge.
     fn record_status(
         &self,
         observation: &mut Observation,
@@ -197,7 +188,6 @@ impl PageObserver {
         Ok(())
     }
 
-    /// Fold a captured body into the tracked observation, revoking on challenge.
     fn record_body(&self, observation: &mut Observation, body: &[u8]) -> Result<(), BrowserError> {
         observation.body_challenged = html_body_challenge(
             observation
@@ -215,7 +205,6 @@ impl PageObserver {
     }
 }
 
-/// Capture one response body, bounded by the body-capture timeout.
 async fn capture_body_bounded(
     page: Page,
     id: RequestId,
@@ -230,7 +219,6 @@ async fn capture_body_bounded(
     (id, body_result)
 }
 
-/// True when the event belongs to the document the observer is tracking.
 pub(super) fn is_current(latest: &Option<RequestId>, event: &RequestId) -> bool {
     latest.as_ref().is_none_or(|current| current == event)
 }

@@ -1,9 +1,3 @@
-//! What a finished generation claims: every file with its length and SHA-256, and the rows each table
-//! holds - and the code that takes those two measurements.
-//!
-//! The digests and the counts sit beside the manifest that carries them on purpose: both are read off
-//! the generation *after* the last thing that writes into it, so the claim and its measurement are the
-//! same fact, and the restore side compares against that same measurement rather than re-inventing it.
 
 use std::collections::BTreeMap;
 use std::fs::{self, File};
@@ -16,11 +10,6 @@ use super::{Manifest, ManifestEntry, MANIFEST_PATH};
 use crate::rows::count_rows;
 use crate::{Store, StoreError, StoreResult, Table};
 
-/// Every regular file under `root`, with its length and the digest of the bytes on disk.
-///
-/// This runs after the last thing that writes into a generation, so the digests describe exactly the
-/// bytes a restore will read back. The listing is sorted, so two backups of the same bytes produce the
-/// same manifest.
 pub(super) fn digest_tree(root: &Path) -> StoreResult<Vec<ManifestEntry>> {
     let mut entries = Vec::new();
     collect_digests(root, root, &mut entries)?;
@@ -59,12 +48,6 @@ fn collect_digests(root: &Path, dir: &Path, entries: &mut Vec<ManifestEntry>) ->
     Ok(())
 }
 
-/// Per-table row counts as the keyspace holds them: every key under a table's prefix is one row.
-///
-/// The sequence counter is deliberately not used here - it is a pointer, not a count (see
-/// `store/sequences.rs`), and for a derived table it says nothing at all. Counted on both sides of a
-/// restore, this is what makes the manifest's `tables` an assertion about contents rather than a
-/// restatement of the writer's own bookkeeping.
 pub(super) fn table_row_counts(store: &Store) -> StoreResult<BTreeMap<String, u64>> {
     let mut counts = BTreeMap::new();
     for table in Table::ALL {
@@ -76,10 +59,6 @@ pub(super) fn table_row_counts(store: &Store) -> StoreResult<BTreeMap<String, u6
     Ok(counts)
 }
 
-/// Serialise `manifest` into the finished generation and make it durable before anything is published.
-///
-/// The manifest is written last and fsynced, together with the directory that holds it: it is the
-/// statement "this generation is complete", so it must not become durable before the files it lists.
 pub(super) fn write_manifest(generation: &Path, manifest: &Manifest) -> StoreResult<()> {
     let path = generation.join(MANIFEST_PATH);
     let json = serde_json::to_string_pretty(manifest).map_err(|source| StoreError::Json {
@@ -94,7 +73,6 @@ pub(super) fn write_manifest(generation: &Path, manifest: &Manifest) -> StoreRes
     fsync_dir(generation)
 }
 
-/// A manifest entry path that stays inside the backup, or a refusal naming it.
 pub(super) fn safe_entry_path(path: &str) -> StoreResult<&Path> {
     let relative = Path::new(path);
     let escapes = relative.as_os_str().is_empty()

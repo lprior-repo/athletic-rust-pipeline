@@ -1,48 +1,8 @@
-//! The one claim `fjall_restate_e2e.rs` cannot make: a run that is **killed mid-flight** resumes
-//! from its journal, and no durable write happens twice.
-//!
-//! That file says it plainly: discovery is answered by the SDK's own endpoint, "no external Restate
-//! server is needed, and no network traffic leaves the machine". It proves the endpoint advertises
-//! five services and drains on request. It cannot prove resume, because nothing holds the journal
-//! and there is no second process to resume *in*.
-//!
-//! This file adds exactly those two things:
-//!
-//! * a real `restate-server` process (the pinned 1.7.10 build, or `$RESTATE_SERVER_BIN`), with its
-//!   base-dir on local disk and the schema's durability knobs set the way the census node sets them;
-//! * a real `census-serve` process, registered with that server as its deployment.
-//!
-//! Then it kills the endpoint with SIGKILL in the middle of a `Consolidate` run — the corpus is
-//! large enough that the table scan and snapshot write are still running when the signal lands —
-//! starts the endpoint again on the same port and data-dir, resumes the paused invocation, and
-//! asserts three things:
-//!
-//! 1. the invocation is not lost: the killed run resumes and finishes its merge;
-//! 2. it does not start a second execution: re-submitting the same run identity is refused as an
-//!    invocation that already exists;
-//! 3. nothing was written twice: the store's observation count still equals the corpus appended, and
-//!    a replayed append would have doubled it. (Observations, not merged entities: `stats` counts
-//!    the rows the store received, which is precisely what a replayed durable write would duplicate.)
-//!
-//! The resume is an explicit step because the node does not perform one: a killed endpoint's
-//! invocation fails, backs off, and is **paused** once the retry policy is spent, and the operator's
-//! recovery is `PATCH /invocations/{id}/resume` for each paused row (`HANDOFF.md` §"Evidence and
-//! remaining work"). Restarting the endpoint alone leaves the run parked, so a test that only
-//! restarted it would be asserting a redelivery the node never makes.
-//!
-//! `Consolidate` is the run this proves against because it is the one heavy job that touches only
-//! the store: a jurisdiction census walks the source sites, so a kill mid-census would make this
-//! test depend on the network it is meant to be independent of.
-//!
-//! The test is skipped — loudly, and only — when no server binary can be found, because a test that
-//! silently passes without a server would be worse than no test. Everything else is deterministic:
-//! ports are taken from the kernel, all state lives under one `mkdtemp`-style directory, and both
-//! child processes are killed on drop.
-
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
-    GradYear, Grade, Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
+    GradYear, Grade, Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceIdentity,
+    SourceNamespace, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::{Revision, WorkflowIdentity};
@@ -55,27 +15,16 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
-/// The pinned server build, or anything the operator points at.
 const SERVER_ENV: &str = "RESTATE_SERVER_BIN";
-/// A core adapter id: never one of `report::NON_CORE_SOURCE_IDS`, so a core-scope census keeps every
-/// synthetic row.
 const SOURCE_ID: &str = "mshsl_results";
 const MEET_DATE: &str = "2026-05-02";
 const SEASON: SchoolYear = SchoolYear::new(2025).expect("2025 is a season");
 const REVISION: Revision = Revision(1);
 
-/// Big enough that the `Consolidate` merge is still working when the kill lands. 300 schools × 40
-/// athletes = 12 000 athletes and 24 000 performances; the scan-and-write of the athlete and
-/// performance snapshots alone is seconds of work.
 const SCHOOLS: usize = 300;
 const ATHLETES_PER_SCHOOL: usize = 40;
 
-/// How long to let the invocation get into the store before killing the endpoint under it. Short:
-/// the node accepts a submission in tens of milliseconds, and the merge is the long part, so a kill
-/// this early lands inside the merge rather than after it.
 const KILL_DELAY: Duration = Duration::from_millis(300);
-/// Readiness and completion budgets. The merge is seconds; two minutes is the wedged-connection
-/// budget, not the expected duration.
 const READY_BUDGET: Duration = Duration::from_secs(60);
 const RUN_BUDGET: Duration = Duration::from_secs(300);
 const POLL_INTERVAL: Duration = Duration::from_millis(250);
@@ -84,8 +33,6 @@ fn evidence() -> Evidence {
     Evidence::parsed(SourceRef::id(SOURCE_ID), MEET_DATE)
 }
 
-/// The server binary: `$RESTATE_SERVER_BIN`, then the pinned build, then `PATH`. `None` skips the
-/// test with a printed reason.
 fn server_binary() -> Option<PathBuf> {
     if let Some(path) = std::env::var_os(SERVER_ENV) {
         return Some(PathBuf::from(path));
@@ -106,18 +53,8 @@ fn server_binary() -> Option<PathBuf> {
     })
 }
 
-/// The ephemeral ports this process has already handed out.
-///
-/// The kernel re-offers a just-released ephemeral port to the next `bind(":0")`, so picks made one
-/// after another can return the same number twice. That is how a node config ends up binding
-/// `[admin]` and `[ingress]` to one port: the second server dies with `Address in use`, and the
-/// test then fails waiting for an API that was never going to answer. The ledger makes every pick
-/// in this process distinct. What is left is the handoff window to other processes, where losing
-/// the race shows up as a child that never becomes ready - never as a silent pass.
 static HANDED_OUT: LazyLock<Mutex<HashSet<u16>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
 
-/// Bind an ephemeral port, read it back, and drop the listener so a child can bind it - a port
-/// this process has not handed out before.
 fn free_port() -> u16 {
     loop {
         let listener = TcpListener::bind("127.0.0.1:0").expect("bind an ephemeral port");
@@ -136,21 +73,17 @@ fn free_port() -> u16 {
     }
 }
 
-/// A child process that is killed when the test ends, however it ends.
 struct ChildGuard {
     child: Child,
 }
 
 impl ChildGuard {
-    /// SIGKILL: the point of the test is that no shutdown hook runs.
     fn kill_hard(&mut self) {
         self.child.kill().expect("send SIGKILL to the owned child");
         let status = self.child.wait().expect("reap the killed child");
         assert_eq!(status.signal(), Some(9), "the child must die from SIGKILL");
     }
 
-    /// SIGTERM, then wait for the drain. The store is a single-writer Fjall database: the test may
-    /// only open it after the process that holds it has exited.
     fn stop_gracefully(&mut self) {
         let pid = self.child.id();
         let _ = Command::new("kill")
@@ -179,13 +112,10 @@ impl Drop for ChildGuard {
     }
 }
 
-/// The Restate node the test runs against: its own base-dir, its own three ports, telemetry off.
 struct Node {
-    /// Held for its `Drop`: the server is killed when the node goes out of scope.
     _guard: ChildGuard,
     ingress: String,
     admin: String,
-    /// Where the node's own output went; read it from a failure message.
     log_path: PathBuf,
 }
 
@@ -279,13 +209,9 @@ impl Node {
     }
 }
 
-/// The census endpoint: `census-serve`, the same binary the deployment runs.
 struct Endpoint {
     guard: ChildGuard,
     listen: SocketAddr,
-    /// Where the endpoint's own output went. A resumed invocation that stops making progress says
-    /// why only in its log, so a test that discards stdout and stderr can report a symptom and
-    /// nothing else.
     log_path: PathBuf,
 }
 
@@ -313,14 +239,11 @@ impl Endpoint {
         }
     }
 
-    /// The endpoint's output, for a failure message.
     fn log(&self) -> String {
         std::fs::read_to_string(&self.log_path).unwrap_or_default()
     }
 }
 
-/// Ask the node to (re)register the endpoint, retrying until it accepts: registration fails while
-/// the endpoint is not yet listening, which makes it the readiness probe as well.
 async fn register(
     client: &reqwest::Client,
     node: &Node,
@@ -345,7 +268,6 @@ async fn register(
     Err(format!("endpoint never registered: {last}"))
 }
 
-/// Wait for the node's admin API to answer at all.
 async fn wait_for_node(client: &reqwest::Client, node: &Node) -> Result<(), String> {
     let deadline = Instant::now() + READY_BUDGET;
     let mut last = String::from("no attempt made");
@@ -364,12 +286,6 @@ async fn wait_for_node(client: &reqwest::Client, node: &Node) -> Result<(), Stri
     Err(format!("node admin API never came up: {last}"))
 }
 
-/// The invocation the kill left behind, read from the admin's `sys_invocation` table.
-///
-/// The node's retry policy spends its attempts against the closed socket and then **pauses** the
-/// invocation — the same `on_max_attempts = "pause"` policy the live node runs, which `HANDOFF.md`
-/// §"Evidence and remaining work" records as a paused run rather than a resumed one. The operator's
-/// recovery enumerates those rows and resumes each, so the id comes from the same place here.
 async fn paused_invocation(client: &reqwest::Client, node: &Node) -> Result<String, String> {
     let response = client
         .post(format!("{}query", node.admin))
@@ -392,7 +308,6 @@ async fn paused_invocation(client: &reqwest::Client, node: &Node) -> Result<Stri
     id.ok_or_else(|| format!("no invocation id in the admin's answer: {text}"))
 }
 
-/// The first value under `key` anywhere in `value`, depth first.
 fn find_key<'a>(value: &'a serde_json::Value, key: &str) -> Option<&'a serde_json::Value> {
     match value {
         serde_json::Value::Object(map) => map
@@ -403,7 +318,6 @@ fn find_key<'a>(value: &'a serde_json::Value, key: &str) -> Option<&'a serde_jso
     }
 }
 
-/// Resume a paused invocation. `PATCH` is the verb the admin API takes; `POST` answers `405`.
 async fn resume(client: &reqwest::Client, node: &Node, invocation: &str) -> Result<(), String> {
     let response = client
         .patch(format!("{}invocations/{invocation}/resume", node.admin))
@@ -418,11 +332,6 @@ async fn resume(client: &reqwest::Client, node: &Node, invocation: &str) -> Resu
     Err(format!("the admin answered {status} to the resume: {text}"))
 }
 
-/// POST a handler and return the raw body, distinguishing transport failure from a handler reply.
-///
-/// The body is optional because a shared handler takes no input: Restate's ingress rejects a request
-/// that carries one where the handler expects none, which surfaces as `400 input validation error`
-/// and reads like a handler fault when it is not one.
 async fn invoke(
     client: &reqwest::Client,
     node: &Node,
@@ -465,8 +374,6 @@ impl Corpus {
             .unwrap();
     }
 
-    /// Rows the store received. `stats` counts observations, so this is what a replayed append
-    /// would double.
     fn appended_rows(&self) -> usize {
         self.schools.len()
             + self.teams.len()
@@ -541,11 +448,16 @@ fn add_athlete(
     } else {
         Gender::Girls
     };
+    let source = SourceIdentity::new(
+        SourceNamespace::Other("fixture".to_string()),
+        format!("kill-test-athlete-{index}-{slot}"),
+    );
     let mut athlete = CanonicalAthlete::new(
         school_id,
         format!("Kill Test Runner {index}-{slot}"),
         GradYear::CO2027,
         gender,
+        source.clone(),
     );
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.observed_grades.push(ObservedGrade {
@@ -586,7 +498,7 @@ fn add_athlete(
             observed_grade: Some(Grade::new(11).unwrap()),
             evidence: vec![evidence()],
             source_key,
-            source_athlete: None,
+            source_athlete: source.clone(),
             retained_conflicts: Vec::new(),
         });
     }

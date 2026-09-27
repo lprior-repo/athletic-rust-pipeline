@@ -1,7 +1,3 @@
-//! The `provider` subcommand: one association contact adapter per name.
-//!
-//! Each name has its own `Options` shape, so the dispatch is a plain match over the name with
-//! no trait indirection.
 
 use anyhow::{bail, Context, Result};
 use census_domain::model::SchoolYear;
@@ -15,62 +11,52 @@ mod arms;
 
 #[derive(Args, Debug)]
 pub(super) struct ProviderArgs {
-    /// Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament,
-    /// ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_athletes,
-    /// athleticlive_results, athleticnet, milesplit, milesplit_results, coach_contacts.
+    #[arg(help = "Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_athletes, athleticlive_results, athleticnet, milesplit, milesplit_results, coach_contacts")]
     name: String,
-    /// Cap the number of schools processed (smoke runs).
+    #[arg(help = "Cap the number of schools processed (smoke runs)")]
     #[arg(long)]
     limit: Option<usize>,
-    /// Restrict meet selection to this season year. Without it, all stored seasons are selected.
+    #[arg(help = "Restrict meet selection to this season year. Without it, all stored seasons are selected")]
     #[arg(long)]
     season_year: Option<u16>,
-    /// Restrict to these jurisdictions (adapters that span several states). The `milesplit` arm
-    /// walks the list and defaults to Wisconsin; every other adapter reads an empty list as its own
-    /// coverage, and the list must include that state or the run reports the mismatch.
+    #[arg(help = "Restrict to these jurisdictions (adapters that span several states). The `milesplit` arm walks the list and defaults to Wisconsin; every other adapter reads an empty list as its own coverage, and the list must include that state or the run reports the mismatch")]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
-    /// Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be
-    /// combined with `--states`.
+    #[arg(help = "Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`")]
     #[arg(long)]
     all_states: bool,
-    /// Restrict to these archive years (result-archive adapters only).
+    #[arg(help = "Restrict to these archive years (result-archive adapters only)")]
     #[arg(long, value_delimiter = ',')]
     seasons: Vec<i16>,
-    /// School names to resolve for adapters with no bulk index.
+    #[arg(help = "School names to resolve for adapters with no bulk index")]
     #[arg(long, value_delimiter = ',')]
     school_names: Vec<String>,
-    /// Input artifact for import-style adapters.
+    #[arg(help = "Input artifact for import-style adapters")]
     #[arg(long)]
     input: Option<String>,
-    /// Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the
-    /// whole-meet route (two requests per meet) instead of the per-athlete registry route.
+    #[arg(help = "Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the whole-meet route (two requests per meet) instead of the per-athlete registry route")]
     #[arg(long, value_delimiter = ',')]
     meets: Vec<i64>,
-    /// Spend the third request per meet for the per-event type and hurdle metadata.
+    #[arg(help = "Spend the third request per meet for the per-event type and hurdle metadata")]
     #[arg(long)]
     event_metadata: bool,
-    /// Cap the number of meets processed on the whole-meet route.
+    #[arg(help = "Cap the number of meets processed on the whole-meet route")]
     #[arg(long)]
     meet_limit: Option<usize>,
-    /// Ignore cached HTTP bodies and re-fetch.
+    #[arg(help = "Ignore cached HTTP bodies and re-fetch")]
     #[arg(long)]
     refresh: bool,
-    /// ISO date stamped into evidence (defaults to today).
+    #[arg(help = "ISO date stamped into evidence (defaults to today)")]
     #[arg(long)]
     observed_on: Option<String>,
 }
 
-/// The jurisdictions this run restricts to: `--all-states`, else `--states`, else the adapter's own
-/// coverage (an empty list). The `milesplit` arm is a roster walk and uses the Wisconsin default;
-/// the `milesplit_results` arm reads the meets the `meets` subcommand discovered.
 impl ProviderArgs {
     fn jurisdictions(&self) -> Result<Vec<UsJurisdiction>> {
         super::resolve_restriction(self.all_states, &self.states)
     }
 }
 
-/// Run one association contact adapter by name.
 pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) -> Result<()> {
     let fetcher = build_fetcher(cli, store)?.with_source(args.name.clone());
     let observed_on = args

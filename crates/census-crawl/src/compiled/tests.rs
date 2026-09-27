@@ -7,8 +7,6 @@ fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)
 }
 
-/// Shape of the 2026 regional exports: two event blocks per page, relay on the left, a
-/// preliminary heat on the right that carries a qualifier letter instead of points.
 const REGIONAL: &str = r#"
 05/26/2026, 09:56 PM                                  D1 Regional 8B - Appleton North
                                                         Appleton North HS  Tue, May 26, 2026

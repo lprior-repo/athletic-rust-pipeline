@@ -5,29 +5,20 @@ pub struct CanonicalCoach {
     pub id: CoachId,
     pub name: String,
     pub school: SchoolId,
-    /// `None` for school-wide roles (athletic director) that are not bound to a single sport.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sport: Option<Sport>,
     pub gender: Gender,
     pub role: CoachRole,
-    /// The address a source published on a school, district, association or organisation domain.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub professional_email: Option<String>,
-    /// The address a source published on a consumer mailbox (see `CONSUMER_MAIL_DOMAINS`).
-    ///
-    /// Both fields publish an address a source carried, each with the kind of domain it sits on, so a
-    /// reader can take the school contact alone or every address the coach ever published. Nothing is
-    /// withheld: [`publish`](crate::model::CanonicalCoach) routes an address to its field by its own
-    /// domain and never trusts the field it arrived in.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub personal_email: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phone: Option<String>,
     pub source_identities: Vec<SourceIdentity>,
     pub evidence: Vec<Evidence>,
-    /// Canonical-id collisions this row's merge retained: another natural key minted this id, so the
-    /// row below is the one that survived and the other subject's facts were not absorbed. Empty on
-    /// every row whose fields still state the id they minted, which is every row until one collides.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tenure_evidence: Vec<contact_tenure::CoachTenureEvidence>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retained_conflicts: Vec<RetainedConflict>,
 }
@@ -67,27 +58,15 @@ impl CanonicalCoach {
             phone: None,
             source_identities: Vec::new(),
             evidence: Vec::new(),
+            tenure_evidence: Vec::new(),
             retained_conflicts: Vec::new(),
         }
     }
 
-    /// Whether the row carries an address a source published, whichever field it landed in.
-    ///
-    /// A coach's published contact is the school-domain address when a source published one, and the
-    /// coach's own mailbox when that is all any source published. A reader asking whether the school
-    /// can be reached at all asks this, rather than reading one field and answering "no contact".
     pub fn has_published_email(&self) -> bool {
         self.professional_email.is_some() || self.personal_email.is_some()
     }
 
-    /// Record an address a source published, in the field its own domain belongs to.
-    ///
-    /// The kind is derived from the domain, never from the caller's belief: a consumer mailbox lands in
-    /// [`personal_email`](Self::personal_email) and an organisation mailbox in
-    /// [`professional_email`](Self::professional_email). The first address of a kind wins, so two rows
-    /// publishing two addresses of one kind leave the row to the order the source published them in.
-    /// A malformed address is refused — a source that published one published no contact — and nothing
-    /// is ever dropped for its domain.
     pub fn set_published_email(&mut self, address: &str) {
         match published_email(address) {
             Some((address, MailboxKind::Professional)) if self.professional_email.is_none() => {
@@ -98,6 +77,14 @@ impl CanonicalCoach {
             }
             _ => {}
         }
+    }
+
+
+    pub fn tenure_state(
+        &self,
+        school_year: SchoolYear,
+    ) -> Result<contact_tenure::CoachTenure, contact_tenure::TenureAssessmentError> {
+        contact_tenure::assess_coach_tenure(&self.tenure_evidence, school_year)
     }
 }
 
@@ -111,8 +98,6 @@ pub enum CoachRole {
 }
 
 impl CoachRole {
-    /// The byte spelling of this role inside a minted canonical coach id; see
-    /// [`Gender::stable_key`].
     pub const fn stable_key(self) -> &'static str {
         match self {
             Self::HeadCoach => "HeadCoach",

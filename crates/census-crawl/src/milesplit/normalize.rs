@@ -1,8 +1,5 @@
-//! Roster -> canonical entities: the school, its athletes with their observed grade, and one
-//! team per sport the roster carries.
 use census_domain::model::{
-    normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, Gender, GradYear,
-    Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, Gender, Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 
 use super::wire::{Roster, RosterAthlete, Site, TeamRef};
@@ -22,8 +19,6 @@ impl RosterAthlete {
         sports
     }
 
-    /// The school year this roster was observed in. Rosters are current-season documents; the
-    /// caller passes the school year the collection belongs to.
     pub fn observed_grade(
         &self,
         school_year: SchoolYear,
@@ -39,10 +34,6 @@ impl RosterAthlete {
     }
 }
 
-/// Convert a parsed roster into canonical entities.
-///
-/// The state every entity is filed under comes from the [`Site`] the roster was fetched through, so
-/// there is no second, string-shaped copy of the jurisdiction for a caller to get wrong.
 pub fn roster_entities(
     roster: &Roster,
     school_year: SchoolYear,
@@ -81,8 +72,6 @@ pub fn roster_entities(
     (school, athletes, teams)
 }
 
-/// The school a roster belongs to, plus the id it minted and the source reference every entity of
-/// the roster is stamped with.
 fn roster_school(
     roster: &Roster,
     observed_on: &str,
@@ -106,8 +95,6 @@ fn roster_school(
     (school, school_id, source)
 }
 
-/// One roster entry as a canonical athlete: its names, sports, observed grade, profile identity and
-/// the evidence that ties it back to the page it was read from.
 fn roster_athlete_entity(
     entry: &RosterAthlete,
     school_id: &SchoolId,
@@ -137,7 +124,6 @@ fn roster_athlete_entity(
     athlete
 }
 
-/// One canonical team per sport/gender the roster carries, keyed by the team page's own id.
 fn roster_teams(
     seen_sports: Vec<(Sport, Gender)>,
     school_id: &SchoolId,
@@ -169,7 +155,6 @@ fn roster_teams(
         .collect()
 }
 
-/// MileSplit team rows use the school name; strip a trailing gender marker if present.
 fn owner_name(team: &TeamRef) -> String {
     let name = team.name.trim();
     for suffix in [" Boys", " Girls", " (B)", " (G)"] {

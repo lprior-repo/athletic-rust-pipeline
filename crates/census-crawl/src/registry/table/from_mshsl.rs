@@ -1,5 +1,3 @@
-//! The registry's entries from `mshsl` on, in the table's published order — the other half of the
-//! positional cut described in `through_milesplit`.
 
 use super::super::policy::{
     fetched, CRAWL_DELAY_TEN_RPS, FETCHER_RPS, SCHOOL_COACH_CONTACT, SCHOOL_COACH_NAMES,
@@ -7,7 +5,6 @@ use super::super::policy::{
 use super::super::SourceCapabilities as Caps;
 use super::super::{SourceDescriptor, TransportKind};
 
-/// The adapters whose slugs sort from `mshsl` on.
 pub(super) const FROM_MSHSL: [SourceDescriptor; 9] = [
     SourceDescriptor {
         slug: "mpa",

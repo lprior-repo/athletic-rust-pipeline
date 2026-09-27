@@ -1,16 +1,3 @@
-//! The recording sink: the rows a walk produced but did not write.
-//!
-//! An adapter's rows normally travel straight into the store its walk holds. A run whose acquisition
-//! is routed through its deployment's `Ingest` objects writes none of them itself: it records them,
-//! hands them to its caller, and the object appends them. The walk is the same walk either way —
-//! same parse, same row builder, same commit boundary — because the routing lives in [`RowBatch`],
-//! the writer [`AdapterContext::write_batch`](crate::AdapterContext::write_batch) hands out, and not
-//! in the adapter.
-//!
-//! A recording belongs to one source's walk. The caller drains it when the walk returns, so what it
-//! holds is exactly the rows that walk produced, and posts them to the endpoint that serves that
-//! source — which is what makes an acquisition route visible as observations on a durable object
-//! instead of as rows nobody counted.
 
 use std::sync::{Mutex, PoisonError};
 
@@ -22,63 +9,37 @@ mod sink;
 
 pub use sink::{RowBatch, RowSink};
 
-/// One table's rows, as a walk produced them: the unit a recording carries and a caller posts.
-///
-/// `Serialize`/`Deserialize` because the recording crosses the durable boundary a stage runs behind:
-/// the rows a walk recorded are part of what that run's journal holds, so a replay posts the same
-/// rows instead of walking again.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordedBatch {
-    /// The table the rows belong to.
     pub table: Table,
-    /// The rows, each carrying its canonical `id`.
     pub rows: Vec<Value>,
 }
 
 impl RecordedBatch {
-    /// How many rows this batch carries.
     pub fn len(&self) -> usize {
         self.rows.len()
     }
 }
 
-/// One journal entry a routed walk produced: the marker that names a unit it read.
-///
-/// The entry is *not* written when the walk commits it. A run whose rows are posted writes the
-/// marker only once the rows it covers are posted, because the invariant the store's own batch
-/// keeps — no unit is journaled whose rows are missing — is the reason the marker exists at all.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RecordedJournal {
-    /// The phase the entry belongs to, as the walk names it (`wiaa_results`, its parser version, …).
     pub phase: String,
-    /// The unit within the phase, as the walk names it (an artifact URL, a result-set key, …).
     pub key: String,
-    /// The entry's payload: the evidence the walk wants to keep about the unit it read.
     pub payload: Value,
 }
 
-/// Everything one routed walk produced: the rows to post, and the journal entries to write once they
-/// are posted.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Recorded {
-    /// The rows, one batch per table per commit, in the order the walk produced them.
     pub rows: Vec<RecordedBatch>,
-    /// The journal entries, in the order the walk produced them.
     pub journal: Vec<RecordedJournal>,
 }
 
 impl Recorded {
-    /// True when the walk neither produced rows nor read a unit worth journaling.
     pub fn is_empty(&self) -> bool {
         self.rows.is_empty() && self.journal.is_empty()
     }
 }
 
-/// What one walk recorded instead of writing.
-///
-/// A `Mutex` rather than a channel because the walk is synchronous: an adapter appends, commits and
-/// moves on, and the caller drains once the walk has returned. Poisoning is ignored on purpose — a
-/// panic elsewhere must not turn a readable recording into a second failure.
 #[derive(Debug, Default)]
 pub struct Recording {
     batches: Mutex<Vec<RecordedBatch>>,
@@ -86,12 +47,10 @@ pub struct Recording {
 }
 
 impl Recording {
-    /// An empty recording.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Take everything committed so far, in the order the walk produced it.
     pub fn drain(&self) -> Recorded {
         Recorded {
             rows: std::mem::take(&mut *self.batches.lock().unwrap_or_else(PoisonError::into_inner)),
@@ -101,7 +60,6 @@ impl Recording {
         }
     }
 
-    /// Rows recorded so far, across every batch.
     pub fn rows(&self) -> usize {
         self.batches
             .lock()
@@ -111,7 +69,6 @@ impl Recording {
             .sum()
     }
 
-    /// True when nothing at all has been committed.
     pub fn is_empty(&self) -> bool {
         self.rows() == 0
             && self
@@ -139,7 +96,7 @@ impl Recording {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Store;
+    use census_store::Store;
     use serde_json::json;
 
     fn scratch() -> (tempfile::TempDir, Store) {
@@ -148,7 +105,6 @@ mod tests {
         (dir, store)
     }
 
-    /// The store route writes what it commits — and only on commit.
     #[test]
     fn the_store_route_writes_on_commit() {
         let (_dir, store) = scratch();
@@ -167,7 +123,6 @@ mod tests {
         assert_eq!(store.walk_table(Table::Meets).expect("walk").rows, 2);
     }
 
-    /// The recording route writes nothing and hands the rows and entries to its caller instead.
     #[test]
     fn the_recording_route_holds_rows_and_leaves_the_store_alone() {
         let (_dir, store) = scratch();
@@ -208,7 +163,6 @@ mod tests {
         assert!(recording.is_empty(), "a drain takes what it returns");
     }
 
-    /// The recorded route journals nothing: a unit that is not written yet is not marked read.
     #[test]
     fn a_recorded_unit_is_not_journaled_until_it_is_written() {
         let (_dir, store) = scratch();

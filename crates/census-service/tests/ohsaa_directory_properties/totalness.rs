@@ -1,9 +1,3 @@
-//! Error pages, half-rendered tables and what the seam is allowed to do with them.
-//!
-//! The search is posted per name and the school pages are fetched per id, so most bodies that arrive
-//! are not the table that was asked for: an autocomplete fragment, a JSON error, a login redirect or
-//! markup cut off mid-row. None of those may panic, none may invent a school or a coach, and the same
-//! bytes must always read the same way — the walker keys off these reads.
 
 use super::seam_config;
 use census_crawl::ohsaa::{
@@ -11,7 +5,6 @@ use census_crawl::ohsaa::{
 };
 use proptest::prelude::*;
 
-/// The roles the association's own labels are published under.
 const CANONICAL: [&str; 7] = [
     "assistant athletic director",
     "assistant athletic secretary",
@@ -22,8 +15,6 @@ const CANONICAL: [&str; 7] = [
     "business manager",
 ];
 
-/// Tokens from the committed captures, in the order a scrambled or half-rendered page might carry
-/// them.
 const TOKENS: [&str; 10] = [
     "<table id=\"tblSearchResults\"><tbody>",
     "<tr><td>DUBLIN COFFMAN</td><td>Dublin</td><td>",
@@ -37,8 +28,6 @@ const TOKENS: [&str; 10] = [
     "<tr><td colspan=\"2\"><br/></td></tr>",
 ];
 
-/// Arbitrary markup, plus markup assembled from the seam's own tokens: the shapes a truncated,
-/// scrambled or non-HTML body actually arrives in.
 fn arbitrary_markup() -> impl Strategy<Value = String> {
     prop_oneof![
         prop::collection::vec(any::<char>(), 0..512)
@@ -51,9 +40,6 @@ fn arbitrary_markup() -> impl Strategy<Value = String> {
 proptest! {
     #![proptest_config(seam_config())]
 
-    /// Arbitrary markup reads to rows or to none — never to a panic, never to a result row without a
-    /// numeric id, never to a named coach or office role the page did not print — and always the same
-    /// way twice.
     #[test]
     fn arbitrary_markup_reads_to_rows_or_to_none(body in arbitrary_markup()) {
         let results = parse_search(&body);

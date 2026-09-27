@@ -1,9 +1,7 @@
-//! Request construction: verbs, bodies, and the conditional-GET headers.
 
 use super::cache::CacheMeta;
 use super::{FetchError, FetchOptions, FetchOutcome, Fetcher, REQUEST_TIMEOUT_SECS};
 
-/// Request payload for POSTs: a pre-serialized body, plus the content type it must be sent with.
 #[derive(Debug, Clone)]
 pub(super) enum RequestBody {
     Json(String),
@@ -11,7 +9,6 @@ pub(super) enum RequestBody {
 }
 
 impl Fetcher {
-    /// GET a URL with caching, robots enforcement and per-host politeness.
     #[tracing::instrument(skip(self, options), fields(url, method = "GET"))]
     pub async fn get(&self, url: &str, options: &FetchOptions) -> Result<FetchOutcome, FetchError> {
         tracing::Span::current().record("url", url);
@@ -19,10 +16,6 @@ impl Fetcher {
             .await
     }
 
-    /// POST a JSON body; cached by body content so repeated runs are free.
-    ///
-    /// Elasticsearch-backed result platforms take the query in the body, so the cache key must
-    /// include that body: two different queries against one endpoint are two different documents.
     #[tracing::instrument(skip(self, options, body), fields(url, method = "POST"))]
     pub async fn post_json(
         &self,
@@ -45,12 +38,6 @@ impl Fetcher {
         .await
     }
 
-    /// POST a form body (`application/x-www-form-urlencoded`); cached by body content so repeated
-    /// runs are free.
-    ///
-    /// Some association directories answer only to a form POST of a query field (the NSAA export
-    /// screen is one), so the same content-addressed caching the JSON POST uses applies here: two
-    /// different queries against one endpoint are two different documents.
     #[tracing::instrument(skip(self, options, form), fields(url, method = "POST"))]
     pub async fn post_form(
         &self,
@@ -76,7 +63,6 @@ impl Fetcher {
     }
 }
 
-/// Build an HTTP request with headers, body, and conditional GET support.
 pub(super) fn build_request<'a>(
     client: &'a reqwest::Client,
     method: &str,

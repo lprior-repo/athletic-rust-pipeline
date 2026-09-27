@@ -1,18 +1,6 @@
-//! Pure parsing: the CIAC staff directory page into school tables.
-//!
-//! Each school on the page is a `<table class='DirectoryStaffTable'>` preceded by a
-//! `<div class='DirectoryDetail'>` carrying the school name in `<b>…</b>`.
-//!
-//! Within a table:
-//! * Header row — `<th>Role</th><th>Name</th><th>Phone</th>`
-//! * Coach rows — `<td>Sport</td><td>Head Coach</td><td>Coach Name</td><td>Phone</td>`
-//! * Non-coach rows — `<td></td><td>Principal</td><td>Name</td><td>Phone</td>`
-//!
-//! No I/O, no store access.
 
 use super::map::SchoolTable;
 
-/// Map a raw sport label to a Sport variant, returning None for non-XC/TF rows.
 pub fn parse_sport_label(label: &str) -> Option<census_domain::model::Sport> {
     let l = label.trim().to_ascii_lowercase();
     match l.as_str() {
@@ -30,7 +18,6 @@ pub fn parse_sport_label(label: &str) -> Option<census_domain::model::Sport> {
     }
 }
 
-/// Derive Gender from a sport label like "Boys Cross Country" or "Girls Indoor Track".
 pub fn parse_gender(label: &str) -> census_domain::model::Gender {
     let l = label.trim().to_ascii_lowercase();
     if l.starts_with("boys") {
@@ -42,7 +29,6 @@ pub fn parse_gender(label: &str) -> census_domain::model::Gender {
     }
 }
 
-/// Strip HTML tags from a string.
 fn strip_tags(s: &str) -> String {
     let mut result = String::with_capacity(s.len());
     let mut in_tag = false;
@@ -58,11 +44,6 @@ fn strip_tags(s: &str) -> String {
     result
 }
 
-/// A name a source publishes where a coach's would be: no person holds this row.
-///
-/// Two callers need the same answer — [`parse_table`] drops the row, and the mapper refuses to mint
-/// a coach from one — so the rule lives in one place. A second copy would be a second opinion, and
-/// a placeholder that slipped past the mapper would land in the workbook as a real coach.
 pub(super) fn is_placeholder_name(name: &str) -> bool {
     let name = name.trim();
     if name.eq_ignore_ascii_case("Team of one (Nicholai Dalidowitz)") {
@@ -74,7 +55,6 @@ pub(super) fn is_placeholder_name(name: &str) -> bool {
     )
 }
 
-/// Parse one `<table class='DirectoryStaffTable'>` block into a SchoolTable.
 pub fn parse_table(table_html: &str) -> Option<SchoolTable> {
     let mut rows: Vec<(String, String)> = Vec::new();
 
@@ -117,7 +97,6 @@ pub fn parse_table(table_html: &str) -> Option<SchoolTable> {
     Some(SchoolTable { rows })
 }
 
-/// Parse the full directory page HTML into a list of school tables.
 pub fn parse_directory(html: &str) -> Vec<(String, SchoolTable)> {
     const OPENING: &str = "<table class='DirectoryStaffTable'>";
     const CLOSING: &str = "</table>";
@@ -153,12 +132,10 @@ pub fn parse_directory(html: &str) -> Vec<(String, SchoolTable)> {
     results
 }
 
-/// Find the school name from the <b> tag in the preceding DirectoryDetail div.
 fn find_school_name(html: &str, table_pos: usize) -> String {
     name_before(html, table_pos).unwrap_or_default()
 }
 
-/// The `<b>` text of the `DirectoryDetail` div that precedes `table_pos`, when the page has one.
 fn name_before(html: &str, table_pos: usize) -> Option<String> {
     let before = html.get(..table_pos)?;
     let detail = before.get(before.rfind("<div class='DirectoryDetail'>")?..)?;
@@ -171,10 +148,6 @@ fn name_before(html: &str, table_pos: usize) -> Option<String> {
     }
 }
 
-/// Extract Sport, Role, Name from a row's first three <td> cells.
-///
-/// Returns raw text including the `<td...>` tag prefix, which callers should
-/// strip_tags before using.
 fn extract_td_text(row: &str) -> (String, String, String) {
     let mut cells: [String; 3] = Default::default();
     let mut rest = row;

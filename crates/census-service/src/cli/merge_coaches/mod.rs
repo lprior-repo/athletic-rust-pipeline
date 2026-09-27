@@ -1,4 +1,3 @@
-//! The `merge-coaches` subcommand: merge and validate coach-lane fragments into one importable CSV.
 mod judge;
 mod load;
 mod report;
@@ -23,6 +22,7 @@ const HEADER: &[&str] = &[
     "ad_email",
     "source_url",
     "last_observed",
+    "verified_proof_digest",
 ];
 
 const PERSONAL_MAIL: &[&str] = &[
@@ -90,6 +90,7 @@ pub(super) struct Row {
     ad_email: String,
     source_url: String,
     last_observed: String,
+    verified_proof_digest: String,
 }
 
 impl Row {
@@ -157,7 +158,6 @@ pub(super) fn run_merge_coaches(args: &MergeCoachesArgs) -> Result<()> {
     Ok(())
 }
 
-/// What one pass over the fragment files produced.
 #[derive(Default)]
 struct MergePass {
     kept: KeptRows,
@@ -218,10 +218,8 @@ fn process_files(csv_files: &[PathBuf]) -> Result<MergePass> {
     Ok(pass)
 }
 
-/// The merge key: lowercased school, state, lowercased sport, lowercased role.
 type RowKey = (String, String, String, String);
 
-/// Merged rows by their dedupe key.
 type KeptRows = BTreeMap<RowKey, Row>;
 
 fn collect_csv_files(frag_dir: &Path) -> Result<Vec<PathBuf>> {
@@ -261,7 +259,6 @@ fn write_merged_csv(
     Ok(())
 }
 
-/// Encode the merged rows into `temporary`, the file the publication renames to `published`.
 fn write_merged_body(
     temporary: &std::path::Path,
     published: &std::path::Path,

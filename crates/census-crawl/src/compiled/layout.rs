@@ -1,5 +1,3 @@
-//! Where the blocks and their columns sit: the page's event blocks, the column anchors read from
-//! the column header line, and the cells a block's fields are measured from.
 
 use regex::Regex;
 use std::sync::LazyLock;
@@ -12,7 +10,6 @@ use crate::{CrawlError, CrawlResult};
 use super::events::event_of;
 use super::ParsedEvent;
 
-/// An event block starts at the line's left edge or after a gap wide enough to separate columns.
 static BLOCK_START: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(r"(?:^|\s{3,})(#\s?\d+\s+)?(Boys|Girls|Men|Women)['\u{2019}]?s?\s+")
 });
@@ -26,17 +23,11 @@ fn block_start() -> CrawlResult<&'static Regex> {
         })
 }
 
-/// One event column of the page.
 pub(super) struct Block {
-    /// Start of the block's event header.
     pub(super) start: usize,
-    /// End of the block's event header, which bounds the label of the header line only.
     pub(super) end: usize,
-    /// End of the block's own values, which is the next block's identity column and is therefore
-    /// wider than `end`: the rows of an event print wider than its header.
     pub(super) limit: usize,
     pub(super) kind: EventKind,
-    /// Column anchors, in absolute offsets of the line they were read from.
     pub(super) columns: Vec<Column>,
     pub(super) index: usize,
 }
@@ -48,9 +39,6 @@ impl Block {
             .find(|column| labels.contains(&column.label.as_str()))
     }
 
-    /// Value printed under a numeric column. Hy-Tek HTML right-aligns a value to its label's right
-    /// edge while the Chrome-printed exports left-align it at the label's left edge, so a value that
-    /// touches either edge is accepted and the one nearest an edge wins.
     pub(super) fn numeric<'a>(
         &self,
         tokens: &[hytek::Token<'a>],
@@ -72,9 +60,6 @@ impl Block {
             .map(|token| token.text)
     }
 
-    /// Value printed under a text column: left-aligned at its label, ending where the next column's
-    /// label begins. The cell is measured between labels rather than between whitespace tokens,
-    /// because a school such as `APPLETON NORTH` is two tokens.
     pub(super) fn text(&self, line: &str, labels: &[&str]) -> Option<String> {
         let column = self.column(labels)?;
         let end = self
@@ -89,11 +74,6 @@ impl Block {
     }
 }
 
-/// Re-anchor every block of the page against the column header line they share.
-///
-/// The column header of a page states where every field sits, and blocks on the same page share it.
-/// A block owns the columns from its own header up to the next block's identity column, because the
-/// score columns of the left event print left of where the right event's athlete column begins.
 pub(super) fn rebind_columns(blocks: &mut [Block], columns: &[Column]) {
     let bounds: Vec<usize> = blocks
         .iter()
@@ -129,8 +109,6 @@ pub(super) fn block_starts(line: &str) -> Option<Vec<usize>> {
     (!starts.is_empty()).then_some(starts)
 }
 
-/// Columns that name a school, an athlete or a team: where one starts, the previous event's
-/// columns end.
 fn is_identity_column(label: &str) -> bool {
     matches!(label, "Name" | "School" | "Team" | "Relay" | "Athlete")
 }

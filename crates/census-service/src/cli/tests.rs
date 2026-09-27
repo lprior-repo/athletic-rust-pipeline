@@ -1,10 +1,6 @@
-//! What the clap surface must keep: the state flags resolve the way a caller reads them, and the
-//! restriction a subcommand runs under is never inferred from what the flags happen to hold.
 use super::{resolve_restriction, resolve_states};
 use census_domain::UsJurisdiction;
 
-/// `--all-states` is the census *run* scope (ADR-009), not every jurisdiction the domain models:
-/// Alaska and Hawaii are valid values a run never acquires, so the flag must not admit them.
 #[test]
 fn all_states_selects_the_census_run_scope() {
     let states = resolve_states(true, &[]).expect("--all-states resolves");
@@ -31,7 +27,6 @@ fn combining_the_two_flags_is_refused() {
     assert!(error.to_string().contains("--all-states"));
 }
 
-/// The restriction form stays empty without a flag, so an adapter keeps its own coverage.
 #[test]
 fn a_restriction_with_no_flag_is_empty_not_wisconsin() {
     let states = resolve_restriction(false, &[]).expect("no restriction");
@@ -47,7 +42,7 @@ use std::path::Path;
 
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalPerformance, CentiSeconds, EventKind, Gender,
-    GradYear, Id, Mark, TeamId,
+    GradYear, Id, Mark, SourceIdentity, SourceNamespace, TeamId,
 };
 use census_report::bests::mark_text;
 use rust_xlsxwriter::Workbook as Xlsx;
@@ -120,18 +115,20 @@ fn write_test_workbook(
     path
 }
 
-/// The event a test's performances share: the store holds this row, so the sheet prints its label.
+fn fixture_source(id: &str) -> SourceIdentity {
+    SourceIdentity::new(SourceNamespace::Other("fixture".to_string()), id)
+}
+
 fn make_event(kind: EventKind, gender: Gender) -> CanonicalEvent {
     let meet_id = Id::mint("meet", &["test-meet"]);
     CanonicalEvent::new(&meet_id, kind, gender, None, None)
 }
 
-/// A performance in `event`: the fixture references the event row the store holds, so the sheet's
-/// Event cell and the store's key state the same fact.
 fn make_perf(
     athlete_id: &census_domain::model::AthleteId,
     team_id: &TeamId,
     event: &CanonicalEvent,
+    source: &SourceIdentity,
     time_seconds: u32,
 ) -> CanonicalPerformance {
     let perf_id = CanonicalPerformance::mint(
@@ -159,12 +156,11 @@ fn make_perf(
         observed_grade: None,
         evidence: Vec::new(),
         source_key: "test".to_string(),
-        source_athlete: None,
+        source_athlete: source.clone(),
         retained_conflicts: Vec::new(),
     }
 }
 
-/// Agreement: store and workbook share the same rows → verify succeeds.
 #[test]
 fn acceptance_agreement() {
     let dir = tempfile::tempdir().unwrap();
@@ -177,18 +173,20 @@ fn acceptance_agreement() {
         "Alice Runner",
         GradYear::new(2027).unwrap(),
         Gender::Girls,
+        fixture_source("athlete-1"),
     );
     let a2 = CanonicalAthlete::new(
         &school_id,
         "Bob Sprinter",
         GradYear::new(2027).unwrap(),
         Gender::Boys,
+        fixture_source("athlete-2"),
     );
 
     let e1 = make_event(EventKind::Track200m, Gender::Girls);
     let e2 = make_event(EventKind::Track100m, Gender::Boys);
-    let p1 = make_perf(&a1.id, &team, &e1, 26);
-    let p2 = make_perf(&a2.id, &team, &e2, 11);
+    let p1 = make_perf(&a1.id, &team, &e1, &a1.source, 26);
+    let p2 = make_perf(&a2.id, &team, &e2, &a2.source, 11);
 
     let store = Store::open(dir.path()).expect("open temp store");
     store
@@ -231,18 +229,11 @@ fn acceptance_agreement() {
         ],
     );
 
-    let args = VerifyArgs {
-        workbook: Some(dir.path().join("verify-test.xlsx")),
-        sample_every: 1,
-        grad_year: 2027,
-    };
+    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
     let result = run_verify(&store, &args);
     assert!(result.is_ok(), "verify should succeed: {:?}", result.err());
 }
 
-/// The performances sheet's version of the school-id leak: the Event cell carries the event's raw
-/// id where the store holds the row and therefore a label. The sheet prints labels, so `verify`
-/// refuses it.
 #[test]
 fn acceptance_event_id_where_the_store_has_a_label() {
     let dir = tempfile::tempdir().unwrap();
@@ -255,9 +246,10 @@ fn acceptance_event_id_where_the_store_has_a_label() {
         "Alice Runner",
         GradYear::new(2027).unwrap(),
         Gender::Girls,
+        fixture_source("athlete-1"),
     );
     let e1 = make_event(EventKind::Track200m, Gender::Girls);
-    let p1 = make_perf(&a1.id, &team, &e1, 26);
+    let p1 = make_perf(&a1.id, &team, &e1, &a1.source, 26);
 
     let store = Store::open(dir.path()).expect("open temp store");
     store
@@ -282,11 +274,7 @@ fn acceptance_event_id_where_the_store_has_a_label() {
         )],
     );
 
-    let args = VerifyArgs {
-        workbook: Some(dir.path().join("verify-test.xlsx")),
-        sample_every: 1,
-        grad_year: 2027,
-    };
+    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
     let result = run_verify(&store, &args);
     let err = result
         .expect_err("an id printed where the store holds a label is a disagreement")
@@ -297,8 +285,6 @@ fn acceptance_event_id_where_the_store_has_a_label() {
     );
 }
 
-/// The documented fallback: the store holds no event row, so the sheet has no label to print and
-/// leaves the Event cell empty. `verify` accepts exactly that, and nothing wider.
 #[test]
 fn acceptance_empty_event_cell_with_no_store_row() {
     let dir = tempfile::tempdir().unwrap();
@@ -311,9 +297,10 @@ fn acceptance_empty_event_cell_with_no_store_row() {
         "Alice Runner",
         GradYear::new(2027).unwrap(),
         Gender::Girls,
+        fixture_source("athlete-1"),
     );
     let e1 = make_event(EventKind::Track200m, Gender::Girls);
-    let p1 = make_perf(&a1.id, &team, &e1, 26);
+    let p1 = make_perf(&a1.id, &team, &e1, &a1.source, 26);
 
     let store = Store::open(dir.path()).expect("open temp store");
     store
@@ -337,16 +324,11 @@ fn acceptance_empty_event_cell_with_no_store_row() {
         )],
     );
 
-    let args = VerifyArgs {
-        workbook: Some(dir.path().join("verify-test.xlsx")),
-        sample_every: 1,
-        grad_year: 2027,
-    };
+    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
     let result = run_verify(&store, &args);
     assert!(result.is_ok(), "verify should succeed: {:?}", result.err());
 }
 
-/// Disagreement: workbook has a wrong athlete name → verify fails.
 #[test]
 fn acceptance_disagreement() {
     let dir = tempfile::tempdir().unwrap();
@@ -357,6 +339,7 @@ fn acceptance_disagreement() {
         "Alice Runner",
         GradYear::new(2027).unwrap(),
         Gender::Girls,
+        fixture_source("athlete-1"),
     );
 
     let store = Store::open(dir.path()).expect("open temp store");
@@ -376,11 +359,7 @@ fn acceptance_disagreement() {
         &[],
     );
 
-    let args = VerifyArgs {
-        workbook: Some(dir.path().join("verify-test.xlsx")),
-        sample_every: 1,
-        grad_year: 2027,
-    };
+    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
     let result = run_verify(&store, &args);
     assert!(result.is_err(), "verify should fail: got Ok");
     let err = result.unwrap_err().to_string();
@@ -390,9 +369,6 @@ fn acceptance_disagreement() {
     );
 }
 
-/// The shape a run-scope leak published: the School cell carries the school's raw id where the
-/// store holds the row and therefore a name. The sheet prints names, so `verify` refuses it — the
-/// check that caught the 2026-09-23 export's out-of-scope rows.
 #[test]
 fn acceptance_school_id_where_the_store_has_a_name() {
     let dir = tempfile::tempdir().unwrap();
@@ -403,6 +379,7 @@ fn acceptance_school_id_where_the_store_has_a_name() {
         "Alice Runner",
         GradYear::new(2027).unwrap(),
         Gender::Girls,
+        fixture_source("athlete-1"),
     );
 
     let store = Store::open(dir.path()).expect("open temp store");
@@ -422,11 +399,7 @@ fn acceptance_school_id_where_the_store_has_a_name() {
         &[],
     );
 
-    let args = VerifyArgs {
-        workbook: Some(dir.path().join("verify-test.xlsx")),
-        sample_every: 1,
-        grad_year: 2027,
-    };
+    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
     let result = run_verify(&store, &args);
     let err = result
         .expect_err("an id printed where the store holds a name is a disagreement")
@@ -437,8 +410,6 @@ fn acceptance_school_id_where_the_store_has_a_name() {
     );
 }
 
-/// The documented fallback: the store holds no row for the athlete's school id, so the sheet has no
-/// name to print and carries the id itself. `verify` accepts exactly that, and nothing wider.
 #[test]
 fn acceptance_school_id_with_no_store_row() {
     let dir = tempfile::tempdir().unwrap();
@@ -449,6 +420,7 @@ fn acceptance_school_id_with_no_store_row() {
         "Ghost Runner",
         GradYear::new(2027).unwrap(),
         Gender::Girls,
+        fixture_source("athlete-1"),
     );
 
     let store = Store::open(dir.path()).expect("open temp store");
@@ -468,16 +440,11 @@ fn acceptance_school_id_with_no_store_row() {
         &[],
     );
 
-    let args = VerifyArgs {
-        workbook: Some(dir.path().join("verify-test.xlsx")),
-        sample_every: 1,
-        grad_year: 2027,
-    };
+    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
     let result = run_verify(&store, &args);
     assert!(result.is_ok(), "verify should succeed: {:?}", result.err());
 }
 
-/// Missing column: workbook Athletes sheet lacks Graduation Year → refused.
 #[test]
 fn acceptance_missing_column() {
     let dir = tempfile::tempdir().unwrap();
@@ -517,11 +484,7 @@ fn acceptance_missing_column() {
     let _ = book.save(&path);
 
     let store = Store::open(dir.path()).unwrap();
-    let args = VerifyArgs {
-        workbook: Some(path),
-        sample_every: 1,
-        grad_year: 2027,
-    };
+    let args = VerifyArgs { workbook: Some(path), sample_every: 1 };
     let result = run_verify(&store, &args);
     assert!(result.is_err(), "verify should fail: got Ok");
     let err = result.unwrap_err().to_string();

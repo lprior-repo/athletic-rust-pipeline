@@ -96,7 +96,19 @@ per table.
 
 ### 3.1 Tables
 
-`Table` (`crates/census-store/src/table.rs`) names the sixteen collections; the full table list, key shapes and write discipline is in `FJALL_SCHEMA.md` §2. Canonical entities are append-only and merged at read time; derived tables are replaced. `Entity::publish` applies the collection contract to the merged value.
+`Table` (`crates/census-store/src/table.rs`) names the collections; the full table list, key shapes and write discipline is in `FJALL_SCHEMA.md` §2. Canonical entities are append-only and merged at read time; derived tables are replaced. `Entity::publish` applies the collection contract to the merged value.
+
+`Store::snapshot()` captures one Fjall MVCC generation across entity tables. Hold that
+`StoreSnapshot` for a multi-table read, identity projection or artifact export; later appends must not
+enter its result. The handle borrows the store and releases its pinned generation when dropped.
+Single-call `Store` scans delegate to this same implementation rather than a second merge algorithm.
+
+The merged scan counts every physical observation against the table ceiling, retains only the
+current entity and one decoded observation, and rejects malformed keys or disagreement between the
+storage key and payload identity. Visitor failures stop publication. Snapshot consolidation writes
+through the existing atomic file publisher; it does not mutate evidence. Identity projection reads
+subjects, review cases, verdicts and applications from the same captured generation and propagates
+typed domain failures as `StoreError::Identity`.
 
 ### 3.2 Durability
 

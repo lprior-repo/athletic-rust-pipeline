@@ -1,7 +1,6 @@
 use super::SearchBody;
 use serde::Serialize;
 
-/// Helper type for serializing qParams grades as a JSON array.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RankingsQParamsInner<'a> {
@@ -9,7 +8,6 @@ pub struct RankingsQParamsInner<'a> {
     pub page: u32,
 }
 
-/// Wire-body struct for Rankings POST body.  Borrows from RankingsAction.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RankingsQuery<'a> {
@@ -25,7 +23,6 @@ pub struct RankingsQuery<'a> {
     pub debug: &'static str,
 }
 
-/// Borrowed wire-body enum returned by RequestSpec::body().
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(untagged)]
 pub enum RequestBody<'a> {

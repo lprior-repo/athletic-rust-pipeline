@@ -1,16 +1,3 @@
-//! Handing the §52 rows over one school-name range at a time, sorted, without holding the table.
-//!
-//! [`sheet_order`] starts with the school name, so the rows for one school are contiguous, and so are
-//! the rows for a contiguous slice of the school-name universe. That is the seam this module cuts
-//! along: [`PerformanceRows::build`] reads the performance table once, joins each row, and spills it
-//! into the range file whose slice of names it falls in; the ranges are then read back in name order,
-//! sorted, and handed out one at a time. Nothing larger than one range is ever resident — the parent
-//! tables the join reads are the other resident set, and they are held indexed, whole, for as long as
-//! the spill is being written.
-//!
-//! The spill is a directory under the system temp dir, removed when the value drops. A process that
-//! dies mid-pass leaves it behind; it is inert, since nothing reads it unless a `PerformanceRows`
-//! names it, and the name carries this process id.
 
 use super::join::{Lookups, Parents};
 use super::rows::{sheet_order, PerformanceRow};
@@ -21,14 +8,10 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
-/// Rows one range holds. Each range is sorted on its own, so this is the sort's memory unit: a
-/// quarter million rows of JSONL at the census's row width are a few hundred megabytes at most.
 const RANGE_ROWS: u64 = 250_000;
 
-/// Ranges at most, hence files open at once while the spill is written.
 const MAX_RANGES: usize = 256;
 
-/// The §52 rows in sheet order, produced one school-name range at a time.
 pub(super) struct PerformanceRows {
     dir: PathBuf,
     ranges: usize,
@@ -37,13 +20,10 @@ pub(super) struct PerformanceRows {
 }
 
 impl PerformanceRows {
-    /// Build the rows for `store` under `scope`, restricted to the cohort.
     pub(super) fn build(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
         Self::with_ranges(store, scope, grad_year, RANGE_ROWS, MAX_RANGES)
     }
 
-    /// The same, with the range sizing a caller chooses — so a test can prove the range seams without
-    /// a quarter-million rows.
     pub(super) fn with_ranges(
         store: &Store,
         scope: Scope,
@@ -75,9 +55,6 @@ impl PerformanceRows {
     }
 }
 
-/// The bucket universe: the names a row can print, plus the empty name an unresolved school prints,
-/// sorted so a contiguous slice of ranks is a contiguous slice of the sheet order — with the rank of
-/// each name.
 fn bucket_universe<'a>(lookups: &Lookups<'a>) -> (Vec<&'a str>, HashMap<&'a str, usize>) {
     let mut names: Vec<&str> = lookups.school_names();
     names.push("");
@@ -91,8 +68,6 @@ fn bucket_universe<'a>(lookups: &Lookups<'a>) -> (Vec<&'a str>, HashMap<&'a str,
     (names, ranks)
 }
 
-/// The performance table's observation count: every version counted, so it can only over-estimate the
-/// merged rows, and an over-estimate buys more ranges, never larger ones.
 fn held_rows(store: &Store) -> ReportResult<u64> {
     let count = store
         .stats()?
@@ -104,7 +79,6 @@ fn held_rows(store: &Store) -> ReportResult<u64> {
     Ok(count)
 }
 
-/// The range files, and what places a row among them.
 struct RangeFiles<'a> {
     dir: &'a Path,
     writers: &'a mut [BufWriter<File>],
@@ -113,7 +87,6 @@ struct RangeFiles<'a> {
 }
 
 impl RangeFiles<'_> {
-    /// The range a row's school name falls in, or the invariant that says why it cannot be placed.
     fn range_of(&self, row: &PerformanceRow) -> ReportResult<usize> {
         let Some(rank) = self.ranks.get(row.school.as_str()).copied() else {
             return Err(ReportError::Invariant {
@@ -129,7 +102,6 @@ impl RangeFiles<'_> {
         Ok(ranges.unwrap_or_default().min(files.saturating_sub(1)))
     }
 
-    /// Spill one joined row into the range file its range names.
     fn write(&mut self, row: &PerformanceRow) -> ReportResult<()> {
         let range = self.range_of(row)?;
         let Some(writer) = self.writers.get_mut(range) else {
@@ -144,7 +116,6 @@ impl RangeFiles<'_> {
     }
 }
 
-/// Read the performance table once, joining every row `scope` keeps and spilling it.
 fn spill(
     store: &Store,
     scope: Scope,
@@ -178,7 +149,6 @@ fn spill(
     }
 }
 
-/// Flush every range file, naming the file a refusal came from.
 fn flush_ranges(dir: &Path, writers: &mut [BufWriter<File>]) -> ReportResult<()> {
     for (index, writer) in writers.iter_mut().enumerate() {
         if let Err(source) = writer.flush() {
@@ -221,15 +191,12 @@ impl Drop for PerformanceRows {
     }
 }
 
-/// The ranges a table of `rows` rows is split into: enough that one range is a bounded sort, and
-/// never more than there are names to order.
 fn ranges_for(rows: u64, range_rows: u64, max_ranges: usize, names: usize) -> usize {
     let wanted = rows.div_ceil(range_rows.max(1));
     let wanted = usize::try_from(wanted).unwrap_or(usize::MAX);
     wanted.clamp(1, max_ranges).min(names.max(1))
 }
 
-/// A directory under the system temp dir, named for this process so two runs cannot share one.
 fn spill_dir() -> ReportResult<PathBuf> {
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -263,7 +230,6 @@ fn write_row(writer: &mut BufWriter<File>, row: &PerformanceRow) -> std::io::Res
     writer.write_all(b"\n")
 }
 
-/// One range's rows, sorted into sheet order.
 fn read_range(dir: &Path, range: usize) -> ReportResult<Vec<PerformanceRow>> {
     let path = range_path(dir, range);
     let file = File::open(&path).map_err(|source| io_error(&path, source))?;

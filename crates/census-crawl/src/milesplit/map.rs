@@ -1,12 +1,3 @@
-//! A `/raw` result set -> canonical entities: its meet, its events, and each row's athlete.
-//!
-//! Identity follows the crate's rule that the same athlete seen through two sources is one entity:
-//! the meet mints on `(state, date, name)`, the event on the meet and the canonical kind, the team
-//! on `(school, sport, gender, school year)`, the athlete on `(school, name, grad year, gender)` —
-//! so a roster row and a result row that agree on those four facts reconcile by construction. The
-//! provider ids the file does publish (`MeetID`, `RSID`) are recorded as source identities and in
-//! the performance's `source_key`; `AthleteID` and `TeamID` are not published in the fixed-width
-//! text at all, so no row claims one.
 
 use super::raw::RawPage;
 use super::results::{Accumulator, Stats};
@@ -25,10 +16,6 @@ mod map_rows;
 
 use map_rows::record_row;
 
-/// Absorb one `/raw` result set: its meet, its events, and every row's athlete and performance.
-///
-/// Returns the number of athlete rows written. Rows that name no resolvable school, carry no `Yr`,
-/// or fail the name guard are counted in `stats` and contribute no entity.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn absorb_result_set(
     page: &RawPage,
@@ -72,7 +59,6 @@ pub(super) fn absorb_result_set(
     athlete_rows
 }
 
-/// The run-level aggregates one result set's rows are written into.
 pub(super) struct RowWriter<'a> {
     pub(super) index: &'a SchoolIndex,
     pub(super) resolved: &'a mut HashMap<String, Option<SchoolId>>,
@@ -80,7 +66,6 @@ pub(super) struct RowWriter<'a> {
     pub(super) accumulated: &'a mut Accumulator,
 }
 
-/// One (meet, event) pair the row helpers write against.
 pub(super) struct MeetContext<'a> {
     pub(super) meet: &'a CanonicalMeet,
     pub(super) event: &'a ParsedEvent,
@@ -88,20 +73,11 @@ pub(super) struct MeetContext<'a> {
     pub(super) source: &'a SourceRef,
     pub(super) evidence: &'a Evidence,
     pub(super) rsid: &'a str,
-    /// The jurisdiction of the site the result set was read from: the school index resolves a row's
-    /// published label inside it, so a label can only ever match a school of that state.
     pub(super) jurisdiction: UsJurisdiction,
-    /// The sport the page published; a page that names none leaves its rows unplaced.
     pub(super) sport: Option<census_domain::model::Sport>,
     pub(super) school_year: census_domain::model::SchoolYear,
 }
 
-/// Build the meet and the evidence every event and row of it shares.
-///
-/// The level comes from the meet's published name through the crate's one name classifier. The
-/// timing method is left `Unknown` even for a championship name: unlike the WIAA association's own
-/// files, MileSplit is not the timer and its `/raw` payload states no timing method, so there is
-/// nothing to infer from.
 fn meet_for(
     page: &RawPage,
     reference: &ResultSetRef,
@@ -130,8 +106,6 @@ fn meet_for(
     (meet, evidence, source)
 }
 
-/// What the run learned about the page beside the rows: the result set it read, the level the name
-/// implies, and — when the page publishes a region — whether that region is the site's own.
 fn meet_note(page: &RawPage, reference: &ResultSetRef, stats: &mut Stats) -> String {
     let site = reference.site.code();
     let region = match page.region.as_deref() {
@@ -152,7 +126,6 @@ fn meet_note(page: &RawPage, reference: &ResultSetRef, stats: &mut Stats) -> Str
     )
 }
 
-/// Record one parsed event and return the event id its rows reference.
 fn record_event(
     writer: &mut RowWriter<'_>,
     meet: &CanonicalMeet,
@@ -182,7 +155,6 @@ fn record_event(
     event_id
 }
 
-/// Keep the meet once every event of it has been recorded.
 fn keep_meet(writer: &mut RowWriter<'_>, meet: CanonicalMeet) {
     writer
         .accumulated

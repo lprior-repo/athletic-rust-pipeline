@@ -1,16 +1,8 @@
-//! Total-ness: what the mark column does with text no page would publish.
-//!
-//! The column is scraped, so the input space is whatever bytes are in the cell — including figures
-//! that parse as floating point but are not marks. A mark of `inf` points or metres compares as
-//! better than every real one, so one such cell would silently take every best-mark slot for that
-//! event from then on. That is the failure this law exists to prevent, and it is the reason the
-//! multi-event points arm carries an explicit finiteness check.
 
 use super::{arbitrary_token, number_of, parse_mark, seam_config, shaped_token};
 use census_domain::model::EventKind;
 use proptest::prelude::*;
 
-/// One kind of each mark route: a running event, a field event, a multi-event.
 fn kinds() -> [EventKind; 3] {
     [
         EventKind::CrossCountry,
@@ -36,7 +28,6 @@ proptest! {
         }
     }
 
-    /// A mark that is accepted is a figure a competition could have produced.
     #[test]
     fn an_accepted_mark_is_finite(token in shaped_token()) {
         for kind in kinds() {

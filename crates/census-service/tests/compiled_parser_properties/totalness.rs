@@ -1,21 +1,11 @@
-//! Total-ness and determinism: the two laws every consumer of these parsers is allowed to assume.
-//!
-//! A parser that panics on a malformed page takes the whole run down with it — a census walk is
-//! hundreds of pages nobody has read — and a parser that answers differently on the same lines makes
-//! a journaled rerun meaningless. Both are asserted over arbitrary text and over text woven out of
-//! the tokens this parser keys on.
 
 use super::{arbitrary_body, parse_body, seam_config, shaped_body};
 use proptest::prelude::*;
 
-/// A parse's answer with the meet rendered, so two runs are compared as values.
 fn answer(body: &str) -> Option<String> {
     parse_body(body).map(|meet| format!("{meet:?}"))
 }
 
-/// A page whose header the reader cannot place is not claimed: the archive's index pages and the
-/// meet's own program are not meets, and an event below a missing header cannot be attributed to a
-/// date.
 #[test]
 fn a_body_without_a_meet_header_is_refused() {
     let block_only = "Girls' 4x800 Relay Division 1                     Finals\n\

@@ -1,7 +1,3 @@
-//! The questions one pass asks: the cases the store retained, and the subject rows behind them.
-//!
-//! A packet carries only what the store holds about the subject — the row's own canonical fields and
-//! the case's own detail — so the model never sees a question this store did not ask.
 
 use std::collections::HashMap;
 
@@ -15,13 +11,6 @@ use census_store::{Store, StoreResult, Table};
 use super::athlete_packet::{self, AthleteIndex};
 use super::{ReviewFamily, ReviewOptions};
 
-/// The retained cases this pass asks about, each with the family that retained it.
-///
-/// Two tables can hold a finding: the review cases a previous pass wrote, and the conflicts the merge
-/// retained. A conflict carries no state because nothing has ever adjudicated it, so the lane reads
-/// it as pending — which is how the athlete family reaches this lane at all, since the merge writes
-/// those findings beside the cohort and school conflicts. A finding held by both tables is one case:
-/// the ids are the same, and the pass asks about it once.
 pub(super) fn pending_cases(
     store: &Store,
     options: &ReviewOptions,
@@ -57,7 +46,6 @@ pub(super) fn pending_cases(
         .collect())
 }
 
-/// The subjects the selected cases name, read once per table.
 pub(super) struct SubjectIndex {
     schools: HashMap<String, CanonicalSchool>,
     meets: HashMap<String, CanonicalMeet>,
@@ -65,7 +53,6 @@ pub(super) struct SubjectIndex {
 }
 
 impl SubjectIndex {
-    /// Read the rows the selected cases name.
     pub(super) fn read(store: &Store, pending: &[(ReviewCase, ReviewFamily)]) -> StoreResult<Self> {
         let wants_schools = pending
             .iter()
@@ -102,7 +89,6 @@ impl SubjectIndex {
         })
     }
 
-    /// The packet for one case, or `None` when the store does not hold its subject.
     pub(super) fn packet(&self, case: &ReviewCase, family: ReviewFamily) -> Option<ReviewPacket> {
         let subject_id = case.subject_id.clone();
         match family {
@@ -148,12 +134,10 @@ impl SubjectIndex {
     }
 }
 
-/// One evidence fact about a census row.
 pub(super) fn fact(field: &str, value: &str) -> ReviewEvidenceFact {
     ReviewEvidenceFact::new("census", field, value)
 }
 
-/// The case as the model reads it.
 pub(super) fn case_fact(case: &ReviewCase) -> ReviewCaseFact {
     ReviewCaseFact {
         case_id: case.id.clone(),
@@ -162,7 +146,6 @@ pub(super) fn case_fact(case: &ReviewCase) -> ReviewCaseFact {
     }
 }
 
-/// Index rows by their own id, keeping the first row for an id.
 pub(super) fn index_by_id<T>(rows: Vec<T>, id: impl Fn(&T) -> String) -> HashMap<String, T> {
     let mut index: HashMap<String, T> = HashMap::with_capacity(rows.len());
     for row in rows {

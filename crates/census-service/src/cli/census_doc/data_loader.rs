@@ -1,4 +1,3 @@
-//! Data loading helpers: report parsing, seed counting, CSV reading.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -8,13 +7,10 @@ use anyhow::{Context, Result};
 use super::counted_seeds::counted_seeds;
 use super::Seeds;
 
-/// One CSV table: rows keyed by column header.
 pub(super) type CsvTable = Vec<HashMap<String, String>>;
 
-/// A report object keyed by name, as `serde_json` hands it over.
 pub(super) type ReportObject = serde_json::Map<String, serde_json::Value>;
 
-/// Everything the document builder needs: the report, the counted seeds, and the three tables.
 pub(super) type LoadedData = (serde_json::Value, Seeds, CsvTable, CsvTable, CsvTable);
 
 fn csv_rows(path: &Path) -> Result<CsvTable> {
@@ -31,7 +27,6 @@ fn csv_rows(path: &Path) -> Result<CsvTable> {
     Ok(rows)
 }
 
-/// Totals extracted from the report's `totals` object.
 pub(super) struct Totals {
     pub(super) total_schools: u64,
     pub(super) total_athletes: u64,
@@ -47,7 +42,6 @@ pub(super) struct Totals {
     pub(super) meets_an: u64,
 }
 
-/// Load report JSON, counted seeds, and all CSVs in one shot.
 pub(super) fn load_all_data(store_out: &Path, data_dir: &Path) -> Result<LoadedData> {
     let report_path = store_out.join("report.json");
     let report_text = std::fs::read_to_string(&report_path)
@@ -63,7 +57,6 @@ pub(super) fn load_all_data(store_out: &Path, data_dir: &Path) -> Result<LoadedD
     Ok((report, seeds, coaches, co2027, recruiting))
 }
 
-/// Extract totals and key sub-objects from the report.
 pub(super) fn extract_report_data(
     report: &serde_json::Value,
 ) -> (Totals, ReportObject, ReportObject, ReportObject) {

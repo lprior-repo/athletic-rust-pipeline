@@ -1,5 +1,3 @@
-//! Canonical mapping: the accumulated entities, the school/meet resolution and the performance
-//! store, plus the published-flag readers they apply to a row.
 
 use super::parse::Bio;
 use super::SCHOOL_KIND;
@@ -13,7 +11,6 @@ use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
-/// Profile URL for an athlete id, in the form Athletic.net itself links to.
 pub(super) fn profile_url(athlete_id: u64) -> String {
     format!("https://www.athletic.net/athlete/{athlete_id}/track-and-field")
 }
@@ -49,7 +46,6 @@ pub(super) struct Accumulator {
     pub(super) performances: HashMap<String, CanonicalPerformance>,
 }
 
-/// The grade observed in a given school year, when the payload publishes one.
 pub(super) fn grade_in(observed: &[ObservedGrade], school_year: SchoolYear) -> Option<Grade> {
     observed
         .iter()
@@ -57,12 +53,6 @@ pub(super) fn grade_in(observed: &[ObservedGrade], school_year: SchoolYear) -> O
         .map(|observation| observation.grade)
 }
 
-/// Resolve or mint the school a payload row names, memoized per run so a school is counted once
-/// rather than once per row that names it.
-///
-/// Returns `None` when the state is unknown or the payload publishes no name for the school id:
-/// school identity keys on state + name, so minting without one would merge same-named schools in
-/// different states.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn school_for(
     school_id: &str,
@@ -111,7 +101,6 @@ pub(super) fn school_for(
     Some(id)
 }
 
-/// Resolve or mint the meet a payload row names.
 pub(super) fn meet_for(
     meet_id: Option<i64>,
     bio: &Bio,
@@ -148,9 +137,9 @@ pub(super) fn meet_for(
     Some(meet.clone())
 }
 
-/// Everything one published result row contributes to a canonical performance.
 pub(super) struct PerformanceInput<'a> {
     pub(super) athlete: &'a AthleteId,
+    pub(super) source_athlete: SourceIdentity,
     pub(super) school: &'a SchoolId,
     pub(super) meet: &'a CanonicalMeet,
     pub(super) kind: &'a EventKind,
@@ -169,7 +158,6 @@ pub(super) struct PerformanceInput<'a> {
     pub(super) label: Option<&'a str>,
 }
 
-/// Store one canonical performance, minting its team and event on the platform's keys.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn store_performance(
     accumulated: &mut Accumulator,
@@ -206,12 +194,11 @@ pub(super) fn store_performance(
             observed_grade: input.grade,
             evidence: vec![Evidence::parsed(source.clone(), observed_on)],
             source_key: input.source_key,
-            source_athlete: None,
+            source_athlete: input.source_athlete,
             retained_conflicts: Vec::new(),
         });
 }
 
-/// The team a performance belongs to, minted on first sight.
 pub(super) fn ensure_team(
     accumulated: &mut Accumulator,
     source: &SourceRef,
@@ -238,7 +225,6 @@ pub(super) fn ensure_team(
     team_id
 }
 
-/// The event a performance belongs to, minted on first sight.
 fn ensure_event(
     accumulated: &mut Accumulator,
     source: &SourceRef,

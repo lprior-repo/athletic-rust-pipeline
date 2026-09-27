@@ -1,7 +1,3 @@
-//! The `UsJurisdiction` impl block: scope guard, code/name tables, parse, and Display/FromStr.
-//!
-//! Rust does not allow split inherent impls, so this file owns the entire impl despite the enum
-//! declaration sitting in [`super::table`].
 
 use std::fmt;
 
@@ -11,8 +7,6 @@ use std::str::FromStr;
 use super::table::UsJurisdiction;
 
 impl UsJurisdiction {
-    /// Accept a jurisdiction only if a census run may cover it (ADR-009), returning it so a caller
-    /// can map a slice through this and collect the survivors.
     pub fn require_census_scope(self) -> Result<Self, super::scope::OutsideCensusScope> {
         if self.is_in_census_scope() {
             Ok(self)
@@ -21,13 +15,10 @@ impl UsJurisdiction {
         }
     }
 
-    /// Whether a census run may cover this jurisdiction: the rule [`Self::CENSUS_SCOPE`] encodes,
-    /// in one place so no caller has to re-derive it.
     pub const fn is_in_census_scope(self) -> bool {
         !matches!(self, Self::Alaska | Self::Hawaii)
     }
 
-    /// The USPS two-letter code — the jurisdiction's stable key form.
     pub const fn code(self) -> &'static str {
         match self {
             Self::Alabama => "AL",
@@ -84,7 +75,6 @@ impl UsJurisdiction {
         }
     }
 
-    /// The jurisdiction's English name as reports and workbooks spell it.
     pub const fn name(self) -> &'static str {
         match self {
             Self::Alabama => "Alabama",
@@ -141,10 +131,6 @@ impl UsJurisdiction {
         }
     }
 
-    /// Parse a two-letter USPS code, ignoring surrounding whitespace and ASCII case.
-    ///
-    /// Use this where the source publishes a code (`"WI"`); [`Self::parse`] additionally accepts a
-    /// spelled-out name for directory pages that never print codes.
     pub fn from_code(code: &str) -> Option<Self> {
         let trimmed = code.trim();
         if trimmed.is_empty() {
@@ -156,11 +142,6 @@ impl UsJurisdiction {
             .find(|jurisdiction| jurisdiction.code().eq_ignore_ascii_case(trimmed))
     }
 
-    /// Parse either a USPS code or a spelled-out jurisdiction name, case-insensitively.
-    ///
-    /// Returns `None` for anything else — including territories — so a caller that wants to refuse
-    /// an unknown jurisdiction can, and a caller that wants to *record* the refusal has the raw
-    /// string it was given.
     pub fn parse(raw: &str) -> Option<Self> {
         let trimmed = raw.trim();
         if trimmed.is_empty() {
@@ -174,7 +155,6 @@ impl UsJurisdiction {
 }
 
 impl fmt::Display for UsJurisdiction {
-    /// Displays the USPS code, which is the form every key and workflow identity uses.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.code())
     }

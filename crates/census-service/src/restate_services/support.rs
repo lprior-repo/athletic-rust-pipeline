@@ -1,9 +1,3 @@
-//! The job layer every handler shares: how a store or report failure is classified for retry, and
-//! how the blocking pool runs the work.
-//!
-//! Nothing here touches the store or the journal. A handler converts its job's error into
-//! [`JobError`] and hands the function to [`blocking`]; the split between retryable and terminal is
-//! made in one place so no handler can decide it differently.
 use std::sync::Arc;
 
 use restate_sdk::prelude::*;
@@ -12,33 +6,14 @@ use crate::outcome::Outcome;
 use crate::spawn::Spawner;
 use census_report::report::ReportError;
 use census_store::StoreError;
-/// A job outcome Restate can act on: retrying a transient failure is worth it, retrying a terminal
-/// one is not.
 #[derive(Debug, thiserror::Error)]
 pub enum JobError {
-    /// Retry with backoff — the input may still be there next time.
     #[error("{message}")]
     Transient { message: String },
-    /// Do not retry — the request itself is wrong or the job panicked.
     #[error("{message}")]
     Terminal { message: String },
 }
 
-/// Store work that failed, classified for retry.
-///
-/// Plausibly environmental failures — the database cannot be opened, a WAL flush stalls, a read
-/// or write hits a transient I/O fault, or a sidecar file operation fails — ride Transient
-/// because a retry may succeed once the environment stabilises.
-///
-/// Deterministic failures — the stored data is corrupt JSON, a scan bound would be exceeded, a
-/// counter reached its limit, a journal entry is too large, a request was refused, a legacy import
-/// failed, or an invariant was violated — do not improve on retry: the same input reproduces the
-/// same result.
-///
-/// `StoreError::Io` is transient here: it wraps a WAL or sidecar write. This is a different
-/// failure surface than `CrawlError::Io` (which wraps a read of a crawl fixture and is terminal
-/// in `jobs.rs`). The store's I/O is a durable write that may recover (disk pressure, lock
-/// contention); the crawl's I/O is a read-only fixture that will fail identically on retry.
 impl From<StoreError> for JobError {
     fn from(error: StoreError) -> Self {
         let message = error.to_string();
@@ -51,19 +26,17 @@ impl From<StoreError> for JobError {
             StoreError::Decode { .. }
             | StoreError::Json { .. }
             | StoreError::SnapshotRow { .. }
+            | StoreError::ObservationReplacement { .. }
             | StoreError::TooManyRows { .. }
             | StoreError::JournalTooLarge { .. }
             | StoreError::CounterOverflow
             | StoreError::Refused { .. }
             | StoreError::Legacy { .. }
+            | StoreError::Identity(_)
             | StoreError::Invariant { .. } => Self::Terminal { message },
         }
     }
 }
-/// Report, bests and workbook work that failed: the same rule one layer up. A store failure
-/// delegates so its own classification survives, and a violated invariant is terminal here for the
-/// same reason it is in the store: the report's invariants are its own, so a replay cannot restore
-/// one.
 impl From<ReportError> for JobError {
     fn from(error: ReportError) -> Self {
         let message = error.to_string();
@@ -75,9 +48,6 @@ impl From<ReportError> for JobError {
     }
 }
 
-/// Map a job outcome onto Restate's terminal/retryable split. Deliberately a plain function rather
-/// than a `From` impl: `HandlerError` already has a blanket `From<E: StdError>`, and letting
-/// `JobError` take that path would make every terminal failure silently retryable.
 pub fn job_error(error: JobError) -> HandlerError {
     match error {
         JobError::Transient { message } => HandlerError::from(TransientFailure { message }),
@@ -91,15 +61,6 @@ struct TransientFailure {
     message: String,
 }
 
-/// Run a blocking job as a region task, classifying the outcome for retry.
-///
-/// `E` is whatever the job reports: the store's and the report's typed errors convert through the
-/// `From` impls above, and a job that already knows its own outcome — an input bound it refused —
-/// hands back a [`JobError`] unchanged. A panicked or cancelled task is always terminal: replaying
-/// the journal value that panicked would panic again.
-///
-/// The job goes through the region the shell handed in, so an invocation that is aborted mid-await
-/// leaves the work owned (and reaped) by the region rather than running unattached.
 #[tracing::instrument(skip_all)]
 pub async fn blocking<T, E, F>(spawner: Arc<Spawner>, job: F) -> Result<T, JobError>
 where

@@ -1,6 +1,3 @@
-//! `{legacy_athletic_net: {kind: athlete}}` → `legacy_athletic_net:athlete`.
-//!
-//! Identity rule ported from `export_data_products.ns_key`.
 
 use serde_json::Value;
 

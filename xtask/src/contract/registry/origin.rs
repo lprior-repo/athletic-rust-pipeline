@@ -1,18 +1,6 @@
-//! The admission-origin syntax clause of check 5: what a descriptor's `origin` string may be.
-//!
-//! Split out so the registry module holds only what reads the registry: this is a pure predicate over
-//! a string, it is where the labels-versus-IP-literal distinction lives, and it is the part of the
-//! checks a test can drive without a registry behind it.
 
-/// The longest a DNS label may be (RFC 1035).
 const LABEL_MAX: usize = 63;
 
-/// Whether an admission origin names a host: dot-separated labels, or a bracketed IP literal.
-///
-/// The declared value is a host, not a URL, so a scheme, a port, a path or a space is rejected; a
-/// trailing root dot is accepted, as DNS itself accepts it. `local-artifact` — the origin an adapter
-/// that contacts no host declares — is a single label, and passes, because a source that fetches
-/// nothing still names the origin its policy is stated for.
 pub(super) fn is_host(origin: &str) -> bool {
     if let Some(literal) = origin
         .strip_prefix('[')
@@ -27,7 +15,6 @@ pub(super) fn is_host(origin: &str) -> bool {
     !name.is_empty() && name.split('.').all(is_label)
 }
 
-/// Whether one DNS label is well formed: 1..=63 letters, digits or inner hyphens.
 fn is_label(label: &str) -> bool {
     !label.is_empty()
         && label.chars().count() <= LABEL_MAX

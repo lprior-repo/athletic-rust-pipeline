@@ -1,10 +1,3 @@
-//! The performance row's own merge rule and the source-athlete key it carries through the store.
-//!
-//! Two facts the row exists to state. A merge fills the source athlete only where the surviving row
-//! has none, so the identity a row was written with is never replaced by a later sighting's. And the
-//! identity survives the store: what a row is read back with is what it was written with, which is
-//! what makes the key usable for a decision made long after the fetch.
-
 use super::*;
 use crate::{Store, Table};
 use census_domain::jurisdiction::UsJurisdiction;
@@ -14,15 +7,14 @@ use census_domain::model::{
     Sport, TimingMethod,
 };
 
-/// One performance of one athlete, keyed by `source_key` so two calls mint one id.
-fn performance(source_key: &str, identity: Option<SourceIdentity>) -> CanonicalPerformance {
+fn performance(source_key: &str, identity: SourceIdentity) -> CanonicalPerformance {
     let school = CanonicalSchool::mint(
         UsJurisdiction::Wisconsin,
         "Abbotsford High School",
         "abbotsford",
     );
     let athlete =
-        CanonicalAthlete::mint(&school, "Julian Aguilera", GradYear::CO2027, Gender::Boys);
+        CanonicalAthlete::mint(&school, "Julian Aguilera", GradYear::CO2027, Gender::Boys, &identity);
     let meet = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
         "2026-05-01",
@@ -62,47 +54,31 @@ fn performance(source_key: &str, identity: Option<SourceIdentity>) -> CanonicalP
     }
 }
 
-/// The identity a MileSplit-style pass would carry: the source's own athlete object.
 fn identity(id: &str) -> SourceIdentity {
     SourceIdentity::new(SourceNamespace::MilesplitAthlete, id)
 }
 
 #[test]
-fn a_merge_fills_a_blank_source_athlete_and_never_replaces_one() {
-    let mut blank = performance("perf-1", None);
-    blank.merge(performance("perf-1", Some(identity("111"))));
-    assert_eq!(
-        blank
-            .source_athlete
-            .as_ref()
-            .map(|identity| identity.id.as_str()),
-        Some("111"),
-        "a row written without an identity takes the later sighting's"
-    );
-
-    let mut stated = performance("perf-2", Some(identity("222")));
-    stated.merge(performance("perf-2", Some(identity("333"))));
-    assert_eq!(
-        stated
-            .source_athlete
-            .as_ref()
-            .map(|identity| identity.id.as_str()),
-        Some("222"),
-        "a row that states an identity keeps it rather than swapping to a later one"
-    );
+fn conflicting_source_owner_is_retained_not_replaced() {
+    let mut first = performance("perf-1", identity("111"));
+    let mut other = performance("perf-1", identity("222"));
+    other.id = first.id.clone();
+    first.merge(other);
+    assert_eq!(first.source_athlete, identity("111"));
+    assert_eq!(first.retained_conflicts.len(), 1);
 }
 
+
 #[test]
-fn the_source_athlete_survives_the_store_and_a_blank_one_stays_absent() {
+fn the_source_athlete_survives_the_store() {
     let dir = tempfile::tempdir().expect("temp dir");
     let store = Store::open(dir.path().join("store")).expect("store");
     let stamped = performance(
         "perf-1",
-        Some(identity("111").with_url("https://ms.test/a/111")),
+        identity("111").with_url("https://ms.test/a/111"),
     );
-    let blank = performance("perf-2", None);
     store
-        .append_many(Table::Performances, &[stamped.clone(), blank.clone()])
+        .append_many(Table::Performances, &[stamped.clone()])
         .expect("append");
 
     let rows: Vec<CanonicalPerformance> = store.scan(Table::Performances).expect("scan");
@@ -113,13 +89,5 @@ fn the_source_athlete_survives_the_store_and_a_blank_one_stays_absent() {
     assert_eq!(
         read_back.source_athlete, stamped.source_athlete,
         "the row reads back with the identity it was written with"
-    );
-    let absent = rows
-        .iter()
-        .find(|row| row.source_key == "perf-2")
-        .expect("the blank row is stored");
-    assert_eq!(
-        absent.source_athlete, None,
-        "a row no source athlete was read from does not acquire one by being stored"
     );
 }

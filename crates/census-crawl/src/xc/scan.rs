@@ -1,4 +1,3 @@
-//! The line-by-line reading state: headings move it on, data lines push their rows.
 use crate::result_file::{ParsedEvent, ParsedRow};
 use census_domain::model::{EventKind, Gender};
 
@@ -8,8 +7,6 @@ use super::rows::{
     starts_like_a_row,
 };
 
-/// The reading state a cross-country file accumulates as its lines are scanned: the events read so
-/// far, the row counters, and the gender, label, division and team the next row inherits.
 pub(super) struct XcScan {
     pub(super) events: Vec<ParsedEvent>,
     pub(super) rows_parsed: usize,
@@ -18,7 +15,6 @@ pub(super) struct XcScan {
     label: String,
     division: Option<String>,
     team: Option<String>,
-    /// The `====` rule of the file's rule-lined table, once one has been read.
     spans: Option<Vec<(usize, usize)>>,
 }
 
@@ -36,10 +32,6 @@ impl XcScan {
         }
     }
 
-    /// Read one line: a heading line moves the reading state on, a data line pushes its rows.
-    ///
-    /// `None` is the regex-compile failure the original propagated per line: a broken literal
-    /// pattern means no file can be read, so the rest of the line stream is never walked.
     pub(super) fn read_line(&mut self, line: &str) -> Option<()> {
         let trimmed = line.trim();
         if trimmed.is_empty() {
@@ -52,8 +44,6 @@ impl XcScan {
         Some(())
     }
 
-    /// A section banner, a `Division N` label, the `====` rule of the rule-lined table, a gender
-    /// heading or a team block. `true` when the line was one of those.
     fn read_heading(&mut self, line: &str, trimmed: &str) -> Option<bool> {
         if let Some(banner) = section_banner().ok()?.captures(trimmed) {
             let inner = banner.get(1)?.as_str().trim();
@@ -85,8 +75,6 @@ impl XcScan {
         Some(false)
     }
 
-    /// A Hy-Tek team block, the padded grade table or the rule-lined AccuRace table; a line that
-    /// merely starts like a row counts as skipped.
     fn read_rows(&mut self, line: &str, trimmed: &str) {
         let block = block_rows(line, self.team.as_deref());
         if !block.is_empty() {
@@ -130,12 +118,6 @@ impl XcScan {
     }
 }
 
-/// A row's event: the one the current section opened, created on its first row.
-///
-/// The event is looked up by the section's own `(gender, label)` rather than taken as the last one
-/// opened, because a page may return to a race after another race — a boys race resumed after the
-/// girls race keeps printing into its own event instead of the girls'. The property lane
-/// `tests/xc_parser_properties/accounting.rs` pins that.
 fn push_row(
     events: &mut Vec<ParsedEvent>,
     gender: &Gender,

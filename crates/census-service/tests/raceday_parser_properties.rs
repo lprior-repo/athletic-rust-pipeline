@@ -1,28 +1,3 @@
-//! Property tests for the RaceDay Scoring export seam.
-//!
-//! `census_crawl::raceday::parse` reads the finish-list pages WIAA posts for
-//! cross-country sectionals and state meets: one `<h3>` naming the race and one or more
-//! `data-display` grids whose rows are the athletes. Cross-country feeds the class-of-2027 census
-//! because every grid row prints the runner's `Year`, and the provider publishes no mark beyond the
-//! finish time.
-//!
-//! These properties pin what the census may assume about that arm:
-//!
-//! * **Total-ness** — arbitrary markup and markup woven out of the tokens this reader keys on parse
-//!   to a meet or to a typed refusal, never a panic, and the same body always gives the same answer
-//!   ([`totalness`]).
-//! * **Accounting** — `rows_parsed` is the rows the events carry, `rows_skipped` is the grid rows the
-//!   layout could not read as a performance, and nothing without an athlete and a time is published
-//!   ([`accounting`]).
-//! * **Append-only reading** — a body cut short yields the readings the whole body starts with
-//!   ([`prefix_laws`]).
-//! * **Printed furniture** — the case a header label is printed in, the blanks a stylesheet pads a
-//!   cell with, and the spelling a title gives its division decide nothing: the same grid reads to the
-//!   same rows and the same race ([`casing`]).
-//!
-//! Deterministic by construction: [`seam_config`] pins 64 cases on ChaCha with the fixed seed
-//! `0x5241_4345_4441_5931`. `CAPTURE` is the committed page this adapter was qualified against;
-//! `DECLINED_ROW` is the shape of a grid row the layout cannot read.
 #![forbid(unsafe_code)]
 
 use census_crawl::raceday::parse;
@@ -41,14 +16,9 @@ mod prefix_laws;
 #[path = "raceday_parser_properties/totalness.rs"]
 mod totalness;
 
-/// Verbatim `<h3>` + finish-list table from
-/// `https://www.wiaawi.org/Portals/0/PDF/Results/Cross_Country/2023/racinesectionalb.htm`
-/// (WIAA Division 2 Racine sectional, boys race, 2023).
 const CAPTURE: &str =
     include_str!("../../census-crawl/tests/fixtures/wiaa_results/racinesectionalb-finish-list.htm");
 
-/// A one-table export whose second row carries no athlete name: a grid row the layout cannot read as
-/// a performance, beside one it can.
 const DECLINED_ROW: &str = r#"
 <h3>WIAA D3 XC Sectionals - Girls Race Team Finish List-XC</h3>
 <table class="data-display">
@@ -60,16 +30,13 @@ const DECLINED_ROW: &str = r#"
 </table>
 "#;
 
-/// A titled page with no result table at all: the section index a collector can reach by mistake.
 const NO_GRID: &str = r#"
 <h3>WIAA D3 XC Sectionals - Girls Race</h3>
 <p>Results posted after the meet.</p>
 "#;
 
-/// The season the file was archived under; RaceDay publishes no date of its own.
 const ARCHIVE_YEAR: i16 = 2023;
 
-/// The pages this seam's laws are stated over.
 const LAYOUTS: [(&str, &str); 2] = [
     ("committed capture", CAPTURE),
     ("grid with a declined row", DECLINED_ROW),
@@ -88,12 +55,10 @@ fn seam_config() -> ProptestConfig {
     }
 }
 
-/// One body's parse, through the shipped entry point.
 fn parse_body(body: &str) -> CrawlResult<ParsedMeet> {
     parse(body, source(), ARCHIVE_YEAR)
 }
 
-/// A row's reading, rendered for comparison.
 fn rendered_reading(row: &ParsedRow) -> String {
     format!(
         "place={:?} name={:?} grade={:?} school={:?} mark={:?}",
@@ -101,7 +66,6 @@ fn rendered_reading(row: &ParsedRow) -> String {
     )
 }
 
-/// Every event's rows, in file order, rendered for comparison.
 fn rendered_rows(meet: &ParsedMeet) -> Vec<String> {
     meet.events
         .iter()
@@ -110,8 +74,6 @@ fn rendered_rows(meet: &ParsedMeet) -> Vec<String> {
         .collect()
 }
 
-/// Markup the arbitrary bodies are woven from: tag fragments, grid cells and times, so the reader
-/// sees unbalanced tables and half-rows rather than prose.
 fn arbitrary_body() -> impl Strategy<Value = String> {
     prop::collection::vec(
         prop_oneof![
@@ -138,8 +100,6 @@ fn arbitrary_body() -> impl Strategy<Value = String> {
     .prop_map(|parts| parts.concat())
 }
 
-/// Pages woven out of the tokens a finish list prints, so grids, rows and headings reach the reader
-/// in orders no capture has.
 fn shaped_body() -> impl Strategy<Value = String> {
     let rows = prop::collection::vec(
         prop_oneof![

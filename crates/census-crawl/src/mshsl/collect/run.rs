@@ -1,4 +1,3 @@
-//! The MSHSL run: its resume set, request inputs, tallies and per-school steps.
 use crate::mshsl::map::{ad_coaches, ad_role, provider_key, school_domains, school_entities};
 use crate::mshsl::parse::{
     listing_page_url, parse_next_listing_page, parse_school_detail, parse_school_list,
@@ -17,7 +16,6 @@ use std::collections::HashSet;
 
 use super::{collect_team_coaches, count, fetch_options};
 
-/// One run's inputs, resume set, tallies and the report being built.
 pub(super) struct MshslRun<'a> {
     ctx: &'a AdapterContext<'a>,
     options: &'a Options,
@@ -35,7 +33,6 @@ pub(super) struct MshslRun<'a> {
 }
 
 impl<'a> MshslRun<'a> {
-    /// Gather this run's inputs and resume set; `None` when the states exclude Minnesota.
     pub(super) fn start(
         ctx: &'a AdapterContext<'a>,
         options: &'a Options,
@@ -66,7 +63,6 @@ impl<'a> MshslRun<'a> {
         }))
     }
 
-    /// Walk the listing pages, one row at a time, until they run out or pagination stops.
     pub(super) async fn walk(&mut self) -> CrawlResult<()> {
         let mut page = 0usize;
         'pages: while page < MAX_LISTING_PAGES {
@@ -105,7 +101,6 @@ impl<'a> MshslRun<'a> {
         Ok(())
     }
 
-    /// Fetch and parse one listing row, then emit the school it names.
     async fn process_row(&mut self, row: &SchoolListRow) -> CrawlResult<()> {
         if !self.wanted.is_empty() && !self.wanted.contains(&normalize_name(&row.name)) {
             return Ok(());
@@ -137,7 +132,6 @@ impl<'a> MshslRun<'a> {
         self.emit_school(row, &school, &school_id, &detail).await
     }
 
-    /// Emit one school's rows: the school, its AD rows, then its sport coaches and journals.
     async fn emit_school(
         &mut self,
         row: &SchoolListRow,
@@ -169,8 +163,7 @@ impl<'a> MshslRun<'a> {
         };
         let mut batch = self.ctx.store.write_batch();
         batch.append_many(Table::Schools, std::slice::from_ref(school))?;
-        self.ctx
-            .observe_school(&SourceNamespace::association_school(SOURCE_ID), school)?;
+        batch.append_many(Table::SourceObservations, self.ctx.school_observation(&SourceNamespace::association_school(SOURCE_ID), school).as_slice())?;
         batch.append_many(Table::Coaches, &ads)?;
         batch.append_many(Table::Coaches, &sport_coaches)?;
         for note in notes {
@@ -182,8 +175,6 @@ impl<'a> MshslRun<'a> {
         Ok(())
     }
 
-    /// Journal one emitted school under both the school and the coach journals, in the page that holds
-    /// its rows.
     fn journal_school(
         &mut self,
         batch: &mut StoreBatch<'_>,
@@ -232,7 +223,6 @@ impl<'a> MshslRun<'a> {
         Ok(())
     }
 
-    /// Fill in the request deltas and the run notes, and hand back the report.
     pub(super) async fn finish(mut self, stats_before: FetchStats) -> AdapterReport {
         let stats_after = self.ctx.fetcher.stats().await;
         self.report.rows = count(self.processed);

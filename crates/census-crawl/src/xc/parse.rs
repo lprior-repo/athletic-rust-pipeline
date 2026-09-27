@@ -1,15 +1,9 @@
-//! The adapter entry point: read every line, keep the events that carry rows.
 use crate::result_file::{ParsedEvent, ParsedMeet};
 use census_domain::model::SourceRef;
 
 use super::header::header;
 use super::scan::XcScan;
 
-/// Parse a cross-country result file.
-///
-/// `archive_year` supplies the school year when the file publishes no date at all: the sectional
-/// family from TrackSide prints a date in no header and no footer, and a year is enough to place the
-/// race in the right school year (the same floor the RaceDay parser uses).
 pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<ParsedMeet> {
     let (name, date) = header(lines)?;
     let date = date.unwrap_or_else(|| archive_year.to_string());

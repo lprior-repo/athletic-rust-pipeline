@@ -1,5 +1,3 @@
-//! Waiting for a run: the polling loop, the jurisdiction probe, and the progress line an operator
-//! reads while it runs.
 
 use anyhow::{bail, Result};
 use census_domain::model::SchoolYear;
@@ -14,8 +12,6 @@ use restate_sdk::prelude::*;
 use super::{POLL, PROGRESS_EVERY};
 use census_service::ingress;
 
-/// The pieces a waiting national command needs to observe one run. The invocation handle carries
-/// the ingress client the output reads go through, so it is the only transport needed here.
 pub(crate) struct Watch<'a> {
     pub(crate) handle: &'a InvocationHandle<reqwest::Client, Json<NationalReport>>,
     pub(crate) ingestion: &'a ReqwestClient,
@@ -25,11 +21,6 @@ pub(crate) struct Watch<'a> {
     pub(crate) rounds: u64,
 }
 
-/// Wait for the run's output, printing how each jurisdiction is doing along the way.
-///
-/// The bound is the command's `--timeout-seconds`. Reaching it is not a cancellation: the run keeps
-/// going, and rerunning the same command reattaches, which is why the message says so instead of
-/// implying the census failed.
 pub(crate) async fn observe(watch: Watch<'_>) -> Result<NationalReport> {
     let mut round: u64 = 0;
     while round < watch.rounds {
@@ -62,12 +53,6 @@ pub(crate) async fn observe(watch: Watch<'_>) -> Result<NationalReport> {
     )
 }
 
-/// Submit one jurisdiction's durable run and wait for its report.
-///
-/// Shared by the commands that drive a state's census in one submission: the object's key is the
-/// jurisdiction identity, so a repeat submission joins the run that already holds it instead of
-/// starting a second one. The submission line prints for every state, including the ones Restate
-/// deduplicated, because "your submission was not applied" is a fact the operator has to read.
 pub(crate) async fn drive_jurisdiction(
     ingestion: &ReqwestClient,
     request: JurisdictionRequest,
@@ -96,7 +81,6 @@ pub(crate) async fn drive_jurisdiction(
     observe_jurisdiction(&handle, rounds).await
 }
 
-/// Wait for one jurisdiction's run the same way the national command waits for the fan-out.
 pub(crate) async fn observe_jurisdiction(
     handle: &InvocationHandle<reqwest::Client, Json<JurisdictionReport>>,
     rounds: u64,
@@ -117,12 +101,6 @@ pub(crate) async fn observe_jurisdiction(
     )
 }
 
-/// One progress line: how many jurisdictions have finished each stage, and the cohort totals they
-/// report so far.
-///
-/// A jurisdiction whose state cannot be read is counted, not fatal. It is normally a state that has
-/// not been reached yet — the object exists only once the fan-out calls it — and the operator asked
-/// for the run's progress, which is still true.
 pub(crate) async fn print_progress(
     ingestion: &ReqwestClient,
     jurisdictions: &[UsJurisdiction],

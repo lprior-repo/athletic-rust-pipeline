@@ -1,5 +1,3 @@
-//! The merge report: per-state accounting, every rejection with its evidence, and the fragments
-//! that could not be read at all.
 
 use anyhow::{Context, Result};
 use std::collections::BTreeMap;
@@ -50,8 +48,6 @@ pub(super) fn print_report(
     }
 }
 
-/// Write the markdown report: per-state accounting, every rejection with its evidence, and the
-/// fragments that could not be read at all.
 pub(super) fn write_report(
     kept: &KeptRows,
     per_state: &BTreeMap<String, StateCounts>,

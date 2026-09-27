@@ -260,6 +260,21 @@ is never dereferenced by a core run.
 | E | Wayzata Results (MN / IA / WI timer) | `wayzata` (provider name `wayzata_schedule`) | meet inventory from published schedules |
 | - | AthleticLIVE mirror | `athleticlive`, `athleticlive_athletes`, `athleticlive_results` (manifest-driven import of captures, no request) | **non-core**: comparison only |
 
+### MileSplit roster outcomes
+
+`fetch_roster` returns the transport capture and a typed verdict: complete, partial with rejected
+row locators, or quarantined. Missing identity, name or graduation year and invalid graduation
+years are explicit row failures. Unknown templates, unreadable rosters, invalid UTF-8 and 404s
+do not become successful empty rosters.
+
+The collector atomically appends accepted canonical records, their source observations and the
+unit journal. Partial observations are retained, but only complete verdicts count toward
+`rosters_committed`. `rosters_total`, `rosters_remaining` and persisted errors retain the gap
+after reopening; replaying a journaled unit does not append its observations again.
+The journal stores capture metadata and rejected-row spans, not an immutable raw-body archive.
+This does not yet provide recovery of an incomplete unit after its source changes under the
+same logical run; a persisted gap is not evidence of completed coverage.
+
 ### Result-artifact parsing
 
 `result_file` dispatches on the detected vendor layout and shares one header-anchor rule across

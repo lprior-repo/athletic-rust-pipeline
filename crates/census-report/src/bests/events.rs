@@ -1,9 +1,6 @@
-//! The event-specific rules: which events are never an athlete's personal best, and which sport an
-//! event belongs to.
 
 use census_domain::model::EventKind;
 
-/// `true` for squad events, which are never an athlete's personal best.
 pub const fn is_relay(kind: &EventKind) -> bool {
     matches!(
         kind,
@@ -16,7 +13,6 @@ pub const fn is_relay(kind: &EventKind) -> bool {
     )
 }
 
-/// Which of the platform's sports an event belongs to.
 pub const fn sport_of(kind: &EventKind) -> &'static str {
     match kind {
         EventKind::CrossCountry => "CrossCountry",

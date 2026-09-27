@@ -1,22 +1,3 @@
-//! The region's task spawner: one owned set that every task a region starts joins back through.
-//!
-//! A `tokio::spawn` (or a `spawn_blocking`) whose handle is dropped is an orphan factory: the task
-//! outlives the region that started it, and shutdown cannot tell whether it is still writing. This
-//! module is the opposite contract. One [`Spawner`] owns one `JoinSet`, the region starts its tasks
-//! only through it, completion classifies through [`Outcome`] and [`DrainState`], and
-//! [`Spawner::drain`] reaps the region inside a deadline — counting the natural exits first, then
-//! aborting and counting whatever outlived it — so the owner can finalize knowing that nothing of
-//! its own is still running.
-//!
-//! Blocking work rides the same set. A blocking job that is still queued is aborted like any other
-//! task; a job that already started runs to completion, because the blocking pool cannot interrupt
-//! it. The drain does not wait for such a job — after the deadline it aborts and reaps with
-//! non-blocking `try_join_next` over a bounded number of runtime turns — so it returns promptly
-//! and `remaining` reflects what the abort could not reclaim.
-//!
-//! Draining is a region-level decision and happens once: the owner drains after nothing can start
-//! more work. A task started after that lands in the region's fresh, empty set — the next drain's
-//! business, never this one's.
 
 use std::future::Future;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
@@ -32,12 +13,6 @@ use census_store::clock::{Clock, SystemClock};
 mod ledger;
 use ledger::Ledger;
 
-/// What one region did with the tasks it owned.
-///
-/// `accepted == completed + cancelled + panicked + aborted`. `timed_out` carries the count that
-/// the deadline found still in flight; `remaining` is updated after reaping to hold the tasks the
-/// abort could not reclaim. `aborted` counts how many of those it did reclaim. Counts
-/// saturate; they never wrap into a smaller, quieter number.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct TaskReport {
     pub accepted: u64,
@@ -49,28 +24,17 @@ pub struct TaskReport {
     pub panicked: u64,
 }
 
-/// A task count that does not fit the report's `u64` field.
-///
-/// The counting is exact or it is nothing: a count that does not fit is a typed refusal, not a
-/// clamped figure that would read as a smaller, quieter region.
 #[derive(Debug, thiserror::Error)]
 pub enum SpawnError {
-    /// A set size did not fit the field it was counted into.
     #[error("task count does not fit u64")]
     TaskCountOverflow,
 }
 
-/// What a region-owned blocking job published to the caller that started it.
 enum Completion<T, E> {
-    /// The job returned, with its own result.
     Returned(Result<T, E>),
-    /// The job panicked before it could return.
     Panicked,
 }
 
-/// The tasks one region owns, plus the ledger of everything it has counted.
-///
-/// One lock holds both, so the counters can never disagree with the set they describe.
 #[derive(Default)]
 struct Region {
     tasks: JoinSet<()>,
@@ -78,10 +42,6 @@ struct Region {
 }
 
 impl Region {
-    /// Count every task that finished since the last look and drop its entry.
-    ///
-    /// Reaping here is what keeps a long-lived region's set bounded: a set that is only drained at
-    /// shutdown holds one entry for every job the region ever ran.
     fn reap_finished(&mut self) {
         while let Some(joined) = self.tasks.try_join_next() {
             self.ledger.classify(DrainState::from_join(joined));
@@ -89,7 +49,6 @@ impl Region {
     }
 }
 
-/// The region-owned spawner: start tasks, and reap them inside a deadline.
 pub struct Spawner {
     region: Mutex<Region>,
 }
@@ -101,17 +60,12 @@ impl Default for Spawner {
 }
 
 impl Spawner {
-    /// A region that owns nothing yet.
     pub fn new() -> Self {
         Self {
             region: Mutex::new(Region::default()),
         }
     }
 
-    /// A region that adopts an already-built set, counting what it already holds.
-    ///
-    /// The shell's drain tests hand it the set they built by hand, so their report describes
-    /// exactly the set they handed in while the counting itself lives here, once.
     pub fn adopting(tasks: JoinSet<()>) -> Result<Self, SpawnError> {
         let held = narrow(tasks.len())?;
         Ok(Self {
@@ -122,7 +76,6 @@ impl Spawner {
         })
     }
 
-    /// Start a region-owned task. Its completion is counted, and a drain can abort it.
     #[tracing::instrument(skip_all)]
     pub fn spawn<F>(&self, task: F)
     where
@@ -134,10 +87,6 @@ impl Spawner {
         region.reap_finished();
     }
 
-    /// Run `job` on the blocking pool as a region-owned task, and classify what came back.
-    ///
-    /// The job belongs to the region, not to the caller: a caller cancelled mid-await costs the
-    /// region nothing, because the job stays the region's to reap.
     #[tracing::instrument(skip_all)]
     pub async fn blocking<T, E, F>(&self, job: F) -> Outcome<T, E>
     where
@@ -163,11 +112,6 @@ impl Spawner {
         }
     }
 
-    /// Reap the region inside `timeout`: the natural exits first, then abort and count the rest.
-    ///
-    /// Tasks that finished inside the deadline are counted normally; the deadline phase uses
-    /// non-blocking `try_join_next` so the drain returns promptly — even if a blocking job that
-    /// started before the deadline runs to completion, the drain does not wait for it.
     #[tracing::instrument(skip_all, fields(timeout_secs = timeout.as_secs()))]
     pub async fn drain(&self, timeout: Duration) -> Result<TaskReport, SpawnError> {
         let mut region = self.take();
@@ -207,7 +151,6 @@ impl Spawner {
         Ok(region.ledger.report())
     }
 
-    /// Register `job` as a region task and count it as accepted.
     fn push_blocking<F>(&self, job: F)
     where
         F: FnOnce() + Send + 'static,
@@ -218,7 +161,6 @@ impl Spawner {
         region.reap_finished();
     }
 
-    /// Take the set and its counters, leaving the region empty for whatever comes next.
     fn take(&self) -> Region {
         let mut region = self.lock();
         Region {
@@ -227,10 +169,6 @@ impl Spawner {
         }
     }
 
-    /// The lock is held only across bookkeeping — register, count, release — so no guard ever
-    /// crosses an `await`. A poisoned lock is recovered instead of propagated: the panic happened
-    /// inside the region's own bookkeeping (spawning outside a runtime is the one such path), and
-    /// the counters and the set are still structurally sound.
     fn lock(&self) -> MutexGuard<'_, Region> {
         match self.region.lock() {
             Ok(guard) => guard,
@@ -239,13 +177,10 @@ impl Spawner {
     }
 }
 
-/// A set size as a report field.
 fn narrow(count: usize) -> Result<u64, SpawnError> {
     u64::try_from(count).map_err(|_| SpawnError::TaskCountOverflow)
 }
 
-/// Hand a result to the caller that is waiting for it. A caller that is gone — cancelled, or
-/// aborted with the region — makes the send fail, and the value is simply dropped.
 fn publish<T, E>(tx: oneshot::Sender<Completion<T, E>>, completion: Completion<T, E>) {
     if tx.send(completion).is_err() {
         tracing::debug!("a region job finished with no caller waiting for its value");

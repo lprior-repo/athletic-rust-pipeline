@@ -1,18 +1,7 @@
-//! The round trip between a published time and the seconds it means.
-//!
-//! Every mark the corpus keeps is a `f64` of seconds, so the only thing standing between a
-//! published page and a wrong personal best is this conversion. The law is stated in both
-//! directions: render a duration the way the vendor writes one, and it must read back unchanged —
-//! at every scale the notation distinguishes (tenths-and-up under a minute, minutes, hours).
 
 use super::{parse_time, seam_config};
 use proptest::prelude::*;
 
-/// Centiseconds published in the vendor's own notation, plus the seconds they mean.
-///
-/// `10.56` under a minute, `1:54.32` under an hour, `1:05:12.34` past it — the three shapes the
-/// vendor's captures show. The renderer is deliberately the *inverse* of the parser and shares no
-/// code with it, so agreement is evidence rather than a restatement.
 fn render_centis(centis: u64) -> (String, f64) {
     let total = centis as f64 / 100.0;
     let hours = centis / 360_000;
@@ -31,7 +20,6 @@ fn render_centis(centis: u64) -> (String, f64) {
 proptest! {
     #![proptest_config(seam_config())]
 
-    /// Ten hours of published times, to the centisecond, at every shape of the notation.
     #[test]
     fn a_rendered_time_reads_back_as_the_same_duration(centis in 0u64..36_000_000) {
         let (text, expected) = render_centis(centis);

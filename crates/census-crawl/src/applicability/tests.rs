@@ -1,12 +1,7 @@
-//! Tests for the applicability table: the two rules the table stands on (a slug a plan can act on, a
-//! row that answers for the jurisdictions it omits) and the two promises a caller relies on (a plan
-//! in `bulk_first` order, an answer for every jurisdiction without panic).
 
 use super::*;
 use crate::registry::{descriptor, descriptors, AccessClass};
 
-/// Every row names a source the registry can resolve: a slug that resolves nowhere would drop out of
-/// a plan silently, because `bulk_first` filters slugs it cannot resolve.
 #[test]
 fn every_row_names_a_registered_slug() {
     for row in table() {
@@ -18,8 +13,6 @@ fn every_row_names_a_registered_slug() {
     }
 }
 
-/// The table and the registry hold the same sources: a new adapter that lands without an
-/// applicability row would otherwise be invisible to every jurisdiction's plan.
 #[test]
 fn the_table_names_every_registered_source_once() {
     let mut named: Vec<&str> = table().iter().map(|row| row.slug).collect();
@@ -32,7 +25,6 @@ fn the_table_names_every_registered_source_once() {
     );
 }
 
-/// A row may only plan jurisdictions a run may touch, and only once each.
 #[test]
 fn every_listed_jurisdiction_is_in_scope_and_listed_once() {
     for row in table() {
@@ -58,8 +50,6 @@ fn every_listed_jurisdiction_is_in_scope_and_listed_once() {
     }
 }
 
-/// The two platforms the national lanes evidence for all 51 jurisdictions are planned everywhere a
-/// census run may go.
 #[test]
 fn every_census_jurisdiction_plans_both_national_platforms() {
     for jurisdiction in UsJurisdiction::CENSUS_SCOPE {
@@ -73,8 +63,6 @@ fn every_census_jurisdiction_plans_both_national_platforms() {
     }
 }
 
-/// A plan is a set in `bulk_first` order: no source twice, and the same order the registry's own
-/// planning rule produces for those slugs.
 #[test]
 fn a_plan_holds_no_source_twice_and_follows_bulk_first_order() {
     for jurisdiction in UsJurisdiction::CENSUS_SCOPE {
@@ -98,8 +86,6 @@ fn a_plan_holds_no_source_twice_and_follows_bulk_first_order() {
     }
 }
 
-/// An out-of-scope jurisdiction plans nothing, and no modelled jurisdiction panics: a caller that
-/// asks for every variant gets an answer, not a fallback to the whole registry.
 #[test]
 fn out_of_scope_jurisdictions_plan_nothing_and_every_jurisdiction_answers() {
     for jurisdiction in UsJurisdiction::EXCLUDED_FROM_CENSUS {
@@ -118,8 +104,6 @@ fn out_of_scope_jurisdictions_plan_nothing_and_every_jurisdiction_answers() {
     }
 }
 
-/// The association adapters are planned for their own state and for no other: this is the claim the
-/// table exists to make.
 #[test]
 fn single_state_adapters_are_planned_in_their_own_state_only() {
     let homes = [
@@ -144,8 +128,6 @@ fn single_state_adapters_are_planned_in_their_own_state_only() {
     }
 }
 
-/// The adapters that read a checked-in artifact instead of contacting a host are planned where the
-/// research evidences their platform: a plan wants them, because they cost no request.
 #[test]
 fn artifact_adapters_are_planned_where_the_platform_is_evidenced() {
     let planned = applicable_sources(UsJurisdiction::Wisconsin);
@@ -162,8 +144,6 @@ fn artifact_adapters_are_planned_where_the_platform_is_evidenced() {
     );
 }
 
-/// TFRRS is planned where the research evidences high-school depth (IN, FL, NH) and refused
-/// everywhere else — including states whose association row mentions DirectAthletics.
 #[test]
 fn tfrrs_is_planned_only_where_high_school_depth_is_evidenced() {
     for jurisdiction in [
@@ -193,8 +173,6 @@ fn tfrrs_is_planned_only_where_high_school_depth_is_evidenced() {
     }
 }
 
-/// Every row states both halves of the rule: what the reports say, and why the omitted
-/// jurisdictions are omitted.
 #[test]
 fn every_row_states_its_evidence_and_its_refusal() {
     for row in table() {

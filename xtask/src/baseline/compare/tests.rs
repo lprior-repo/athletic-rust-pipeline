@@ -1,13 +1,8 @@
-//! The refusal's own judgement: what `xtask quality-baseline update` will not record.
-//!
-//! Only the oversized-file ledger is exercised, because it is the one ledger the refusal reads by
-//! path rather than by count: everything else it refuses on a monotone number.
 
 use super::raises;
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 
-/// The smallest scan report the refusal reads — the ledger it is being asked about.
 fn scan_report(oversized: Value) -> Value {
     json!({
         "crates": {},
@@ -16,12 +11,10 @@ fn scan_report(oversized: Value) -> Value {
     })
 }
 
-/// The smallest baseline the refusal compares against.
 fn baseline_report(oversized: Value) -> Value {
     json!({ "structure": { "files_over_300_lines": oversized } })
 }
 
-/// What the refusal reports for `before` -> `after`.
 fn refusal(before: Value, after: Value) -> Vec<String> {
     raises(
         &BTreeMap::new(),

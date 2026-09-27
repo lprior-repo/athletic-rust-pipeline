@@ -6,7 +6,6 @@ use crate::spawn::Spawner;
 
 use super::super::{blocking, JobError};
 
-/// Prune the store's receipts past the replay window through the blocking pool.
 pub(super) async fn blocking_prune_receipts(
     spawner: Arc<Spawner>,
     store: Arc<Store>,

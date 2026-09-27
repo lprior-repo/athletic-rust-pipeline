@@ -1,23 +1,12 @@
-//! What the directory prints, and what the seam is allowed to publish.
-//!
-//! A letter fragment prints one row per school: an `orgID` inside the `GetDirectorySchool` link, the
-//! full name in the link's `title` (the visible `<h5>` is CSS-truncated) and the level/kind/city
-//! labels beside it. A school page prints its name in a `JumboMain` label and its totals in an
-//! `Enrollment (…)</span><span>School:</span><b>` block, with one row per staff member in the
-//! administration and coach tables. The laws are the ones a refresh depends on: the id a row
-//! publishes is the id the page printed (so no school is lost or invented between runs) and the
-//! facts a page publishes are the facts it printed.
 
 use super::seam_config;
 use census_crawl::wiaa::{parse_directory_letter, parse_enrollment, parse_school_page};
 use proptest::prelude::*;
 
-/// Names, levels and cities taken from the committed letter fragment.
 const NAMES: [&str; 4] = ["Abbotsford", "Adams-Friendship", "Altoona", "Amherst"];
 const LEVELS: [&str; 3] = ["High School", "Middle School", "Combined"];
 const CITIES: [&str; 4] = ["Abbotsford", "Adams", "Altoona", "Amherst Junction"];
 
-/// One `#tblSchools` row as the letter fragment prints it.
 #[derive(Debug)]
 struct IndexRow {
     org_id: u32,
@@ -26,7 +15,6 @@ struct IndexRow {
     city: String,
 }
 
-/// A letter fragment's rows: the `orgID` the link carries and the labels beside it.
 fn index_rows() -> impl Strategy<Value = Vec<IndexRow>> {
     prop::collection::vec(
         (
@@ -49,7 +37,6 @@ fn index_rows() -> impl Strategy<Value = Vec<IndexRow>> {
     })
 }
 
-/// The `#tblSchools` fragment of a letter page, in the shape `directory_letter_a.html` prints.
 fn render_letter(rows: &[IndexRow]) -> String {
     let mut body = String::from(
         "<div class=\"panel gridFonts\"><div id=\"tableContainer\"><table id=\"tblSchools\" \
@@ -69,7 +56,6 @@ fn render_letter(rows: &[IndexRow]) -> String {
     body
 }
 
-/// What one `GetDirectorySchool` page prints.
 #[derive(Debug)]
 struct PageFacts {
     name: String,
@@ -78,7 +64,6 @@ struct PageFacts {
     coaches: usize,
 }
 
-/// A school page: the `JumboMain` name, the enrollment block and the two staff tables.
 fn page_facts() -> impl Strategy<Value = PageFacts> {
     (
         prop::sample::select(Vec::from(NAMES)),
@@ -94,7 +79,6 @@ fn page_facts() -> impl Strategy<Value = PageFacts> {
         })
 }
 
-/// The page markup, in the shape `school_org1_abbotsford.html` prints it.
 fn render_school(page: &PageFacts) -> String {
     let mut body = format!(
         "<div class=\"container\"><label class=\"JumboMain\">{}</label>\n\
@@ -123,8 +107,6 @@ fn render_school(page: &PageFacts) -> String {
 proptest! {
     #![proptest_config(seam_config())]
 
-    /// The id on an index row is the school key the page printed: a refresh can neither lose a
-    /// school nor mint one.
     #[test]
     fn an_index_row_publishes_the_id_and_labels_it_prints(rows in index_rows()) {
         let entries = parse_directory_letter(&render_letter(&rows));
@@ -142,8 +124,6 @@ proptest! {
         }
     }
 
-    /// The name and the enrollment a school page prints are the ones published, and every staff row
-    /// printed is a staff row published.
     #[test]
     fn a_school_page_publishes_the_name_and_totals_it_prints(page in page_facts()) {
         let body = render_school(&page);

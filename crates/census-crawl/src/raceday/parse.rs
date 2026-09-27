@@ -1,4 +1,3 @@
-//! The entry point: one RaceDay export body in, one parsed meet out.
 
 use crate::result_file::{ParsedEvent, ParsedMeet};
 use crate::{CrawlError, CrawlResult};
@@ -9,8 +8,6 @@ use super::regexes::{tags_regex, Patterns};
 use super::table::{table_labels, table_rows};
 use super::title::{division_of, race_name, race_title};
 
-/// Parse a RaceDay export. `year` is the season the file was archived under, used because the format
-/// publishes no date of its own.
 pub fn parse(body: &str, source: SourceRef, year: i16) -> CrawlResult<ParsedMeet> {
     let tags = tags_regex()?;
     let title = race_title(body, tags)?;
@@ -42,11 +39,6 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> CrawlResult<ParsedMeet
     })
 }
 
-/// What one body's tables yielded: the events they became and the counters the report publishes.
-///
-/// `rows_parsed` counts every row the events carry, and `rows_skipped` counts the data rows of a
-/// name-bearing table the reader declined because the row had no athlete cell or no time to take as
-/// the mark.
 #[derive(Default)]
 struct Tables {
     events: Vec<ParsedEvent>,
@@ -54,7 +46,6 @@ struct Tables {
     rejected: Vec<Vec<super::table::RowRejection>>,
 }
 
-/// Read every result table of one body into a cross-country event.
 fn read_tables(
     body: &str,
     tags: &Regex,

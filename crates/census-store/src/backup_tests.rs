@@ -1,7 +1,3 @@
-//! Tests for store backup, restore, and integrity.
-//!
-//! A backup is a cold copy, so every backup test closes its store first (the guard scopes it) and the
-//! tests that care about the refusal leave one open on purpose.
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -12,7 +8,6 @@ use super::*;
 use census_domain::model::*;
 use census_domain::UsJurisdiction;
 
-/// The temporary names a backup or restore may leave beside its destination.
 const TEMPORARY_PREFIXES: [&str; 4] =
     ["backup.tmp.", "backup.old.", "restore.tmp.", "restore.old."];
 
@@ -20,7 +15,6 @@ fn school(name: &str) -> CanonicalSchool {
     CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0
 }
 
-/// A closed store holding one school per name.
 fn store_with(root: &Path, names: &[&str]) {
     let store = Store::open(root).unwrap();
     let schools: Vec<CanonicalSchool> = names.iter().map(|name| school(name)).collect();
@@ -36,7 +30,6 @@ fn digest_of(path: &Path) -> String {
     sha256_hex(&std::fs::read(path).unwrap())
 }
 
-/// Every file under `root` with the digest of its bytes: a directory image to compare two runs by.
 fn tree_image(root: &Path) -> BTreeMap<String, String> {
     let mut image = BTreeMap::new();
     collect_image(root, root, &mut image);
@@ -65,7 +58,6 @@ fn read_manifest(backup: &Path) -> Manifest {
     serde_json::from_str(&text).unwrap()
 }
 
-/// Rewrite the manifest through a JSON document, the way a hand-edited or foreign one would arrive.
 fn edit_manifest(backup: &Path, edit: impl FnOnce(&mut serde_json::Value)) {
     let path = backup.join("backup.json");
     let mut document: serde_json::Value =
@@ -74,7 +66,6 @@ fn edit_manifest(backup: &Path, edit: impl FnOnce(&mut serde_json::Value)) {
     std::fs::write(&path, serde_json::to_string_pretty(&document).unwrap()).unwrap();
 }
 
-/// The staging directories a failed or finished run left behind beside its destination.
 fn staging_leftovers(parent: &Path) -> Vec<String> {
     let mut left: Vec<String> = std::fs::read_dir(parent)
         .unwrap()
@@ -90,7 +81,6 @@ fn staging_leftovers(parent: &Path) -> Vec<String> {
     left
 }
 
-/// One byte of the payload the streaming tests copy and digest.
 fn pattern_byte(index: u64) -> u8 {
     u8::try_from(index % 251).unwrap_or(0)
 }
@@ -345,7 +335,6 @@ fn a_backup_into_an_existing_generation_replaces_it_whole() {
     assert_eq!(restored.tables.get("schools").copied(), Some(4));
 }
 
-/// A reader that serves a payload and fails the copy if it is ever asked for more than one buffer.
 struct OneBufferAtATime {
     remaining: u64,
     served: u64,

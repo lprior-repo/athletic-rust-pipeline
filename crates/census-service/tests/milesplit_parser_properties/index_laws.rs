@@ -1,11 +1,3 @@
-//! What a state results index and a meet's file list are allowed to yield.
-//!
-//! The census walks the index and the arm derives a `/raw` URL per file, so the two laws that keep
-//! that chain honest are stated over the captures: every meet names a numeric id its own URL
-//! carries on a `milesplit.com` host, and the pager and the rows agree about whether another page
-//! exists (a walk that stops early silently loses meets; one that never stops never terminates —
-//! the census terminates on the index's own repeat signal, and this pins that the signal is a
-//! property of the page, not of a bound).
 
 use super::{parse_meet_index, parse_meet_result_files, OH_FILE_LIST, OH_INDEX};
 

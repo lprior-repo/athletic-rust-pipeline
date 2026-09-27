@@ -1,9 +1,6 @@
-//! The census fixture: the performance arithmetic the pipeline benches feed through the merge.
 use super::*;
-use census_domain::model::CentiSeconds;
+use census_domain::model::{CentiSeconds, SourceIdentity, SourceNamespace};
 
-/// `PERFORMANCES` performances, each observed `OBSERVATIONS_PER_PERFORMANCE` times, spread over one
-/// championship meet per jurisdiction so the batch covers the country instead of one state.
 pub(super) fn performance_observations() -> Result<Vec<CanonicalPerformance>> {
     let mut batch = Vec::with_capacity(PERFORMANCES.saturating_mul(OBSERVATIONS_PER_PERFORMANCE));
     let jurisdictions = UsJurisdiction::CENSUS_SCOPE.iter().cycle().copied();
@@ -13,7 +10,6 @@ pub(super) fn performance_observations() -> Result<Vec<CanonicalPerformance>> {
     Ok(batch)
 }
 
-/// Build all observations for a single performance index in the given jurisdiction.
 fn performance_for_index(
     jurisdiction: UsJurisdiction,
     index: usize,
@@ -22,7 +18,17 @@ fn performance_for_index(
     let school = CanonicalSchool::mint(jurisdiction, &name, &normalize_name(&name));
     let meet = CanonicalMeet::mint(Some(jurisdiction), MEET_DATE, MEET_NAME, None);
     let athlete_name = format!("Athlete {index:05}");
-    let athlete = CanonicalAthlete::mint(&school, &athlete_name, GradYear::CO2027, Gender::Boys);
+    let source = SourceIdentity::new(
+        SourceNamespace::Other("fixture".to_string()),
+        format!("athlete-{index:05}"),
+    );
+    let athlete = CanonicalAthlete::mint(
+        &school,
+        &athlete_name,
+        GradYear::CO2027,
+        Gender::Boys,
+        &source,
+    );
     let team = CanonicalTeam::mint(
         &school,
         Sport::OutdoorTrack,
@@ -67,15 +73,13 @@ fn performance_for_index(
                 format!("2025-06-{:02}", seen.saturating_add(6)),
             )],
             source_key: source_key.clone(),
-            source_athlete: None,
+            source_athlete: source,
             retained_conflicts: Vec::new(),
         });
     }
     Ok(observations)
 }
 
-/// `<crawl crate>/tests/fixtures/<dir>/<file>`, read as UTF-8: the path resolution `benches/core.rs`
-/// uses, from the manifest directory at compile time.
 pub(super) fn fixture(dir: &str, file: &str) -> Result<String> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../census-crawl/tests/fixtures")

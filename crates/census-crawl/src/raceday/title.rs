@@ -1,4 +1,3 @@
-//! Race titles: the export's `<h3>`, the race name carried in it, and the division it names.
 
 use crate::{CrawlError, CrawlResult};
 use regex::Regex;
@@ -6,7 +5,6 @@ use regex::Regex;
 use super::regexes::title_regex;
 use super::table::text_of;
 
-/// The text of the export's `<h3>`, which is the race title.
 pub(super) fn race_title(body: &str, tags: &Regex) -> CrawlResult<String> {
     title_regex()?
         .captures(body)
@@ -18,7 +16,6 @@ pub(super) fn race_title(body: &str, tags: &Regex) -> CrawlResult<String> {
         })
 }
 
-/// `WIAA D2 XC Sectionals - Boys Race Team Finish List-XC` → `WIAA D2 XC Sectionals - Boys Race`.
 pub(super) fn race_name(title: &str) -> CrawlResult<String> {
     let trimmed = title
         .trim_end_matches("-XC")
@@ -35,7 +32,6 @@ pub(super) fn race_name(title: &str) -> CrawlResult<String> {
     Ok(trimmed)
 }
 
-/// `WIAA D2 XC Sectionals` → `Division 2`.
 pub(super) fn division_of(title: &str) -> Option<String> {
     let lowered = title.to_ascii_lowercase();
     if let Some(index) = lowered.find("division ") {

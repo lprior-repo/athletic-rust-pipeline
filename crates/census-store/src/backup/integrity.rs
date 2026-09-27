@@ -1,25 +1,9 @@
-//! Store integrity checking.
-
 use std::fs;
 
 use super::{IntegrityReport, IntegrityTable};
 use crate::{StorageMode, Store, StoreError, StoreResult, Table, TableWalk};
 
 impl Store {
-    /// Check the store's own integrity.
-    ///
-    /// Every table is walked once and then held to the invariant its own write mode states. Each
-    /// table's ledger count — the number its writers keep, stored in the same batch as the rows it
-    /// counts — must equal the rows its keyspace holds; a walk that disagrees is drift, and drift is
-    /// what the count is kept for. An append-only table's sequence mark may stand *in front* of its
-    /// keys, which is exactly what a batch that reserved and never committed leaves, but never behind
-    /// them: a reopen would then hand out a sequence the keyspace already holds, and the observation
-    /// written under it would overwrite the one already there. A derived table holds one row per id,
-    /// every row keyed under sequence zero — a foreign sequence is a copy a read merges *under* the row
-    /// that should have replaced it, and a repeated id is a second key a read folds into one entity.
-    ///
-    /// Checks journal files are readable. Reports unreadable entity logs. Returns ok only when no table
-    /// contradicts itself and no such file exists.
     pub fn integrity(&self) -> StoreResult<IntegrityReport> {
         let mut tables = Vec::with_capacity(Table::ALL.len());
         let mut unreadable_journals = Vec::new();
@@ -37,8 +21,6 @@ impl Store {
         })
     }
 
-    /// Every table once: its ledger count against the rows its keyspace holds, and its mode's own
-    /// invariant as [`Store::walk_table`] reads it.
     fn check_table_integrity(
         &self,
         tables: &mut Vec<IntegrityTable>,
@@ -50,7 +32,7 @@ impl Store {
                 table: table.file().to_string(),
                 expected: self.count(table)?,
                 actual: walk.rows,
-                details: mode_details(self, table, walk),
+                details: mode_details(self, table, walk)?,
             });
         }
         Ok(())
@@ -82,19 +64,15 @@ impl Store {
     }
 }
 
-/// The mode-specific facts a count cannot express, in the words the report prints them in.
-///
-/// A derived table's two facts come from the same walk that counts its rows, so a table is only read
-/// once: the counts are the check that its writers kept the ledger, and these are the check that its
-/// keys are the shape its mode says they are.
-fn mode_details(store: &Store, table: Table, walk: TableWalk) -> Vec<String> {
+fn mode_details(store: &Store, table: Table, walk: TableWalk) -> StoreResult<Vec<String>> {
     let mut details = Vec::new();
     match table.storage_mode() {
         StorageMode::ObservationLog => {
-            let keys = walk
-                .highest_sequence
-                .map_or(0, |highest| highest.saturating_add(1));
-            let mark = store.sequences.next_sequence(table);
+            let keys = match walk.highest_sequence {
+                Some(highest) => highest.checked_add(1).ok_or(StoreError::CounterOverflow)?,
+                None => 0,
+            };
+            let mark = store.sequences.next_sequence(table)?;
             if mark < keys {
                 details.push(format!(
                     "sequence mark {mark} is behind the highest key stored ({keys})"
@@ -113,5 +91,5 @@ fn mode_details(store: &Store, table: Table, walk: TableWalk) -> Vec<String> {
             }
         }
     }
-    details
+    Ok(details)
 }

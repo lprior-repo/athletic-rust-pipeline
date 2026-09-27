@@ -1,8 +1,3 @@
-//! Aggregation: the per-state outcomes folded into one report, and the append logs into snapshots.
-//!
-//! `summarize_states` owns the report totals, the per-state row order and the failure list — the
-//! caller keeps its journal and re-runs, so a partial walk is reported rather than discarded — and
-//! `consolidate` merges the append logs into the `out/*.jsonl` read model, counting what it wrote.
 
 use census_crawl::CrawlResult;
 use census_domain::model::{
@@ -17,14 +12,10 @@ use tracing::info;
 
 use super::{CollectReport, StateProgress, TransportReport};
 
-/// `usize` -> `u64` for the report counters, saturating where the value cannot fit.
 fn count(value: usize) -> u64 {
     u64::try_from(value).unwrap_or(u64::MAX)
 }
 
-/// Fold the per-state outcomes into one report, returning it with the states that failed.
-///
-/// Bounded by the number of requested jurisdictions.
 pub(super) fn summarize_states(
     results: Vec<(UsJurisdiction, CrawlResult<StateProgress>)>,
 ) -> (CollectReport, Vec<String>) {
@@ -44,19 +35,21 @@ pub(super) fn summarize_states(
     for (jurisdiction, outcome) in results {
         match outcome {
             Ok(progress) => {
-                report.teams_total = report.teams_total.saturating_add(progress.teams);
-                report.rosters_fetched =
-                    report.rosters_fetched.saturating_add(progress.rosters_done);
-                report.athletes_total = report.athletes_total.saturating_add(progress.athletes);
-                report.class_of_2027_total = report
-                    .class_of_2027_total
-                    .saturating_add(progress.class_of_2027);
-                report.errors = report.errors.saturating_add(count(progress.errors.len()));
+                let new_teams = report.teams_total.saturating_add(progress.rosters_total);
+                let new_fetched = report.rosters_fetched.saturating_add(progress.rosters_committed);
+                let new_co2027 = report.class_of_2027_total.saturating_add(progress.class_of_2027);
+                let new_errors = report.errors.saturating_add(count(progress.errors.len()));
+                let new_athletes = report.athletes_total.saturating_add(progress.athletes);
+                report.teams_total = new_teams;
+                report.rosters_fetched = new_fetched;
+                report.class_of_2027_total = new_co2027;
+                report.errors = new_errors;
+                report.athletes_total = new_athletes;
                 info!(
                     state = jurisdiction.code(),
-                    teams = progress.teams,
-                    rosters = progress.rosters_done,
+                    teams = progress.rosters_total,
                     co2027 = progress.class_of_2027,
+                    rosters = progress.rosters_committed,
                     "state complete"
                 );
                 report.states.push(progress);
@@ -68,7 +61,6 @@ pub(super) fn summarize_states(
     (report, failures)
 }
 
-/// Merge append logs into snapshots under `out/`, returning per-table counts.
 pub fn consolidate(store: &Store) -> StoreResult<Vec<(String, usize)>> {
     let out = store.out_dir();
     std::fs::create_dir_all(&out).map_err(|source| StoreError::Io {
@@ -80,7 +72,6 @@ pub fn consolidate(store: &Store) -> StoreResult<Vec<(String, usize)>> {
     Ok(counts)
 }
 
-/// The canonical tables: one merged snapshot per entity table.
 fn bulk_counts(store: &Store, out: &Path) -> StoreResult<Vec<(String, usize)>> {
     let coaches_path = out.join("coaches.jsonl");
     let coaches = store.consolidate::<CanonicalCoach>(Table::Coaches, &coaches_path)?;
@@ -117,17 +108,6 @@ fn bulk_counts(store: &Store, out: &Path) -> StoreResult<Vec<(String, usize)>> {
     ])
 }
 
-/// The derived planes are findings, not bulk: an operator reads the retained conflicts, the review
-/// queue, the per-jurisdiction coverage, the snapshot history and the access conditions. The
-/// source-identity table is deliberately absent — it is the join table behind those rows, one row
-/// per canonical id per source, and dumping it would dwarf everything else here.
-///
-/// Every table here is a state table the index pass owns, so these files are only as fresh as the
-/// last `index` run: call this after that pass, never before it. In the other order the dumps
-/// publish the previous cycle's rows — a 4,548-line `conflicts.jsonl` against a 5,300-row ledger,
-/// and a `coverage.jsonl` whose 50 jurisdiction rows sum 569 short of the store — while the
-/// workbook, which reads the store directly, stays correct. The `run_offline` cycle in
-/// `crate::cli::cycle` is the caller that has to keep that order.
 fn finding_counts(store: &Store, out: &Path) -> StoreResult<Vec<(String, usize)>> {
     Ok(vec![
         (
@@ -169,7 +149,6 @@ fn finding_counts(store: &Store, out: &Path) -> StoreResult<Vec<(String, usize)>
     ])
 }
 
-/// The row count of one consolidated table, materialized as `path`.
 fn table_rows<T: Entity>(store: &Store, table: Table, path: &Path) -> StoreResult<usize> {
     Ok(store.consolidate::<T>(table, path)?.rows)
 }

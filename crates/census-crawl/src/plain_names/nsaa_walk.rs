@@ -1,8 +1,3 @@
-//! The Nebraska half's per-school walk: fetch one member page, tally its published rows, append
-//! the school's entity rows and journal it.
-//!
-//! Split out of `nsaa_coaches` when that file's walk outgrew the repository's file budget; the
-//! collection entry point and the row/school parsers stay there.
 
 use super::nsaa::{nsaa_school_url, parse_nsaa_directory, NsaaRow, NsaaSchool};
 use super::nsaa_coaches::{nsaa_coaches, parse_nsaa_row, parse_nsaa_school};
@@ -13,7 +8,6 @@ use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachRole, SourceNamespace};
 use census_store::{StoreBatch, Table};
 
-/// The school block `name` names, or the page's only block.
 fn named_block<'a>(blocks: &'a [NsaaSchool], name: &str) -> Option<&'a NsaaSchool> {
     blocks
         .iter()
@@ -21,7 +15,6 @@ fn named_block<'a>(blocks: &'a [NsaaSchool], name: &str) -> Option<&'a NsaaSchoo
         .or_else(|| blocks.first())
 }
 
-/// The athletic-director and head-coach row counts of one school's coach rows.
 fn coach_roles(coaches: &[CanonicalCoach]) -> (usize, usize) {
     let ad_rows = coaches
         .iter()
@@ -34,7 +27,6 @@ fn coach_roles(coaches: &[CanonicalCoach]) -> (usize, usize) {
     (ad_rows, sport_rows)
 }
 
-/// Journal both NSAA phases for one walked school, in the page that holds its rows.
 fn journal_school(
     batch: &mut StoreBatch<'_>,
     key: &str,
@@ -54,7 +46,6 @@ fn journal_school(
     Ok(())
 }
 
-/// One walk of the NSAA member directory: the rows each visit appended and its report counters.
 #[derive(Default)]
 pub(super) struct NsaaWalk {
     observed_on: String,
@@ -73,7 +64,6 @@ pub(super) struct NsaaWalk {
 }
 
 impl NsaaWalk {
-    /// A walk whose entities cite `observed_on`.
     pub(super) fn new(observed_on: String) -> Self {
         Self {
             observed_on,
@@ -81,17 +71,14 @@ impl NsaaWalk {
         }
     }
 
-    /// Whether the operator's row limit has already been reached.
     pub(super) fn limit_reached(&self, limit: Option<usize>) -> bool {
         limit.is_some_and(|limit| self.processed >= limit)
     }
 
-    /// Count one member school as already journalled.
     pub(super) fn note_resumed(&mut self) {
         self.resumed = self.resumed.saturating_add(1);
     }
 
-    /// Fetch one member page's HTML; `None` means the failure is already on the report.
     async fn page(
         &mut self,
         ctx: &AdapterContext<'_>,
@@ -110,7 +97,6 @@ impl NsaaWalk {
         }
     }
 
-    /// Fetch, parse and record one member school: its entity rows, tallies and journal entries.
     pub(super) async fn visit(
         &mut self,
         ctx: &AdapterContext<'_>,
@@ -135,7 +121,6 @@ impl NsaaWalk {
         self.record(ctx, name, school, coaches, entry.roles.len())
     }
 
-    /// Count one page's published rows for the report lines.
     fn tally(&mut self, entry: &NsaaSchool) -> CrawlResult<()> {
         for role in &entry.roles {
             self.role_rows = self.role_rows.saturating_add(1);
@@ -158,7 +143,6 @@ impl NsaaWalk {
         Ok(())
     }
 
-    /// Append one school's entity rows, count its coach roles and journal both phases.
     fn record(
         &mut self,
         ctx: &AdapterContext<'_>,
@@ -174,10 +158,8 @@ impl NsaaWalk {
 
         let mut batch = ctx.store.write_batch();
         batch.append_many(Table::Schools, std::slice::from_ref(&school))?;
-        ctx.observe_school(
-            &SourceNamespace::association_school(super::NSAA_ADAPTER_ID),
-            &school,
-        )?;
+        batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(super::NSAA_ADAPTER_ID),
+        &school,).as_slice())?;
         batch.append_many(Table::Coaches, &coaches)?;
         self.school_rows = self.school_rows.saturating_add(1);
         self.coach_rows = self.coach_rows.saturating_add(coach_count);
@@ -193,7 +175,6 @@ impl NsaaWalk {
         Ok(())
     }
 
-    /// Report the counts of the rows each visit appended and emit the two summary lines.
     pub(super) fn publish(
         &self,
         report: &mut AdapterReport,
@@ -209,7 +190,6 @@ impl NsaaWalk {
         Ok((school_rows, coach_rows))
     }
 
-    /// The two NSAA summary lines: parse coverage and the email/name split.
     fn summary(&self, report: &mut AdapterReport, members: usize, coach_rows: u64) {
         let NsaaWalk {
             processed,

@@ -16,22 +16,8 @@ use super::{job_error, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS, STOP_SIGNAL};
 mod blocking_prune_receipts;
 mod blocking_write_report;
 
-/// How long a store receipt must outlive the operation it names.
-///
-/// While Restate still holds an invocation's journal, that invocation can be replayed — and a replay
-/// has to find the receipt the first application wrote, or it appends the page again. The objects
-/// that write receipts declare a 90-day journal retention, so 90 days is the window; it is
-/// deliberately the *longest* retention any of them declares, not the shortest.
-///
-/// This is the policy half of [`Store::prune_receipts`]. The store holds no opinion on the window;
-/// it removes exactly the receipts a caller tells it are past theirs.
 pub const REPLAY_RETENTION_DAYS: u64 = 90;
 
-/// The oldest day a receipt may hold and still be replayed: `today` less the replay retention.
-///
-/// A day the calendar cannot read is a fault in the deployment's own clock rather than a source
-/// condition, so this fails closed: a boundary derived from a date nobody can read would either
-/// remove receipts that are still live or never remove any at all, and both are silent.
 fn retention_boundary(today: &str) -> Result<String, HandlerError> {
     let day = NaiveDate::parse_from_str(today, "%Y-%m-%d")
         .map_err(|_| TerminalError::new(format!("sweep day {today} is not a YYYY-MM-DD day")))?;
@@ -43,9 +29,6 @@ fn retention_boundary(today: &str) -> Result<String, HandlerError> {
     Ok(boundary.to_string())
 }
 
-/// One durable window wait, behind a seam: a `WorkflowContext` cannot be built in a unit test, so
-/// the loop takes anything that can wait out a window. `true` = the window elapsed; `false` = the
-/// stop signal cut it short.
 trait WindowWaits {
     async fn window(&self, seconds: u64) -> bool;
 }
@@ -59,13 +42,10 @@ impl WindowWaits for WorkflowContext<'_> {
     }
 }
 
-/// `Sweep`: observe the ingest objects across windows, durably sleeping between them.
 #[derive(Clone)]
 pub struct Sweep {
     store: Arc<Store>,
     clock: Arc<dyn Clock>,
-    /// The shell's region: the report write runs through it, so a cancelled workflow leaves the
-    /// region, not the runtime, owning the job.
     region: Arc<Spawner>,
 }
 
@@ -162,11 +142,6 @@ impl Sweep {
         Ok(written)
     }
 
-    /// Sleep out `windows` durable windows, returning how many elapsed and whether the stop signal
-    /// cut the wait short. Each window races `ctx.sleep(window_seconds)` against the stop signal, so
-    /// a signal arriving mid-window ends the sweep there. `window_seconds == 0` means each wait is
-    /// `Duration::ZERO`, which the runtime resolves immediately: the loop still waits, it just waits
-    /// no time. A sweep that returns without its waits observes nothing.
     async fn wait_windows(
         ctx: &WorkflowContext<'_>,
         windows: u32,
@@ -175,8 +150,6 @@ impl Sweep {
         Ok(Self::wait_windows_with(ctx, windows, window_seconds).await)
     }
 
-    /// The counting half of [`Self::wait_windows`]: how many windows elapsed, and whether a signal
-    /// cut the sweep short. Split out so a test can drive it with a scripted window wait.
     async fn wait_windows_with<W: WindowWaits>(
         waits: &W,
         windows: u32,
@@ -191,7 +164,6 @@ impl Sweep {
         }
         (observed, false)
     }
-    /// nothing yet. A bounded slice keeps the object calls bounded.
     async fn observe_endpoints(
         ctx: &WorkflowContext<'_>,
         endpoints: &[String],

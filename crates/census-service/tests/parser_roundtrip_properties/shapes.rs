@@ -1,4 +1,3 @@
-//! What a well-formed fixture must parse into: identities and marks, front-end agreement.
 
 use super::*;
 use census_domain::model::{CentiSeconds, EventKind, Gender, Grade, Mark};

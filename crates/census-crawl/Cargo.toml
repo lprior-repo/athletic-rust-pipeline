@@ -14,6 +14,7 @@ census-domain = { path = "../census-domain" }
 census-store = { path = "../census-store" }
 # The coach-contact importer reads and writes the association's own CSV export.
 csv = "1"
+csv-core = "=0.1.13"
 # `RobotsRecord` stamps the crawl date it was fetched for, and the net layer ages a record by it.
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 futures = "0.3"

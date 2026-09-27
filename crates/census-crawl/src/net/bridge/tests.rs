@@ -1,26 +1,17 @@
-//! The census's half of the browser-lane wire contract.
-//!
-//! The fixtures are shared with `athleticnet-browser`; that crate's own tests assert its types encode
-//! them byte for byte, and these assert the mirror reads — and, for the request, re-encodes — the same
-//! bytes. A change to either shape fails on the other side.
 
 use super::{Action, BrowserError, BrowserOutcome, RequestSpec, Verdict};
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
 
-/// One athlete-bio request, as the census builds it.
 const CENSUS_BIO_REQUEST: &str =
     include_str!("../../../../../fixtures/wire/athleticnet-browser-request.json");
 
-/// The transport's own answer for a request that met a challenge.
 const CAPTURE_FIXTURE: &str =
     include_str!("../../../../../fixtures/wire/athleticnet-browser-capture.json");
 
-/// The transport's own answer for a request it stopped without capturing.
 const FAILURE_FIXTURE: &str =
     include_str!("../../../../../fixtures/wire/athleticnet-browser-failure.json");
 
-/// The census's own reading of the fixture, field by field.
 #[test]
 fn the_census_mirror_decodes_the_fixture() {
     let spec: RequestSpec = serde_json::from_str(CENSUS_BIO_REQUEST).expect("fixture decodes");
@@ -45,7 +36,6 @@ fn the_census_mirror_decodes_the_fixture() {
     assert!(matches!(spec.action, Action::Fetch { body: None }));
 }
 
-/// The census re-encodes the fixture byte for byte, so what it posts is what the crate reads.
 #[test]
 fn the_census_mirror_re_encodes_the_fixture_byte_for_byte() {
     let spec: RequestSpec = serde_json::from_str(CENSUS_BIO_REQUEST).expect("fixture decodes");
@@ -56,12 +46,6 @@ fn the_census_mirror_re_encodes_the_fixture_byte_for_byte() {
     );
 }
 
-/// The transport's own challenge capture, decoded field by field.
-///
-/// The status, the repeated `set-cookie` name and the base64 body are the three readings the request
-/// direction never exercises, so this is where the answer half of the mirror is proved: a challenge
-/// capture must arrive with its flag, its clock and its own `Retry-After`, and the page it carries
-/// must be the verification page — which is what makes refusing it, rather than caching it, correct.
 #[test]
 fn the_census_mirror_decodes_the_capture_fixture() {
     let outcome: BrowserOutcome = serde_json::from_str(CAPTURE_FIXTURE).expect("fixture decodes");
@@ -104,7 +88,6 @@ fn the_census_mirror_decodes_the_capture_fixture() {
     );
 }
 
-/// The transport's own failure answer, decoded into the two readings that travel with it.
 #[test]
 fn the_census_mirror_decodes_the_failure_fixture() {
     let outcome: BrowserOutcome = serde_json::from_str(FAILURE_FIXTURE).expect("fixture decodes");
@@ -115,11 +98,6 @@ fn the_census_mirror_decodes_the_failure_fixture() {
     assert_eq!(failure.verdict, Verdict::HumanRequired);
 }
 
-/// Every reason renders as the name the wire gives it.
-///
-/// The census refuses a lane failure with the reason in the message, so the renderer and the serde
-/// name have to be one spelling: this reads each rendered name back through the decoder, which is
-/// what makes a message an operator reads a property of the contract rather than of this file.
 #[test]
 fn every_reason_renders_as_its_wire_name() {
     const REASONS: [BrowserError; 9] = [
@@ -154,10 +132,6 @@ fn every_reason_renders_as_its_wire_name() {
     assert_eq!(rendered.len(), REASONS.len());
 }
 
-///
-/// This is a compile-time assertion in [`super`], but the test reads the value back through the
-/// constant so a reviewer can see it in the source, and so a human can grep for it.  If a
-/// reviewer changes `SESSION_KEY` to anything else, the build fails here *and* at compile time.
 #[test]
 fn session_key_is_profile_zero() {
     assert_eq!(
@@ -167,10 +141,6 @@ fn session_key_is_profile_zero() {
     );
 }
 
-/// Admitted origins invariant: the set must list every browser-transported origin from the registry.
-///
-/// The only browser-transported origin is `www.athletic.net` (the `athleticnet` descriptor).
-/// A missing entry here would let an off-target URL through the lane.
 #[test]
 fn admitted_browser_origins_contains_athletic_net() {
     assert!(
@@ -179,7 +149,6 @@ fn admitted_browser_origins_contains_athletic_net() {
     );
 }
 
-/// Origin guard: a URL with a non-admitted origin is refused at the lane boundary.
 #[test]
 fn a_non_admitted_origin_is_refused_with_policy_error() {
     let err = crate::net::bridge::validate_origin("http://evil.example.com/page")
@@ -199,7 +168,6 @@ fn a_non_admitted_origin_is_refused_with_policy_error() {
     }
 }
 
-/// Origin guard: an admitted origin passes validation.
 #[test]
 fn an_admitted_origin_passes_validation() {
     let result = crate::net::bridge::validate_origin(

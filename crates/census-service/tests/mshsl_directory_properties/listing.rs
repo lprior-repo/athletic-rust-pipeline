@@ -1,17 +1,8 @@
-//! The `/schools` listing and its pager.
-//!
-//! The listing is the only place the crawl learns the school universe: one `views-row` chunk per
-//! school carrying a `school-teaser__title` link (whose `/schools/<slug>` path is the key the store
-//! resolves a school by) and a `locality` span naming its city. The pager decides whether the walk
-//! continues. The laws: a listed school is published with its own slug, name and city, a school the
-//! page lists twice is published once, and the pager follows page `current + 1` exactly when the page
-//! links to it.
 
 use super::seam_config;
 use census_crawl::mshsl::{parse_next_listing_page, parse_school_list, school_page_url};
 use proptest::prelude::*;
 
-/// Slugs, names and cities taken from the committed listing capture.
 const SLUGS: [&str; 4] = [
     "aitkin-high-school",
     "wayzata-high-school",
@@ -26,7 +17,6 @@ const NAMES: [&str; 4] = [
 ];
 const CITIES: [&str; 4] = ["Aitkin", "Plymouth", "Foley", "West St. Paul"];
 
-/// One listed school: the slug its link carries, its name and its city.
 #[derive(Debug)]
 struct Listed {
     slug: String,
@@ -34,7 +24,6 @@ struct Listed {
     city: String,
 }
 
-/// A listing page's rows, with each slug listed at most once.
 fn listed_schools() -> impl Strategy<Value = Vec<Listed>> {
     prop::collection::vec(
         (
@@ -60,7 +49,6 @@ fn listed_schools() -> impl Strategy<Value = Vec<Listed>> {
     })
 }
 
-/// The listing markup `schools_listing.html` prints: one `views-row` per school and the Drupal pager.
 fn render_listing(rows: &[Listed], pager: &[usize]) -> String {
     let mut body = String::from("<div class=\"view-content\">\n");
     for row in rows {
@@ -84,8 +72,6 @@ fn render_listing(rows: &[Listed], pager: &[usize]) -> String {
 proptest! {
     #![proptest_config(seam_config())]
 
-    /// Every listed school is published once, with the slug its own link carried and the city it
-    /// printed beside it — the slug is the key a later crawl resolves the school by.
     #[test]
     fn a_listed_school_is_published_with_its_own_slug(rows in listed_schools()) {
         let entries = parse_school_list(&render_listing(&rows, &[0]));
@@ -101,8 +87,6 @@ proptest! {
         }
     }
 
-    /// The pager follows the page after the one being read, and only when the listing links to it: a
-    /// walk cannot skip a page of schools and cannot start reading a page that does not exist.
     #[test]
     fn the_pager_follows_the_page_the_listing_prints(current in 0usize..8, pages in 1usize..10) {
         let links: Vec<usize> = (0..pages).collect();

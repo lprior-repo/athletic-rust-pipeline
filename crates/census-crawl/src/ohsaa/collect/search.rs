@@ -1,7 +1,3 @@
-//! Which schools the adapter walks: the requested names, or the association rows already stored.
-//!
-//! The journal check lives here rather than in the walk, so a resumed run never re-fetches a school
-//! it has already journalled regardless of how the list was produced.
 
 use super::super::map::SearchResult;
 use super::super::parse::resolve_school_name;
@@ -10,7 +6,6 @@ use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::SourceNamespace;
 use std::collections::HashSet;
 
-/// Resolve the school list, deduplicate it, drop journalled schools and apply the limit.
 pub(super) async fn resolve_schools(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -51,7 +46,6 @@ pub(super) async fn resolve_schools(
     Ok(to_process)
 }
 
-/// Search the OHSAA site for each requested school name.
 async fn search_schools(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -87,7 +81,6 @@ async fn search_schools(
     }
     Ok(results)
 }
-/// URL-encode a school name for the search query parameter.
 fn url_encode(value: &str) -> String {
     let mut result = String::new();
     for ch in value.chars() {

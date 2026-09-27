@@ -1,21 +1,9 @@
-//! Append-only reading: what a page cut short is allowed to yield.
-//!
-//! Compiled exports reach the census through archives, resumes and half-written downloads, and the
-//! walk journals what it read. Reading is one pass over the lines, so a page cut short can only yield
-//! what the lines above the cut said: the same meet, the same events, and — per event — a prefix of
-//! the readings the whole page publishes.
-//!
-//! A relay row is the one reading a later line enriches rather than replaces: the leg lines sit
-//! beneath the team row, so a page cut before them publishes the team and no legs. The comparison
-//! below therefore leaves legs out and asserts the enrichment separately, in `accounting`.
 
 use super::{
     lines, parse_body, parse_lines, rendered_reading, seam_config, HEAT, LAYOUTS, REGIONAL,
 };
 use proptest::prelude::*;
 
-/// The law: a body cut after `cut` lines parses to the meet the whole body names, and every event it
-/// read holds a prefix of that event's readings in the whole body.
 fn prefix_holds(name: &str, body: &str, cut: usize) -> Result<(), TestCaseError> {
     let full = parse_body(body).expect("the whole body is a meet");
 

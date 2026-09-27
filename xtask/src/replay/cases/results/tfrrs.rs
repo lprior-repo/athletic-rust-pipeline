@@ -1,17 +1,9 @@
-//! The TFRRS arm: an instance home page, a performance-list page, or a team page with its roster.
-//!
-//! The home page is the one capture here the production walk does not read through a published
-//! entry point - the adapter's own bare regex helpers are private - so [`home_routes`] performs the
-//! split `sources/tfrrs/tests.rs` performs inline over this same capture, and then resolves each
-//! href through the published `parse_team_path`. A page that stops publishing the `/teams/tf/`
-//! family therefore fails here by name rather than reporting an empty route list.
 
 use crate::replay::{ensure_rows, unmapped, Capture};
 use anyhow::{bail, Result};
 use census_crawl::tfrrs;
 use std::collections::BTreeSet;
 
-/// A TFRRS capture: a performance-list page, a team page with its roster, or the instance home page.
 pub(super) fn capture(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     if file.ends_with("_home_teams.html") {
@@ -44,12 +36,6 @@ pub(super) fn capture(capture: &Capture<'_>) -> Result<String> {
     unmapped("tfrrs", file)
 }
 
-/// The instance home page: the `/teams/tf/<School>_m.html` route family it publishes, each href
-/// resolved through `parse_team_path` - the read `sources/tfrrs/tests.rs` makes of this same
-/// capture. The page's production walk reads hrefs through a helper inside the module's private
-/// `parse::html`; the split below is the one the module's own test performs inline, and the route
-/// parse is the published `parse_team_path`, so a page that stops publishing the family fails here
-/// by name rather than reporting an empty route list.
 fn home_routes(capture: &Capture<'_>) -> Result<String> {
     let (file, body) = (capture.file, capture.body);
     let hrefs: Vec<&str> = body

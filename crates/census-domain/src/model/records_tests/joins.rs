@@ -1,5 +1,3 @@
-//! What the §31 join and the merge record say: which row a source object keyed, which id a decision
-//! retired.
 
 use super::super::*;
 use crate::model::SourceNamespace;

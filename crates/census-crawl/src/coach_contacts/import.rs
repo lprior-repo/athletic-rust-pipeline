@@ -1,5 +1,3 @@
-//! The CSV walk itself: read each record, fold its entities into the accumulated maps (collapsing
-//! the duplicate AD rows), and write the schools and coaches through the store.
 
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
@@ -14,10 +12,6 @@ use census_store::{Store, Table};
 use super::entities::row_entities;
 use super::wire::{CoachContactRow, RowEntities};
 
-/// Import a contact CSV, writing canonical schools and coaches into the store.
-///
-/// Duplicate coach rows (the same AD repeated across a school's sport rows) collapse to one entity
-/// with the union of its evidence and the first non-empty email.
 pub fn import_csv(
     store: &Store,
     csv_path: &Path,
@@ -47,11 +41,6 @@ pub fn import_csv(
     Ok(report)
 }
 
-/// Deserialize one CSV record into a row plus the jurisdiction it names.
-///
-/// The CSV is an operator-supplied file, so this is the one place its state column becomes a
-/// [`UsJurisdiction`]: a row that names no school, no state, or a state outside the census is
-/// refused with its line number rather than filed under a guess.
 fn contact_row(
     record: Result<CoachContactRow, csv::Error>,
     index: usize,
@@ -78,9 +67,6 @@ fn contact_row(
     Ok((row, state))
 }
 
-/// Fold one row's entities into the accumulated schools and coaches.
-///
-/// Returns `true` when the row carried no coach role.
 fn merge_entities(
     schools: &mut BTreeMap<String, CanonicalSchool>,
     coaches: &mut BTreeMap<CoachId, CanonicalCoach>,
@@ -97,7 +83,6 @@ fn merge_entities(
     without_coach_role
 }
 
-/// Union one coach row into the map entry it shares an identity with.
 fn merge_coach(coaches: &mut BTreeMap<CoachId, CanonicalCoach>, coach: CanonicalCoach) {
     match coaches.get_mut(&coach.id) {
         Some(existing) => {
@@ -124,7 +109,6 @@ fn merge_coach(coaches: &mut BTreeMap<CoachId, CanonicalCoach>, coach: Canonical
     }
 }
 
-/// Write the accumulated entities and fill in the report's counters and notes.
 fn write_entities(
     store: &Store,
     report: &mut AdapterReport,

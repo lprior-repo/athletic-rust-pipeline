@@ -4,7 +4,6 @@ use std::collections::BTreeSet;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
-/// Render the per-fragment audit table as markdown rows (header included).
 pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
     let mut table = String::from(
         "| fragment | rows | verified | role conveyed by page context | role contradicted | render-required | mismatch | empty | robots-blocked | fetch failed | shipped share |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n",
@@ -13,7 +12,7 @@ pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
     let mut rows_total = 0usize;
     for outcome in outcomes {
         let count = |verdict: super::verdict::Verdict| {
-            outcome.counts.get(verdict.as_str()).copied().unwrap_or(0)
+            outcome.counts.get(&verdict).copied().unwrap_or(0)
         };
         let total = outcome.rows.len();
         let shipped = count(super::verdict::Verdict::Ok);
@@ -57,7 +56,6 @@ pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
     table
 }
 
-/// Compute a percentage safely: 0.0 when the denominator is zero.
 fn pct(num: usize, den: usize) -> f64 {
     if den == 0 {
         0.0
@@ -68,10 +66,6 @@ fn pct(num: usize, den: usize) -> f64 {
     }
 }
 
-/// Write the per-row verdict CSV (one row per fragment row, verdict included).
-///
-/// Publication is atomic: the audit csv is replaced whole, so a reader holding `path` never
-/// observes a partial audit.
 pub fn write_audit_csv(path: &Path, outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
     census_store::read::publish_atomically(path, |temporary| {
         write_audit_csv_body(temporary, path, outcomes)
@@ -79,7 +73,6 @@ pub fn write_audit_csv(path: &Path, outcomes: &[FragmentOutcome]) -> anyhow::Res
     Ok(())
 }
 
-/// Write the audit rows to `temporary`; publication renames it onto `published`.
 fn write_audit_csv_body(
     temporary: &Path,
     published: &Path,
@@ -131,11 +124,6 @@ fn write_audit_csv_body(
         })
 }
 
-/// Group verified rows by state and write one `<ST>.csv` per state into `dir` — the shape
-/// `merge-coaches` consumes, because that step reads a directory whose file stems are state codes.
-/// Rows keep their provenance columns and the recomputed verdict; the merge step dedupes them.
-///
-/// Returns the row count staged per state.
 pub fn write_state_union(
     dir: &Path,
     outcomes: &[FragmentOutcome],
@@ -166,10 +154,6 @@ pub fn write_state_union(
     Ok(counts)
 }
 
-/// Write one state's staged fragment to `temporary`; publication renames it onto `published`.
-///
-/// `merge-coaches` reads `<ST>.csv` by these eleven columns; a twelfth column makes it reject the
-/// whole state as unusable.
 fn write_state_file_body(
     temporary: &Path,
     published: &Path,
@@ -179,9 +163,14 @@ fn write_state_file_body(
         .from_path(temporary)
         .map_err(|error| census_store::read::csv_failure(published, error))?;
     writer
-        .write_record(super::FRAGMENT_COLUMNS)
+        .write_record(census_domain::model::CONTACT_COLUMNS.iter().copied()
+            .chain(std::iter::once(census_domain::model::CONTACT_PROOF_COLUMN)))
         .map_err(|error| census_store::read::csv_failure(published, error))?;
     for row in rows {
+        let proof = census_domain::model::compute_contact_proof(&row.row, &row.evidence)
+            .map_err(|source| census_store::StoreError::Invariant {
+                detail: format!("contact proof failed before publication: {source}"),
+            })?;
         writer
             .write_record([
                 row.row.school.as_str(),
@@ -195,6 +184,7 @@ fn write_state_file_body(
                 row.row.ad_email.as_str(),
                 row.row.source_urls.join(" ").as_str(),
                 row.row.last_observed.as_str(),
+                proof.as_str(),
             ])
             .map_err(|error| census_store::read::csv_failure(published, error))?;
     }
@@ -206,12 +196,11 @@ fn write_state_file_body(
         })
 }
 
-/// Write the freeze manifest: the timestamp, one `sha256 <path>` line per input fragment, then one
-/// verdict line per fragment. It ties every tally in the audit doc to the exact input bytes.
 pub fn write_manifest(
     path: &Path,
     files: &[PathBuf],
     outcomes: &[FragmentOutcome],
+    union_dir: Option<&Path>,
 ) -> anyhow::Result<()> {
     use anyhow::Context;
     use sha2::{Digest, Sha256};
@@ -231,17 +220,35 @@ pub fn write_manifest(
         manifest.push_str(&format!("{digest:x}  {}\n", file.display()));
     }
     manifest.push('\n');
+    if let Some(union_dir) = union_dir {
+        let mut output_files: Vec<(String, String)> = Vec::new();
+        for outcome in outcomes {
+            let base = fragment_file_name(Path::new(&outcome.file));
+            let csv_path = format!("{}/{}", union_dir.display(), base);
+            let jsonl_path = format!("{base}.evidence.jsonl");
+            output_files.push((csv_path.clone(), jsonl_path));
+        }
+        output_files.sort();
+        for (csv_path, jsonl_path) in &output_files {
+            if let Ok(bytes) = std::fs::read(csv_path) {
+                let digest = Sha256::digest(&bytes);
+                manifest.push_str(&format!("{digest:x}  {}\n", csv_path));
+            }
+            if let Ok(bytes) = std::fs::read(jsonl_path) {
+                let digest = Sha256::digest(&bytes);
+                manifest.push_str(&format!("{digest:x}  {}\n", jsonl_path));
+            }
+        }
+    }
+    manifest.push('\n');
     for outcome in outcomes {
-        manifest.push_str(&outcome.log_line());
+        manifest.push_str(&serde_json::to_string(&outcome.summary())?);
         manifest.push('\n');
     }
     std::fs::write(path, manifest).with_context(|| format!("write manifest {path:?}"))?;
     Ok(())
 }
 
-/// Every host the given fragment files cite, lowercased and deduplicated. A caller that treats the
-/// operator's commission of this collection as authorization for those hosts passes this list to the
-/// fetcher, which then records each such request as `robots_authorized` under its pacing ceiling.
 pub fn cited_hosts(files: &[PathBuf]) -> anyhow::Result<Vec<String>> {
     use anyhow::Context;
     static URL_HOST: LazyLock<Option<regex::Regex>> =
@@ -261,4 +268,19 @@ pub fn cited_hosts(files: &[PathBuf]) -> anyhow::Result<Vec<String>> {
         }
     }
     Ok(hosts.into_iter().collect())
+}
+
+pub fn fragment_file_name(path: &Path) -> String {
+    let file = path
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "fragment.csv".to_string());
+    match path
+        .parent()
+        .and_then(Path::file_name)
+        .map(|name| name.to_string_lossy().into_owned())
+    {
+        Some(directory) if !directory.is_empty() => format!("{directory}-{file}"),
+        _ => file,
+    }
 }

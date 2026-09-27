@@ -1,5 +1,3 @@
-//! The school-page stage of the WIAA directory walk: which pages are still worth fetching, the
-//! tally they feed, and the school plus coach rows they write.
 
 use super::super::map::{school_entities, SchoolExtract};
 use super::super::parse::{parse_school_page, IndexEntry, SchoolPage};
@@ -11,7 +9,6 @@ use census_store::Table;
 use futures::stream::{self, StreamExt};
 use std::collections::HashSet;
 
-/// Per-run counters and transcripts for the directory walk.
 #[derive(Debug, Default)]
 pub(super) struct SchoolTally {
     pub(super) processed: usize,
@@ -25,7 +22,6 @@ pub(super) struct SchoolTally {
     pub(super) skipped_coach_rows: usize,
 }
 
-/// Fetch the school pages still worth reading: the requested names, minus the journaled ones.
 pub(super) async fn plan_schools(
     ctx: &AdapterContext<'_>,
     options: &Options,
@@ -80,7 +76,6 @@ pub(super) async fn plan_schools(
         .await
 }
 
-/// Read one school page: journal and count it, or record why it was skipped.
 pub(super) async fn process_school(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
@@ -126,7 +121,6 @@ pub(super) async fn process_school(
     record_school(ctx, tally, &key, entry, &page, extract)
 }
 
-/// Append the school and its coach rows, count them, and journal both tables.
 fn record_school(
     ctx: &AdapterContext<'_>,
     tally: &mut SchoolTally,
@@ -137,10 +131,8 @@ fn record_school(
 ) -> CrawlResult<()> {
     let mut batch = ctx.store.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    ctx.observe_school(
-        &SourceNamespace::association_school(super::super::ASSOCIATION),
-        &extract.school,
-    )?;
+    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(super::super::ASSOCIATION),
+    &extract.school,).as_slice())?;
     batch.append_many(Table::Coaches, &extract.coaches)?;
 
     let school_with_email = extract

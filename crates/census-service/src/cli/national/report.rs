@@ -1,12 +1,9 @@
-//! Printing what a run reported: the national table, the per-jurisdiction table, and the exit code
-//! that says whether the run finished clean.
 
 use anyhow::{bail, Result};
 use census_service::restate_services::{
     JurisdictionReport, JurisdictionSummary, NationalReport, SourcePlan,
 };
 
-/// A cell for a value a report may predate: an unrecorded denominator is unknown, not zero.
 pub(crate) fn cell(value: Option<usize>) -> String {
     match value {
         Some(value) => value.to_string(),
@@ -14,8 +11,6 @@ pub(crate) fn cell(value: Option<usize>) -> String {
     }
 }
 
-/// The owed sources of one run, in plan order: the slugs an operator has to see, because a plan
-/// that is recorded and never printed reads as a run that swept everything.
 pub(crate) fn owed_sources(plan: &SourcePlan) -> String {
     plan.refused
         .iter()
@@ -24,18 +19,12 @@ pub(crate) fn owed_sources(plan: &SourcePlan) -> String {
         .join(",")
 }
 
-/// The fold's owed total: unknown if any row is unknown, because a sum over known rows alone would
-/// understate the work the run left unfinished.
-pub(crate) fn owed_total(rows: &[JurisdictionSummary]) -> Option<usize> {
-    rows.iter().map(|row| row.rosters_owed).sum()
+pub(crate) fn owed_total(rows: &[JurisdictionSummary]) -> usize {
+    rows.iter().map(|row| row.rosters_remaining).sum()
 }
 
-/// How many jurisdictions were refused, on the same terms as [`owed_total`].
-pub(crate) fn blocked_count(rows: &[JurisdictionSummary]) -> Option<usize> {
-    rows.iter().try_fold(0_usize, |count, row| {
-        row.blocked
-            .map(|blocked| count.saturating_add(usize::from(blocked)))
-    })
+pub(crate) fn blocked_count(rows: &[JurisdictionSummary]) -> usize {
+    rows.iter().filter(|row| row.blocked).count()
 }
 
 pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> {
@@ -50,35 +39,36 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
         report.today
     );
     println!(
-        "{:>3}  {:>8}  {:>7}  {:>7}  {:>7}  {:>9}  {:>8}  blocked",
-        "st", "teams", "walked", "had", "owed", "athletes", "co2027"
+        "{:>3}  {:>9}  {:>9}  {:>7}  {:>9}  {:>7}  {:>9}  {:>8}  blocked",
+        "st", "rosters", "committed", "had", "remaining", "athletes", "co2027", ""
     );
     for summary in &report.jurisdictions {
         println!(
-            "{:>3}  {:>8}  {:>7}  {:>7}  {:>7}  {:>9}  {:>8}  {}",
+            "{:>3}  {:>9}  {:>9}  {:>7}  {:>9}  {:>7}  {:>8}  {}",
             summary.jurisdiction.code(),
-            summary.teams,
-            summary.rosters_done,
+            summary.rosters_total,
+            summary.rosters_committed,
             summary.rosters_skipped,
-            cell(summary.rosters_owed),
+            summary.rosters_remaining,
             summary.athletes,
             summary.class_of_2027,
-            match summary.blocked {
-                Some(true) => "refused",
-                Some(false) => "",
-                None => "?",
+            if summary.blocked {
+                "refused"
+            } else {
+                ""
             },
         );
     }
     println!(
-        "total: teams {} · athletes {} · co2027 {} · jurisdictions done {} · failed {} · owed {} · blocked {}",
-        report.teams_total,
+        "total: rosters {} · committed {} · athletes {} · co2027 {} · jurisdictions done {} · failed {} · remaining {} · blocked {}",
+        report.rosters_total,
+        report.jurisdictions.iter().map(|s| s.rosters_committed).sum::<usize>(),
         report.athletes_total,
         report.class_of_2027_total,
         report.jurisdictions.len(),
         report.failures.len(),
-        cell(owed_total(&report.jurisdictions)),
-        cell(blocked_count(&report.jurisdictions)),
+        owed_total(&report.jurisdictions),
+        blocked_count(&report.jurisdictions),
     );
     for failure in &report.failures {
         println!(
@@ -91,12 +81,6 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
     Ok(())
 }
 
-/// Exit non-zero when the fold carries failed jurisdictions.
-///
-/// The report is the artifact and it already printed — a failed jurisdiction's error text is in
-/// those rows — but a shell that only sees the exit code must not read a run with failures as a
-/// successful national census. `--detach` returns before this: a submission that has not drained
-/// yet has no verdict to report, and inventing one would be worse than saying nothing.
 pub(crate) fn failure_exit(report: &NationalReport) -> Result<()> {
     if report.failures.is_empty() {
         return Ok(());
@@ -125,8 +109,8 @@ pub(crate) fn print_jurisdiction(report: &JurisdictionReport, json: bool) -> Res
     println!(
         "teams {} · rosters {}/{} skipped {} · athletes {} · co2027 {} (boys {} girls {}) · blocked {}",
         report.teams,
-        report.rosters.rosters_done,
-        report.rosters.teams,
+        report.rosters.rosters_committed,
+        report.rosters.rosters_total,
         report.rosters.rosters_skipped,
         report.rosters.athletes,
         report.rosters.class_of_2027,
@@ -153,8 +137,6 @@ pub(crate) fn print_jurisdiction(report: &JurisdictionReport, json: bool) -> Res
 mod tests {
     use super::*;
 
-    /// The segment is built from the plan as the journal records it, so what an operator reads is
-    /// the run's own record — refusals in plan order, none dropped.
     #[test]
     fn owed_sources_are_the_plans_refusals_in_order() {
         let plan: SourcePlan = serde_json::from_value(serde_json::json!({
@@ -168,7 +150,6 @@ mod tests {
         assert_eq!(owed_sources(&plan), "athleticnet,wiaa");
     }
 
-    /// A plan with nothing owed prints nothing at all, so a clean run stays one line.
     #[test]
     fn nothing_owed_is_an_empty_segment() {
         let plan: SourcePlan = serde_json::from_value(serde_json::json!({

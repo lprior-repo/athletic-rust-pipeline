@@ -1,10 +1,8 @@
-//! Count helper functions used by the reconciliation block.
 
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, GradYear, SourceNamespace,
 };
 
-/// Coaches carrying a published address.
 pub(super) fn count_coaches_with_email(coaches: &[CanonicalCoach]) -> usize {
     coaches
         .iter()
@@ -12,7 +10,6 @@ pub(super) fn count_coaches_with_email(coaches: &[CanonicalCoach]) -> usize {
         .count()
 }
 
-/// The store's class-of-2027 athlete rows.
 pub(super) fn count_co2027(athletes: &[CanonicalAthlete]) -> usize {
     athletes
         .iter()
@@ -20,7 +17,6 @@ pub(super) fn count_co2027(athletes: &[CanonicalAthlete]) -> usize {
         .count()
 }
 
-/// Class-of-2027 athletes carrying at least one grade observation.
 pub(super) fn count_grade_evidence(athletes: &[CanonicalAthlete]) -> usize {
     athletes
         .iter()
@@ -30,8 +26,6 @@ pub(super) fn count_grade_evidence(athletes: &[CanonicalAthlete]) -> usize {
         .count()
 }
 
-/// Meets whose source identities include a legacy Athletic.net meet id, the predicate the census's
-/// own `with_athletic_net_id` counter uses.
 pub(super) fn count_athletic_net_meets(meets: &[CanonicalMeet]) -> usize {
     meets
         .iter()

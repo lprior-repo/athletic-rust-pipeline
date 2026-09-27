@@ -1,263 +1,225 @@
-//! The one recruiting contact an athlete's row prefers, and the state that says what was looked at.
-//!
-//! §50's last four columns answer "who do I contact for this athlete, and how do we know": the
-//! preferred contact's name, the role the sheet names it under, the address, and the state that says
-//! what was looked at. This module owns the rule; `school` folds the coach table into the facts it
-//! resolves against, `heads` resolves each slot's rows, `athletes` renders the result and documents
-//! the columns, and `coaches` prints the same school facts row by row.
-//!
-//! # The preferred contact (F06: resolved before address preference)
-//!
-//! The athlete's own evidence picks the slot, and the slot ladder picks the contact:
-//!
-//! 1. **Resolve school/sport/side/role FIRST** — the head coach of the athlete's evidence-bearing
-//!    sport (TF for indoor/outdoor, XC for XC-only), or the athlete's own side (boys/girls).
-//!    Only after the correct slot and side are resolved do we consider addresses.
-//! 2. **Fresh coach beats former** — a coach with current tenure (newer observation) is preferred
-//!    over a former coach, even if the former published an address. Tenure unknown/stale/conflicting
-//!    is marked explicitly rather than assumed current.
-//! 3. **No program match falls back explicitly** — opposite-side or other-sport contacts cannot
-//!    masquerade as same-program contacts. A useful fallback (AD/department/other program) is
-//!    explicitly labeled.
-//! 4. **Athletic director is last resort** — the AD is a department-level fallback, not a coach.
-//!
-//! The rung that matched sets [`ContactState`]: a coach's published address is
-//! `professional_coach_email`, the director's is `professional_ad_email`, and a named contact with
-//! no published address anywhere is `coach_name_only`. When the coach table holds rows for the
-//! school but none of them names a head coach or an athletic director, the state is
-//! `no_public_contact_found`; when it holds no row for the school at all, no contact source has ever
-//! landed one and the state is `contact_source_not_attempted`. Every state names what was looked at,
-//! so a blank cell is never the answer to "did we look".
-//!
-//! # Which head coach, when a school's rows name several
-//!
-//! The source publishes one head coach per side of a team — `Boys Track and Field` and
-//! `Girls Track and Field` both arrive as [`Sport::OutdoorTrack`] — so a slot is bucketed by the side
-//! its rows were published for, and a bucket resolves to one row: the athlete's own side first, then
-//! a side-less (`Gender::Mixed`) row, then an `Unknown` one, then boys, then girls. Within one
-//! bucket the row that published an address wins over a row that published none, and the
-//! newest `Evidence.observed_on` wins among rows otherwise equal; ties fall back to the coach's name,
-//! then to the coach's id, so two runs over one store publish the same coach.
-//!
-//! Two rows of one bucket publishing different addresses is the disagreement that order resolves: the
-//! rung still answers with the winner's kind, and the bucket is recorded as a `contact_conflict` row
-//! on the workbook's `Conflicts` sheet, because the retained-conflict queue prints rows rather than
-//! counts. When the evidence cannot separate the rows either — the rows that share the newest
-//! observation disagree about the coach's name or the address they published — nothing evidenced
-//! picks a coach, the bucket is recorded just the same, and the state is `contact_conflict` instead
-//! of a coin toss between names. The rows themselves stay visible on the `Coaches` sheet, which
-//! publishes every coach the store holds.
-//!
-//! A preferred-contact email carries the professional address first, falling back explicitly to the
-//! personal address when no professional address was published. A blank means no source published one.
-//!
-//! # F06: Contact-attempt status
-//!
-//! The `contact_source_not_attempted` state remains when no coach row exists for the school at all.
-//! Since F10 persistent ledger is separate, we mark the contact-attempt status as unknown until
-//! F10 is integrated. The state `contact_source_not_attempted` is the honest answer: no contact
-//! source has landed one there.
-//!
-//! # F06: Consumer-domain email labeling
-//!
-//! A coach or director whose only address is a consumer mailbox must NOT be published as
-//! professional. The state must name the address type (`personal_coach_email` / `personal_ad_email`)
-//! and the cell must carry the address. Consumer-domain addresses are never printed as
-//! organisation-domain addresses.
-
 mod heads;
 mod normalise;
 mod school;
+#[cfg(test)]
+mod tests;
 
-use census_domain::model::{CanonicalAthlete, CanonicalCoach, Sport};
-use normalise::{role_label, Named};
+use std::collections::BTreeSet;
+
+use census_domain::model::{CanonicalAthlete, CanonicalCoach, Gender, SchoolYear, Sport};
+use heads::Outcome;
+use normalise::Named;
 
 pub(super) use normalise::Preferred;
 pub(super) use school::{contacts, SchoolContacts};
 
-/// The `Contact Coverage State` column's vocabulary: what the row looked at, and what it found.
-///
-/// The column is `Contact Coverage State` and not `Contact State`: the `Coverage State` column one
-/// column away already means the sheet pass that wrote the row, and two columns called "State" would
-/// read as the same quantity.
+pub(in crate::workbook) fn coach_observations(
+    snapshot: &census_store::StoreSnapshot<'_>,
+) -> census_store::StoreResult<Vec<CanonicalCoach>> {
+    let mut rows = Vec::new();
+    snapshot.for_each_observation(census_store::Table::Coaches, |mut coach: CanonicalCoach| {
+        census_store::Entity::publish(&mut coach);
+        rows.push(coach);
+        Ok(())
+    })?;
+    Ok(rows)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum ContactState {
-    /// A head coach of the athlete's own sport published an address.
+pub(in crate::workbook) enum ContactState {
     ProfessionalCoachEmail,
-    /// No coach of the athlete's sport published one; the athletic director did.
     ProfessionalAdEmail,
-    /// A head coach of the athlete's own sport published only a consumer mailbox.
     PersonalCoachEmail,
-    /// No coach of the athlete's sport published one; the athletic director published only a consumer mailbox.
     PersonalAdEmail,
-    /// A contact is named, and no public address exists anywhere for the school.
     CoachNameOnly,
-    /// The coach table holds rows for the school, and none names a head coach or an athletic
-    /// director: a contact source reached the school and published no contact.
-    NoPublicContactFound,
-    /// The coach table holds no row for the school at all: no contact source has landed one there.
-    ContactSourceNotAttempted,
-    /// The school's rows disagree about the athlete's own slot and the precedence order cannot
-    /// separate them, so which coach is current is unresolved rather than merely unpublished.
+    AdNameOnly,
     ContactConflict,
+    ContactResearchUnknown,
+    ContactTenureConflict,
+    ContactEvidenceInvalid,
 }
 
 impl ContactState {
-    /// The cell text, the vocabulary the `Contact Coverage State` column publishes.
-    pub(super) const fn as_str(self) -> &'static str {
+    pub(in crate::workbook) const fn as_str(self) -> &'static str {
         match self {
             Self::ProfessionalCoachEmail => "professional_coach_email",
-            Self::ProfessionalAdEmail => "professional_ad_email",
-            Self::CoachNameOnly => "coach_name_only",
-            Self::NoPublicContactFound => "no_public_contact_found",
-            Self::ContactSourceNotAttempted => "contact_source_not_attempted",
-            Self::ContactConflict => "contact_conflict",
             Self::PersonalCoachEmail => "personal_coach_email",
+            Self::ProfessionalAdEmail => "professional_ad_email",
             Self::PersonalAdEmail => "personal_ad_email",
+            Self::CoachNameOnly => "coach_name_only",
+            Self::AdNameOnly => "ad_name_only",
+            Self::ContactConflict => "contact_conflict",
+            Self::ContactResearchUnknown => "contact_research_unknown",
+            Self::ContactTenureConflict => "contact_tenure_conflict",
+            Self::ContactEvidenceInvalid => "contact_evidence_invalid",
         }
     }
 }
 
-/// The contact slots one school's coach table can fill.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum Slot {
-    /// The track programs' head coach: the sheet's `Head TF Coach` column.
-    Track,
-    /// The cross-country program's head coach: the sheet's `Head XC Coach` column.
+    OutdoorTrack,
+    IndoorTrack,
     CrossCountry,
-    /// A head coach whose row carries no sport binding.
-    SchoolWide,
-    /// The school's athletic director.
     Director,
 }
 
 impl Slot {
-    /// The slot the athlete's stored sports prefer: track for a track athlete, cross country for an
-    /// athlete whose only sport is cross country, and **unknown** for an athlete that stores no
-    /// sport at all.
-    ///
-    /// F06 fix: removed the TF-first shortcut that always picked Track for athletes with no
-    /// stored sport. An athlete with no stored sport has no evidence-bearing sport, so the slot
-    /// is unknown rather than defaulting to track. The fallback ladder (school-wide coach, then AD)
-    /// will handle this case.
-    fn preferred(sports: &[Sport]) -> Self {
-        let has_track = sports
-            .iter()
-            .any(|sport| matches!(sport, Sport::IndoorTrack | Sport::OutdoorTrack));
-        let has_xc = sports.contains(&Sport::CrossCountry);
-        match (has_track, has_xc) {
-            (true, _) => Self::Track,
-            (false, true) => Self::CrossCountry,
-            (false, false) => Self::UnknownSport,
+    pub(super) const fn of(sport: Sport) -> Self {
+        match sport {
+            Sport::OutdoorTrack => Self::OutdoorTrack,
+            Sport::IndoorTrack => Self::IndoorTrack,
+            Sport::CrossCountry => Self::CrossCountry,
         }
     }
 
-    /// The school's other coaching slot: a track athlete falls back to the cross-country coach and
-    /// the other way round.
-    fn other(self) -> Self {
+    pub(super) const fn label(self) -> &'static str {
         match self {
-            Self::CrossCountry => Self::Track,
-            Self::Track | Self::SchoolWide | Self::Director | Self::UnknownSport => Self::CrossCountry,
-        }
-    }
-
-    /// The label the sheet's own contact columns carry, so a reader can find the column a contact
-    /// came from.
-    fn label(self) -> &'static str {
-        match self {
-            Self::Track => "Head TF Coach",
+            Self::OutdoorTrack => "Head Outdoor TF Coach",
+            Self::IndoorTrack => "Head Indoor TF Coach",
             Self::CrossCountry => "Head XC Coach",
-            Self::SchoolWide => "Head Coach",
             Self::Director => "Athletic Director",
-            Self::UnknownSport => "No sport binding",
         }
     }
 }
 
-/// One school's contact disagreement, as the retained conflict queue reads it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::workbook) struct Disagreement {
-    /// The school the disagreeing rows belong to: the queue row's subject id.
     pub(in crate::workbook) school: String,
-    /// The slot and side the rows disagree about, as the `Preferred Contact Role` cell names them.
     pub(in crate::workbook) role: String,
-    /// Whether the precedence order separated the rows, or left the bucket unresolved.
-    pub(in crate::workbook) decided: bool,
-    /// Every row of the bucket: the coach, the address they published, and the observation that
-    /// dates the row.
+    pub(in crate::workbook) state: ContactState,
     pub(in crate::workbook) rows: Vec<String>,
 }
 
-/// Every school whose coach rows disagree about a head coach, as the retained conflict queue reads
-/// them: the same buckets the athletes' ladder resolves against, so no disagreement — decided or
-/// undecided — stays invisible.
-pub(in crate::workbook) fn disagreements(coaches: &[CanonicalCoach]) -> Vec<Disagreement> {
-    contacts(coaches)
-        .into_values()
-        .flat_map(|facts| facts.heads.into_disagreements())
-        .collect()
+pub(in crate::workbook) fn disagreements(
+    coaches: &[CanonicalCoach], school_year: SchoolYear,
+) -> Vec<Disagreement> {
+    contacts(coaches, school_year).into_values()
+        .flat_map(|facts| facts.heads.into_disagreements()).collect()
 }
 
-/// The contact one athlete's row prefers, in the order this module's header states.
-///
-/// F06: resolves school/sport/side/role BEFORE address preference. A fresh named coach does not
-/// lose to a former emailed coach. Opposite-side or other-sport contacts cannot masquerade as
-/// same-program contacts. Unknown tenure is explicit.
-pub(super) fn preferred(
-    contacts: Option<&SchoolContacts>,
-    athlete: &CanonicalAthlete,
-) -> Preferred {
-    let Some(contacts) = contacts else {
-        return Preferred::unnamed(ContactState::ContactSourceNotAttempted);
+pub(super) struct ScopedContacts<'a> {
+    outdoor: &'a Outcome,
+    indoor: &'a Outcome,
+    cross_country: &'a Outcome,
+    director: &'a Outcome,
+    assistants: &'a [Named],
+    athlete: &'a CanonicalAthlete,
+}
+
+pub(super) fn scoped<'a>(
+    school: Option<&'a SchoolContacts>, athlete: &'a CanonicalAthlete,
+) -> ScopedContacts<'a> {
+    let school = school.filter(|school| school.school == athlete.school);
+    let resolve = |sport| {
+        if !athlete.sports.contains(&sport) {
+            return &Outcome::Unknown;
+        }
+        school.map(|school| school.heads.resolve(Slot::of(sport), athlete.gender))
+            .unwrap_or(&Outcome::Unknown)
     };
-    let slot = Slot::preferred(&athlete.sports);
-    let heads = [
-        (slot, contacts.heads.resolve(slot, athlete.gender)),
-        (
-            slot.other(),
-            contacts.heads.resolve(slot.other(), athlete.gender),
-        ),
-        (
-            Slot::SchoolWide,
-            contacts.heads.resolve(Slot::SchoolWide, athlete.gender),
-        ),
-    ];
-    let mut named: Option<(Slot, &Named)> = None;
-    for (slot, bucket) in heads.iter() {
-        let Some(bucket) = bucket else {
-            continue;
-        };
-        if bucket.undecided {
-            return Preferred::unnamed(ContactState::ContactConflict);
-        }
-        let Some(coach) = bucket.row.as_ref() else {
-            continue;
-        };
-        if coach.email.is_some() {
-            return Preferred::named(*slot, coach, ContactState::ProfessionalCoachEmail);
-        }
-        if coach.personal_email.is_some() {
-            return Preferred::named(*slot, coach, ContactState::PersonalCoachEmail);
+    ScopedContacts {
+        outdoor: resolve(Sport::OutdoorTrack), indoor: resolve(Sport::IndoorTrack),
+        cross_country: resolve(Sport::CrossCountry),
+        director: school.map(|school| school.heads.resolve(Slot::Director, Gender::Mixed))
+            .unwrap_or(&Outcome::Unknown),
+        assistants: school.map(|school| school.assistants.as_slice()).unwrap_or(&[]),
+        athlete,
+    }
+}
+
+impl ScopedContacts<'_> {
+    fn heads(&self) -> impl Iterator<Item = (Slot, &Outcome)> {
+        [(Slot::OutdoorTrack, self.outdoor), (Slot::IndoorTrack, self.indoor),
+            (Slot::CrossCountry, self.cross_country)].into_iter()
+    }
+
+    pub(super) fn preferred(&self) -> Preferred {
+        let mut named = None;
+        let mut blocker = None;
+        for (slot, outcome) in self.heads() {
+            if let Some(coach) = outcome.named() {
+                if coach.address().is_some() {
+                    return Preferred::named(slot, coach);
+                }
+                if named.is_none() {
+                    named = Some((slot, coach));
+                }
+            }
+            blocker = blocker.or(outcome.blocker());
         }
         if named.is_none() {
-            named = Some((*slot, coach));
+            if let Some(state) = blocker {
+                return Preferred::unnamed(state);
+            }
         }
-    }
-    let director = contacts.director.as_ref();
-    if let Some(director) = director.filter(|director| director.email.is_some()) {
-        return Preferred::named(Slot::Director, director, ContactState::ProfessionalAdEmail);
-    }
-    if let Some(director) = director.filter(|director| director.personal_email.is_some()) {
-        return Preferred::named(Slot::Director, director, ContactState::PersonalAdEmail);
-    }
-    if let Some((slot, coach)) = named {
-        if coach.personal_email.is_some() {
-            return Preferred::named(slot, coach, ContactState::PersonalCoachEmail);
+        if let Some(director) = self.director() {
+            if director.address().is_some() || named.is_none() {
+                return Preferred::named(Slot::Director, director);
+            }
         }
-        return Preferred::named(slot, coach, ContactState::CoachNameOnly);
+        if let Some((slot, coach)) = named {
+            return Preferred::named(slot, coach);
+        }
+        Preferred::unnamed(self.director.blocker().unwrap_or(ContactState::ContactResearchUnknown))
     }
-    if let Some(director) = director {
-        return Preferred::named(Slot::Director, director, ContactState::CoachNameOnly);
+
+    pub(super) fn track_names(&self) -> Option<String> {
+        self.track_field(|coach| Some(coach.name.as_str()))
     }
-    Preferred::unnamed(ContactState::NoPublicContactFound)
+
+    pub(super) fn track_emails(&self) -> Option<String> {
+        self.track_field(Named::address)
+    }
+
+    fn track_field(&self, field: fn(&Named) -> Option<&str>) -> Option<String> {
+        let multiple = self.outdoor.named().is_some() && self.indoor.named().is_some();
+        let mut text = String::new();
+        for (slot, outcome) in [(Slot::OutdoorTrack, self.outdoor), (Slot::IndoorTrack, self.indoor)] {
+            let Some(value) = outcome.named().and_then(field) else { continue };
+            if !text.is_empty() { text.push_str("; "); }
+            if multiple {
+                text.push_str(slot.label());
+                text.push_str(": ");
+            }
+            text.push_str(value);
+        }
+        (!text.is_empty()).then_some(text)
+    }
+
+    pub(super) fn cross_country(&self) -> Option<&Named> {
+        self.cross_country.named()
+    }
+
+    pub(super) fn director(&self) -> Option<&Named> {
+        self.director.named()
+    }
+
+    pub(super) fn professional_coach_email(&self) -> Option<&str> {
+        self.heads().find_map(|(_, outcome)| outcome.named()?.email.as_deref())
+    }
+
+    pub(super) fn all_emails(&self) -> String {
+        let assistants = self.assistants.iter().filter(|coach| {
+            coach.sport.is_some_and(|sport| self.athlete.sports.contains(&sport))
+                && matches_side(coach.side, self.athlete.gender)
+        });
+        let eligible = self.heads().filter_map(|(_, outcome)| outcome.named())
+            .chain(self.director()).chain(assistants);
+        let mut addresses = BTreeSet::new();
+        for coach in eligible {
+            addresses.extend(coach.email.iter().chain(&coach.personal_email).map(String::as_str));
+        }
+        let mut text = String::new();
+        for address in addresses {
+            if !text.is_empty() { text.push_str("; "); }
+            text.push_str(address);
+        }
+        text
+    }
+}
+
+fn matches_side(coach: Gender, athlete: Gender) -> bool {
+    matches!(coach, Gender::Mixed)
+        || matches!((coach, athlete), (Gender::Boys, Gender::Boys) | (Gender::Girls, Gender::Girls))
 }

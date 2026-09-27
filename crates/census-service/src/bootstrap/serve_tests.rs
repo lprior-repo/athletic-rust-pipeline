@@ -1,8 +1,3 @@
-//! The shell's lane wiring: which deployments hand the census a client, and which do not.
-//!
-//! Nothing here launches a browser. What is proved is the decision itself, because it is the input to
-//! the run's source plan: a client the census does not have turns a browser-transported source into a
-//! refusal by name, and one it does have makes that source ordinary work.
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -12,8 +7,6 @@ use athleticnet_browser::BrowserSettings;
 use super::lane_client;
 use super::ServeOptions;
 
-/// A deployment that serves no lane builds no client: the census then refuses a browser-transported
-/// source by name instead of failing requests against a lane that is not there.
 #[tokio::test]
 async fn a_deployment_without_a_lane_builds_no_client() {
     let plain = ServeOptions::default();
@@ -23,8 +16,6 @@ async fn a_deployment_without_a_lane_builds_no_client() {
     );
 }
 
-/// A deployment that serves the profile hands the census a client for it: the object installs it on
-/// the shared fetcher, which is what the plan asks.
 #[tokio::test]
 async fn a_deployment_that_serves_the_lane_hands_the_census_a_client() {
     assert!(
@@ -33,8 +24,6 @@ async fn a_deployment_that_serves_the_lane_hands_the_census_a_client() {
     );
 }
 
-/// The options a deployment that serves the lane runs with. The profile directory is a tempdir and
-/// the executable does not exist: neither is read until an operator starts the lane.
 fn serving_lane() -> ServeOptions {
     let profile_dir = std::env::temp_dir().join("census-service-lane-wiring-test");
     ServeOptions {

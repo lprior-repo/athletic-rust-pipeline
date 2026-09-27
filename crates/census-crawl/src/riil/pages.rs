@@ -1,15 +1,7 @@
-//! Pure parsing: the RIIL directory page into [`SchoolTable`] structs.
-//!
-//! Captured text in, parsed rows out; no I/O, no store access.
-//!
-//! Source shape: each `<details>` element contains a school's name (in `<summary>` and `<b>`),
-//! contact details, and one `<table class="DirectoryStaffTable">` whose rows are staff/coach
-//! entries with columns: Sport | Role | Name | Phone.
 
 use super::map::{CoachRow, SchoolTable};
 use census_domain::model::Sport;
 
-/// Remove HTML tags, keeping one space where a tag separated two words.
 fn strip_tags(fragment: &str) -> String {
     let mut out = String::with_capacity(fragment.len());
     let mut in_tag = false;
@@ -32,7 +24,6 @@ fn strip_tags(fragment: &str) -> String {
     out
 }
 
-/// Decode common HTML entities.
 fn decode_entities(value: &str) -> String {
     value
         .replace("&amp;", "&")
@@ -44,7 +35,6 @@ fn decode_entities(value: &str) -> String {
         .replace("&nbsp;", " ")
 }
 
-/// Collapse every run of whitespace to one space and trim the ends.
 fn collapse_whitespace(value: &str) -> String {
     let mut result = String::with_capacity(value.len());
     let mut prev_space = false;
@@ -62,7 +52,6 @@ fn collapse_whitespace(value: &str) -> String {
     result.trim().to_string()
 }
 
-/// Extract text from the Nth `<td>` in a row (no tag stripping).
 fn extract_td_text(row: &str, index: usize) -> String {
     let mut count = 0;
     let mut rest = row;
@@ -87,7 +76,6 @@ fn extract_td_text(row: &str, index: usize) -> String {
     String::new()
 }
 
-/// Map a sport label to a `Sport` variant, or `None` for non-TC/XC sports.
 pub fn parse_sport_label(label: &str) -> Option<Sport> {
     let cleaned = collapse_whitespace(&decode_entities(label));
     match cleaned.as_str() {
@@ -106,13 +94,11 @@ pub fn parse_sport_label(label: &str) -> Option<Sport> {
     }
 }
 
-/// Extract the coach name from a cell, stripping any phone anchor.
 fn parse_coach_name(cell: &str) -> String {
     let text = strip_tags(&decode_entities(cell));
     collapse_whitespace(&text)
 }
 
-/// Parse one school's `<table class='DirectoryStaffTable'>` into coach rows.
 fn parse_table_rows(table_html: &str) -> Vec<CoachRow> {
     let mut rows = Vec::new();
     let table_rows: Vec<&str> = table_html
@@ -153,7 +139,6 @@ fn parse_table_rows(table_html: &str) -> Vec<CoachRow> {
     rows
 }
 
-/// Extract a phone number from a cell that may contain <a href='tel:...'>.
 fn extract_phone_from_cell(cell: &str) -> Option<String> {
     if let Some(after) = cell.split_once("href=\"tel:") {
         let end = after.1.find('"').unwrap_or(after.1.len());
@@ -166,7 +151,6 @@ fn extract_phone_from_cell(cell: &str) -> Option<String> {
     None
 }
 
-/// Parse the full directory page into one [`SchoolTable`] per `<details>` element.
 pub fn parse_directory(html: &str) -> Vec<SchoolTable> {
     let mut schools = Vec::new();
 
@@ -191,7 +175,6 @@ pub fn parse_directory(html: &str) -> Vec<SchoolTable> {
     schools
 }
 
-/// Extract the school name from a section (from <summary> or <b>).
 fn extract_school_name(section: &str) -> String {
     for (opening, closing) in [("<summary>", "</summary>"), ("<b>", "</b>")] {
         if let Some(name) = tagged_text(section, opening, closing) {
@@ -202,7 +185,6 @@ fn extract_school_name(section: &str) -> String {
     String::new()
 }
 
-/// The whitespace-collapsed text between the first `opening` and the next `closing` after it.
 fn tagged_text(section: &str, opening: &str, closing: &str) -> Option<String> {
     let start = section.find(opening)?.checked_add(opening.len())?;
     let from_open = section.get(start..)?;
@@ -215,7 +197,6 @@ fn tagged_text(section: &str, opening: &str, closing: &str) -> Option<String> {
     }
 }
 
-/// Extract the `<table>` content from a section.
 fn extract_table(section: &str) -> String {
     const CLOSING: &str = "</table>";
 

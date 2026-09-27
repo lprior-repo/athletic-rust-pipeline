@@ -1,33 +1,3 @@
-//! §59 crash/recovery tests: kill, restart, resume, idempotent reconciliation, terminal counters.
-//!
-//! The census is a multi-hour, multi-process run, so §59 requires the durable seams to be tested
-//! explicitly: completed durable work is reused, incomplete work resumes at the first unjournaled
-//! unit, duplicate observations reconcile idempotently, and terminal counters stay consistent
-//! across a restart. This file drives those seams at the two levels they exist on:
-//!
-//! | scenario | restart / kill mechanism | level |
-//! |---|---|---|
-//! | [`store_reopen_after_a_writer_stops_mid_batch_resumes_at_the_first_unjournaled_unit`] | the writer handle is dropped mid-batch (a process that ends without finishing its set) | in-process `Store` |
-//! | [`adapter_restart_reuses_finished_units_without_refetch_or_duplicate_rows`] | a second run of the same adapter over the same store | in-process `ks::collect` |
-//! | [`exporter_restart_republishes_identical_snapshots_and_totals`] | the store is closed and reopened between two export passes | in-process `census::consolidate` + `report::build_census` |
-//! | [`cli_worker_restart_across_processes_resumes_and_keeps_counters`] | two real `census-service` processes in sequence, plus `fjall-stats` and `consolidate` | real processes |
-//! | [`sigkill_mid_batch_worker_restart_completes_the_remaining_units`] | **SIGKILL** of a running `census-service provider athleticlive` at fractions of its own measured clean runtime | real process kill |
-//! | [`sigkill_of_the_service_keeps_durable_work_and_the_restart_drains_cleanly`] | **SIGKILL** of `census-serve` once `/discover` answers, then restart and a SIGTERM drain | real process kill |
-//! | [`service_with_no_stop_request_survives_its_drain_deadline`] | a real `census-serve` that is never told to stop, probed past its own `--drain-timeout` | real process |
-//! | [`ks_directory_walk_claims_units_the_kill_can_lose`] | **SIGKILL** of a running `census-service provider ks`; measures the journal/effect gap | real process kill |
-//! | [`jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters`] | a roster pass capped at one roster, then a restart on the same store | in-process `census::collect_state_teams` + `collect_state_rosters` |
-//!
-//! Every scenario prints the values it asserts on with a `[recovery:…]` prefix, so the proof is
-//! visible in the test output and not only in the assertions.
-//!
-//! # No network
-//!
-//! Adapters run from committed captures seeded into the fetcher's on-disk cache
-//! (`tests/fixtures/ks/kshsaa_directory_a.json`, `tests/fixtures/athleticlive/meets-sample.csv`,
-//! `tests/fixtures/milesplit/wi_teams_index.html` with `wi_roster_52649.html`),
-//! exactly as the crate's adapter tests do; `provider athleticlive` performs no HTTP at all. Child
-//! processes additionally run with `HTTPS_PROXY=http://127.0.0.1:9`, so a cache-key drift fails as
-//! a connection refusal instead of reaching the source host.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
@@ -49,46 +19,30 @@ use census_service::census::CollectOptions;
 use census_store::{Store, Table};
 use sha2::{Digest, Sha256};
 
-/// The one URL the KS adapter requests, spelled exactly as `sources/ks/collect.rs` builds it.
 const KS_DIRECTORY_URL: &str = "https://kshsaa-api.kshsaa.org/directory/search/name/a/";
-/// The resume-journal phases the two adapters write.
 const KS_PHASE: &str = "kshsaa_schools";
 const ATHLETICLIVE_PHASE: &str = "athleticlive_meets";
-/// The phase the store-level scenarios journal into.
 const UNIT_PHASE: &str = "recovery_units";
-/// Capture date the fixtures carry; every `observed_on` here is that date.
 const OBSERVED_ON: &str = "2026-09-20";
 
 const KS_DIRECTORY_FIXTURE: &str =
     include_str!("../../census-crawl/tests/fixtures/ks/kshsaa_directory_a.json");
 const ATHLETICLIVE_FIXTURE: &str =
     include_str!("../../census-crawl/tests/fixtures/athleticlive/meets-sample.csv");
-/// The MileSplit pair captured together: the WI team index and the roster of the team that index
-/// lists first (`Site::teams_url()`, and `<that team's url>/roster` off the parsed index).
 const WI_TEAMS_FIXTURE: &str =
     include_str!("../../census-crawl/tests/fixtures/milesplit/wi_teams_index.html");
 const WI_ROSTER_FIXTURE: &str =
     include_str!("../../census-crawl/tests/fixtures/milesplit/wi_roster_52649.html");
-/// The two resume-journal phases the jurisdiction walk writes (`census::teams_phase` /
-/// `census::rosters_phase`): a state's team index, and `<state>:<team id>` per finished roster.
 const WI_TEAMS_PHASE: &str = "milesplit_teams_wi";
 const WI_ROSTERS_PHASE: &str = "milesplit_rosters_wi";
 
-/// The crate's own binaries, built by cargo for this test target.
 const CENSUS_BIN: &str = env!("CARGO_BIN_EXE_census-service");
 const SERVE_BIN: &str = env!("CARGO_BIN_EXE_census-serve");
 
-/// Any accidental cache miss fails against a dead proxy instead of reaching a real host.
 const DEAD_PROXY: &str = "http://127.0.0.1:9";
-/// Bound on the `/discover` poll after a `census-serve` start: a service's startup is milliseconds,
-/// so the poll is short and the drain deadlines in these scenarios outlive it.
 const DISCOVER_ATTEMPTS: usize = 200;
 const DISCOVER_RETRY_DELAY: Duration = Duration::from_millis(25);
-/// The discovery accept header, the same one `tests/fjall_restate_e2e.rs` asks with.
 const DISCOVERY_ACCEPT: &str = "application/vnd.restate.endpointmanifest.v4+json";
-/// The services the endpoint advertises (wire names, from `restate_services`): the operator's read
-/// surface, the four heavy jobs it shares, the ingest object, and the sweeps and workflows that
-/// drive them.
 const EXPECTED_SERVICES: [&str; 9] = [
     "Census",
     "Consolidate",
@@ -101,12 +55,10 @@ const EXPECTED_SERVICES: [&str; 9] = [
     "NationalCensus",
 ];
 
-/// One evidence line: every scenario prints what it is about to assert on.
 fn note(scenario: &str, message: impl std::fmt::Display) {
     println!("[recovery:{scenario}] {message}");
 }
 
-/// A stable hex digest of a serializable value, for comparing merged output across restarts.
 fn digest_of<T: serde::Serialize>(value: &T) -> String {
     let bytes = serde_json::to_vec(value).expect("serialize for digest");
     let mut hasher = Sha256::new();
@@ -115,7 +67,6 @@ fn digest_of<T: serde::Serialize>(value: &T) -> String {
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-/// Sorted journal keys for a phase: the resume set an adapter reads on restart.
 fn journal_keys(store: &Store, phase: &str) -> BTreeSet<String> {
     store
         .journal_keys(phase)
@@ -124,7 +75,6 @@ fn journal_keys(store: &Store, phase: &str) -> BTreeSet<String> {
         .collect()
 }
 
-/// `<table file name>` -> observation count, the store's own per-table estimate.
 fn table_counts(store: &Store) -> BTreeMap<String, u64> {
     store
         .stats()
@@ -134,12 +84,10 @@ fn table_counts(store: &Store) -> BTreeMap<String, u64> {
         .collect()
 }
 
-/// Observation count for one table.
 fn count_of(counts: &BTreeMap<String, u64>, table: Table) -> u64 {
     counts.get(table.file()).copied().unwrap_or(0)
 }
 
-/// Merged meet ids, the identity a duplicate observation must not change.
 fn meet_ids(store: &Store) -> BTreeSet<String> {
     store
         .scan::<CanonicalMeet>(Table::Meets)
@@ -149,7 +97,6 @@ fn meet_ids(store: &Store) -> BTreeSet<String> {
         .collect()
 }
 
-/// Merged school ids.
 fn school_ids(store: &Store) -> BTreeSet<String> {
     store
         .scan::<CanonicalSchool>(Table::Schools)
@@ -159,8 +106,6 @@ fn school_ids(store: &Store) -> BTreeSet<String> {
         .collect()
 }
 
-/// Seed the fetcher's on-disk cache for `url`, so an adapter that fetches runs with no socket: the
-/// key is `sha256(method \x1f url \x1f body)[..16]`, the form `net::cache` writes.
 fn seed_cache(cache: &Path, url: &str, body: &str) {
     let mut hasher = Sha256::new();
     hasher.update(b"GET");
@@ -179,7 +124,7 @@ fn seed_cache(cache: &Path, url: &str, body: &str) {
         "url": url,
         "method": "GET",
         "status": 200,
-        "sha256": format!("{:x}", Sha256::digest(body.as_bytes())),
+        "content_digest": format!("{:x}", Sha256::digest(body.as_bytes())),
         "bytes": body.len(),
         "fetched_at": "2026-09-20T00:00:00Z",
         "content_type": "application/json",
@@ -191,12 +136,10 @@ fn seed_cache(cache: &Path, url: &str, body: &str) {
     .expect("cache meta written");
 }
 
-/// Open the store at `root`, creating it if needed.
 fn open_store(root: &Path) -> Store {
     Store::open(root).expect("opening the store")
 }
 
-/// A fetcher pointed at its store's own cache directory.
 fn fetcher_for(store: &Store) -> Fetcher {
     Fetcher::new(
         store.http_cache_dir(),
@@ -208,7 +151,6 @@ fn fetcher_for(store: &Store) -> Fetcher {
     .expect("building the fetcher")
 }
 
-/// Build the adapter context an in-process run uses.
 fn context<'a>(fetcher: &'a Fetcher, store: &'a Store, observed_on: &str) -> AdapterContext<'a> {
     AdapterContext {
         fetcher,
@@ -220,7 +162,6 @@ fn context<'a>(fetcher: &'a Fetcher, store: &'a Store, observed_on: &str) -> Ada
     }
 }
 
-/// A fresh store whose cache carries the KS directory capture.
 fn store_seeded_with_ks(root: &Path) -> Store {
     let store = open_store(root);
     seed_cache(
@@ -231,7 +172,6 @@ fn store_seeded_with_ks(root: &Path) -> Store {
     store
 }
 
-/// One KS directory pass, optionally capped at `limit` units.
 async fn ks_pass(store: &Store, limit: Option<usize>) -> AdapterReport {
     let fetcher = fetcher_for(store);
     let ctx = context(&fetcher, store, OBSERVED_ON);
@@ -245,12 +185,6 @@ async fn ks_pass(store: &Store, limit: Option<usize>) -> AdapterReport {
     ks::collect(&ctx, &options).await.expect("ks collect")
 }
 
-/// A fresh store whose cache answers the WI team index and one roster per indexed team.
-///
-/// The index and the roster fixtures are the captured pair: the index lists team `52649` first and
-/// the roster fixture is that team's page. The same captured roster body stands in for the remaining
-/// teams, so the scenarios that use this seed compare a restarted walk against a clean walk over the
-/// same cache rather than against athlete names on the page.
 fn store_seeded_with_wisconsin(root: &Path, site: &milesplit::Site) -> Store {
     let store = open_store(root);
     seed_cache(&store.http_cache_dir(), &site.teams_url(), WI_TEAMS_FIXTURE);
@@ -271,7 +205,6 @@ fn store_seeded_with_wisconsin(root: &Path, site: &milesplit::Site) -> Store {
     store
 }
 
-/// The collection options a jurisdiction walk here runs with; `limit_per_state` is the caller's.
 fn wi_options(limit_per_state: Option<usize>) -> CollectOptions {
     CollectOptions {
         jurisdictions: vec![UsJurisdiction::Wisconsin],
@@ -284,7 +217,6 @@ fn wi_options(limit_per_state: Option<usize>) -> CollectOptions {
     }
 }
 
-/// One unit's observation: a school named after the unit, stamped with the observation date.
 fn unit_school(key: &str, observed_on: &str) -> CanonicalSchool {
     let name = format!("Recovery Unit {key}");
     let (mut school, _id) =
@@ -296,8 +228,6 @@ fn unit_school(key: &str, observed_on: &str) -> CanonicalSchool {
     school
 }
 
-/// One unit of worker work: append the observation, then journal the unit done — the ordering the
-/// durable contract requires (a journal entry is the promise that its row reached the store).
 fn process_unit(store: &Store, key: &str, observed_on: &str) {
     store
         .append(Table::Schools, &unit_school(key, observed_on))
@@ -311,7 +241,6 @@ fn process_unit(store: &Store, key: &str, observed_on: &str) {
         .expect("journalling a unit");
 }
 
-/// The units a restarted worker still owes: everything the journal has not claimed.
 fn pending_units<'a>(store: &Store, units: &[&'a str]) -> Vec<&'a str> {
     let done = store.journal_keys(UNIT_PHASE).expect("reading the journal");
     units
@@ -321,15 +250,12 @@ fn pending_units<'a>(store: &Store, units: &[&'a str]) -> Vec<&'a str> {
         .collect()
 }
 
-/// The same units, as one store pass with the given per-unit observation dates.
 fn process_units(store: &Store, units: &[&str], observed_on: &str) {
     for unit in units {
         process_unit(store, unit, observed_on);
     }
 }
 
-/// A `census-service` command against `root`, with tracing silenced so stdout is the payload and a
-/// dead proxy so a cache miss cannot reach a source host.
 fn census_command(root: &Path) -> Command {
     let mut command = Command::new(CENSUS_BIN);
     command
@@ -343,7 +269,6 @@ fn census_command(root: &Path) -> Command {
     command
 }
 
-/// Run one `census-service` command to completion, failing the test on a non-zero status.
 fn run_census(root: &Path, args: &[&str]) -> Output {
     let output = census_command(root)
         .args(args)
@@ -359,7 +284,6 @@ fn run_census(root: &Path, args: &[&str]) -> Output {
     output
 }
 
-/// The JSON report a `provider` command prints on stdout.
 fn report_of(output: &Output) -> serde_json::Value {
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     serde_json::from_str(&stdout).unwrap_or_else(|error| {
@@ -367,9 +291,6 @@ fn report_of(output: &Output) -> serde_json::Value {
     })
 }
 
-/// Only keys the durable contract names survive: the table observation counts and the journal's
-/// `observations` counter. Everything else is operational (the on-disk byte figure, the store path)
-/// and would compare filesystem layout instead of durable state across restarts.
 fn counters_of(output: &Output) -> BTreeMap<String, u64> {
     let mut allowed: BTreeSet<&str> = Table::ALL.iter().map(|table| table.file()).collect();
     allowed.insert("observations");
@@ -387,7 +308,6 @@ fn counters_of(output: &Output) -> BTreeMap<String, u64> {
         .collect()
 }
 
-/// What one SIGKILL attempt left behind, read back by reopening the store after the child exits.
 struct KillAttempt {
     delay: Duration,
     exited_before_kill: bool,
@@ -397,9 +317,6 @@ struct KillAttempt {
     observations: u64,
 }
 
-/// Spawn `census-service` on `root`, SIGKILL it after `delay`, then read the store back.
-///
-/// The store is opened only after `wait()`, so the dead process has released its lock first.
 fn attempt_kill(
     root: &Path,
     args: &[&str],
@@ -432,7 +349,6 @@ fn attempt_kill(
     }
 }
 
-/// What a ladder attempt kills: the phase to interrupt and the rows that prove the units landed.
 struct Subject<'a> {
     phase: &'a str,
     table: Table,
@@ -508,7 +424,6 @@ fn kill_ladder(
     attempts
 }
 
-/// A free loopback port: bind, read it back, drop the listener.
 fn free_loopback_port() -> u16 {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("binding an ephemeral port");
     let port = listener.local_addr().expect("local addr").port();
@@ -516,8 +431,6 @@ fn free_loopback_port() -> u16 {
     port
 }
 
-/// The h2 discovery client. The SDK's endpoint serves HTTP/2 only (hyper's `http2::Builder`), so the
-/// client has to speak h2 without an upgrade dance - the same shape `tests/fjall_restate_e2e.rs` uses.
 fn discovery_client() -> reqwest::Client {
     reqwest::Client::builder()
         .timeout(Duration::from_secs(5))
@@ -526,7 +439,6 @@ fn discovery_client() -> reqwest::Client {
         .expect("building the discovery client")
 }
 
-/// One `/discover` request against the endpoint: the manifest, or the reason it did not arrive.
 async fn discovery_once(client: &reqwest::Client, port: u16) -> Result<serde_json::Value, String> {
     let url = format!("http://127.0.0.1:{port}/discover");
     match client
@@ -544,13 +456,10 @@ async fn discovery_once(client: &reqwest::Client, port: u16) -> Result<serde_jso
     }
 }
 
-/// Whether the endpoint on `port` still answers a discovery request: the liveness probe the
-/// drain-deadline scenario uses after a deadline that was never requested.
 async fn endpoint_answers(client: &reqwest::Client, port: u16) -> bool {
     discovery_once(client, port).await.is_ok()
 }
 
-/// Poll `/discover` until the endpoint answers with a manifest, or report that it never did.
 async fn poll_for_discovery(
     client: &reqwest::Client,
     port: u16,
@@ -574,9 +483,6 @@ async fn poll_for_discovery(
     panic!("census-serve never answered /discover on port {port}: last={last}");
 }
 
-/// Spawn `census-serve` on `root` with `drain_secs` as its drain deadline and wait until it answers
-/// `/discover`. `RUST_LOG=info` is what puts the drain report and its stop reason on stdout, which is
-/// the evidence the service scenarios assert on.
 async fn spawn_serve(root: &Path, port: u16, drain_secs: u64) -> (Child, serde_json::Value) {
     let mut child = Command::new(SERVE_BIN)
         .arg("--data-dir")
@@ -594,8 +500,6 @@ async fn spawn_serve(root: &Path, port: u16, drain_secs: u64) -> (Child, serde_j
     (child, manifest)
 }
 
-/// The service names a discovery manifest advertises, in the shape `tests/fjall_restate_e2e.rs` reads
-/// them: Restate wire names come from struct names, so they are PascalCase.
 fn manifest_services(manifest: &serde_json::Value) -> Vec<String> {
     manifest
         .get("services")
@@ -607,7 +511,6 @@ fn manifest_services(manifest: &serde_json::Value) -> Vec<String> {
         .collect()
 }
 
-/// Assert the manifest advertises every service the endpoint is supposed to.
 fn assert_manifest_advertises(scenario: &str, manifest: &serde_json::Value) {
     let services = manifest_services(manifest);
     note(
@@ -627,8 +530,6 @@ fn assert_manifest_advertises(scenario: &str, manifest: &serde_json::Value) {
     );
 }
 
-/// Wait for `child` to exit, at most `bound`; `Some(elapsed)` once it is gone, `None` if it is still
-/// running when the bound expires.
 fn wait_for_exit(child: &mut Child, bound: Duration) -> Option<Duration> {
     let started = Instant::now();
     while started.elapsed() < bound {
@@ -640,7 +541,6 @@ fn wait_for_exit(child: &mut Child, bound: Duration) -> Option<Duration> {
     None
 }
 
-/// Send SIGTERM the way an operator does, through the system `kill`.
 fn send_sigterm(child: &Child) {
     let status = Command::new("kill")
         .arg("-TERM")
@@ -929,8 +829,6 @@ async fn exporter_restart_republishes_identical_snapshots_and_totals() {
     );
 }
 
-/// What one export pass produced: the consolidate counts, per-table snapshot digests, the census
-/// totals projection and its digest.
 struct Export {
     counts: Vec<(String, usize)>,
     snapshots: BTreeMap<String, String>,
@@ -938,7 +836,6 @@ struct Export {
     totals: String,
 }
 
-/// Consolidate every table and build the census, the publishing stage of `census-service run`.
 fn export(store: &Store) -> Export {
     let counts: Vec<(String, usize)> = census::consolidate(store)
         .expect("consolidate")
@@ -1353,7 +1250,6 @@ async fn sigkill_of_the_service_keeps_durable_work_and_the_restart_drains_cleanl
     }
 }
 
-/// The `drained: accepted=…` line of a service's stdout, the certificate a clean stop prints.
 fn drain_line(stdout: &str) -> &str {
     stdout
         .lines()
@@ -1361,7 +1257,6 @@ fn drain_line(stdout: &str) -> &str {
         .unwrap_or("<no drain report>")
 }
 
-/// The `census service stopped report=DrainReport { … }` line, which carries the stop reason.
 fn stop_reason_line(stdout: &str) -> &str {
     stdout
         .lines()
@@ -1369,7 +1264,6 @@ fn stop_reason_line(stdout: &str) -> &str {
         .unwrap_or("<no stop reason>")
 }
 
-/// The `drained: accepted=… completed=… …` counters, as the `census-serve` bin prints them.
 fn parse_drain_line(line: &str) -> BTreeMap<String, u64> {
     line.trim_start_matches("drained:")
         .split_whitespace()
@@ -1610,17 +1504,6 @@ async fn ks_directory_walk_claims_units_the_kill_can_lose() {
     );
 }
 
-/// The jurisdiction object's two collection stage bodies are `census::collect_state_teams` and
-/// `census::collect_state_rosters` (`restate_services/jobs.rs`), so the durable claims those stages
-/// make to the workflow are asserted here on the library calls themselves:
-///
-/// * the team index is journaled per state, and a later stage re-reads it from the cache instead of
-///   rebuilding it — which is what makes the roster stage's "read the index back" cheap; and
-/// * a roster pass on a store where an earlier pass stopped completes exactly the rosters that pass
-///   did not journal, and lands on the control pass's counters, journal and merged athlete rows.
-///
-/// The walk is driven in-process; the Restate replay of a stage handler is the SDK's own durable
-/// execution, which needs a live `restate-server` and so is out of reach of this offline suite.
 #[tokio::test]
 async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters() {
     const SCENARIO: &str = "jurisdiction-walk";
@@ -1654,7 +1537,7 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
             .expect("scan athletes");
         let parsed = milesplit::parse_roster(WI_ROSTER_FIXTURE, teams[0].clone())
             .expect("the roster fixture parses");
-        let per_roster = parsed
+        let per_roster = parsed.roster().expect("the fixture contains readable athletes")
             .athletes
             .iter()
             .filter(|athlete| athlete.grad_year == GradYear::CO2027)
@@ -1844,8 +1727,6 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
     );
 }
 
-/// What one jurisdiction walk produced: the index it read, the stage's own counters, the merged
-/// athlete rows, and the journals and store counters a restart has to land on.
 struct Walk {
     teams: Vec<milesplit::TeamRef>,
     progress: census::StateProgress,
@@ -1854,7 +1735,5 @@ struct Walk {
     roster_journal: BTreeSet<String>,
     counts: BTreeMap<String, u64>,
     stats: census_crawl::net::FetchStats,
-    /// Class-of-2027 athletes on one roster page: the per-pass cohort counters are this times the
-    /// rosters the pass walked.
     per_roster: usize,
 }

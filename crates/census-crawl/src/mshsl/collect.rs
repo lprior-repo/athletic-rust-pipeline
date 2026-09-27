@@ -9,10 +9,6 @@ use super::map::coach_entities;
 use super::teams::{parse_coach_records, parse_team_nodes, select_team_nodes, TeamCoaches};
 use super::{Options, COACH_API_PREFIX, SOURCE_ID, TEAMS_VIEW_URL};
 
-/// Fetch one school's team nodes and their coach records.
-///
-/// Returns the entities plus notes for surfaces that were unavailable; the caller has already written the
-/// AD rows, so a failure here never discards work.
 async fn collect_team_coaches(
     ctx: &AdapterContext<'_>,
     fetch_options: &FetchOptions,
@@ -53,7 +49,6 @@ async fn collect_team_coaches(
     )
 }
 
-/// Fetch options for this run: the run-level refresh flag or the adapter's own.
 fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
     FetchOptions {
         refresh: options.refresh || ctx.refresh,
@@ -62,16 +57,10 @@ fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
     }
 }
 
-/// `u64` view of a `usize` count: lossless on every supported target, saturating otherwise.
 fn count(value: usize) -> u64 {
     u64::try_from(value).unwrap_or(u64::MAX)
 }
 
-/// Collect this provider's schools and coach/AD contacts into the canonical store.
-///
-/// Per school: one school page (facts + AD rows), one team-node list and up to
-/// `MAX_TEAMS_PER_SCHOOL` coach requests. Progress is journalled per school, so a re-run resumes
-/// without re-fetching finished schools.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let stats_before = ctx.fetcher.stats().await;
     let Some(mut run) = MshslRun::start(ctx, options)? else {

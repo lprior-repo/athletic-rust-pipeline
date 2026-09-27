@@ -1,6 +1,3 @@
-//! The adapter body: fetch the CIAC directory page, parse and map.
-//!
-//! Network and store access live here and nowhere else in this module.
 
 use super::map::SchoolExtract;
 use super::search::resolve_schools;
@@ -10,7 +7,6 @@ use census_domain::model::SourceNamespace;
 use census_domain::UsJurisdiction;
 use census_store::Table;
 
-/// Collect CIAC schools and coaches.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("ciac", "schools");
 
@@ -47,17 +43,12 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-/// Counters for one `collect` run.
 #[derive(Default)]
 struct Tally {
     processed: u64,
     coach_rows: usize,
 }
 
-/// Append and journal one school's rows, tallying its coach count.
-///
-/// The journal key is the same `CT:<id>` the school's rows carry, so a re-run reads the completed
-/// schools from the log instead of trusting the page's own ordering.
 fn emit_school(
     ctx: &AdapterContext<'_>,
     extract: &SchoolExtract,
@@ -65,12 +56,10 @@ fn emit_school(
 ) -> CrawlResult<()> {
     let mut batch = ctx.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    ctx.observe_school(
-        &SourceNamespace::AssociationSchool {
-            association: ASSOCIATION.to_string(),
-        },
-        &extract.school,
-    )?;
+    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::AssociationSchool {
+        association: ASSOCIATION.to_string(),
+    },
+    &extract.school,).as_slice())?;
 
     for coach in &extract.coaches {
         tally.coach_rows = tally.coach_rows.saturating_add(1);

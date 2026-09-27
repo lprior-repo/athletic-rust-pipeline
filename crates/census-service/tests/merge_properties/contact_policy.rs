@@ -1,8 +1,3 @@
-//! The coach contact policy, applied by `Entity::publish`.
-//!
-//! `publish` is what every read of the store passes through, so every valid published mailbox must
-//! survive on the merged row in the field matching its domain kind. Malformed addresses are the
-//! only inputs that do not produce a published field.
 
 use super::*;
 use census_domain::model::{published_email, MailboxKind};

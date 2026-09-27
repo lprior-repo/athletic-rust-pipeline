@@ -1,9 +1,3 @@
-//! Comparing a measurement against the recorded baseline: what grew, and what is new.
-//!
-//! Every function here prints each change (`[DOWN]` for burndown, `[UP]` for debt) and appends one
-//! line per violation to `failures`, so a failing gate names the metric and shows the movement that
-//! caused it. A metric the baseline does not list is debt: recording it is the deliberate act that
-//! says whether it is a budget or a description of the tree.
 
 use anyhow::{Context, Result};
 use serde_json::Value;
@@ -15,7 +9,6 @@ use super::{
 };
 use crate::json::number;
 
-/// The clippy tallies that grew, one `crate\tlint` key at a time.
 pub(super) fn clippy(
     known: &Value,
     clippy: &BTreeMap<String, u64>,
@@ -41,7 +34,6 @@ pub(super) fn clippy(
     Ok(())
 }
 
-/// The per-crate scan metrics that grew.
 pub(super) fn scan(scan: &Value, known: &Value, failures: &mut Vec<String>) -> Result<()> {
     let known_scan = known
         .get("scan")
@@ -80,7 +72,6 @@ pub(super) fn scan(scan: &Value, known: &Value, failures: &mut Vec<String>) -> R
     Ok(())
 }
 
-/// The structure budgets, and the oversized-file ledger behind them.
 pub(super) fn structure(scan: &Value, known: &Value, failures: &mut Vec<String>) -> Result<()> {
     let known_structure = known.get("structure").and_then(Value::as_object);
     let structure = scan
@@ -122,7 +113,6 @@ pub(super) fn structure(scan: &Value, known: &Value, failures: &mut Vec<String>)
     Ok(())
 }
 
-/// Every baseline number that the current measurements would raise (`update`'s refusal).
 pub(super) fn raises(
     clippy: &BTreeMap<String, u64>,
     scan: &Value,
@@ -135,7 +125,6 @@ pub(super) fn raises(
     Ok(raised)
 }
 
-/// The clippy tallies the refusal would report, appended to `raised` in key order.
 fn raised_clippy(clippy: &BTreeMap<String, u64>, old: &Value, raised: &mut Vec<String>) {
     let known = old.get("clippy").and_then(Value::as_object);
     for (key, value) in clippy {
@@ -146,7 +135,6 @@ fn raised_clippy(clippy: &BTreeMap<String, u64>, old: &Value, raised: &mut Vec<S
     }
 }
 
-/// The per-crate scan metrics the refusal would report, appended to `raised` in report order.
 fn raised_scan(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Result<()> {
     let known = old.get("scan").and_then(Value::as_object);
     let scan_crates = scan
@@ -176,7 +164,6 @@ fn raised_scan(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Result<()
     Ok(())
 }
 
-/// The structure budgets and the oversized-file ledger behind them, appended to `raised`.
 fn raised_structure(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Result<()> {
     let old_structure = old.get("structure").and_then(Value::as_object);
     let structure = scan
@@ -216,14 +203,6 @@ fn raised_structure(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Resu
     Ok(())
 }
 
-/// The oversized-file ledger: a new file is debt, a file that grew is debt, and a file that shrank
-/// prints as burndown.
-///
-/// The deleted script compared the whole display entry (`crate:path/file.rs (412)`) as a set member,
-/// which made every line-count change to an already-recorded file read as a brand new file: shrinking
-/// `types.rs` from 408 to 404 lines failed the gate as "new file over 300 lines: ... (404)". Parsing
-/// the entry keeps the intended check (the *path* is the identity) and adds the growth check the
-/// string comparison only appeared to make.
 fn oversized(known: &[FileEntry], current: &[FileEntry], failures: &mut Vec<String>) {
     let known_paths: BTreeMap<&str, &FileEntry> = known
         .iter()
