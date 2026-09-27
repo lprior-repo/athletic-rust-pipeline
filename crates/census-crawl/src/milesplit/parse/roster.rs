@@ -124,11 +124,12 @@ impl Fields<'_> {
 }
 
 fn active_seasons(regex: &Regex, html: &str) -> [bool; 3] {
-    regex.captures_iter(html).take(3).enumerate().fold(
-        [false; 3],
-        |mut seasons, (index, capture)| {
-            seasons[index] = capture.get(2).is_some_and(|value| value.as_str() == "yes");
-            seasons
-        },
-    )
+    let mut seasons = [false; 3];
+    seasons
+        .iter_mut()
+        .zip(regex.captures_iter(html).take(3))
+        .for_each(|(season, capture)| {
+            *season = capture.get(2).is_some_and(|value| value.as_str() == "yes");
+        });
+    seasons
 }

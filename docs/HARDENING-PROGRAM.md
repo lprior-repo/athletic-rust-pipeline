@@ -1,13 +1,13 @@
-# Hardening program — Athletic.net-resistant Midwest census workspace
+# Historical hardening program — 2026-09-21 baseline
 
-Status: **plan, not yet executed**. Baseline commit `4e5b828` (origin/main). Measured 2026-09-21 on
-this workstation with the pinned toolchain from `rust-toolchain.toml` (nightly-2026-04-27,
-rustc 1.97.0-nightly).
+Status: **historical plan and measurements**, superseded for active execution by
+[the fresh national census master plan](NATIONAL-CENSUS-PLAN.md) and ADR-013. The old Midwest scope,
+workbook/root-pipeline work and phase ordering below do not bind the new source-discovered census.
 
-Target: the whole workspace — a **fjall**-backed observation store, **Restate** durable services,
-**chromiumoxide**-driven Athletic.net acquisition — at Power-of-Ten / async-structural /
-Wlaschin-DDD quality with in-repo enforced gates, reproducible performance evidence, and
-deterministic replay.
+Baseline: commit `4e5b828` (then origin/main), measured 2026-09-21 with nightly-2026-04-27,
+rustc 1.97.0-nightly. Preserve these results as historical evidence, not current gate results.
+Its Fjall/Restate/chromiumoxide, Power-of-Ten, async and DDD goals remain relevant where carried into
+the active plan; recorded completions do not certify a fresh national acquisition.
 
 Skills in force for this program: `holzman-rust` (Power of Ten + PLUS performance),
 `async-rust-reviewer` (structural async correctness, Asupersync-inspired), `scott-ddd-refactor`

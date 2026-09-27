@@ -86,31 +86,18 @@ fn validate_claim_against_row(
     claim: &ContactClaimEvidence,
     covered: &mut [bool; 4],
 ) -> Result<(), ContactProofError> {
-    let (value, person, role, present) = match claim.field {
-        ContactProofField::CoachName => (
-            &row.coach_name,
-            &row.coach_name,
-            row.role.as_str(),
-            &mut covered[0],
-        ),
+    let (value, person, role, index) = match claim.field {
+        ContactProofField::CoachName => {
+            (&row.coach_name, &row.coach_name, row.role.as_str(), 0usize)
+        }
         ContactProofField::PublicProfessionalEmail => (
             &row.public_professional_email,
             &row.coach_name,
             row.role.as_str(),
-            &mut covered[1],
+            1usize,
         ),
-        ContactProofField::AdName => (
-            &row.ad_name,
-            &row.ad_name,
-            "Athletic Director",
-            &mut covered[2],
-        ),
-        ContactProofField::AdEmail => (
-            &row.ad_email,
-            &row.ad_name,
-            "Athletic Director",
-            &mut covered[3],
-        ),
+        ContactProofField::AdName => (&row.ad_name, &row.ad_name, "Athletic Director", 2usize),
+        ContactProofField::AdEmail => (&row.ad_email, &row.ad_name, "Athletic Director", 3usize),
     };
     let sport_matches =
         claim.sport == row.sport || (is_director(claim.field) && claim.sport.is_empty());
@@ -134,6 +121,9 @@ fn validate_claim_against_row(
     if !row.source_urls.contains(&claim.source_url) {
         return Err(ContactProofError::SourceUrlNotFound);
     }
+    let present = covered
+        .get_mut(index)
+        .ok_or(ContactProofError::UnverifiedClaim)?;
     *present = true;
     Ok(())
 }
@@ -172,5 +162,5 @@ fn is_hex64(s: &str) -> bool {
     }
     s.as_bytes()
         .iter()
-        .all(|&b| (b >= b'0' && b <= b'9') || (b >= b'a' && b <= b'f'))
+        .all(|&b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }

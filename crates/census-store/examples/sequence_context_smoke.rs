@@ -49,11 +49,11 @@ fn main() -> Result<()> {
         .count();
     drop(store);
     let store = Store::open(root.path())?;
-    let mut raw_rows = 0;
+    let mut raw_rows: usize = 0;
     store
         .snapshot()
         .for_each_observation::<CanonicalSchool>(Table::Schools, |_| {
-            raw_rows += 1;
+            raw_rows = raw_rows.saturating_add(1);
             Ok(())
         })?;
     drop(store);

@@ -22,7 +22,6 @@ url = "2"
 # against the family's rule, never deserialized straight into the row it proposes to produce.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha2 = "0.10"
 thiserror = "2"
 tracing = "0.1"
 

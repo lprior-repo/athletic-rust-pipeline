@@ -3,6 +3,10 @@
 Operational companion: [`docs/FJALL_SCHEMA.md`](docs/FJALL_SCHEMA.md) — durability knobs and the
 sharp-edge list with current line citations. This file is the design-side schema.
 
+Fresh national acquisition follows [ADR-013](docs/adr/ADR-013-fresh-national-source-census.md):
+use a new store/run, preserve old roots and do not import their corpus or completion claims.
+Legacy import is explicit old-store maintenance, not a fresh-run population source.
+
 What `census-service` actually writes to its embedded store: directories, keyspaces, key bytes,
 values, the write and read paths, and the limits the code enforces. Derived from
 `crates/census-store/src/` (primary), `crates/census-service/src/cli/` (the `census-service`
@@ -78,13 +82,13 @@ configuration.
 | --- | --- | --- |
 | Open | `Store::open(&cli.store)` in `main` | `spawn_blocking(Store::open)` in `bootstrap::serve_until` |
 | Work | one subcommand | Restate handlers share `Arc<Store>` |
-| Flush | `consolidate` (via `Store::consolidate`), and `Store::open`'s legacy import | `store.flush()` after the region drains |
+| Flush | `consolidate` and explicit legacy-import maintenance | `store.flush()` after the region drains |
 | Close | `Store` dropped at process exit | `flush()`, then `drop(store)` |
 
-`Store::open` performs, in order: create `http`/`out`; open the database with
-`cache_size(CACHE_BYTES)`; open the four keyspaces; seed the per-table sequence counters from the
-highest key present; run the one-time legacy import. There is no explicit `close`; dropping the
-`Store` drops the `Database`, and the only shutdown-time durability action is `flush()`.
+`Store::open` creates or opens store directories, database and keyspaces and seeds checked sequence
+state from persisted high-water marks or legacy observations. It does not automatically import
+pre-Fjall JSONL. There is no explicit `close`; dropping `Store` drops `Database`, while supervised
+shutdown explicitly flushes before releasing the store.
 
 ### Single writer
 
@@ -366,16 +370,14 @@ variants; no error is swallowed.
 
 ### Import path (pre-Fjall journals)
 
-`Store::open` always calls `import_legacy` before a command sees the store. Per table: if the
-`meta` marker is absent and `<root>/entities/<table>.jsonl` exists, every non-empty line is inserted
-under a fresh sequence (id parsed from the line, cap enforced); then the marker is written. Phase
-files under `<root>/journal` are imported into the `journal` keyspace under `imported:resume-
-journals`. Each entity file is committed as a single batch and the marker is written afterwards, so a
-crash before the commit imports nothing and the next open starts that file clean; a crash after the
-commit but before the marker re-imports the whole file, which duplicates its observations (see §8,
-item 12). The method ends with `flush()` (`SyncAll`). The legacy JSONL files are left in place as the
-record of what the database was built from, which is why `entities/*.jsonl` still exists in the live
-root.
+`import_legacy` is explicit maintenance for an existing pre-Fjall store; `Store::open` does not
+invoke it. Its implementation in `crates/census-store/src/legacy.rs` owns import progress, entity
+batches and completion markers under the single-writer discipline. Preserve original JSONL until
+independent reconciliation establishes that all rows and resume journals survived.
+
+This is not a startup stage of ADR-013. The fresh national store is populated from newly acquired
+public source evidence, not the old census or an operator workbook. Historical import markers
+cannot certify source discovery, coverage, identity decisions or completion of the new run.
 
 ## 6. Read path
 
@@ -424,9 +426,9 @@ numbers as `{table, rows}` pairs plus `observations`, `bytes_on_disk`, `today`.
   a live directory is never opened from a second process.
 * **Restore** is the same copy in reverse: the store has no restore code path. Because sequences are
   reseeded from stored keys at open, a restored directory behaves exactly like the original.
-* **Pre-Fjall migration** is the only schema migration: `census-service import-legacy` (and every
-  other command, since the import runs in `Store::open`), guarded by the `meta` markers. Operators
-  are told to keep the old journals until `report` matches the pre-migration numbers.
+* **Pre-Fjall import** is explicit `census-service import-legacy` maintenance, guarded by progress
+  and completion records; it does not run automatically in `Store::open`. Keep original journals
+  until independent reconciliation succeeds. Never use this path to seed the ADR-013 census.
 * **Footprint measurement** is `bytes_on_disk` from `fjall-stats` / status. It reports the `entities`
   keyspace's LSM-tree size (`Keyspace::disk_space` → `tree.disk_space`, fjall 3.1.10
   `src/keyspace/mod.rs`), which **excludes** the `journal` and `meta` keyspaces and the write-ahead

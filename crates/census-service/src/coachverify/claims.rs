@@ -25,7 +25,6 @@ pub(super) fn inspect(
     fetched_at: &str,
 ) -> anyhow::Result<PageClaims> {
     let (spans, heading) = spans(text)?;
-    let school = normalize(&row.school);
     let context = ClaimContext {
         row,
         url,
@@ -41,55 +40,57 @@ pub(super) fn inspect(
         if span.len() > MAX_SPAN {
             continue;
         }
-        let flat = normalize(&span);
-        [false, true].into_iter().for_each(|director| {
-            let (person, email) = if director {
-                (&row.ad_name, &row.ad_email)
-            } else {
-                (&row.coach_name, &row.public_professional_email)
-            };
-            if person.is_empty() || !contains(&flat, &normalize(person)) {
-                return;
-            }
-            let row_ok = if director {
-                contains(&flat, "athletic director")
-            } else {
-                role_matches(&flat, row) && jurisdiction_matches(&flat, &heading, &row.state)
-            };
-            if !row_ok {
-                return;
-            }
-            let contradicts = if director {
-                false
-            } else {
-                self_contradicts(&flat, row)
-            };
-            result.contradicted |= contradicts;
-            let name_field = if director { "ad_name" } else { "coach_name" };
-            result.fields.push(evidence(
-                field_to_enum(name_field),
-                person,
-                person,
-                &span,
-                &context,
-            ));
-            if !email.is_empty() && contains(&flat, &normalize(email)) {
-                let email_field = if director {
-                    "ad_email"
-                } else {
-                    "public_professional_email"
-                };
-                result.fields.push(evidence(
-                    field_to_enum(email_field),
-                    email,
-                    person,
-                    &span,
-                    &context,
-                ));
-            }
-        });
+        for director in [false, true] {
+            collect(&span, &heading, director, &context, &mut result);
+        }
     }
     Ok(result)
+}
+
+fn collect(
+    span: &str,
+    heading: &str,
+    director: bool,
+    context: &ClaimContext<'_>,
+    result: &mut PageClaims,
+) {
+    let row = context.row;
+    let flat = normalize(span);
+    let (person, email) = if director {
+        (&row.ad_name, &row.ad_email)
+    } else {
+        (&row.coach_name, &row.public_professional_email)
+    };
+    if person.is_empty() || !contains(&flat, &normalize(person)) {
+        return;
+    }
+    let row_ok = if director {
+        contains(&flat, "athletic director")
+    } else {
+        role_matches(&flat, row) && jurisdiction_matches(&flat, heading, &row.state)
+    };
+    if !row_ok {
+        return;
+    }
+    result.contradicted |= !director && self_contradicts(&flat, row);
+    let name = if director {
+        ContactProofField::AdName
+    } else {
+        ContactProofField::CoachName
+    };
+    result
+        .fields
+        .push(evidence(name, person, person, span, context));
+    if !email.is_empty() && contains(&flat, &normalize(email)) {
+        let field = if director {
+            ContactProofField::AdEmail
+        } else {
+            ContactProofField::PublicProfessionalEmail
+        };
+        result
+            .fields
+            .push(evidence(field, email, person, span, context));
+    }
 }
 
 fn spans(text: &str) -> anyhow::Result<(Vec<String>, String)> {
@@ -187,16 +188,6 @@ fn jurisdiction_matches(span: &str, heading: &str, state: &str) -> bool {
             .into_iter()
             .any(|text| contains(text, &code) || contains(text, &name))
     })
-}
-
-fn field_to_enum(field: &str) -> ContactProofField {
-    match field {
-        "coach_name" => ContactProofField::CoachName,
-        "public_professional_email" => ContactProofField::PublicProfessionalEmail,
-        "ad_name" => ContactProofField::AdName,
-        "ad_email" => ContactProofField::AdEmail,
-        _ => unreachable!("only coach_name/ad_name/public_professional_email/ad_email reach here"),
-    }
 }
 
 fn evidence(

@@ -48,7 +48,9 @@ impl RowEvidence {
         page.fields.into_iter().for_each(|claim| {
             let field_str = contact_proof_field_str(claim.field);
             if let Some(index) = FIELDS.iter().position(|field| *field == field_str) {
-                self.verified[index] = true;
+                if let Some(slot) = self.verified.get_mut(index) {
+                    *slot = true;
+                }
             }
             self.claims.push(claim);
         });

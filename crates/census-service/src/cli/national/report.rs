@@ -3,13 +3,6 @@ use census_service::restate_services::{
     JurisdictionReport, JurisdictionSummary, NationalReport, SourcePlan,
 };
 
-pub(crate) fn cell(value: Option<usize>) -> String {
-    match value {
-        Some(value) => value.to_string(),
-        None => "?".to_string(),
-    }
-}
-
 pub(crate) fn owed_sources(plan: &SourcePlan) -> String {
     plan.refused
         .iter()

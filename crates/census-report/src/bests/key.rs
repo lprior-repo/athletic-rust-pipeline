@@ -2,10 +2,9 @@ mod classification;
 mod tie;
 
 pub use classification::{classify_wind, is_wind_sensitive, resolve_timing};
-pub use tie::tie_break_later;
+pub use tie::{tie_break_later, MarkOrdering};
 
 use census_domain::model::{CanonicalMeet, CanonicalPerformance, EventId, EventKind, Sport};
-use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
 pub enum SurfaceClass {
@@ -114,23 +113,15 @@ impl std::fmt::Display for PrKey {
 pub fn should_replace(
     candidate_value: i64,
     incumbent_value: i64,
-    cand_date: &str,
-    cand_meet: &str,
-    cand_perf_id: &str,
-    inc_date: &str,
-    inc_meet: &str,
-    inc_perf_id: &str,
+    candidate: MarkOrdering<'_>,
+    incumbent: MarkOrdering<'_>,
     better: impl Fn(i64, i64) -> bool,
 ) -> bool {
     tie::should_replace_impl(
         candidate_value,
         incumbent_value,
-        cand_date,
-        cand_meet,
-        cand_perf_id,
-        inc_date,
-        inc_meet,
-        inc_perf_id,
+        candidate,
+        incumbent,
         better,
     )
 }

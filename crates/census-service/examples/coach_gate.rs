@@ -25,7 +25,7 @@ async fn main() -> anyhow::Result<()> {
     let outcomes = verify_fragments(&fetcher, &fragments, &out_dir, &options, jobs).await?;
     emit_freeze_log(&outcomes)?;
     for outcome in &outcomes {
-        println!("{}", outcome.log_line());
+        println!("{}", log_line(outcome));
     }
     write_reports(&outcomes)?;
     write_manifest(&fragments, &outcomes)?;
@@ -129,6 +129,16 @@ async fn verify_fragments(
     Ok(outcomes)
 }
 
+fn log_line(outcome: &FragmentOutcome) -> String {
+    let verdicts = outcome
+        .counts
+        .iter()
+        .map(|(verdict, count)| format!("{verdict:?}={count}"))
+        .collect::<Vec<String>>()
+        .join(",");
+    format!("{} rows={} {verdicts}", outcome.file, outcome.rows.len())
+}
+
 fn emit_freeze_log(outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
     if let Ok(log) = std::env::var("LOG") {
         let mut handle = std::fs::OpenOptions::new()
@@ -136,7 +146,7 @@ fn emit_freeze_log(outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
             .append(true)
             .open(&log)?;
         for outcome in outcomes {
-            writeln!(handle, "{}", outcome.log_line())?;
+            writeln!(handle, "{}", log_line(outcome))?;
         }
         handle.flush()?;
     }
@@ -168,7 +178,8 @@ fn write_reports(outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
 fn write_manifest(fragments: &[PathBuf], outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
     if let Ok(manifest) = std::env::var("MANIFEST") {
         let manifest = PathBuf::from(&manifest);
-        coachverify::write_manifest(&manifest, fragments, outcomes)?;
+        let union = std::env::var("UNION").ok().map(PathBuf::from);
+        coachverify::write_manifest(&manifest, fragments, outcomes, union.as_deref())?;
         println!("manifest: {}", manifest.display());
     }
     Ok(())

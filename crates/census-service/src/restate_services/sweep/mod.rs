@@ -29,6 +29,24 @@ fn retention_boundary(today: &str) -> Result<String, HandlerError> {
     Ok(boundary.to_string())
 }
 
+fn check_ceilings(request: &SweepRequest) -> Result<(), HandlerError> {
+    if request.windows > MAX_SWEEP_WINDOWS {
+        return Err(TerminalError::new(format!(
+            "{} windows exceeds the ceiling of {MAX_SWEEP_WINDOWS}",
+            request.windows
+        ))
+        .into());
+    }
+    if request.endpoints.len() > MAX_SWEEP_ENDPOINTS {
+        return Err(TerminalError::new(format!(
+            "{} endpoints exceeds the ceiling of {MAX_SWEEP_ENDPOINTS}",
+            request.endpoints.len()
+        ))
+        .into());
+    }
+    Ok(())
+}
+
 trait WindowWaits {
     async fn window(&self, seconds: u64) -> bool;
 }
@@ -84,20 +102,7 @@ impl Sweep {
         ctx: WorkflowContext<'_>,
         Json(request): Json<SweepRequest>,
     ) -> Result<Json<SweepReport>, HandlerError> {
-        if request.windows > MAX_SWEEP_WINDOWS {
-            return Err(TerminalError::new(format!(
-                "{} windows exceeds the ceiling of {MAX_SWEEP_WINDOWS}",
-                request.windows
-            ))
-            .into());
-        }
-        if request.endpoints.len() > MAX_SWEEP_ENDPOINTS {
-            return Err(TerminalError::new(format!(
-                "{} endpoints exceeds the ceiling of {MAX_SWEEP_ENDPOINTS}",
-                request.endpoints.len()
-            ))
-            .into());
-        }
+        check_ceilings(&request)?;
         let today = super::journaled_today_workflow(&ctx, &self.clock).await?;
         let (windows_observed, interrupted) =
             Self::wait_windows(&ctx, request.windows, request.window_seconds).await?;

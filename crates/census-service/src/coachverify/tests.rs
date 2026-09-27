@@ -1,6 +1,7 @@
 use super::evidence::RowEvidence;
 use super::*;
-use census_domain::model::{ContactClaimEvidence, ContactProofField, RawContactRow};
+use census_domain::model::{ContactProofField, RawContactRow};
+use sha2::{Digest, Sha256};
 
 fn fragment() -> RawContactRow {
     RawContactRow {
@@ -24,7 +25,7 @@ fn staff(body: &str) -> String {
 
 fn evaluate(row: &RawContactRow, body: &str) -> RowEvidence {
     let mut evidence = RowEvidence::default();
-    let sha256 = format!("{:x}", sha2::Digest::sha256(body.as_bytes()));
+    let sha256 = format!("{:x}", Sha256::digest(body.as_bytes()));
     evidence
         .absorb(
             body,
@@ -163,15 +164,15 @@ fn exact_email_bytes_preserved_not_casefolded() {
 fn proof_digest_matches_evidence() {
     let body = staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>");
     let row = fragment();
-    let mut evidence = evaluate(&row, &body);
-    let digest = super::census_domain::model::compute_contact_proof(&row, &evidence.claims)
-        .expect("valid proof");
+    let evidence = evaluate(&row, &body);
+    let digest =
+        census_domain::model::compute_contact_proof(&row, &evidence.claims).expect("valid proof");
     assert!(!digest.is_empty());
     let mut mutated_claims = evidence.claims.clone();
     if let Some(claim) = mutated_claims.first_mut() {
         claim.value = "mutated@example.org".to_string();
     }
-    let result = super::census_domain::model::compute_contact_proof(&row, &mutated_claims);
+    let result = census_domain::model::compute_contact_proof(&row, &mutated_claims);
     assert!(result.is_err());
 }
 

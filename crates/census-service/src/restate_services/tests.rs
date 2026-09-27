@@ -363,13 +363,14 @@ fn answered_report() -> JurisdictionReport {
         rosters: StateProgress {
             jurisdiction: UsJurisdiction::Wisconsin,
             teams: 7,
-            rosters_done: 5,
+            rosters_total: 7,
+            rosters_committed: 5,
+            rosters_remaining: 2,
             rosters_skipped: 0,
             athletes: 11,
             class_of_2027: 3,
             class_of_2027_boys: 2,
             class_of_2027_girls: 1,
-            empty_rosters: 1,
             errors: Vec::new(),
             blocked: false,
             blocked_skipped: 0,
@@ -413,21 +414,16 @@ fn a_state_that_did_not_answer_becomes_a_failure_row_and_the_run_keeps_its_summa
     };
     assert_eq!(summary.jurisdiction, UsJurisdiction::Wisconsin);
     assert_eq!(summary.identity, "jurisdiction:WI:2026-27:1");
-    assert_eq!(summary.teams, 7);
-    assert_eq!(summary.rosters_done, 5);
+    assert_eq!(summary.rosters_total, 7);
+    assert_eq!(summary.rosters_committed, 5);
     assert_eq!(summary.rosters_skipped, 0);
     assert_eq!(summary.class_of_2027, 3);
     assert_eq!(
-        summary.rosters_owed,
-        Some(2),
-        "seven teams with five rosters walked leave two owed"
+        summary.rosters_remaining, 2,
+        "seven teams with five rosters walked leave two remaining"
     );
     assert_eq!(summary.athletes, 11);
-    assert_eq!(
-        summary.blocked,
-        Some(false),
-        "a completed walk is not a blocked one"
-    );
+    assert!(!summary.blocked, "a completed walk is not a blocked one");
 }
 
 static BROWSER_ONLY: SourceDescriptor = SourceDescriptor {

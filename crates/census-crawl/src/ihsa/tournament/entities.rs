@@ -53,13 +53,11 @@ impl<'a> Mapper<'a> {
         };
         let identities = athlete_identities(row.net_id, row.live_id, row.entry.as_deref());
         let grad_year = observation.grad_year();
-        let source = identities.first().cloned().map_or_else(
-            || {
-                SourceIdentity::new(
-                    SourceNamespace::Other("ihsa_result_row".to_string()),
-                    row.source_key,
-                )
-            },
+        let source = identities.first().cloned().map_or(
+            SourceIdentity::new(
+                SourceNamespace::Other("ihsa_result_row".to_string()),
+                row.source_key,
+            ),
             |source| source,
         );
         let id = CanonicalAthlete::mint(row.school, name, grad_year, row.gender, &source);

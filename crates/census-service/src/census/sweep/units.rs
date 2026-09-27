@@ -29,16 +29,6 @@ pub(super) async fn roster_unit(
             return;
         }
     }
-    let outcome = roster::fetch_and_store(
-        fetcher,
-        store,
-        &run.site,
-        team,
-        run.school_year,
-        run.observed_on,
-        run.refresh,
-        run.revision,
-    )
-    .await;
+    let outcome = roster::fetch_and_store(fetcher, store, team, run).await;
     record_roster(shared, outcome).await;
 }

@@ -146,10 +146,10 @@ pub(super) fn bests_phase(
     );
     for row in &rows {
         anyhow::ensure!(
-            row.marks_in_event == PERFORMANCES_PER_ATHLETE,
+            row.population.marks == PERFORMANCES_PER_ATHLETE,
             "athlete {} reduced {} marks, expected {}",
-            row.athlete_id,
-            row.marks_in_event,
+            row.athlete_id(),
+            row.population.marks,
             PERFORMANCES_PER_ATHLETE
         );
     }

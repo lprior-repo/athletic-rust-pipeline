@@ -158,10 +158,10 @@ proptest! {
     ) {
         let mut first = base.clone();
         first.known_names = vec![other_name];
-        first.source_identities.push(left);
+        first.source_links.push(left);
         let mut second = base;
         second.sports = vec![other_sport];
-        second.source_identities.push(right);
+        second.source_links.push(right);
 
         let mut merged = first.clone();
         merged.merge(second.clone());
@@ -170,7 +170,7 @@ proptest! {
 
         prop_assert!(same_members(&merged.known_names, &reversed.known_names));
         prop_assert!(same_members(&merged.sports, &reversed.sports));
-        prop_assert!(same_members(&merged.source_identities, &reversed.source_identities));
+        prop_assert!(same_members(&merged.source_links, &reversed.source_links));
     }
 
     #[test]

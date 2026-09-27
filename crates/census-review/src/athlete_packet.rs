@@ -44,10 +44,10 @@ impl AthleteIndex {
             }
             ids.sort();
             let idx = groups.len();
-            groups.push(ids);
-            for id in groups[idx].iter() {
+            for id in &ids {
                 group_index.insert(id.clone(), idx);
             }
+            groups.push(ids);
         }
         Self {
             rows: index_by_id(rows, |row| row.id.to_string()),
@@ -62,7 +62,7 @@ impl AthleteIndex {
     ) -> Option<(&CanonicalAthlete, &CanonicalAthlete, &[String])> {
         let subject = self.rows.get(subject_id)?;
         let idx = self.group_index.get(subject_id)?;
-        let group = &self.groups[*idx];
+        let group = self.groups.get(*idx)?;
         let other_id = group.iter().find(|id| id.as_str() != subject_id)?;
         let other = self.rows.get(other_id)?;
         Some((subject, other, group))

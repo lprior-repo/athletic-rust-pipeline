@@ -14,6 +14,10 @@ census-serve --listen 127.0.0.1:9080 --data-dir var/census-service --max-concurr
 Everything lives under `--data-dir` (`var/census-service` by default): the Fjall store, the fetch
 cache with its content hashes, the consolidated `out/*.jsonl` snapshots and the reports.
 
+For the fresh national census, follow [ADR-013](adr/ADR-013-fresh-national-source-census.md) and
+[the master plan](NATIONAL-CENSUS-PLAN.md): use a new store and unused durable run identities.
+The existing-store refresh examples below do not initialize or certify that new census.
+
 ## Weekly incremental refresh
 
 `meets` enumerates each state's published meets into `source_meets` (about one index request per
@@ -73,12 +77,12 @@ stages — are the ones left to route.
 **Jurisdiction default (critical):** with neither `--states` nor `--all-states`, the gather commands
 (`teams`, `meets`, `collect`) cover **Wisconsin alone** (`crates/census-service/src/cli/mod.rs:239`,
 pinned by `crates/census-service/src/cli/tests.rs:15`) — a one-state quick test, not the run scope.
-The run scope is the 49 jurisdictions of `UsJurisdiction::CENSUS_SCOPE` (ADR-009): `--all-states`
-selects it (`cli/mod.rs:238`), and the operational path is the service, which walks the whole scope on
-its own (`crates/census-service/src/restate_services/open_work.rs:102`; a request naming a
-jurisdiction outside it is refused at `restate_services/national.rs:73`). The `provider` subcommands
-take the restriction form instead, where no flag means no restriction (`cli/mod.rs:252`, pinned at
-`cli/tests.rs:34`).
+The implemented `UsJurisdiction::CENSUS_SCOPE` is still 49; `--all-states` selects it and still
+excludes Alaska and Hawaii. ADR-013 requires all 50 states plus D.C.; the scope, validation,
+source qualification and coverage/seal denominators must migrate before a run satisfies it.
+Do not describe current `--all-states` output or a historical seal as the fresh national delivery.
+The `provider` subcommands use the restriction form: no flag means no restriction (`cli/mod.rs:252`,
+pinned at `cli/tests.rs:34`). A Wisconsin default or provider invocation is not national completion.
 
 ## Shutdown and the drain certificate
 

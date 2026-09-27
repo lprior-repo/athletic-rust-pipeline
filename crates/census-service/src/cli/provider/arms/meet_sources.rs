@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use census_crawl::{self as providers, AdapterContext, AdapterReport};
-use census_domain::model::{SchoolYear, SourceMeetRef};
+use census_domain::model::SourceMeetRef;
 use census_service::census;
 
 use super::super::ProviderArgs;

@@ -226,7 +226,7 @@ proptest! {
         let mut merged = base.clone();
         merged.merge(incoming.clone());
         let expected = if agrees { Confidence::HIGH } else { Confidence::LOW };
-        prop_assert_eq!(merged.identity_confidence, expected);
+        prop_assert_eq!(merged.derived_cohort_confidence(), Some(expected));
 
         let settled = merged.clone();
         merged.merge(incoming);
@@ -234,16 +234,30 @@ proptest! {
     }
 
     #[test]
-    fn a_silent_observation_leaves_confidence_alone(confidence in 0u8..=100, base in athlete()) {
-        let mut first = base.clone();
-        first.identity_confidence = Confidence::new(confidence).expect("0..=100 is a confidence");
-        let mut merged = first.clone();
+    fn a_silent_observation_leaves_confidence_alone(
+        grade in grade(),
+        year in school_year(),
+        other_grade in grade(),
+        other_year in school_year(),
+        base in athlete(),
+    ) {
+        let observation = |grade, school_year, source| ObservedGrade {
+            grade,
+            school_year,
+            source: SourceRef::new(source, None),
+        };
+        let mut informed = base.clone();
+        informed.observed_grades = vec![
+            observation(grade, year, "wiaa_results"),
+            observation(other_grade, other_year, "milesplit"),
+        ];
+        let before = informed.derived_cohort_confidence();
+        let grades = informed.observed_grades.clone();
+
+        let mut merged = informed;
         merged.merge(base);
 
-        prop_assert_eq!(
-            merged.identity_confidence,
-            Confidence::new(confidence).expect("0..=100 is a confidence")
-        );
-        prop_assert!(merged.observed_grades.is_empty());
+        prop_assert_eq!(merged.derived_cohort_confidence(), before);
+        prop_assert_eq!(merged.observed_grades, grades);
     }
 }

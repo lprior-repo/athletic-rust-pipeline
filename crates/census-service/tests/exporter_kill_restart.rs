@@ -2,8 +2,8 @@ use calamine::Reader;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
-    GradYear, Grade, Id, Mark, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
-    Sport, TimingMethod,
+    GradYear, Grade, Id, Mark, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};

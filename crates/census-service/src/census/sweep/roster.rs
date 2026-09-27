@@ -1,5 +1,5 @@
 use census_crawl::milesplit::{
-    self, Roster, RosterQuarantine, RosterRejection, RosterVerdict, Site, TeamRef,
+    self, Roster, RosterOutcome, RosterQuarantine, RosterRejection, RosterVerdict, Site, TeamRef,
 };
 use census_crawl::net::{FetchOptions, FetchOutcome, Fetcher};
 use census_crawl::{CrawlError, CrawlResult};
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 use super::super::scope::{count_co2027, count_cohort};
-use super::rosters_phase;
+use super::{rosters_phase, units::RosterRun};
 
 #[derive(Serialize)]
 struct Records {
@@ -96,18 +96,14 @@ struct Journal<S = String, C = FetchOutcome, R = Vec<RosterRejection>> {
 pub(super) async fn fetch_and_store(
     fetcher: &Fetcher,
     store: &Store,
-    site: &Site,
     team: &TeamRef,
-    school_year: SchoolYear,
-    observed_on: &str,
-    refresh: bool,
-    revision: std::num::NonZeroU32,
+    run: &RosterRun<'_>,
 ) -> CrawlResult<Application> {
     let read = milesplit::fetch_roster(
         fetcher,
         team,
         &FetchOptions {
-            refresh,
+            refresh: run.refresh,
             allow_not_found: true,
             headers: Vec::new(),
         },
@@ -115,28 +111,77 @@ pub(super) async fn fetch_and_store(
     .await?;
     let roster = read.verdict.roster();
     let records = roster
-        .map(|roster| Records::of(roster, site, school_year, observed_on))
+        .map(|roster| Records::of(roster, &run.site, run.school_year, run.observed_on))
         .transpose()?;
-    let quarantine = match &read.verdict {
+    let quarantine = quarantine_of(&read.verdict);
+    let journal = roster_journal(
+        team,
+        &read,
+        records.as_ref(),
+        run.school_year,
+        run.observed_on,
+        roster,
+    );
+    let digest = roster_digest(
+        &records,
+        team,
+        run.school_year,
+        run.observed_on,
+        &read,
+        quarantine,
+    )?;
+    let state = run.site.jurisdiction().code();
+    let operation = roster_operation(state, run.school_year, run.revision, team);
+    let phase = rosters_phase(run.site.jurisdiction(), run.school_year, run.revision);
+    let mut batch = store.write_batch();
+    if let Some(records) = &records {
+        records.stage(&mut batch)?;
+    }
+    batch.journal_done(&phase, &format!("{state}:{}", team.id), &journal)?;
+    Ok(batch.commit_once(&operation, &digest)?)
+}
+
+fn quarantine_of(verdict: &RosterVerdict) -> Option<RosterQuarantine> {
+    match verdict {
         RosterVerdict::Quarantined { reason, .. } => Some(*reason),
         RosterVerdict::Complete { .. } | RosterVerdict::Partial { .. } => None,
-    };
-    let journal = Journal {
+    }
+}
+
+fn roster_journal<'a>(
+    team: &'a TeamRef,
+    read: &'a RosterOutcome,
+    records: Option<&'a Records>,
+    school_year: SchoolYear,
+    observed_on: &'a str,
+    roster: Option<&Roster>,
+) -> Journal<&'a str, &'a FetchOutcome, &'a [RosterRejection]> {
+    Journal {
         team_id: team.id.as_str(),
-        school: records.as_ref().map(|rows| rows.school.id.as_str()),
+        school: records.map(|rows| rows.school.id.as_str()),
         year: school_year.get(),
         observed_on,
         capture: &read.capture,
-        quarantine,
+        quarantine: quarantine_of(&read.verdict),
         rejected: read.verdict.rejections(),
         athletes: roster.map_or(0, |rows| rows.athletes.len()),
-        teams: records.as_ref().map_or(0, |rows| rows.teams.len()),
+        teams: records.map_or(0, |rows| rows.teams.len()),
         co2027: roster.map_or(0, count_co2027),
         co2027_boys: roster.map_or(0, |rows| count_cohort(rows, Gender::Boys)),
         co2027_girls: roster.map_or(0, |rows| count_cohort(rows, Gender::Girls)),
-    };
-    let digest = serialized_digest(&(
-        &records,
+    }
+}
+
+fn roster_digest(
+    records: &Option<Records>,
+    team: &TeamRef,
+    school_year: SchoolYear,
+    observed_on: &str,
+    read: &RosterOutcome,
+    quarantine: Option<RosterQuarantine>,
+) -> CrawlResult<String> {
+    serialized_digest(&(
+        records,
         team.id.as_str(),
         school_year,
         observed_on,
@@ -149,20 +194,20 @@ pub(super) async fn fetch_and_store(
     .map_err(|source| CrawlError::Encode {
         table: "milesplit_roster".to_string(),
         source,
-    })?;
-    let state = site.jurisdiction().code();
-    let operation = format!(
+    })
+}
+
+fn roster_operation(
+    state: &str,
+    school_year: SchoolYear,
+    revision: std::num::NonZeroU32,
+    team: &TeamRef,
+) -> String {
+    format!(
         "milesplit_roster:{state}:{}:{revision}:{}",
         school_year.get(),
         team.id
-    );
-    let phase = rosters_phase(site.jurisdiction(), school_year, revision);
-    let mut batch = store.write_batch();
-    if let Some(records) = &records {
-        records.stage(&mut batch)?;
-    }
-    batch.journal_done(&phase, &format!("{state}:{}", team.id), &journal)?;
-    Ok(batch.commit_once(&operation, &digest)?)
+    )
 }
 
 #[derive(Default)]

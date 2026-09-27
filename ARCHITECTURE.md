@@ -5,12 +5,12 @@ commit messages reference them, so edit a section's content without renumbering 
 
 ## 1. Mission
 
-Build the richest defensible recruiting census of U.S. Class-of-2027 high-school Track &
-Field and Cross Country athletes over the run scope of §2: discover them across all qualified
-sources, reconcile duplicate
-identities, collect their available athletic histories, calculate comparable PRs, identify every
-:event they contest, resolve their current high school and its publicly published coaching contacts,
-retain source profiles, and export a recruiter-friendly workbook with auditable evidence.
+Build a fresh, source-discovered recruiting census of U.S. Class-of-2027 high-school Track & Field
+and Cross Country athletes across all 50 states plus D.C. Discover the population through qualified
+public sources, reconcile identities, collect athletic histories, calculate comparable PRs, retain
+contested events and source profiles, resolve time-scoped school affiliation and public coaching
+contacts, and generate recruiter workbooks with auditable evidence. No workbook supplies the
+population; admissions matching and original-input-row reconciliation are not this product.
 
 The run may take many hours or days. It must be durable, resumable, restart-safe, rate-aware,
 bounded, idempotent, observable, decomposable into independent work, ergonomic for coding agents, and
@@ -24,6 +24,11 @@ genuinely ambiguous. Excel is a projection of that truth, never the truth itself
 **The identity rule.** No canonical identity decision may destroy source identity or provenance
 required to reverse that decision later.
 
+**The fresh-run rule.** ADR-013 requires a new store and unused durable run namespace/revision.
+Preserve historical stores and artifacts; do not import their observations, identities, receipts,
+coverage or seals into the new census. Reuse maintained code, fixtures and qualified source entry
+points, then acquire fresh evidence. Reuse that run's captures and completed work during recovery.
+
 **The root package is gone.** The acquisition-side root crate, `athletic-rust-pipeline`, was deleted
 on 2026-09-23 once the census crates owned its work: this workspace now holds only the nine members of
 §4 plus the package-less `fixtures/` directory, and no root `src/`, `tests/` or `benches/` exists. The
@@ -32,11 +37,11 @@ root manifest's header records the same fact, and §4's `acq-*` note says what b
 
 ## 2. Scope
 
-- **Geography (§2)**: all 50 states plus the District of Columbia are valid
-  `UsJurisdiction` values. The census run covers the **48 contiguous states plus D.C. — forty-nine
-  jurisdictions (ADR-009); Alaska and Hawaii exist as values but are never run or counted**.
-  Territories and freely associated states are not modelled at all: `"PR"` fails to parse rather than
-  widening coverage, and adding one is an explicit domain change, never a silent one.
+- **Geography (§2)**: the target is **all 50 states plus D.C. — 51 jurisdictions**, including Alaska
+  and Hawaii. [ADR-013](docs/adr/ADR-013-fresh-national-source-census.md) supersedes ADR-009's
+  contiguous-state restriction. `UsJurisdiction::CENSUS_SCOPE` still implements 49; scope validation,
+  source qualification, coverage/seal denominators and tests must migrate together. Territories and
+  freely associated states remain unmodelled; adding one requires an explicit domain decision.
 - **Cohort (§3)**: `GraduationYear(2027)` is the durable target, never "junior". Grade is
   time-scoped evidence (`GradeObservation { grade, academic_year, source }`) — `2025-2026 → Grade 11`
   and `2026-2027 → Grade 12` both support the same canonical cohort. No source-specific query
@@ -45,34 +50,24 @@ root manifest's header records the same fact, and §4's `acq-*` note says what b
   discovered through the qualified source graph — boys and girls, cross country, indoor and outdoor
   track, all legitimate events including relays where membership is evidenced. The workbook is a
   projection, not the population contract.
+- **Inputs and outputs**: public source discovery is the population contract. Published result
+  spreadsheets may be captured as evidence, like PDFs; an operator workbook or recruit list may not
+  seed the census. Excel is output only. Subset runs are labeled qualification runs.
 
 ## 3. Pipeline
 
 ```text
-                 NATIONAL SOURCE GRAPH
-                          |
-                  SOURCE DISCOVERY
-                          |
-                 durable Restate work
-                          |
-        +-----------------+------------------+
-        |                 |                  |
-      meets             athletes           schools
-        +-----------------+------------------+
-                          |
-                       evidence
-                          |
-                         Fjall
-                          |
-                  deterministic merge
-                          |
-                 ambiguous identities
-                          |
-                   local Qwen review
-                          |
-                  canonical census
-                          |
-                  recruiting workbook
+51-jurisdiction run + qualified public source graph
+  -> school/program/season discovery obligations
+  -> origin-admitted durable Restate acquisition
+  -> immutable captures + provider-owned observations in Fjall
+  -> validated claims + candidate identities + contradiction checks
+  -> deterministic Rust adjudication
+       ambiguous cases -> both local Qwen lanes -> evidence-bound advice -> Rust
+  -> reversible identity/cohort/affiliation decisions + retained gaps
+  -> one snapshot-bound projection
+  -> independently verified atomic workbook/audit generation
+  -> evidence-backed census seal
 ```
 
 Athletic.net is one source. MileSplit is one source. State associations, timing companies, meet
@@ -115,9 +110,13 @@ something more precise (`CanonicalAthleteId`, `SourceAthleteId`, `GraduationYear
 
 ## 5. Workflow backbone (§7-§9)
 
+The catalog below describes the current implementation, not completion of ADR-013. The target
+integrates discovery, acquisition, reconciliation, review, gap resolution and export under one
+durable application path. Batch-only stages must join it; do not create a parallel engine.
+
 ```text
 NationalCensus (implemented workflow: fans out JurisdictionCensus, folds NationalFailure rows, merges once via Consolidate)
-  +-- JurisdictionCensus(<each run jurisdiction>)   (the 48 + D.C.; implemented object: teams / rosters / meets / results)
+  +-- JurisdictionCensus(<each run jurisdiction>)   (currently 49; ADR-013 migration pending; teams / rosters / meets / results)
   |     +-- meets stage routes via Ingest (<slug>_<state>, ISO-week window); teams / rosters / results write the store directly inside ctx.run
   |     +-- SourceDiscovery / SchoolDiscovery / MeetDiscovery / AthleteDiscovery,
   |         ResultAcquisition / CoachDiscovery / Reconciliation / GapAnalysis — NOT Restate workflows;
@@ -172,7 +171,8 @@ evasion, no direct-HTTP fallback intended to circumvent Cloudflare.
 
 ## 7. Store (§29-§31)
 
-Fjall is the system of record; PostgreSQL is not part of this census. Keyspaces:
+Fjall is the system of record; PostgreSQL is not part of this census. Target logical collections
+(not one physical keyspace per collection; implemented storage is cataloged in `census-store`):
 
 ```text
 canonical:      athletes schools coaches meets performances
@@ -190,7 +190,32 @@ filter on a field.
 
 ## 8. Identity review (§32-§34)
 
-Candidate discovery → deterministic normalisation → hard contradiction detection → scoring → AI review for ambiguous cases only. The model returns `SamePerson | DifferentPerson | InsufficientEvidence`; Rust adjudication is authoritative. See `docs/adr/ADR-005-ai-cannot-override-contradictions.md` for the full rule: AI can never create a match across a hard deterministic contradiction, and poor model confidence defaults to `REVIEW`.
+Candidate discovery is not acceptance. Deterministic normalization and hard-contradiction checks
+precede adjudication; only genuinely ambiguous cases receive advice from both approved local Qwen
+servers. Models return `SamePerson | DifferentPerson | InsufficientEvidence`, bound to retained
+evidence and policy/model revisions. Rust alone accepts a link. Agreement or a score cannot replace
+corroboration or override a hard contradiction; unresolved uncertainty remains `REVIEW`.
+See `docs/adr/ADR-005-ai-cannot-override-contradictions.md`.
+
+## 9. Target data and publication contracts
+
+Raw observations, validated claims, candidates and accepted links are separate constrained types.
+Cohort membership is not person identity. Provider IDs retain their true ownership scope; missing
+IDs cannot become name-derived canonical people. Grade, affiliation, participation and coaching
+appointment are time-scoped facts. Syndicated sources are not independent corroboration.
+
+Archive captured bytes durably before publishing references. A URL, body hash or parse count alone
+is not an archive. Commit observations, source progress and effect receipts atomically; acknowledge
+only after durability. Partial parses retain valid rows and rejected locators without closing the
+unfinished obligation. Retry replay and a legitimate new capture have different effect semantics.
+
+Use one snapshot and one projection for workbook and audit outputs. Preserve historical result
+affiliation, real rounds/heats and comparable PR conditions. Bind public coach mailboxes to exact
+institution/role evidence. Verify exact record IDs, PR winners and coverage, then atomically publish
+the whole generation; a failed or stale exporter cannot replace a valid bundle.
+
+Detailed contracts, dependency order, F01–F15 and all 17 native fault scenarios live in
+[`docs/NATIONAL-CENSUS-PLAN.md`](docs/NATIONAL-CENSUS-PLAN.md). They remain required until exercised.
 
 ## 10. Engineering standards (§37-§43)
 
@@ -232,27 +257,26 @@ documents are not test evidence.
 
 ## 12. Acceptance (§70)
 
-The census may be sealed only when every configured jurisdiction has terminal sweeps; every source
-object has a terminal acquisition state; every potential Class-of-2027 athlete has a terminal cohort
-decision; every identity candidate has a terminal deterministic or AI-assisted decision; every
-unresolved conflict and every retry-exhausted operation is explicitly retained; all successful
-evidence is durable; performance and PR calculations are reproducible; every workbook athlete maps to
-canonical stored evidence; and workbook counts, source coverage and run metrics all reconcile against
-Fjall with a passing final export verification.
+The national census may be sealed only when all 51 required jurisdictions have terminal declared
+discovery/acquisition obligations; every potential Class-of-2027 athlete has a terminal cohort
+decision; every identity candidate has a terminal adjudication; and every conflict, gap and
+retry-exhausted operation is retained. Unresolved work and unverified publication block sealing;
+terminal findings may remain under ADR-011. All successful evidence must be durable, performance
+and PR calculations reproducible, and workbook records, coverage and metrics reconciled against
+the same Fjall snapshot. A seal certifies the declared run, not exhaustive knowledge of the Internet.
 
-## 13. Current state and migration
+## 13. Current state and delivery order
 
-The migration onto §4 proceeds in waves — contract and inventory, store, crawl, reconcile/review/
-report, service, then the national run — with the gates green and a pushed commit at the end of every
-wave. The **store** wave landed `crates/census-store` (Fjall keyspaces, journals, snapshots,
-backup/restore, and the clock capability) and `crates/census-review` (the local-model review lane);
-the **crawl** wave landed `crates/census-crawl` (the polite fetcher and browser bridge, one module per
-provider, the provider registry) together with `census-domain/src/school_index.rs` and
-`census-domain/src/core_scope.rs`. What remains in `crates/census-service` is the composition root:
-the sweep and meet walk, the durable services, the reductions (`crates/census-report/src/{report,bests,workbook}/`), the
-CLI and the supervisor; the `crates/g1-audit` audit binary that sat beside them was folded into
-Deps already wired: fjall 3.1.10, restate-sdk 0.12, reqwest 0.13, tokio, thiserror, serde.
-`xtask seams` enforces both graphs: the module table for
-what is left and the crate table for the edges that crossed a boundary, so a wave cannot quietly
-reintroduce a direction the layout forbids. `docs/migration/module-map.md` holds the file-level cut;
-`docs/adr/README.md` holds the decisions frozen so far.
+The nine-crate split exists; `docs/migration/module-map.md` records its historical cut. Do not
+restart it or resurrect the deleted root pipeline. `docs/architecture.md` records implementation
+details; §5 names the current durable handlers and batch-only gaps.
+
+ADR-013 changes the mission, not the code by declaration. First migrate the 49-jurisdiction scope
+and bind a fresh store/run; establish source/program obligations; prove one real discovery-to-capture-
+to-census-to-output path; then expand sources, history and contacts across all 51. Integrate the
+same durable application, shared projection and atomic publication before the national acceptance
+run. Execute all F01–F15 and 17 fault obligations, reconcile the final generation and seal, then
+Main commits verified delivery. Exact stage exits are in `docs/NATIONAL-CENSUS-PLAN.md`.
+
+Historical `var/midwest-census` data, old exports and prior seals are preserved, not imported or
+counted as completed work for the fresh national run. Documentation is not runtime evidence.

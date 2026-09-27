@@ -3,34 +3,57 @@
 Primary instruction document for any person or coding agent working here. Read this first, then
 `ARCHITECTURE.md`, then `docs/adr/README.md`.
 
+## Startup (mandatory, every session)
+
+Every agent invokes these four skills at session start, before reading further or editing code.
+Re-invoke after any context compaction or reset. If a skill is unavailable, stop and report it
+instead of proceeding without it.
+
+1. `rust-contract` — domain and type contracts before proof, tests, or implementation.
+2. `holzman-rust` — implementation, repair, review, and performance work under the NASA/JPL
+   Power-of-Ten discipline (no production `unsafe`/`unwrap`/`expect`/`panic`, checked arithmetic,
+   typed errors, bounded resources, benchmark evidence for perf claims).
+3. `async-rust-reviewer` — any async/concurrency work (spawn discipline, cancellation safety,
+   `Send`/`Sync` hygiene, shutdown drain accounting, observability).
+4. `scott-ddd-refactor` — Scott Wlaschin type-driven design: validated newtypes, checked
+   constructors, exhaustive algebraic types, explicit state transitions; make illegal states
+   unrepresentable, never mirror types or silently change interfaces.
+
 ## What this repository is
 
-A Class-of-2027 high-school Track & Field / Cross Country recruiting census over the run scope of
-ADR-009: the 48 contiguous states plus D.C. A qualified
-source graph feeds durable acquisition, acquisition produces evidence, evidence lands in Fjall, a
-deterministic merge proposes canonical identities, and the local Qwen lane advises only where Rust
-cannot resolve uncertainty. Rust adjudicates; models do not establish identity. The result is
-projected into an Excel workbook a recruiter can filter. The workbook is a projection; the durable
-evidence system is the census.
+A fresh, source-discovered Class-of-2027 high-school Track & Field / Cross Country recruiting
+census across all 50 states plus D.C. — 51 jurisdictions under ADR-013. Discover the population
+through qualified public sources, acquire evidence durably into Fjall, and reconcile identities
+in deterministic Rust. Both local Qwen lanes advise only where Rust cannot resolve uncertainty;
+models do not establish identity. Excel is generated output, never an input population.
+
+`docs/NATIONAL-CENSUS-PLAN.md` is the active implementation master plan. The code's existing
+49-jurisdiction scope has not yet been migrated; do not describe the 51-jurisdiction target as
+implemented or use an old store, export or seal as proof of this fresh national run.
 
 ## Required delivery contract
 
-- Build a production-grade, fully Rust pipeline that processes every real row from both input
-  workbook sheets. Preserve the original workbook unchanged, retain stable source-row identities,
-  and reconcile every input row to an explicit outcome, including unresolved `REVIEW`.
+- Build a production-grade, fully Rust pipeline that discovers and scrapes the nationwide population
+  from scratch. Do not import a seed/admissions workbook, process an operator-supplied recruit list,
+  or measure completion against original spreadsheet rows. Public result spreadsheets are eligible
+  captured source documents, not the population contract.
+- Start with a fresh named store and unused durable run namespace/revision, bound to each other.
+  Preserve existing stores and artifacts; do not import their evidence, canonical entities,
+  completion receipts or seals. Reuse maintained code, fixtures and qualified public source entry
+  points, then acquire this run's evidence afresh. Within the run, reuse completed work on recovery.
 - Discover athlete information across as many relevant sources as can be found: Athletic.net,
   MileSplit, DirectAthletics, relevant TFRRS records, AthleticLIVE, state associations, timing
   companies, meet organizers, school and team websites, and linked results in HTML, structured
   data, PDFs and spreadsheets. Continuously discover additional relevant sources through school,
   team, meet and results links, subject to bounded work and source policy.
-- Acquire team rosters and meet results once and reuse them across applicable athletes. Maintain a
-  shared local evidence index so workbook rows do not repeat searches, downloads, parsing or
-  unchanged model reviews.
+- Acquire team rosters and meet results once per relevant capture/parse revision and reuse them
+  across provider-owned subjects. Maintain a shared evidence index so discovery does not repeat
+  searches, downloads, parsing or unchanged model reviews for each athlete.
 - Track source coverage, pagination, retrieval failures, unsupported formats and unfinished
   discovery explicitly. Incomplete coverage must never become a definitive no-match result or a
   claim of exhaustive coverage. Source failure is not evidence of athlete absence.
-- Verify Class-of-2027 identity and distinguish Track & Field from Cross Country participation.
-  Return source profile links, verified marks and traceable evidence.
+- Verify Class-of-2027 cohort membership separately from identity, and distinguish Track & Field
+  from Cross Country participation. Return source profile links, verified marks and traceable evidence.
 - Resolve cross-source identities using corroborated school, location, graduation-year, season
   and participation evidence. Never merge on name alone or count syndicated copies as independent
   corroboration. Preserve provider-specific athlete IDs and URLs, conflicting observations and
@@ -47,16 +70,16 @@ evidence system is the census.
   calculation deterministically before invoking AI. Clean deterministic matches bypass AI.
 - Treat the local Qwen llama.cpp servers on the RTX 5090 and RTX 3090 as scarce review capacity.
   Unresolved identities and cross-source conflicts receive independent reviews from both servers,
-  using the permitted full local row and prepared, source-linked evidence. Acceptance requires
+  using prepared, source-linked public evidence and retained contradictions. Acceptance requires
   sufficient corroboration, satisfaction of deterministic rules and reviewer agreement. Agreement
   cannot replace evidence; unresolved uncertainty remains `REVIEW`.
-- Keep admissions data and model review local. Do not expose private workbook rows to cloud models,
-  development-agent prompts, public logs, committed fixtures or remote services.
+- Keep model review local to the approved servers. Admissions data and private workbooks are not
+  inputs; never add workbook enrichment or cloud-model fallback as a competing execution path.
 - Use locally hosted, non-Docker Restate with its Rust SDK for durable orchestration, idempotent
   operations and crash recovery. Restate is the sole retry owner; transport performs one attempt.
-  The repository's stricter three-total-attempt ceiling remains within the requested maximum of
-  three retries after the initial attempt. Preserve every source row, candidate, observation,
-  decision and exhausted failure under stable logical identities.
+  The ceiling is three total automatic attempts, not three retries after an initial attempt.
+  Preserve every source object, candidate, observation, decision and exhausted failure under stable
+  logical identities; a retry must not mint a new job or reset its budget.
 - Export accepted identities, graduation evidence, sport classifications, source links, verified
   marks, coverage status and review reasons. Publish snapshot-bound workbook and audit artifacts
   atomically; never replace a valid published bundle with a partial one.
@@ -70,12 +93,14 @@ evidence system is the census.
    §9, §55 and §70 resolve there; the §38/§49/§56 family comes from the mission brief, which is not in
    this tree, and this file restates those standards where they bind).
 2. `docs/adr/README.md` — decisions that may not be silently re-litigated.
-3. `docs/migration/module-map.md` — the module inventory and the crate cut being executed.
-4. `crates/census-service/README.md` and `xtask/README.md` — the two crate-root READMEs that exist;
+3. `docs/NATIONAL-CENSUS-PLAN.md` — active target contracts, delivery order, F01–F15 and all 17 faults.
+4. `docs/architecture.md` — implementation inventory and known gaps; `docs/migration/module-map.md`
+   records the historical crate cut, not the current execution plan.
+5. `crates/census-service/README.md` and `xtask/README.md` — crate-root operational references;
    keep additional architecture, domain and operating rationale in separate documentation, not code.
-5. `docs/OPERATIONS.md` — operations runbook; successor to the superseded `HANDOFF.md`.
-6. `docs/FJALL_BACKUP.md` — Fjall backup and restore procedures.
-7. `docs/deployment-lifecycle.md` — deployment and lifecycle management.
+6. `docs/OPERATIONS.md` — operations runbook; successor to the superseded `HANDOFF.md`.
+7. `docs/FJALL_BACKUP.md` — Fjall backup and restore procedures.
+8. `docs/deployment-lifecycle.md` — deployment and lifecycle management.
 
 ## Commands
 
@@ -102,8 +127,9 @@ not a bug.
 
 Binary: `./target/release/census-service` — the `census-service` bin of `crates/census-service`; its
 `serve` subcommand prints the `census-serve` command line that runs the endpoint against this store.
-Store root: `var/census-service` (the `--data-dir` default); the delivered census of ADR-009 lives
-in `var/midwest-census` (the store the seal, the workbook and the §58 verification were built from).
+Store root defaults to `var/census-service`. `var/midwest-census` and its ADR-009 workbook/seal are
+historical artifacts, not the fresh national destination or proof of its completeness. Select a new
+named store and durable run revision for ADR-013; do not silently reuse or delete either old root.
 **The store is single-writer**; lanes that write must serialize.
 
 ## Crate ownership
@@ -183,16 +209,16 @@ infer GPA (§36). A §69 stop condition for one source is persisted and the cens
 4. Compile and run focused tests after each integrated slice, before dependent work expands.
    The previous “finish all F01–F15 before any checks” restriction is superseded. Existing defects
    are blockers to repair, not permission to defer verification or weaken a gate.
-5. Finish one working end-to-end workbook-to-evidence-to-output path first, then extend coverage
-   through the same implementation. Measure verified slices completed and defects escaping review,
-   not agent activity or files changed.
+5. Finish one working source-discovery-to-capture-to-evidence-to-census-to-output path first, then
+   extend national coverage through that same implementation. A qualification slice is not the
+   delivered census. Measure verified completions and escaped defects, not activity or files changed.
 6. Make testing a release gate. Exercise every defined state transition, source contract, acceptance
    rule, boundary and recovery path. Every discovered defect gains a regression test.
 
 Required release evidence includes:
 
 - Adversarial identity fixtures, cross-source conflicts, syndicated duplicates, schema changes,
-  pagination gaps, incompatible marks and complete input/output reconciliation.
+  pagination gaps, incompatible marks and exact source-observation/decision/artifact reconciliation.
 - Property tests, parser fuzzing, concurrency and cancellation, duplicate delivery, fault injection,
   crash recovery, retry exhaustion and malformed model responses.
 - Critical-logic mutation testing, representative load tests, throughput and resource measurements,
@@ -200,7 +226,8 @@ Required release evidence includes:
 - Real execution of the named durability scenarios against isolated local-disk scratch state.
   Simulated success, a narrowed test or a passing build does not prove the intended fault.
 - Exercise changed CLI, Restate and export paths; verify generated artifacts against durable
-  evidence and confirm the original workbook remains unchanged.
+  evidence, all 51 jurisdiction obligations and disclosed coverage limits. Prove the new run did
+  not inherit old completion claims and historical stores/artifacts remain untouched.
 
 Unresolved accuracy, data-loss or recovery failures block release. Record exact commands, observed
 results, coverage limits and remaining blockers. Never claim completion, exhaustive coverage or a

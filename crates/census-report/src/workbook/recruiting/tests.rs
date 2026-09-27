@@ -1,6 +1,5 @@
 use super::*;
 use crate::bests;
-use crate::workbook::Options;
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     normalize_name, AthleteId, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
@@ -125,6 +124,10 @@ fn event(store: &Store, meet: &MeetId, kind: EventKind) -> EventId {
 
 fn performance(store: &Store, context: &PerformanceRow<'_>, mark: Mark, source: &str, url: &str) {
     let school_year = SchoolYear::from_date(context.date).unwrap();
+    let source_athlete = SourceIdentity::new(
+        SourceNamespace::Other(source.to_string()),
+        format!("{source}-999"),
+    );
     let team = CanonicalTeam::mint(
         context.school,
         Sport::OutdoorTrack,
@@ -173,7 +176,7 @@ fn performance(store: &Store, context: &PerformanceRow<'_>, mark: Mark, source: 
                 observed_grade: None,
                 evidence: evidence(source, Some(url)),
                 source_key,
-                source_athlete: context.source_athlete.clone(),
+                source_athlete,
                 retained_conflicts: Vec::new(),
             },
         )
@@ -182,7 +185,6 @@ fn performance(store: &Store, context: &PerformanceRow<'_>, mark: Mark, source: 
 
 struct PerformanceRow<'a> {
     athlete: &'a AthleteId,
-    source_athlete: &'a SourceIdentity,
     school: &'a SchoolId,
     meet: &'a MeetId,
     event: &'a EventId,
@@ -239,7 +241,7 @@ fn fixture() -> Fixture {
     let store = Store::open(dir.path()).unwrap();
     let wi = school(&store, UsJurisdiction::Wisconsin, "Abbotsford");
     let mn = school(&store, UsJurisdiction::Minnesota, "Ada-Borup");
-    let (julian, source_athlete) = julian(&store, &wi);
+    let (julian, _) = julian(&store, &wi);
     let nadia = nadia(&store, &mn);
     younger(&store, &wi);
 
@@ -315,7 +317,6 @@ fn fixture() -> Fixture {
             &store,
             &PerformanceRow {
                 athlete: &julian,
-                source_athlete: &source_athlete,
                 school: &wi,
                 meet,
                 event,
@@ -408,10 +409,6 @@ fn text(range: &Range<Data>, row: usize, column: usize) -> String {
         .get_value((row, column))
         .map(|value| value.to_string())
         .unwrap_or_default()
-}
-
-fn header(range: &Range<Data>, width: usize) -> Vec<String> {
-    (0..width).map(|column| text(range, 0, column)).collect()
 }
 
 fn row_of(range: &Range<Data>, key: &str) -> usize {

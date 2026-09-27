@@ -146,6 +146,10 @@ the research stays outside the repository as a read-only cache.
 
 ## ADR-009 — Run scope: the 48 contiguous states plus D.C.
 
+**Superseded by [ADR-013](ADR-013-fresh-national-source-census.md).** The binding target is now all
+50 states plus D.C. (51 jurisdictions). The decision below is historical; its 49-jurisdiction code
+still requires migration and must not be presented as the completed new national scope.
+
 **Decision.** `UsJurisdiction` models every state and D.C. The census run requires the 48 contiguous
 states plus the District of Columbia — forty-nine jurisdictions. Alaska and Hawaii are valid values
 that the run never requires: every value outside the run scope is representable, never run, and never
@@ -187,6 +191,10 @@ the workbook's own coverage sheet against the classifier's rows.
 ---
 
 ## ADR-010 — Migrate the corpus, never rebuild it
+
+**Superseded for the fresh national run by [ADR-013](ADR-013-fresh-national-source-census.md).**
+Preserve existing data, but acquire the new census in a fresh store/run rather than importing the
+old corpus. Explicit persisted-schema migrations remain required for existing stores.
 
 **Decision.** The existing Fjall corpus (millions of athletes, tens of thousands of schools, meets
 and coaches) is migrated into the new keyspaces in place, with a recorded revision, rather than
@@ -239,3 +247,25 @@ places able to describe a source — the failure the single capability registry 
 `census-domain` tree carries no async or I/O package, and `tools/gate.sh` runs it. A new transport is
 a module inside `census-crawl`, not a crate. If a second product ever genuinely needs the acquisition
 engine, the extraction happens then, under its own record.
+
+---
+
+## ADR-013 — Fresh nationwide source census, not workbook enrichment
+
+**Decision.** Discover the Class-of-2027 high-school TF/XC population from qualified public sources
+across all 50 states plus D.C. Do not import an admissions/seed workbook or use its rows as the
+population or coverage denominator. Excel is generated output; public result spreadsheets remain
+eligible captured source documents.
+
+Use a fresh named store and unused durable run namespace/revision. Preserve historical stores and
+artifacts without importing their evidence, canonical population, completion receipts or seals.
+Reuse maintained code, fixtures and qualified source entry points; acquire this run's evidence
+afresh, then reuse its completed work during recovery.
+
+**Supersession.** Replaces ADR-009's geographic restriction and ADR-010's old-corpus prerequisite
+for this fresh census. It does not reinstate the deleted root pipeline or authorize data deletion.
+The current 49-jurisdiction implementation must migrate before a run satisfies this decision.
+
+**Contract.** [Full decision](ADR-013-fresh-national-source-census.md) and
+[active implementation master plan](../NATIONAL-CENSUS-PLAN.md), including F01–F15 and all 17 faults.
+The new plan supersedes `docs/HARDENING-PROGRAM.md` as the execution plan, not as historical evidence.

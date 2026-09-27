@@ -20,6 +20,10 @@ fn packet() -> ReviewPacket {
     ReviewPacket::new(case.subject_id.clone(), case.subject.clone())
         .with_case(case_fact(&case))
         .with_evidence(fact("answer_field", "identity"))
+        .with_evidence(fact(
+            "flag",
+            "shared_source_identity: one provider id is on both rows",
+        ))
 }
 
 fn packet_with_flag(flag: &str) -> ReviewPacket {

@@ -234,7 +234,7 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
         observed_on: args
             .observed_on
             .clone()
-            .map_or_else(census_crawl::net::today_iso, |date| date),
+            .unwrap_or_else(census_crawl::net::today_iso),
         revision: std::num::NonZeroU32::new(args.flags.revision)
             .ok_or_else(|| anyhow::anyhow!("--revision must be greater than zero"))?,
     })

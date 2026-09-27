@@ -1,9 +1,9 @@
-use super::key::{should_replace, PrKey};
+use super::key::{should_replace, MarkOrdering, PrKey};
 use super::selection::{Conflict, Population, SharedSelection};
 use super::{is_relay, mark_text, Measure, Options, Parents};
 use crate::report::{retain_core_row, Scope};
 use census_domain::model::{
-    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, EventKind, Mark,
+    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, Mark, SourceIdentity,
 };
 use census_domain::{JurisdictionBucket, MeetState};
 use census_store::{Store, StoreResult, Table};
@@ -38,9 +38,106 @@ pub(crate) fn build_with(
 
 pub(crate) struct PrSlot {
     winner: Option<SharedSelection>,
-    sources: Vec<String>,
+    sources: Vec<SourceIdentity>,
     reports: Vec<(String, String)>,
     marks: usize,
+}
+
+impl PrSlot {
+    fn empty() -> Self {
+        Self {
+            winner: None,
+            sources: Vec::new(),
+            reports: Vec::new(),
+            marks: 0,
+        }
+    }
+}
+
+struct Candidate<'a> {
+    key: PrKey,
+    athlete: &'a CanonicalAthlete,
+    meet: Option<&'a CanonicalMeet>,
+    performance: &'a CanonicalPerformance,
+    measure: Measure,
+    value: i64,
+}
+
+impl<'a> Candidate<'a> {
+    fn resolve(
+        performance: &'a CanonicalPerformance,
+        parents: &'a Parents,
+        options: &Options,
+    ) -> Option<Self> {
+        let athlete = parents.athlete(performance.athlete.as_str())?;
+        if let Some(year) = options.grad_year {
+            if athlete.grad_year.get() != year {
+                return None;
+            }
+        }
+        let kind = parents.event(performance.event.as_str())?;
+        if is_relay(kind) {
+            return None;
+        }
+        let measure = Measure::of(&performance.mark)?;
+        let value = measure.value(&performance.mark)?;
+        let meet = parents.meet(performance.meet.as_str());
+        let key = PrKey::from_performance(performance, kind, meet, measure)?;
+        Some(Self {
+            key,
+            athlete,
+            meet,
+            performance,
+            measure,
+            value,
+        })
+    }
+
+    fn record(&self, entry: &mut PrSlot, parents: &Parents) {
+        entry.marks = entry.marks.saturating_add(1);
+        if !entry.sources.contains(&self.performance.source_athlete) {
+            entry.sources.push(self.performance.source_athlete.clone());
+        }
+        let meet_name = self.meet.map(|meet| meet.name.clone()).unwrap_or_default();
+        entry
+            .reports
+            .push((meet_name, format_mark(&self.performance.mark)));
+        if self.wins_over(entry) {
+            entry.winner = Some(make_row(
+                self.key.clone(),
+                self.athlete,
+                self.meet,
+                self.performance,
+                self.value,
+                self.measure,
+                parents,
+            ));
+        }
+    }
+
+    fn wins_over(&self, entry: &PrSlot) -> bool {
+        entry
+            .winner
+            .as_ref()
+            .map(|winner| {
+                should_replace(
+                    self.value,
+                    winner.value,
+                    MarkOrdering::new(
+                        &self.performance.date,
+                        self.performance.meet.as_str(),
+                        self.performance.id.as_str(),
+                    ),
+                    MarkOrdering::new(
+                        &winner.date,
+                        winner.meet_id.as_str(),
+                        winner.performance_id.as_str(),
+                    ),
+                    move |candidate, incumbent| self.measure.better(candidate, incumbent),
+                )
+            })
+            .unwrap_or(true)
+    }
 }
 
 fn fold(
@@ -49,79 +146,13 @@ fn fold(
     parents: &Parents,
     options: &Options,
 ) {
-    let Some(athlete) = parents.athlete(performance.athlete.as_str()) else {
+    let Some(candidate) = Candidate::resolve(performance, parents, options) else {
         return;
     };
-    if let Some(year) = options.grad_year {
-        if athlete.grad_year.get() != year {
-            return;
-        }
-    }
-    let Some(kind) = parents.event(performance.event.as_str()) else {
-        return;
-    };
-    if is_relay(kind) {
-        return;
-    }
-    let Some(measure) = Measure::of(&performance.mark) else {
-        return;
-    };
-    let Some(value) = measure.value(&performance.mark) else {
-        return;
-    };
-
-    let meet = parents.meet(performance.meet.as_str());
-    let Some(key) = PrKey::from_performance(performance, kind, meet, measure) else {
-        return;
-    };
-
-    let entry = slots.entry(key.clone()).or_insert_with(|| PrSlot {
-        winner: None,
-        sources: Vec::new(),
-        reports: Vec::new(),
-        marks: 0,
-    });
-
-    entry.marks += 1;
-
-    if !entry.sources.contains(&performance.source_athlete.id) {
-        entry.sources.push(performance.source_athlete.id.clone());
-    }
-
-    let meet_name = meet.map(|m| m.name.clone()).unwrap_or_default();
-    entry
-        .reports
-        .push((meet_name.clone(), format_mark(&performance.mark)));
-
-    let wins = entry
-        .winner
-        .as_ref()
-        .map(|w| {
-            should_replace(
-                value,
-                w.value,
-                &performance.date,
-                performance.meet.as_str(),
-                performance.id.as_str(),
-                &w.date,
-                w.meet_id.as_str(),
-                w.performance_id.as_str(),
-                move |c, i| measure.better(c, i),
-            )
-        })
-        .unwrap_or(true);
-
-    if wins {
-        entry.winner = Some(make_row(
-            key,
-            athlete,
-            meet,
-            performance,
-            value,
-            measure,
-            parents,
-        ));
-    }
+    let entry = slots
+        .entry(candidate.key.clone())
+        .or_insert_with(PrSlot::empty);
+    candidate.record(entry, parents);
 }
 
 fn close(slot: PrSlot) -> Option<SharedSelection> {

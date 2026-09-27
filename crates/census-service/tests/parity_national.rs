@@ -1,6 +1,6 @@
 mod common;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use census_crawl::athleticlive_athletes::{self, AthleteHit, MeetTarget};
 use census_crawl::net::{FetchOptions, Fetcher};
 use census_crawl::{athleticlive, athleticnet, coach_contacts, milesplit, AdapterContext};

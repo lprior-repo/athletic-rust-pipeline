@@ -19,56 +19,11 @@ impl Parents {
         scope: Scope,
         grad_year: Option<i16>,
     ) -> StoreResult<Self> {
-        let mut athletes: BTreeMap<String, CanonicalAthlete> = BTreeMap::new();
-        let mut meets: BTreeMap<String, CanonicalMeet> = BTreeMap::new();
-        let mut events: BTreeMap<String, EventKind> = BTreeMap::new();
-        let mut teams: BTreeMap<String, CanonicalTeam> = BTreeMap::new();
-        let mut schools: BTreeMap<String, CanonicalSchool> = BTreeMap::new();
-        snapshot.for_each_merged(Table::Schools, |s: CanonicalSchool| {
-            let id = s.id.as_str().to_string();
-            schools.insert(id, s);
-            Ok(())
-        })?;
-
-        snapshot.for_each_merged(Table::Athletes, |mut athlete: CanonicalAthlete| {
-            if scope == Scope::Core && !retain_core_row(&mut athlete) {
-                return Ok(());
-            }
-            if grad_year.is_some_and(|year| athlete.grad_year.get() != year) {
-                return Ok(());
-            }
-            let state = schools
-                .get(athlete.school.as_str())
-                .and_then(|school| school.state);
-            if in_run_scope(state.into()) {
-                athletes.insert(athlete.id.as_str().to_string(), athlete);
-            }
-            Ok(())
-        })?;
-
-        snapshot.for_each_merged(Table::Meets, |mut m: CanonicalMeet| {
-            if scope == Scope::Core && !retain_core_row(&mut m) {
-                return Ok(());
-            }
-            meets.insert(m.id.as_str().to_string(), m);
-            Ok(())
-        })?;
-
-        snapshot.for_each_merged(Table::Events, |mut e: CanonicalEvent| {
-            if scope == Scope::Core && !retain_core_row(&mut e) {
-                return Ok(());
-            }
-            let id = e.id.as_str().to_string();
-            events.insert(id, e.kind);
-            Ok(())
-        })?;
-
-        snapshot.for_each_merged(Table::Teams, |t: CanonicalTeam| {
-            let id = t.id.as_str().to_string();
-            teams.insert(id, t);
-            Ok(())
-        })?;
-
+        let schools = load_schools(snapshot)?;
+        let athletes = load_athletes(snapshot, &schools, scope, grad_year)?;
+        let meets = load_meets(snapshot, scope)?;
+        let events = load_events(snapshot, scope)?;
+        let teams = load_teams(snapshot)?;
         Ok(Self {
             athletes,
             meets,
@@ -97,4 +52,81 @@ impl Parents {
     pub(crate) fn school(&self, id: &str) -> Option<&CanonicalSchool> {
         self.schools.get(id)
     }
+}
+
+fn load_schools(
+    snapshot: &census_store::StoreSnapshot<'_>,
+) -> StoreResult<BTreeMap<String, CanonicalSchool>> {
+    let mut schools: BTreeMap<String, CanonicalSchool> = BTreeMap::new();
+    snapshot.for_each_merged(Table::Schools, |school: CanonicalSchool| {
+        schools.insert(school.id.as_str().to_string(), school);
+        Ok(())
+    })?;
+    Ok(schools)
+}
+
+fn load_athletes(
+    snapshot: &census_store::StoreSnapshot<'_>,
+    schools: &BTreeMap<String, CanonicalSchool>,
+    scope: Scope,
+    grad_year: Option<i16>,
+) -> StoreResult<BTreeMap<String, CanonicalAthlete>> {
+    let mut athletes: BTreeMap<String, CanonicalAthlete> = BTreeMap::new();
+    snapshot.for_each_merged(Table::Athletes, |mut athlete: CanonicalAthlete| {
+        if scope == Scope::Core && !retain_core_row(&mut athlete) {
+            return Ok(());
+        }
+        if grad_year.is_some_and(|year| athlete.grad_year.get() != year) {
+            return Ok(());
+        }
+        let state = schools
+            .get(athlete.school.as_str())
+            .and_then(|school| school.state);
+        if in_run_scope(state.into()) {
+            athletes.insert(athlete.id.as_str().to_string(), athlete);
+        }
+        Ok(())
+    })?;
+    Ok(athletes)
+}
+
+fn load_meets(
+    snapshot: &census_store::StoreSnapshot<'_>,
+    scope: Scope,
+) -> StoreResult<BTreeMap<String, CanonicalMeet>> {
+    let mut meets: BTreeMap<String, CanonicalMeet> = BTreeMap::new();
+    snapshot.for_each_merged(Table::Meets, |mut meet: CanonicalMeet| {
+        if scope == Scope::Core && !retain_core_row(&mut meet) {
+            return Ok(());
+        }
+        meets.insert(meet.id.as_str().to_string(), meet);
+        Ok(())
+    })?;
+    Ok(meets)
+}
+
+fn load_events(
+    snapshot: &census_store::StoreSnapshot<'_>,
+    scope: Scope,
+) -> StoreResult<BTreeMap<String, EventKind>> {
+    let mut events: BTreeMap<String, EventKind> = BTreeMap::new();
+    snapshot.for_each_merged(Table::Events, |mut event: CanonicalEvent| {
+        if scope == Scope::Core && !retain_core_row(&mut event) {
+            return Ok(());
+        }
+        events.insert(event.id.as_str().to_string(), event.kind);
+        Ok(())
+    })?;
+    Ok(events)
+}
+
+fn load_teams(
+    snapshot: &census_store::StoreSnapshot<'_>,
+) -> StoreResult<BTreeMap<String, CanonicalTeam>> {
+    let mut teams: BTreeMap<String, CanonicalTeam> = BTreeMap::new();
+    snapshot.for_each_merged(Table::Teams, |team: CanonicalTeam| {
+        teams.insert(team.id.as_str().to_string(), team);
+        Ok(())
+    })?;
+    Ok(teams)
 }

@@ -213,6 +213,7 @@ fn wi_options(limit_per_state: Option<usize>) -> CollectOptions {
         refresh: false,
         school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: OBSERVED_ON.to_string(),
+        revision: std::num::NonZeroU32::new(1).expect("1 is a revision"),
     }
 }
 
@@ -1557,10 +1558,10 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
         note(
             SCENARIO,
             format!(
-                "control: teams={} rosters_done={} co2027={} athletes={} requests={} cache_hits={} \
+                "control: teams={} rosters_committed={} co2027={} athletes={} requests={} cache_hits={} \
                  tables={:?}",
                 walk.teams.len(),
-                walk.progress.rosters_done,
+                walk.progress.rosters_committed,
                 walk.progress.class_of_2027,
                 walk.athletes.len(),
                 walk.stats.requests,
@@ -1574,7 +1575,7 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
             "the team index is journaled once per state"
         );
         assert_eq!(
-            walk.progress.rosters_done,
+            walk.progress.rosters_committed,
             walk.teams.len(),
             "a clean pass walks every roster the index lists"
         );
@@ -1618,11 +1619,11 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
         note(
             SCENARIO,
             format!(
-                "first pass (limit 1): rosters_done={} skipped={} journal={journal:?}",
-                first.rosters_done, first.rosters_skipped
+                "first pass (limit 1): rosters_committed={} skipped={} journal={journal:?}",
+                first.rosters_committed, first.rosters_skipped
             ),
         );
-        assert_eq!(first.rosters_done, 1);
+        assert_eq!(first.rosters_committed, 1);
         assert_eq!(
             first.rosters_skipped, 0,
             "skipped counts rosters an earlier pass journaled, and this pass is the first: the \
@@ -1673,9 +1674,9 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
     note(
         SCENARIO,
         format!(
-            "restart: rosters_done={} skipped={} co2027={} athletes={} requests={} cache_hits={} \
+            "restart: rosters_committed={} skipped={} co2027={} athletes={} requests={} cache_hits={} \
              tables={counts:?}",
-            resumed.rosters_done,
+            resumed.rosters_committed,
             resumed.rosters_skipped,
             resumed.class_of_2027,
             athletes.len(),
@@ -1684,7 +1685,7 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
         ),
     );
     assert_eq!(
-        resumed.rosters_done,
+        resumed.rosters_committed,
         teams.len() - stopped_after.len(),
         "the restart walked only the rosters the first pass did not journal"
     );

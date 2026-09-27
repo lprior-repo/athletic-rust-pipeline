@@ -15,15 +15,18 @@ pub fn read_raw_contacts(path: &Path) -> Result<Vec<RawContactRow>, ContactArtif
     let mut csv = ContactCsv::open(path, RAW_CONTACT_HEADER_COUNT)?;
     header(&mut csv, path, RAW_CONTACT_HEADER_COUNT)?;
     let mut rows = Vec::new();
-    for index in 0..=MAX_ROWS {
-        let Some(record) = csv.next(index + 1)? else {
+    for row in 1..=MAX_ROWS.saturating_add(1) {
+        let Some(record) = csv.next(row)? else {
             return Ok(rows);
         };
-        enforce_rows(path, index + 1)?;
-        let source_urls = record[9].split_whitespace().map(str::to_owned).collect();
+        enforce_rows(path, row)?;
+        let source_urls = field(&record, path, row, 9)?
+            .split_whitespace()
+            .map(str::to_owned)
+            .collect();
         rows.try_reserve(1)
             .map_err(|error| ContactArtifactError::io(path, io::Error::other(error)))?;
-        rows.push(raw_row(&record, source_urls));
+        rows.push(raw_row(&record, source_urls, path, row)?);
     }
     Err(ContactArtifactError::RowLimitExceeded {
         path: path.to_owned(),
@@ -72,8 +75,8 @@ fn read_pairs(
 ) -> Result<Vec<ValidatedRow>, ContactArtifactError> {
     let mut rows = Vec::new();
     let (mut csv_rows, mut jsonl_envelopes) = (0usize, 0usize);
-    for index in 0..=MAX_ROWS {
-        let record = csv.next(index + 1)?;
+    for index in 1..=MAX_ROWS.saturating_add(1) {
+        let record = csv.next(index)?;
         let envelope = envelopes.next()?;
         if record.is_none() && envelope.is_none() {
             if csv_rows != jsonl_envelopes {
@@ -93,11 +96,11 @@ fn read_pairs(
             return Ok(rows);
         }
         if record.is_some() {
-            csv_rows += 1;
+            csv_rows = csv_rows.saturating_add(1);
             enforce_rows(csv_path, csv_rows)?;
         }
         if envelope.is_some() {
-            jsonl_envelopes += 1;
+            jsonl_envelopes = jsonl_envelopes.saturating_add(1);
             enforce_rows(evidence_path, jsonl_envelopes)?;
         }
         if let (Some(record), Some(envelope)) = (record, envelope) {
@@ -147,17 +150,18 @@ fn validate_row(
     path: &Path,
     index: usize,
 ) -> Result<ValidatedRow, ContactArtifactError> {
-    let source_urls: Vec<String> = serde_json::from_str(record[9]).map_err(|error| {
-        ContactArtifactError::InvalidSourceUrlsJson {
-            path: path.to_owned(),
-            row: index,
-            detail: error.to_string(),
-        }
-    })?;
+    let source_urls: Vec<String> =
+        serde_json::from_str(field(record, path, index, 9)?).map_err(|error| {
+            ContactArtifactError::InvalidSourceUrlsJson {
+                path: path.to_owned(),
+                row: index,
+                detail: error.to_string(),
+            }
+        })?;
     if source_urls.iter().any(String::is_empty) {
         return Err(ContactArtifactError::EmptySourceUrl { row: index });
     }
-    let csv_proof = record[11];
+    let csv_proof = field(record, path, index, 11)?;
     if csv_proof.is_empty() {
         return Err(ContactArtifactError::MissingProofDigest { row: index });
     }
@@ -173,7 +177,7 @@ fn validate_row(
             "CSV and evidence proof differ",
         ));
     }
-    let row = raw_row(record, source_urls);
+    let row = raw_row(record, source_urls, path, index)?;
     let proof = verify_contact_proof(&row, &envelope.claims, csv_proof)
         .map_err(|error| ContactArtifactError::proof(index, error.to_string()))?;
     Ok(ValidatedRow {
@@ -186,20 +190,34 @@ fn validate_row(
 fn raw_row(
     record: &[&str; VERIFIED_CONTACT_HEADER_COUNT],
     source_urls: Vec<String>,
-) -> RawContactRow {
-    RawContactRow {
-        school: record[0].to_owned(),
-        city: record[1].to_owned(),
-        state: record[2].to_owned(),
-        sport: record[3].to_owned(),
-        role: record[4].to_owned(),
-        coach_name: record[5].to_owned(),
-        public_professional_email: record[6].to_owned(),
-        ad_name: record[7].to_owned(),
-        ad_email: record[8].to_owned(),
+    path: &Path,
+    index: usize,
+) -> Result<RawContactRow, ContactArtifactError> {
+    Ok(RawContactRow {
+        school: field(record, path, index, 0)?.to_owned(),
+        city: field(record, path, index, 1)?.to_owned(),
+        state: field(record, path, index, 2)?.to_owned(),
+        sport: field(record, path, index, 3)?.to_owned(),
+        role: field(record, path, index, 4)?.to_owned(),
+        coach_name: field(record, path, index, 5)?.to_owned(),
+        public_professional_email: field(record, path, index, 6)?.to_owned(),
+        ad_name: field(record, path, index, 7)?.to_owned(),
+        ad_email: field(record, path, index, 8)?.to_owned(),
         source_urls,
-        last_observed: record[10].to_owned(),
-    }
+        last_observed: field(record, path, index, 10)?.to_owned(),
+    })
+}
+
+fn field<'a>(
+    record: &'a [&'a str; VERIFIED_CONTACT_HEADER_COUNT],
+    path: &Path,
+    row: usize,
+    position: usize,
+) -> Result<&'a str, ContactArtifactError> {
+    record
+        .get(position)
+        .copied()
+        .ok_or_else(|| ContactArtifactError::record(path, row, format!("missing field {position}")))
 }
 
 fn read_manifest(directory: &Path) -> Result<Manifest, ContactArtifactError> {

@@ -137,9 +137,10 @@ impl ModelClient {
             .await?;
         let status = response.status().as_u16();
         let content_length = response.content_length().unwrap_or(0);
-        if content_length > RESPONSE_CAP as u64 {
+        let declared_cap = u64::try_from(RESPONSE_CAP).unwrap_or(u64::MAX);
+        if content_length > declared_cap {
             return Err(ModelError::ResponseTooLarge {
-                bytes: content_length as usize,
+                bytes: usize::try_from(content_length).unwrap_or(RESPONSE_CAP),
             });
         }
         let mut buf = Vec::new();
@@ -149,10 +150,9 @@ impl ModelClient {
                 Ok(None) => break,
                 Err(err) => return Err(ModelError::from(err)),
             };
-            if buf.len() + chunk.len() > RESPONSE_CAP {
-                return Err(ModelError::ResponseTooLarge {
-                    bytes: buf.len() + chunk.len(),
-                });
+            let grown = buf.len().saturating_add(chunk.len());
+            if grown > RESPONSE_CAP {
+                return Err(ModelError::ResponseTooLarge { bytes: grown });
             }
             buf.extend_from_slice(&chunk);
         }

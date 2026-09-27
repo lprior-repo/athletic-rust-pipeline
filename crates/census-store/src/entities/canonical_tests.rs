@@ -36,28 +36,6 @@ fn athlete(
     row
 }
 
-fn athlete_with_links(
-    id: &AthleteId,
-    name: &str,
-    gender: Gender,
-    namespace: SourceNamespace,
-    source: &str,
-    links: &[(&str, &str)],
-) -> CanonicalAthlete {
-    let identity = SourceIdentity::new(namespace, source);
-    let mut row = CanonicalAthlete::new(&school(), name, GradYear::CO2027, gender, identity);
-    row.id = id.clone();
-    for (ns, id) in links {
-        let ns = match *ns {
-            "milesplit" => SourceNamespace::MilesplitAthlete,
-            "tfrrs" => SourceNamespace::TfrrsAthlete,
-            _ => panic!("unsupported namespace"),
-        };
-        row.add_identity(SourceIdentity::new(ns, *id));
-    }
-    row
-}
-
 #[test]
 fn two_observations_of_one_athlete_merge_as_before() {
     let id = CanonicalAthlete::mint(

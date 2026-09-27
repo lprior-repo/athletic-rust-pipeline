@@ -1,5 +1,7 @@
 use super::*;
-use census_domain::model::{CentiSeconds, SourceIdentity, SourceNamespace};
+use census_domain::model::{
+    AthleteId, CentiSeconds, MeetId, PerformanceId, SourceIdentity, SourceNamespace, TeamId,
+};
 
 pub(super) fn performance_observations() -> Result<Vec<CanonicalPerformance>> {
     let mut batch = Vec::with_capacity(PERFORMANCES.saturating_mul(OBSERVATIONS_PER_PERFORMANCE));
@@ -14,38 +16,69 @@ fn performance_for_index(
     jurisdiction: UsJurisdiction,
     index: usize,
 ) -> Result<Vec<CanonicalPerformance>> {
-    let name = format!("{SCHOOL_PREFIX} {} 000", jurisdiction.code());
-    let school = CanonicalSchool::mint(jurisdiction, &name, &normalize_name(&name));
-    let meet = CanonicalMeet::mint(Some(jurisdiction), MEET_DATE, MEET_NAME, None);
-    let athlete_name = format!("Athlete {index:05}");
-    let source = SourceIdentity::new(
-        SourceNamespace::Other("fixture".to_string()),
-        format!("athlete-{index:05}"),
-    );
-    let athlete = CanonicalAthlete::mint(
-        &school,
-        &athlete_name,
-        GradYear::CO2027,
-        Gender::Boys,
-        &source,
-    );
-    let team = CanonicalTeam::mint(
-        &school,
-        Sport::OutdoorTrack,
-        Gender::Boys,
-        SchoolYear::new(2024).context("2024 is a season")?,
-    );
-    let kind = EventKind::Track800m;
-    let event = CanonicalEvent::new(&meet, kind.clone(), Gender::Boys, None, Some("finals"));
-    let source_key = format!("bench:{index:05}");
-    let id = CanonicalPerformance::mint(&athlete, &meet, &kind, MEET_DATE, &source_key);
-    let step = u32::try_from(index % 900).context("a mark step does not fit u32")?;
-    let mark = Mark::TimeSeconds(
-        CentiSeconds::try_from_seconds_f64(120.0 + f64::from(step) / 100.0)
-            .expect("fixture is in range"),
-    );
-    let mut observations = Vec::with_capacity(OBSERVATIONS_PER_PERFORMANCE);
-    for observation in 0..OBSERVATIONS_PER_PERFORMANCE {
+    let fixture = Fixture::mint(jurisdiction, index)?;
+    (0..OBSERVATIONS_PER_PERFORMANCE)
+        .map(|observation| fixture.observation(observation))
+        .collect()
+}
+
+struct Fixture {
+    index: usize,
+    athlete: AthleteId,
+    team: TeamId,
+    meet: MeetId,
+    event: CanonicalEvent,
+    performance: PerformanceId,
+    mark: Mark,
+    source_key: String,
+}
+
+impl Fixture {
+    fn mint(jurisdiction: UsJurisdiction, index: usize) -> Result<Self> {
+        let name = format!("{SCHOOL_PREFIX} {} 000", jurisdiction.code());
+        let school = CanonicalSchool::mint(jurisdiction, &name, &normalize_name(&name));
+        let meet = CanonicalMeet::mint(Some(jurisdiction), MEET_DATE, MEET_NAME, None);
+        let athlete_name = format!("Athlete {index:05}");
+        let source = SourceIdentity::new(
+            SourceNamespace::Other("fixture".to_string()),
+            format!("athlete-{index:05}"),
+        );
+        let athlete = CanonicalAthlete::mint(
+            &school,
+            &athlete_name,
+            GradYear::CO2027,
+            Gender::Boys,
+            &source,
+        );
+        let team = CanonicalTeam::mint(
+            &school,
+            Sport::OutdoorTrack,
+            Gender::Boys,
+            SchoolYear::new(2024).context("2024 is a season")?,
+        );
+        let kind = EventKind::Track800m;
+        let event = CanonicalEvent::new(&meet, kind.clone(), Gender::Boys, None, Some("finals"));
+        let source_key = format!("bench:{index:05}");
+        let performance =
+            CanonicalPerformance::mint(&athlete, &meet, &kind, MEET_DATE, &source_key);
+        let step = u32::try_from(index % 900).context("a mark step does not fit u32")?;
+        let mark = Mark::TimeSeconds(
+            CentiSeconds::try_from_seconds_f64(120.0 + f64::from(step) / 100.0)
+                .context("fixture mark is in range")?,
+        );
+        Ok(Self {
+            index,
+            athlete,
+            team,
+            meet,
+            event,
+            performance,
+            mark,
+            source_key,
+        })
+    }
+
+    fn observation(&self, observation: usize) -> Result<CanonicalPerformance> {
         let seen = u16::try_from(observation).context("an observation does not fit u16")?;
         let first = observation == 0;
         let timing = if first {
@@ -54,14 +87,14 @@ fn performance_for_index(
             TimingMethod::Hand
         };
         let observed_grade = Grade::new(if first { 11 } else { 12 });
-        observations.push(CanonicalPerformance {
-            id: id.clone(),
-            athlete: athlete.clone(),
-            team: team.clone(),
-            event: event.id.clone(),
-            meet: meet.clone(),
+        Ok(CanonicalPerformance {
+            id: self.performance.clone(),
+            athlete: self.athlete.clone(),
+            team: self.team.clone(),
+            event: self.event.id.clone(),
+            meet: self.meet.clone(),
             date: MEET_DATE.to_string(),
-            mark: mark.clone(),
+            mark: self.mark.clone(),
             wind_mps: Some(f64::from(seen) + 1.2),
             place: Some(seen.saturating_add(1)),
             heat: None,
@@ -72,12 +105,14 @@ fn performance_for_index(
                 SourceRef::new("bench", None),
                 format!("2025-06-{:02}", seen.saturating_add(6)),
             )],
-            source_key: source_key.clone(),
-            source_athlete: source,
+            source_key: self.source_key.clone(),
+            source_athlete: SourceIdentity::new(
+                SourceNamespace::Other("fixture".to_string()),
+                format!("athlete-{:05}", self.index),
+            ),
             retained_conflicts: Vec::new(),
-        });
+        })
     }
-    Ok(observations)
 }
 
 pub(super) fn fixture(dir: &str, file: &str) -> Result<String> {

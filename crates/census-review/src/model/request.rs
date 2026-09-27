@@ -30,7 +30,8 @@ impl std::io::Write for BoundedWriter {
                 .max(256)
                 .max(self.attempted)
                 .min(REQUEST_CAP);
-            self.buf.reserve_exact(capacity - self.buf.len());
+            self.buf
+                .reserve_exact(capacity.saturating_sub(self.buf.len()));
         }
         self.buf.extend_from_slice(bytes);
         Ok(bytes.len())
@@ -127,17 +128,17 @@ struct PacketDisplay<'a> {
 
 impl std::fmt::Display for PacketDisplay<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "subject_id: {}\n", self.packet.subject_id)?;
-        write!(f, "subject: {}\n\n", self.packet.subject)?;
-        write!(f, "cases:\n")?;
+        writeln!(f, "subject_id: {}", self.packet.subject_id)?;
+        writeln!(f, "subject: {}\n", self.packet.subject)?;
+        writeln!(f, "cases:")?;
         for case in &self.packet.cases {
-            write!(f, "- case_id: {}\n", case.case_id)?;
-            write!(f, "  family: {}\n", case.family)?;
-            write!(f, "  detail: {}\n", case.detail)?;
+            writeln!(f, "- case_id: {}", case.case_id)?;
+            writeln!(f, "  family: {}", case.family)?;
+            writeln!(f, "  detail: {}", case.detail)?;
         }
-        write!(f, "\nevidence:\n")?;
+        writeln!(f, "\nevidence:")?;
         for fact in &self.packet.evidence {
-            write!(f, "- {}: {} = {}\n", fact.source, fact.field, fact.value)?;
+            writeln!(f, "- {}: {} = {}", fact.source, fact.field, fact.value)?;
         }
         Ok(())
     }

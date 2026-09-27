@@ -110,7 +110,7 @@ the resulting store statistics.
 observations through `Entity::merge` and then applies `Entity::publish`.
 
 - **Idempotency** — merging an identical observation changes nothing.
-- **Union commutativity** — `source_identities`, `evidence`, `aliases`, `known_names`, `sports`, `source_urls` and `source_labels` are sets: merge order cannot reach a row.
+- **Union commutativity** — `source_links` on athletes and `source_identities` on the other entities, plus `evidence`, `aliases`, `known_names`, `sports`, `source_urls` and `source_labels`, are sets: merge order cannot reach a row.
 - **First-writer-wins** — a scalar a row already carries is never replaced (`name`, `city`,
   `enrollment`, `level`, `professional_email`, `personal_email`, `wind_mps`, …); a hole is filled
   from the other side (`None`, or the meet's `Unknown` level), which is why merge is idempotent on
@@ -118,8 +118,8 @@ observations through `Entity::merge` and then applies `Entity::publish`.
 - **Identity preservation** — merge never rewrites the name a record was minted from
   (`school.name`, `school.normalized_name`, `athlete.canonical_name`); other spellings land in
   `aliases` / `known_names`.
-- **Cohort rule** — an `ObservedGrade` that disagrees with `grad_year` lowers `identity_confidence`
-  to `LOW`, agreement raises it to `HIGH`, and silence leaves it alone.
+- **Cohort rule** — an `ObservedGrade` that disagrees with `grad_year` lowers
+  `derived_cohort_confidence()` to `LOW`, agreement raises it to `HIGH`, and silence leaves it alone.
 - **Contact policy** — `publish` keeps every valid address, placing organisation domains in
   `professional_email` and consumer domains in `personal_email`; every valid address remains available.
 

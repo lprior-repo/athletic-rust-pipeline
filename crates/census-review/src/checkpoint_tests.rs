@@ -184,7 +184,7 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() {
     .id;
 
     let source_a = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
-    let mut a = CanonicalAthlete::new(
+    let a = CanonicalAthlete::new(
         &school_a,
         "Jordan Smith",
         GradYear::CO2027,
@@ -192,7 +192,7 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() {
         source_a,
     );
     let source_b = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
-    let mut b = CanonicalAthlete::new(
+    let b = CanonicalAthlete::new(
         &school_b,
         "Jordan Smith",
         GradYear::CO2027,

@@ -24,7 +24,9 @@ impl Measure {
     pub fn value(self, mark: &Mark) -> Option<i64> {
         match (self, mark) {
             (Measure::Time, Mark::TimeSeconds(cs)) => Some(i64::from(cs.value())),
-            (Measure::Distance, Mark::DistanceMetres(cm)) => Some(i64::from(cm.value()) * 10_000),
+            (Measure::Distance, Mark::DistanceMetres(cm)) => {
+                i64::from(cm.value()).checked_mul(10_000)
+            }
             (Measure::Distance, Mark::FieldImperial { feet_mark, .. }) => {
                 notation::parse_field_imperial(feet_mark)
             }
@@ -46,8 +48,8 @@ impl Measure {
             Measure::Time | Measure::Points => (100, 100.0),
             Measure::Distance => (1_000_000, 1_000_000.0),
         };
-        let units = i32::try_from(value / scale).ok()?;
-        let fraction = i32::try_from(value % scale).ok()?;
+        let units = i32::try_from(value.checked_div(scale)?).ok()?;
+        let fraction = i32::try_from(value.checked_rem(scale)?).ok()?;
         Some((f64::from(units) * floating_scale + f64::from(fraction)) / floating_scale)
     }
 

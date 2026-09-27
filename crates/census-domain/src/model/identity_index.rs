@@ -49,7 +49,10 @@ impl IdentityFact {
             .collect();
         links.sort_unstable();
         links.dedup();
-        let alias_conflict = links.windows(2).any(|pair| pair[0].0 == pair[1].0)
+        let alias_conflict = links
+            .iter()
+            .zip(links.iter().skip(1))
+            .any(|(left, right)| left.0 == right.0)
             || primary.is_some_and(|key| links.iter().any(|link| link.0 == key.0));
         let parsed = athlete.evidence.iter().any(|evidence| {
             evidence.method == EvidenceMethod::Parsed

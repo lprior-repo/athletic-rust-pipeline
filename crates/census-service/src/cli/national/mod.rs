@@ -164,7 +164,7 @@ mod run;
 
 pub(super) use observe::drive_jurisdiction;
 #[cfg(test)]
-use report::{blocked_count, cell, failure_exit, owed_total};
+use report::{blocked_count, failure_exit, owed_total};
 pub(super) use run::{run_jurisdiction, run_national, run_national_report};
 
 #[cfg(test)]

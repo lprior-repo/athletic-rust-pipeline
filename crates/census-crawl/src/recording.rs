@@ -18,6 +18,10 @@ impl RecordedBatch {
     pub fn len(&self) -> usize {
         self.rows.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

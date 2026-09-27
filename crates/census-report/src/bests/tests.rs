@@ -573,12 +573,8 @@ fn should_replace_strictly_better() {
     assert!(crate::bests::key::should_replace(
         1080,
         1094,
-        "2025-03-15",
-        "meet_a",
-        "perf_1",
-        "2025-03-15",
-        "meet_a",
-        "perf_1",
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -588,12 +584,8 @@ fn should_replace_worse_value() {
     assert!(!crate::bests::key::should_replace(
         1100,
         1094,
-        "2025-06-15",
-        "meet_b",
-        "perf_2",
-        "2025-03-15",
-        "meet_a",
-        "perf_1",
+        crate::bests::key::MarkOrdering::new("2025-06-15", "meet_b", "perf_2"),
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -603,12 +595,8 @@ fn should_replace_equal_value_older_loses() {
     assert!(!crate::bests::key::should_replace(
         1094,
         1094,
-        "2025-01-01",
-        "meet_a",
-        "perf_1",
-        "2025-06-15",
-        "meet_a",
-        "perf_1",
+        crate::bests::key::MarkOrdering::new("2025-01-01", "meet_a", "perf_1"),
+        crate::bests::key::MarkOrdering::new("2025-06-15", "meet_a", "perf_1"),
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -618,12 +606,8 @@ fn should_replace_equal_value_later_wins() {
     assert!(crate::bests::key::should_replace(
         1094,
         1094,
-        "2025-06-15",
-        "meet_a",
-        "perf_2",
-        "2025-03-15",
-        "meet_a",
-        "perf_1",
+        crate::bests::key::MarkOrdering::new("2025-06-15", "meet_a", "perf_2"),
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -633,12 +617,8 @@ fn should_replace_equal_value_same_date_meet_wins() {
     assert!(crate::bests::key::should_replace(
         1094,
         1094,
-        "2025-03-15",
-        "meet_b",
-        "perf_1",
-        "2025-03-15",
-        "meet_a",
-        "perf_1",
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_b", "perf_1"),
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -648,12 +628,8 @@ fn should_replace_equal_value_same_meet_perf_wins() {
     assert!(crate::bests::key::should_replace(
         1094,
         1094,
-        "2025-03-15",
-        "meet_a",
-        "perf_2",
-        "2025-03-15",
-        "meet_a",
-        "perf_1",
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_2"),
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -794,23 +770,15 @@ fn reduce_equal_value_picks_later_date() {
     assert!(crate::bests::key::should_replace(
         1094,
         1094,
-        "2025-06-15",
-        "meet_b",
-        "perf_2",
-        "2025-03-15",
-        "meet_a",
-        "perf_1",
+        crate::bests::key::MarkOrdering::new("2025-06-15", "meet_b", "perf_2"),
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
     assert!(!crate::bests::key::should_replace(
         1094,
         1094,
-        "2025-03-15",
-        "meet_a",
-        "perf_1",
-        "2025-06-15",
-        "meet_b",
-        "perf_2",
+        crate::bests::key::MarkOrdering::new("2025-03-15", "meet_a", "perf_1"),
+        crate::bests::key::MarkOrdering::new("2025-06-15", "meet_b", "perf_2"),
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }

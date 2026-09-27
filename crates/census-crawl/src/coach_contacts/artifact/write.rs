@@ -60,10 +60,9 @@ impl ArtifactWriter {
             rows: 0,
         };
         let mut header = [""; VERIFIED_CONTACT_HEADER_COUNT];
-        for (cell, name) in header.iter_mut().zip(CONTACT_COLUMNS) {
+        for (cell, name) in header.iter_mut().zip(header_names()) {
             *cell = name;
         }
-        header[11] = CONTACT_PROOF_COLUMN;
         writer.record.csv(header).map_err(|error| {
             ContactArtifactError::record(&writer.csv_path, 0, error.to_string())
         })?;
@@ -84,8 +83,16 @@ impl ArtifactWriter {
             });
         }
         let proof = compute_contact_proof(row, claims)?;
+        self.write_row(row, &proof)?;
+        self.write_envelope(claims, &proof)?;
+        self.rows = self.rows.saturating_add(1);
+        Ok(())
+    }
+
+    fn write_row(&mut self, row: &RawContactRow, proof: &str) -> Result<(), ContactArtifactError> {
+        let row_number = self.rows.saturating_add(1);
         self.urls.json(&row.source_urls).map_err(|error| {
-            ContactArtifactError::record(&self.csv_path, self.rows + 1, error.to_string())
+            ContactArtifactError::record(&self.csv_path, row_number, error.to_string())
         })?;
         let urls = self
             .urls
@@ -108,32 +115,38 @@ impl ArtifactWriter {
                 &row.ad_email,
                 urls,
                 &row.last_observed,
-                &proof,
+                proof,
             ])
             .map_err(|error| {
-                ContactArtifactError::record(&self.csv_path, self.rows + 1, error.to_string())
+                ContactArtifactError::record(&self.csv_path, row_number, error.to_string())
             })?;
-        self.write_csv()?;
+        self.write_csv()
+    }
+
+    fn write_envelope(
+        &mut self,
+        claims: &[ContactClaimEvidence],
+        proof: &str,
+    ) -> Result<(), ContactArtifactError> {
+        let row_number = self.rows.saturating_add(1);
         self.record
             .json(&EvidenceEnvelope {
-                proof_digest: proof.as_str(),
+                proof_digest: proof,
                 claims,
             })
             .map_err(|error| {
-                ContactArtifactError::record(&self.evidence_path, self.rows + 1, error.to_string())
+                ContactArtifactError::record(&self.evidence_path, row_number, error.to_string())
             })?;
         self.record.write_all(b"\n").map_err(|error| {
-            ContactArtifactError::record(&self.evidence_path, self.rows + 1, error.to_string())
+            ContactArtifactError::record(&self.evidence_path, row_number, error.to_string())
         })?;
-        self.evidence
-            .write_all(
-                self.record
-                    .bytes()
-                    .map_err(|error| ContactArtifactError::io(&self.evidence_path, error))?,
-            )
+        let bytes = self
+            .record
+            .bytes()
             .map_err(|error| ContactArtifactError::io(&self.evidence_path, error))?;
-        self.rows += 1;
-        Ok(())
+        self.evidence
+            .write_all(bytes)
+            .map_err(|error| ContactArtifactError::io(&self.evidence_path, error))
     }
 
     fn write_csv(&mut self) -> Result<(), ContactArtifactError> {
@@ -185,6 +198,13 @@ impl ArtifactWriter {
             verified_rows: self.rows,
         })
     }
+}
+
+fn header_names() -> impl Iterator<Item = &'static str> {
+    CONTACT_COLUMNS
+        .iter()
+        .copied()
+        .chain(std::iter::once(CONTACT_PROOF_COLUMN))
 }
 
 fn sync_file(writer: BoundedHashWriter<File>, path: &Path) -> Result<String, ContactArtifactError> {

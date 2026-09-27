@@ -1,5 +1,5 @@
 use census_domain::model::{CanonicalAthlete, ObservedGrade, SourceNamespace};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use super::super::cells::Cell;
 
@@ -28,28 +28,6 @@ pub(super) fn source_count(athlete: &CanonicalAthlete) -> usize {
         .map(|identity| &identity.namespace)
         .collect::<BTreeSet<&SourceNamespace>>()
         .len()
-}
-
-pub(super) fn conflicts(athlete: &CanonicalAthlete) -> bool {
-    athlete
-        .observed_grades
-        .iter()
-        .any(|observation| observation.grad_year() != athlete.grad_year)
-        || conflicting_identities(athlete)
-}
-
-fn conflicting_identities(athlete: &CanonicalAthlete) -> bool {
-    let mut seen: BTreeMap<&SourceNamespace, &str> = BTreeMap::new();
-    for identity in athlete.identities() {
-        match seen.get(&identity.namespace) {
-            Some(existing) if *existing != identity.id.as_str() => return true,
-            Some(_) => {}
-            None => {
-                seen.insert(&identity.namespace, identity.id.as_str());
-            }
-        }
-    }
-    false
 }
 
 pub(super) fn coverage_state(has_performance: bool, has_pr: bool) -> &'static str {

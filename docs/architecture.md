@@ -4,9 +4,25 @@ Current-state reference: what each crate is, which phase each subcommand advance
 holds and how it survives a crash, what a seal certifies and refuses, and which module edges are
 allowed. Every claim below names the file it comes from.
 
-For the narrative view — execution model, the browser session supervisor, the census data model and
-the planned workspace split — read `ARCHITECTURE.md` at the repository root. For planned work read
-`docs/HARDENING-PROGRAM.md`; for the adapter contract read `SOURCE_ADAPTER_GUIDE.md`.
+For the binding target read [ARCHITECTURE.md](../ARCHITECTURE.md) and the
+[national census master plan](NATIONAL-CENSUS-PLAN.md). The workspace split already exists.
+`HARDENING-PROGRAM.md` is historical; `SOURCE_ADAPTER_GUIDE.md` describes adapter obligations.
+
+### Target correction versus implemented behavior
+
+[ADR-013](adr/ADR-013-fresh-national-source-census.md) requires a fresh source-discovered national
+census, no input workbook, and generated recruiter outputs. It does not certify the current code.
+
+| Area | Current implementation / required cutover |
+|---|---|
+| Geography | `UsJurisdiction::CENSUS_SCOPE` is still 49; Alaska/Hawaii, validation and coverage/seal denominators must migrate to 51. |
+| Fresh run | Preserve old stores; bind a new store to unused durable run identities so old completions cannot populate it. |
+| Application | The durable acquisition handlers exist; batch-only reconciliation/review/gap paths must join one application path. |
+| Evidence | Capture metadata and parsed rows do not prove an immutable byte archive; the new run requires retrievable captured evidence. |
+| Recovery/publication | Partial-unit resume and snapshot-bound atomic bundles require end-to-end acceptance, not artifact-existence heuristics. |
+
+Historical exports and seals, including `var/midwest-census`, are not acceptance evidence for this
+fresh 51-jurisdiction run. The phase indicators below describe current heuristics, not target proof.
 
 ## 1. Crate map
 
@@ -112,18 +128,18 @@ typed domain failures as `StoreError::Identity`.
 
 ### 3.2 Durability
 
-Fjall is an embedded LSM-tree store: writes land in a write-ahead journal and a memtable and are
-compacted into immutable sorted tables, so an interrupted run costs at most the observations never
-flushed — never a rewritten snapshot.
+Fjall is an embedded LSM-tree store with a write-ahead journal and immutable sorted tables.
+A successful durable acknowledgement must follow the batch's persistence barrier. Disk failure,
+interrupted effects and replay boundaries require fault evidence; a file's existence is not proof.
 
 | Property | Value | Source |
 |---|---|---|
 | commit mode | `PersistMode::SyncData` (`fdatasync`) per batch | `crates/census-store/src/lib.rs` |
 | upgrade | `Store::flush()` → `PersistMode::SyncAll`, called at consolidation and shutdown | `crates/census-store/src/lib.rs` |
 | block cache | 1 GiB (`CACHE_BYTES`, `crates/census-store/src/lib.rs:70`) | `crates/census-store/src/lib.rs:70` |
-| sequence seeding | from the last key present at open, so a reopened database never reuses a sequence or overwrites an observation | `crates/census-store/src/lib.rs`, `crates/census-store/src/sequences.rs` |
+| sequence seeding | persisted high-water marks, with checked legacy observation scanning; allocation and commit must remain serialized | `crates/census-store/src/sequences.rs` |
 | resume journal | durable per completed unit of work; the journal keyspace holds `<phase>\0<key>` | `crates/census-store/src/keys.rs` |
-| legacy import | `Store::open` imports the pre-Fjall `entities/` and `journal/` JSONL exactly once, recorded under `meta` | `crates/census-store/src/legacy.rs` |
+| legacy import | explicit maintenance via `import_legacy`, not automatic `Store::open`; prohibited as the population source for ADR-013 | `crates/census-store/src/legacy.rs` |
 
 The store API also owns `Store::backup`, `Store::restore` and `Store::integrity`
 (`crates/census-store/src/backup/`): `backup` copies the durable material and writes a `backup.json` manifest of
@@ -212,11 +228,10 @@ retained case with no verdict, because the item is about the decision and only a
 
 ## 5. Module seams
 
-The census stays a single crate with module seams (`docs/HARDENING-PROGRAM.md` §9), so the compiler
-seals items but cannot forbid an edge between top-level modules. `cargo xtask seams`
-(`xtask/src/seams.rs`) reads every production `.rs` file under `crates/census-service/src`, resolves
-each `crate::…` reference to its top-level module, and compares the `(from, to)` pair against the
-table in that file. The gate runs it as the "module seams" lane.
+The workspace has nine crates with compiler-enforced dependency boundaries, plus module seams
+inside the service. `cargo xtask seams` (`xtask/src/seams.rs`) checks declared module/crate edges;
+the gate runs it as the "module seams" lane. The historical hardening plan's single-crate proposal
+is not an instruction to collapse the workspace.
 
 * **Direction rule.** Adapters and workflows depend on domain types and on the store, never the
   reverse. `net` and `school_index` are leaves; `store` and `report` may not reach into `net` (the

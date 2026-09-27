@@ -31,7 +31,7 @@ pub(super) fn record_row(
         context.school_year,
         context.evidence,
     );
-    let (athlete_id, source_athlete) = record_athlete(
+    let (athlete_id, source) = record_athlete(
         writer,
         context,
         &school_id,
@@ -39,22 +39,22 @@ pub(super) fn record_row(
         shape.grade,
         row_index,
     );
-    record_performance(
-        writer,
-        context,
-        row,
-        row_index,
-        &shape,
-        &source_athlete,
-        &athlete_id,
-        &team_id,
-    );
+    let athlete = AthleteSubject {
+        id: athlete_id,
+        source,
+    };
+    record_performance(writer, context, row, row_index, &shape, &athlete, &team_id);
     1
 }
 
 struct RowShape {
     sport: Sport,
     grade: Grade,
+}
+
+struct AthleteSubject {
+    id: AthleteId,
+    source: SourceIdentity,
 }
 
 fn shape_of(
@@ -94,13 +94,12 @@ fn record_performance(
     row: &ParsedRow,
     row_index: usize,
     shape: &RowShape,
-    source_athlete: &SourceIdentity,
-    athlete_id: &AthleteId,
+    athlete: &AthleteSubject,
     team_id: &TeamId,
 ) {
     let source_key = performance_key(context, row_index);
     let performance_id = CanonicalPerformance::mint(
-        athlete_id,
+        &athlete.id,
         &context.meet.id,
         &context.event.kind,
         &context.meet.date,
@@ -113,7 +112,7 @@ fn record_performance(
         .entry(performance_id.as_str().to_string())
         .or_insert_with(|| CanonicalPerformance {
             id: performance_id,
-            athlete: athlete_id.clone(),
+            athlete: athlete.id.clone(),
             team: team_id.clone(),
             event: context.event_id.clone(),
             meet: context.meet.id.clone(),
@@ -127,7 +126,7 @@ fn record_performance(
             observed_grade: Some(shape.grade),
             evidence: vec![evidence],
             source_key,
-            source_athlete: source_athlete.clone(),
+            source_athlete: athlete.source.clone(),
             retained_conflicts: Vec::new(),
         });
 }

@@ -1,4 +1,4 @@
-use super::{scope_digest, Revision, WorkflowIdentity, MAX_IDENTITY_BYTES, MAX_PART_BYTES};
+use super::{scope_digest, Revision, WorkflowIdentity, MAX_IDENTITY_BYTES};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 

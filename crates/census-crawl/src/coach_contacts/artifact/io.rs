@@ -45,7 +45,10 @@ impl<R: Read> Read for BoundedHashReader<R> {
             .remaining
             .min(u64::try_from(buf.len()).map_err(io::Error::other)?);
         let available = usize::try_from(available).map_err(io::Error::other)?;
-        let count = self.reader.read(&mut buf[..available])?;
+        let target = buf
+            .get_mut(..available)
+            .ok_or_else(|| invalid("reader returned an invalid length"))?;
+        let count = self.reader.read(target)?;
         let bytes = buf
             .get(..count)
             .ok_or_else(|| invalid("reader returned an invalid length"))?;

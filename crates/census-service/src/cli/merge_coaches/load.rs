@@ -1,4 +1,4 @@
-use super::{url_find, Row, HEADER, PERSONAL_MAIL};
+use super::{url_find, Row, HEADER};
 use std::path::Path;
 
 pub(super) fn from_fields(fields: Vec<String>) -> Row {

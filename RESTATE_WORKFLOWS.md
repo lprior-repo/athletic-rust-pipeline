@@ -4,6 +4,14 @@ How this repo uses [Restate](https://restate.dev) to make the browser/scrape sid
 process hosts which service, what each handler does, what state is written per invocation, and what
 the code does (and does not) promise about retries and replay.
 
+**Active target:** [ADR-013](docs/adr/ADR-013-fresh-national-source-census.md) and the
+[national census master plan](docs/NATIONAL-CENSUS-PLAN.md) require source-discovered work across
+51 jurisdictions in a fresh store/run. The implemented scope remains 49 until migrated. Historical
+`WorkbookImport`/`RowWorker` definitions below must not be restored: workbooks are generated outputs.
+Fresh storage must use unused durable run identities so old journaled completions cannot seed it.
+The target's budget-resume/control protocol and batch-stage integration are not claimed implemented
+by the current wire catalog. Restate alone owns at most three total automatic attempts.
+
 **2026-09-23 root package deletion.** The `athletic-rust-pipeline` root package was deleted (`Cargo.toml` header: "the acquisition-side root package that used to sit here was deleted once the census path owned its work (ARCHITECTURE.md §1)"); the workspace now has members only in `crates/` and `xtask/`. The following sections are therefore **historical**: §1 overview (pipeline worker rows), §2.1 pipeline worker catalog, §3.2 `RunCoordinator` state, §4.2 pipeline worker boot, §5.2 CLI→handler map rows referencing `athletic-rust-pipeline`, §6.1 adding a pipeline handler, §7.4 run fan-out cancellation, the entire "Pipeline" half of §5.3 request/response shapes. The census Restate code still lives at `crates/census-service/src/restate_services/` and is unaffected.
 
 Everything below is read from source. Where it comes from:
@@ -22,10 +30,10 @@ the name.
 
 ## 1. Overview
 
-Restate is the scheduler, journal and K/V store for work too long-lived and too failure-prone to own
-in-process: headed-browser acquisitions that wait on humans, workbook rows that fan out across
-duplicate athlete identities, multi-window collection sweeps. The worker performs the effects;
-Restate decides when they run, what has already run, and what to re-run. ~~The code states the split directly: "Restate owns scheduling. Source workflows and model SDK policies have distinct retry budgets. Unacknowledged effects may repeat during crash recovery" (`src/runtime/protocol.rs:93-94`)~~ (historical: path belonged to deleted root crate).
+Restate owns durable scheduling and journals for source discovery, shared team/meet acquisition,
+headed-browser work that may wait on humans, identity review and national collection sweeps.
+The worker performs effects; Restate determines when they run and what replay observes. Source,
+adapter, browser and model transports perform one attempt; none owns a nested retry budget.
 
 Two processes serve two endpoints.
 

@@ -3,10 +3,6 @@ use crate::net::bridge::{BrowserError, BrowserFailure, BrowserOutcome, Verdict};
 use crate::net::cache::read_cache;
 use crate::net::{AccessBlockKind, FetchError};
 
-const URL: &str =
-    "https://www.athletic.net/api/v1/AthleteBio/GetAthleteBioData?athleteId=1&sport=tf";
-const HOST: &str = "www.athletic.net";
-
 fn fetcher_in(dir: &std::path::Path) -> Fetcher {
     Fetcher::new(
         dir.join("http"),
