@@ -40,7 +40,7 @@ complete acquisition, provenance, fixtures and shared application integration be
 
 ## The one required function
 
-Migrate existing collectors in place to a typed crawl boundary; do not add a second collection API.
+Migrate existing `collect` entry points in place to a typed crawl boundary; do not add a second API.
 Production errors belong to `CrawlError`/`thiserror`, with `anyhow` only at application composition.
 
 The current shared `AdapterContext` (do not extend it per-adapter) carries:

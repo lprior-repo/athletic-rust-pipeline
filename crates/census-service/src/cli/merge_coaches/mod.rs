@@ -2,6 +2,7 @@ mod judge;
 mod load;
 mod report;
 use anyhow::{bail, Context, Result};
+use census_domain::model::{CONTACT_COLUMNS, CONTACT_PROOF_COLUMN};
 use clap::Args;
 use load::load_rows;
 use regex::Regex;
@@ -9,21 +10,6 @@ use report::print_report;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
-
-const HEADER: &[&str] = &[
-    "school",
-    "city",
-    "state",
-    "sport",
-    "role",
-    "coach_name",
-    "public_professional_email",
-    "ad_name",
-    "ad_email",
-    "source_url",
-    "last_observed",
-    "verified_proof_digest",
-];
 
 const PERSONAL_MAIL: &[&str] = &[
     "gmail.com",
@@ -267,7 +253,12 @@ fn write_merged_body(
     let mut writer = csv::Writer::from_path(temporary)
         .map_err(|error| census_store::read::csv_failure(published, error))?;
     writer
-        .write_record(HEADER)
+        .write_record(
+            CONTACT_COLUMNS
+                .iter()
+                .copied()
+                .chain(std::iter::once(CONTACT_PROOF_COLUMN)),
+        )
         .map_err(|error| census_store::read::csv_failure(published, error))?;
     for row in kept.values() {
         writer

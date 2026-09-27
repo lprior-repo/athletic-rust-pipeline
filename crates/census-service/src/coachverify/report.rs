@@ -231,7 +231,7 @@ pub fn write_manifest(
         for outcome in outcomes {
             let base = fragment_file_name(Path::new(&outcome.file));
             let csv_path = format!("{}/{}", union_dir.display(), base);
-            let jsonl_path = format!("{base}.evidence.jsonl");
+            let jsonl_path = format!("{csv_path}.evidence.jsonl");
             output_files.push((csv_path.clone(), jsonl_path));
         }
         output_files.sort();

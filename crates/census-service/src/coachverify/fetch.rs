@@ -199,15 +199,6 @@ pub(super) async fn verify_one_fragment(
             evidence: evidence.claims,
         });
     }
-    let claims: Vec<&census_domain::model::ContactClaimEvidence> =
-        outcomes.iter().flat_map(|row| &row.evidence).collect();
-    census_store::read::write_snapshot_rows(
-        &out_dir.join(format!(
-            "{}.evidence.jsonl",
-            crate::coachverify::fragment_file_name(path)
-        )),
-        &claims,
-    )?;
     crate::coachverify::write_fragment(
         &out_dir.join(crate::coachverify::fragment_file_name(path)),
         &outcomes,

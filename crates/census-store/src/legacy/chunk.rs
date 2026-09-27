@@ -14,10 +14,10 @@ pub(super) struct ImportChunk<'a> {
     table: Table,
     batch: fjall::OwnedWriteBatch,
     base: u64,
-    pub(super) rows: u64,
+    rows: u64,
     bytes: u64,
     pub(super) offset: u64,
-    table_rows: u64,
+    start: u64,
     row_count: u64,
 }
 
@@ -32,20 +32,20 @@ impl<'a> ImportChunk<'a> {
             rows: 0,
             bytes: 0,
             offset: store.import_offset(table)?,
-            table_rows: base,
+            start: base,
             row_count: store.count(table)?,
         })
     }
 
     pub(super) fn push(&mut self, body: &[u8], path: &Path, line_no: u64) -> StoreResult<()> {
-        if self.table_rows >= MAX_ROWS_PER_TABLE {
+        if self.base >= MAX_ROWS_PER_TABLE {
             return Err(StoreError::Legacy {
                 detail: format!(
                     "{} line {line_no}: table {} already holds {} observations, \
                      and the next would pass the {MAX_ROWS_PER_TABLE} row ceiling",
                     path.display(),
                     self.table.file(),
-                    self.table_rows
+                    self.base
                 ),
             });
         }
@@ -56,17 +56,25 @@ impl<'a> ImportChunk<'a> {
         self.batch.insert(&self.store.entities, key, body);
         self.base = self.base.saturating_add(1);
         self.rows = self.rows.saturating_add(1);
-        self.table_rows = self.table_rows.saturating_add(1);
+        let bytes = u64::try_from(body.len()).map_err(|_| StoreError::CounterOverflow)?;
         self.bytes = self
             .bytes
-            .saturating_add(u64::try_from(body.len()).unwrap_or(u64::MAX));
+            .checked_add(bytes)
+            .ok_or(StoreError::CounterOverflow)?;
         if self.rows >= IMPORT_CHUNK_ROWS || self.bytes >= IMPORT_CHUNK_BYTES {
             self.commit()?;
         }
         Ok(())
     }
 
-    pub(super) fn commit(&mut self) -> StoreResult<()> {
+    pub(super) fn finish(mut self) -> StoreResult<u64> {
+        self.commit()?;
+        self.base
+            .checked_sub(self.start)
+            .ok_or(StoreError::CounterOverflow)
+    }
+
+    fn commit(&mut self) -> StoreResult<()> {
         if self.rows == 0 {
             return Ok(());
         }

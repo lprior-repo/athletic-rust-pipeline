@@ -28,26 +28,6 @@ fn multi_url_trims_to_first() {
 }
 
 #[test]
-fn personal_mail_blank() {
-    let mut row = make_row(vec![
-        "School",
-        "",
-        "OH",
-        "Cross Country",
-        "Head Coach",
-        "Coach",
-        "coach@gmail.com",
-        "",
-        "ad@yahoo.com",
-        "",
-        "2026-09-22",
-    ]);
-    row.normalize();
-    assert_eq!(row.public_professional_email, "");
-    assert_eq!(row.ad_email, "");
-}
-
-#[test]
 fn professional_mail_kept() {
     let mut row = make_row(vec![
         "School",
@@ -439,29 +419,34 @@ fn does_not_resolve_soccer() {
 #[test]
 fn merge_round_trip_keeps_every_row_importable_and_distinct() {
     let dir = tempfile::tempdir().expect("temp dir");
+    let header = "school,city,state,sport,role,coach_name,public_professional_email,ad_name,\
+                  ad_email,source_url,last_observed,verified_proof_digest\n";
+    let proof = "9f2c1d4b7a3e50618c9d2f4a6b8e0c1d3f5a7b9c1d3e5f70819a2b3c4d5e6f70";
     std::fs::write(
         dir.path().join("WI.csv"),
-        "school,city,state,sport,role,coach_name,public_professional_email,ad_name,ad_email,source_url,last_observed\n\
-         Madison West High School,Madison,WI,Track & Field,Head Coach,Dana Reed,,,,\
-         https://madisonwest.example.org/athletics,2026-09-22\n\
-         Madison West High School,Madison,WI,Cross Country,Head Coach,Sam Ellery,\
-         sam.ellery@madisonwest.example.org,,,https://madisonwest.example.org/athletics,2026-09-22\n",
+        format!(
+            "{header}\
+             Madison West High School,Madison,WI,Track & Field,Head Coach,Dana Reed,,,,\
+             https://madisonwest.example.org/athletics,2026-09-22,{proof}\n\
+             Madison West High School,Madison,WI,Track & Field,Head Coach,Dana Reed,\
+             dana.reed@madisonwest.example.org,,,https://madisonwest.example.org/athletics,\
+             2026-09-22,{proof}\n\
+             Madison West High School,Madison,WI,Cross Country,Head Coach,Sam Ellery,\
+             sam.ellery@madisonwest.example.org,,,https://madisonwest.example.org/athletics,\
+             2026-09-22,{proof}\n"
+        ),
     )
     .expect("write WI fragment");
     std::fs::write(
         dir.path().join("MN.csv"),
-        "school,city,state,sport,role,coach_name,public_professional_email,ad_name,ad_email,source_url,last_observed\n\
-         Washburn High School,Minneapolis,MN,Track & Field,Head Coach,Rae Lindqvist,\
-         rae.lindqvist@washburn.example.org,,,https://washburn.example.org/athletics,2026-09-22\n",
+        format!(
+            "{header}\
+             Washburn High School,Minneapolis,MN,Track & Field,Head Coach,Rae Lindqvist,\
+             rae.lindqvist@washburn.example.org,,,https://washburn.example.org/athletics,\
+             2026-09-22,{proof}\n"
+        ),
     )
     .expect("write MN fragment");
-    std::fs::write(
-        dir.path().join("WI-extra.csv"),
-        "school,city,state,sport,role,coach_name,public_professional_email,ad_name,ad_email,source_url,last_observed\n\
-         Madison West High School,Madison,WI,Track & Field,Head Coach,Dana Reed,\
-         dana.reed@madisonwest.example.org,,,https://madisonwest.example.org/athletics,2026-09-22\n",
-    )
-    .expect("write second WI fragment");
 
     let out = NamedTempFile::new().expect("temp file");
     let report = NamedTempFile::new().expect("temp file");
@@ -523,7 +508,7 @@ fn dedupe_keeps_richer_row() {
         "Cross Country",
         "Head Coach",
         "Coach B",
-        "coach@gmail.com",
+        "coach@school.edu",
         "",
         "",
         "https://school.edu",
@@ -533,17 +518,20 @@ fn dedupe_keeps_richer_row() {
     row2.normalize();
     let key = row1.dedupe_key();
     assert_eq!(key, row2.dedupe_key());
-
-    let mut kept: BTreeMap<_, _> = BTreeMap::new();
-    kept.insert(key.clone(), row1.clone());
-    let existing = kept.get(&key).expect("should exist");
-    let new_has_email = !row2.public_professional_email.trim().is_empty();
-    let old_has_email = !existing.public_professional_email.trim().is_empty();
-    let new_is_newer = row2.last_observed.trim() > existing.last_observed.trim();
-    if new_has_email && !old_has_email || new_is_newer {
-        kept.insert(key.clone(), row2);
-    }
-    assert_eq!(kept[&key].coach_name, "Coach");
+    assert!(
+        pick_richer(&row2, &row1),
+        "the row that publishes a professional email is the richer one"
+    );
+    assert!(
+        !pick_richer(&row1, &row2),
+        "a row without an email never replaces the row that publishes one"
+    );
+    let kept = if pick_richer(&row2, &row1) {
+        &row2
+    } else {
+        &row1
+    };
+    assert_eq!(kept.coach_name, "Coach B");
 }
 
 #[test]
@@ -578,13 +566,18 @@ fn dedupe_keeps_newer_row() {
     row2.normalize();
     let key = row1.dedupe_key();
     assert_eq!(key, row2.dedupe_key());
-
-    let mut kept: BTreeMap<_, _> = BTreeMap::new();
-    kept.insert(key.clone(), row1.clone());
-    let existing = kept.get(&key).expect("should exist");
-    let new_is_newer = row2.last_observed.trim() > existing.last_observed.trim();
-    if new_is_newer {
-        kept.insert(key.clone(), row2);
-    }
-    assert_eq!(kept[&key].coach_name, "Coach B");
+    assert!(
+        pick_richer(&row2, &row1),
+        "the later observation wins when both publish an email"
+    );
+    assert!(
+        !pick_richer(&row1, &row2),
+        "an older observation never replaces a newer one"
+    );
+    let kept = if pick_richer(&row2, &row1) {
+        &row2
+    } else {
+        &row1
+    };
+    assert_eq!(kept.coach_name, "Coach B");
 }

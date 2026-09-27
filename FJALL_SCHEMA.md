@@ -417,15 +417,15 @@ numbers as `{table, rows}` pairs plus `observations`, `bytes_on_disk`, `today`.
 
 ## 7. Backup, restore, footprint
 
-* **No backup API is used.** The crate imports only `Database`, `Keyspace`, `KeyspaceCreateOptions`
-  and `PersistMode`; fjall 3.1.10 offers `Database::snapshot()` but nothing calls it. There is no
-  in-process export, no incremental backup, no checksum manifest.
-* **Documented procedure** (`docs/OPERATIONS.md`): cold copy only — stop the unit (drain certificate
-  printed), copy the whole `--data-dir`, start again. The store and the HTTP cache are a matched
-  pair; a cache copy without the store is worthless. `README.md` and `HANDOFF.md` add the rule that
-  a live directory is never opened from a second process.
-* **Restore** is the same copy in reverse: the store has no restore code path. Because sequences are
-  reseeded from stored keys at open, a restored directory behaves exactly like the original.
+* **Store APIs:** `Store::backup`, `Store::restore` and `Store::integrity` are implemented in
+  `crates/census-store/src/backup/`; the backup includes a checksum/count manifest. The older claim
+  that no backup or restore API exists is obsolete.
+* **Procedures:** follow [`docs/FJALL_BACKUP.md`](docs/FJALL_BACKUP.md) and `docs/OPERATIONS.md`.
+  Do not open a live store from a second process or assume an arbitrary live directory copy is a
+  consistent backup. Retain the store and evidence material required to resolve its references.
+* **Acceptance:** the national fault catalog requires exact nonempty backup/restore reconciliation,
+  including captured evidence and decision history. A successful store restore alone does not
+  prove recovery of the separate Restate journal.
 * **Pre-Fjall import** is explicit `census-service import-legacy` maintenance, guarded by progress
   and completion records; it does not run automatically in `Store::open`. Keep original journals
   until independent reconciliation succeeds. Never use this path to seed the ADR-013 census.

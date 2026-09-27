@@ -32,8 +32,18 @@ const WI_TEAMS_FIXTURE: &str =
     include_str!("../../census-crawl/tests/fixtures/milesplit/wi_teams_index.html");
 const WI_ROSTER_FIXTURE: &str =
     include_str!("../../census-crawl/tests/fixtures/milesplit/wi_roster_52649.html");
-const WI_TEAMS_PHASE: &str = "milesplit_teams_wi";
-const WI_ROSTERS_PHASE: &str = "milesplit_rosters_wi";
+fn wi_teams_phase() -> String {
+    census::teams_phase(UsJurisdiction::Wisconsin)
+}
+
+fn wi_rosters_phase() -> String {
+    let options = wi_options(None);
+    census::rosters_phase(
+        UsJurisdiction::Wisconsin,
+        options.school_year,
+        options.revision,
+    )
+}
 
 const CENSUS_BIN: &str = env!("CARGO_BIN_EXE_census-service");
 const SERVE_BIN: &str = env!("CARGO_BIN_EXE_census-serve");
@@ -1549,8 +1559,8 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
             teams,
             progress,
             athletes,
-            index_journal: journal_keys(&store, WI_TEAMS_PHASE),
-            roster_journal: journal_keys(&store, WI_ROSTERS_PHASE),
+            index_journal: journal_keys(&store, &wi_teams_phase()),
+            roster_journal: journal_keys(&store, &wi_rosters_phase()),
             counts: table_counts(&store),
             stats: fetcher.stats().await,
             per_roster,
@@ -1615,7 +1625,7 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
         )
         .await
         .expect("WI rosters, capped at one");
-        let journal = journal_keys(&store, WI_ROSTERS_PHASE);
+        let journal = journal_keys(&store, &wi_rosters_phase());
         note(
             SCENARIO,
             format!(
@@ -1686,8 +1696,8 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
     );
     assert_eq!(
         resumed.rosters_committed,
-        teams.len() - stopped_after.len(),
-        "the restart walked only the rosters the first pass did not journal"
+        teams.len(),
+        "the restart reports the state's cumulative commit count, not this pass's"
     );
     assert_eq!(
         resumed.rosters_skipped,
@@ -1700,19 +1710,19 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
         resumed.errors
     );
     assert_eq!(
-        journal_keys(&store, WI_ROSTERS_PHASE),
+        journal_keys(&store, &wi_rosters_phase()),
         control.roster_journal,
         "the restarted store completes exactly the roster set the control pass covered"
     );
     assert_eq!(
-        journal_keys(&store, WI_TEAMS_PHASE),
+        journal_keys(&store, &wi_teams_phase()),
         control.index_journal,
         "the team-index journal is untouched by the roster stage"
     );
     assert_eq!(
         resumed.class_of_2027,
-        control.per_roster * (teams.len() - stopped_after.len()),
-        "the resumed pass reports the cohort of exactly the rosters it walked"
+        control.per_roster * teams.len(),
+        "the resumed pass reports the cohort the journal holds for the whole state"
     );
     assert_eq!(
         athletes, control.athletes,

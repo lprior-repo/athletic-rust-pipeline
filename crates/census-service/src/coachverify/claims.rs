@@ -67,7 +67,7 @@ fn collect(
     let row_ok = if director {
         contains(&flat, "athletic director")
     } else {
-        role_matches(&flat, row) && jurisdiction_matches(&flat, heading, &row.state)
+        role_matches(&flat, row) && institution_matches(&flat, heading, row)
     };
     if !row_ok {
         return;
@@ -155,12 +155,15 @@ fn contains(text: &str, value: &str) -> bool {
 }
 
 fn role_matches(flat: &str, row: &RawContactRow) -> bool {
+    let role = normalize(&row.role);
     contains(flat, "coach")
         && program_matches(flat, row)
         && ["head", "assistant", "boys", "girls"]
             .into_iter()
-            .all(|part| !contains(flat, part) || contains(flat, part))
-        && !(contains(flat, "head") && !contains(flat, "assistant") && contains(flat, "assistant"))
+            .all(|part| !contains(&role, part) || contains(flat, part))
+        && !(contains(&role, "head")
+            && !contains(&role, "assistant")
+            && contains(flat, "assistant"))
 }
 
 fn program_matches(flat: &str, row: &RawContactRow) -> bool {
@@ -178,6 +181,13 @@ fn self_contradicts(flat: &str, row: &RawContactRow) -> bool {
         contains(flat, "former") || contains(flat, "not current") || contains(flat, "no longer");
     let role = normalize(&row.role);
     negation_marker && contains(flat, &role) && contains(flat, "coach")
+}
+
+fn institution_matches(flat: &str, heading: &str, row: &RawContactRow) -> bool {
+    let school = normalize(&row.school);
+    !school.is_empty()
+        && (contains(flat, &school) || contains(heading, &school))
+        && jurisdiction_matches(flat, heading, &row.state)
 }
 
 fn jurisdiction_matches(span: &str, heading: &str, state: &str) -> bool {

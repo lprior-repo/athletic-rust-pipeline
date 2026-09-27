@@ -131,24 +131,24 @@ impl Store {
         let mut line_no = 0_u64;
         loop {
             line.clear();
-            line_no = line_no.saturating_add(1);
+            line_no = line_no.checked_add(1).ok_or(StoreError::CounterOverflow)?;
             let Some(ending) = read_legacy_line(&mut reader, &mut line, path, line_no)? else {
                 break;
             };
             if ending == LineEnding::Truncated {
                 break;
             }
+            let bytes = u64::try_from(line.len()).map_err(|_| StoreError::CounterOverflow)?;
             chunk.offset = chunk
                 .offset
-                .saturating_add(u64::try_from(line.len()).unwrap_or(u64::MAX));
+                .checked_add(bytes)
+                .ok_or(StoreError::CounterOverflow)?;
             let trimmed = line.trim_ascii();
             if trimmed.is_empty() {
                 continue;
             }
             chunk.push(trimmed, path, line_no)?;
         }
-        let rows = chunk.rows;
-        chunk.commit()?;
-        Ok(rows)
+        chunk.finish()
     }
 }

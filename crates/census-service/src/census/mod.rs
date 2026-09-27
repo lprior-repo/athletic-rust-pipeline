@@ -136,14 +136,14 @@ impl TransportReport {
     }
 }
 
-fn teams_phase(jurisdiction: UsJurisdiction) -> String {
+pub fn teams_phase(jurisdiction: UsJurisdiction) -> String {
     format!(
         "milesplit_teams_{}",
         jurisdiction.code().to_ascii_lowercase()
     )
 }
 
-fn rosters_phase(
+pub fn rosters_phase(
     jurisdiction: UsJurisdiction,
     school_year: SchoolYear,
     revision: std::num::NonZeroU32,

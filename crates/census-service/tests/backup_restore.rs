@@ -145,6 +145,7 @@ fn add_school(
         MEET_DATE,
         CompetitionLevel::Invitational,
     );
+    meet.sports = vec![Sport::OutdoorTrack];
     meet.evidence.push(observation(SOURCE, MEET_DATE));
     let meet_id = meet.id.clone();
     corpus.schools.push(school);
@@ -467,6 +468,7 @@ fn expected_observations(corpus: &Corpus) -> Vec<(String, u64)> {
         Table::IdentityVerdicts,
         Table::SourceMeets,
         Table::SourceObservations,
+        Table::AthleteIdentityDecisions,
     ]
     .into_iter()
     .map(|table| row(table, 0));

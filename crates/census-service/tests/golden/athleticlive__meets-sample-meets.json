@@ -27,7 +27,7 @@
       {
         "id": "257957",
         "namespace": {
-          "legacy_athletic_net": {
+          "athletic_net": {
             "kind": "meet"
           }
         },
@@ -74,7 +74,7 @@
       {
         "id": "259955",
         "namespace": {
-          "legacy_athletic_net": {
+          "athletic_net": {
             "kind": "meet"
           }
         },
@@ -121,7 +121,7 @@
       {
         "id": "267134",
         "namespace": {
-          "legacy_athletic_net": {
+          "athletic_net": {
             "kind": "meet"
           }
         },

@@ -1,5 +1,6 @@
 use super::csv_reader::ContactCsv;
 use super::envelopes::Envelopes;
+use super::io::is_hex64;
 use super::{
     ContactArtifactError, EvidenceEnvelope, Manifest, ValidatedRow, VerifiedContactArtifact,
     CONTACT_COLUMNS, CONTACT_PROOF_COLUMN, CSV_FILE, EVIDENCE_FILE, MANIFEST_FILE,
@@ -292,11 +293,4 @@ fn check_digest(
         });
     }
     Ok(())
-}
-
-fn is_hex64(value: &str) -> bool {
-    value.len() == 64
-        && value
-            .bytes()
-            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }

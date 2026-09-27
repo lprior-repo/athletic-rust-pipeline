@@ -1,4 +1,5 @@
-use super::{url_find, Row, HEADER};
+use super::{url_find, Row};
+use census_domain::model::{CONTACT_COLUMNS, CONTACT_PROOF_COLUMN};
 use std::path::Path;
 
 pub(super) fn from_fields(fields: Vec<String>) -> Row {
@@ -49,20 +50,27 @@ pub(super) fn dedupe_key(row: &Row) -> (String, String, String, String) {
 }
 
 fn validate_header(record: &[String]) -> Result<(), String> {
-    if record.len() < 11 {
-        return Err("expected at least 11 columns".to_string());
+    let proof_index = CONTACT_COLUMNS.len();
+    let expected_len = proof_index.saturating_add(1);
+    if record.len() < expected_len {
+        return Err(format!("expected at least {expected_len} columns"));
     }
     let normalized: Vec<String> = record
         .iter()
-        .take(11)
+        .take(proof_index)
         .map(|h| h.trim().trim_start_matches('\u{feff}').to_string())
         .collect();
-    let expected: Vec<String> = HEADER.iter().map(|s| s.to_string()).collect();
+    let expected: Vec<String> = CONTACT_COLUMNS.iter().map(|s| s.to_string()).collect();
     if normalized != expected {
-        Err(format!("header mismatch: {:?}", normalized))
-    } else {
-        Ok(())
+        return Err(format!("header mismatch: {normalized:?}"));
     }
+    let proof = record.get(proof_index).map(|header| header.trim());
+    if proof != Some(CONTACT_PROOF_COLUMN) {
+        return Err(format!(
+            "expected column {expected_len} to be {CONTACT_PROOF_COLUMN}"
+        ));
+    }
+    Ok(())
 }
 
 fn is_empty_record(record: &[String]) -> bool {

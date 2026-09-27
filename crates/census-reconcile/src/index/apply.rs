@@ -1,4 +1,3 @@
-
 use census_domain::model::{
     AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId, AthleteIdentityIndex,
     IdentityMember, IdentityProjectionBuilder, ReviewCase, ReviewState, ReviewVerdictRecord,
@@ -14,75 +13,80 @@ pub(super) fn apply_decisions(
 ) -> ReportResult<usize> {
     let cases: Vec<ReviewCase> = store.scan(Table::ReviewCases)?;
     let verdicts: Vec<ReviewVerdictRecord> = store.scan(Table::IdentityVerdicts)?;
+    let athletes = load_athletes(store)?;
+    let source_bound_index = build_index(&athletes);
+    let existing: Vec<AppliedAthleteIdentity> = store.scan(Table::AthleteIdentityDecisions)?;
+    let mut decisions = retained_decisions(&athletes, &cases, &verdicts, &existing)?;
+    decisions.extend(source_bound_decisions(&source_bound_index));
+    store.replace_many(Table::AthleteIdentityDecisions, &decisions)?;
+    Ok(decisions.len())
+}
 
+fn load_athletes(store: &Store) -> ReportResult<Vec<census_domain::model::CanonicalAthlete>> {
     let mut athletes: Vec<census_domain::model::CanonicalAthlete> = Vec::new();
     store.for_each_merged::<census_domain::model::CanonicalAthlete>(
         Table::Athletes,
-        |a| {
-            athletes.push(a);
+        |athlete| {
+            athletes.push(athlete);
             Ok(())
         },
     )?;
+    Ok(athletes)
+}
 
-    let mut source_bound_index = AthleteIdentityIndex::default();
-    for athlete in &athletes {
-        if let Err(_e) = source_bound_index.observe(athlete) {
-        }
-    }
-
-    let builder_index = build_index(&athletes);
-    let mut builder = IdentityProjectionBuilder::new(builder_index, &cases, &verdicts)
-        .map_err(|e| ReportError::Invariant {
-            detail: format!("identity projection builder: {e}"),
+fn retained_decisions(
+    athletes: &[census_domain::model::CanonicalAthlete],
+    cases: &[ReviewCase],
+    verdicts: &[ReviewVerdictRecord],
+    existing: &[AppliedAthleteIdentity],
+) -> ReportResult<Vec<AppliedAthleteIdentity>> {
+    let builder_index = build_index(athletes);
+    let mut builder =
+        IdentityProjectionBuilder::new(builder_index, cases, verdicts).map_err(|error| {
+            ReportError::Invariant {
+                detail: format!("identity projection builder: {error}"),
+            }
         })?;
-
-    let existing: Vec<AppliedAthleteIdentity> =
-        store.scan(Table::AthleteIdentityDecisions)?;
-
     let mut decisions: Vec<AppliedAthleteIdentity> = Vec::new();
-    for decision in &existing {
-        match builder.consider(decision) {
-            Ok(None) => {
-                decisions.push(decision.clone());
-            }
-            Ok(Some(_)) => {
-            }
-            Err(_e) => {
-            }
+    for decision in existing {
+        if let Ok(None) = builder.consider(decision) {
+            decisions.push(decision.clone());
         }
     }
+    Ok(decisions)
+}
 
-    for subject in source_bound_index.subjects() {
-        if source_bound_index.isolated_source(subject.as_str()) {
-            if let Some(fact) = source_bound_index.member(subject.as_str()) {
-                let members = vec![IdentityMember {
-                    subject: subject.clone(),
-                    evidence_digest: fact.evidence_digest.clone(),
-                }];
-                decisions.push(AppliedAthleteIdentity {
-                    id: format!("source_bound:{}:p1", subject),
-                    policy: census_domain::model::ATHLETE_IDENTITY_POLICY,
-                    kind: AppliedIdentityKind::SourceBound,
-                    members,
-                    canonical_id: None,
-                    case_id: None,
-                    verdict_digest: None,
-                    observed_at: "derive".to_string(),
-                });
-            }
+fn source_bound_decisions(index: &AthleteIdentityIndex) -> Vec<AppliedAthleteIdentity> {
+    let mut decisions: Vec<AppliedAthleteIdentity> = Vec::new();
+    for subject in index.subjects() {
+        if !index.isolated_source(subject.as_str()) {
+            continue;
         }
+        let Some(fact) = index.member(subject.as_str()) else {
+            continue;
+        };
+        let members = vec![IdentityMember {
+            subject: subject.clone(),
+            evidence_digest: fact.evidence_digest.clone(),
+        }];
+        decisions.push(AppliedAthleteIdentity {
+            id: format!("source_bound:{}:p1", subject),
+            policy: census_domain::model::ATHLETE_IDENTITY_POLICY,
+            kind: AppliedIdentityKind::SourceBound,
+            members,
+            canonical_id: None,
+            case_id: None,
+            verdict_digest: None,
+            observed_at: "derive".to_string(),
+        });
     }
-
-    store.replace_many(Table::AthleteIdentityDecisions, &decisions)?;
-
-    Ok(decisions.len())
+    decisions
 }
 
 fn build_index(athletes: &[census_domain::model::CanonicalAthlete]) -> AthleteIdentityIndex {
     let mut index = AthleteIdentityIndex::default();
     for athlete in athletes {
-        if let Err(_e) = index.observe(athlete) {
-        }
+        if let Err(_error) = index.observe(athlete) {}
     }
     index
 }
@@ -92,74 +96,68 @@ pub(super) fn invalidate_stale_applications(store: &Store) -> ReportResult<usize
     if decisions.is_empty() {
         return Ok(0);
     }
-
-    let mut athletes: Vec<census_domain::model::CanonicalAthlete> = Vec::new();
-    store.for_each_merged::<census_domain::model::CanonicalAthlete>(
-        Table::Athletes,
-        |a| {
-            athletes.push(a);
-            Ok(())
-        },
-    )?;
-
+    let athletes = load_athletes(store)?;
     let index = build_index(&athletes);
-
     let verdicts: Vec<ReviewVerdictRecord> = store.scan(Table::IdentityVerdicts)?;
     let cases: Vec<ReviewCase> = store.scan(Table::ReviewCases)?;
+    Ok(decisions
+        .iter()
+        .filter(|decision| decision_is_stale(decision, &index, &cases, &verdicts))
+        .count())
+}
 
-    let mut invalidated = 0usize;
+fn decision_is_stale(
+    decision: &AppliedAthleteIdentity,
+    index: &AthleteIdentityIndex,
+    cases: &[ReviewCase],
+    verdicts: &[ReviewVerdictRecord],
+) -> bool {
+    members_diverged(decision, index) || case_is_stale(decision, cases, verdicts)
+}
 
-    for decision in &decisions {
-        let mut stale = false;
-        for member in &decision.members {
-            let current_member = index.member(member.subject.as_str());
-            match current_member {
-                Some(current) => {
-                    if current.evidence_digest != member.evidence_digest {
-                        stale = true;
-                        break;
-                    }
-                }
-                None => {
-                    stale = true;
-                    break;
-                }
-            }
-        }
+fn members_diverged(decision: &AppliedAthleteIdentity, index: &AthleteIdentityIndex) -> bool {
+    decision.members.iter().any(|member| {
+        index
+            .member(member.subject.as_str())
+            .is_none_or(|current| current.evidence_digest != member.evidence_digest)
+    })
+}
 
-        if !stale {
-            if let Some(case_id) = &decision.case_id {
-                if let Some(case) = cases.iter().find(|c| c.id == *case_id) {
-                    match case.state {
-                        ReviewState::Superseded | ReviewState::Pending => {
-                            stale = true;
-                        }
-                        ReviewState::Resolved | ReviewState::Retained => {
-                            let has_accepted_verdict = verdicts.iter().any(|v| {
-                                v.case_id == *case_id
-                                    && v.field == "identity"
-                                    && (decision.kind == AppliedIdentityKind::SamePerson
-                                        || decision.kind == AppliedIdentityKind::DifferentPerson)
-                                    && v.accepted
-                            });
-                            if !has_accepted_verdict
-                                && (decision.kind == AppliedIdentityKind::SamePerson
-                                    || decision.kind == AppliedIdentityKind::DifferentPerson)
-                            {
-                                stale = true;
-                            }
-                        }
-                    }
-                } else {
-                    stale = true;
-                }
-            }
-        }
-
-        if stale {
-            invalidated += 1;
+fn case_is_stale(
+    decision: &AppliedAthleteIdentity,
+    cases: &[ReviewCase],
+    verdicts: &[ReviewVerdictRecord],
+) -> bool {
+    let Some(case_id) = decision.case_id.as_deref() else {
+        return false;
+    };
+    let Some(case) = cases.iter().find(|case| case.id == case_id) else {
+        return true;
+    };
+    match case.state {
+        ReviewState::Superseded | ReviewState::Pending => true,
+        ReviewState::Resolved | ReviewState::Retained => {
+            needs_accepted_verdict(decision, case_id, verdicts)
         }
     }
+}
 
-    Ok(invalidated)
+fn needs_accepted_verdict(
+    decision: &AppliedAthleteIdentity,
+    case_id: &str,
+    verdicts: &[ReviewVerdictRecord],
+) -> bool {
+    if !is_identity_pair(decision.kind) {
+        return false;
+    }
+    !verdicts.iter().any(|verdict| {
+        verdict.case_id == case_id && verdict.field == "identity" && verdict.accepted
+    })
+}
+
+fn is_identity_pair(kind: AppliedIdentityKind) -> bool {
+    matches!(
+        kind,
+        AppliedIdentityKind::SamePerson | AppliedIdentityKind::DifferentPerson
+    )
 }

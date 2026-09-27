@@ -290,3 +290,9 @@ Current scope code still declares 49 jurisdictions. Batch-only application stage
 integration; capture metadata is not proof of an immutable archive; partial-resume and whole-bundle
 publication require end-to-end evidence. Historical Midwest/49-jurisdiction exports and seals do not
 satisfy this fresh 51-jurisdiction run. These are delivery obligations, not claims fixed by this plan.
+
+Design reference basis: mandatory `rust-contract` and `scott-ddd-refactor`; Holzmann references
+`references/nasa-jpl-standards.md`, `references/runtime-performance-architecture.md`,
+`references/latency-throughput-playbook.md`, `references/zero-cost-abstractions.md`;
+async-review references `references/structural-correctness.md` and
+`references/cancellation-safety.md`. These are skill references, not verification evidence.

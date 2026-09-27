@@ -96,3 +96,47 @@ fn legacy_lines_are_trimmed_before_they_are_parsed() {
     );
     assert_eq!(store.stats().unwrap().observations, 2);
 }
+
+#[test]
+fn bulk_legacy_import_counts_every_committed_chunk() -> Result<(), Box<dyn std::error::Error>> {
+    for imported_rows in [20_000_u64, 20_001_u64] {
+        let dir = tempfile::tempdir()?;
+        let entities = dir.path().join("entities");
+        std::fs::create_dir_all(&entities)?;
+        let row = school("Imported school");
+        let body = serde_json::to_vec(&row)?;
+        let mut output =
+            std::io::BufWriter::new(std::fs::File::create(entities.join("schools.jsonl"))?);
+        for _ in 0..imported_rows {
+            std::io::Write::write_all(&mut output, &body)?;
+            std::io::Write::write_all(&mut output, b"\n")?;
+        }
+        std::io::Write::flush(&mut output)?;
+        drop(output);
+
+        let existing = school("Previously acquired school");
+        let existing_body = serde_json::to_vec(&existing)?;
+        let store = Store::open(dir.path())?;
+        store.append(Table::Schools, &existing)?;
+        assert_eq!(store.import_legacy()?.observations, imported_rows);
+        drop(store);
+
+        let reopened = Store::open(dir.path())?;
+        let expected = imported_rows.checked_add(1).ok_or("row count overflow")?;
+        assert_eq!(reopened.count(Table::Schools)?, expected);
+        let existing_key = observation_key(Table::Schools, existing.entity_id(), 0);
+        let retained = reopened
+            .entities
+            .get(existing_key)?
+            .ok_or("missing existing row")?;
+        assert_eq!(retained.as_ref(), existing_body.as_slice());
+        for sequence in 1..=imported_rows {
+            let key = observation_key(Table::Schools, row.entity_id(), sequence);
+            let retained = reopened.entities.get(key)?.ok_or("missing imported row")?;
+            assert_eq!(retained.as_ref(), body.as_slice());
+        }
+        assert_eq!(reopened.import_legacy()?.observations, 0);
+        assert_eq!(reopened.count(Table::Schools)?, expected);
+    }
+    Ok(())
+}

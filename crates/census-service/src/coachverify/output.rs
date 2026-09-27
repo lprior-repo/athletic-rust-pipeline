@@ -51,6 +51,15 @@ fn read_evidence_jsonl(path: &Path) -> anyhow::Result<Vec<ContactClaimEvidence>>
 }
 
 pub fn write_fragment(path: &Path, outcomes: &[super::RowOutcome]) -> anyhow::Result<()> {
+    let claims = outcomes
+        .iter()
+        .flat_map(|outcome| &outcome.evidence)
+        .collect::<Vec<_>>();
+    census_store::read::write_snapshot_rows(&evidence_path(path), &claims)?;
+    publish_fragment(path, outcomes)
+}
+
+fn publish_fragment(path: &Path, outcomes: &[super::RowOutcome]) -> anyhow::Result<()> {
     use census_store::read::publish_atomically;
     Ok(publish_atomically(path, |temporary| {
         let mut writer = csv::WriterBuilder::new()
@@ -90,13 +99,20 @@ pub fn read_fragment_evidence(
     path: &Path,
     row: &RawContactRow,
 ) -> anyhow::Result<Vec<ContactClaimEvidence>> {
-    let file_name = fragment_file_name(path);
-    let evidence_path = path.with_file_name(format!("{}.evidence.jsonl", file_name));
-    let claims = read_evidence_jsonl(&evidence_path)?;
+    let claims = read_evidence_jsonl(&evidence_path(path))?;
     Ok(claims
         .into_iter()
         .filter(|c| c.school == row.school && c.role == row.role && c.person == row.coach_name)
         .collect())
+}
+
+fn evidence_path(path: &Path) -> std::path::PathBuf {
+    let mut name = path
+        .file_name()
+        .map(std::ffi::OsStr::to_os_string)
+        .unwrap_or_else(|| std::ffi::OsString::from("contacts.csv"));
+    name.push(".evidence.jsonl");
+    path.with_file_name(name)
 }
 
 pub fn fragment_file_name(path: &Path) -> String {
