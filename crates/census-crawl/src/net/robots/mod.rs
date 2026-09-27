@@ -89,21 +89,16 @@ impl Fetcher {
             Ok((status, _)) => {
                 debug!(
                     status,
-                    "robots fetch returned non-standard status, allowing all"
+                    "robots fetch returned non-standard status, failing closed (disallow all)"
                 );
-                RobotsRules {
-                    fetched: true,
-                    rules: Vec::new(),
-                    crawl_delay: None,
-                }
+                parse_robots(REFUSAL_RULES)
             }
-            Err(_) => {
-                debug!("robots fetch failed, allowing all (transport/server error)");
-                RobotsRules {
-                    fetched: true,
-                    rules: Vec::new(),
-                    crawl_delay: None,
-                }
+            Err(e) => {
+                debug!(
+                    error = %e,
+                    "robots fetch failed, failing closed (disallow all)"
+                );
+                parse_robots(REFUSAL_RULES)
             }
         };
         debug!(

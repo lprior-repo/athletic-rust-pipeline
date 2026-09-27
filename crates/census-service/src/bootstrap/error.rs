@@ -75,8 +75,11 @@ pub enum BootstrapError {
         #[source]
         source: std::io::Error,
     },
-    #[error("task count does not fit u64")]
-    TaskCountOverflow,
+    #[error("task supervision failed: {source}")]
+    TaskSupervision {
+        #[source]
+        source: crate::spawn::SpawnError,
+    },
     #[error("the browser lane's origin {origin} is not a URL: {source}")]
     LaneOriginUnusable {
         origin: String,

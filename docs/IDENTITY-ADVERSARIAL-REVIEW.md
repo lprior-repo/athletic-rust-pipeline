@@ -1,9 +1,13 @@
-# Adversarial Identity Review — Athlete Matching and Adjudication
+# Adversarial identity source audit — 2026-09-25
 
 **Date:** 2026-09-25
 **Scope:** `crates/census-reconcile/`, `crates/census-review/`, `crates/census-domain/src/model/`, `crates/census-store/src/entities/`
-**Objective:** §58 of `ATHLETIC_PIPELINE_DELIVERY_GOAL_183fca1.md` (GOAL-2026-09-24-01) adversarial-identity-review requirement.
-**Authority:** Deterministic Rust owns ingestion, parsing, normalization, source identifiers, school matching, cohort interpretation, candidate generation, contradiction detection, mark arithmetic, comparison, PR reduction, evidence persistence, caching, coverage and export. AI may advise only on genuinely unresolved identity questions *after* normalization and *after* hard contradictions are computed; exactly one model owns a case; the deterministic adjudicator owns acceptance. Never fabricate a field to make a row look complete.
+**Objective:** Historical adversarial-identity review of commit `183fca13dd6d48165d04c76fd56648998e6b432f`; static findings, not reproduced failures or current release status.
+**Authority:** [DOMAIN.md](../DOMAIN.md) and [ADR-005](adr/ADR-005-ai-cannot-override-contradictions.md) own current adjudication. Rust accepts identities; ambiguous cases require both local Qwen reviews. This audit's former single-model assignment assumption is superseded.
+
+Paths and guards below describe the pinned tree. Later identity repairs and their executed checks
+are recorded in [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md). Recheck a finding before
+promoting it into a current bug or claiming it closed.
 
 ---
 

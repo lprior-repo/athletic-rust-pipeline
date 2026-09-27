@@ -1,199 +1,87 @@
-# Deployment lifecycle
+# Native deployment lifecycle
 
-A national census executes for days on a Restate cluster. The journal lives in the node, not in
-the endpoint process: a crash of `census-serve` resumes at the last recorded step. Rolling a new
-build is not a restart — it is a new registration, and the old registration stays alive until every
-in-flight invocation finishes or is cancelled. Nothing in the repo encodes this lifecycle today;
-the following describes how it must work and why.
+This document owns binary installation, registration and store handoff. Runtime commands are in
+[OPERATIONS.md](OPERATIONS.md), handler policies in [RESTATE_WORKFLOWS.md](../RESTATE_WORKFLOWS.md),
+and required V1→V2 fault evidence in [scenario 4](NATIONAL-CENSUS-FAULTS.md#required-scenarios).
+An ordinary restart is not proof of an in-flight upgrade.
 
-## The two safety rules
+## Invariants
 
-1. **A version is immutable once registered.** A binary that has been registered with Restate must
-   never be rebuilt in place. Rebuilding a registered version's binary and re-registering it causes
-   RT0016 journal mismatches because the journal still references the old invocation chain and the
-   new binary's type layout, error paths, and retry semantics may differ. The only safe path is to
-   build into a *new* path and register that path.
+- Registered binaries are immutable artifacts. Bind a release ID to the actual binary/lockfile/
+  configuration, not merely an unverified checkout SHA. Do not overwrite a running executable.
+- Preserve native Restate's durable directory and deployment/invocation identity. Completed journal
+  steps replay; unfinished external effects may repeat and require their idempotency contract.
+- One process owns a Fjall root. Two ports or release directories do not permit concurrent owners
+  of the same database. Separate empty stores do not provide continuity for one census.
+- Do not unregister an old deployment with retained work unless an explicit supported migration or
+  operator-approved terminal disposition accounts for every invocation. Forced deletion is not drain.
 
-2. **No version is removed while it has active invocations.** A deployment that still has workflows
-   in progress must not be shut down or unregistered. In-flight invocations are pinned to the
-   deployment that accepted them; removing the deployment while work remains causes those invocations
-   to fail with unrecoverable errors, corrupting the journal and potentially losing data.
+Keeping a binary immutable avoids accidental code drift but does not itself make replay deterministic.
+Time, external responses, unordered iteration, wire shapes and durable call order need stable
+journaled/run-bound semantics. A code change can cause RT0016 replay mismatch; not every rebuild
+necessarily does, and a paused invocation is not proof of journal corruption.
 
-These rules exist because of the replay hazards that Restate workflows exhibit across builds.
+## Shipped assets
 
-## Invocation timeouts
-
-Restate asks an invocation to suspend after `inactivity_timeout` without journal progress, then aborts
-it `abort_timeout` later. Both default to one minute and ten minutes, and both are read from the
-manifest the endpoint publishes — per service — so an endpoint that declares neither gets the defaults
-whatever the node's own configuration says.
-
-The census needs longer than the defaults, because **queueing is in-flight time**. Every handler runs
-its work on the blocking pool (`--max-concurrent` slots), and the national fan-out submits every
-jurisdiction at once, so most handlers spend their first minutes waiting for a slot with no journal
-entry to show for it. Restate read that wait as a stall: on 2026-09-24 the revision-8 nationwide run
-lost 47 of its 49 jurisdictions to a ten-minute abort while they were queued, and finished with two.
-
-`build_endpoint` therefore binds the nine store-backed services with `ServiceOptions` declaring an
-hour for each timer (`CENSUS_INACTIVITY_TIMEOUT`/`CENSUS_ABORT_TIMEOUT` in `restate_services/mod.rs`),
-and `fjall_restate_e2e` asserts both numbers appear in the manifest that every one of them advertises.
-`BrowserSession` keeps the defaults on purpose: the lane answers one request at a time, and a lane
-that hangs should be aborted quickly rather than held for an hour.
-
-The hour is also the backstop for a genuinely stuck handler. An abort discards whatever the blocking
-job had done in memory — the journal holds only what landed — so the invocation's next attempt
-replays that work. The retry policy decides what happens after an abort; the timer decides only that
-waiting forever is not one of the options.
-
-## What breaking rule 1 looks like
-
-The failure is silent, which is why it is worth recognising. A client that submits work against a
-stale registration prints `submitted as invocation inv_…` and then blocks until its own observation
-bound expires; re-running the same command prints the same and blocks again. The endpoint's log says
-nothing, the store gains no rows, and the HTTP cache gains no bodies, so the run looks like a crawl
-that is thinking rather than one that is not running at all.
-
-The invocations are visible from the node's admin API:
-
-```bash
-curl -s -X POST http://127.0.0.1:19095/query \
-  -H 'content-type: application/json' -H 'accept: application/json' \
-  -d '{"query":"SELECT id, status, target FROM sys_invocation"}'
-```
-
-`status: "paused"` is the signature. Every `JurisdictionCensus` and `Sweep` handler carries
-`invocation_retry_policy(on_max_attempts = "pause")`, so an invocation whose journal no longer
-matches the registered schema fails its three attempts and is parked instead of failing the caller.
-A paused invocation **keeps its virtual-object key**, so every later submission for the same
-`<jurisdiction>:<season>:<revision>` waits behind it as `pending` and never starts: the key stays
-poisoned until the paused invocation is ended.
-
-```bash
-# Ends the paused invocation (the key is released; it reports `completed`)
-curl -s -X PATCH http://127.0.0.1:19095/invocations/<id>/kill \
-  -H 'content-type: application/json' -H 'accept: application/json'
-```
-
-Measured 2026-09-24: rebuilding `census-serve` in place and restarting it at the same URI left 59
-paused invocations — the revision-5 sweeps of roughly half the states. The DC key absorbed three
-further submissions, none of which ran, before the paused one was killed; the run then completed in
-minutes and wrote its observations. Re-registering the rebuilt binary bumped each service to
-revision 8 and the symptoms stopped.
-
-## Replay hazards
-
-A Restate workflow invocation may replay on a different build of the same endpoint. If the binary
-changes, replayed steps may produce different results. The hazards are:
-
-| Hazard | Description |
+| File | Role |
 |---|---|
-| **Current time** | A step that reads `SystemTime::now()` at build A may see a different value at build B during replay, causing divergent branch decisions or date-based queries. |
-| **HTTP calls** | A step that fetches a URL may receive different content between builds if the upstream served new data; the step's result (a parsed struct) may have different fields. |
-| **Random values** | A step that generates a random identifier or sample will produce different values on replay, potentially altering which records are selected. |
-| **Unordered collections** | A step that collects results into a `HashSet` or iterates a `HashMap` may produce different ordering on replay, affecting any downstream comparison that depends on iteration order. |
+| `deploy/restate.toml` | Native node config; conventional loopback ingress 18095/admin 19095 |
+| `deploy/systemd/restate-server.service` | Node and its separate durable state |
+| `deploy/systemd/census-serve@.service` | Endpoint per release, binary under `/opt/athletic-rust-pipeline/releases/<release>/bin/census-serve` |
+| `deploy/endpoint.env.example` | Per-release listen address environment |
+| `deploy/systemd/census-service-collect.service` and `.timer` | Historical weekly staging collection; not the fresh census's canonical workflow |
 
-These hazards are inherent to the journal-and-replay model. The only mitigation is immutability:
-if a version's binary is never rebuilt in place, the step code is the same on replay as it was
-during the original execution, so the hazards are bounded to the same build's behavior.
+The endpoint unit currently uses `/var/lib/census-service/<release>` and a per-release log directory.
+That prevents lock sharing by default but does **not** migrate an existing run's evidence. Deliberately
+bind the intended run/store before using a new instance; do not silently direct replay into a new
+empty release root. The unit grants writable access to its declared data root, so any override must
+also reconcile filesystem permissions and sandbox paths.
 
-## Manual lifecycle
+## Planned same-store handoff
 
-### 1. Build into a versioned path
+1. Build and verify `census-serve` and the corresponding CLI into a new immutable release directory.
+   Record hashes, build/schema/wire versions, intended store/run and rollback artifact. Never use the
+   mutable build output as the registered long-lived executable.
+2. Choose an unused loopback port and one consistent URI spelling. Inspect registrations and active
+   invocations; `localhost` and `127.0.0.1` registrations need not be the same deployment.
+3. Stop new run submissions. Let old deployment work drain to a demonstrated terminal boundary,
+   or execute a separately qualified in-flight migration. Resolve paused work explicitly; do not
+   interpret a missing/unknown active count as zero.
+4. SIGTERM the old endpoint, retain its drain certificate and confirm process exit/store lock release.
+   Take the required cold backup. Keep old binaries, registration metadata and evidence recoverable.
+5. Start the immutable new endpoint against the **intended same store**, with compatible wire/schema
+   and run semantics. Confirm endpoint discovery/health before registration. A fresh census instead
+   needs its separately authorized new store and unused namespace.
+6. Register the new URI with the existing node, then run an isolated canary with observed effects.
+   Check that pending/replayed calls reach the intended build/store rather than merely accepting HTTP.
+7. Retire the old registration only after its work is accounted for and the replacement is usable.
+   Keep rollback artifacts; reuse a port only when no retained deployment needs that address.
 
-Build the binary for the target commit and place it under `/releases/<git-sha>/`:
+A same-store handoff includes downtime between owners. Claiming zero-downtime overlapping writers
+would violate the storage contract. Retained in-flight calls may remain pinned to the old deployment;
+the sequence above is not an untested automatic reassignment procedure.
 
-```bash
-cargo build --release -p census-service
-cp target/release/census-service "/releases/$(git rev-parse HEAD)/census-service"
-```
+## Administration and stuck invocations
 
-The path is keyed by the full git SHA so every build is addressable and never collides with another.
-The directory must not already exist: if `/releases/<sha>/` exists, a previous build already claimed
-that SHA and the binary must not be overwritten. This is the enforcement of the immutability rule.
+Use the loopback admin API to inspect deployments and query `sys_invocation`; examples are in the
+operations runbook. Registration uses `POST /deployments` with `{"uri":"http://127.0.0.1:<port>/"}`.
+Use the installed server/CLI version's supported inspection and retirement operations.
 
-### 2. Assign a port slot
+`JurisdictionCensus` now kills on retry exhaustion; other definitions can pause. A paused virtual
+object can block subsequent calls behind its owned key. Preserve the failure, invocation IDs and
+receipts before an operator deliberately cancels/kills it. Do not create replacement revisions merely
+to evade blocked/exhausted work. Historical API retirement responses and timeout incidents are in
+[verification evidence](VERIFICATION-EVIDENCE.md), not guarantees about every server version.
 
-Each version gets its own TCP port, starting at 19100 and incrementing per version:
+Store-backed handlers advertise long inactivity/abort timeouts; the browser uses SDK defaults.
+Queueing without journal progress consumes that budget. Increasing a timeout is not a substitute
+for bounded work, explicit checkpoints or supervised blocking effects.
 
-| Version index | Port  |
-|---|---|
-| 1 | 19100 |
-| 2 | 19101 |
-| 3 | 19102 |
-| … | … |
+## Helper limitations
 
-The port is chosen before starting the endpoint and must not be in use by another version. A port
-collision means two versions are serving on the same address, which breaks the journal's routing.
-
-### 3. Start the new endpoint
-
-Start `census-serve` on the assigned port, pointing at the version's binary:
-
-```bash
-census-serve --listen 127.0.0.1:<port> --data-dir var/census-service --max-concurrent 8
-```
-
-One store serves one process. `census-serve` opens `--data-dir` for writing at startup and a Fjall
-store has one writer, so the new endpoint cannot come up on its new port while the old one still
-holds the store: the old process has to drain and exit first, and only then does the new port start
-answering. The registration order is the half that must not be skipped — register the new deployment
-before removing any registration for the old endpoint, so no invocation window resolves to a dead
-address. Measured 2026-09-24: the old endpoint exited 2 s after `SIGTERM` with nothing in flight, the
-new one answered on its own port 2 s later, and the canary that followed ran its results stage on the
-new revision.
-
-### 4. Register the deployment
-
-Register the new endpoint with the Restate node so that new invocations route to it:
-
-```bash
-restate deployment register --name <name> --uri http://127.0.0.1:<port>/
-```
-
-New invocations will route to the new deployment; existing invocations on the old deployment
-continue unaffected.
-
-### 5. Drain the old deployment
-
-Inspect the old deployment's active invocation count:
-
-```bash
-restate deployment describe <old-id> --extra
-```
-
-Wait until `active_invocations` is zero. During this period, new invocations use the new
-deployment while in-flight ones on the old deployment complete or are cancelled.
-
-### 6. Shut down and unregister
-
-Once `active_invocations` is zero:
-
-```bash
-# Shut down the old endpoint process (SIGTERM triggers the drain sequence)
-kill <old-pid>
-
-# Unregister the old deployment
-restate deployment unregister <old-id>
-```
-
-Without the CLI on `PATH` — and it is not installed on this host — the admin API does the same work,
-and retirement needs `force=true`: `DELETE /deployments/<id>` answers `501 Not Implemented`, while
-`DELETE /deployments/<id>?force=true` answers `202 Accepted`. Registration is `POST /deployments`
-with `{"uri": "http://127.0.0.1:<port>/"}`. Measured 2026-09-24: two registrations for one endpoint
-had accumulated — `http://localhost:9080/` at revisions 9/5 and `http://127.0.0.1:9080/` at revisions
-8/4, because one host spelled two ways is two deployments — and both were retired this way once the
-new deployment on its own port was registered and serving revisions 10/6.
-
-The binary at `/releases/<old-sha>/` may be removed after unregistration.
-
-### 7. Reuse the port
-
-After unregistering, the port is free. If this SHA is revisited in the future (e.g. a rebuild
-for a dependency bump), a new SHA will be produced and a new port will be assigned. The old
-port does not need to be reclaimed.
-
-## The deploy-lifecycle script
-
-`tools/deploy-lifecycle.sh` automates the mechanical steps: installing the binary, printing the
-register command, and listing registered deployments with their active-invocation counts. See
-`tools/deploy-lifecycle.sh --help` for usage.
+`tools/deploy-lifecycle.sh` exposes `install`, `list` and `describe`, but it is **not a qualified
+endpoint deployment tool**. Its current install path is repository `var/releases/<sha>` and it copies
+`census-service`, not the required `census-serve`; its help/path claims and environment override do
+not match implementation. Its listing can substitute zero for an absent invocation-count field.
+Do not use that output as evidence that retirement is safe. These are implementation fixes, not
+problems documentation can repair; use the explicit verified handoff above meanwhile.

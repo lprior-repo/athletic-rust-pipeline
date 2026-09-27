@@ -1,11 +1,16 @@
 use super::map::{build_entities, BatchEntities};
 use super::parse::AthleteHit;
 use super::targets::MeetTarget;
-use super::{batch_query, BatchStats, Options, ENDPOINT, PAGE_SIZE, RESULT_WINDOW};
+use super::{
+    batch_query, BatchStats, Options, ENDPOINT, MEETS_PER_BATCH, PAGE_SIZE, RESULT_WINDOW,
+};
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_store::{StoreBatch, Table};
 use serde_json::{json, Value};
 use std::collections::{HashMap, VecDeque};
+
+const MAX_ROWS_PER_MEET: usize = 8_000;
+const MAX_PLAUSIBLE_TOTAL: usize = MAX_ROWS_PER_MEET * MEETS_PER_BATCH;
 
 pub(super) async fn run_batches<'t>(
     ctx: &AdapterContext<'_>,
@@ -45,6 +50,7 @@ async fn page_hits(
     let mut from = 0usize;
     let mut hits: Vec<AthleteHit> = Vec::new();
     let mut total = 0usize;
+    let mut declared: Option<usize> = None;
     loop {
         let body = batch_query(ids, from);
         let outcome = ctx.fetcher.post_json(ENDPOINT, &body, &fetch).await?;
@@ -58,25 +64,73 @@ async fn page_hits(
             break;
         }
         let parsed: Value = outcome.json()?;
-        if from == 0 {
-            total = parsed
-                .pointer("/hits/total/value")
-                .and_then(Value::as_u64)
-                .map_or(0, |value| usize::try_from(value).unwrap_or(usize::MAX));
-        }
         let page: Vec<AthleteHit> = serde_json::from_value(Value::Array(page_sources(&parsed)))
             .map_err(|source| CrawlError::Decode {
                 url: ENDPOINT.to_string(),
                 source,
             })?;
         let fetched = page.len();
+        if from == 0 {
+            declared = declared_rows(&parsed);
+            total = usable_total(declared, fetched, ids.len(), report);
+        }
         hits.extend(page);
         from = from.saturating_add(fetched);
-        if fetched == 0 || from >= total || from.saturating_add(PAGE_SIZE) > RESULT_WINDOW {
+        let window_reached = from.saturating_add(PAGE_SIZE) > RESULT_WINDOW;
+        if fetched == 0 || from >= total || window_reached {
+            if declared.is_none() && window_reached && fetched > 0 {
+                report.note(format!(
+                    "batch of {} meets reached the {RESULT_WINDOW}-row result window with no usable result total: any rows beyond it were not retrieved",
+                    ids.len()
+                ));
+            }
             break;
         }
     }
     Ok((hits, total))
+}
+
+fn declared_rows(parsed: &Value) -> Option<usize> {
+    parsed
+        .pointer("/hits/total/value")
+        .and_then(Value::as_u64)
+        .and_then(|value| usize::try_from(value).ok())
+}
+
+fn usable_total(
+    declared: Option<usize>,
+    fetched: usize,
+    meets: usize,
+    report: &mut AdapterReport,
+) -> usize {
+    if fetched == 0 {
+        if let Some(claimed) = declared.filter(|total| *total > 0) {
+            report.note(format!(
+                "batch of {meets} meets returned no rows though it declared {claimed}: nothing was written for it"
+            ));
+        }
+        return 0;
+    }
+    match declared.filter(|total| (fetched..=MAX_PLAUSIBLE_TOTAL).contains(total)) {
+        Some(total) => total,
+        None => {
+            let claim = match declared {
+                Some(total) => format!("declared {total} rows against {fetched} on the first page"),
+                None => format!("returned {fetched} rows with no result total"),
+            };
+            tracing::warn!(
+                meets,
+                fetched,
+                declared = ?declared,
+                window = RESULT_WINDOW,
+                "athleticlive result total is missing or implausible; paginating to the result window"
+            );
+            report.note(format!(
+                "batch of {meets} meets {claim}; paginating to the {RESULT_WINDOW}-row result window"
+            ));
+            RESULT_WINDOW
+        }
+    }
 }
 
 fn page_sources(parsed: &Value) -> Vec<Value> {

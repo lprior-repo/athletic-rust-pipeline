@@ -55,7 +55,7 @@ sealed 5ab49d85c232c26363e8c2e04695ab2c6394d84eb31590c70fed78ccba9ad233 on 2026-
 `var/midwest-census/out/seal.json` carries the same evidence, with 3,859,887 observations and 23,970
 calculations retained. The gap classes are retained findings, not refusals: the largest are
 `missing_performance_history` and `missing_coach`, both 9,120 athletes, which is the Class 1 and
-Class 2 deficit `13-gap-resolution-plan-2026-09-22.md` describes.
+Class 2 deficit measured in [the earlier acceptance audit](12-acceptance-audit-2026-09-22.md).
 
 ## The export
 

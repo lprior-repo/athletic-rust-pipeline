@@ -1,125 +1,78 @@
-# Durability harness — seventeen failure-injection scenarios
+# Native durability harness
 
-Run with `tools/durability/run.sh`.  Each scenario is a self-contained script under
-`tools/durability/scenario-NN-*.sh` (where NN is zero-padded).  The runner executes every
-scenario in order, prints a PASS / FAIL / SKIPPED table, and exits nonzero on any FAIL or SKIPPED.
+[The fault catalog](../../docs/NATIONAL-CENSUS-FAULTS.md) owns all seventeen required scenarios,
+phase-boundary subcases and exact recovery oracles. This file owns harness invocation and maps the
+current wrappers to implementation; it is not a duplicate acceptance contract or execution ledger.
 
-## Shared preconditions
+## Prerequisites and isolation
 
-Every scenario expects the census-service binary to be built.  Most scenarios skip without it.
+Build the intended `census-service` and `census-serve` binaries and record their identities. Native
+Restate tests use pinned server **1.7.10**, selected by `RESTATE_SERVER_BIN`, then the project install
+under `$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/`, with test-specific fallback rules.
+Obtain it from the [official release](https://github.com/restatedev/restate/releases/tag/v1.7.10),
+verify the published checksum and check `--version`; never commit the binary.
 
-| Precondition | How to verify |
-|---|---|
-| `census-service` binary | `"$BINARY" --help` prints the clap usage |
-| `census-serve` binary | `"$SERVE_BINARY" --help` |
-| Pinned Restate 1.7.10 at `$RESTATE_SERVER_BIN` or `$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server` | `"$RESTATE_SERVER_BIN" --help` |
+Use owned scratch on local disk and isolated ephemeral services. Never reboot the shared host,
+change its clock, fill production filesystems, kill shared GPU servers or open a live store with a
+second owner. The limited tmpfs mounts used by ENOSPC injectors are deliberate fault media, not
+power-loss/reboot evidence. Tests/scripts may not edit project sources or manifests.
 
-The runner exports `SCRATCH_STORE`, `TMPDIR`, `BINARY`, `SERVE_BINARY`, `RESTATE_BINARY`,
-`RESTATE_SERVER_BIN`, `CORPUS_FIXTURE`, `ADMIN_PORT`, `SERVICE_PORT`, `REPO_ROOT`,
-`BINARY_AVAILABLE`, `RESTATE_AVAILABLE` to each scenario script.  Scenario scripts **must not**
-edit Rust sources, `Cargo.toml`, or anything under `crates/`.  They may create and destroy
-directories under `$SCRATCH_STORE`.
+## Invocation and configuration
 
-## Setup: obtaining the pinned Restate server
+```sh
+mkdir -p var/durability-scratch
+SCRATCH_STORE="$PWD/var/durability-scratch" \
+BINARY="$PWD/target/release/census-service" \
+SERVE_BINARY="$PWD/target/release/census-serve" \
+RESTATE_SERVER_BIN=<verified-server-path> tools/durability/run.sh
 
-The census lanes are qualified against Restate 1.7.10. Scenario 01 starts and reaps
-its own isolated Restate processes on ephemeral ports; no pre-existing live server
-is required. Set `SCRATCH_STORE` to a local-disk directory, not tmpfs.
-
-1. **Download** the pinned build from the Restate releases page, checking it against the published
-   digest. The asset for x86-64 Linux is the musl tarball, and the binary sits one directory deep:
-   ```
-   base=https://github.com/restatedev/restate/releases/download/v1.7.10
-   artefact=restate-server-x86_64-unknown-linux-musl.tar.xz
-   curl -LO "$base/$artefact" && curl -LO "$base/$artefact.sha256"
-   sha256sum -c "$artefact.sha256"          # 870fdc42…c83355e
-   dir="$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10"
-   mkdir -p "$dir" && tar xJf "$artefact" -C "$dir"
-   mv "$dir/restate-server-x86_64-unknown-linux-musl/restate-server" "$dir/"
-   "$dir/restate-server" --version          # restate-server 1.7.10
-   ```
-   `crates/census-service/tests/restate_kill_restart.rs` looks in `$RESTATE_SERVER_BIN`, then at
-   exactly `$HOME/.local/share/athletic-rust-pipeline/restate/1.7.10/restate-server`, then on PATH,
-   and panics rather than skipping when it finds none — it exists to prove a real server resumes
-   a run whose endpoint was killed. `.github/workflows/gate.yml` installs it the same way.
-2. **Place** the binary where the runner looks: `RESTATE_BINARY` for scenarios that need it, or
-   the directory above.
-
-Do not commit the binary to the repository.
-
-## Scenario table
-
-| # | Script | Status | Evidence |
-|---|---|---|---|
-| 1 | `scenario-01-endpoint-kill.sh` | Invokes tests | Endpoint crash recovery and Restate restart preserving the same paused workflow invocation; snapshots and observation counts reconcile |
-| 2 | `scenario-02-restate-kill-during-fanout.sh` | SKIPPED | No isolated NationalCensus mid-fanout crash scenario; scenario 01 does not prove this |
-| 3 | `scenario-03-reboot-with-full-census.sh` | SKIPPED | No whole-machine reboot scenario; process restart does not prove this |
-| 4 | `scenario-04-rolling-upgrade.sh` | SKIPPED | No two-version rolling-upgrade scenario |
-| 5 | `scenario-05-http-error-taxonomy.sh` | SKIPPED | No browser HTTP fault-server scenario for rate limits, failures and challenges |
-| 6 | `scenario-06-no-duplicate-evidence.sh` | SKIPPED | No crash-injected evidence replay assertion; observation counts alone are insufficient |
-| 7 | `scenario-07-domain-dedup.sh` | SKIPPED | No concurrent cross-workflow domain-dedup scenario |
-| 8 | `scenario-08-global-budget.sh` | SKIPPED | No multi-endpoint global-budget scenario |
-| 9 | `scenario-09-disk-full-fjall.sh` | SKIPPED | No isolated bounded-filesystem ENOSPC injector for Fjall |
-| 10 | `scenario-10-disk-full-restate.sh` | Invokes processes | Private bounded tmpfs; actual Restate storage ENOSPC; acknowledged workflow survives restart; duplicate refused and fresh workflow returns baseline output |
-| 11 | `scenario-11-parent-exit.sh` | SKIPPED | `ATHLETIC_FAULT_HTTP_EXIT` seam not implemented |
-| 12 | `scenario-12-cross-midnight.sh` | SKIPPED | No clock-manipulation seam |
-| 13 | `scenario-13-ai-review-failures.sh` | Invokes tests | Real model HTTP client against isolated peers: 503, malformed/empty answers, header/body timeouts, truncated body, and valid verdict |
-| 14 | `scenario-14-seal-refuses.sh` | Invokes CLI | Builds an empty-store workbook, then requires a nonzero seal refusal with named unmet criteria |
-| 15 | `scenario-15-full-backup-restore.sh` | Invokes test | `crates/census-service/tests/backup_restore.rs` — Fjall cold copy integrity |
-| 16 | `scenario-16-golden-census-determinism.sh` | Invokes test | `crates/census-service/tests/parity_pipeline.rs` — byte-identical pipeline output |
-| 17 | `scenario-17-recovery-tests.sh` | Invokes test | `crates/census-service/tests/recovery.rs` — SIGKILL mid-batch, service restart, drain deadline, journal-append gap, jurisdiction walk resume |
-
-Scenario 13 verifies the model transport boundary. It does not kill a GPU model
-process or prove review-checkpoint recovery. Skipped scenarios remain unverified;
-a passing subset is not completion of the full durability requirement.
-
-Scenario 10 requires Linux user, mount and PID namespaces plus `mount`, `curl`,
-`jq`, `python3` and `timeout`. Only its isolated Restate data directory is on the
-256 MiB tmpfs; endpoint storage and logs remain under owned local-disk scratch.
-Bounded high-entropy request bodies exhaust preallocated storage. A filler error
-or failed HTTP request alone cannot pass: the Restate log must contain an actual
-OS disk-full error. Both child services are reaped and the private mount vanishes
-with its namespace. This is process/storage recovery, not power-loss durability.
-
-## Design principles
-
-1. **No green results from absence of faults.**  Every scenario either passes with observable
-   evidence or skips with a precise reason.
-2. **SKIPPED names the missing seam.**  E.g. `"SKIPPED: no fault-injection abort point after the Fjall commit in census-service"`.
-3. **Deterministic over time.**  Where clock manipulation is involved, the script advances time
-   rather than waiting.
-4. **Idempotent.**  Running the same scenario twice from a fresh `$SCRATCH_STORE` must produce
-   the same result.
-5. **No Rust edits.**  Scripts may create directories, kill processes, inject errors via
-   environment variables or configuration, but must not modify `crates/`, `Cargo.toml`, or
-   any `.rs` file.
-6. **Scratch-only.**  All file operations use `$SCRATCH_STORE` or `mktemp -d`. No production
-   directories are ever read, written, or deleted.
-7. **Integration test delegation.**  Scenarios that cannot exercise a seam at the CLI level
-   invoke the corresponding production integration test rather than running fake empty stores
-   or sharing live ports.
-
-## Running
-
-```bash
-# Quick run (all scenarios, defaults)
-tools/durability/run.sh
-
-# Custom store and binaries
-SCRATCH_STORE=/tmp/my-scenarios \
-BINARY=target/debug/census-service \
-SERVE_BINARY=target/debug/census-serve \
-RESTATE_SERVER_BIN=/opt/restate/restate-server \
-tools/durability/run.sh
-
-# One scenario only
 tools/durability/run.sh scenario-01-endpoint-kill
 ```
 
-## Exit codes
+Choose a fresh owned scratch root per evidence run. The runner exports `SCRATCH_STORE`, `TMPDIR`,
+`BINARY`, `SERVE_BINARY`, `RESTATE_BINARY`, `RESTATE_SERVER_BIN`, `CORPUS_FIXTURE`, `ADMIN_PORT`,
+`SERVICE_PORT`, `REPO_ROOT`, `BINARY_AVAILABLE` and `RESTATE_AVAILABLE`. Default scratch is under
+`/tmp`; override it if that is tmpfs or shared. A scenario may additionally require namespace tools,
+mount, curl, jq, timeout or the test harness's own prerequisites.
 
-| Exit code | Meaning |
-|---|---|
-| 0 | All scenarios PASS |
-| 1 | One or more scenarios FAIL or SKIPPED (unverified seams) |
-| 2 | Invalid arguments or missing required tool |
+## Current wrapper map
+
+Static implementation inventory, not observed PASS results. Files are `scenario-NN-<name>.sh` in
+this directory. A narrower invoked test does not discharge the broader same-number acceptance item.
+
+| # | Name | Current implementation/limit |
+|---|---|---|
+| 01 | `endpoint-kill` | Runs service `restate_kill_restart` integration tests |
+| 02 | `restate-kill-during-fanout` | Explicit skip: native NationalCensus mid-fan-out fault missing |
+| 03 | `reboot-with-full-census` | Explicit skip: isolated machine reboot missing |
+| 04 | `rolling-upgrade` | Explicit skip: distinct V1→V2 upgrade missing |
+| 05 | `http-error-taxonomy` | Explicit skip: real browser HTTP fault-server scenario missing |
+| 06 | `no-duplicate-evidence` | Explicit skip: reached production commit/lost-ack injection missing |
+| 07 | `domain-dedup` | Explicit skip: concurrent cross-workflow source-unit scenario missing |
+| 08 | `global-budget` | Explicit skip: multi-endpoint physical origin-budget scenario missing |
+| 09 | `disk-full-fjall` | Builds `census-store` ENOSPC probe in private 64-MiB tmpfs; conditional namespace/tool skips |
+| 10 | `disk-full-restate` | Owned processes/private bounded mount; demands an actual OS disk-full log and acknowledged-work recovery |
+| 11 | `parent-exit` | Explicit skip: `ATHLETIC_FAULT_HTTP_EXIT` seam missing |
+| 12 | `cross-midnight` | Explicit skip: isolated clock fault missing |
+| 13 | `ai-review-failures` | Runs `census-review` HTTP transport tests; does not prove advice-checkpoint crash recovery |
+| 14 | `seal-refuses` | Empty-store CLI refusal; does not exercise every unmet acceptance item |
+| 15 | `full-backup-restore` | Runs service `backup_restore` integration tests; not Restate recovery |
+| 16 | `golden-census-determinism` | Runs selected `parity_pipeline` fixture test; not full frozen real-capture/advice replay |
+| 17 | `recovery-tests` | Runs service `recovery` suite; verify the actual reached batch window against the catalog |
+
+Scenario 10 also uses `restate-enospc-probe.sh`; its current helper prerequisites include Python.
+That existing harness implementation is not permission to implement census pipeline logic in Python.
+Do not convert a missing tool or inaccessible fault seam into simulated success.
+
+## Verdicts and evidence
+
+The runner executes every selected script, prints its output and emits a final table. A nonzero
+child exit is FAIL. A `SKIPPED:` marker takes precedence over `PASS:`; no recognized success marker
+also becomes SKIPPED. Exit 0 means all **selected wrappers** passed their implemented checks, not
+that all national acceptance obligations were exercised. Any FAIL/SKIPPED returns 1; invalid scenario
+selection returns 2. A single selected wrapper is not a full release run.
+
+Record exact build/run IDs, commands, reached injections, owned process identities, physical request
+counts, before/after exact-record oracles, logs, exit statuses and cleanup. Keep measured outcomes in
+[VERIFICATION-EVIDENCE.md](../../docs/VERIFICATION-EVIDENCE.md). Release requires every mandatory
+scenario and subcase, with no skip or substitute.

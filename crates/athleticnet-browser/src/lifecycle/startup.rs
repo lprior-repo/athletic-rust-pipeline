@@ -3,6 +3,7 @@ use super::super::{
     gate::ProfileGate,
     pool, BrowserSettings, BrowserState, BrowserStatus,
 };
+use super::error::BrowserStartupError;
 use super::BrowserManager;
 use crate::clock::Clock;
 use chromiumoxide::{handler::HandlerConfig, Browser, BrowserConfig, Handler};
@@ -16,11 +17,18 @@ const HANDLER_QUEUE: usize = 256;
 
 impl BrowserManager {
     #[tracing::instrument(skip_all, fields(tabs = settings.tabs, headed = settings.headed))]
-    pub async fn launch(settings: BrowserSettings, clock: Arc<dyn Clock>) -> anyhow::Result<Self> {
-        settings.validate()?;
-        pool::prepare_profile(&settings)?;
+    pub async fn launch(
+        settings: BrowserSettings,
+        clock: Arc<dyn Clock>,
+    ) -> Result<Self, BrowserStartupError> {
+        settings
+            .validate()
+            .map_err(|_| BrowserStartupError::InvalidTabCount)?;
+        pool::prepare_profile(&settings).map_err(|_| BrowserStartupError::ProfileNotDirectory)?;
         let config = browser_config(&settings)?;
-        let (browser, handler) = Browser::launch(config).await?;
+        let (browser, handler) = Browser::launch(config)
+            .await
+            .map_err(|error| BrowserStartupError::LaunchFailed(error.to_string()))?;
         finish_startup(browser, handler, true, settings, clock).await
     }
 
@@ -29,14 +37,17 @@ impl BrowserManager {
         cdp_url: url::Url,
         settings: BrowserSettings,
         clock: Arc<dyn Clock>,
-    ) -> anyhow::Result<Self> {
-        settings.validate()?;
+    ) -> Result<Self, BrowserStartupError> {
+        settings
+            .validate()
+            .map_err(|_| BrowserStartupError::InvalidTabCount)?;
         let handler_config = HandlerConfig {
             request_timeout: settings.request_timeout,
             ..Default::default()
         };
-        let (browser, handler) =
-            Browser::connect_with_config(cdp_url.as_str(), handler_config).await?;
+        let (browser, handler) = Browser::connect_with_config(cdp_url.as_str(), handler_config)
+            .await
+            .map_err(|error| BrowserStartupError::ConnectFailed(error.to_string()))?;
         finish_startup(browser, handler, false, settings, clock).await
     }
 }
@@ -47,7 +58,7 @@ async fn finish_startup(
     launched: bool,
     settings: BrowserSettings,
     clock: Arc<dyn Clock>,
-) -> anyhow::Result<BrowserManager> {
+) -> Result<BrowserManager, BrowserStartupError> {
     let (tx, rx) = mpsc::channel(settings.tabs.saturating_mul(QUEUE_MULTIPLIER).max(1));
     let (handler_tx, handler_rx) = mpsc::channel(HANDLER_QUEUE);
     let handler_join = spawn_handler(handler, handler_tx);
@@ -85,16 +96,16 @@ async fn finish_startup(
     finish_bootstrap(manager).await
 }
 
-async fn finish_bootstrap(manager: BrowserManager) -> anyhow::Result<BrowserManager> {
+async fn finish_bootstrap(manager: BrowserManager) -> Result<BrowserManager, BrowserStartupError> {
     let (reply, result) = oneshot::channel();
     manager
         .tx
         .send(Command::Bootstrap { reply })
         .await
-        .map_err(|_| anyhow::anyhow!("browser actor stopped during startup"))?;
+        .map_err(|_| BrowserStartupError::ActorStopped)?;
     let bootstrap_result = match result.await {
         Ok(value) => value,
-        Err(_) => Err(anyhow::anyhow!("browser actor stopped during startup")),
+        Err(_) => Err(BrowserStartupError::ActorStopped),
     };
     if let Err(error) = bootstrap_result {
         let (report, failure) = manager.shutdown().await;
@@ -115,7 +126,7 @@ fn spawn_handler(
     tokio::spawn(run_handler(handler, events).instrument(tracing::info_span!("browser.handler")))
 }
 
-fn browser_config(settings: &BrowserSettings) -> anyhow::Result<BrowserConfig> {
+fn browser_config(settings: &BrowserSettings) -> Result<BrowserConfig, BrowserStartupError> {
     let builder = BrowserConfig::builder()
         .chrome_executable(&settings.executable)
         .user_data_dir(&settings.profile_dir)
@@ -127,7 +138,7 @@ fn browser_config(settings: &BrowserSettings) -> anyhow::Result<BrowserConfig> {
     };
     builder
         .build()
-        .map_err(|_| anyhow::anyhow!("invalid browser launch configuration"))
+        .map_err(|_| BrowserStartupError::ConfigBuildFailed)
 }
 
 async fn run_handler(mut handler: Handler, events: mpsc::Sender<HandlerEvent>) {

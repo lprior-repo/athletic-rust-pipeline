@@ -2,10 +2,11 @@ use super::super::{actor::Command, BrowserState, SHUTDOWN_TIMEOUT};
 use super::status::write_state;
 use super::BrowserManager;
 use crate::drain::DrainReport;
+use crate::lifecycle::error::BrowserStartupError;
 use tokio::sync::oneshot;
 
 impl BrowserManager {
-    pub async fn shutdown(&self) -> (DrainReport, Option<anyhow::Error>) {
+    pub async fn shutdown(&self) -> (DrainReport, Option<BrowserStartupError>) {
         self.gate.revoke();
         write_state(&self.status, BrowserState::Stopped);
         let deadline = match self.clock.now_instant().checked_add(SHUTDOWN_TIMEOUT) {
@@ -22,32 +23,40 @@ impl BrowserManager {
     async fn send_shutdown_command(
         &self,
         deadline: tokio::time::Instant,
-    ) -> (DrainReport, Option<anyhow::Error>) {
+    ) -> (DrainReport, Option<BrowserStartupError>) {
         let (reply, result) = oneshot::channel();
         match tokio::time::timeout_at(deadline, self.tx.send(Command::Shutdown { reply })).await {
             Ok(Ok(())) => match tokio::time::timeout_at(deadline, result).await {
                 Ok(Ok(report)) => (report, None),
                 Ok(Err(_)) => (
                     DrainReport::default(),
-                    Some(anyhow::anyhow!("browser actor stopped")),
+                    Some(BrowserStartupError::ShutdownFailed(
+                        "browser actor stopped".to_string(),
+                    )),
                 ),
                 Err(_) => (
                     DrainReport::default(),
-                    Some(anyhow::anyhow!("browser shutdown reply timed out")),
+                    Some(BrowserStartupError::ShutdownFailed(
+                        "browser shutdown reply timed out".to_string(),
+                    )),
                 ),
             },
             Ok(Err(_)) => (
                 DrainReport::default(),
-                Some(anyhow::anyhow!("browser actor stopped")),
+                Some(BrowserStartupError::ShutdownFailed(
+                    "browser actor stopped".to_string(),
+                )),
             ),
             Err(_) => (
                 DrainReport::default(),
-                Some(anyhow::anyhow!("browser shutdown send timed out")),
+                Some(BrowserStartupError::ShutdownFailed(
+                    "browser shutdown send timed out".to_string(),
+                )),
             ),
         }
     }
 
-    async fn join_actor(&self, deadline: tokio::time::Instant) -> Option<anyhow::Error> {
+    async fn join_actor(&self, deadline: tokio::time::Instant) -> Option<BrowserStartupError> {
         let mut guard = self.join.lock().await;
         let join = guard.take();
         drop(guard);
@@ -55,13 +64,17 @@ impl BrowserManager {
         match tokio::time::timeout_at(deadline, &mut handle).await {
             Ok(Ok(Ok(()))) => None,
             Ok(Ok(Err(error))) => Some(error),
-            Ok(Err(_)) => Some(anyhow::anyhow!("browser actor panicked")),
+            Ok(Err(_)) => Some(BrowserStartupError::ShutdownFailed(
+                "browser actor panicked".to_string(),
+            )),
             Err(_) => {
                 handle.abort();
                 if handle.await.is_err() {
                     tracing::warn!("browser actor aborted after shutdown timeout");
                 }
-                Some(anyhow::anyhow!("browser shutdown timed out"))
+                Some(BrowserStartupError::ShutdownFailed(
+                    "browser shutdown timed out".to_string(),
+                ))
             }
         }
     }

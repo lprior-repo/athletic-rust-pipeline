@@ -144,7 +144,12 @@ impl CanonicalAthlete {
         gender: Gender,
         source: SourceIdentity,
     ) -> Self {
-        let canonical_name = name.into();
+        let canonical_name: String = name.into();
+        debug_assert!(!canonical_name.is_empty(), "athlete name must not be empty");
+        debug_assert!(
+            school.validate("sch"),
+            "athlete school id {school} does not validate as a school identifier"
+        );
         let id = CanonicalAthlete::mint(school, &canonical_name, grad_year, gender, &source);
         Self {
             id,
@@ -161,6 +166,40 @@ impl CanonicalAthlete {
             evidence: Vec::new(),
             retained_conflicts: Vec::new(),
         }
+    }
+
+    pub fn new_checked(
+        school: &SchoolId,
+        name: impl Into<String>,
+        grad_year: GradYear,
+        gender: Gender,
+        source: SourceIdentity,
+    ) -> Result<Self, String> {
+        let canonical_name: String = name.into();
+        if canonical_name.is_empty() {
+            return Err("athlete name must not be empty".to_string());
+        }
+        if !school.validate("sch") {
+            return Err(format!(
+                "athlete school id {school} does not validate as a school identifier"
+            ));
+        }
+        let id = CanonicalAthlete::mint(school, &canonical_name, grad_year, gender, &source);
+        Ok(Self {
+            id,
+            canonical_name: canonical_name.clone(),
+            known_names: vec![canonical_name],
+            grad_year,
+            school: school.clone(),
+            gender,
+            sports: Vec::new(),
+            observed_grades: Vec::new(),
+            public_profile_urls: Vec::new(),
+            source: Some(source),
+            source_links: Vec::new(),
+            evidence: Vec::new(),
+            retained_conflicts: Vec::new(),
+        })
     }
 
     pub fn derived_cohort_confidence(&self) -> Option<Confidence> {

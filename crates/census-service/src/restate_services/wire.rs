@@ -153,6 +153,10 @@ impl NationalRequest {
 pub struct StageOutcome {
     pub records: usize,
     pub at: String,
+    #[serde(default)]
+    pub errors: Vec<String>,
+    #[serde(default)]
+    pub notes: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

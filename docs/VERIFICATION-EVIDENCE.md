@@ -1,8 +1,10 @@
-# Verification Evidence — Phase 6
+# Verification evidence ledger
 
-Sections below record runs against different historical working trees. Results do not transfer to
-later revisions without re-execution. The current integration section distinguishes exercised
-behavior from release requirements that remain unverified.
+Each section records its own historical tree, input generation and execution limits. Results do
+not transfer to a later revision, fresh store or new run identity. A historical seal is not the
+fresh national census's release certificate. Current requirements live in
+[NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
+and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
 ## Identity advice boundary and integration regression — 2026-09-27
 
@@ -26,8 +28,10 @@ A broader `cargo nextest run -p census-review -p census-reconcile -p census-repo
 122 passes and one failure: `the_jurisdiction_row_carries_its_measured_denominators` observed
 50 rows instead of 52. Live source inspection found the formerly removed 49-entry
 `UsJurisdiction::CENSUS_SCOPE` and the coverage caller restored by an intervening write.
-The earlier national-scope results below describe the earlier tree, not the current integration.
-The source of that write has not been established; its changes have not been blindly reverted.
+The owner subsequently confirmed that Alaska and Hawaii must remain excluded and that the restored
+implementation must be kept. The earlier national-scope results below describe a withdrawn
+51-jurisdiction change, not the required current scope. Current acceptance is 49 jurisdictions
+plus the unplaced coverage row; these geographic APIs are intentional policy, not legacy shims.
 
 ## Census scope stays ADR-009's 49 jurisdictions — 2026-09-27
 
@@ -44,8 +48,7 @@ That expansion is reverted:
   and seal denominators, the applicability table, the workbook recruiting readers and the
   workspace contract check use the 49-jurisdiction scope again. Explicit subsets remain subsets;
   provider evidence filtering, out-of-scope notes and UNKNOWN rows remain.
-- Records updated: ADR-013 (withdrawal in place), ADR-009's entry in `docs/adr/README.md`,
-  ARCHITECTURE §2, `docs/architecture.md`, `docs/OPERATIONS.md`, `docs/NATIONAL-CENSUS-PLAN.md`.
+- Records updated at the time: ADR-013, ADR-009, architecture, operations and the national plan. The former secondary architecture document has since been consolidated into root `ARCHITECTURE.md`.
 - Kept from the same integration: the optional `CanonicalAthlete::source` and
   `CanonicalPerformance::source_athlete` decode maps with the owning-row-id fallback, and the
   owner-identity and keyed-parent refactors.
@@ -487,11 +490,11 @@ evidence, and the historical drill results below do not transfer to this integra
 
 ### Verification limits
 
-These are slice results, not a release verdict. Full-workspace gates, raw-capture binding of contact
-proofs, the complete F01–F15 acceptance set, real processing of both workbook sheets, and all 17
-real durability fault scenarios remain unverified. Historical workbook/seal and durability entries
-below do not certify this integration. The original admissions workbook was not opened or modified
-by these smoke runs.
+These are slice results, not a release verdict. Raw-capture binding of contact proofs, the full
+F01–F15 acceptance set and all 17 real durability fault scenarios remained unverified for this
+integration. Its workbook-era input checks do not define the newer fresh-run scope, which has no
+seed workbook. Historical workbook/seal entries below do not certify this integration; these
+smokes did not open or modify the original admissions workbook.
 
 ## Toolchain
 
@@ -1233,7 +1236,7 @@ Three things this establishes:
   is `observations > 0` (`census/state/open.rs:70-77`) and an endpoint's observations are what
   `Ingest::record` (`restate_services/ingest.rs:83`) appends. Nothing in this build calls it: the
   CLI chain and the service's jurisdiction stages both write observations straight to the store, and
-  `docs/migration/module-map.md` §5.2.1 records the same gap from the identity side —
+  the contemporaneous module inventory recorded the same gap from the identity side —
   `WorkflowIdentity::source_sweep` "has a constructor but no binder". Every key an operator can
   name reads `observations 0 windows 0`: the 38 journal stems (`milesplit_rosters_wi`, …) and the
   endpoint spellings (`milesplit_wi`, `athleticnet_wi`, `wiaa_wi`, `wayzata_wi`, `meets_wi`, `wiaa`,
@@ -2434,9 +2437,292 @@ Scenarios 14 (seal-refuses) and 16 (golden-census-determinism) now pass because 
 
 ### Coverage report discrepancy
 
-The rebuilt workbook's `Coverage` sheet carries 131 duplicate jurisdiction rows and 108 unique
-jurisdictions (expected 108 per the store). This is a pre-existing data quality issue in the
-Coverage sheet, not introduced by the rebuild. The offline seal correctly reports this as a
-refusal reason: `the coverage report does not reconcile`. The seal via Restate ingress was not
-executable because the Census service is not deployed to Restate (no `Census/seal` endpoint
-registered on the ingress).
+The prior rebuild note reported 131 duplicate rows and “108 unique jurisdictions (expected 108
+per the store)” in `Coverage`. That wording cannot describe the 49-jurisdiction run denominator
+and was not independently resolved by the note; do not treat 108 as a valid jurisdiction count.
+The observed offline seal refused with `the coverage report does not reconcile`. The online
+attempt had no registered `Census/seal` endpoint. Neither result is a successful seal.
+
+## Consolidated historical evidence — imported 2026-09-27
+
+The following facts came from retired handoffs, implementation plans and duplicate operating
+guides. They were **not rerun during documentation cleanup**. Original run IDs, partial digests,
+dates and scope distinctions remain as recorded; abbreviated hashes are not full hash certificates.
+Old source access, signed-in sessions, arbitrary retry behavior and workbook inputs are not
+authorizations or production procedures for the fresh census.
+
+### Workbook-era acquisition and qualification — 2026-09-19 to 2026-09-21
+
+- The retained native corpus comparison reported 95 queries, 4,256 receipts, 340,238 individual
+  results, 57,629 relay-member results, 142,705 athlete IDs and 15,724 unresolved roster results.
+  Its private report was `native-rankings-1789772180206/native-corpus-cleanup-proof.json`.
+  Twenty-six private public-API storage scenarios passed; their corrected position oracle counted
+  positions `1,2,1` as two distinct positions. These reports were not recovered or rerun here.
+- Serialization measured 344,131 versus 13,131 allocations over 1,000 synthetic iterations,
+  331 fewer per iteration. This is not a throughput result.
+- Fixture division runs `6f3c0c59…` (indoor girls), `f0ef3948…` (indoor boys) and `3c726c6d…`
+  (outdoor boys) each reconciled eight synthetic rows: six accepted, one no-match, one review,
+  none pending. Stopped-writer verification matched source hashes; cached replay added no source
+  requests. Outdoor pause/resume froze source traffic for the observed 25 seconds.
+- Live indoor boys `57f88b34…` collected 95 terminal events over 1,065 pages, snapshot
+  `40792b83cfb168de5de876773f1312e41af3c34fc49782a991bdd6d9d4389dd6`. Its eight synthetic
+  workbook rows all remained `review_required`. Workbook/JSONL/receipt digests began
+  `a4eb1fe7…` / `87cfd651…` / `a4f0791b…`; stopped-writer verification exited zero.
+  Cached replay took 0.5 seconds, left artifacts byte-identical and kept fetch count 488→488.
+  Collection required a CDP re-arm mitigation; it did not prove the transport defect repaired.
+- Live indoor girls `fe726b41…` collected 94 events over 816 pages and likewise left all eight
+  rows in review. Artifacts began `8322bae9…` / `44f9f773…` / `fc6c12fe…`; verification exited
+  zero and replay left requests 3,616→3,616. Outdoor runs `7be7e9dd…` and `3b7c07fa…` were
+  separate historical generations, not additional accepted-person evidence.
+- The 2026-09-19 fresh-headless probes returned 403 block pages of 5,484 bytes. The later headed
+  profile produced 200 captures. A recovery cycle reached `human_required` in 31 seconds around
+  its 30-second bound rather than waiting to the old 24-hour deadline. These are session-specific
+  observations, not a rule that future access or challenges may be bypassed.
+- The old gate records changed with the tree: 226 tests with library 149/2 ignored, later
+  232 tests at `3f78fd9` with library 156/2 ignored, and a CDP-patched 234-test record. Do not
+  combine them into one current suite count. The old 16-target command was:
+
+```text
+cargo test --lib --bins --test rankings_parser --test rankings_catalog --test rankings_scope --test rankings_indoor --test rankings_storage --test profile_html_bounds --test profile_merge_bounds --test search_html_bounds --test workbook_verify --test workbook_zip_layout --test native_parser_properties --test result_verify --test bundle_verify --test ingress_failure_surface
+```
+
+Those root-package targets no longer exist. The retained `scale-v15` lane used fixture transport
+and binary `0f044e59…` from working tree `9d101d9`, not live identity search. Its real workbook
+had 120,716 rows in two sheets (111,939 + 8,777), 1,569,308 source fields and 26 headers.
+A ten-selected-row smoke retained all rows and an 83.7 MB JSONL. An owner-online partial export
+retained 462 completed and 120,254 pending rows. Final run `a8328b7f…` assessed 5,000:
+zero accepted, 3,405 review, 1,595 no-match; the other 115,716 remained explicitly pending.
+Stopped-writer verification and replay were reported complete by 2026-09-21, correcting the
+earlier pending note. Older `smoke`, `scale-partial` and `scale-2500` publications failed the later
+header-width verifier and were not silently replaced. No private row values are reproduced here.
+
+Measured fixture throughput was approximately 0.31 rows/s at concurrency 8 and 0.27 at 32;
+two lanes together approximately 0.9 rows/s. A 120.1-second window held 41 rows and 358 source
+operations (0.341 rows/s, 8.73 operations/row), with 358 readiness calls and a 0.329-second mean
+handler duration. A shared-probe experiment kept probe/gate calls 280/280 and fell to 0.167 rows/s;
+it was reverted. The device-write estimate of 12–14 MB/row was not journal payload: retained
+journals measured 51.5 KB/decided row, 112.5 B/entry, versus 110 KB/row in Restate data and
+36 KB/row in the store. This is an old workload, not a current performance baseline.
+
+The 2026-09-21 endgame audit at `3af713b` (dirty tree) found live issue counts 38 sport mismatch,
+17 noncanonical URL, 16 malformed page and six short page; six submitted live output directories
+were empty. Its twelve-state walk held 6,737 rosters, 35,622 cached responses and 2.2 GB.
+It could not infer national workflow execution from journals shared with CLI walks. The later
+[search capture audit](../research/G1-LIVE-SEARCH-CONTRACT.md) owns detailed rejection evidence.
+The original “profile evidence stayed empty” claim was false across retained runs: the older
+33-row pilot held 2,263 profile artifacts and 46,524 performance entries, and one live-girls row
+held one profile with 21 entries. Neither observation established an accepted identity.
+
+Live probes on 2026-09-21 found no XC season in the TF `GetNavInfo` map; XC rankings landing
+pages did not issue a ranking request. Bio responses exposed both sport-specific surfaces,
+grades, teams, seasons, meets and results. A two-sport sample returned 40 TF results separately
+from 22 XC results. Across five other athletes, `level=4` reduced TF row counts
+88/87/428/80/162 to 73/74/148/71/68; `GetAthletes?listId=` returned an empty array. These are
+capability captures, not exhaustive collection or permission to bypass the headed browser policy.
+
+### Early independent-census baseline — 2026-09-20
+
+Imported from the former service README; before Fjall/Restate cutover. Counts describe that
+generation only, not today's store or independently verified people.
+
+| Scope | Athletes | Co2027 | Boys | Girls | Profile URL | Coach | Coach email |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Core | 651,736 | 146,858 | 80,896 | 65,751 | 142,916 | 37,179 | 28,929 |
+| All sources | 787,584 | 190,087 | 105,755 | 84,034 | 176,885 | 43,201 | 33,340 |
+
+Both rows reported grade evidence for 100% of their cohort; core/all-source cohort ratio was
+77.3%. There were 27,580 coach rows, 1,532 core meets (WI 796, MN 209, IA 85; 442 unresolved),
+and 11,007 all-source meets, 9,593 carrying an Athletic.net ID.
+
+| State | Schools | Athletes | Co2027 | Boys | Girls | Coach | Coach email |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| OH | 1,504 | 87,765 | 26,998 | 14,414 | 12,507 | 313 | 313 |
+| IL | 1,889 | 69,493 | 19,392 | 10,856 | 8,521 | 6,432 | 6,244 |
+| WI | 1,027 | 118,031 | 19,281 | 10,323 | 8,929 | 14,699 | 13,646 |
+| MI | 1,493 | 94,771 | 16,176 | 9,285 | 6,891 | 0 | 0 |
+| MO | 1,037 | 42,226 | 13,218 | 7,377 | 5,839 | 0 | 0 |
+| IN | 1,108 | 40,846 | 11,909 | 6,430 | 5,402 | 0 | 0 |
+| MN | 1,016 | 54,084 | 11,261 | 6,147 | 5,114 | 9,338 | 8,629 |
+| KS | 836 | 29,950 | 9,252 | 5,258 | 3,993 | 0 | 0 |
+| IA | 913 | 49,024 | 8,738 | 4,924 | 3,804 | 76 | 19 |
+| NE | 678 | 35,800 | 5,921 | 3,248 | 2,673 | 4,971 | 0 |
+| SD | 427 | 17,134 | 2,669 | 1,518 | 1,151 | 239 | 78 |
+| ND | 339 | 12,612 | 2,043 | 1,116 | 927 | 1,111 | 0 |
+
+The parser/header repair in that record grew parsed Wisconsin artifacts 96→1,740 (compiled 763,
+XC 380, Hy-Tek 597), producing 834,254 rows, 264,167 with grades, and 4,323 added core Co2027
+rows. A separate Wayzata schedule measurement resolved 304/537 venue rows (95 sites, 209 schools);
+the rest were unresolved, not guessed.
+
+### Hardening waves — 2026-09-21 to 2026-09-22
+
+The retired program's baseline was `4e5b828`, nightly-2026-04-27 / rustc 1.97.0-nightly.
+Strict production Clippy exited 101 with approximately 440 diagnostics (392 census lib and
+51 root lib; the approximation and differing scopes are retained). Per-lint census/root counts:
+arithmetic 208/36, expect 75/0, string slicing 47/2, casts 36/10, indexing 23/2,
+ignored-must-use 3/0, unwrap 1/0. It counted 134/552 census functions over 25 logical lines,
+33 over 60 and 21 files over 300. The pre-split sizes were 33,608 root production lines/182 files
+and 17,854 census lines/31 files.
+
+The async census/root inventory recorded bare spawn 0/4, blocking spawn 2/2, JoinSet 3/5,
+TaskTracker 0/3, cancellation token 0/10, select 3/7, buffered-unordered 4/0, and six/zero
+instrument attributes. Spawn instrumentation, paused-time/loom and console/OTLP support were absent
+in that baseline. These were subsequent implementation targets, not current-tree claims.
+
+| Recorded wave | Executed result and distinctive evidence |
+|---|---|
+| Wave 1, 2026-09-21 | Gate reported 465 passed/2 skipped; root strict counters zero; census arithmetic 240→68, casts/index/string-slice/expect/unwrap 36/23/47/75/1→7/4/1/0/0; scan census indexing/expect/casts 128/75/32→0/0/7 |
+| Wave 2, 2026-09-21 | 583 passed/2 skipped, strict counters zero, oversized files 23→0; production root/census 36,656/24,039 lines over 305/160 files; functions over 60/25 were 0/549 |
+| Wave 3, `3af713b` | Commit 286 files, +66,070/−1,184; independently frozen fmt/scan clean, census 25,582 lines/167 files, zero oversized files/over-60 functions; commit record reported 618 passed/2 skipped |
+| Waves 4/5, 2026-09-22 | Gate 726 passed/2 skipped, strict Clippy zero; recovery eight scenarios; census 39,340 lines/251 files. Lost-row kill oracle changed 4/4 to `claimed_without_rows_at_kill=0 missing_from_the_final_store=0`; drain ordering and volatile Coverage-note parity were repaired |
+| Wave 6, 2026-09-22 | 745 passed/2 skipped; census lib 356, domain 39. Six-school/13-coach smoke derived 19 identities, zero conflicts/reviews, 58 coverage rows and one snapshot; three passes preserved one row/key. Offline cycle 0.23 s; Run Metrics golden cells 13,872→13,882, other sheets unchanged |
+
+Distinct defects included a FOUL row under a relay header, RaceDay reporting zero parsed rows
+for an 82-row finish list, missing meet references, a resumed IHSA limit counting walked rather
+than newly fetched meets, and normalization non-idempotence for `X School School`. The latter
+was repaired to a suffix-stripping fixpoint and pinned by the repeated-suffix regression.
+The Kani census (four verified, seven environment-blocked, sixteen no verdict) and bounded fuzz/
+mutation results already have their detailed logs above; they are not upgraded by this transfer.
+The old 559–627k observations/s figures had no in-repository reproducible baseline.
+
+Deferred findings then included direct adapter/store coupling, whole-table materialization and
+20M-row rejection, legacy import's commit/marker window, full-store index rebuilds, observation
+counts mistaken for merged entities, unchecked allocation growth, cloned journal payloads,
+whole-scan failure on malformed rows, uninstrumented spawn sites, backup/parity fixtures that never
+derived indexes, and cohort-specific coverage. This list is historical; the current plan and schema
+distinguish implemented repairs from remaining obligations. It is not a second active work queue.
+
+### Pinned delivery source audit — `183fca1`
+
+The former delivery brief inspected commit `183fca13dd6d48165d04c76fd56648998e6b432f`.
+Actions run `36020764525`, job `107715786629`, failed at Quality gate; subsequent feature checks
+were skipped. Log download failed for credentials, so the review did not diagnose the failure.
+The source findings below are renamed **G01–G11** to avoid collision with the national plan's
+F01–F15 acceptance items. They are static findings, not fresh test results or an assertion they
+all remain present.
+
+| ID | Finding at that revision |
+|---|---|
+| G01 | Transparent integer mark wrappers contradicted a decimal-JSON compatibility claim |
+| G02 | Imperial comparison treated hundredths of an inch as inches: `3-0.75` computed 2819 mm instead of 933.450; `4-0.00` computed 1219 instead of 1219.200, reversing order |
+| G03 | Restate seen-operation state followed the external Fjall write, leaving a lost-acknowledgement window |
+| G04 | S06 explicitly skipped the named crash boundary |
+| G05 | Review fact hashing sorted words and erased attribution |
+| G06 | Candidate/singleton identity depended on school/name/class/category rather than source-person evidence |
+| G07 | Fast Kani selection was not reconciled with actual wired harnesses |
+| G08 | Benchmark parsing accepted empty output and comparison did not require every baseline group |
+| G09 | RSS capture used invalid `/proc/self/status/VmHWM` and could substitute zero |
+| G10 | Applicability mapped twelve Midwest states, with empty fallback elsewhere |
+| G11 | Batch accounting saturated row counts and lacked a total byte budget |
+
+The 24 named canaries, 12 proof kernels, 17 faults and full-artifact verifier requirements now live
+in their single current owners (national plan, TESTING and fault catalog). The old one-model policy,
+seed-workbook branch and competing T01–T36 implementation waves are not current instructions.
+
+### Provider wiring and storage-path audits — historical source inspection
+
+The 2026-09-23 dispatch audit found six witnessed registry/stage/CLI slugs: `milesplit`, `mshsl`,
+`plain_names`, `wayzata`, `wiaa`, `wiaa_results`. Seven had registry+CLI but no stage:
+`athleticlive`, `athleticlive_athletes`, `athleticnet`, `coach_contacts`, `ihsa`, `ks`, `ohsaa`.
+Three were CLI-only modes: `athleticlive_results`, `ihsa_tournament`, `milesplit_results`.
+`tfrrs` had a registry row but no CLI arm. That was 17 names, not 17 integrated adapters.
+It ran no binary; subsequent wiring changes require their own evidence.
+
+The retired local batch audit, transferred on 2026-09-27, estimated separate `SyncData` commits
+from the then-inspected source: Athletic.net bio flush `6 + k` (70 for 64 units), index five,
+review two, WIAA/ND/NSAA school+coach journals two, OHSAA `1 + coach_count`. These were source-path
+counts, **not measured fdatasync calls or throughput**. Its proposal to commit from Drop and its
+claim that Fjall batches cannot span keyspaces were incorrect and are not retained as design.
+The current atomic write/receipt contract is [FJALL_SCHEMA.md](../FJALL_SCHEMA.md).
+
+### Backup, deployment and source-owner cutover evidence
+
+The earlier synthetic cold-copy drill used 400 observations (200 schools, 100 coaches, 100 meets)
+and merged 199 schools; the backup held 12 files/229,232 bytes and normalized reports of 27,649
+bytes compared equal. A 64 MiB journal preallocation made the root 67,212,350 bytes before reopen
+versus 196,402 afterward; this was physical layout, not lost observations. Bad version and truncated
+descriptor opens refused with `InvalidVersion` and `UnexpectedEof`. Truncating 100 tail bytes
+retained 400 observations; 4,000 retained 300. Fourteen row-value flips all refused. Of 96 header
+flips, eight triggered upstream debug assertions, 82 refused and six opened; release behavior was
+not verified. These observations do not make a live directory copy safe.
+
+The 2026-09-24 campaign cold-copy drill recorded:
+
+```text
+target/release/census-service --store /tmp/store-copy store-backup --to /tmp/census-backup-drill/backup
+exit 0; 10 s
+target/release/census-service store-restore --from /tmp/census-backup-drill/backup --to /tmp/census-backup-drill/restored
+exit 0; 7 s
+target/release/census-service --store /tmp/census-backup-drill/restored consolidate
+exit 0; 8 s
+target/release/census-service --store /tmp/census-backup-drill/restored report
+exit 0; 13 s
+```
+
+Reported physical table counts included teams 207,609; coaches 65,020; athletes 3,072,309;
+meets 12,556; events 101,711; performances 309,962; source identities 2,507,541; conflicts 4,548;
+review cases 107,768; coverage 213; snapshots two; source access zero; identity verdicts 43,291;
+source meets 131,726; source observations 207; observations 3,991,059.
+Sizes were 1,459,217,992 on disk and 7,698,688,836 logical. Restored all-source report:
+31,870 schools, 2,364,818 athletes, 623,509 Co2027 (350,944 boys, 271,560 girls), 609,738 profile
+URLs, 59,269 multisource rows and 32,031 coaches. Equal counts are not complete semantic equality;
+the separate 2026-09-25 drill above used a different generation.
+
+The deployment record for 2026-09-24 reported revision 8 fan-out of 49 jurisdictions, with 47
+aborted/two finished under the default timeout. An in-place rebuild left 59 paused invocations
+and three DC tasks pending; re-registration preceded recovery. Old process stop and new canary
+response each took two seconds in that experiment. Duplicate localhost/127.0.0.1 registrations
+carried revisions 9/5 versus 8/4; old registrations were retired after 10/6 became active.
+Deletion without force returned 501, with force 202. This is not proof of uninterrupted upgrades
+or a safe recipe to retire a deployment with unknown in-flight work.
+
+ADR-014's source-owner repair was motivated by 74,468 identity-less rows among 2,374,515 historical
+athletes and 204,102 performance rows predating the owner field. Recorded decode errors named
+`athletes:ath_0000477b2bc153dc#1363551` and
+`performances:perf_0000150f06a7a1de#5600`. After repair, core census-status reported 31,870 schools,
+2,220,866 athletes and 575,991 Co2027; release bests reported 10,231 selections in 3.2 seconds
+with 1.4 GB peak RSS. These imported measurements do not supply owners to unknown historical rows
+or certify the fresh run.
+
+An asynchronous export result received on 2026-09-27 printed
+`wrote /var/tmp/real-census/out/census-service-2026-09-27.xlsx`,
+`real 24m50.412s`, `user 24m43.126s`, `sys 0m3.953s`.
+Its initiating command and artifact readback were not recovered. It is a process result only,
+not verified workbook contents, a repeatable benchmark or a new seal.
+
+### Pinned sources for the 183fca1 review
+
+Retained source references from that review, not newly fetched or runtime-verified. Repository
+links pin the old commit even when the current file has been removed; external links describe
+framework semantics, not this implementation's correctness.
+
+| Reference | Source |
+|---|---|
+| R01 | [Latest main recheck and pinned commit](https://github.com/lprior-repo/athletic-rust-pipeline/commit/183fca13dd6d48165d04c76fd56648998e6b432f) |
+| R02 | [GitHub Actions run for the reviewed SHA](https://github.com/lprior-repo/athletic-rust-pipeline/actions/runs/36020764525) |
+| R03 | [Failed Quality gate job](https://github.com/lprior-repo/athletic-rust-pipeline/actions/runs/36020764525/job/107715786629) |
+| R04 | [Fixed mark representation](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-domain/src/model/fixed_mark.rs) |
+| R05 | [PR comparison and imperial conversion](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-report/src/bests/measure.rs) |
+| R06 | [Kani runner](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/xtask/src/kani.rs) |
+| R07 | [Production Ingest handler](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-service/src/restate_services/ingest.rs) |
+| R08 | [Performance benchmark capture](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/xtask/src/perf/bench.rs) |
+| R09 | [Existing multi-table StoreBatch](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-store/src/write_batch.rs) |
+| R10 | [Current meet-stage handoff](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-service/src/restate_services/meets_arms.rs) |
+| R11 | [S06 crash/duplicate-evidence scenario](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/tools/durability/scenario-06-no-duplicate-evidence.sh) |
+| R12 | [Current domain Kani module wiring](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-domain/kani/census_domain_wiring.rs) |
+| R13 | [CaseEvidence and review case identity](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-domain/src/model/records.rs) |
+| R14 | [Candidate and canonical athlete types](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-domain/src/model/athlete.rs) |
+| R15 | [Performance comparison](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/xtask/src/perf/compare.rs) |
+| R16 | [Source applicability](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-crawl/src/applicability.rs) |
+| R17 | [Repository endgame research](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/research/ENDGAME-GAPS.md) |
+| R18 | [Restate jobs and journal handoff](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-service/src/restate_services/jobs.rs) |
+| R19 | [Jurisdiction pipeline integration](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-service/src/restate_services/jurisdiction/pipeline.rs) |
+| R20 | [Grade-year Kani harnesses](https://github.com/lprior-repo/athletic-rust-pipeline/blob/183fca13dd6d48165d04c76fd56648998e6b432f/crates/census-domain/kani/gradyear.rs) |
+| E01 | [Restate Rust durable steps](https://docs.restate.dev/develop/rust/durable-steps) |
+| E02 | [Restate Rust error handling](https://docs.restate.dev/develop/rust/error-handling) |
+| E03 | [Serde container attributes](https://serde.rs/container-attrs.html) |
+| E04 | [Kani harness listing](https://model-checking.github.io/kani/reference/experimental/list.html) |
+| E05 | [Criterion command-line options](https://bheisler.github.io/criterion.rs/book/user_guide/command_line_options.html) |
+| E06 | [TigerBeetle testing practices](https://docs.tigerbeetle.com/coding/testing/) |
+| E07 | [TigerBeetle safety practices](https://docs.tigerbeetle.com/coding/safety/) |
+

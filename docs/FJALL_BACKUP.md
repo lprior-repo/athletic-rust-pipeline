@@ -1,475 +1,81 @@
-# Fjall backup / restore drill (objective §60)
+# Fjall cold backup and restore
 
-Objective §60 asks for commands covering **consistent backup → restore → integrity verification → reopen
-→ full census read**, and for an actual restore drill to be run before delivery. This document is that
-drill: every command line below was executed on this machine against a real store built from the
-pre-Fjall logs in this checkout (`var/census-service/`, gitignored runtime state - substitute your own
-root), and the output blocks are verbatim.
+Canonical operator procedure. [FJALL_SCHEMA.md](../FJALL_SCHEMA.md) owns schema/read APIs;
+[verification evidence](VERIFICATION-EVIDENCE.md) retains the historical small-store and
+2026-09-24 campaign drill measurements. Those transcripts are not rerun or fresh-run certification.
 
-The drill is enforced by [`crates/census-service/tests/backup_restore.rs`](../crates/census-service/tests/backup_restore.rs)
-(7 tests, offline, no network, no shared state), so it is re-run by `cargo test -p census-service
---test backup_restore` rather than by hand. The shell sequence below exists so an operator can do the
-same thing against a production root (a `<store-dir>` on disk, not a `/tmp` drill).
+## Safety and included state
 
-Schema, keyspaces and key format: [`FJALL_SCHEMA.md`](FJALL_SCHEMA.md). Store code:
-[`crates/census-store/src/`](../crates/census-store/src/).
+Stop intake, drain and close the sole store-owning process before backup. The backup API takes the
+Fjall lock and refuses a live owner. `Store::snapshot()` pins an in-process MVCC read view; it does
+not make an arbitrary live-directory copy consistent across journal rotation and compaction.
+`flush()` makes writes durable but does not pause writers. Cold backup is the supported path.
 
----
+Current `Store::backup` copies existing `fjall/`, `entities/`, `journal/`, `http/` and `out/` subtrees,
+opens the staged copy for count validation, writes `backup.json` with file lengths/SHA-256 and table
+counts, and publishes the staged generation. Nonregular objects such as symlinks are refused.
+`Store::restore` checks the manifest/files and restored counts before promoting into its destination.
+Use a new destination for a drill; never restore over a served root.
 
-## 1. What a census store root contains
+Native Restate's durable directory is **separate** and not included. Nor are arbitrary external raw
+capture paths. Inventory every referenced evidence object and run/decision/artifact manifest before
+calling a backup complete. If `http/` holds the only retained source bytes, it is evidence, not an
+optional optimization that may be dropped on the assumption the source can be fetched again.
+Historical JSONL logs are preserved where present; no current `import-legacy` CLI is implied.
 
-`<store-dir>/` as the CLI's `--store` names it (`crates/census-service/src/cli/mod.rs:87`, default
-`var/census-service` at `:48`) and as `Store::open` lays it out (`crates/census-store/src/lib.rs:140`):
+## Procedure
 
-| Path | Role | Needed in a backup? |
-|---|---|---|
-| `fjall/` | All canonical state: keyspaces `entities` (all sixteen tables, `crates/census-store/src/table.rs:72-104`), `journal` (per-phase dispatch logs), `meta` (markers, e.g. the legacy-import marker) | **Required** |
-| `http/` | Source response cache | Optional - dropping it costs re-fetches, not correctness |
-| `out/` | Regenerable exports (`report.json`, `census-by-state.csv`, `*.jsonl` snapshots) | No - rebuild with `consolidate` / `report` |
-| `entities/`, `journal/` | Pre-Fjall JSONL logs, written before the 2026-09 row-shape revision; nothing in this tree reads them any more (the one-time import was removed 2026-09-27) | No - inert |
+Run only against a stopped, owned source store and fresh backup/restore destinations. Commands below
+are templates; choose paths for the actual run and record them with build, schema and manifest IDs.
 
-`fjall/` in the drill store is 12 files / 229,232 bytes:
-
-```text
-$ (cd /tmp/census-backup-drill/live/fjall && find . -type f | sort)
-./0.jnl
-./keyspaces/0/current
-./keyspaces/0/tables/3
-./keyspaces/0/v5
-./keyspaces/1/current
-./keyspaces/1/v0
-./keyspaces/2/current
-./keyspaces/2/v0
-./keyspaces/3/current
-./keyspaces/3/v0
-./lock
-./version
+```sh
+census-service --store <source-store> store-integrity
+census-service --store <source-store> fjall-stats
+census-service --store <source-store> store-backup --to <backup-dir>
+census-service store-restore --from <backup-dir> --to <new-restored-store>
+census-service --store <new-restored-store> store-integrity
+census-service --store <new-restored-store> fjall-stats
+census-service --store <new-restored-store> consolidate
+census-service --store <new-restored-store> report
 ```
 
-`lock` is the advisory lock file, `0.jnl` the write-ahead journal (223,557 of those bytes) and `version`
-a format marker. `keyspaces/<n>/` are fjall's index-addressed keyspace directories: index `0` is fjall's
-own keyspace-configuration table - the single SST in `keyspaces/0/tables/3` is where the census keyspace
-names are recorded, in creation order (`entities`, `journal`, `meta`) - so the census's three keyspaces
-live in `1`-`3`, journal-only in this store. The set grows as compaction
-writes SSTs, so **copying a live directory by an include-list of "files we have seen before" is wrong**;
-copy the whole `fjall/` subtree.
+Inspect `store-integrity`'s `ok` and per-table findings, not just process success. Preserve the source
+baseline and backup manifest. Compare the complete physical table map, effect receipts, source IDs,
+canonical decisions/history and semantic records, not only aggregate row counts. Recompute required
+PR/cohort/contact/coverage checks and independently verify the actual workbook against the restored
+input generation. Equal totals can conceal changed ownership, missing evidence or wrong mark units.
 
-## 2. What the store API can and cannot do
+Opening the restored database can rewrite engine files during recovery. Validate the manifest at the
+restore boundary; do not demand byte identity of mutable database files after later opens/writes.
+Journal preallocation means footprint may shrink on reopen without any evidence loss. Conversely,
+a truncated journal may open with only a complete prefix: “it opened” is not integrity proof.
 
-Read out of the pinned dependency (`fjall-3.1.10`), not assumed:
+## Existing automated drill
 
-* **The only consistent-backup entry point is cold.** `Store::backup`
-  (`crates/census-store/src/backup/copy.rs:36`) copies a closed store and writes `backup.json` beside
-  it; `Store::restore` (`backup/restore.rs:29`) verifies that manifest, and `Store::integrity`
-  (`backup/integrity.rs:23`) checks a store in place. What no entry point gives a caller is a copy of
-  a *live* store: `Store` keeps `db: Database` private and exposes no snapshot. fjall does provide
-  `Database::snapshot()` (`fjall-3.1.10/src/db.rs:150`) returning a `Snapshot`
-  (`src/snapshot.rs:17-31`) that pins an in-memory read view for as long as it is held - it stops
-  neither compaction from rewriting SSTs nor the journal from rotating mid-frame - but the census
-  crate never calls it, so a copier has no way to hold one.
-* **There is no pause point during a backup.** The only quiescence primitives are process-level: the
-  handle's lock and `Store::flush()` (= `Database::persist(PersistMode::SyncAll)`,
-  `fjall-3.1.10/src/db.rs:350`), which fsyncs but does **not** stop writers.
-* **Cold copy is the only consistent backup path.** The single-writer rule and lock mechanics are documented in `FJALL_SCHEMA.md` §1; this document focuses on the backup drill itself.
-* **A copy that races a live writer loses the incomplete tail silently.** Recovery truncates a torn
-  journal tail instead of failing the open (`fjall-3.1.10/src/journal/reader.rs:56-79`), so a snapshot
-  copy of `fjall/` is simply *missing* the rows whose batch frame was still being written when the
-  copy reached it. No error, no warning: the census just reads back with lower counts. The suite
-  measures this (`a_copy_whose_journal_stops_mid_batch_keeps_the_complete_prefix`, §4).
-
-Not filed as a bug against the census crate; recorded here so nobody ships a "hot backup" script
-believing the store cooperates. The two shapes that would make a hot backup safe are exposing
-`fjall::Snapshot` from `Store` (hold the snapshot, copy `fjall/`, drop it) or a cold-copy entry point
-that enforces the stop. The second landed as `Store::backup`
-(`crates/census-store/src/backup/copy.rs:36`, driven by `census-service --store <root> store-backup
---to <dir>`): it takes `fjall/lock` and refuses a lock that is already held rather than trusting an
-operator to stop the writer. The snapshot shape still does not exist, so the rest of this document is
-**cold backup only** - the same cold copy the CLI performs, kept so an operator can run it by hand.
-
-## 3. The drill, command by command
-
-Store built from this checkout's raw logs (`var/census-service/`) so the drill carries real data
-without touching the network: 200 schools + 100 coaches + 100 meets = **400 observations**, plus one
-journal phase. The seed step is historical: it used the `import-legacy` path, removed 2026-09-27, and
-the counts below are that run's record. Reproduce the drill with `tools/ops-backup-drill.sh <store-dir>`,
-which copies a store the pipeline built instead of importing journals.
-
-```console
-$ DRILL=/tmp/census-backup-drill
-$ mkdir -p $DRILL/live/entities $DRILL/live/journal
-$ head -n 200 var/census-service/entities/schools.jsonl > $DRILL/live/entities/schools.jsonl
-$ head -n 100 var/census-service/entities/coaches.jsonl > $DRILL/live/entities/coaches.jsonl
-$ head -n 100 var/census-service/entities/meets.jsonl   > $DRILL/live/entities/meets.jsonl
-$ head -n 1   var/census-service/journal/kshsaa_schools.jsonl > $DRILL/live/journal/kshsaa_schools.jsonl
-$ target/debug/census-service --store $DRILL/live import-legacy   # removed 2026-09-27
-legacy	schools	89426 bytes	/tmp/census-backup-drill/live/entities/schools.jsonl
-legacy	teams	absent
-legacy	coaches	49163 bytes	/tmp/census-backup-drill/live/entities/coaches.jsonl
-legacy	athletes	absent
-legacy	meets	61487 bytes	/tmp/census-backup-drill/live/entities/meets.jsonl
-legacy	events	absent
-legacy	performances	absent
-legacy_journal_dir	/tmp/census-backup-drill/live/journal
-store	/tmp/census-backup-drill/live
-schools	200
-teams	0
-coaches	100
-athletes	0
-meets	100
-events	0
-performances	0
-observations	400
-bytes_on_disk	0
-```
-
-### 3.1 Consistent backup - stop the unit, then copy
-
-```console
-$ target/debug/census-service --store $DRILL/live fjall-stats
-store	/tmp/census-backup-drill/live
-schools	200
-teams	0
-coaches	100
-athletes	0
-meets	100
-events	0
-performances	0
-observations	400
-bytes_on_disk	0
-store_bytes	429419
-$ cp -a $DRILL/live $DRILL/backup
-$ (cd $DRILL/live/fjall     && find . -type f | sort | xargs sha256sum) > $DRILL/live.manifest
-$ (cd $DRILL/backup/fjall   && find . -type f | sort | xargs sha256sum) > $DRILL/backup.manifest
-$ diff $DRILL/live.manifest $DRILL/backup.manifest && echo "MANIFESTS IDENTICAL ($(wc -l < $DRILL/live.manifest) files)"
-MANIFESTS IDENTICAL (12 files)
-```
-
-`cp -a <store-dir> <backup-dir>` copies `fjall/` along with the optional `http/` cache; `cp -a
-<store-dir>/fjall <backup-dir>/fjall` is enough for a state-only backup. Either form creates the
-destination directory, so give it a path that does not exist yet - `cp -a` nests into an existing
-directory (`cp -a a/fjall b/fjall` with `b/fjall` present produces `b/fjall/fjall`), which a restore
-would then not find. **The unit must not be running**: while it is, the copy is the racing case of §2.
-
-Three sizes are in play and they answer different questions; the numbers below are this drill's store:
-
-| `fjall-stats` line | live root | restored root | What it counts |
-|---|---|---|---|
-| `bytes_on_disk` | 0 | 0 | fjall's LSM-tree level sizes - SST files only (`Keyspace::disk_space`, `fjall-3.1.10/src/keyspace/mod.rs:401` → `lsm-tree-3.1.10/src/tree/mod.rs:615-620`). A store whose rows still live in the journal reports 0, and reads 0 again for every damaged copy in §3.5 |
-| `store_bytes` | 429,419 | 229,232 | the recursive size of the store root (`crates/census-store/src/read/directory.rs:23`, reported at `crates/census-store/src/read/mod.rs:218`): database, journal, HTTP cache, `out/` and the pre-Fjall logs. `du -sb` agrees |
-
-So `bytes_on_disk 0` is not a bug and not a restore check either: it is 0 before the damage and 0
-after it. Size a copy by `store_bytes` (or `du -sb`), and prove a restore by the journal manifest, the
-census document and `Store::stats()`, never by a size column.
-
-**Sharp edge, measured.** fjall preallocates a fresh journal to 64 MiB
-(`fjall-3.1.10/src/journal/writer.rs:19`, `set_len(64 * 1024 * 1024)`) and only a later *reopen*
-truncates it back to the frames actually written. On this machine, one `import-legacy` run over 200
-schools (2026-09-24, before that path was removed) left a store of **67,212,350** bytes on disk (`0.jnl` = 67,108,864 bytes, and `du` counted all
-of it - the preallocation is not sparse on this filesystem); one `fjall-stats` run later the same store
-was **196,402** bytes with a 101,301-byte journal:
-
-```console
-$ target/debug/census-service --store $D import-legacy | tail -3   # removed 2026-09-27
-observations	200
-bytes_on_disk	0
-store_bytes	67212350
-$ ls -la $D/fjall/0.jnl
--rw-r--r-- 1 lewis lewis 67108864 ... /tmp/census-backup-drill2/fjall/0.jnl
-$ du -sb $D/fjall
-67116338	/tmp/census-backup-drill2/fjall
-$ target/debug/census-service --store $D fjall-stats | tail -2
-bytes_on_disk	0
-store_bytes	196402
-$ ls -la $D/fjall/0.jnl
--rw-r--r-- 1 lewis lewis 101301 ... /tmp/census-backup-drill2/fjall/0.jnl
-$ du -sb $D/fjall
-106976	/tmp/census-backup-drill2/fjall
-```
-
-A backup taken right after a collection run therefore carries up to 64 MiB of journal for a few hundred
-rows. Reopening the store once (any command) settles it and costs nothing, so stop the unit, run one
-`fjall-stats`, and only then copy.
-
-### 3.2 Restore into a fresh data directory
-
-```console
-$ mkdir -p $DRILL/restored && cp -a $DRILL/backup/fjall $DRILL/restored/fjall
-$ (cd $DRILL/restored/fjall && find . -type f | sort | xargs sha256sum) > $DRILL/restored.manifest
-$ diff $DRILL/backup.manifest $DRILL/restored.manifest && echo "RESTORED MANIFEST IDENTICAL"
-RESTORED MANIFEST IDENTICAL
-```
-
-The manual path below restores by copying `fjall/` onto a fresh root, and that is all it needs; the
-CLI's own restore is `census-service store-restore --from <backup dir> --to <fresh root>`
-(`crates/census-store/src/backup/restore.rs:29`), which streams the directory `store-backup` wrote -
-`fjall/` plus its `backup.json` manifest - checks every file's length and SHA-256 as the bytes pass,
-and reconciles the restored row counts against the manifest before renaming the staging directory into
-place (`crates/census-store/src/backup/mod.rs:38-45`). The fresh root does not need the source root's
-pre-Fjall `entities/`/`journal/` logs: nothing reads them any more, so copying them only spends bytes
-(2.7 GB of journals in the delivered Midwest census). Do not restore a backup over a root that is
-being served - the lock (§2) will reject it, or worse, a running process holds an in-memory view of the
-files you are replacing.
-
-### 3.3 Integrity verification
-
-The manifest diff above is the integrity check that matters for a backup: every file name and every
-SHA-256 of the 12-file tree is identical between source, backup, and restored copy. On the database
-side, reopening runs fjall's own recovery - `version` and per-keyspace `current` descriptors are read
-back and the journal is replayed; a damaged descriptor fails the open rather than limping.
-
-### 3.4 Reopen and full census read
-
-```console
-$ target/debug/census-service --store $DRILL/restored fjall-stats
-store	/tmp/census-backup-drill/restored
-schools	200
-teams	0
-coaches	100
-athletes	0
-meets	100
-events	0
-performances	0
-observations	400
-bytes_on_disk	0
-store_bytes	229232
-$ target/debug/census-service --store $DRILL/restored consolidate
-schools	199
-teams	0
-coaches	100
-coaches_email_withheld	0
-athletes	0
-meets	100
-events	0
-performances	0
-$ target/debug/census-service --store $DRILL/restored report
-wrote /tmp/census-backup-drill/restored/out/report.json
-wrote /tmp/census-backup-drill/restored/out/census-by-state.csv
-scope=all_sources totals: schools=199 athletes=0 co2027=0 (boys=0 girls=0) profile_url=0 multisource=0 coaches=100
-$ target/debug/census-service --store $DRILL/live report
-wrote /tmp/census-backup-drill/live/out/report.json
-wrote /tmp/census-backup-drill/live/out/census-by-state.csv
-scope=all_sources totals: schools=199 athletes=0 co2027=0 (boys=0 girls=0) profile_url=0 multisource=0 coaches=100
-$ jq -S 'del(.store_dir,.generated_on)|.notes|=map(sub("from .*";"from <root>"))' $DRILL/live/out/report.json     > $DRILL/live-norm.json
-$ jq -S 'del(.store_dir,.generated_on)|.notes|=map(sub("from .*";"from <root>"))' $DRILL/restored/out/report.json > $DRILL/restored-norm.json
-$ wc -c $DRILL/live-norm.json $DRILL/restored-norm.json && diff $DRILL/live-norm.json $DRILL/restored-norm.json; echo "diff exit=$?"
-27649 /tmp/census-backup-drill/live-norm.json
-27649 /tmp/census-backup-drill/restored-norm.json
-55298 total
-diff exit=0
-$ jq -c '{scope, totals: {schools: .totals.schools, coaches: .totals.coaches, coaches_with_email: .totals.coaches_with_email}, meets: .meets.total}' $DRILL/restored/out/report.json
-{"scope":"all_sources","totals":{"schools":199,"coaches":100,"coaches_with_email":25},"meets":100}
-```
-
-
-**Note (2026-09-25):** the `coaches_email_withheld` field in this transcript was removed from the
-`consolidate` summary by the contact-policy change: the old policy withheld consumer-domain addresses
-and emitted a count; the new policy classifies every published address and emits no withheld counter.
-It was replaced by `coaches_with_email` in the report output (not the consolidate summary). The
-transcript is unmodified; the `coaches_email_withheld 0` line reflects the pre-policy state.
-Every count matches the source store: `fjall-stats` shows the same 200/100/100/400 before and after,
-`consolidate` and `report` produce the same reduction on both roots, and after removing only the two
-fields that are *supposed* to differ (the root path and the run date) the two census documents are
-byte-identical (`diff` exit 0, 27,649 bytes each; the earlier drill measured 4,519 bytes on the
-same corpus - the document grows as the report module lands coverage, so quote the *equality*, not the
-size).
-
-`jq` on this machine is `jaq 2.3.0` at `/usr/bin/jq`; it rejects non-JSON prefixes, so do not pipe
-`report --print` (whose stdout starts with three `wrote ...` lines) into it - use `out/report.json`.
-
-### 3.5 What damage does, measured
-
-The verification above is a *file* check (§3.1) plus a *content* check (§3.4); neither is redundant, and
-the shape of a damaged restore is worth knowing before trusting either one:
-
-| Damage | Result |
-|---|---|
-| `fjall/version` replaced with garbage | `Error: store open failed: FjallError: InvalidVersion(None)`, exit 1 |
-| `fjall/keyspaces/0/current` truncated to zero bytes | `Error: store open failed: FjallError: Storage(Io(Error { kind: UnexpectedEof, message: "failed to fill whole buffer" }))`, exit 1 |
-| `fjall/0.jnl` truncated by 100 bytes | opens, exit 0; `fjall-stats` still reports 200/100/100/400 (`bytes_on_disk 0`, `store_bytes 458251`) and the census document is byte-identical to the intact restore - the lost tail frame carried nothing the census reads |
-| `fjall/0.jnl` truncated by 4,000 bytes | opens, exit 0; `fjall-stats` now reports `schools 200 coaches 100 meets 0 observations 300` (`store_bytes 391138`), and the census loses the whole timer-meet breakdown |
-| `fjall/0.jnl` with one byte flipped inside a stored row value | **every one of the 14 value-byte tears refused the open** (`cargo test … backup_restore -- --nocapture`: `row-tear sweep over 14 bytes: 14 refused the open, 0 opened with every row intact`). A tear in the *value* is detected; a tear in the *header* can panic inside fjall itself (next row) |
-| `fjall/0.jnl` with one byte flipped inside fjall's entry header | a probe over the 96 header bytes of one frame: 8 panicked, 82 refused the open, 6 opened. The panic is fjall's **own debug assertion**, not a census error - and in a debug build it takes the process down: |
-
-```console
-$ rm -rf $DRILL/dmg-a && cp -a $DRILL/restored $DRILL/dmg-a && printf 'XXXX' > $DRILL/dmg-a/fjall/version
-$ target/debug/census-service --store $DRILL/dmg-a fjall-stats
-Error: store open failed: FjallError: InvalidVersion(None)
-
-Caused by:
-    FjallError: InvalidVersion(None)
-$ echo $?
-1
-$ rm -rf $DRILL/dmg-c && cp -a $DRILL/restored $DRILL/dmg-c && truncate -s -100 $DRILL/dmg-c/fjall/0.jnl
-$ target/debug/census-service --store $DRILL/dmg-c fjall-stats | tail -3
-observations	400
-bytes_on_disk	0
-store_bytes	458251
-$ target/debug/census-service --store $DRILL/dmg-c consolidate >/dev/null && target/debug/census-service --store $DRILL/dmg-c report >/dev/null
-$ jq -S 'del(.store_dir,.generated_on)|.notes|=map(sub("from .*";"from <root>"))' $DRILL/dmg-c/out/report.json > $DRILL/dmg-c-norm.json
-$ diff $DRILL/restored-norm.json $DRILL/dmg-c-norm.json; echo "diff exit=$?"
-diff exit=0
-# the header-tear probe of the last table row, verbatim (temporary test, removed after measuring):
-thread 'temp_probe_entry_header_tear' (1784428) panicked at /cache/cargo-shared/registry/src/index.crates.io-1949cf8c6b5b557f/fjall-3.1.10/src/journal/entry.rs:190:25:
-assertion `left == right` failed
-  left: 4278190245
- right: 165
-```
-
-A damaged **descriptor** closes the door; a damaged **journal** opens and answers, because recovery
-truncates at the last complete frame (`journal/reader.rs:56-79`). So "it opened" proves nothing about a
-restore, and neither size column does either: `bytes_on_disk` reads `0` on the intact restore *and* on
-every damaged copy in the table, while `store_bytes` (the recursive root size, `crates/census-store/src/read/directory.rs:23`)
-counts real bytes but says nothing about which rows survived - it even *grows* to 458,251 on the truncated
-copy, because that copy carries the consolidated snapshots of the root it was taken from. `fjall-stats`
-reports what survived the recovery, not what was backed up. Verify a restore by digest (§3.1) or by
-reading the census and comparing it (§3.4) - which is exactly what the executable drill in §4 asserts,
-at the level of both the read model and the database files.
-
-One consequence for operators: a byte flipped in fjall's entry header is a **process panic in a debug
-build**, which no `Result` in this crate can catch - the assertion is `debug_assert_eq!(value_len,
-on_disk_value_len)` in the uncompressed arm of `Entry::decode_from`
-(`fjall-3.1.10/src/journal/entry.rs:190`; uncompressed is the arm the census writes, because its rows
-are small). In a release build that assertion is compiled out and the frame should be dropped like any
-other corrupt frame; that release behaviour is **not measured here** (the whole drill ran against debug
-binaries, which is what `cargo test` and the repo's own tooling build). Treat it as
-expected-but-unverified, and prefer copying a *stopped* store over coping with a torn one.
-
-### 3.6 A real store at campaign scale, measured (2026-09-24)
-
-The steps above were run against the campaign store itself rather than a synthetic corpus. The source
-was a cold copy of the live root (`fjall/`, `entities/`, `journal/`, `out/`), taken because
-`store-backup` refuses a root whose lock is held - which is the live store for the whole of a
-campaign, so §5's "large live store" bullet still stands as written.
-
-```console
-$ target/release/census-service --store /tmp/store-copy store-backup --to /tmp/census-backup-drill/backup
-table	teams	207609
-…                                                     # 16 tables, exit 0, 10 s wall
-$ target/release/census-service store-restore --from /tmp/census-backup-drill/backup --to /tmp/census-backup-drill/restored
-table	teams	207609
-…                                                     # exit 0, 7 s wall
-$ target/release/census-service --store /tmp/census-backup-drill/restored fjall-stats
-teams	207609
-coaches	65020
-athletes	3072309
-meets	12556
-events	101711
-performances	309962
-source_identities	2507541
-conflicts	4548
-review_cases	107768
-coverage	213
-snapshots	2
-source_access	0
-identity_verdicts	43291
-source_meets	131726
-source_observations	207
-observations	3991059
-bytes_on_disk	1459217992
-store_bytes	7698688836
-```
-
-Every one of the 16 table counts and both size totals is identical to the pre-drill `fjall-stats` of
-the source root, so the restore is exact at 1.46 GB on disk / 7.7 GB logical (4.0 M observations,
-3.1 M athletes, 2.5 M source identities). The restored store then served the full read model:
-
-```console
-$ target/release/census-service --store /tmp/census-backup-drill/restored consolidate
-…                                                     # exit 0, 8 s wall
-$ target/release/census-service --store /tmp/census-backup-drill/restored report
-wrote /tmp/census-backup-drill/restored/out/report.json
-wrote /tmp/census-backup-drill/restored/out/census-by-state.csv
-scope=all_sources totals: schools=31870 athletes=2364818 co2027=623509 (boys=350944 girls=271560) profile_url=609738 multisource=59269 coaches=32031
-                                                      # exit 0, 13 s wall
-```
-
-Two operational numbers are worth keeping: a 1.46 GB store backs up in 10 s and restores in 7 s, and
-the whole read model rebuilds from a restored copy in 21 s. A restore drill is therefore cheap enough
-to run whenever a campaign is paused, and it needs no network.
-
-## 4. The executable drill
-
-```console
-$ cargo test -p census-service --test backup_restore
-```
-
-The suite covers what the shell sequence cannot do deterministically: a copy taken from an open handle
-with no flush, a journal cut mid-batch, a journal flipped mid-frame, the lock refusing a second opener,
-and the restored copy's observation history row for row.
-
-| Test | What it proves |
-|---|---|
-| `cold_copy_backup_restores_the_read_model_exactly` | the whole drill end to end. The corpus is asserted against the *live* store first (so a drill that loses the same rows on both sides still fails), then the restored copy must reproduce it surface for surface: per-table observation counts, observation total, merged-school count, the history school's merged observation history, the core-scope census JSON, the all-sources census JSON, the best-mark reduction, the consolidated row counts and the consolidated snapshots. The backup and the restore are each asserted to be a byte image of the previous stage (`tree_digest` over `fjall/`) |
-| `the_restored_store_reopens_and_appends_without_overwriting` | a restore that seeded its sequence counter wrong would hand out a sequence already in use and overwrite a restored observation. After the restore an append must add a row rather than replace one, join the history as a fourth observation, survive a reopen, and resume from the restored store's high-water mark |
-| `a_copy_taken_while_the_store_handle_is_open_keeps_every_committed_batch` | a copy taken from an open handle with **no** `flush()` is still complete, because `append_many` commits at `SyncData`. Pins the regression that matters for backups: a durability downgrade to `Buffer` would make the copy lose its unpersisted tail - silently |
-| `a_second_open_of_a_live_store_is_refused` | the "cold" in cold copy is enforced by the database, not by convention: a second `Store::open` of a live store fails with the typed `StoreError::Open`, and the path opens again once the first handle is dropped |
-| `a_copy_whose_journal_stops_mid_batch_keeps_the_complete_prefix` | the racing copy itself. Cutting one byte into the second batch's frame keeps **exactly** the first batch (6 rows → 2), every surviving row still merges, the lost batch's rows are gone rather than invented, and the source store is untouched by the copy's damage. Cutting one byte short of the journal keeps exactly the first two batches |
-| `a_copy_with_a_torn_byte_inside_a_row_never_yields_an_invented_row` | the other half of that hazard: each byte of a real row *value* is flipped in turn (14 bytes) and every outcome must be one of "refused the open" or "opened with every surviving row byte-identical to the source". Measured: 14 refused, 0 opened - the tear is detected, never silently absorbed - and no row is ever changed or invented. The counts are printed, so run with `--nocapture` to see them. The tear is aimed at a value on purpose: one byte earlier, in fjall's entry header, is fjall's own debug assertion (§3.5) |
-
-The suite is offline and self-contained: the corpus is synthetic and built in the test file itself
-(three schools across Wisconsin, Minnesota and Iowa with their teams, coaches, meets and athletes, plus
-one recorded resume unit of work), each test builds its store inside its own `tempfile::TempDir`, and
-no request leaves the process.
-
-### 4.1 Shell-script drill (production operator path)
-
-`tools/ops-backup-drill.sh <store-dir>` uses the production cold-backup and
-restore APIs. Stop the source writer first; a held database lock fails the drill.
-`BINARY` overrides the default repository debug binary.
-
-The drill:
-
-1. Creates a unique scratch directory under `TMPDIR` (default `/tmp`).
-2. Takes one consistent backup with a manifest of file lengths, SHA-256 digests
-   and exact per-table row counts.
-3. Restores that generation through `store-restore`, which validates every file
-   digest and reconciles the restored row counts before publishing it.
-4. Requires `store-integrity` to report `ok=true`, then compares the complete
-   restored `fjall-stats` table map with the manifest using `jq`.
-5. Consolidates the restored entities and builds the all-sources census.
-6. Reopens the restored database and rebuilds the census. Both JSON documents
-   must match after removing only the store path and generation date.
-
-The script exits nonzero on any failed operation or comparison. It removes only
-its own scratch directory on exit. It never deletes or restores over the source,
-and does not compare mutable database files after reopening them.
-
-For large stores, choose a local-disk scratch directory with room for the backup,
-restored database and consolidated snapshots:
-
-```console
+```sh
 mkdir -p var/restore-drill-tmp
-TMPDIR="$PWD/var/restore-drill-tmp" tools/ops-backup-drill.sh var/midwest-census
+TMPDIR="$PWD/var/restore-drill-tmp" tools/ops-backup-drill.sh <stopped-source-store>
+cargo test -p census-service --test backup_restore
 ```
 
-This exercises Fjall restoration, not restoration of Restate's journal or
-machine-level services. A successful empty-store drill is not census evidence.
+The operator script creates owned scratch state, performs backup/restore/integrity/count checks,
+consolidates and compares normalized report reads, then removes its scratch directory. `BINARY`
+selects the census CLI. Use local disk with capacity for backup, restored database and materialized
+outputs; do not point a destructive fault at the source. An empty-store pass proves little about a
+nonempty census. These commands are procedures, not evidence that they ran during this docs cleanup.
 
-## 5. Not covered by this drill
+The integration suite separately covers cold copies, reopens/appends, lock exclusion and damaged
+journal boundaries. Its narrower assertions do not replace the full publication/readback oracle or
+all [17 native fault scenarios](NATIONAL-CENSUS-FAULTS.md).
 
-* **A backup of a large live store.** The drill's store never flush()es, so its rows live in the
-  journal; a real campaign flushes SSTs and compacts. The racing-copy behaviour is therefore measured
-  for *one* shape (torn journal) and not for the many-file shape (compaction rewriting SSTs while a
-  copier reads them) - which is exactly the case a snapshot would protect, and exactly the case no
-  census API can currently express. The *scale* half of this gap is closed by §3.6 (a 1.46 GB /
-  7.7 GB logical store, backed up in 10 s and restored byte-identically in 7 s), which still starts
-  from a cold copy rather than from a held-open handle, for the reason above.
-* **Restoring while a unit is serving.** Not attempted: the lock forbids part of it, and nothing
-  coordinates the in-memory view.
-* **The `http/` response cache** is treated as optional and never verified after a restore.
-* **Cross-machine and cross-filesystem restore** (permission bits, sparse files, encrypted volumes).
-* **A supported hot backup.** Impossible without an API change; see §2.
-* **A journal that passes its 64 MiB preallocation and rotates.** The drill's journal is 223 KB; fjall
-  rotates the active journal to `<journal_id + 1>.jnl` when it fills (`journal/writer.rs:66`, `fn
-  rotate`, which creates the next id via `create_new`), so a real
-  campaign's backup input is several journal files, and the drill never crossed that boundary.
-* **The release-build behaviour of a torn entry header.** §3.5 measures the debug-build outcome - a
-  panic inside fjall's own `debug_assert_eq!` - and argues the assertion is compiled out in release;
-  no release binary was built or run for this drill (the repo's tooling builds debug, and a release
-  build would have serialised the shared target directory).
-* **Pinning the header-tear panic in the suite.** Deliberate: the test would have to assert a panic
-  that only exists because fjall's *debug* assertions are on, and a temporary probe (96 header bytes:
-  8 panicked, 82 refused, 6 opened) was removed after measuring rather than committed as a test that
-  a future fjall release may legitimately change.
-* **Windows.** `std::fs::File::try_lock` (Rust's own file locking) does not map to `flock(2)` there, so
-  the lock demonstration in §2 is Unix-only.
+## Limits and failure handling
+
+- A held lock means stop the owner; never remove/bypass the lock file.
+- Corrupt manifest, descriptor, payload or missing external capture blocks acceptance. Preserve the
+  failed generation and diagnostics without replacing the previous accepted backup.
+- Interrupt backup/restore only in an isolated owned scenario; verify the original and prior accepted
+  generation remain recoverable and partial staging cannot become the selected backup.
+- Historical journal header-tear probes hit debug assertions inside Fjall. Their release-build
+  behavior was not established by that probe; do not advertise panic-free recovery from it.
+- Live compaction-copy safety, Restate journal restoration, host reboot, cross-machine/filesystem
+  migration and Windows behavior require their own evidence. A Fjall drill does not prove them.

@@ -45,11 +45,13 @@ pub(super) async fn supervise(
 
     let reason = Arc::new(AtomicU8::new(StopReason::ServerExit.to_raw()));
     let over_budget = Arc::new(tokio::sync::Notify::new());
-    let (cancel, endpoint_done) = spawn_endpoint(&region, &store, &options, listener, lane);
-    let _watcher = tokio::spawn(super::guard::watch_memory(
-        super::DEFAULT_MEMORY_BUDGET_BYTES,
-        Arc::clone(&over_budget),
-    ));
+    let (cancel, endpoint_done) = spawn_endpoint(&region, &store, &options, listener, lane)?;
+    region
+        .spawn(super::guard::watch_memory(
+            super::DEFAULT_MEMORY_BUDGET_BYTES,
+            Arc::clone(&over_budget),
+        ))
+        .map_err(count_error)?;
     tracing::info!(
         %bound,
         max_concurrent = options.max_concurrent,
@@ -134,10 +136,13 @@ fn spawn_endpoint(
     options: &ServeOptions,
     listener: tokio::net::TcpListener,
     lane: Option<BrowserLane>,
-) -> (
-    tokio::sync::oneshot::Sender<()>,
-    tokio::sync::oneshot::Receiver<()>,
-) {
+) -> Result<
+    (
+        tokio::sync::oneshot::Sender<()>,
+        tokio::sync::oneshot::Receiver<()>,
+    ),
+    BootstrapError,
+> {
     let (cancel, cancelled) = tokio::sync::oneshot::channel::<()>();
     let (ended, endpoint_done) = tokio::sync::oneshot::channel::<()>();
     let stop = async move {
@@ -150,13 +155,15 @@ fn spawn_endpoint(
         options.lane.clone(),
         lane,
     );
-    region.spawn(async move {
-        HttpServer::new(endpoint)
-            .serve_with_cancel(listener, stop)
-            .await;
-        ended.send(()).ok();
-    });
-    (cancel, endpoint_done)
+    region
+        .spawn(async move {
+            HttpServer::new(endpoint)
+                .serve_with_cancel(listener, stop)
+                .await;
+            ended.send(()).ok();
+        })
+        .map_err(count_error)?;
+    Ok((cancel, endpoint_done))
 }
 
 #[tracing::instrument(skip_all)]

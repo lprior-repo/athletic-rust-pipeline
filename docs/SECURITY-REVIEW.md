@@ -1,9 +1,15 @@
-# Security Review: Census Pipeline
+# Security source audit — 2026-09-25
 
 **Date:** 2026-09-25
 **Scope:** `athletic-rust-pipeline` (commit `183fca13dd6d48165d04c76fd56648998e6b432f`)
 **Reviewer:** SecurityReview-2
 **Classification:** Read-only source audit. No code execution was performed.
+
+This is a historical static audit of the pinned revision, including hypotheses that were not
+reproduced. Later disposition notes are not a fresh audit of today's code. Commands and regression
+evidence belong in [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md); current policy belongs in
+[ARCHITECTURE.md](../ARCHITECTURE.md). Reclassify each finding against the actual release before
+using it as either a vulnerability claim or a closure certificate.
 
 ---
 
@@ -138,7 +144,7 @@
 - **Trigger:** A response contains `Set-Cookie`, `Authorization`, `x-api-key`, or other sensitive headers.
 - **Where the check is:** `headers::serialize` serializes the entire `HeaderMap` sorted by name, including every header. No filtering of sensitive header names occurs.
 - **Impact:** Session cookies, auth tokens, and API keys from responses are stored in the captured evidence (JSON files on disk, potentially in version-controlled fixtures). This is a credential leakage vector.
-- **Remedy:** Redact sensitive headers (`Set-Cookie`, `Authorization`, `Cookie`, `x-api-key`, `anettokens`) before writing to cache/evidence. The goal doc §19 requires this: "Credentials must not become durable evidence. Omit cookies, Set-Cookie, authorization headers, bearer/session tokens."
+- **Remedy:** Exclude cookies, authorization/session tokens and sensitive response headers from durable evidence under the [architecture privacy boundary](../ARCHITECTURE.md).
 
 ### F-SECRETS-02 [material] — Auth tokens embedded in request evidence
 - **Surface:** `crates/census-crawl/src/athleticnet/meet/collect/`
@@ -159,7 +165,7 @@
 - **Trigger:** The browser uses a persistent Chromium profile directory for authentication cookies and local storage.
 - **Where the check is:** `profile_dir` is an absolute path to the browser profile. Chromium stores session cookies, local storage, and potentially cached credentials there.
 - **Impact:** If the profile directory is backed up or exposed (e.g., in a log, in a container image, or on a shared filesystem), session cookies for athletic.net are recovered.
-- **Remedy:** Treat the profile directory as a secret. Ensure it is not included in backups, exports, or log output. The goal doc §19 requires access-controlled handling of token-bearing data.
+- **Remedy:** Treat the profile as a secret; exclude it from public evidence, exports and logs. Use access-controlled handling under [ARCHITECTURE.md](../ARCHITECTURE.md), not an unrestricted store-root copy.
 
 ---
 
@@ -186,16 +192,12 @@
 | F-SECRETS-03 | material | Full URLs logged including query params |
 | F-SECRETS-04 | hardening | Browser profile dir is a persistent secret |
 
-### Blocked findings
-- ~~**F-WORKBOOK-01**~~: ~~The XLSX writer does not escape formula prefixes.~~ — Superseded. Verified against `rust_xlsxwriter 0.99.1` (`~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rust_xlsxwriter-0.99.1/src/worksheet.rs:19458-19511`): `write_string` emits `t="inlineStr"` or `t="s"` cells without `<f>` formula elements; Excel displays string cells literally.
-- ~~**F-WORKBOOK-02**~~: ~~CSV exports write third-party fields verbatim~~ — Fixed. `csv.rs:22-33` `escape_field()` prefixes `'` for `=`, `+`, `@`, tab, CR at byte 0; for leading `-` only when `field.parse::<f64>().is_err()`. Regression test `cli::export_data::csv::tests::csv_fields_are_safe_for_spreadsheets` passes.
-
 ### Unchecked surfaces
 The following were noted but could not be fully adjudicated without deeper tracing:
 
 1. **Every URL extraction point across all adapters** — Each of the ~15 source adapters constructs URLs from page content (JSON fields, HTML attributes, regex groups). Tracing every path to confirm admission or origin validation is not exhaustive from the tree alone.
 2. **Restate ingress security** — The browser lane is accessed via Restate ingress (`BrowserLane::answer` in `bridge/lane.rs`). The ingress transport security (TLS, auth) depends on the deployment configuration and is outside the repository tree.
-3. **Fjall storage-level encryption** — The store writes data to JSONL files on disk. Whether these are encrypted at rest depends on filesystem-level encryption and is outside the scope of the code review.
+3. **At-rest encryption** — Fjall data and retained artifacts rely on deployment/filesystem controls; encryption was not established by this source audit.
 4. **CDP endpoint exposure** — The CDP endpoint is validated to be loopback-only (`profile.rs:71-95`), but the actual Chromium launch flags and exposed CDP ports depend on the deployment manifest.
 5. **Model server input validation** — The `census-review` crate communicates with local model servers. The input packets (athlete evidence) sent to models should be verified to not contain harmful payloads in the model's execution context.
-6. **Dependency and license audits** — `cargo deny check` reports advisories/bans/licenses/sources all clear; `cargo audit --quiet` is silent. The §58 dependency and license verification items are satisfied on the current tree.
+6. **Dependency assurance** — Earlier notes reported clean dependency checks, but this read-only audit did not execute them. Use commit-bound results in the evidence ledger. License enforcement is excluded by owner direction; advisories, bans, provenance and dependency vetting remain required.

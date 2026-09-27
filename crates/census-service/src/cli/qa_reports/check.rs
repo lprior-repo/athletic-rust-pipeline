@@ -75,6 +75,6 @@ pub fn check_evidence(evidence_dir: &Path, start: usize, end: usize, problems: &
 
 pub fn check_synthesis(synthesis_file: &Path, problems: &mut Vec<String>) {
     if !synthesis_file.exists() {
-        problems.push("SYNTHESIS: 09-gap-phase-consolidation-2026-09-20.md missing".to_string());
+        problems.push(format!("SYNTHESIS: {} missing", synthesis_file.display()));
     }
 }

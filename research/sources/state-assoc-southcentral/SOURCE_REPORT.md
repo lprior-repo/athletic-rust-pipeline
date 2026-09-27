@@ -51,7 +51,7 @@ and `misshsaa.com` was abandoned after its blanket HTTP 403.
 7. **Pagination** — `n/a` (no association surface reachable). The MileSplit team index is a single page (562 links).
 8. **Athlete fields** — `UNVERIFIED`: the 2025 AHSAA state XC page publishes **no** athlete data itself; it links `http://xt.anet.live/3bb7ev` ("Live Results") `samples/al-ahsaa-2025-xc-state-live.html`.
 9. **Meet fields** — observed on the Xpress Timing page: `AHSAA State Championship`, `Saturday, November 8, 2025`, venue `Oakville Indian Mounds`, `Oakville, AL`, timing provider `www.xpresstiming.com`, contact `paul.xpresstiming@gmail.com`.
-10. **Result fields** — none captured (delegated to anet.live; that host was deliberately not fetched, per the repo's standing Athletic.net exclusion in `SOURCES_SURVEY.md` §0).
+10. **Result fields** — none captured (delegated to anet.live; that host was deliberately not fetched under the then-current Athletic.net exclusion, withdrawn by the fresh public-source census in [ADR-013](../../../docs/adr/ADR-013-fresh-national-source-census.md)).
 11. **Grade/class evidence** — `UNVERIFIED`.
 12. **Coach/contact fields** — none public anon-reachable; a timing-provider contact email is the only address captured.
 13. **Public API availability** — none observed.

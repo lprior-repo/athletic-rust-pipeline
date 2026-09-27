@@ -4,6 +4,7 @@ use super::{
     pool::{self, PageSlot, Pending},
     BrowserError, BrowserOutcome, BrowserResponse, BrowserSettings, BrowserState, BrowserStatus,
 };
+use crate::lifecycle::error::BrowserStartupError;
 use crate::{clock::Clock, drain::DrainReport};
 use chromiumoxide::Browser;
 use std::{
@@ -65,7 +66,7 @@ pub(super) struct ChallengeTarget {
 
 pub(super) enum Command {
     Bootstrap {
-        reply: oneshot::Sender<Result<(), anyhow::Error>>,
+        reply: oneshot::Sender<Result<(), BrowserStartupError>>,
     },
     Fetch {
         request: crate::request::RequestSpec,
@@ -154,7 +155,7 @@ impl Actor {
     }
 
     #[tracing::instrument(skip_all)]
-    pub(super) async fn run(mut self) -> anyhow::Result<()> {
+    pub(super) async fn run(mut self) -> Result<(), BrowserStartupError> {
         loop {
             if self.panic_shutdown || (self.draining && self.jobs.is_empty()) {
                 self.panic_shutdown = false;
@@ -185,8 +186,8 @@ impl Actor {
                         let (report, failure) = self.close_browser().await;
                         tracing::warn!(?report, "browser region drained after a handler failure");
                         return match failure {
-                            None => Err(anyhow::anyhow!("browser handler stopped")),
-                            Some(error) => Err(anyhow::anyhow!("browser handler stopped; cleanup failed: {}", error)),
+                            None => Err(BrowserStartupError::HandlerStopped),
+                            Some(error) => Err(BrowserStartupError::HandlerStoppedCleanupFailed(error.to_string())),
                         };
                     }
                 }

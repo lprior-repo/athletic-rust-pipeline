@@ -3,7 +3,7 @@
 Status: complete
 Observed on: 2026-09-20
 
-Closes the MN row of `synthesis/06-open-questions.md` §D: *"MSHSL 2025 XC PDFs are raster-only
+Closes the MN item in the 2026-09-20 research question register: *"MSHSL 2025 XC PDFs are raster-only
 (OCR required or skip); MSHSL participant nodes for prior years unverified [09][10]."* Read with
 report **09** (MSHSL enumeration/coach API) and report **10** (MN timers). All raw captures in
 `research/midwest/evidence/gaps/36/`.

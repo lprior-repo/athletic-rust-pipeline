@@ -1,5 +1,8 @@
 # Acceptance audit — measured at seal `7b41a264` (2026-09-22)
 
+Historical audit of the named workbook generation, not a fresh-run certificate. Current source
+policy and the full independent oracle supersede its operational recommendations; see [index](../README.md).
+
 **Rebuild note (2026-09-22, after this audit was written).** The workbook below was rebuilt at 11:53 by
 `tools/run_pipeline.sh` after the coach-plane import and the verified fragment union
 (`data/coach-contacts.csv` 3,444 → 6,215 rows; store coaches 29,294 → 31,488): the on-disk
@@ -105,8 +108,8 @@ Wisconsin. The Ohio and Michigan coach gaps are the largest single deficits afte
 
 ## 9. Which five to ten production adapters give the best coverage/engineering ratio
 
-Ranked by marginal verified coverage per unit of work already spent (evidence:
-`synthesis/03-adapter-ranking.md` plus the measured store):
+Historical ranking by marginal verified coverage per unit of work spent; supporting measured
+source costs are in [acceptance answers](01-acceptance-answers.md), not a current build-order plan:
 
 1. **MileSplit state rosters/grade pages** — the cohort backbone in every state.
 2. **AthleticLIVE timer index** — publishes the Athletic.net athlete id in the `ani` field; the

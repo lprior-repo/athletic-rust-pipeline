@@ -1,9 +1,9 @@
 use std::future::Future;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 
-use tokio::sync::oneshot;
+use tokio::sync::{oneshot, OwnedSemaphorePermit, Semaphore, TryAcquireError};
 use tokio::task::JoinSet;
 
 use crate::outcome::{DrainState, Outcome};
@@ -11,6 +11,8 @@ use census_store::clock::{Clock, SystemClock};
 
 mod ledger;
 use ledger::Ledger;
+
+pub const DEFAULT_CAPACITY: usize = 500;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct TaskReport {
@@ -27,6 +29,10 @@ pub struct TaskReport {
 pub enum SpawnError {
     #[error("task count does not fit u64")]
     TaskCountOverflow,
+    #[error("the task region already supervises its {capacity} tasks")]
+    RegionFull { capacity: usize },
+    #[error("the task region's capacity is closed")]
+    RegionClosed,
 }
 
 enum Completion<T, E> {
@@ -49,6 +55,8 @@ impl Region {
 }
 
 pub struct Spawner {
+    capacity: usize,
+    permits: Arc<Semaphore>,
     region: Mutex<Region>,
 }
 
@@ -60,14 +68,24 @@ impl Default for Spawner {
 
 impl Spawner {
     pub fn new() -> Self {
+        Self::with_capacity(DEFAULT_CAPACITY)
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        let bound = capacity.clamp(1, Semaphore::MAX_PERMITS);
         Self {
+            capacity: bound,
+            permits: Arc::new(Semaphore::new(bound)),
             region: Mutex::new(Region::default()),
         }
     }
 
     pub fn adopting(tasks: JoinSet<()>) -> Result<Self, SpawnError> {
         let held = narrow(tasks.len())?;
+        let capacity = DEFAULT_CAPACITY.max(tasks.len());
         Ok(Self {
+            capacity,
+            permits: Arc::new(Semaphore::new(capacity.saturating_sub(tasks.len()))),
             region: Mutex::new(Region {
                 tasks,
                 ledger: Ledger::holding(held),
@@ -76,14 +94,16 @@ impl Spawner {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn spawn<F>(&self, task: F)
+    pub fn spawn<F>(&self, task: F) -> Result<(), SpawnError>
     where
         F: Future<Output = ()> + Send + 'static,
     {
+        let slot = self.admit()?;
         let mut region = self.lock();
-        region.tasks.spawn(task);
-        region.ledger.accept();
         region.reap_finished();
+        region.tasks.spawn(holding_slot(slot, task));
+        region.ledger.accept();
+        Ok(())
     }
 
     #[tracing::instrument(skip_all)]
@@ -93,14 +113,24 @@ impl Spawner {
         T: Send + 'static,
         E: Send + 'static,
     {
+        let Ok(slot) = Arc::clone(&self.permits).acquire_owned().await else {
+            tracing::error!(
+                capacity = self.capacity,
+                "the task region's capacity is closed; the blocking job was not run"
+            );
+            return Outcome::Cancelled;
+        };
         let (tx, rx) = oneshot::channel();
-        self.push_blocking(move || match catch_unwind(AssertUnwindSafe(job)) {
-            Ok(result) => publish(tx, Completion::Returned(result)),
-            Err(payload) => {
-                publish(tx, Completion::Panicked);
-                resume_unwind(payload);
-            }
-        });
+        self.push_blocking(
+            move || match catch_unwind(AssertUnwindSafe(job)) {
+                Ok(result) => publish(tx, Completion::Returned(result)),
+                Err(payload) => {
+                    publish(tx, Completion::Panicked);
+                    resume_unwind(payload);
+                }
+            },
+            slot,
+        );
         match rx.await {
             Ok(Completion::Returned(Ok(value))) => Outcome::Ok(value),
             Ok(Completion::Returned(Err(error))) => Outcome::Err(error),
@@ -148,14 +178,34 @@ impl Spawner {
         Ok(region.ledger.report())
     }
 
-    fn push_blocking<F>(&self, job: F)
+    fn admit(&self) -> Result<OwnedSemaphorePermit, SpawnError> {
+        let acquired = Arc::clone(&self.permits).try_acquire_owned();
+        match acquired {
+            Ok(slot) => Ok(slot),
+            Err(TryAcquireError::NoPermits) => {
+                tracing::warn!(
+                    capacity = self.capacity,
+                    "the task region is at capacity; refusing to supervise more work"
+                );
+                Err(SpawnError::RegionFull {
+                    capacity: self.capacity,
+                })
+            }
+            Err(TryAcquireError::Closed) => Err(SpawnError::RegionClosed),
+        }
+    }
+
+    fn push_blocking<F>(&self, job: F, slot: OwnedSemaphorePermit)
     where
         F: FnOnce() + Send + 'static,
     {
         let mut region = self.lock();
-        region.tasks.spawn_blocking(job);
-        region.ledger.accept();
         region.reap_finished();
+        region.tasks.spawn_blocking(move || {
+            let _slot = slot;
+            job();
+        });
+        region.ledger.accept();
     }
 
     fn take(&self) -> Region {
@@ -172,6 +222,14 @@ impl Spawner {
             Err(poisoned) => poisoned.into_inner(),
         }
     }
+}
+
+async fn holding_slot<F>(slot: OwnedSemaphorePermit, task: F)
+where
+    F: Future<Output = ()>,
+{
+    let _slot = slot;
+    task.await;
 }
 
 fn narrow(count: usize) -> Result<u64, SpawnError> {

@@ -5,7 +5,9 @@ use super::*;
 #[tokio::test]
 async fn drain_reaps_and_counts_a_task_that_finishes_inside_the_deadline() {
     let spawner = Spawner::new();
-    spawner.spawn(async {});
+    spawner
+        .spawn(async {})
+        .expect("an empty region admits a task");
     let counted = spawner
         .drain(Duration::from_secs(5))
         .await
@@ -19,7 +21,9 @@ async fn drain_reaps_and_counts_a_task_that_finishes_inside_the_deadline() {
 #[tokio::test]
 async fn drain_aborts_and_counts_what_outlives_the_deadline() {
     let spawner = Spawner::new();
-    spawner.spawn(pending());
+    spawner
+        .spawn(pending())
+        .expect("an empty region admits a task");
     let counted = spawner
         .drain(Duration::from_millis(1))
         .await
@@ -34,9 +38,11 @@ async fn drain_aborts_and_counts_what_outlives_the_deadline() {
 #[tokio::test]
 async fn drain_counts_a_panicking_task_as_panicked() {
     let spawner = Spawner::new();
-    spawner.spawn(async {
-        panic!("region task is allowed to fail loudly");
-    });
+    spawner
+        .spawn(async {
+            panic!("region task is allowed to fail loudly");
+        })
+        .expect("an empty region admits a task");
     let counted = spawner
         .drain(Duration::from_secs(5))
         .await
@@ -97,7 +103,9 @@ async fn a_running_blocking_job_is_waited_for_and_counted_as_completed() {
 #[tokio::test]
 async fn drain_returns_promptly_when_task_overruns_deadline() {
     let spawner = Spawner::new();
-    spawner.spawn(async { tokio::time::sleep(Duration::from_secs(10)).await });
+    spawner
+        .spawn(async { tokio::time::sleep(Duration::from_secs(10)).await })
+        .expect("an empty region admits a task");
     let start = std::time::Instant::now();
     let counted = spawner
         .drain(Duration::from_millis(10))
@@ -151,7 +159,9 @@ async fn adopting_counts_the_set_it_was_handed() {
 #[tokio::test]
 async fn a_timeout_the_clock_cannot_represent_still_drains() {
     let spawner = Spawner::new();
-    spawner.spawn(async {});
+    spawner
+        .spawn(async {})
+        .expect("an empty region admits a task");
     let counted = tokio::time::timeout(
         Duration::from_secs(5),
         spawner.drain(Duration::from_secs(u64::MAX)),
@@ -172,7 +182,9 @@ async fn a_task_started_after_a_drain_belongs_to_the_next_one() {
         .await
         .expect("an empty set fits the report");
     assert_eq!(first.accepted, 0);
-    spawner.spawn(async {});
+    spawner
+        .spawn(async {})
+        .expect("an empty region admits a task");
     let second = spawner
         .drain(Duration::from_secs(5))
         .await
@@ -184,8 +196,12 @@ async fn a_task_started_after_a_drain_belongs_to_the_next_one() {
 #[tokio::test(start_paused = true)]
 async fn a_drain_counts_finished_work_and_the_deadline_separately() {
     let spawner = Spawner::new();
-    spawner.spawn(async {});
-    spawner.spawn(pending());
+    spawner
+        .spawn(async {})
+        .expect("an empty region admits a task");
+    spawner
+        .spawn(pending())
+        .expect("an empty region admits a task");
     let counted = spawner
         .drain(Duration::from_millis(1))
         .await
@@ -198,6 +214,79 @@ async fn a_drain_counts_finished_work_and_the_deadline_separately() {
     assert_eq!(counted.timed_out, 1);
     assert_eq!(counted.remaining, 0, "the abort reclaimed the pending task");
     assert_eq!(counted.aborted, 1);
+}
+
+#[tokio::test]
+async fn a_full_region_refuses_work_until_a_slot_frees() {
+    let spawner = Spawner::with_capacity(1);
+    spawner
+        .spawn(pending())
+        .expect("the first task fits the capacity");
+    assert!(matches!(
+        spawner.spawn(async {}),
+        Err(SpawnError::RegionFull { capacity: 1 })
+    ));
+    let counted = spawner
+        .drain(Duration::from_millis(1))
+        .await
+        .expect("a small set fits the report");
+    assert_eq!(counted.timed_out, 1);
+    spawner
+        .spawn(async {})
+        .expect("the drained slot is free again");
+    let counted = spawner
+        .drain(Duration::from_secs(5))
+        .await
+        .expect("a small set fits the report");
+    assert_eq!(counted.accepted, 1);
+    assert_eq!(counted.completed, 1);
+}
+
+#[tokio::test]
+async fn the_default_region_admits_its_capacity_and_refuses_the_next_task() {
+    let spawner = Spawner::new();
+    for _ in 0..DEFAULT_CAPACITY {
+        spawner
+            .spawn(pending())
+            .expect("the configured capacity admits every task up to the bound");
+    }
+    assert!(matches!(
+        spawner.spawn(pending()),
+        Err(SpawnError::RegionFull { capacity }) if capacity == DEFAULT_CAPACITY
+    ));
+    let counted = spawner
+        .drain(Duration::from_millis(1))
+        .await
+        .expect("a small set fits the report");
+    let capacity = u64::try_from(DEFAULT_CAPACITY).expect("the capacity fits u64");
+    assert_eq!(counted.accepted, capacity);
+    assert_eq!(counted.timed_out, capacity);
+    assert_eq!(counted.remaining, 0);
+    assert_eq!(counted.aborted, capacity);
+}
+
+#[tokio::test]
+async fn a_full_region_parks_a_blocking_job_until_a_slot_frees() {
+    let spawner = Spawner::with_capacity(1);
+    spawner
+        .spawn(pending())
+        .expect("the first task fits the capacity");
+    let waited = tokio::time::timeout(
+        Duration::from_millis(50),
+        spawner.blocking(|| Ok::<u8, &'static str>(7)),
+    )
+    .await;
+    assert!(
+        waited.is_err(),
+        "a full region parks a blocking job instead of running it early"
+    );
+    let counted = spawner
+        .drain(Duration::from_millis(1))
+        .await
+        .expect("a small set fits the report");
+    assert_eq!(counted.timed_out, 1);
+    let outcome = spawner.blocking(|| Ok::<u8, &'static str>(7)).await;
+    assert_eq!(outcome, Outcome::Ok(7));
 }
 
 #[test]

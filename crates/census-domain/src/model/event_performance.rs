@@ -124,7 +124,118 @@ impl TimingMethod {
     }
 }
 
+fn mark_kind_compatible(kind: &EventKind, mark: &Mark) -> bool {
+    let is_time_event = !kind.is_field() && !kind.is_relay();
+    let is_time_mark = matches!(mark, Mark::TimeSeconds(_));
+    let is_field_mark = matches!(
+        mark,
+        Mark::DistanceMetres(_) | Mark::FieldImperial { .. } | Mark::Points(_)
+    );
+    let is_raw = matches!(mark, Mark::Raw(_));
+    match kind {
+        EventKind::Pentathlon | EventKind::Heptathlon | EventKind::Decathlon => true,
+        EventKind::Relay4x100
+        | EventKind::Relay4x200
+        | EventKind::Relay4x400
+        | EventKind::Relay4x800
+        | EventKind::SprintMedley
+        | EventKind::DistanceMedley => is_time_mark || is_raw,
+        _ if kind.is_field() => is_field_mark || is_raw,
+        _ if is_time_event => is_time_mark || is_raw,
+        _ => true,
+    }
+}
+
+fn valid_date(date: &str) -> bool {
+    chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").is_ok()
+}
+
 impl CanonicalPerformance {
+#[allow(clippy::too_many_arguments)]
+    pub fn new(
+        athlete: &AthleteId,
+        team: &TeamId,
+        event: &EventId,
+        event_kind: &EventKind,
+        meet: &MeetId,
+        date: &str,
+        mark: Mark,
+        source_key: &str,
+        wind_mps: Option<f64>,
+        place: Option<u16>,
+    ) -> Self {
+        debug_assert!(!date.is_empty(), "performance date must not be empty");
+        debug_assert!(
+            valid_date(date),
+            "performance date {date:?} is not a valid ISO date"
+        );
+        let id = CanonicalPerformance::mint(athlete, meet, event_kind, date, source_key);
+        Self {
+            id,
+            athlete: athlete.clone(),
+            team: team.clone(),
+            event: event.clone(),
+            meet: meet.clone(),
+            date: date.to_string(),
+            mark,
+            wind_mps,
+            place,
+            heat: None,
+            round: None,
+            timing: None,
+            observed_grade: None,
+            evidence: Vec::new(),
+            source_key: source_key.to_string(),
+            source_athlete: None,
+            retained_conflicts: Vec::new(),
+        }
+    }
+
+#[allow(clippy::too_many_arguments)]
+    pub fn new_checked(
+        athlete: &AthleteId,
+        event_kind: &EventKind,
+        team: &TeamId,
+        event: &EventId,
+        meet: &MeetId,
+        date: &str,
+        mark: Mark,
+        source_key: &str,
+        wind_mps: Option<f64>,
+        place: Option<u16>,
+    ) -> Result<Self, String> {
+        if date.is_empty() {
+            return Err("performance date must not be empty".to_string());
+        }
+        if !valid_date(date) {
+            return Err(format!("performance date {date:?} is not a valid ISO date"));
+        }
+        let id = CanonicalPerformance::mint(athlete, meet, event_kind, date, source_key);
+        Ok(Self {
+            id,
+            athlete: athlete.clone(),
+            team: team.clone(),
+            event: event.clone(),
+            meet: meet.clone(),
+            date: date.to_string(),
+            mark,
+            wind_mps,
+            place,
+            heat: None,
+            round: None,
+            timing: None,
+            observed_grade: None,
+            evidence: Vec::new(),
+            source_key: source_key.to_string(),
+            source_athlete: None,
+            retained_conflicts: Vec::new(),
+        })
+    }
+
+    pub fn mark_compatible(&self, kind: &EventKind) -> bool {
+        mark_kind_compatible(kind, &self.mark)
+    }
+
     pub fn mint(
         athlete: &AthleteId,
         meet: &MeetId,

@@ -1,4 +1,5 @@
 use super::{BrowserError, BrowserOutcome, BrowserSettings};
+use crate::lifecycle::error::BrowserStartupError;
 use chromiumoxide::Page;
 use std::{collections::VecDeque, fs, path::Path};
 use tokio::sync::oneshot;
@@ -19,39 +20,45 @@ pub(super) struct Pending {
     pub reply: oneshot::Sender<super::BrowserOutcome>,
 }
 
-pub(super) fn prepare_profile(settings: &BrowserSettings) -> anyhow::Result<()> {
+pub(super) fn prepare_profile(settings: &BrowserSettings) -> Result<(), BrowserStartupError> {
     let path = &settings.profile_dir;
     if path.exists() {
-        let metadata = fs::symlink_metadata(path)?;
+        let metadata =
+            fs::symlink_metadata(path).map_err(|_| BrowserStartupError::ProfileNotDirectory)?;
         if metadata.file_type().is_symlink() || !metadata.is_dir() {
-            anyhow::bail!("browser profile must be a real directory");
+            return Err(BrowserStartupError::ProfileNotDirectory);
         }
     } else {
-        fs::create_dir_all(path)?;
+        fs::create_dir_all(path).map_err(|_| BrowserStartupError::ProfileNotDirectory)?;
         restrict_directory(path)?;
     }
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mode = fs::metadata(path)?.permissions().mode();
+        let mode = fs::metadata(path)
+            .map_err(|_| BrowserStartupError::ProfileNotDirectory)?
+            .permissions()
+            .mode();
         if mode & 0o077 != 0 {
-            anyhow::bail!("browser profile directory is accessible by other users");
+            return Err(BrowserStartupError::ProfilePermissions);
         }
     }
     Ok(())
 }
 
 #[cfg(unix)]
-fn restrict_directory(path: &Path) -> anyhow::Result<()> {
+fn restrict_directory(path: &Path) -> Result<(), BrowserStartupError> {
     use std::os::unix::fs::PermissionsExt;
-    let mut permissions = fs::metadata(path)?.permissions();
+    let mut permissions = fs::metadata(path)
+        .map_err(|_| BrowserStartupError::ProfileNotDirectory)?
+        .permissions();
     permissions.set_mode(0o700);
-    fs::set_permissions(path, permissions)?;
+    fs::set_permissions(path, permissions).map_err(|_| BrowserStartupError::ProfilePermissions)?;
     Ok(())
 }
 
 #[cfg(not(unix))]
-fn restrict_directory(_path: &Path) -> anyhow::Result<()> {
+fn restrict_directory(_path: &Path) -> Result<(), BrowserStartupError> {
     Ok(())
 }
 

@@ -1,303 +1,245 @@
-# Fresh national census — implementation master plan
+# Fresh national census — delivery and acceptance plan
 
-Status: binding target and delivery plan, not a claim of completed implementation or verification.
-[ADR-013](adr/ADR-013-fresh-national-source-census.md) records the owner's correction and supersedes
-workbook-driven intake and the former geographic restriction. [ARCHITECTURE.md](../ARCHITECTURE.md)
-retains the binding numbered standards; [architecture.md](architecture.md) describes implementation.
+Status: binding unfinished delivery contract, **not execution evidence**. This is the only active
+plan. [ARCHITECTURE.md](../ARCHITECTURE.md) owns mission/engineering policy,
+[DOMAIN.md](../DOMAIN.md) owns semantics, and [ADRs](adr/README.md) own decisions.
+[Dated verification](VERIFICATION-EVIDENCE.md) records what actually ran.
 
-## 1. Product and fresh-run boundary
+## 1. Run boundary
 
-Discover the Class-of-2027 high-school Track & Field / Cross Country population across the 48
-contiguous states plus D.C. Include source-supported boys' and girls' XC, indoor and outdoor
-participation, legitimate
-events and evidenced relay membership. Do not infer participation, graduation year, GPA or identity
-from a matching name. Never collect athlete personal contact information.
+Deliver the Class-of-2027 high-school TF/XC census from public-source discovery across exactly
+49 jurisdictions: 48 contiguous states plus D.C. `UsJurisdiction::ALL` models 51 locations;
+`CENSUS_SCOPE` is the run denominator. The proposed ADR-013 expansion was withdrawn on 2026-09-27.
 
-There is no input workbook, admissions dataset, supplied recruit list or original-sheet accounting.
-Excel is generated output. Public result spreadsheets are source documents, not a seed population.
-Population and coverage come from public source discovery, including schools and programs that have
-not yet yielded an accepted athlete. A subset run is qualification evidence, not national completion.
+Create a fresh named store bound to an unused durable run namespace/revision. Preserve historical
+corpora without importing their athletes, observations, decisions, receipts, coverage or seals.
+No admissions workbook, seed list or previous export supplies the population; public result
+spreadsheets are captured sources. Historical migration is separate maintenance, not a current
+legacy-import API or a fresh-run prerequisite. Excel is output.
 
-Use a fresh named store and unused durable run revision/namespace, explicitly bound to each other.
-A new directory with old Restate keys is not fresh: replay can skip work using old completions.
-Preserve existing stores and exports. Do not import their evidence, identities, receipts, counts or
-seals. Reuse code, captured parser fixtures and qualified public source entry points; acquire this
-run's evidence afresh. Once acquired, reuse its immutable captures and effects across subjects and
-recovery. "From scratch" does not mean rewriting the working Rust stack or repeatedly fetching it.
-
-## 2. One architecture, not another engine
-
-Keep the existing nine crates, native non-Docker Restate, Fjall, Tokio and both local Qwen servers.
-Keep one implementation per responsibility; migrate every caller and delete superseded paths.
-No replacement root package, acquisition crate family, custom runtime, ORM or generic workflow DSL.
+Extend the existing nine-crate implementation. Do not create a replacement engine, new scheduler,
+shadow domain model or parallel CLI. First prove one complete source-to-output path, then breadth:
 
 ```text
-51-jurisdiction run specification + qualified public source registry
-  -> discovery frontier and school/program/season obligations
-  -> origin-admitted acquisition -> immutable captures
-  -> provider-owned observations -> validated evidence
-  -> candidate generation -> contradiction checks -> Rust adjudication
-                                      ^ bounded local Qwen advice
-  -> versioned decisions and retained gaps -> one snapshot projection
-  -> verified atomic output generation -> evidence-backed seal
+49-jurisdiction run -> source obligations -> captures -> validated claims
+  -> candidates -> Rust decisions (+ dual local advice when needed)
+  -> immutable export dataset -> verified atomic bundle -> qualified seal
 ```
 
-`census-domain` owns pure constrained types and rules; `census-crawl` owns source parsing, discovery
-and single-attempt acquisition; `athleticnet-browser` owns headed capture and challenge vocabulary;
-`census-store` owns durable transactions and snapshots; `census-reconcile` owns deterministic identity;
-`census-review` obtains advice; `census-report` projects; `census-service` composes and supervises;
-`xtask` exposes existing operations. Adapters never accept canonical identities themselves.
+## 2. Discovery and coverage obligations
 
-## 3. Domain contracts before caller migration
+Represent school/program/season and source obligations independently of accepted athletes. Discover
+schools, teams, schedules, rosters, meets and linked results through all relevant qualified provider
+families. Reuse shared source objects across athletes; keep profiles as bounded evidence/history
+fill-in. Registration or an applicability row is not an executed source sweep.
 
-Separate raw wire DTOs, captured observations, validated claims, identity candidates and accepted
-links. Private newtypes and checked constructors carry provider identity, jurisdiction, cohort,
-season, event, performance conditions, source object, capture, decision and operation identities.
-Deserialization must run the same checks. Do not serialize invalid states around constructors.
+Persist pagination/cursors, redirects, unsupported media/schema, access stops, parser quarantine,
+exhaustion and unfinished discovery. Model successful-empty, partial, blocked, human-required,
+exhausted and complete-with-gaps separately. Never turn zero accepted athletes or an unreached
+jurisdiction into complete coverage. Continue unrelated permitted work after a source stop.
 
-Use explicit state enums rather than flags and nullable lifecycle fields. Keep cohort membership,
-person identity, school affiliation, sports participation, coach appointment and source coverage
-separate. A grade needs its academic-year context; today's clock cannot reinterpret old evidence.
-A school affiliation is time-scoped, not the athlete's timeless current school.
+## 3. Capture and external-effect durability
 
-Provider IDs retain their namespace and actual ownership scope: athlete-global, meet-local or
-sport-local as applicable. Missing IDs produce capture-scoped subjects, not name hashes masquerading
-as stable people. Canonical links and reversals are versioned decisions; observations are immutable.
-A source's copied/syndicated descendants share a corroboration family, not independent votes.
+Archive immutable bytes before publishing claims/progress. Capture identity binds source instance,
+method, canonical request including POST body and representation context, URL/status, actual fetch
+time, media type, byte length, digest and archive locator. Distinguish event, source publication,
+acquisition and run-as-of dates. URLs/digests alone are not retained evidence.
 
-Pure functions handle normalization, cohort rules, contradictions, admissibility, result comparison
-and coverage reductions. Network, store, clock, spawning and model capabilities stay in the shell.
-Expected failures are typed: invalid input, unsupported schema, partial parse, access restriction,
-human required, rate limit, transport failure, exhausted retry, corrupt capture, budget stop,
-identity conflict, insufficient evidence, durability failure and publication failure stay distinct.
+Retain valid rows and rejected locators from partial parses with parser/schema revision. Quarantine
+corruption; do not silently refetch/overwrite an object or cache a failed attempt as success.
 
-## 4. Nationwide source graph and coverage obligations
+Use one store apply-once contract under existing write synchronization. Atomically persist bounded
+observations, sequence/count metadata, source progress and a reusable effect receipt. Bind the
+receipt to store/run lineage, source instance, logical object/page, capture/parser revision,
+destination schema/table, stable batch ordinal and full payload digest. Changed content under the
+same operation ID is a typed conflict; successful-empty pages still have receipts.
 
-Create obligations for every required jurisdiction before acquisition. Discover schools/programs
-from public association, school and team directories independently of successful athlete matches.
-Qualify Athletic.net, MileSplit, DirectAthletics, relevant TFRRS, AthleticLIVE, state associations,
-timing providers, organizers and school/team sites. Follow relevant linked HTML, structured data,
-PDFs and public spreadsheets. Retain provenance for newly discovered sources and their access policy.
+Partition oversized objects deterministically with row, record and byte bounds and a manifest.
+Keep completed chunk boundaries stable through restart. Retain receipts while a legitimate Restate
+replay can use them; do not confuse effect receipts with a second task scheduler. Prove the real
+commit/lost-ack window using physical observations, not only merge-on-read canonical counts.
 
-Prefer shared rosters and meet/results acquisition over repeated athlete-name searches. Use major
-meets and qualifiers to discover participation, then rosters, linked profiles and earlier seasons
-to fill cohort and history gaps. Track discovered links, visited source units, pagination, seasons,
-unsupported formats and truncation. New sources extend the frontier; qualification is not a one-off
-fixed list. Bound each activation and persist its cursor; reaching a budget is not finishing a source.
+## 4. Durable orchestration and resource boundaries
 
-Track jurisdiction, source, school/program and season obligations with explicit pending, acquired,
-partial, quarantined, access-blocked, human-required, retry-exhausted and budget-limited outcomes.
-A state with zero accepted athletes is not covered by definition. Unknown source denominators stay
-unknown. A failed or unavailable source is never negative identity evidence or `NO_MATCH`.
+Run discovery, acquisition, parse/apply, deterministic reconciliation, local review, gap handling,
+export and verification through the existing durable application. Parent completion requires each
+child's declared terminal state. Large bodies/batches remain in immutable evidence storage; Restate
+carries bounded references, not a workflow per performance or an entire state's rows per result.
 
-## 5. Immutable acquisition evidence
+Keep immutable run semantics distinct from execution budgets. A larger budget resumes owed work;
+it does not change completed step meaning, erase exhaustion or mint replacement jobs. Restate
+owns three total external attempts; transports make one. Account conservatively for an uncertain
+network attempt across a crash, without claiming exactly-once HTTP or adding another scheduler.
 
-A capture records request method, canonical request identity including relevant body digest,
-non-secret representation context, final URL, status, actual acquisition time, media type, byte
-length, body digest and immutable storage reference. Published/effective dates are separate from
-fetch time. A URL alone cannot identify a POST response or prove a parsed fact.
+Apply shared per-origin physical admission across endpoints/workflows/tabs, Retry-After, redirect
+SSRF checks, response/parse limits and browser human handoff. Own and bound async/blocking tasks;
+stop intake, drain/finalize and persist exact mutually exclusive outcomes on shutdown.
 
-Durably write and verify captured bytes before committing references to them. Commit observations,
-progress and effect receipt together, then acknowledge. A crash can leave an unreferenced capture;
-it must not leave acknowledged observations pointing at missing bytes. Quarantine corruption with
-a typed finding. Cache only immutable successes; failed captures may be retained as evidence of
-failure, never replayed as successful acquisition. Cache reads do not advance source freshness.
+## 5. Identity, marks, affiliations and contacts
 
-Every material claim resolves to a captured locator: provider object/result ID, HTML location,
-structured-data path, PDF page or spreadsheet sheet/row. Parsing revisions and rejected locators are
-retained. Partial rosters keep valid rows while retaining the rejected rows and unfinished obligation.
-A parser count or successful HTTP status does not prove the required immutable archive exists.
+Implement [DOMAIN.md](../DOMAIN.md)'s raw/validated/candidate/accepted separation and constrained
+construction/deserialization. Provider ownership, independent source families, temporal cohort,
+contradictions and reversible decisions survive every consumer. Names/scores/cohort alone never
+accept identity. Review packets preserve structured attribution; token-bag hashing is not equivalent.
 
-## 6. One durable application path
+Clean deterministic decisions bypass AI. Ambiguous cases require independent, evidence-bound advice
+from both approved local GPUs and Rust adjudication. Failed/malformed/disagreeing/insufficient advice
+remains `REVIEW`; decisive conflicting evidence cannot be silently truncated to fit a packet.
 
-Evolve the existing `NationalCensus`/`JurisdictionCensus` and service handlers into one path through
-discovery, acquisition, reconciliation, review, gap resolution and publication. CLI entry points
-submit/status that application; they do not maintain a second business implementation. Existing
-batch-only index/review/gap paths must join it before the target can be called implemented.
+Retain exact source mark units/precision, comparison context, historical team, rounds/heats/attempts,
+relay-versus-split meaning and source-declared PR versus observed best. Share one compatible-key and
+tie policy across all consumers. Ambiguous historical units require explicit versioned maintenance
+and quarantine, never magnitude-based guessing during fresh acquisition.
 
-Distinguish immutable run semantics from execution controls. Cohort, jurisdiction set, source and
-policy revisions define the logical run. Pagination/work-per-activation/concurrency budgets control
-execution. Increasing a smoke-run budget must resume retained work, not mint duplicate people or
-pretend replaying a completed workflow changes its immutable input. Main must define the durable
-resume/control transition and migrate current wire contracts explicitly.
+Resolve current coaching role, sport, side/category and affiliation from time-scoped public evidence.
+Bind the exact permitted mailbox to the eligible role; do not fabricate patterns or treat unknown as
+both. Persist successful-empty, failed/blocked and never-attempted contact outcomes distinctly.
 
-Distinguish run, logical source unit, physical attempt, capture, ingest effect, review case and export
-generation IDs. Retries retain logical IDs. Receipt lookup precedes an effect; reusing an operation
-ID with different content is a typed mismatch, not an overwrite. A newly fetched capture is distinct
-from replaying the same effect. Journal activity alone cannot make a partial unit complete.
+## 6. Snapshot-bound derivation and publication
 
-Restate is the sole automatic retry owner: three total attempts, not three retries after an initial
-attempt. HTTP, browser, adapter and model transports each perform one attempt. Preserve the budget
-across restart; exhaustion remains evidence while independent sources continue. Persist Retry-After
-and challenge state. No private retry loop or new workflow key may reset the ceiling.
+Derive all report/workbook/audit outputs from one captured input generation. Current independent
+`Store::scan` snapshots and live sequence numbers are not a durable restart boundary. Freeze inputs
+in a recoverable form with store/run/schema/policy lineage; derived writes must not invalidate their
+own source generation. Reuse one bounded immutable export dataset rather than rebuild decisions
+and cohort/PR/contact joins per sheet.
 
-## 7. Admission, boundaries and supervision
+Keep no-performance athletes, accepted aliases versus candidate statuses, unknown joins, Core versus
+All evidence filtering and geographic/cohort scope distinct. Use performance-team/date for historical
+affiliation, not present athlete school. Measure scan/decode/sort/render/write phases; selected reads
+that traverse all keys are not point indexes. Add persistent indexes only for measured query need;
+workbook order may require bounded sorting regardless of athlete-keyed access.
 
-Measure admission at physical remote requests. Share one origin budget across endpoints, workflows,
-tabs and related Athletic.net surfaces; more workers must not multiply it. Honor robots, authorized
-origins, redirects and content-size limits. Revalidate redirect destinations; protect local/private
-network boundaries. Browser and HTTP acquisition retain their distinct supported policies.
+Stage workbook, sidecars, audit and manifest together. The manifest binds run/input generation,
+scope/cohort/as-of, schema/policy revisions, exact record/partition identities, counts, lengths,
+digests, coverage and PR winners. Flush and independently verify before atomic fenced promotion.
+Failed/stale exporters retain the previous valid bundle. Define spill, MVCC, receipt and old-generation
+retention with explicit resource budgets; no naked live-directory copy or unbounded memory cache.
 
-Athletic.net uses the headed persistent-profile lane. Challenges enter `HumanRequired`, close new
-admission and drain issued work. No CAPTCHA solver, authentication/paywall bypass, identity spoofing,
-proxy evasion or direct-HTTP fallback to circumvent a challenge.
+### Required workbook information
 
-Own every task in a bounded region. Backpressure precedes spawning; queues are bounded accelerators,
-not durable authorities. No lock crosses an await. Offload bounded blocking/CPU work to supervised
-workers, not detached tasks. At each suspension an effect has a reserve/commit/rollback or replay
-contract. Separate returned errors, cancellation, timeout, abort and panic.
+These are semantic requirements, not a claim that today's sheet/column layout implements them:
 
-Shutdown stops intake, drains/finalizes owned work, persists unfinished obligations, then reports
-mutually exclusive completed/failed/cancelled/timed-out/aborted/panicked/still-running outcomes.
-The sum reconciles with accepted work; no running task is silently called completed. Successful
-shutdown leaves no unowned work; unfinished business remains durably resumable in Restate.
-
-## 8. Identity and both local Qwen lanes
-
-Candidate discovery is high-recall retrieval, not acceptance. Name, grade, school text, a score or
-model agreement alone cannot prove identity. Require policy-defined corroboration and retain
-contradictions, source ownership and observation time. Transfers are time-scoped affiliations;
-different schools at different times are not automatically different people.
-
-Resolve deterministic cases in Rust first. Ambiguous cases go to both approved local Qwen servers
-(5090 and 3090) with bounded structured evidence, claim IDs and contradictions. No cloud fallback,
-private workbook or admissions data. Bind advice to evidence digest, policy and model revisions;
-retain each response and reuse valid completed advice. Do not silently truncate decisive evidence.
-
-Models return `SamePerson`, `DifferentPerson` or `InsufficientEvidence` with evidence references.
-Rust checks the evidence binding, admissibility and required agreement. Invalid output, disagreement,
-insufficient corroboration or exhausted model attempts stays `REVIEW`; agreement cannot defeat a
-hard contradiction. Changed material evidence invalidates the affected decision/advice, not arbitrary
-unrelated work. Models cannot invent marks, graduation evidence, affiliations or email addresses.
-
-## 9. Performances, affiliations and coach contacts
-
-Identify result instances by provider result ID or a qualified meet/event/round/heat/attempt/subject
-key. Unknown conditions are not wildcards. Deduplicate repeated references while retaining legitimate
-heats, rounds, attempts and relay memberships. Preserve the affiliation on the historical result;
-never replace it with a present-day school. Club and unattached participation remain explicit.
-
-One event/comparison contract governs PRs everywhere: timing, wind, distance, units, surface and XC
-course/context compatibility. Keep declared profile PRs separate from best observed performances.
-Report the history/conditions limitations. Workbook and sidecars must agree on exact winner IDs,
-values and evidence, not merely the number of rows.
-
-Research public school/program coach appointments by role, sport, side and season. Current explicit
-appointments outrank former staff even when the former coach has an email. Unknown side is not both
-sides; another sport is not TF/XC. Bind each published mailbox to exact source text and its person or
-program role. A consumer-domain address can be legitimate when the institution publishes it. Reject
-mailbox construction from name/domain patterns and unrelated addresses on the same page.
-
-Persist contact-research attempts, including empty, inaccessible and failed results. No coach row
-means no published contact, not proof that research never ran. Keep identity and contact decisions
-separate so invalidating a mailbox does not erase otherwise valid athlete evidence.
-
-## 10. Store, projections and publication
-
-Fjall remains single-writer. Plan sequence allocation under the write lock; commit data, progress and
-receipts with the required durability before publishing in-memory counters or acknowledgements.
-Counter exhaustion, poisoned state and failed durability cannot silently produce usable writes.
-Use the actual logical table catalog, not a hard-coded historical table count. Legacy import is an
-explicit maintenance operation for old stores, never normal startup for this fresh census.
-
-Use one MVCC snapshot and one shared projection for all output formats. Writers do not reimplement
-cohort, identity, contact, coverage or PR policy. Stream bounded batches instead of constructing
-multiple full-corpus vectors. Retain the snapshot only for the required projection lifetime.
-
-Stage every generation's workbook, machine-readable/audit outputs and manifest together. The
-manifest binds run/snapshot/scope/cohort/policy revisions, paths, byte lengths, hashes, record IDs,
-coverage totals and PR winners. Flush, independently verify, then atomically switch the published
-generation reference. Retain the previous valid generation on failure. Generation identity is not
-a calendar date; stale concurrent exporters cannot overwrite a newer accepted generation.
-
-Workbook sheets expose accepted athletes/cohort, separate TF/XC evidence, source profiles, observed
-marks/PRs, schools, public coaching contacts, coverage, conflicts, review and run metrics. Raw source
-counts, scoped observations and accepted Class-of-2027 counts are separate, with all limits visible.
-
-## 11. Completion and measured efficiency
-
-ADR-011 remains: terminal gaps, conflicts and exhaustion can be retained findings, but unresolved
-work and unverified publication block sealing. A seal certifies the declared run and obligations;
-it is not proof of every athlete or document on the Internet. Do not hide incomplete history,
-unknown denominators or unsupported sources behind a national label.
-
-Measure useful verified records per physical request, capture/parse/advice reuse, completion rate,
-latency, CPU scaling, peak process RSS and peak disk use including staging, old generations and MVCC
-retention. Use the actual 16-core/32-thread, 128-GB workstation and approved GPU lanes. Bound pages,
-payloads, candidate sets, queues, batches and model prompts. No allocator, parallelism or layout
-rewrite without a representative baseline and correctness-preserving benchmark comparison.
-
-## 12. Dependency-ordered delivery
-
-Each slice owns its domain contract, caller migration and focused executable acceptance. Main owns
-public types, schemas, Restate contracts and integration. Use 2–4 useful bounded agents, at most one
-coding job per GPU; do not parallelize competing writers or disguise staffing limits as scope cuts.
-
-| Stage | Deliverable and exit evidence |
+| Projection | Required content |
 |---|---|
-| 0 — Scope | ADR-013, fresh-run contract, all 51 scope members and migration inventory; preserve old data. |
-| 1 — Entry | Fresh store/run binding, qualified source roots and per-jurisdiction/program obligations; native national entry point. |
-| 2 — Evidence | One real source-object discovery/capture/parse/atomic-ingest path, exact provenance and partial-result behavior. |
-| 3 — Decisions | Source-owned subjects, time-scoped cohort/affiliation, reversible deterministic acceptance and both local advice lanes. |
-| 4 — Vertical proof | Real discovery-to-census-to-output qualification run; restart and increased execution budget resume exact remaining work. |
-| 5 — Breadth | All named source families, linked document formats, every jurisdiction of the run scope, history and persisted public-contact research. |
-| 6 — Publication | Shared snapshot projection, exact PR/contact parity, independent verification and atomic output generations. |
-| 7 — National run | Fresh source-discovered acquisition across the whole run scope; independently reconcile obligations, decisions, findings and artifacts. |
-| 8 — Assurance | All F01–F15 checks, all 17 native faults, security/async review, hostile-input and measured resource gates; repair failures. |
-| 9 — Release | Verified final generation and seal, reproducible evidence and operations docs; Main commits/pushes only verified delivery. |
+| Athletes | Stable accepted ID, names, source profiles, source-backed graduation/cohort decision, current evidenced school/location, category, TF/XC/indoor/outdoor observations, events/best summary, history coverage, conflicts/review and snapshot identity; no-performance athletes retained |
+| PRs | Athlete + compatible context, exact value/unit and display mark, supporting performance/source-claim IDs, date/meet, timing/wind/specification, policy, ties, source-declared versus observed-best status and completeness |
+| Performances | Declared cohort denominator; athlete/source subject, meet/event, team at performance date, raw/exact normalized mark, conditions/status/round/heat/attempt/place, result/capture locators and identity-decision revision; relay team versus individual split explicit |
+| Contacts | Current TF/XC coach/AD and preferred permitted contact, exact mailbox/role/program binding, resolution state, source/date/freshness and school athletics URL |
+| Supporting detail | Coaches, Schools, Meets, Sources, Coverage, Conflicts, Review and Run Metrics; complete normalized profile/evidence detail when a cell cannot hold it |
 
-Do not wait for a broad refactor before exercising the first vertical path. Do not claim that path
-is national completion. Remove temporary probes after preserving their evidence and durable fixes.
+Observed, not-observed and unknown participation must not imply the same fact. Any optional publicly
+reported recruiting GPA retains scale/source/date; never infer GPA or import private admissions data.
+Use filters, frozen headers, useful widths and explicit units. Detect Excel row/column/cell/hyperlink
+limits before publication and partition **every** potentially oversized sheet without dropping IDs,
+rows or provenance. Validate hyperlinks and write hostile formula-prefixed text safely, including CSV.
 
-## 13. F01–F15 acceptance — none dropped
+### Independent readback oracle
 
-| ID | Required consumer-visible evidence |
+Read the actual delivered files, not only intermediate JSON or the exporter's own row builder.
+Share validated primitive/schema contracts, not the projection logic under test. Verify every row
+using bounded sorted keys/exact multisets and partition manifests; samples/totals are insufficient.
+
+1. Each accepted athlete ID appears once in the primary cohort projection.
+2. Withheld/unresolved candidates are accounted for outside accepted identities.
+3. Every performance has valid athlete/source/event/meet references and historical affiliation.
+4. Every PR has exact admissible support in a compatible performance or explicit source claim.
+5. Rejected/ambiguous values never contribute to calculated bests.
+6. Every cohort acceptance has source-backed graduation evidence.
+7. Every contact mailbox is permitted, current-role-backed and traceable.
+8. Source failures and unfinished/terminal gaps reconcile with coverage.
+9. All 49 planned jurisdictions have correct statuses; unknown location is separately named.
+10. Exact partition records, counts, lengths and hashes reconcile with the manifest.
+11. This run consumed no seed workbook: verify source-discovery obligations, not fictional input rows.
+
+Repeat required verification against the restored backup. Equal totals with different ownership or
+units fail. Distinguish execution conformance from real-world coverage: an approved terminal access
+gap may be honest, while an unwired stage, skipped required scenario or failed artifact oracle is an
+engineering blocker. Never remove failed sources from the declared manifest to obtain a seal.
+
+## 7. Ordered stage exits
+
+| Stage | Required exit before dependent expansion |
 |---|---|
-| F01 | Exact public mailbox, role and school/source binding; reject invented address, wrong role, wrong institution and unrelated page address. |
-| F02 | Homonyms remain distinct; accepted links have corroboration and a reversible decision history. |
-| F03 | Cohort evidence is not identity proof; contradictory graduation/grade evidence remains visible. |
-| F04 | Partial acquisition and increased execution budgets resume the same logical work without duplicate effects or false completion. |
-| F05 | Comparable performance conditions and exact PR-winner parity across workbook and machine-readable outputs. |
-| F06 | Current, program/sport/side-specific coaching appointments; missing email never promotes a former or unrelated coach. |
-| F07 | Explicit source/program/season and history obligations, including unavailable and truncated coverage. |
-| F08 | Historical result affiliations preserved through transfers, clubs and unattached participation. |
-| F09 | Genuine rounds, heats and attempts retained; repeated references do not create false result conflicts. |
-| F10 | Durable contact-research attempts distinguish not attempted, empty, failed and completed research. |
-| F11 | Honest national denominators and gaps; no failure-to-absence conversion or empty-state coverage fiction. |
-| F12 | Source-discovered national athlete/result outputs with evidence-linked profiles, participation and auditable accepted decisions. |
-| F13 | Raw, scoped and accepted-cohort counts separated; run scope and acquisition/publication limits disclosed. |
-| F14 | Generation manifests verified and published atomically; no date collision, partial bundle or stale-export overwrite. |
-| F15 | Measured bounded memory/disk/concurrency and useful acquisition throughput; no benchmark-free efficiency claim. |
+| 0 — Run contract | Fresh store/namespace bound; 49-jurisdiction scope, immutable semantics and acceptance fixed |
+| 1 — Source entry | One real public discovery path with explicit bounded obligations/cursors |
+| 2 — Durable evidence | Capture-to-claim provenance and actual apply-once commit/lost-ack recovery |
+| 3 — Decisions | Typed deterministic identity/cohort/mark/contact rules plus evidence-bound dual review |
+| 4 — Vertical proof | One source-to-published-output slice passes exact independent readback and restart |
+| 5 — Breadth | Extend the same implementation across provider families/jurisdictions; record limitations |
+| 6 — Publication | Shared recoverable input generation, bounded derivation and fenced atomic bundle |
+| 7 — National result | All 49 obligations terminal; exact populations/coverage and retained findings reconcile |
+| 8 — Assurance | Required tests/proofs/faults/security/mutation/load/backup restoration have actual evidence |
+| 9 — Release | Validated seal binds tested build, run, artifacts and coverage limits; no unresolved blocker |
 
-## 14. All 17 native fault scenarios
+## 8. F01–F15 acceptance ledger
 
-Required, not executed by this document. Each scenario records the actual injection point, owned
-processes, exact command/exit/status, before/after oracle, recovery result and cleanup. An unreached
-fault, skipped scenario, simulated error substituted for the real fault, or unmeasured invariant is
-not PASS. Preserve genuine terminal gaps; never count them as successful acquisitions.
+These IDs denote corrections, not the separately dated source-audit findings in the evidence ledger.
 
-The complete numbered [native fault catalog](NATIONAL-CENSUS-FAULTS.md) defines all 17 injections,
-their exact recovery obligations and isolation rules. It is part of this plan, not optional work.
+| ID | Required acceptance |
+|---|---|
+| F01 | Exact public mailbox binds to permitted current role; no fabricated address |
+| F02 | Homonyms, transfers and reversible cross-source identities preserve attribution and contradictions |
+| F03 | Cohort evidence cannot establish identity by itself |
+| F04 | Partial/budget-limited work resumes under the same logical identity with apply-once effects |
+| F05 | Exact mark/condition normalization and compatible PR winners agree across every projection |
+| F06 | Contacts distinguish current/former role, TF/XC and side/category; unknown is not both |
+| F07 | Source/program/season obligations and history remain explicit even with no accepted athletes |
+| F08 | Historical performance affiliation survives transfers |
+| F09 | Deduplication retains legitimate rounds, heats, attempts and provenance |
+| F10 | Contact attempt state distinguishes empty, failed/blocked and never attempted |
+| F11 | Denominators include unresolved/unfinished coverage; source failure is not absence |
+| F12 | Fresh source-discovered population reconciles to generated outputs, not seed-workbook accounting |
+| F13 | Raw observations, scope-filtered identities and accepted-cohort counts remain separate |
+| F14 | Same-generation atomic publication fences stale writers and retains prior valid artifacts |
+| F15 | Representative measured resource/throughput gates fail closed; no invented speedup |
 
-## 15. Quality gates and current implementation gaps
+## 9. Named regression canaries
 
-Run the four workspace gates in ARCHITECTURE §11, contract checks, the zero-comment lexical gate,
-dependency/security audits and async review. Exercise CLI/native Restate/export behavior,
-not just unit tests. Keep focused regressions for real consumer-visible failures, adversarial
-identity/contact/result fixtures, proptest and parser fuzzing; use mutation on acceptance rules and
-Loom on the actual shared concurrency kernel rather than a disconnected replica.
-License enforcement is excluded by owner direction; dependency security checks remain required.
+All 24 canaries from the superseded delivery brief remain permanent behavior-test obligations.
+Historical mark-shape cases exercise explicit maintenance readers, not a fresh-run import path.
 
-Geographic contracts are settled: `UsJurisdiction::ALL` models 51 states and D.C. while the census
-scope is `UsJurisdiction::CENSUS_SCOPE`, the 49 jurisdictions of ADR-009 (48 contiguous + D.C.);
-ADR-013's 51-jurisdiction target is withdrawn by owner direction. Fresh nationwide acquisition
-remains unproven.
-Batch-only stages still need integration; capture metadata is not proof of an immutable archive; partial-resume and whole-bundle
-publication require end-to-end evidence. Historical Midwest/49-jurisdiction exports and seals do not
-satisfy this fresh run. These are delivery obligations, not claims fixed by this plan.
+| # | Input/fault | Required outcome |
+|---|---|---|
+| 1 | Old JSON `TimeSeconds: 60` versus versioned centiseconds `60` | Writer version determines units, never integer appearance |
+| 2 | `3-0.75` versus `4-0.00` | Four feet is better |
+| 3 | `5-4.00` versus `5-4.25` | Quarter-inch distinction retained |
+| 4 | `0.5` versus `0.50` inch | Exact equality |
+| 5 | Compatible times differing in the third decimal | Distinction retained until explicit comparison/reporting policy |
+| 6 | Same school/name/class/category, different students | No automatic collapse |
+| 7 | Same student across transfer | Admissible identity, history and result ownership preserved |
+| 8 | Provider IDs `123` in different namespaces | No cross-provider collision |
+| 9 | Add a smaller-sorting cluster candidate | Stable public ID or atomic alias transition |
+| 10 | A–B and B–C proposed, A contradicts C | No unchecked transitive merge |
+| 11 | Swap which subject owns graduation year 2027 | Review evidence identity changes |
+| 12 | Reorder an unordered fact set | Review evidence identity unchanged |
+| 13 | Fjall commit succeeds, acknowledgement lost | One physical application, reusable receipt |
+| 14 | Successful page has zero athletes | Successful-empty receipt, not permanently owed |
+| 15 | Same operation key, changed table/payload | Typed conflict, no silent reuse |
+| 16 | Empty derived-snapshot rebuild | Stale materialized rows removed |
+| 17 | Benchmark parser returns no cases | Performance gate fails |
+| 18 | A baseline benchmark is missing | Performance gate fails |
+| 19 | Kani selects zero harnesses/wrong package | Proof gate fails |
+| 20 | S06 is skipped | Release gate fails |
+| 21 | Unreached jurisdiction has empty applicability | Unresearched, not verified empty |
+| 22 | 4×400 team names athlete without split | Not an individual 400 m PR |
+| 23 | Source text starts `=`, `+`, `-` or `@` | Safe text, not executable spreadsheet content |
+| 24 | Newest output is failed/partial | Never published |
 
-Design reference basis: mandatory `rust-contract` and `scott-ddd-refactor`; Holzmann references
-`references/nasa-jpl-standards.md`, `references/runtime-performance-architecture.md`,
-`references/latency-throughput-playbook.md`, `references/zero-cost-abstractions.md`;
-async-review references `references/structural-correctness.md` and
-`references/cancellation-safety.md`. These are skill references, not verification evidence.
+Retain the discovered repeated-suffix `normalize_name` fixpoint regression as well. No duplicate
+counts-only fixture substitutes for these consumer-visible boundaries.
+
+## 10. Fault, proof and release evidence
+
+[The fault catalog](NATIONAL-CENSUS-FAULTS.md) owns all 17 named native scenarios and their required
+phase-boundary subcases. Use owned isolated native non-Docker infrastructure, actual production
+paths and reached injections. A skipped, unselected, simulated substitute or unmeasured lane is not
+PASS. [TESTING.md](../TESTING.md) owns the 12 mandatory proof kernels, proof verdict taxonomy,
+property/fuzz/mutation/security/async gates and command procedures; [PERFORMANCE.md](../PERFORMANCE.md)
+owns measured benchmark baselines. License enforcement is excluded by owner direction, not advisory,
+security, provenance or cargo-vet checks.
+
+The current blocking themes are end-to-end durable stage integration, evidence/receipt atomicity,
+identity/cohort/contact correctness, exact mark precision and affiliation, complete source obligations,
+recoverable shared export inputs, bounded derivation, full artifact verification and atomic promotion.
+A completed large export is timing/output evidence, not proof of those invariants. Historic seals,
+parser replays and narrower fixture passes do not certify the fresh national run.

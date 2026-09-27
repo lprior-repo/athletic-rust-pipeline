@@ -260,7 +260,7 @@ top of it.
 | **wave 8 verified rebuild (this audit)** | **3,444** | every shipped row re-fetched, role corroborated, 0 unverified |
 | wave 8 gate re-run on the pipeline fetcher (`census-service verify-coaches`) | 6,215 | re-derivation + re-publish: the union merge above, imported the same day |
 
-Known open interaction (unchanged by this gate, tracked in `synthesis/03-adapter-ranking.md` Q6):
+Known open interaction, unchanged by this gate and retained in the [corpus corrections](../../README.md):
 seven of the artifact's source hosts (`api.ihsa.org`, `kshsaa-api.kshsaa.org`, `www.mshsl.org`,
 `ndhsaa.com`, `secure.nsaahome.org`, `myohsaa.org`, `schools.wiaawi.org`) are also covered by live
 pipeline adapters, so those coaches are written into the store twice, from two evidence dates. The

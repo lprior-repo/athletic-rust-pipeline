@@ -1,10 +1,11 @@
 use super::super::SHUTDOWN_TIMEOUT;
 use super::Actor;
 use crate::drain::{count, DrainReport, Outcome};
+use crate::lifecycle::error::BrowserStartupError;
 use tokio::time::Instant;
 
 impl Actor {
-    pub(super) async fn close_browser(&mut self) -> (DrainReport, Option<anyhow::Error>) {
+    pub(super) async fn close_browser(&mut self) -> (DrainReport, Option<BrowserStartupError>) {
         let deadline = match self.clock.now_instant().checked_add(SHUTDOWN_TIMEOUT) {
             Some(deadline) => deadline,
             None => self.clock.now_instant(),
@@ -91,9 +92,11 @@ impl Actor {
         }
     }
 
-    async fn teardown_browser(&mut self) -> Option<anyhow::Error> {
+    async fn teardown_browser(&mut self) -> Option<BrowserStartupError> {
         let Some(browser) = self.browser.take() else {
-            return Some(anyhow::anyhow!("browser already closed"));
+            return Some(BrowserStartupError::ShutdownFailed(
+                "browser already closed".to_string(),
+            ));
         };
         let failure = shutdown_browser_process(self.launched, browser).await;
         match self.handler_join.take() {
@@ -106,19 +109,35 @@ impl Actor {
 async fn shutdown_browser_process(
     launched: bool,
     mut browser: chromiumoxide::Browser,
-) -> Option<anyhow::Error> {
-    let mut failure: Option<anyhow::Error> = None;
+) -> Option<BrowserStartupError> {
+    let mut failure: Option<BrowserStartupError> = None;
     if launched {
         match tokio::time::timeout(SHUTDOWN_TIMEOUT, browser.close()).await {
             Ok(Ok(_)) => {}
-            Ok(Err(_)) => failure = Some(anyhow::anyhow!("browser close failed")),
-            Err(_) => failure = Some(anyhow::anyhow!("browser close timed out")),
+            Ok(Err(_)) => {
+                failure = Some(BrowserStartupError::ShutdownFailed(
+                    "browser close failed".to_string(),
+                ))
+            }
+            Err(_) => {
+                failure = Some(BrowserStartupError::ShutdownFailed(
+                    "browser close timed out".to_string(),
+                ))
+            }
         }
         if failure.is_none() {
             match tokio::time::timeout(SHUTDOWN_TIMEOUT, browser.wait()).await {
                 Ok(Ok(_)) => {}
-                Ok(Err(_)) => failure = Some(anyhow::anyhow!("browser process wait failed")),
-                Err(_) => failure = Some(anyhow::anyhow!("browser process wait timed out")),
+                Ok(Err(_)) => {
+                    failure = Some(BrowserStartupError::ShutdownFailed(
+                        "browser process wait failed".to_string(),
+                    ))
+                }
+                Err(_) => {
+                    failure = Some(BrowserStartupError::ShutdownFailed(
+                        "browser process wait timed out".to_string(),
+                    ))
+                }
             }
         }
     } else {
@@ -129,17 +148,21 @@ async fn shutdown_browser_process(
 
 async fn join_browser_handler(
     mut handle: tokio::task::JoinHandle<()>,
-    failure: Option<anyhow::Error>,
-) -> Option<anyhow::Error> {
+    failure: Option<BrowserStartupError>,
+) -> Option<BrowserStartupError> {
     match tokio::time::timeout(SHUTDOWN_TIMEOUT, &mut handle).await {
         Ok(Ok(())) => failure,
-        Ok(Err(_)) => Some(anyhow::anyhow!("browser handler panicked")),
+        Ok(Err(_)) => Some(BrowserStartupError::ShutdownFailed(
+            "browser handler panicked".to_string(),
+        )),
         Err(_) => {
             handle.abort();
             if handle.await.is_err() {
                 tracing::warn!("browser handler aborted after shutdown timeout");
             }
-            Some(anyhow::anyhow!("browser handler wait timed out"))
+            Some(BrowserStartupError::ShutdownFailed(
+                "browser handler wait timed out".to_string(),
+            ))
         }
     }
 }

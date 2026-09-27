@@ -431,8 +431,9 @@ research estimates — MI's 6 arrive via the `mhsaa` host branch of the coach-CS
 `[18]` `18-indiana-directathletics-milesplit.md` · `[19]` `19-ohio-ohsaa.md` ·
 `[20]` `20-ohio-independent-sources.md` · `[27]` `27-milesplit-super-index.md` ·
 `[28]` `28-directathletics-super-index.md` · `[29]` `29-coach-contact-graph.md` ·
-`[30]` `30-cross-source-pareto.md` · `[32]` `32-milesplit-paywall-boundary.md` ·
+`[30]` retired Pareto synthesis ([retained corrections](../../midwest-source-program/README.md)) · `[32]` `32-milesplit-paywall-boundary.md` ·
 `[35]` `35-wisconsin-gap-followups.md` · `[38]` `38-illinois-gap-followups.md` ·
 `[39]` `39-michigan-gap-followups.md` · `[45]` `45-ohio-gap-followups.md` —
-all under `~/Downloads/midwest-tfxc-source-research/`; CSV citations are paths under
-`~/Downloads/midwest-tfxc-source-research/data/` and `.../reports/`.
+originally under the external Midwest research workspace; retained reports now live under
+[the corpus index](../../midwest-source-program/README.md). CSV citations identify its `data/` and
+`reports/` generations; absent artifacts remain unavailable, not reverified by this document.

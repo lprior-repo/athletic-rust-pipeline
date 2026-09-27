@@ -1,119 +1,113 @@
-# DOMAIN.md — types, identities and evidence rules
+# Domain contracts and current representations
 
-The census answers one question for every athlete: *who is this, what did they run, and how do we
-know?* The types in `crates/census-domain/src/model.rs` (plus `crates/census-domain/src/jurisdiction/` and
-`src/error.rs`) exist to make the wrong answer hard to express. This document is the contract; the
-code is the implementation.
+`census-domain` owns pure meaning; adapters preserve source facts, Rust adjudicates decisions and
+reporting projects them. This document owns semantics, not physical table layout or workflow APIs.
+See [FJALL_SCHEMA.md](FJALL_SCHEMA.md) and [RESTATE_WORKFLOWS.md](RESTATE_WORKFLOWS.md) for those.
+Required behavior below is not a claim that every current public struct enforces it.
 
-## 1. Identity is minted, not borrowed
+## Observation, evidence, candidate, decision
 
-`Id<T>` is a locally minted, deterministic id for a canonical entity: `Id<CanonicalAthlete>`,
-`Id<CanonicalSchool>`, `Id<CanonicalMeet>`, `Id<CanonicalTeam>`, `Id<CanonicalCoach>`. Provider ids
-never become canonical ids. A provider id lives in `SourceIdentity { namespace, id, url }`
-(`id` is the provider's own id, `url` optional) where `SourceNamespace` names the provider
-(`MileSplit`, `Wiaa`, `Mshsl`, `AthleticNet`, …).
+These are distinct stages:
 
-Consequences:
+1. **Raw observation:** what a captured source actually says, including unknown/unparseable fields.
+2. **Validated claim:** interpreted value with its source locator, time and validation outcome.
+3. **Candidate:** a possible identity relationship retrieved for deterministic evaluation.
+4. **Accepted decision:** evidence-backed, policy-bound and reversible Rust adjudication.
 
-- One athlete with four provider profiles is one canonical athlete with four `SourceIdentity` rows.
-- Deleting or re-importing a provider never renumbers canonical entities.
-- Two providers that disagree stay disagreeing and visible; the merge does not average them.
+A URL or model answer is not durable evidence. Material facts must resolve to retained capture bytes,
+parser revision and a precise row/element/page locator. Preserve conflicting and rejected claims;
+absence, failed acquisition, successful-empty acquisition and unfinished work are different states.
 
-A state is not a string either: `UsJurisdiction` (`crates/census-domain/src/jurisdiction/`)
-declares the 50 states plus the District of Columbia. `UsJurisdiction::ALL` is the *modelled*
-universe; `UsJurisdiction::CENSUS_SCOPE` — every one of them except Alaska and Hawaii — is what
-every coverage denominator is decided over, so a jurisdiction in `ALL` but outside the scope is a
-valid value that no run and no published row ever counts. Territories and freely associated states
-are deliberately absent, so `"PR"` *fails to parse* instead of silently widening coverage; every
-source id, journal phase, report row and workflow identity that needs a state formats it as the
-USPS code (`Display` writes the code).
+## Identity and source ownership
 
-## 2. Cohort is a graduation year; grade is time-scoped evidence
+Provider identifiers are namespaced. Identical ID text at two providers does not identify one person;
+syndicated copies do not provide independent corroboration. School/name/class/category is a useful
+candidate bucket, not a unique person key. Distinct same-name students remain distinct; a transfer
+may connect the same student across different school affiliations when corroborated.
 
-```rust
-struct GradYear(i16);          // permanent cohort identity: Class of 2027 == GradYear(2027)
-struct SchoolYear(i16);        // 2025 means the 2025-2026 academic year
-struct Grade(u8);              // 9..=12, validated at construction
-struct ObservedGrade { grade: Grade, school_year: SchoolYear, source: SourceRef }
-```
+Current representations include `CandidateKey` and `CanonicalAthlete`. The latter carries a stable
+ID, canonical/known names, graduation and grade observations, a school, gender/sports, source links,
+evidence and retained conflicts. Its single `school` field is **not** a complete affiliation history.
+Source-owned subject minting adds provider ownership to the candidate bucket; it does not itself
+prove cross-source equivalence or protect against every source's identifier reuse.
 
-`Junior`, `JR`, `11` and `SR`/`12` are *query parameters and label fragments*, not facts. They are
-interpreted with the season they were observed in and recorded as `ObservedGrade`. An athlete
-observed as grade 11 in 2025-2026 and grade 12 in 2026-2027 is the same Class-of-2027 athlete by
-construction, and a source that only ever says "Senior" contributes an observation, never a cohort.
+`CanonicalAthlete.source` and performance `source_athlete` may be absent for retained historical
+shapes under [ADR-014](docs/adr/ADR-014-athlete-owner-identity-optional.md). Do not invent ownership to
+fill that absence. Accepted aliases, candidate statuses and rejected relationships must remain
+separate. Cluster changes must preserve public identity or publish an atomic alias; transitive
+relationships cannot conceal an A–C contradiction merely because A–B and B–C were proposed.
 
-## 3. Evidence, not summary
+[ADR-005](docs/adr/ADR-005-ai-cannot-override-contradictions.md) defines model authority. Acceptance
+requires admissible corroboration; name-only, cohort-only, a score or model agreement is insufficient.
+Bind evidence identity to structured, attributed facts. Reordering a genuinely unordered set may
+leave its identity unchanged; swapping which subject owns a fact must change it.
 
-```rust
-enum EvidenceMethod { … }                 // how the fact was obtained (page, api, pdf, roster …)
-struct Evidence { method: EvidenceMethod, source: SourceRef, … }
-struct SourceRef { namespace: SourceNamespace, url: String, observed_on: … }
-struct Confidence(u8);                    // bounded, explicit, never stringly typed
-```
+## Cohort and time
 
-Everything durable is an observation with a source and a method. Readers merge; writers append. A
-value without an `Evidence`/`SourceRef` is a bug: it cannot be audited later, and the whole product
-promise is auditability.
+[ADR-003](docs/adr/ADR-003-graduation-year-cohort-identity.md) makes graduation year authoritative.
+Current values include `GradYear`, `Grade`, `SchoolYear` and `ObservedGrade`; the observation retains
+its source. `SchoolYear` denotes the academic year's starting year, with the current containing-date
+rule changing at August. For grades 9–12, graduation year is starting year plus `13 - grade`.
 
-## 4. Sport, event and mark
+Thus grade 11 in academic year 2025 and grade 12 in academic year 2026 both support 2027. A free
+“junior” token, query filter, current clock or default school year cannot establish cohort membership.
+Preserve season context and contradicting observations. Distinguish discovered, cohort-unresolved,
+cohort-accepted and cohort-excluded populations; a graduation conflict is not automatically a
+source-person identity conflict.
 
-`Sport` distinguishes cross country from track; `CompetitionLevel` distinguishes high-school,
-post-season and club; `EventKind` canonicalises known event families (sprints, distances, hurdles,
-relays, jumps, throws, pole vault, combined events) while `SourceEventLabel` preserves the provider's
-own literal text, including unusual variants. `Mark` carries the performance value together with its
-comparability inputs (`TimingMethod`, wind, indoor/outdoor, implement and hurdle specification where
-known). `TimingMethod` records whether a mark was FAT, hand-timed, or converted.
+## Meets, events, performances and marks
 
-Never compare incomparable marks, and never flatten a variant into a neighbour to make an event
-column tidy: an indoor 55 m dash is not a 60 m dash, and a wind-aided 10.74 is not a legal 10.74.
+`CanonicalEvent` carries meet, kind, category, division, round, source labels and evidence.
+`CanonicalPerformance` carries athlete, team, event/meet, date, mark, wind, place, heat/round, timing,
+grade observation, source key/owner and provenance. Context is distributed across these records;
+`Mark` alone does not establish comparability.
 
-## 5. PRs
+Current `Mark` variants are time in centiseconds, distance in centimetres, imperial field marks
+with metric representation, points and retained raw text. `TimingMethod` distinguishes FAT, hand
+and unknown. These representations do not by themselves preserve every source's precision.
+Required normalization preserves exact units, raw source precision and rejected/ambiguous values;
+never infer a persisted writer's unit version from plausible magnitude. Explicit historical migration
+belongs to the storage contract, not opportunistic parsing during fresh acquisition.
 
-A PR is computed in Rust from performances that are comparable under §4: an event-specific ordering
-over `Mark`, restricted to provably comparable performances, taking the best. Source-reported PRs
-(from a provider profile page) are stored *alongside* the computed PR, not instead of it, so a
-disagreement is a visible, auditable fact. AI never decides which of two marks is better.
+A legitimate performance identity includes relevant source ownership, event, meet, athlete/team,
+round, heat and attempt. Deduplication unions provenance without merging distinct rounds or attempts.
+A named relay member without an individual split has participation evidence, not an individual PR.
 
-## 6. Transfer and school history
+Best-mark reduction compares only compatible event and conditions: surface/venue context, distance,
+implement/hurdle specification, timing, wind, measurement type and XC course/context where relevant.
+Unknown is not a wildcard. The current `PrKey` includes athlete, event kind, surface, wind class,
+timing, measure and optional context; all consumers must share its validated semantics. For fixed
+compatibility/tie policy, reduction must be deterministic, idempotent, associative and commutative.
+Retain source-declared PRs separately from best observed marks when coverage is incomplete.
 
-A performance carries the school the athlete represented when it was run. When an athlete transfers,
-new observations carry the new school; earlier observations keep the old one. `CanonicalAthlete`
-therefore points at a school history, not a single mutable school field, and "current school" is a
-derived, dated fact rather than an overwritten string.
+## Affiliation and public coaching contacts
 
-## 7. Coaches and contacts
+Affiliation is time-scoped evidence linking a person to a school/program/season. Use the result's team
+and date for historical performance context, not the athlete's present school. Keep unresolved joins
+visible; missing athlete/event/meet rows cannot silently delete evidence or count as athlete absence.
 
-```rust
-struct CanonicalCoach { … }
-enum CoachRole { … }        // head track, head cross country, assistant, athletic director, …
-```
+Public coaching contacts require current role, school/program, sport, side/category and source
+context. Unknown sport/side is not “both”; former staff are not current. Export an email only when
+the permitted source binds that exact mailbox to the eligible role. Never construct addresses from
+patterns or collect athlete personal contact information. Distinguish no attempt, failed/blocked
+attempt, successful-empty result and a resolved contact; retain redirects and evidence provenance.
 
-Only a school/sport role's published address is collected, with its source URL and observed date;
-the address's domain decides whether it lands in the coach's `professional_email` or
-`personal_email`, and only a malformed address is refused. Athlete personal email, personal
-phone, home address and other unrelated personal data are outside the contract: if a directory
-exposes them, they are not ingested.
+## Scope and population accounting
 
-## 8. Failure is a first-class value
+Geographic eligibility is [ADR-009](docs/adr/ADR-009-census-run-scope.md)'s 49-jurisdiction run scope.
+`All`/`Core` evidence scope is a separate dimension: Core excludes Athletic.net and its AthleticLIVE
+derivative to expose independent evidence. It must filter the relevant source/grade/link evidence,
+not merely relabel an all-source row. Neither evidence scope establishes cohort or identity acceptance.
 
-There is no single `OperationTerminal<T>` type in this tree: earlier revisions of this document named
-one, and no such type exists in the code. The vocabulary is per layer, and each layer names its own
-causes:
+Athletes with no performances remain in population accounting. Count unique accepted identities
+separately from observations, proposed candidates and aliases; repeated source records are not more
+athletes. Every obligation has an explicit success, terminal finding or unfinished outcome. Unknown
+locations and unresearched applicability are reported separately from verified empty coverage.
 
-- acquisition pipeline (deleted; see `ARCHITECTURE.md` §1): its per-layer vocabulary —
-  `FailureCode` (`src/runtime/protocol.rs` — historical: root package deleted 2026-09-23), `InvalidInput`, `Transport`, `AccessDenied`,
-  `BrowserChallenge`, `BrowserUnavailable`, `RateLimited`, `HttpFailure`, `PayloadLimit`,
-  `ArtifactFailure`, `MalformedResponse`, `RetryExhausted`, `UncertainEffect` — went with the root
-  package. What survives of it is `BrowserError` (`crates/athleticnet-browser/src/outcome.rs`),
-  including `HumanRequired`, `Unavailable`, `TaskPanicked`, `Shutdown`; and `DomainError`
-  (`crates/census-domain/src/error.rs`) for pure validation.
-- census crate: `FetchError` (`crates/census-crawl/src/net/mod.rs`) for the transport
-  (`Robots`, `Http{status}`, `RateLimited{retry_after_secs}`, `TooLarge`, `Transport`, `Cache`,
-  `Timeout`, …) and `CrawlError` (`crates/census-crawl/src/lib.rs`) for the adapter
-  layer.
+## Remaining representation gaps
 
-Collapsing `RateLimited` or `SourceUnavailable`/`Unavailable` into "not found" is forbidden: it
-silently corrupts coverage reporting, which is the artifact the whole census is judged on. Where an
-outcome must cross an async boundary, keep the cause: `outcome::Outcome<T, E>`
-(`crates/census-service/src/outcome.rs`) separates `Ok`/`Err` from `Cancelled`/`Timeout`/`Panicked`,
-so panic and cancellation stay distinct from domain errors. Retry exhaustion is a Restate policy, not a domain value: invocations park with `on_max_attempts = pause` except `JurisdictionCensus`, which uses `on_max_attempts = kill` so `NationalCensus` folds a `NationalFailure` and continues — see `ARCHITECTURE.md` §5 (§9) and `RESTATE_WORKFLOWS.md` §7.4.
+Public mutable fields, optional owners, scalar school affiliation and fixed-point precision mean the
+current structs are not a proof that all target states are legal. The shared export derivation must
+preserve these distinctions instead of letting each sheet recreate them. Exact row/PR/contact/coverage
+reconciliation is defined in [the delivery plan](docs/NATIONAL-CENSUS-PLAN.md); its named canaries are
+the acceptance oracle. Changes migrate all callers through the existing domain, not mirrored types.

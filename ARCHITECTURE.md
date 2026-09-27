@@ -1,283 +1,257 @@
 # ARCHITECTURE.md
 
-The binding architecture and standards for this repository. §-numbers are stable: other documents and
-commit messages reference them, so edit a section's content without renumbering it.
+Binding product architecture and engineering standards. Numbered sections and the historical
+§ references remain stable. Requirements below are not claims that the implementation passes them.
+The [decision register](docs/adr/README.md) records rationale and supersession;
+[the delivery plan](docs/NATIONAL-CENSUS-PLAN.md) owns unfinished work and acceptance.
 
 ## 1. Mission
 
-Build a fresh, source-discovered recruiting census of U.S. Class-of-2027 high-school Track & Field
-and Cross Country athletes across the 48 contiguous states plus D.C. Discover the population through qualified
-public sources, reconcile identities, collect athletic histories, calculate comparable PRs, retain
-contested events and source profiles, resolve time-scoped school affiliation and public coaching
-contacts, and generate recruiter workbooks with auditable evidence. No workbook supplies the
-population; admissions matching and original-input-row reconciliation are not this product.
+Build a fresh, public-source-discovered Class-of-2027 high-school Track & Field / Cross Country
+recruiting census. Discover athletes, reconcile identities, retain athletic histories and
+source profiles, calculate comparable best marks, resolve time-scoped affiliations and public
+coaching contacts, and publish recruiter workbooks backed by durable evidence.
 
-The run may take many hours or days. It must be durable, resumable, restart-safe, rate-aware,
-bounded, idempotent, observable, decomposable into independent work, ergonomic for coding agents, and
-capable of retaining partial progress indefinitely. A crash, reboot, browser failure, source outage,
-429, model outage, parser defect, or machine restart must not force the census to start over.
+Restate owns durable work. Fjall owns observations and decisions. Deterministic Rust interprets
+and adjudicates evidence. Local models advise only on genuine ambiguity. Excel is a projection,
+not the system of record or an input population.
 
-**The architectural rule.** Restate owns what work must happen. Fjall owns what was observed.
-Deterministic Rust owns what the evidence means. AI may advise only where deterministic evidence is
-genuinely ambiguous. Excel is a projection of that truth, never the truth itself.
+A multi-day run must retain completed work across crashes, reboots, browser/model outages, source
+failures and operator interruption. Partial progress is durable; a failure does not justify
+restarting acquisition or manufacturing a new logical job.
 
-**The identity rule.** No canonical identity decision may destroy source identity or provenance
-required to reverse that decision later.
+[ADR-013](docs/adr/ADR-013-fresh-national-source-census.md) requires a fresh store bound to an unused
+run namespace/revision. Preserve historical stores and artifacts without importing their population,
+receipts or seals. Reuse maintained code, fixtures and qualified entry points; acquire this run's
+source evidence afresh, then reuse its immutable captures and completed effects during recovery.
 
-**The fresh-run rule.** ADR-013 requires a new store and unused durable run namespace/revision.
-Preserve historical stores and artifacts; do not import their observations, identities, receipts,
-coverage or seals into the new census. Reuse maintained code, fixtures and qualified source entry
-points, then acquire fresh evidence. Reuse that run's captures and completed work during recovery.
-
-**The root package is gone.** The acquisition-side root crate, `athletic-rust-pipeline`, was deleted
-on 2026-09-23 once the census crates owned its work: this workspace now holds only the nine members of
-§4 plus the package-less `fixtures/` directory, and no root `src/`, `tests/` or `benches/` exists. The
-root manifest's header records the same fact, and §4's `acq-*` note says what became of that pipeline
-— documents that cite this section for the deletion mean this paragraph.
+The former root acquisition package was removed on 2026-09-23. The virtual workspace below is the
+only product implementation; do not recreate the root pipeline or a parallel acquisition engine.
 
 ## 2. Scope
 
-- **Geography (§2)**: the census scope is the **48 contiguous states plus D.C. — 49 jurisdictions**;
-  Alaska, Hawaii and the territories are outside it, per [ADR-009](docs/adr/README.md). ADR-013's
-  51-jurisdiction target was withdrawn by owner direction on 2026-09-27. `UsJurisdiction::ALL`
-  models all 51 states and `UsJurisdiction::CENSUS_SCOPE` is the 49 the run and every coverage or
-  seal denominator count; a jurisdiction in `ALL` but outside the scope parses and is refused,
-  never silently counted. Adding one requires an explicit domain decision.
-- **Cohort (§3)**: `GraduationYear(2027)` is the durable target, never "junior". Grade is
-  time-scoped evidence (`GradeObservation { grade, academic_year, source }`) — `2025-2026 → Grade 11`
-  and `2026-2027 → Grade 12` both support the same canonical cohort. No source-specific query
-  parameter (`JR`, `11`, `SR`, `12`) becomes a cohort fact without season-aware interpretation.
-- **Population (§4)**: every source-verifiable Class-of-2027 athlete in high-school TF or XC
-  discovered through the qualified source graph — boys and girls, cross country, indoor and outdoor
-  track, all legitimate events including relays where membership is evidenced. The workbook is a
-  projection, not the population contract.
-- **Inputs and outputs**: public source discovery is the population contract. Published result
-  spreadsheets may be captured as evidence, like PDFs; an operator workbook or recruit list may not
-  seed the census. Excel is output only. Subset runs are labeled qualification runs.
+- **Geography (§2):** 48 contiguous states plus D.C., exactly 49 jurisdictions under
+  [ADR-009](docs/adr/ADR-009-census-run-scope.md). `UsJurisdiction::ALL` models 50 states plus D.C.;
+  `UsJurisdiction::CENSUS_SCOPE` defines the run denominator. Alaska and Hawaii parse but are
+  excluded; territories are not modeled. Qualification subsets are not a national delivery.
+- **Cohort (§3):** graduation year 2027, not a timeless “junior” label. Grade and academic year are
+  evidence; [DOMAIN.md](DOMAIN.md) owns their interpretation.
+- **Population (§4):** source-verifiable boys' and girls' high-school XC, indoor and outdoor TF,
+  including legitimate events and evidenced relay membership. Discovery includes programs that
+  have not yet yielded an accepted athlete.
+- **Inputs:** qualified public sources and linked HTML, structured data, PDFs and public result
+  spreadsheets. No admissions workbook, operator recruit list or previous export seeds the census.
+- **Outputs:** accepted identities, cohort and participation evidence, source profiles, verified
+  marks, public coaching contacts, coverage and retained review reasons. Unknown denominators,
+  unfinished discovery and incomplete histories remain visible; source failure is not absence.
 
 ## 3. Pipeline
 
 ```text
-51-jurisdiction run + qualified public source graph
+49-jurisdiction run + qualified public source graph
   -> school/program/season discovery obligations
-  -> origin-admitted durable Restate acquisition
-  -> immutable captures + provider-owned observations in Fjall
-  -> validated claims + candidate identities + contradiction checks
+  -> origin-admitted durable acquisition
+  -> immutable captures + provider-owned observations
+  -> validated claims + identity candidates + contradiction checks
   -> deterministic Rust adjudication
        ambiguous cases -> both local Qwen lanes -> evidence-bound advice -> Rust
   -> reversible identity/cohort/affiliation decisions + retained gaps
-  -> one snapshot-bound projection
+  -> shared snapshot-bound export dataset
   -> independently verified atomic workbook/audit generation
   -> evidence-backed census seal
 ```
 
-Athletic.net is one source. MileSplit is one source. State associations, timing companies, meet
-systems and school directories are sources. The canonical census exists independently of all of them.
+Athletic.net, MileSplit, DirectAthletics, relevant TFRRS, AthleticLIVE, state associations, timing
+providers, organizers and school/team sites are complementary sources, not independent products.
+Relevant discovered links extend the bounded frontier. Shared rosters and meet results are acquired
+once per capture/parse revision and reused across subjects; see [ADR-004](docs/adr/ADR-004-meet-first-ingestion.md).
 
 ## 4. Crate layout (§17)
 
-```text
-crates/
-    census-domain/     pure types and rules; no tokio, fjall, reqwest, chromiumoxide, restate, xlsx, llama
-    census-store/      Fjall keyspaces (entities, journal, meta, receipts), snapshots, migration,
-                       backup/restore
-    census-crawl/      source adapters, fetchers, per-origin admission, browser supervisor
-    census-reconcile/  normalisation, deterministic scoring, conflict detection
-    census-review/     local Qwen identity-review lane
-    census-report/     coverage, bests, PR projection, workbook export
-    athleticnet-browser/ persistent Chromium transport: tab pool, CDP capture, challenge detection, 429 cooldown
-    census-service/    CLI + Restate workflows + bootstrap/supervision
-xtask/                 the agent-facing verbs
-```
+| Crate | Owns | Boundary |
+|---|---|---|
+| `census-domain` | Pure constrained types, cohort/event/comparison rules | No async runtime, database, HTTP, browser, Restate, workbook or model clients |
+| `census-store` | Fjall schema, transactions, receipts, snapshots, migration and backup | No source parsing or HTTP |
+| `census-crawl` | Adapters, discovery, fetchers, admission and browser bridge | Produces observations; does not accept canonical identities |
+| `athleticnet-browser` | Headed profile, CDP capture, tab pool, challenge/429 classification | One attempt; no challenge solving, spoofing, login handling or proxy rotation |
+| `census-reconcile` | Deterministic normalization, identity scoring and contradiction checks | Does not call models |
+| `census-review` | Approved local Qwen advice | Does not establish identity |
+| `census-report` | Coverage, bests, shared export derivation and rendering | Does not mutate evidence |
+| `census-service` | CLI, Restate workflows, composition and supervision | Does not bypass store durability |
+| `xtask` | Developer commands and gate tooling | No census business logic |
 
-Paths in older documents that read `crates/census-service/src/store/`, `.../report/`, `.../net/` or
-`.../workbook/` predate this split: `store/` is `census-store` (`lib.rs`, `keys.rs`, `read/`,
-`write.rs`, `legacy/`, `backup/`), `report/` and `workbook/` are `census-report`, and `net/` is
-`census-crawl`. Symbol names remain the authority; the module paths moved, the schema did not.
-
-### The `acq-*` family
-
-§17 also names `acq-*` crates for the acquisition pipeline. Those crates do not exist: the pipeline's
-root package (`athletic-rust-pipeline`) was deleted once the census crates owned its work, and what
-survived of it is library code rather than a package — `crates/athleticnet-browser` carries the
-persistent Chromium transport, and the census crates carry the rest. The `acq-*` split is therefore
-superseded rather than unstarted.
-
-`census-domain` operates entirely on explicit values. Parse external data once at the boundary:
-external shapes become `Raw*` types, validation produces domain enums (for example
-`RawGraduationValue` → `GraduationEvidence`), and no `String` stands in where the domain knows
-something more precise (`CanonicalAthleteId`, `SourceAthleteId`, `GraduationYear`, `AcademicYear`,
-`RawMark`, `NormalizedMark`, …).
+Parse external representations once into validated domain values. Pure rules receive explicit
+inputs; clocks, network, storage and spawning remain effect boundaries. Existing exceptions are
+implementation work, not permission to create duplicate rules or mirrored public types.
+[ADR-007](docs/adr/ADR-007-crate-boundaries.md) and [ADR-012](docs/adr/ADR-012-single-acquisition-plane.md)
+record the completed crate cut. `fuzz/` is a separate cargo-fuzz workspace; `fixtures/` is shared data.
 
 ## 5. Workflow backbone (§7-§9)
 
-The catalog below describes the current implementation, not completion of ADR-013. The target
-integrates discovery, acquisition, reconciliation, review, gap resolution and export under one
-durable application path. Batch-only stages must join it; do not create a parallel engine.
+The implemented handler/API catalog, logical keys, wire shapes and retry dispositions live only in
+[RESTATE_WORKFLOWS.md](RESTATE_WORKFLOWS.md). Native, non-Docker Restate and its Rust SDK remain the
+orchestrator. There is one application path; CLI and service surfaces must not implement competing
+business workflows. Batch-only reconciliation, review and gap handling must join that path.
 
-```text
-NationalCensus (implemented workflow: fans out JurisdictionCensus, folds NationalFailure rows, merges once via Consolidate)
-  +-- JurisdictionCensus(<each run jurisdiction>)   (currently 49; ADR-013 migration pending; teams / rosters / meets / results)
-  |     +-- meets stage routes via Ingest (<slug>_<state>, ISO-week window); teams / rosters / results write the store directly inside ctx.run
-  |     +-- SourceDiscovery / SchoolDiscovery / MeetDiscovery / AthleteDiscovery,
-  |         ResultAcquisition / CoachDiscovery / Reconciliation / GapAnalysis — NOT Restate workflows;
-  |         offline batch (collect, provider, index, review, import-coaches)
-  +-- MeetWorkflow / AthleteWorkflow / SchoolWorkflow / CoachWorkflow / IdentityReviewWorkflow — NOT Restate workflows; offline batch
-  +-- Consolidate / Report / Bests / Workbook (implemented workflows: journaled blocking jobs) replace
-      NationalReconciliation / NationalCoverageAudit / WorkbookExport / ArtifactVerification as named workflows
-  +-- Census (implemented service: status, open_work, seal) + Sweep / Ingest (implemented) + BrowserSession (implemented object, bound only when --browser-profile serves a lane)
-```
+**Logical identity (§8):** distinguish run, source unit, physical attempt, capture, ingest effect,
+review case and export generation. A retry keeps its logical identity. Reusing an effect ID with
+different content is a typed mismatch. Increased execution budgets resume unfinished work; they do
+not change the immutable meaning of an already completed workflow.
 
-Implemented means bound in `restate_services::build_endpoint` under the struct name as the wire
-name: `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`,
-`JurisdictionCensus`, `NationalCensus`, `BrowserSession` (`restate_services/mod.rs`). Anything not
-in that list — Discovery, ResultAcquisition, CoachDiscovery, Reconciliation, GapAnalysis as
-workflows; Meet/Athlete/School/Coach/IdentityReview workflows; NationalReconciliation,
-NationalCoverageAudit, WorkbookExport, ArtifactVerification as named workflows — does not exist as
-a Restate workflow. Index, review cases, §47 gaps and coach imports are offline batch over the
-store the service holds; they are durable work, not durable invocations. See
-`RESTATE_WORKFLOWS.md` §2.2 for the service table and `docs/OPERATIONS.md` for the batch chain,
-which does not route yet.
+**Retry ownership (§9):** Restate alone owns at most three total automatic attempts per failed
+external operation. HTTP, browser, adapter and model transports perform one attempt. No nested retry
+loop or new workflow key resets the ceiling. Persist exhaustion and continue independent sources.
+[ADR-002](docs/adr/ADR-002-restate-owns-retries.md) owns this decision.
 
-Live `teams`, `meets` and `collect` with an ingress origin drive the full
-`JurisdictionCensus/run` for each named state — every stage the object still owes — not one stage
-in isolation (`cli/gather.rs` via `cli/live.rs::drive_states` and `jurisdiction_request`). The
-workflow fetcher carries `authorized_hosts` (wire default empty); the plan still refuses
-browser-transport sources by name when no lane is configured (`plan::BrowserLaneState::of`).
-
-Identities (§8) are deterministic and stable across retries:
-
-```text
-jurisdiction:{state}:{season}:{revision}      source-sweep:{source}:{state}:{season}:{revision}
-meet:{source}:{source_meet_id}:{revision}     athlete:{source}:{source_athlete_id}:{revision}
-school:{source}:{source_school_id}:{revision} review:{evidence_digest}:{policy_revision}
-```
-
-**§9 retry model**: One retry owner (Restate), max three attempts per failed external operation; transport performs one. Never stack retries across layers. Heavy jobs (`Consolidate`, `Report`, `Bests`, `Workbook`, `Sweep` prune/report, `Census` seal) run as journaled blocking jobs inside `ctx.run` with `max_attempts(1)`; the invocation-level `max_attempts = 3` is the only retry budget. Exhaustion parks the invocation with `on_max_attempts = pause`, except `JurisdictionCensus` which uses `on_max_attempts = kill` so `NationalCensus` folds the failure as a `NationalFailure` row and continues. Store-backed services declare 1h inactivity + 1h abort via `limits::census_service()`; `BrowserSession` keeps the SDK defaults. See `docs/adr/ADR-002-restate-owns-retries.md` for the full retry policy contract, exhaustion semantics, and `FailureCode`/`AccessBlockKind`/`FetchError` error taxonomy.
+A completed journaled step can replay its result. Wrapping a large blocking function in `ctx.run`
+does not checkpoint its internal progress; resumable stages need explicit durable input and
+completion boundaries. A queue is a bounded accelerator, never the authority for unfinished work.
 
 ## 6. Admission and browser state (§10, §26-§28)
 
-`SourceAdmissionPolicy` is per origin: `maximum_in_flight`, `target_rate`, `burst`, `retry_policy`.
-Athletic.net shares one parent budget across rankings, profiles, Bio/history, meets, results and
-browser tabs; launching more workflows must not multiply traffic. Physical requests visible to the
-origin are the measurement. Tabs are execution lanes, not rate-limit budgets.
+Admission is per remote origin and counts physical requests. Share budgets across endpoints,
+workflows and tabs, including related Athletic.net surfaces. Concurrency does not multiply a source
+budget. Bound payloads, redirects, pages, tasks and queued work; revalidate redirect destinations
+and protect local/private network boundaries.
+
+Honor robots and source-access policy. No CAPTCHA, authentication or paywall circumvention,
+browser-identity spoofing, proxy evasion, cookie extraction/replay, or direct-HTTP fallback intended
+to bypass a challenge. Athletic.net uses the headed persistent-profile lane; the operator resolves
+challenges in that profile. [CHROMIUM_DESIGN.md](CHROMIUM_DESIGN.md) owns the browser implementation contract.
 
 ```text
-Ready --429--> Cooldown --successful evidence--> Ready
-Ready --challenge--> HumanRequired --manual resolution--> Ready
+Ready --429--> Cooldown --admitted retry--> Ready
+Ready --challenge--> HumanRequired --operator resolution--> Ready
 ```
 
-A challenge closes new admission; issued requests drain. No CAPTCHA automation, no browser-identity
-evasion, no direct-HTTP fallback intended to circumvent Cloudflare.
+A challenge closes new admission and issued requests drain. A source stop (§69) is persisted while
+other sources continue. Athlete personal contact data and inferred GPA are outside the product (§36).
 
 ## 7. Store (§29-§31)
 
-Fjall is the system of record; PostgreSQL is not part of this census. Target logical collections
-(not one physical keyspace per collection; implemented storage is cataloged in `census-store`):
+Fjall is the sole evidence store under [ADR-001](docs/adr/ADR-001-fjall-primary-store.md).
+[FJALL_SCHEMA.md](FJALL_SCHEMA.md) owns physical keyspaces, logical tables, keys, read/write APIs,
+durability and migration. [Backup procedures](docs/FJALL_BACKUP.md) own safe copying and recovery.
+Do not infer a physical keyspace from a domain collection or an Excel column.
 
-```text
-canonical:      athletes schools coaches meets performances
-source:         source_athletes source_schools source_meets source_results
-relationships:  athlete_performances athlete_schools school_athletes school_coaches meet_performances
-evidence:       source_observations graduation_evidence document_receipts raw_documents
-reconciliation: identity_candidates review_cases canonical_links conflicts
-coverage:       source_coverage jurisdiction_coverage collection_snapshots
-```
+Preserve immutable observations and provenance needed to reverse any identity decision. Commit
+observations, progress and effect receipts together; acknowledge only after durability. Persisted
+schema changes require explicit versioned migration for affected stores, not silent reinterpretation.
+A fresh run does not authorize deletion of historical evidence.
 
-Composite keys are deterministic and sortable (`SourceSystem | SourceAthleteId`,
-`AthleteId | Date | PerformanceId`, `MeetId | PerformanceId`, `SchoolId | Sport | Season | CoachId`,
-`Jurisdiction | SourceSystem | SourceObjectId`). No index is created merely because Excel might
-filter on a field.
+A live MVCC snapshot pins one read view, not a durable checkpoint that can be reopened from a bare
+sequence number. Multi-table operations must use one captured view. Input-generation identity must
+include store/run lineage and all semantically relevant revisions; writing derived output must not
+invalidate its own input identity. Keep retention and garbage collection safe for active readers.
 
 ## 8. Identity review (§32-§34)
 
-Candidate discovery is not acceptance. Deterministic normalization and hard-contradiction checks
-precede adjudication; only genuinely ambiguous cases receive advice from both approved local Qwen
-servers. Models return `SamePerson | DifferentPerson | InsufficientEvidence`, bound to retained
-evidence and policy/model revisions. Rust alone accepts a link. Agreement or a score cannot replace
-corroboration or override a hard contradiction; unresolved uncertainty remains `REVIEW`.
-See `docs/adr/ADR-005-ai-cannot-override-contradictions.md`.
+[DOMAIN.md](DOMAIN.md) owns identity, cohort, affiliation, source independence and comparison
+contracts; [ADR-005](docs/adr/ADR-005-ai-cannot-override-contradictions.md) owns model authority.
+Candidate retrieval is not acceptance. Name, school text, cohort, a score or model agreement alone
+cannot establish identity. Provider ownership and hard contradictions survive every projection.
+
+Resolve deterministic cases without AI. Only ambiguous cases receive independent advice from both
+approved local Qwen servers (RTX 5090 and RTX 3090). Bind bounded structured packets and responses
+to retained evidence, policy and model revisions. Preserve contradictory evidence; do not silently
+truncate decisive facts. No cloud fallback or private admissions data.
+
+Rust requires admissible corroboration and reviewer agreement for model-assisted acceptance. Failed
+calls, malformed replies, disagreement or insufficient evidence remain `REVIEW`; agreement cannot
+override a hard contradiction. Models do not invent marks, cohort evidence, affiliations or contacts.
 
 ## 9. Target data and publication contracts
 
-Raw observations, validated claims, candidates and accepted links are separate constrained types.
-Cohort membership is not person identity. Provider IDs retain their true ownership scope; missing
-IDs cannot become name-derived canonical people. Grade, affiliation, participation and coaching
-appointment are time-scoped facts. Syndicated sources are not independent corroboration.
+[DOMAIN.md](DOMAIN.md) defines the data semantics; [SOURCE_ADAPTER_GUIDE.md](SOURCE_ADAPTER_GUIDE.md)
+defines acquisition/parser obligations. Every material claim must resolve to durable captured bytes
+and a source locator. A URL, digest or parse count alone is not an archive. Partial parses retain
+valid rows, rejected locators and the unfinished obligation.
 
-Archive captured bytes durably before publishing references. A URL, body hash or parse count alone
-is not an archive. Commit observations, source progress and effect receipts atomically; acknowledge
-only after durability. Partial parses retain valid rows and rejected locators without closing the
-unfinished obligation. Retry replay and a legitimate new capture have different effect semantics.
+All reports, workbook sheets and audit outputs use one immutable export dataset derived from one
+input generation. Do not rebuild identity, cohort, contact, coverage or PR rules in writers. Keep
+candidate statuses and accepted aliases distinct; athletes without performances remain in the
+population, and unresolved joins remain explicit coverage outcomes. Core evidence scope is not
+interchangeable with geographic scope or cohort eligibility.
 
-Use one snapshot and one projection for workbook and audit outputs. Preserve historical result
-affiliation, real rounds/heats and comparable PR conditions. Bind public coach mailboxes to exact
-institution/role evidence. Verify exact record IDs, PR winners and coverage, then atomically publish
-the whole generation; a failed or stale exporter cannot replace a valid bundle.
+Preserve historical result affiliation, rounds/heats/attempts, compatible comparison conditions,
+source-declared PRs versus observed bests, and exact source references. Bound derivation, sorting,
+rendering and staging by bytes/work, not only row counts. Persistent indexes require measured query
+need; an athlete-keyed index does not inherently provide workbook display order.
 
-Detailed contracts, dependency order, F01–F15 and all 17 native fault scenarios live in
-[`docs/NATIONAL-CENSUS-PLAN.md`](docs/NATIONAL-CENSUS-PLAN.md). They remain required until exercised.
+Stage workbook, sidecars, audit and manifest as one generation. Bind lineage, input/policy/schema
+revisions, scope, cohort, as-of time, record IDs, counts, hashes and lengths. Independently reconcile
+against the frozen evidence, durably finalize the bundle, then atomically switch its publication
+reference. Fence stale exporters; keep the previous valid bundle on failure. A file rename alone
+is not multi-artifact atomic publication. XLSX byte equality alone is not semantic correctness.
 
 ## 10. Engineering standards (§37-§43)
 
-```text
-no unsafe; no production recursion; no careless unwrap/expect; no panic from input
-no ignored Result; no silent fallback; no unchecked boundary conversion
-no unchecked arithmetic where correctness matters
-no unbounded loop; no unbounded queue; no unbounded spawn
-```
-
-Every loop over external data has a bound or a demonstrably finite iterator. Production functions
-stay within 60 logical lines (hot paths 25); long orchestrations decompose into named stages. Error
-types are `thiserror` enums inside production crates; `anyhow` lives only at CLI/composition edges.
-Async outcomes are not flattened (§43) and a panic never becomes a generic source error. Every
-spawned task belongs to a supervisor whose shutdown accounts for accepted, completed, cancelled,
-timed-out, aborted, panicked and remaining work — success requires `remaining = 0` or a persisted
-unfinished Restate workflow (§42). Observability is structured `tracing` with the standard field set
-(§44). Per-source metrics (§45) are recorded and the efficiency metric is
-**verified useful records per physical request**.
+- **Zero code comments:** no line/block/doc comments or prose documentation attributes in
+  project-owned source, tests, examples, benchmarks or generated project-code templates. Intent
+  belongs in names, types, errors and tests; rationale belongs in docs. A lexical gate must
+  distinguish comments from captured evidence or string literals.
+- **Type discipline:** validated newtypes, private fields, checked constructors/deserialization,
+  exhaustive enums and explicit state transitions. Separate raw observations, validated evidence,
+  candidates and accepted decisions; make illegal states unrepresentable where practical.
+- **Safety (§37, §56):** workspace-wide `forbid(unsafe_code)` and `deny(unused_must_use)`; no
+  input-triggered panic, careless `unwrap`/`expect`, unchecked arithmetic, ignored outcome,
+  production recursion or silent fallback. Handle resource and counter exhaustion explicitly.
+- **Size (§38):** files within 300 lines; production functions within 60 logical lines and hot
+  paths within 25. Decompose named stages rather than suppressing checks. Dated evidence ledgers
+  may retain longer command records; they are not production source.
+- **Errors (§39):** `thiserror` in production crates; `anyhow` only at CLI/composition boundaries.
+- **Async (§42-§43):** supervise every task, bound admission before spawning, avoid locks across
+  awaits, and offload bounded blocking work. Cancellation is stop-intake, drain, finalize/persist,
+  then report; distinguish domain error, cancellation, timeout, abort and panic.
+- **Drain accounting:** accepted work reconciles with mutually exclusive terminal/still-running
+  outcomes. Successful shutdown leaves no unowned task; unfinished business remains durable.
+- **Observability (§44-§45):** structured `tracing` and exact resource/outcome accounting. The
+  acquisition efficiency metric is useful verified records per physical request.
+- **Caching (§61-§62):** reuse immutable successes; quarantine corruption and retain failures.
+  Cache reads do not pretend source freshness advanced.
+- **Efficiency:** measure the bottleneck on the 16-core/32-thread, 128-GB workstation. Use streaming,
+  bounded parallelism, buffer reuse and minimal copying/contention/repeated I/O. Expose defects,
+  constrain work in progress and apply backpressure. No performance claim without measurements.
+- **Language:** Rust-only pipeline and tooling logic under [ADR-008](docs/adr/ADR-008-rust-only-tooling.md);
+  operational/gate shell wrappers are not a second pipeline implementation.
 
 ## 11. Quality gates (§55-§58)
 
-```bash
-cargo fmt --all -- --check
-cargo check --workspace --all-targets
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace --all-targets
-```
+[TESTING.md](TESTING.md) owns commands, gate semantics, fixture rules and coverage limits.
+[PERFORMANCE.md](PERFORMANCE.md) owns benchmark procedures and measured baselines.
+[VERIFICATION-EVIDENCE.md](docs/VERIFICATION-EVIDENCE.md) owns dated command results; a document,
+passing build, skipped lane or old run is not acceptance evidence for a new delivery.
 
-Fuzz-feature build failures are fixed or assigned an explicit fuzzing lane; they never disappear
-silently from CI. `#![forbid(unsafe_code)]` and `#![deny(unused_must_use)]` are workspace policy, and
-the quality ratchet records remaining historical debt without permitting increases. Benchmarks (§57)
-cover parsing, ingestion, merge, scoring, PR calculation, Fjall batch writes and prefix scans, report
-and XLSX generation, and AI case preparation — no optimisation without benchmark evidence. The
-verification program (§58) requires unit, property, fuzzing, failure-injection, replay, concurrency,
-Restate recovery, browser record/replay, Fjall backup/restore, golden-corpus, workbook-verification,
-dependency/license audit, async review, security review and adversarial identity review; architecture
-documents are not test evidence.
+The release contract requires strict format/check/Clippy/tests, architectural and comment gates,
+dependency advisories/provenance/cargo-vet, security and async review, adversarial identity/contact/
+result fixtures, property tests, parser fuzzing, mutation of critical logic, concurrency/cancellation,
+duplicate delivery, fault injection, crash recovery, retry exhaustion, malformed model replies,
+representative load/resource measurements, and actual CLI/Restate/export execution. License
+**enforcement is excluded by owner direction**; security checks are not waived.
+
+The delivery plan retains every F01–F15 correction, named regression and all 17 native fault
+scenarios. Unresolved accuracy, data-loss or recovery failures block release. Report exact commands,
+exit/status, tested scope and remaining limits; never weaken a gate to manufacture a passing claim.
 
 ## 12. Acceptance (§70)
 
-The national census may be sealed only when all 51 required jurisdictions have terminal declared
-discovery/acquisition obligations; every potential Class-of-2027 athlete has a terminal cohort
-decision; every identity candidate has a terminal adjudication; and every conflict, gap and
-retry-exhausted operation is retained. Unresolved work and unverified publication block sealing;
-terminal findings may remain under ADR-011. All successful evidence must be durable, performance
-and PR calculations reproducible, and workbook records, coverage and metrics reconciled against
-the same Fjall snapshot. A seal certifies the declared run, not exhaustive knowledge of the Internet.
+[ADR-011](docs/adr/ADR-011-census-seal.md) defines evidence-backed completion. Every required
+jurisdiction/source obligation, cohort decision and identity candidate must have a terminal declared
+outcome. Retain conflicts, terminal gaps and exhausted failures; open work, unsupported claims and
+unverified publication block sealing. Unknown counts cannot become zero by default.
+
+Accepted facts must be durable, marks reproducible and exact workbook records/PR winners/coverage
+reconciled against the same frozen evidence. A seal certifies the declared run and its disclosed
+limits, not exhaustive knowledge of the Internet. Historical exports and seals do not certify the
+fresh run.
 
 ## 13. Current state and delivery order
 
-The nine-crate split exists; `docs/migration/module-map.md` records its historical cut. Do not
-restart it or resurrect the deleted root pipeline. `docs/architecture.md` records implementation
-details; §5 names the current durable handlers and batch-only gaps.
+The nine-crate split exists. [RESTATE_WORKFLOWS.md](RESTATE_WORKFLOWS.md) inventories bound handlers;
+[FJALL_SCHEMA.md](FJALL_SCHEMA.md) inventories storage; [DOMAIN.md](DOMAIN.md) separates implemented
+representations from required semantics. These references must not label targets implemented.
 
-ADR-013 changes the mission, not the code by declaration. First migrate the 49-jurisdiction scope
-and bind a fresh store/run; establish source/program obligations; prove one real discovery-to-capture-
-to-census-to-output path; then expand sources, history and contacts across all 51. Integrate the
-same durable application, shared projection and atomic publication before the national acceptance
-run. Execute all F01–F15 and 17 fault obligations, reconcile the final generation and seal, then
-Main commits verified delivery. Exact stage exits are in `docs/NATIONAL-CENSUS-PLAN.md`.
-
-Historical `var/midwest-census` data, old exports and prior seals are preserved, not imported or
-counted as completed work for the fresh national run. Documentation is not runtime evidence.
+[The national delivery plan](docs/NATIONAL-CENSUS-PLAN.md) is the only active repair/order/acceptance
+list. Prove one working source-discovery-to-evidence-to-output path before scaling breadth; then
+satisfy all 49 jurisdictions and all release obligations through the same implementation.
+[OPERATIONS.md](docs/OPERATIONS.md) is the runbook, not a competing project plan.

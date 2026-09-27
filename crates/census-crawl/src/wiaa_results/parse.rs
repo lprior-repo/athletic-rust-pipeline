@@ -64,15 +64,18 @@ pub(super) fn pdftotext(body: &[u8]) -> CrawlResult<String> {
         });
     };
     let payload = body.to_vec();
-    let writer = std::thread::spawn(move || drop(stdin.write_all(&payload)));
+    let writer = std::thread::spawn(move || stdin.write_all(&payload));
     let output = child.wait_with_output().map_err(pdftotext_failed)?;
-    writer.join().ok();
+    let written = writer.join().map_err(|_| CrawlError::Invariant {
+        detail: "the pdftotext writer thread panicked".to_string(),
+    })?;
     if !output.status.success() {
         return Err(pdftotext_failed(std::io::Error::other(format!(
             "pdftotext exited with {}",
             output.status
         ))));
     }
+    written.map_err(pdftotext_failed)?;
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 

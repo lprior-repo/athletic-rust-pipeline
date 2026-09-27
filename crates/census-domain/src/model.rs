@@ -50,7 +50,7 @@ pub use event_ontology::{EventKind, SourceEventLabel};
 pub use event_performance::{CanonicalEvent, CanonicalPerformance, Mark, TimingMethod};
 pub use fixed_mark::{CentiMetres, CentiPoints, CentiSeconds};
 pub use identifiers::{
-    tag, AthleteCandidateId, AthleteId, AthleteIndexId, CoachId, EventId, Id, MeetId,
+    tag, AthleteCandidateId, AthleteId, AthleteIndexId, CoachId, EventId, Id, IdTag, MeetId,
     PerformanceId, SchoolId, TeamId,
 };
 pub use identity_application::{AcceptedAthleteIdentity, IdentityApplication};
@@ -60,7 +60,7 @@ pub use identity_decision::{
 };
 pub use identity_index::{AthleteIdentityIndex, IdentityError};
 pub use identity_projection::{AthleteIdentityProjection, IdentityProjectionBuilder};
-pub use identity_validation::IdentityDecisionIssue;
+pub use identity_validation::{IdentityDecisionIssue, VerdictKind};
 pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
 pub use natural_key::NaturalKey;
 pub use normalization::{flip_last_first, normalize_name};

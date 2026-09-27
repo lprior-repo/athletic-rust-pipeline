@@ -21,6 +21,46 @@ pub mod tag {
     pub struct Performance;
 }
 
+pub trait IdTag {
+    const PREFIX: &'static str;
+}
+
+impl IdTag for tag::School {
+    const PREFIX: &'static str = "sch";
+}
+
+impl IdTag for tag::Team {
+    const PREFIX: &'static str = "team";
+}
+
+impl IdTag for tag::Coach {
+    const PREFIX: &'static str = "coach";
+}
+
+impl IdTag for tag::Athlete {
+    const PREFIX: &'static str = "ath_subject";
+}
+
+impl IdTag for tag::AthleteCandidate {
+    const PREFIX: &'static str = "ath";
+}
+
+impl IdTag for tag::AthleteIndex {
+    const PREFIX: &'static str = "ath";
+}
+
+impl IdTag for tag::Meet {
+    const PREFIX: &'static str = "meet";
+}
+
+impl IdTag for tag::Event {
+    const PREFIX: &'static str = "evt";
+}
+
+impl IdTag for tag::Performance {
+    const PREFIX: &'static str = "perf";
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Id<T> {
@@ -49,15 +89,29 @@ impl<T> Id<T> {
             _tag: PhantomData,
         }
     }
-    pub fn cast<U>(&self) -> Id<U> {
-        Id {
-            value: self.value.clone(),
-            _tag: PhantomData,
-        }
+
+    pub fn validate(&self, expected_prefix: &str) -> bool {
+        self.value.starts_with(&format!("{expected_prefix}_"))
     }
 
     pub fn as_str(&self) -> &str {
         &self.value
+    }
+}
+
+impl<T: IdTag> Id<T> {
+    pub fn cast<U: IdTag>(&self) -> Id<U> {
+        let prefix = T::PREFIX;
+        if !self.validate(prefix) {
+            debug_assert!(
+                false,
+                "Id value {self} does not match expected prefix {prefix}"
+            );
+        }
+        Id {
+            value: self.value.clone(),
+            _tag: PhantomData,
+        }
     }
 }
 

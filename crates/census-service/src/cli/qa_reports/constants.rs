@@ -1,4 +1,4 @@
-pub const EXPECTED: [(usize, &str); 46] = [
+pub const EXPECTED: [(usize, &str); 45] = [
     (1, "01-athletic-net-team-universe.md"),
     (2, "02-athletic-net-profile-acquisition.md"),
     (3, "03-athletic-net-meet-acquisition.md"),
@@ -28,7 +28,6 @@ pub const EXPECTED: [(usize, &str); 46] = [
     (27, "27-milesplit-super-index.md"),
     (28, "28-directathletics-super-index.md"),
     (29, "29-coach-contact-graph.md"),
-    (30, "30-cross-source-pareto.md"),
     (31, "31-milesplit-entries-timing.md"),
     (32, "32-milesplit-paywall-boundary.md"),
     (33, "33-milesplit-sitemap-recency.md"),

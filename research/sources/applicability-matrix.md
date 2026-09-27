@@ -1,9 +1,13 @@
 # Source Applicability Matrix — 49 Continental Jurisdictions + DC
 
 **Date:** 2026-09-22
-**Purpose:** One row per jurisdiction (48 states + DC) with per-source capability verdicts, deciding the smallest source set that covers the most states for a Class-of-2027 census.
+**Purpose:** One row per jurisdiction (48 states + DC) with per-source capability verdicts, deciding the smallest source set that covers the most states for a Class-of-2027 census. Appendices A and B carry the dated host-level and timing-provider survey records behind these verdicts.
 
 **Grade/class-year is the deciding column:** an athlete can only be a Co2027 candidate if some source states grade or graduating class. States marked N on grade/class have no Co2027 enumerability.
+
+Class of 2027 = grade 11 in the 2025–26 school year (the `grades: [11]` / Co2027 convention used across these lanes).
+
+**Consolidated 2026-09-27.** Appendix A preserves the unique dated observations of the deleted `SOURCES_SURVEY.md` (2026-09-20 source survey), Appendix B those of the deleted `timing-provider-inventory.md` (2026-09-22). The other two deleted root documents carried no per-jurisdiction verdicts: `PROFILE_REPLICATION.md` (2026-09-20 profile-replication plan) and `COLLECTOR_PATTERNS.md` (2026-09-20 transport-gap inventory) were already marked superseded, and the Class-of-2027 definition they shared is the one stated above. `tools/athletic-net-pr-population/README.md`'s endpoint findings moved to `athleticnet/CORPUS_BUILD_2026-09-20.md`; the dataset probes to `national-aggregators/OPEN_DATASETS_2026-09-20.md`.
 
 ## Matrix
 
@@ -60,9 +64,10 @@
 | WY | Negative (no AN link) | MileSplit WY + `milesplit.live` | Y — AthleticLIVE index (13 meets with `ani`) | Y — MileSplit roster `column-grad-year` | N | Y — MileSplit WY | RESULT-SOURCE | verified-this-run |
 
 **Notes on the table:**
-- `DC` appears twice because the association verdict splits: DC's association (DCSAA) is negative for AN linkage but the platform (M&D Timing) is positive — hence ATHLETIC.NET-SEED.
+- `DC`'s verdict splits: the DCSAA association is negative for AN linkage while the M&D Timing platform is positive — hence ATHLETIC.NET-SEED.
 - States marked `pending` have unlanded group reports (NY, NJ, PA, CT, RI, GA, FL, SC, NC, CA, OR, WA) but the AthleticLIVE index covers all 49, so the `ani` column is complete.
 - Evidence status `verified-this-run` means the claim was observed in the wave F sessions (mid-atlantic, mountain-north, mountain-south, northeast-2, south-central, southeast-west, national-aggregators). `inherited` means the claim was carried from a prior wave or from the Midwest corpus and was not independently verified in this session.
+- **After this matrix was written:** the states whose group reports were `pending` have since landed as lane reports (`state-assoc-westcoast/`, `state-assoc-midatlantic/`, `state-assoc-southeast/`); the `inherited` rows above were not re-derived for this consolidation, so consult the lane report before treating those verdicts as current evidence.
 
 ---
 
@@ -94,18 +99,6 @@ The following families form the Pareto-optimal set. Together they cover all 49 j
 
 (Count: 6 + 11 + 12 + 1 + 14 + 0 = 44. The remaining 5 jurisdictions have `pending` group reports but all carry evidence from the AthleticLIVE index and MileSplit rosters, already classified above.)
 
-### States by recommendation class
-
-| Class | Count | States |
-|-------|------:|--------|
-| PRIMARY | 6 | AL, IA, IL, MN, TX, WI |
-| ATHLETIC.NET-SEED | 11 | AZ, DC, ID, MI, MO, MT, ND, NE, OH, OR, SD |
-| RESULT-SOURCE | 12 | AR, CO, DE, IN, KY, LA, MS, NM, TN, VA, WV, WY |
-| COACH-DIRECTORY | 1 | KS |
-| DISCOVERY-ONLY | 14 | CA, CT, FL, GA, NC, NJ, NV, NY, PA, RI, SC, UT, VT, WA |
-
-**Total:** 49 jurisdictions (48 states + DC). All have at least one data plane.
-
 ---
 
 ## Gap List — States Whose Co2027 Enumerability Is Unknown
@@ -132,24 +125,186 @@ The following states have **no verified grade/class-year source** at the athlete
 
 ## Sources Consulted
 
+Rows 1–8 are wave reports from a prior research pass; they live **outside this repository** (`~/Downloads/census-source-research/`, a non-repo artifact) and cannot be resolved as links from here. Rows 9–19 are repo lane reports.
+
 | # | Source | Type | Jurisdictions Covered |
 |---|--------|------|----------------------|
-| 1 | `/home/lewis/Downloads/census-source-research/README.md` | Consolidated README | All 49 |
-| 2 | `/home/lewis/Downloads/census-source-research/mid-atlantic.md` | Wave F3 Mid-Atlantic | MD, DE, VA, WV, DC |
-| 3 | `/home/lewis/Downloads/census-source-research/mountain-north.md` | Wave F8 Mountain North | MT, WY, ID |
-| 4 | `/home/lewis/Downloads/census-source-research/mountain-south.md` | Wave F7 Mountain South | CO, UT, NV, AZ, NM |
-| 5 | `/home/lewis/Downloads/census-source-research/northeast-2.md` | Wave F2 Northeast | MA, VT, NH, ME |
-| 6 | `/home/lewis/Downloads/census-source-research/south-central.md` | Wave F6 South Central | TX, OK, AR, LA |
-| 7 | `/home/lewis/Downloads/census-source-research/southeast-west.md` | Wave F5 Southeast-West | AL, MS, TN, KY |
-| 8 | `/home/lewis/Downloads/census-source-research/national-aggregators.md` | Wave F10 National | All 49 |
-| 9 | `research/sources/state-assoc-midatlantic/SOURCE_REPORT.md` | Repo mid-Atlantic | DC, DE, MD, NJ, NY, PA, CT, MA, RI, NH, VT, ME |
-| 10 | `research/sources/state-assoc-greatlakes/SOURCE_REPORT.md` | Repo Great Lakes | IL, IN, MI, OH, WI |
-| 11 | `research/sources/state-assoc-plains/SOURCE_REPORT.md` | Repo Plains | IA, KS, MN, MO, ND, NE, SD |
-| 12 | `research/sources/state-assoc-southeast/SOURCE_REPORT.md` | Repo Southeast | (used as Midwest reuse context) |
-| 13 | `research/sources/state-assoc-southcentral/SOURCE_REPORT.md` | Repo South-Central | (used as Midwest reuse context) |
-| 14 | `research/sources/state-assoc-mountain/SOURCE_REPORT.md` | Repo Mountain | (used as prior-wave context) |
-| 15 | `research/sources/athleticnet/SOURCE_REPORT.md` | Repo Athletic.net | All 49 |
-| 16 | `research/sources/national-aggregators/SOURCE_REPORT.md` | Repo National Aggregators | All 49 |
-| 17 | `research/sources/milesplit-national/SOURCE_REPORT.md` | Repo MileSplit National | All 49 |
-| 18 | `research/sources/timing-providers-national/SOURCE_REPORT.md` | Repo Timing Providers | All 49 |
-| 19 | `research/sources/coach-directories-national/SOURCE_REPORT.md` | Repo Coach Directories | All 49 |
+| 1 | `~/Downloads/census-source-research/README.md` (non-repo artifact) | Consolidated README | All 49 |
+| 2 | `~/Downloads/census-source-research/mid-atlantic.md` (non-repo artifact) | Wave F3 Mid-Atlantic | MD, DE, VA, WV, DC |
+| 3 | `~/Downloads/census-source-research/mountain-north.md` (non-repo artifact) | Wave F8 Mountain North | MT, WY, ID |
+| 4 | `~/Downloads/census-source-research/mountain-south.md` (non-repo artifact) | Wave F7 Mountain South | CO, UT, NV, AZ, NM |
+| 5 | `~/Downloads/census-source-research/northeast-2.md` (non-repo artifact) | Wave F2 Northeast | MA, VT, NH, ME |
+| 6 | `~/Downloads/census-source-research/south-central.md` (non-repo artifact) | Wave F6 South Central | TX, OK, AR, LA |
+| 7 | `~/Downloads/census-source-research/southeast-west.md` (non-repo artifact) | Wave F5 Southeast-West | AL, MS, TN, KY |
+| 8 | `~/Downloads/census-source-research/national-aggregators.md` (non-repo artifact) | Wave F10 National | All 49 |
+| 9 | `state-assoc-midatlantic/SOURCE_REPORT.md` | Repo mid-Atlantic | DC, DE, MD, NJ, NY, PA, CT, MA, RI, NH, VT, ME |
+| 10 | `state-assoc-greatlakes/SOURCE_REPORT.md` | Repo Great Lakes | IL, IN, MI, OH, WI |
+| 11 | `state-assoc-plains/SOURCE_REPORT.md` | Repo Plains | IA, KS, MN, MO, ND, NE, SD |
+| 12 | `state-assoc-southeast/SOURCE_REPORT.md` | Repo Southeast | FL, GA, NC, SC, VA, WV |
+| 13 | `state-assoc-southcentral/SOURCE_REPORT.md` | Repo South-Central | AL, AR, KY, LA, MS, OK, TN, TX |
+| 14 | `state-assoc-mountain/SOURCE_REPORT.md` | Repo Mountain | AZ, CO, ID, MT, NM, UT, WY |
+| 15 | `state-assoc-westcoast/SOURCE_REPORT.md` | Repo West Coast | CA, OR, WA, AK, HI, NV |
+| 16 | `athleticnet/SOURCE_REPORT.md` | Repo Athletic.net | All 49 |
+| 17 | `national-aggregators/SOURCE_REPORT.md` | Repo National Aggregators | All 49 |
+| 18 | `milesplit-national/SOURCE_REPORT.md` | Repo MileSplit National | All 49 |
+| 19 | `timing-providers-national/SOURCE_REPORT.md` | Repo Timing Providers | All 49 |
+| 20 | `coach-directories-national/SOURCE_REPORT.md` | Repo Coach Directories | All 49 |
+
+---
+
+## Appendix A — Host-level survey record (2026-09-20, historical)
+
+Unique observations from the deleted `SOURCES_SURVEY.md`, kept because later lane reports did not re-cover these hosts. **Historical:** the survey's operating policy (a 2 rps/host ceiling, `--authorized-host` relaxation) and its collection design are obsolete — pacing and admission are owned by `crates/census-crawl/src/registry/` (1 request/second default; 0.1 rps for `Crawl-delay: 10` origins; one in-flight request) and transport by `ARCHITECTURE.md`. Its unsafe statement about ignoring site restrictions is not retained in any form.
+
+| # | Source | Population | Reachability (2026-09-20) | Identity | Restriction (recorded) |
+|---|--------|-----------|--------------|----------|------------------------|
+| 4 | `www.yentiming.com` | NY Section V HS (indoor/outdoor) | FEASIBLE — live static HTML, 2008–2027, + leaderboards | name-based | robots 404 |
+| 6 | `elitefeats.com` | NY HS track (Sections VIII/XI) | FEASIBLE (static ASP; PL/Name/YR/Team/Wind/Time) | per-meet bib | robots disallows utility paths; `/t-Results` allowed |
+| 9 | `www.runnercard.com` | UT/ID/WY HS + JH | FEASIBLE-WITH-WORK (legacy report engine, fixed-width text) | per-meet bib | none (robots 404) |
+| 10 | `cifss.org` (CIF-SS) | CA HS postseason | FEASIBLE-WITH-WORK (PDF text layer) | name+grade+school | robots allow-all |
+| 12 | `finishedresults.com` + `api.trackscoreboard.com` | CA/NV HS+college | FEASIBLE-WITH-WORK via API (front end is JS-only) | API athlete ids | api host robots `Disallow: /` |
+| 13 | `results.leonetiming.com` | NY/PA | JS-only app (engineering blocker) | unknown | robots + ToS prohibit automated extraction and AI/TDM use |
+| 14 | `milesplit.live` | HS/college live | JS-only SPA; API + Firebase data plane | inherits MileSplit | no robots (SPA catch-all) |
+| 15 | `worldathletics.org` | elite/pro + U20 | parseable static HTML (675 KB records pages) | name+DOB, no id | ToS bans crawlers/automated agents |
+| 17 | `live.athletictiming.net` / `live.athletic.net` | white-label live | loaded AthleticLIVE tenant bundles from `livestatic.athletic.net`; survey did not follow them under the then-current Athletic.net exclusion | n/a | n/a |
+| 18 | `athletic.live` | — | 6/6 probes 302 → `live.athletic.net`; not followed | — | — |
+| 19 | `www.athletictiming.net` / `athletictiming.rsupartner.com` / `www.tfmeetpro.com` | — | pointers/vendor/road-race only | — | rsupartner robots `Disallow: /`; others none |
+| 5 | `www.directathletics.com` | HS + college meets | usable (static, filterable index, `page=792`) | results carry **no athlete id**; profile URL 302 → TFRRS | ToS expressly prohibits commercial exploitation of results/rosters/IDs |
+
+Hosts whose rows the later lanes superseded (rows 1–3, 7–8, 11, 16, 20 of that survey): MileSplit and `milesplit.live` → `milesplit-national/`, `milesplit-cohort-enumerability/`; TFRRS/DirectAthletics/MaxPreps/RunnerSpace/World Athletics → `national-aggregators/`; Baumspage, Finish Timing → `timing-providers-national/`; Kaggle/HuggingFace/Zenodo/Figshare → `national-aggregators/OPEN_DATASETS_2026-09-20.md`; association/NCAA blocks (`mhsaa.com`, `ihsaa.org`, `ohsaa.org`, `stats.ncaa.org`, `opentrack.run`) → the association lanes and `timing-providers-national/`.
+
+**Request ledger (all probes 2026-09-20).** One-shot, sequential, no retries, no concurrency, bounded `--max-time`, plainly-identifying UA, robots fetched first on every host.
+
+| Host | Requests | Notes |
+|---|---|---|
+| `www.milesplit.com` / `ny.` / `js.sp.` / `milesplit.live` | 25 + 3 + 2 (main) | includes the verified API probe |
+| `www.tfrrs.org` | 11 + 2 (main) | |
+| `www.directathletics.com` | 13 + 2 (main) | |
+| `www.maxpreps.com` | 11 | |
+| `cifss.org` / `cifsshome.org` | 6 / 1 | |
+| `mhsaa.com` / `ihsaa.org` / `ihsaa.eventlink.com` / `ohsaa.org` / blob | 12 / 6 / 4 / 5 / 2 | |
+| `baumspage.com` | 16 + 10 | |
+| `runnerspace.com` (+ subdomains) | 11 | |
+| `leonetiming.com` (www/results) | 6 | |
+| `finishedresults.com` / `trackscoreboard` / api | 5 / 3 / 2 | one API GET before its robots was seen — disclosed |
+| `finishtimingresults.com` / `live.finishtiming.com` | 4 / 1 | |
+| `runnercard.com` / `elitefeats.com` / `tfmeetpro.com` | 10 / 11 / 5 | |
+| `athletictiming.net` / `live.athletictiming.net` / `…rsupartner.com` | 4 / 4 / 2 | rsupartner results fetched before its robots was seen — disclosed |
+| `www.kaggle.com` (+ GCS object) | ~16 + 1 | over the ~10 guide; includes the verified download |
+| `api.github.com` / `github.com` / `raw.githubusercontent.com` | 11 + 1 + ~12 | core API limit 60/hour observed |
+| `huggingface.co` | 10 | |
+| `worldathletics.org` / `stats.ncaa.org` / `opentrack.run` | 4 / 1 / 1 | |
+| `zenodo.org` / `api.figshare.com` / `catalog.data.gov` / `archive.org` | 2 / 2 / 2 / 1 | |
+| `www.opensplittime.org` / `www.olympedia.org` / `www.usatf.org` / `www.thepowerof10.info` / `www.yentiming.com` | 2 / 2 / 1 / 1 / 3 | |
+| `athletic.live` | 6 | all 302 into the then-excluded host; not followed |
+| **athletic.net** | **0** | excluded under the survey-era owner instruction (ADR-013 supersedes that exclusion) |
+
+**Open questions recorded then** (most were answered by the lane reports that landed afterwards; none of these are current instructions): MileSplit rankings XHR route; whether every MileSplit meet exposes `/raw`; TFRRS `tf.`/`xc.`/`florida.` subdomains and `director_info.html` terms; DirectAthletics HS `Year` values and track result pages; MaxPreps XC stat tables; elitefeats `YR` population and page-shape uniformity; runnercard `Mark` population on past seasons; `finishedresults`/`trackscoreboard` API route shapes and id stability; whether unauthenticated Kaggle download works for datasets beyond the one observed; Yen Timing ToS text and event coverage beyond the leaderboard index; flosports/MaxPreps terms; other state sections' timing hosts.
+
+---
+
+## Appendix B — Timing-provider roster (2026-09-22 inventory, merged here)
+
+Unique content of the deleted `timing-provider-inventory.md`. Per-provider depth for the families the timing lane later captured first-hand (FlashResults, PrimeTime, Wayzata, FinishLynx/MeetPro, RACE RESULT, OpenTrack, GSE Timing, Finish Timing, RunWV, XCStats, Hero's Timing, TRXC) lives in `timing-providers-national/SOURCE_REPORT.md` with captures; the digest below covers the providers that report does not detail. The inventory's own "Recommended Pipeline Architecture" section is **not** retained: the current pipeline is defined by `ARCHITECTURE.md`, `SOURCE_ADAPTER_GUIDE.md` and the registry, and its "reject all browser-only providers" step is superseded by the headed-browser transport design (`CHROMIUM_DESIGN.md`).
+
+| # | Provider | States | Stable IDs | Grade? | Cost / 1k athletes | Recommendation |
+|---|----------|--------|------------|--------|---------------------|----------------|
+| 1 | MileSplit | 49 | `athleteId`, `teamId`, `meetId`, `performanceId`, `gradYear` (JSON) | **Yes** — `gradYear` in roster API; `Class of YYYY` in HTML | Free | **PRIMARY** |
+| 2 | AthleticLIVE tenant network | 49 | `ani` (Athletic.net MeetID, 83.3% of 75,585 docs), `EventID` (blob) | No (raw data) | Free | **PRIMARY — Result Source** |
+| 3 | Athletic.net (site + platform) | 49 | `AthleteID`, `TeamID`, `MeetID`, `SchoolID`, `ResultCode` | **Yes** — via profile metadata and ranking pages | Free (browser-gated) | **ATHLETIC.NET-SEED** |
+| 4 | DirectAthletics + TFRRS | 49 | DAT `teamId` (Bound), TFRRS `team-id` | No (college-weighted) | Free | **RESULT-SOURCE** (FL/IN/NH only) |
+| 5 | PrimeTime Timing | ~10 | `ptmeetid`, Firebase `EventID` | No | Free (but ToU prohibitive) | **REJECT** |
+| 6 | Finish Timing | 3 (OH/KY/IN) | `FT id = "20" + AN MeetID`, native IDs | **Yes** — numeric 9–12 column in result rows | Free | **RESULT-SOURCE** |
+| 7 | Lancer Timing | 4 (MA/NH/NE/CNESSPA) | `lan-<state>-<meetid>` on AN; AN MeetID | No | Free | **RESULT-SOURCE** |
+| 8 | 802 Timing | 1 (VT) | AN MeetID | No | Free | **RESULT-SOURCE** |
+| 9 | Sub5 | 1 (ME) | AN MeetID | No | Free | **RESULT-SOURCE** |
+| 10 | Brewer Timing | 2 (ME/MA) | AN MeetID | No | Free | **RESULT-SOURCE** |
+| 11 | Hy-Tek Meet Manager | N/A (per-meet) | Hy-Tek event numbers in result files | No | N/A (software, not host) | **DISCOVERY-ONLY** |
+| 12 | TrackScoreboard / FinishedResults | 2 (MA/OH) | Firebase MeetID | No | Free | **RESULT-SOURCE** |
+| 13 | MeetPro (DirectAthletics) | National | AN MeetID | No | Free | **DISCOVERY-ONLY** |
+| 14 | RaceTec | 1 (WI) | AN MeetID | No | Free | **RESULT-SOURCE** |
+| 15 | AccuRace Timing | 1 (WI) | AN MeetID | No | Free | **RESULT-SOURCE** |
+| 16 | TrackSide Timing | 1 (WI) | AN MeetID | No | Free | **RESULT-SOURCE** |
+| 17 | K2 Timing | 1 (WI) | AN MeetID | No | Free | **RESULT-SOURCE** |
+| 18 | Performance Timing | 1 (WI) | AN MeetID | No | Free | **RESULT-SOURCE** |
+| 19 | TRXC Timing | 1 (MO) | AN MeetID | No | Free | **RESULT-SOURCE** |
+| 20 | State Running Network | 4 (NH/MA/CT/RI) | AN MeetID links | No | Free | **DISCOVERY-ONLY** |
+| 21 | Baum's Page | 1 (OH) | `peventid`, Hy-Tek event numbers | No (Year column empty) | Free | **RESULT-SOURCE** |
+| 22 | MITS (Michigan) | 1 (MI) | AN MeetID (AthleticLIVE tenant) | No | Free | **RESULT-SOURCE** |
+| 23 | WIAA | 1 (WI) | AN MeetID | No | Free | **DISCOVERY-ONLY** |
+| 24 | IHSA | 1 (IL) | AN MeetID, athlete IDs, grades | **Yes** — API returns grade + AN athlete id | Free | **VALIDATION** |
+| 25 | SDHSAA / Bound | 1 (SD) | Bound team/school IDs, AN MeetID | **Yes** — yearbook PDFs, grade 11 | Free | **VALIDATION** |
+
+### Digest for providers not detailed in `timing-providers-national/SOURCE_REPORT.md`
+
+| Provider | Hosts | States | Enumeration / key URL | Stable IDs | Grade |
+|----------|-------|--------|----------------------|------------|-------|
+| Lancer Timing | `lancertiming.com`, `lancer-results.com` | 4 (MA primary, NH, NE/CNESSPA) | AN MeetID links from association pages; direct surface not independently fetchable | AN MeetID | No |
+| 802 Timing | `802timing.com` | 1 (VT) | Only timer listed on MileSplit VT → AN MeetID | AN MeetID | No |
+| Sub5 | `sub5timing.com` | 1 (ME) | MPA state meets + NE championship | AN MeetID | No |
+| Brewer Timing | `brewertiming.com` | 2 (ME, MA) | State and league meets | AN MeetID | No |
+| Hy-Tek Meet Manager | N/A (local software) | N/A | Result files (`.htm`/`.html`/`.pdf`) carry Hy-Tek event numbers; not independently discoverable | Hy-Tek event numbers | Rare (some WI PDFs) |
+| TrackScoreboard / FinishedResults | `finishtiming.trackscoreboard.com`, `api.trackscoreboard.com`, Firebase RTDB | 2 (MA indoor, OH live) | Angular SPA over Firebase; archive on `finishedresults.com` | Firebase MeetID (= `20 + ANID` in OH) | No |
+| MeetPro | `tfmeetpro.com` | National | Software by DirectAthletics, linked from MileSplit meet pages; results uploaded by host/timer, no browsable index | AN MeetID | No |
+| RaceTec | `racetec.com` | 1 (WI) | WI timer, behind Performance Timing in usage | AN MeetID | No |
+| AccuRace Timing | `accu race.com` (host string as recorded in the inventory; not re-verified) | 1 (WI) | WI timer; AthleticLIVE tenant | AN MeetID | No |
+| TrackSide Timing | `tracksidetiming.com` | 1 (WI) | WI timer; AthleticLIVE tenant | AN MeetID | No |
+| K2 Timing | `k2timing.com` | 1 (WI) | WI timer; AthleticLIVE tenant | AN MeetID | No |
+| Performance Timing | `performancetiming.com` | 1 (WI) | WI timer; AthleticLIVE tenant | AN MeetID | No |
+| State Running Network | various state-running sites | 4 (NH primary, MA, CT, RI) | Aggregator for NH; links to AN meet pages | AN MeetID links | No |
+| Baum's Page | `www.baumspage.com` | 1 (OH) | `/cc/index.php` and `/track/index.php` list the season; NW/central/east OH small-school meets; OHSAA district/regional archives 2003–2021 | `peventid` (scoped per sport and `table=A|C`), Hy-Tek event numbers | No — Year column present but empty in every sampled file |
+| MITS (Michigan Indoor Track Series) | AthleticLIVE tenant in MI | 1 (MI) | MI indoor series; AthleticLIVE tenant | AN MeetID | No |
+| WIAA | `wiaa.com` | 1 (WI) | State archives, 130 files in 2025 (repo lane: `state-assoc-greatlakes/`) | AN MeetID | No |
+| IHSA | `ihsatf.org` (inventory); `api.ihsa.org` (repo lane) | 1 (IL) | AthleticLIVE tenant + AN links; API returns grade + AN athlete id (repo lane: `state-assoc-greatlakes/`) | AN MeetID, athlete IDs, grades | Yes |
+| SDHSAA / Bound | `sdhsaa.com`, `www.gobound.com` | 1 (SD) | SDHSAA activity pages + Bound `GetTree` (207 SchoolIDs) / `GetCalendar` (11 XC + 3 TF state meets) (repo lane: `state-assoc-plains/`) | Bound school id (hex), AN MeetID | Yes — yearbook PDFs carry grade 11 |
+
+### Providers that could not be verified (2026-09-22)
+
+Observed as link targets or named in research but never independently verified, due to access restrictions:
+
+| Provider | Reason |
+|----------|--------|
+| Finish Timing / TrackScoreboard live SPA | Requires JS rendering (SvelteKit / Angular SPA) |
+| PrimeTime live results (Firebase RTDB) | ToU prohibits automation; Firebase private |
+| PrimeTime-owned surface (`www.pttiming.com`) | Same ToU as live results (Karmarush LLC operator) |
+| Athletic.net SPA pages | Cloudflare-403 from research machine; requires browser |
+| Speed Sport (NE timer) | Domain observed only as link target, never fetched |
+| Northstar Timing (NE) | Domain observed only as link target |
+| MSTCA Live Results (NE) | Domain observed only as link target |
+| iResultsLive | Domain observed only as link target |
+| Millennium Timing | Domain observed only as link target |
+| Marathon Sports | Domain observed only as link target |
+| MTS (Michigan) | No independent site found; lives on AthleticLIVE stack only |
+| MaxPreps | Score partner, not a result host; widget football-configured |
+| GoFan | Browser-only, no verified IDs |
+| Arbiter | Browser-only, no verified IDs |
+| niaa.com/NV | CAPTCHA-gated (Nevada) |
+| Various guessed association domains | DNS-failed on guessed hosts |
+
+### Critical refutations (2026-09-22)
+
+1. **Athletic.net state URL (`athletic.net/track-and-field-outdoor/usa/high-school/<state>/<assoc>`) is NOT evidence of partnership.** Returns 200 for any slug (~7.4 KB Angular shell). Never use as seed.
+2. **`ani = -1` is a sentinel, not a MeetID.** 516 docs carry it. Must filter `ani > 0`.
+3. **MileSplit MeetID space is separate from AthleticLIVE and AN.** Same MeetID 716278 appears in TX, OK, and LA indices. Never join on a bare integer meet ID.
+4. **MileSplit's team index `tx.milesplit.com` does not bound state.** A Georgia meet (741372) appears in the TX index.
+5. **AthleteID is 1:N for person-to-record mapping.** One athlete returned two IDs for the same name+school+class. Join on `(AthleteID, school, grad-year)`.
+6. **Every result file carries name/school/mark/place but NEVER a grade** (except the IHSA API, some WI Hy-Tek PDFs, and SD yearbook PDFs). Co2027 must come from MileSplit rosters or AN, not from result files.
+7. **DirectAthletics is DISCOVERY-ONLY outside Indiana.** College-weighted, refuted in MT/WY/ID, AL/MS/TN/KY, CO, TX/OK/AR/LA.
+8. **MileSplit `/api/` and `/rankings` are robots-disallowed.** Rate carefully.
+
+### Provider-to-state coverage matrix (verbatim from the inventory; its header repeats the IN column)
+
+| Provider | OH | WI | MO | MI | MA | VT | ME | NE | NH | IL | SD | FL | IN | TX | KY | IN | All |
+|----------|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|-----|
+| MileSplit | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | 49 |
+| AthleticLIVE | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | 49 |
+| Athletic.net | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | X | 49 |
+| DAT/TFRRS | X | | | | | | | | | | | X | X | | | X | 3 HS |
+| PrimeTime | X | X | X | X | | | | X | | X | | X | X | X | X | X | 10 |
+| Finish Timing | X | | | | | | | | | | | | | | X | | 3 |
+| Lancer Timing | | X | | | X | | | X | X | | | | | | | | 4 |
+| 802 Timing | | | | | | X | | | | | | | | | | | 1 |
+| Sub5 | | | | | | | X | | | | | | | | | | 1 |
+| Brewer Timing | | | | | X | | X | | | | | | | | | | 2 |
+| IHSA | | | | | | | | | | X | | | | | | | 1 |
+| SDHSAA | | | | | | | | | | | X | | | | | | 1 |

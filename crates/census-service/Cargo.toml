@@ -2,7 +2,7 @@
 name = "census-service"
 version = "0.1.0"
 edition = "2021"
-description = "Independent Midwest HS TF/XC recruiting graph: official associations, MileSplit HTML, TFRRS/DirectAthletics, result artifacts. No Athletic.net dependency."
+description = "Durable public-source Class-of-2027 TF/XC recruiting census for the contiguous United States and D.C."
 license = "MIT"
 
 [lints]

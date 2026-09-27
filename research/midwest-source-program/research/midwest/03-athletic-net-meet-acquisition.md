@@ -13,7 +13,7 @@ Scope of evidence (all read-only):
 | `/home/lewis/Downloads/www.athletic.net.har` | 722 entries; document = `https://www.athletic.net/TrackAndField/rankings/list/170770/m` (Wisconsin, boys); 30 `/api/` calls | 2026-09-18T18:54:41.860Z – 18:55:40.818Z |
 | `/home/lewis/Downloads/www.athletic.net2.har` | 167 entries; document = `https://www.athletic.net/athlete/28872883/track-and-field`; 11 `/api/` calls | 2026-09-18T19:20:59.690Z – 19:21:18.194Z |
 | Retained Angular bundle `chunk-BXK99FuV2.js` (inside HAR #1, entry 58, 12,998 B) | Full `Meet` service class: every meet/result/entries/divisions call site | captured 2026-09-18 |
-| Repo docs + fixtures (read-only) | `README.md`, `SCOPE.md`, `src/profile/**`, `tests/fixtures/rankings/*` | as of 2026-09-19 |
+| Repo docs + fixtures (read-only) | Then-current repository contracts and root-package profile/rankings fixtures, since retired; [historical evidence](../../../../docs/VERIFICATION-EVIDENCE.md) | as of 2026-09-19 |
 
 The decisive negative: **`/api/v1/Meet/*` request count in both HARs = 0.** No meet page was ever captured, so
 nothing about meet payload size, division counts, or per-meet row counts is measured here; those are the named gaps.
@@ -221,7 +221,7 @@ them (`StandardizeResultText`, `getXCResultData`, `getAthleteName/getTeamName/ge
 | normalized mark inputs | Yes | `SortIntRaw`, `SortIntCalc`, `SortIntOrig`, `ConversionInt`; division settings carry `primaryMeasure`/`secondaryMeasure`/`conversion`. |
 | timing method | Yes | `FAT` flag on every rankings row (1 = FAT). |
 | wind | Partial | `Wind` present on some rankings rows (present on the deep 100m page, absent on another page's rows); no wind field observed in the meet-result formatter code. Meet-level wind: unverified. |
-| implement / hurdle specification | **Not observed** — no implement or hurdle-height field appears in any captured call site. `GetStandardsForEventTF`/`GetVerticalFieldSeries` exist but their payloads are uncaptured. Repo `SCOPE.md` lists this as a required target field, so this is a real gap: closes with fixture capture only. |
+| implement / hurdle specification | **Not observed** — no implement or hurdle-height field appears in any captured call site. `GetStandardsForEventTF`/`GetVerticalFieldSeries` exist but their payloads are uncaptured. The then-current scope required this field (still required by [DOMAIN.md](../../../../DOMAIN.md)); the missing capture is an evidence gap. |
 | heat / round | Round yes (`Round`: `F`/`P` observed = final/prelim); heat only as a *request* parameter (`GetRunSplits?round=&heat=`), so heat exists server-side but is not evidenced in a row payload. |
 | place | Yes | `Place`, plus `display`/`rank`/`rowNum` in rankings; `disPlace` formatting marks non-numeric places. |
 | date | Yes | `ResultDate` (rankings rows, bio rows); meet `StartDate`/`EndDate`. |

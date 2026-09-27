@@ -1,4 +1,5 @@
 use crate::drain::{count, DrainReport};
+use crate::lifecycle::error::BrowserStartupError;
 use crate::navigation::{self, NavigationOutcome};
 use crate::retry::retry_after_now;
 use crate::{
@@ -28,7 +29,47 @@ impl Actor {
     ) {
         match observer {
             Some(Ok(Ok(()))) if self.observer_stop.is_cancelled() => {}
-            Some(Ok(Ok(()))) | Some(Ok(Err(_))) | Some(Err(_)) => {
+            Some(Ok(Ok(()))) => {
+                tracing::info!("browser observer completed unexpectedly (not cancelled)");
+                self.set_state(BrowserState::Restarting);
+                self.gate.revoke();
+                self.draining = true;
+                self.shutdown.cancel();
+                self.observer_stop.cancel();
+                self.reject_pending(BrowserError::Unavailable);
+            }
+            Some(Ok(Err(e))) => {
+                tracing::warn!(error = %e, "browser observer failed");
+                self.set_state(BrowserState::Restarting);
+                self.gate.revoke();
+                self.draining = true;
+                self.shutdown.cancel();
+                self.observer_stop.cancel();
+                self.reject_pending(BrowserError::Unavailable);
+            }
+            Some(Err(join_err)) if join_err.is_panic() => {
+                tracing::error!(
+                    error = ?join_err,
+                    "browser observer task panicked"
+                );
+                self.set_state(BrowserState::Restarting);
+                self.gate.revoke();
+                self.draining = true;
+                self.shutdown.cancel();
+                self.observer_stop.cancel();
+                self.reject_pending(BrowserError::Unavailable);
+            }
+            Some(Err(join_err)) if join_err.is_cancelled() => {
+                tracing::debug!("browser observer task cancelled");
+                self.set_state(BrowserState::Restarting);
+                self.gate.revoke();
+                self.draining = true;
+                self.shutdown.cancel();
+                self.observer_stop.cancel();
+                self.reject_pending(BrowserError::Unavailable);
+            }
+            Some(Err(join_err)) => {
+                tracing::warn!(error = ?join_err, "browser observer terminated unexpectedly");
                 self.set_state(BrowserState::Restarting);
                 self.gate.revoke();
                 self.draining = true;
@@ -254,10 +295,14 @@ impl Actor {
         Ok(())
     }
 
-    async fn bootstrap(&mut self) -> Result<(), anyhow::Error> {
+    async fn bootstrap(&mut self) -> Result<(), BrowserStartupError> {
         if self.launched {
-            self.close_restored_pages().await?;
+            self.close_restored_pages()
+                .await
+                .map_err(|_| BrowserStartupError::BootstrapFailed)?;
         }
-        self.create_pages().await
+        self.create_pages()
+            .await
+            .map_err(|_| BrowserStartupError::BootstrapFailed)
     }
 }

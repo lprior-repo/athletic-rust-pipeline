@@ -38,9 +38,7 @@ impl DrainReport {
 }
 
 pub(super) fn count_error(error: SpawnError) -> BootstrapError {
-    match error {
-        SpawnError::TaskCountOverflow => BootstrapError::TaskCountOverflow,
-    }
+    BootstrapError::TaskSupervision { source: error }
 }
 
 #[cfg(test)]

@@ -17,7 +17,12 @@ pub(super) fn write_performance(
     mapped: &Mapped,
     facts: &PerformanceFacts,
 ) {
-    let source_key = format!("{}:{}", context.event_key, mapped.athlete.as_str());
+    let source_key = format!(
+        "{}:row{}:{}",
+        context.event_key,
+        facts.row,
+        mapped.athlete.as_str()
+    );
     let performance_id = CanonicalPerformance::mint(
         &mapped.athlete,
         &context.meet.id,

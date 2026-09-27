@@ -1,502 +1,128 @@
-# Fjall store schema
-
-Operational companion: [`docs/FJALL_SCHEMA.md`](docs/FJALL_SCHEMA.md) — durability knobs and the
-sharp-edge list with current line citations. This file is the design-side schema.
-
-Fresh national acquisition follows [ADR-013](docs/adr/ADR-013-fresh-national-source-census.md):
-use a new store/run, preserve old roots and do not import their corpus or completion claims.
-Legacy import is explicit old-store maintenance, not a fresh-run population source.
-
-What `census-service` actually writes to its embedded store: directories, keyspaces, key bytes,
-values, the write and read paths, and the limits the code enforces. Derived from
-`crates/census-store/src/` (primary), `crates/census-service/src/cli/` (the `census-service`
-binary, a thin clap shell),
-`crates/census-service/src/bin/census-serve.rs`, `crates/census-service/src/bootstrap/`,
-`crates/census-service/src/restate_services/`, `crates/census-domain/src/model.rs`, and the pinned
-dependency
-`fjall = "=3.1.10"` (`crates/census-store/Cargo.toml`). Dependency behaviour is cited from the
-registry source of that version.
-
-The store has its own crate since the split: `crates/census-store/src/`, whose root module is
-`lib.rs`. References below to `store/mod.rs`, `store/read.rs`, `store/write.rs` and
-`store/legacy.rs` name that crate's `lib.rs`, `read/`, `write.rs` and `legacy/` modules — the paths
-as they stood when those citations were written.
-
-Line numbers are from the tree at the time of writing and will drift while the crate is being
-hardened; **symbol names are authoritative**. Nothing here is measured: no store command was run for
-this document (the build directory and the live store are owned by other processes), so footprint
-numbers below are file-system sizes of the live root, not store statistics.
-
-## 1. Overview
-
-One Fjall database per store root. Fjall is an embedded LSM-tree key-value store: writes land in a
-write-ahead journal and a memtable, sealed memtables are flushed and compacted into immutable
-sorted tables (module doc, `store/mod.rs` header). The store is the system of record
-(`ARCHITECTURE.md`: "Fjall is the system of record").
-
-| Property | Value | Source |
-| --- | --- | --- |
-| Crate / version | `fjall = "=3.1.10"` (exact pin) | `crates/census-service/Cargo.toml` |
-| Store root | `--store` (CLI), `--data-dir` (serve), default `var/census-service` | `cli/`, `bootstrap/options.rs::ServeOptions` |
-| Database directory | `<root>/fjall` (`const DB_DIR`) | `store/mod.rs` |
-| Unified cache | 1 GiB, set explicitly (`const CACHE_BYTES`, `crates/census-store/src/lib.rs:70`) | `crates/census-store/src/lib.rs:154`, `Store::open` |
-| Entities table cap | 20,000,000 observations per table (`MAX_ROWS_PER_TABLE`) | `store/mod.rs` |
-| Entity id cap | 512 bytes (`MAX_ID_BYTES`) | `store/mod.rs` |
-| Ingest request cap | 50,000 rows (`MAX_ROWS_PER_REQUEST`) | `restate_services/mod.rs` |
-| Worker threads | not configured by the crate; fjall default `min(cores, 4)` | fjall 3.1.10 `src/db_config.rs` |
-
-### Directory layout
-
-Created by `Store::open` before the database is opened: `<root>/http` (fetcher cache) and
-- `<table>`: one of the 16 table names (e.g. `schools`)
-
-```text
-<root>/
-  fjall/                      # DB_DIR: the Fjall database (exclusive lock lives here)
-    lock                      # fjall LOCK_FILE, exclusive; see "single writer"
-    version                   # fjall VERSION_MARKER (format version)
-    <n>.jnl                   # active write-ahead journal, e.g. 3.jnl
-    keyspaces/<id>/           # one directory per keyspace, id 0 = fjall's internal meta tree
-  http/                       # HTTP cache: <hash>.body + <hash>.meta.json (not Fjall)
-  out/                        # CLI consolidate/report snapshots: <table>.jsonl, report*.json,
-                              # census-by-state*.csv, best-results-<cohort>.*, workbook
-  entities/<table>.jsonl      # pre-Fjall append logs; also the Restate consolidate output
-  journal/<phase>.jsonl       # pre-Fjall resume ledger (import source only)
-```
-
-The live root (`var/census-service`) matches this layout, including both `entities/` (e.g.
-`athletes.jsonl` at 1.0 GB) and `out/` (`athletes.jsonl` at 779 MB). It also holds
-`out.pre-rust/` and a `.merged-athleticlive` marker, which no store code creates; treat those as
-operator state.
-
-Fjall's own key for the file names: `LOCK_FILE = "lock"`, `VERSION_MARKER = "version"`,
-`KEYSPACES_FOLDER = "keyspaces"`, active journal `"0.jnl"` on a fresh database
-(fjall 3.1.10 `src/file.rs`, `src/db.rs`). The live store is on `3.jnl`, i.e. the writer has
-rotated. Keyspace directories are numeric ids; the id→name mapping is stored inside fjall's
-internal meta keyspace (id `0`), not in this repository, so the numbers must not be treated as
-configuration.
-
-### Lifecycle
-
-| Step | CLI (`census-service`) | Service (`census-serve`) |
-| --- | --- | --- |
-| Open | `Store::open(&cli.store)` in `main` | `spawn_blocking(Store::open)` in `bootstrap::serve_until` |
-| Work | one subcommand | Restate handlers share `Arc<Store>` |
-| Flush | `consolidate` and explicit legacy-import maintenance | `store.flush()` after the region drains |
-| Close | `Store` dropped at process exit | `flush()`, then `drop(store)` |
-
-`Store::open` creates or opens store directories, database and keyspaces and seeds checked sequence
-state from persisted high-water marks or legacy observations. It does not automatically import
-pre-Fjall JSONL. There is no explicit `close`; dropping `Store` drops `Database`, while supervised
-shutdown explicitly flushes before releasing the store.
-
-### Single writer
-
-Opening the database takes an exclusive lock (`LockedFileGuard::try_acquire` on `fjall/lock`,
-fjall 3.1.10 `src/db.rs`), so a second **process** cannot open a store that a live writer holds —
-this is the rule stated in `main.rs` ("One process owns the store at a time"), `README.md`
-("Never open a live Fjall directory from a second process") and `HANDOFF.md`. Inside one process
-the store is shared: `census-serve` hands `Arc<Store>` to every handler, and heavy jobs run on
-`spawn_blocking` behind a semaphore (`--max-concurrent`, default 8). Concurrent writers are
-therefore normal in-process; cross-thread coordination is fjall's journal serialisation plus the
-per-table `AtomicU64` sequence counters.
-
-## 2. Keyspaces and tables
-
-Four Fjall keyspaces exist, named by constants in `crates/census-store/src/lib.rs`:
-
-| Keyspace | Constant | Contents | Key shape |
-| --- | --- | --- | --- |
-| `entities` | `ENTITIES` | every observation row of all sixteen tables | `<table>\0<id>\0<seq:u64 BE>` |
-| `journal` | `JOURNAL` | completed-unit resume entries | `<phase>\0<key>` |
-| `meta` | `META` | import markers only | `imported:<table>`, `imported:resume-journals` |
-| `receipts` | `RECEIPTS` | one row per applied operation — the record that makes a replayed append a no-op | the caller's `operation_id` verbatim |
-
-There is no per-table keyspace. The **tables** are logical partitions
-inside `entities`, selected by the table-name byte prefix. `Table` (`store/table.rs`, `enum Table`)
-is `Schools, Teams, Coaches, Athletes, Meets, Events, Performances, SourceIdentities, Conflicts,
-ReviewCases, Coverage, Snapshots, SourceAccess, IdentityVerdicts, SourceMeets, SourceObservations` (sixteen as of
-2026-09-22; `Table::ALL` is the authority), with `Table::file()` giving the wire/prefix name
-(`schools`, `teams`, … `source_meets`), `Table::ALL` the ordered list, and `Table::from_wire` the
-ingest-side parser (unknown names are rejected so a typo cannot create a table nobody scans).
-
-Only `entities`, `journal`, `meta` and `receipts` are Fjall keyspaces; the sixteen names above are
-tables inside `entities`. `ARCHITECTURE.md` §4 describes `census-store` as "Fjall keyspaces, journals,
-snapshots, migration, backup/restore" and leaves the keyspace/table split to this file, which is its
-authority.
-
-| Table | Entity type | Observation body |
-| --- | --- | --- |
-| `schools` | `CanonicalSchool` | school with aliases, association, classification, enrollment, sites |
-| `teams` | `CanonicalTeam` | (school, sport, gender, school year) |
-| `coaches` | `CanonicalCoach` | coach roles plus contact fields under the publication contract |
-| `athletes` | `CanonicalAthlete` | athlete identity, cohort, grade observations, profile URLs |
-| `meets` | `CanonicalMeet` | meet identity, date/end date, location, level, sports |
-| `events` | `CanonicalEvent` | event ontology row per meet (kind, gender, division, round) |
-| `performances` | `CanonicalPerformance` | athlete/team/event/meet mark with provider `source_key` |
-
-The `journal` keyspace holds one row per completed unit of work; `phase` is an
-adapter-supplied string, not an enum. The live root's `journal/*.jsonl` files show 38 phases in use:
-`milesplit_teams_<state>` and `milesplit_rosters_<state>` for 12 states (ia, il, in, ks, mi, mn,
-mo, nd, ne, oh, sd, wi), `wiaa_schools`, `wiaa_coaches`, `wiaa_results`, `ihsa_schools`,
-`kshsaa_schools`, `mshsl_schools`, `mshsl_coaches`, `ndhsaa_schools`, `ndhsaa_coaches`,
-`nsaa_schools`, `nsaa_coaches`, `athleticlive_meets`, `athleticlive_rosters`, `wayzata_schedule`.
-Each name is the string that adapter passes to `Store::journal_done`; a phase that has never
-completed a unit has no row and no file.
-
-The `meta` keyspace holds one `imported:<table>` marker per table plus
-`imported:resume-journals`; nothing else writes to it.
-
-### Receipts (keyspace `receipts`)
-
-```text
-key   = operation_id                       # the caller's stable name for one unit of work
-value = Receipt { operation, digest, at, appended }
-```
-
-The receipt is what makes an external effect idempotent across the two durability domains. An append
-that commits and whose acknowledgement is lost is replayed by whoever owns the retry; written as two
-commits — rows first, receipt second — that replay appends the page again, because the writer that
-should have remembered the first one died before it could. `StoreBatch::commit_once` writes the rows,
-the table's sequence and row marks, the batch's journal entries **and** the receipt in one `SyncData`
-commit, so the store never holds rows a receipt does not cover
-(`crates/census-store/src/receipt.rs`).
-
-* A repeat under the same `operation_id` with the same `digest` writes nothing at all — no row, no
-  counter movement, no journal entry — and returns `Application::Repeated`, carrying the receipt the
-  first application left. `Application::appended()` is zero for that case, so a caller summing replies
-  cannot count one page twice.
-* A repeat under the same id with a *different* digest is a `StoreError::Invariant` (terminal in the
-  service's classification): the same id cannot name two payloads. This is why the digest is not the
-  identity — an id derived from the payload cannot notice that the payload changed under it.
-* The id and digest are bounded before the batch holds anything (`MAX_OPERATION_BYTES` = 512,
-  `MAX_DIGEST_BYTES` = 256), and neither may be empty: an empty digest matches every payload.
-* `at` is a `YYYY-MM-DD` day. `Store::prune_receipts(before)` removes the receipts stamped strictly
-  earlier and reports the rows it could not date as `undated` instead of removing them — a receipt
-  deleted while its invocation could still replay re-opens the window it exists to close. Nothing else
-  deletes a receipt, so `Store::receipt_count` is exact.
-* Receipts live *in* the store, so a store rebuilt from immutable evidence starts with none and no
-  receipt of an earlier generation can be applied to it: there is no cross-generation mixing to guard
-  against. The `Sweep` workflow calls the prune with `REPLAY_RETENTION_DAYS` = 90 — the
-  `journal_retention` the ingest objects declare — and puts both figures in its report
-  (`pruned_receipts`, `undated_receipts`).
-* An operation whose page held no rows still gets a receipt (`appended: 0`), so "no rows appended" and
-  "this page was never posted" stay distinguishable.
-
-## 3. Key and value encoding
-
-### Observation keys (keyspace `entities`)
-
-```text
-key   = <table bytes> 0x00 <id bytes> 0x00 <sequence: u64 big-endian>
-value = serde_json::to_vec(entity)
-```
-
-`table_prefix(table)` emits `<table>\0`; `observation_key(table, id, sequence)` appends the id, a
-separator `0x00`, then the eight big-endian sequence bytes (`store/keys.rs`).
-
-Byte order is load-bearing:
-
-* The table name leads, so each table occupies one contiguous prefix range and `Keyspace::prefix`
-  scans exactly that table.
-* The id follows, so all observations of one entity are adjacent.
-* The sequence is the fixed-width tail in big-endian order, so byte order equals numeric order: a
-  prefix scan over one entity returns its observations in append order, and `Store::scan` folds them
-  through `Entity::merge` in that order.
-* Parsing is positional: `split_observation_key` takes `len-8` as the sequence, checks the byte
-  before it is `0x00`, and splits the remaining text on the first `0x00`. A reverse search for the
-  separator would misparse every key whose low sequence byte is `0` (every 256th key); the regression
-  test `keys_with_a_zero_low_sequence_byte_still_reopen` exists for exactly that bug, and the
-  temporary conversion harness `split_observation_key_indexed` plus
-  `tmp_converted_split_matches_the_indexed_original_on_a_corpus` cross-checks the parsed form on a
-  corpus that includes empty ids, spaces, non-ASCII, an embedded `0x00`, and a 600-byte id.
-
-Ids are the canonical `Id<T>` string (see below), validated before use: `observation_id` borrows the
-`id` field out of the serialized buffer with a `#[serde(borrow)]` view (`ObservationId`) and rejects
-an empty id or one longer than `MAX_ID_BYTES` (512). The stated rationale is fjall's assertion that
-keys stay below 64 KiB (module comment, `store/keys.rs`).
-
-### Journal keys (keyspace `journal`)
-
-```text
-key   = <phase bytes> 0x00 <key bytes>          # journal_key(phase, key)
-value = {"key": <key>, "at": <iso-8601>, "payload": <caller JSON>}
-```
-
-`journal_keys(phase)` scans prefix `<phase>\0` and returns the suffixes as a `HashSet<String>` (the
-resume set); `journal_payloads(phase)` scans the same prefix and extracts `payload`. Because the
-phase separator is a literal `0x00`, a phase name containing NUL would overlap another phase's range;
-no adapter uses one.
-
-### Meta keys (keyspace `meta`)
-
-`imported:schools` … `imported:performances` (from `imported_marker(table)`) and
-`imported:resume-journals`; value is the byte string `b"1"`. Presence of the marker is the only
-import guard.
-
-### Deletion and tombstones
-
-Fjall supports them (`WriteBatch::remove`, `ValueType::Tombstone`, `Database::delete_keyspace`
-exist in 3.1.10), but **this store never issues a delete**: the crate contains no `remove` on a
-keyspace, no `delete_keyspace`, and imports only `Database, Keyspace, KeyspaceCreateOptions,
-PersistMode`. An observation cannot be retracted; a later observation can only be outvoted by the
-merge rules in §4. The one overwrite in the design is the journal, whose keys are upserts
-(§5), and the `meta` markers, which are re-written with the same value.
-
-### Identifier type
-
-`model::Id<T>` is `#[serde(transparent)]` over a `String` with a `PhantomData<T>` tag, so a
-`SchoolId` and a `TeamId` serialise and key identically to their string, and JSON carries no tag.
-`Id::mint(prefix, parts)` produces `<prefix>_<16 lowercase hex>`: the first 64 bits of
-`SHA-256(prefix ‖ 0x1f ‖ part_1 ‖ 0x1f ‖ part_2 …)` — the prefix first, then each part preceded by
-the byte `0x1f`. Aliases `SchoolId`, `TeamId`, `CoachId`, `AthleteId`,
-`MeetId`, `EventId`, `PerformanceId` tag the seven entity kinds, and each entity mints from its own
-natural key (school: state + compressed normalized name; team: school + sport + gender + school
-year; athlete: school + normalized name + grad year + gender; meet: state + date + normalized name;
-performance: athlete + meet + event kind + date + provider `source_key`).
-
-There is **no sealed trait and no `Id`-typed key at the store boundary**: `entities` keys are built
-from `&str` (`Entity::entity_id()`), `append`/`append_many` accept any `Serialize`, and the typed
-identity lives only in `model`. Key-type mistakes are therefore caught by serde/parse errors at read
-time, not by the compiler.
-
-## 4. Entity model on disk
-
-All seven canonical entities are persisted, one table each, each row a complete JSON document.
-`Entity` (`crates/census-store/src/table.rs`) supplies `entity_id`, `merge`, and one read-time hook
-(`publish`) applied by every read.
-
-| Entity | Evidence carried | External identities | Other provenance |
-| --- | --- | --- | --- |
-| `CanonicalSchool` | `evidence: Vec<Evidence>` | `source_identities` | `aliases`, websites |
-| `CanonicalTeam` | `evidence` | `source_identities` | — |
-| `CanonicalCoach` | `evidence` | `source_identities` | `professional_email`, `personal_email`, `phone` |
-| `CanonicalAthlete` | `evidence` | `source_identities` | `public_profile_urls`, `observed_grades` (each with `SourceRef`) |
-| `CanonicalMeet` | `evidence` | `source_identities` | `source_urls` |
-| `CanonicalEvent` | `evidence` | — | `source_labels: Vec<SourceEventLabel>` |
-| `CanonicalPerformance` | `evidence` | — | `source_key` (provider result key) |
-
-`Evidence` = `{ source: SourceRef{id, url?}, method, observed_on, note? }` with
-`EvidenceMethod ∈ {fetched, parsed, derived, inherited}`; `SourceIdentity` =
-`{ namespace: SourceNamespace, id, url? }` with namespaces for MileSplit, TFRRS, DirectAthletics,
-state associations, timers, `legacy_athletic_net` and an open `Other(String)`. Evidence lives
-inside the observation body — there is no separate evidence table — and `union_vec` during merge
-accumulates it, so a row consolidated from N observations carries the union of all their evidence.
-
-Merge rules (`impl Entity for …`), which is what makes append-only safe:
-
-| Entity | Fill-if-absent fields | Unioned | Recomputed |
-| --- | --- | --- | --- |
-| School | city, association, classification, enrollment, websites | aliases, source_identities, evidence; `co_op` OR | longer `name` wins when it extends the shorter one |
-| Team | level | source_identities, evidence | — |
-| Coach | professional_email, personal_email, phone | source_identities, evidence | `publish()` routes each stored address to the field its domain belongs to |
-| Athlete | — | known_names, sports, public_profile_urls, source_identities, evidence, observed_grades | `identity_confidence` from grade observations |
-| Meet | location, end_date; level if `Unknown` | sports, source_identities, source_urls, evidence | — |
-| Event | — | source_labels, evidence | — |
-| Performance | wind_mps, place, observed_grade, timing | evidence | — |
-
-Two entity-specific rules are applied on **read**, inside `Store::scan`, so they hold for the
-report, workbook, snapshot and Restate handlers alike:
-
-* `CanonicalCoach::publish` takes both stored addresses and re-routes each through
-  `CanonicalCoach::set_published_email`, which classifies the address's domain — a consumer mailbox
-  lands in `personal_email`, an organisation mailbox in `professional_email` — refuses a malformed
-  address, and keeps the first address of a kind. Nothing is withheld for its domain: a row whose two
-  fields disagree with its addresses is corrected on read, and no address a source published is lost.
-* `CanonicalAthlete::publish` derives `identity_confidence` from the row's own grade observations.
-  Every read publishes, so the published value is the one the report, the workbook, the snapshot and
-  the Restate handlers see, whether the row was merged or written once.
-
-## 5. Write path
-
-| Writer | Keyspace | Batching | Durability |
-| --- | --- | --- | --- |
-| `append_many` / `append` | `entities` | one `WriteBatch` per call | `durability(SyncData)` then `commit()` |
-| `journal_done` | `journal` | one-row `WriteBatch` | `durability(SyncData)` then `commit()` |
-| `import_observations` | `entities` | one batch per legacy file | `durability(SyncData)` then `commit()` |
-| `import_legacy_resume_journals` | `journal` | one batch for every phase file | `durability(SyncData)` then `commit()` |
-| `import_legacy` markers | `meta` | single `Keyspace::insert` | journal persisted `Buffer`, then `flush()` = `SyncAll` |
-| `StoreBatch::commit` | `entities` + `journal` | one batch per caller page: appends across tables, the marks their reservations move, and the journal entries that name them | `durability(SyncData)` then `commit()` |
-| `StoreBatch::replace_many` + `commit` | `entities` | one batch staging a derived table's whole content (either table mode) | same commit as the rest of the batch |
-| `StoreBatch::commit_once` | `entities` + `journal` + `receipts` | the same batch plus the operation's receipt | `durability(SyncData)` then `commit()` |
-
-`append_many` order of operations: serialize every record; parse and validate its id; `reserve` the
-sequence range (a single `fetch_add` on the table's `AtomicU64`); build the batch with
-`base + offset` per row; commit. Every record is validated before a single sequence is reserved, so a
-rejected batch leaves both the keyspace and the counters untouched (test
-`oversized_and_empty_ids_are_rejected_before_any_write`). A commit that fails inside fjall does not
-roll the counter back: the reserved sequence numbers stay spent, so that table's numbering gains a
-gap. Gaps are harmless — nothing reuses them, and reopening reseeds from the highest stored key —
-and no stored observation can be overwritten by a later append.
-
-Atomicity: fjall documents `commit` as "Commits the batch to the Database atomically"
-(fjall 3.1.10 `src/batch/mod.rs`), which is what makes one adapter page one unit. A batch now spans
-keyspaces, and cross-keyspace invariants depend on that guarantee in three places: the receipt the
-same commit as the rows it covers (so the store never holds rows no receipt names), a caller's page
-row and its journal entry (§4), and a derivation that closes cases *and* records the verdicts it
-closed (the local-model review pass, `census-review`), which is one batch because two commits would
-let a crash leave a verdict standing against a case that still reads as open.
-Batching is per call, not per observation: `append_many` carries the whole slice, `journal_done`
-carries exactly one row. The largest batches are the pre-Fjall imports (one file each, capped at
-`MAX_ROWS_PER_TABLE`) and Restate ingest (≤ 50,000 rows per request).
-
-Durability knobs actually in play:
-
-| Mode | fjall semantics (3.1.10 `src/journal/writer.rs`) | Where used |
-| --- | --- | --- |
-| `Buffer` | flush to OS buffers; lost on power loss or OS crash | fjall's default for `db.batch()` and for plain `Keyspace::insert`; only reachable here via the `meta` markers |
-| `SyncData` | `fdatasync`; survives an application crash | every `entities`/`journal` batch |
-| `SyncAll` | `fsync` data + metadata | `Store::flush`, called by `consolidate` and at service shutdown |
-
-The crate never sets `manual_journal_persist`, so fjall's implicit post-commit persist stays on; the
-explicit `SyncData` upgrade is what the code adds. No CLI flag, env var or config file exposes a
-durability choice.
-
-Sequence counters are **not persisted**: `Store` holds `sequences: BTreeMap<&'static str,
-AtomicU64>`, seeded at open from the highest key in each table (`last_sequence`) and bumped by
-`reserve`. Reopening therefore resumes rather than restarts (test
-`observations_survive_reopen_without_overwriting`), and no observation is ever overwritten
-because the sequence component is always fresh.
-
-Error taxonomy: the store returns a dedicated `StoreError` enum under `StoreResult<T>`
-(`store/mod.rs`), not `anyhow`. Variants cover the failure homes directly: `Open`/`Flush`/
-`Write`/`Read` wrap `fjall::Error`; `Decode`/`Json` wrap `serde_json::Error` with the offending
-key or a `detail` naming the step; `Invariant { detail }` carries the writer's own broken
-assumption; `TooManyRows { table, max }` is the `MAX_ROWS_PER_TABLE` rejection in `scan` and the
-importer; `JournalTooLarge`, `CounterOverflow`, `Io { path }` and `Legacy { detail }` cover the
-resume journal ceiling, sequence exhaustion, sidecar/artifact I/O and the one-time legacy import.
-Every fallible fjall or filesystem call is either `?`-propagated or mapped into one of those
-variants; no error is swallowed.
-
-### Import path (pre-Fjall journals)
-
-`import_legacy` is explicit maintenance for an existing pre-Fjall store; `Store::open` does not
-invoke it. Its implementation in `crates/census-store/src/legacy.rs` owns import progress, entity
-batches and completion markers under the single-writer discipline. Preserve original JSONL until
-independent reconciliation establishes that all rows and resume journals survived.
-
-This is not a startup stage of ADR-013. The fresh national store is populated from newly acquired
-public source evidence, not the old census or an operator workbook. Historical import markers
-cannot certify source discovery, coverage, identity decisions or completion of the new run.
-
-## 6. Read path
-
-`Store::scan::<T>(table)` is the only entity read. It iterates `entities.prefix(<table>\0)`,
-deserializes each row, merges by `entity_id` into a `BTreeMap<String, T>` (so the result is sorted by
-id), applies `publish`, and returns `Vec<T>`. Consequences the code makes explicit: it holds the
-whole merged table in memory, it enforces `MAX_ROWS_PER_TABLE` (`bail!` — "holds more than 20000000
-observations; consolidate with a smaller window"), and merging happens at read time so an
-unconsolidated store still reports one row per entity (test
-`census_reads_merged_observations_without_consolidating` in `report.rs`).
-
-There are **no point reads and no page/window API**. The crate contains no `get` on the `entities`
-or `journal` keyspaces: `meta.contains_key` (import markers) is the only key lookup, everything else
-is a prefix scan. Downstream consumers:
-
-| Consumer | Read |
-| --- | --- |
-| `report::build_census`, `bests::build`, `workbook::build` | `store.scan` for the tables they need |
-| Adapters that need existing state (e.g. `wayzata`, `athleticlive_athletes`, `wiaa_results`) | `store.scan` of schools/meets |
-| `athleticnet` school resolution | `out/schools.jsonl` snapshot, when present |
-| `Store::consolidate` | `scan` + write `<out_path>.jsonl` |
-| Restate `Census::status` | `Store::stats` |
-
-`Store::stats` returns `StoreStats { tables: Vec<(String, u64)>, observations: u64, bytes_on_disk:
-u64 }`. Per-table counts are read from the in-memory sequence counters (`counter.load(Relaxed)`),
-i.e. **observations ever appended to that table**, exact and monotone — not the LSM tree's estimate.
-`bytes_on_disk` is `self.entities.disk_space()`, the `entities` keyspace tree only.
-
-`census-service fjall-stats` (`Command::FjallStats` → `print_store_stats`) prints `store\t<root>`,
-then one `<table>\t<observations>` line per table in `Table::ALL` order (`schools`, `teams`,
-`coaches`, `athletes`, `meets`, `events`, `performances`), then `observations\t<sum>` and
-`bytes_on_disk\t<entities keyspace bytes>` — tab-separated, no header.
-
-`census-service import-legacy` prints the same block after listing, per table, the legacy file size
-or `absent`, plus the `journal` directory path. The Restate `Census::status` reply carries the same
-numbers as `{table, rows}` pairs plus `observations`, `bytes_on_disk`, `today`.
-
-## 7. Backup, restore, footprint
-
-* **Store APIs:** `Store::backup`, `Store::restore` and `Store::integrity` are implemented in
-  `crates/census-store/src/backup/`; the backup includes a checksum/count manifest. The older claim
-  that no backup or restore API exists is obsolete.
-* **Procedures:** follow [`docs/FJALL_BACKUP.md`](docs/FJALL_BACKUP.md) and `docs/OPERATIONS.md`.
-  Do not open a live store from a second process or assume an arbitrary live directory copy is a
-  consistent backup. Retain the store and evidence material required to resolve its references.
-* **Acceptance:** the national fault catalog requires exact nonempty backup/restore reconciliation,
-  including captured evidence and decision history. A successful store restore alone does not
-  prove recovery of the separate Restate journal.
-* **Pre-Fjall import** is explicit `census-service import-legacy` maintenance, guarded by progress
-  and completion records; it does not run automatically in `Store::open`. Keep original journals
-  until independent reconciliation succeeds. Never use this path to seed the ADR-013 census.
-* **Footprint measurement** is `bytes_on_disk` from `fjall-stats` / status. It reports the `entities`
-  keyspace's LSM-tree size (`Keyspace::disk_space` → `tree.disk_space`, fjall 3.1.10
-  `src/keyspace/mod.rs`), which **excludes** the `journal` and `meta` keyspaces and the write-ahead
-  journal. Fjall's `Database::disk_space()` (journal + all keyspaces, `src/db.rs`) is not called.
-  For an end-to-end figure, measure the directory.
-* On-disk reality worth planning around: the consolidated JSONL snapshots are not small. In the live
-  root, `out/athletes.jsonl` is 779 MB, `out/performances.jsonl` 116 MB, `entities/athletes.jsonl`
-  1.0 GB and `entities/teams.jsonl` 60 MB — i.e. the materialized read model dwarfs the store itself
-  for a store of this size. These are file sizes, not database statistics.
-
-Build-time knobs in play (repo choice vs fjall default):
-
-| Knob | Value | Origin |
-| --- | --- | --- |
-| Block cache | 1 GiB | repo (`cache_size(CACHE_BYTES)`, `crates/census-store/src/lib.rs:155`); fjall default 32 MiB |
-| Write buffer / memtable | fjall default 64 MiB per keyspace | not configured by the repo |
-| Max journal size | fjall default 512 MiB, then rotate | not configured by the repo |
-| Journal compression | LZ4 above a 4096-byte threshold (`lz4` is a default feature) | fjall default; the repo does not change it |
-| Data-block compression | disabled by fjall's own tree config (`CompressionPolicy::disabled()`) | fjall 3.1.10 `src/db.rs`; the repo does not change it |
-| Bloom filters | fjall default `FalsePositiveRate(0.0001)`, with `expect_point_read_hits(true)` hinted on `journal` and `meta` whose point reads are known-hit | fjall; the repo sets only the hint |
-| Keyspace create options | `KeyspaceCreateOptions::default`, plus `expect_point_read_hits(true)` on `journal` and `meta`; `entities` keeps default filters so a miss cannot fall through the last level | repo (`Store::open`, `crates/census-store/src/lib.rs:159-173`); no compaction filter, default compaction strategy |
-
-## 8. Operational limits and sharp edges
-
-1. **Open is O(keys), on every command.** `Store::open` seeds sequences by walking each of the seven
-   table prefixes and decoding every key (`last_sequence`). Cost grows with the store, and every CLI
-   invocation pays it before doing any work.
-2. **Open can write.** The legacy import runs inside `Store::open`, so the first open of a
-   pre-Fjall store mutates it (`SyncData` batches plus a final `SyncAll`), takes the exclusive lock,
-   and can fail the command for reasons unrelated to that command.
-3. **The 20M row cap is read-only.** `MAX_ROWS_PER_TABLE` is enforced in `scan` and in
-   `import_observations`, **not** in `append_many`. A table can be grown past the cap, after which
-   every read of that table fails with a typed error — including `report`, `bests` and `workbook`.
-   The bail message recommends "a smaller window", but `scan`/`consolidate` take no window, page or
-   range parameter; the only recovery is a different process trimming the table, which the store
-   offers no API for.
-4. **Reads materialise the table.** `scan` builds a `BTreeMap<String, T>` of every merged entity, so
-   peak memory scales with the entity count, not the batch size. Nothing streams.
-5. **`bytes_on_disk` is not the store's footprint.** It covers the `entities` keyspace only
-   (see §7); the write-ahead journal (active or sealed) and the `journal`/`meta` keyspaces are
-   invisible to it. The `StoreStats` doc comment describing counts as the LSM tree's
-   `approximate_len` estimates is stale: the implementation reads the exact sequence counters.
-6. **Two snapshot locations.** CLI `consolidate` writes `out/<table>.jsonl`
-   (`census::consolidate`), while the Restate `Census::consolidate` handler writes
-   `entities/<table>.jsonl` via `store.table_path(table)`. Both files are consolidated read models
-   with different paths, and both exist in the live root; tooling must know which one it is reading.
-7. **The journal is a ledger, not a log of history.** `journal_done(phase, key, payload)` upserts: the
-   same `(phase, key)` overwrites its payload, and re-completing a unit therefore rewrites rather
-   than appends. Nothing prunes it — no delete, no TTL, no compaction filter — so the `journal`
-   keyspace keeps one row per distinct unit ever completed.
-8. **Observation ranges are prefix-delimited, not name-exact.** `table_prefix` terminates the table
-   name with `0x00`, so no table's key range can overlap another's even if one name were a prefix of
-   another. The same construction makes a phase name containing a NUL byte ambiguous in the
-   `journal` keyspace (`<phase>\0<key>`); no adapter generates one, and nothing validates it.
-9. **No compaction filter, no retention.** Observations are never compacted away by the store's own
-   rules; only fjall's LSM compaction applies, and consolidated output is written by overwriting the
-   JSONL file, not by deleting store rows.
-10. **One process only.** In-process concurrency is supported (`Arc<Store>` in the service, with
-    `--max-concurrent`, default 8, gating heavy jobs), but a second process cannot open the
-    directory at all. Sequence safety depends on that: the counters are in memory, so two writers
-    would hand out the same sequences.
-11. **Durability ends at `SyncData` unless something calls `flush()`.** A CLI run that neither
-    consolidates nor imports at open exits without `SyncAll`; the service flushes after the region
-    drains. The tail is still `fdatasync`-durable, and the resume journal is durable per completed
-    unit, so a killed run redoes work at most for the in-flight unit.
-12. **Import is exactly-once only if the crash lands before the commit.** `import_observations`
-    commits one batch per file and the marker is written afterwards, so a crash between the commit
-    and the marker re-imports the whole file on the next open, inserting every row a second time
-    under fresh sequences. Merging at read time hides the duplicate entity but not the duplicate
-    evidence, which is what the module comment's promise ("finishes importing on the next open
-    without duplicating observations") covers only for crashes that happen before the commit.
+# Fjall schema and read/write behavior
+
+Canonical storage reference for `census-store`, pinned to Fjall 3.1.10. Decision rationale is
+[ADR-001](docs/adr/ADR-001-fjall-primary-store.md); operating procedures are in
+[backup/restore](docs/FJALL_BACKUP.md). This describes current APIs, not proof of every delivery invariant.
+
+## Physical layout and ownership
+
+One database under `<store>/fjall`; `Store::open` also creates `http/` and `out/`. Existing
+`entities/` and `journal/` directories may contain historical JSONL/materialized artifacts, not a
+second authoritative database. Current startup does not run a legacy importer.
+
+Fjall permits one owning process. The service shares `Arc<Store>` in-process, and store mutation
+uses its append mutex. A second CLI opener must fail while the service holds the lock. The configured
+cache is 1 GiB; `journal`, `meta` and `receipts` request point-read-hit hints, while `entities` uses
+default keyspace options. Other engine tuning remains at the pinned dependency defaults.
+
+| Keyspace | Keys and values |
+|---|---|
+| `entities` | `<table>\0<entity-id>\0<sequence:u64 big-endian>` → serialized JSON observation or derived entity |
+| `journal` | `<phase>\0<logical-key>` → `{key, at, payload}` JSON completion/progress record |
+| `meta` | `sequence:<table>` and `rows:<table>` → textual unsigned high-water/count values; historical stores may also retain old markers |
+| `receipts` | Exact caller operation ID → `{operation, digest, at, appended}` JSON |
+
+Prefix order groups all observations of one entity together in write order. `<table>\0` alone is a
+table scan, not one-entity lookup. Journal logical keys are caller-defined, not entity-key encodings.
+Malformed persisted keys/counts/JSON return store errors; a permissive reader must not hide corruption.
+
+## Logical tables and replacement semantics
+
+`Table::ALL` currently has **17** entries. They share `entities`; they are not 17 Fjall keyspaces.
+
+| Storage mode | Tables | Meaning |
+|---|---|---|
+| `ObservationLog` | `schools`, `teams`, `coaches`, `athletes`, `meets`, `events`, `performances`, `source_meets`, `source_observations` | Append retained evidence under increasing sequence keys |
+| `DerivedSnapshot` | `source_identities`, `conflicts`, `coverage` | Rebuild replaces the declared set and removes unnamed stale rows, including on an empty rebuild |
+| `DerivedMap` | `review_cases`, `snapshots`, `source_access`, `identity_verdicts`, `athlete_identity_decisions` | Replace named derived entries without treating each derivation as another observation |
+
+Derived rows use the store's reserved derived sequence. Do not call append APIs on a derived table
+or apply snapshot-clearing semantics to a map. `source_meets` records enumerated meets independently
+of acquired result rows. Domain `CollectionSnapshot` records are pass metadata, not Fjall MVCC
+handles or durable copies of the underlying input generation.
+
+`Entity::merge` combines observations and `publish` applies the entity's read-time projection.
+Unioned evidence/aliases and fill-if-absent scalars have different laws: do not claim every merge is
+commutative or that a later observation always wins. Domain/source-owner meaning lives in
+[DOMAIN.md](DOMAIN.md), including [ADR-014](docs/adr/ADR-014-athlete-owner-identity-optional.md)'s
+explicit historical athlete/performance decode shapes. Current writers emit the current shape only.
+
+## Writes and accounting
+
+`append`/`append_many`, journal writes, derived replacement and `StoreBatch` persist through Fjall
+write batches with `SyncData`. `Store::flush` uses `SyncAll`. Planned sequence and row metadata are
+staged with the rows; in-memory sequence publication follows the successful durable commit.
+Missing metadata is reconstructed from table keys on open and persisted. Opening a store can
+therefore write metadata and sweep stale snapshot temporaries; it is not a read-only inspection API.
+
+The table ceiling is 20,000,000 observations/rows as enforced by the relevant paths, not a heap-byte
+budget. Current named limits are 512 bytes for entity IDs and operation IDs, 256 bytes for receipt
+digests, 4 KiB for journal keys and 1 MiB for journal values. These limits do not establish a total
+serialized batch, export or process-memory bound.
+
+`StoreBatch` can stage observations, journal records and derived replacements in one database batch.
+Its `commit_once(operation, digest)` returns `Application::Written(receipt)` or
+`Application::Repeated(original_receipt)`. A repeated application reports zero newly appended rows
+while retaining the original receipt. A different digest under the same operation is
+`StoreError::Invariant`, not an upsert. An empty receipted effect can still commit a receipt.
+
+The caller computes and binds operation identity and digest; this API alone cannot guarantee that
+source/run/capture/parser/schema semantics were included. Nor does its presence prove every adapter
+uses it or that a native commit/lost-ack fault was exercised. See the active plan's
+[capture/effect contract](docs/NATIONAL-CENSUS-PLAN.md#3-capture-and-external-effect-durability).
+
+`prune_receipts` removes receipts older than an explicit date and counts undated entries. `Sweep`
+uses a 90-day policy. That age threshold is implementation behavior, **not proof** that no retained
+invocation can replay an old operation. Receipt retention must be reconciled with actual replay/run
+retention before relying on collection as safe.
+
+## Snapshots, streaming and materialization
+
+`Store::snapshot()` exposes `StoreSnapshot`, backed by Fjall MVCC. On that one view:
+
+| API | Behavior |
+|---|---|
+| `sequence()` | Live snapshot sequence; no API to reopen the same view after process death from this number alone |
+| `for_each_observation` | Bounded-count table prefix traversal with strict decode |
+| `for_each_merged` | Adjacent-entity streaming merge and `publish`; does not require a whole-table map |
+| `for_each_merged_selected` | Traverses the whole table's keys/values, skips decode for IDs outside the supplied set; not a point index |
+| `scan` | Collects the merged stream into a `Vec`; memory still scales with returned entities |
+| `consolidate` / `consolidate_table` | Streams a table into an individually atomically published JSONL snapshot |
+
+Convenience methods on `Store` acquire a new snapshot per call. A multi-table report must explicitly
+share a view; several `Store::scan` calls do not establish a common generation. A live MVCC handle is
+neither restartable export input nor permission to copy a changing database directory.
+
+Snapshot file readers reject invalid rows rather than skipping them. Per-file atomic publication
+and stale-temporary cleanup do not provide a fenced atomic workbook/sidecar/manifest bundle.
+`journal_keys` and `journal_payloads` still materialize their results; the latter clones payloads.
+Use bounded consumers where required rather than labeling every read streaming.
+
+## Counts and footprint
+
+`StoreStats.tables` reports physical current table rows using persisted row marks, with a key-walk
+fallback when needed. `appended` and `observations` count observation-log rows, excluding derived
+rows. These are not merged entities, accepted identities or cohort populations. Sequence high-water
+marks are another quantity and must not be presented as current row counts.
+
+`bytes_on_disk` comes from the `entities` keyspace's LSM disk-space metric; it is not the database
+root's total footprint. `store_bytes` recursively measures the root, including journals, caches and
+outputs. Journal preallocation/recovery can change bytes without changing accepted evidence.
+Neither size equality nor equal total rows proves semantic restore integrity.
+
+## Recovery and schema changes
+
+Use [the cold backup procedure](docs/FJALL_BACKUP.md). Backup/restore cover the configured store
+subtrees and a file/count manifest, not native Restate's separate durable directory or arbitrary
+external evidence paths. Preserve all referenced capture bytes required for replay.
+
+Fresh runs follow [ADR-013](docs/adr/ADR-013-fresh-national-source-census.md); historical schema work
+follows [ADR-010](docs/adr/ADR-010-preserve-existing-corpus.md). For any future mark-unit migration:
+quiesce and back up the old store, identify the actual writer/schema version, convert into an isolated
+new generation, quarantine `AmbiguousLegacyUnit` rather than guessing from magnitude, compare exact
+records/PR ownership, verify restored evidence, then explicitly promote with rollback retained.
+No current legacy-import command is implied by this requirement.
+
+Remaining durability/resource/retention and shared-export obligations live in
+[the active delivery plan](docs/NATIONAL-CENSUS-PLAN.md); dated predecessor audits and measurements
+live in [verification evidence](docs/VERIFICATION-EVIDENCE.md), not a competing storage plan.

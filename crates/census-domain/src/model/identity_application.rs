@@ -1,7 +1,7 @@
 use super::{
     identity_verdict_digest, AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId,
     IdentityDecisionIssue, IdentityError, IdentityProjectionBuilder, ReviewCase, ReviewState,
-    ATHLETE_IDENTITY_FAMILY, ATHLETE_IDENTITY_POLICY,
+    VerdictKind, ATHLETE_IDENTITY_FAMILY, ATHLETE_IDENTITY_POLICY,
 };
 
 #[derive(Debug)]
@@ -83,14 +83,16 @@ impl IdentityProjectionBuilder<'_> {
                 IdentityDecisionIssue::MissingAcceptedVerdict,
             ));
         };
-        let kind = match verdict.value.as_str() {
-            "same_person" => AppliedIdentityKind::SamePerson,
-            "different_person" => AppliedIdentityKind::DifferentPerson,
-            _ => {
-                return Ok(IdentityApplication::Retained(
-                    IdentityDecisionIssue::MissingAcceptedVerdict,
-                ));
-            }
+        let same_slug = VerdictKind::SamePerson.slug();
+        let different_slug = VerdictKind::DifferentPerson.slug();
+        let kind = if verdict.value == same_slug {
+            AppliedIdentityKind::SamePerson
+        } else if verdict.value == different_slug {
+            AppliedIdentityKind::DifferentPerson
+        } else {
+            return Ok(IdentityApplication::Retained(
+                IdentityDecisionIssue::MissingAcceptedVerdict,
+            ));
         };
         let Some(members) = case
             .member_ids

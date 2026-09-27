@@ -34,6 +34,82 @@ pub struct AppliedAthleteIdentity {
 
 type PersonKey = (&'static str, u64);
 
+fn validate_identity_membership(
+    kind: AppliedIdentityKind,
+    members: &[IdentityMember],
+    canonical_id: Option<&AthleteId>,
+) -> Option<String> {
+    if kind == AppliedIdentityKind::SourceBound && members.len() != 1 {
+        return Some(format!(
+            "SourceBound identity requires exactly one member, found {}",
+            members.len()
+        ));
+    }
+    if kind == AppliedIdentityKind::SamePerson && members.len() < 2 {
+        return Some(format!(
+            "SamePerson identity requires at least two members, found {}",
+            members.len()
+        ));
+    }
+    if kind == AppliedIdentityKind::SamePerson && canonical_id.is_none() {
+        return Some("SamePerson identity requires a canonical_id".to_string());
+    }
+    if kind == AppliedIdentityKind::DifferentPerson && canonical_id.is_some() {
+        return Some("DifferentPerson identity must not have a canonical_id".to_string());
+    }
+    None
+}
+
+impl AppliedAthleteIdentity {
+    pub fn new(
+        id: &str,
+        kind: AppliedIdentityKind,
+        members: Vec<IdentityMember>,
+        canonical_id: Option<AthleteId>,
+        case_id: Option<String>,
+        verdict_digest: Option<String>,
+        observed_at: &str,
+    ) -> Self {
+        if let Some(error) = validate_identity_membership(kind, &members, canonical_id.as_ref()) {
+            debug_assert!(false, "{error}");
+        }
+        Self {
+            id: id.to_string(),
+            policy: ATHLETE_IDENTITY_POLICY,
+            kind,
+            members,
+            canonical_id,
+            case_id,
+            verdict_digest,
+            observed_at: observed_at.to_string(),
+        }
+    }
+
+    pub fn new_checked(
+        id: &str,
+        kind: AppliedIdentityKind,
+        members: Vec<IdentityMember>,
+        canonical_id: Option<AthleteId>,
+        case_id: Option<String>,
+        verdict_digest: Option<String>,
+        observed_at: &str,
+    ) -> Result<Self, String> {
+        if let Some(error) = validate_identity_membership(kind, &members, canonical_id.as_ref()) {
+            return Err(error);
+        }
+        Ok(Self {
+            id: id.to_string(),
+            policy: ATHLETE_IDENTITY_POLICY,
+            kind,
+            members,
+            canonical_id,
+            case_id,
+            verdict_digest,
+            observed_at: observed_at.to_string(),
+        })
+    }
+}
+
 pub fn person_provider(namespace: &SourceNamespace) -> Option<&'static str> {
     match namespace {
         SourceNamespace::MilesplitAthlete => Some("milesplit"),

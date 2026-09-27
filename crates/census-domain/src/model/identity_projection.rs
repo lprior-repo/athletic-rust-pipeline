@@ -1,9 +1,9 @@
-use super::identity_aliases::IdentityAliases;
-use super::identity_validation::{validate, ReviewBindings};
 use super::{
+    identity_aliases::IdentityAliases,
+    identity_validation::{validate, ReviewBindings},
     AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId, AthleteIdentityIndex,
     IdentityDecisionIssue, IdentityError, IdentityStatus, ReviewCase, ReviewState,
-    ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY, CANONICAL_ID_COLLISION_FAMILY,
+    ReviewVerdictRecord, VerdictKind, ATHLETE_IDENTITY_FAMILY, CANONICAL_ID_COLLISION_FAMILY,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -229,7 +229,8 @@ fn case_status(case: &ReviewCase, verdict: Option<&ReviewVerdictRecord>) -> Opti
             Some(row)
                 if row.accepted
                     && row.field == "identity"
-                    && matches!(row.value.as_str(), "same_person" | "different_person") =>
+                    && (row.value == VerdictKind::SamePerson.slug()
+                        || row.value == VerdictKind::DifferentPerson.slug()) =>
             {
                 None
             }

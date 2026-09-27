@@ -5,12 +5,129 @@ use std::sync::Arc;
 use restate_sdk::prelude::*;
 
 use crate::spawn::Spawner;
+use census_domain::model::{
+    AppliedAthleteIdentity, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow,
+    RetainedConflict, ReviewCase, ReviewVerdictRecord, SourceAccessCondition, SourceMeetRef,
+    SourceObjectIdentity, SourceObservation,
+};
 use census_store::clock::Clock;
 use census_store::{Application, Store, Table};
 
 use super::jobs::apply_observations;
 use super::wire::ingest::{IngestReply, IngestRequest, IngestState, WindowRequest};
 use super::{blocking, job_error, resolve_table, JobError, KEY_STATE};
+
+fn validate_rows(table: Table, rows: &[Value]) -> Result<(), JobError> {
+    for (i, row) in rows.iter().enumerate() {
+        let name = table.file();
+        match table {
+            Table::Schools => {
+                let _: CanonicalSchool =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::Teams => {
+                let _: CanonicalTeam =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::Coaches => {
+                let _: CanonicalCoach =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::Athletes => {
+                let _: CanonicalAthlete =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::Meets => {
+                let _: CanonicalMeet =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::Events => {
+                let _: CanonicalEvent =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::Performances => {
+                let _: CanonicalPerformance =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::SourceIdentities => {
+                let _: SourceObjectIdentity =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::Conflicts => {
+                let _: RetainedConflict =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::ReviewCases => {
+                let _: ReviewCase =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::Coverage => {
+                let _: CoverageRow =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::Snapshots => {
+                let _: CollectionSnapshot =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::SourceAccess => {
+                let _: SourceAccessCondition =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::IdentityVerdicts => {
+                let _: ReviewVerdictRecord =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::SourceMeets => {
+                let _: SourceMeetRef =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::SourceObservations => {
+                let _: SourceObservation =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+            Table::AthleteIdentityDecisions => {
+                let _: AppliedAthleteIdentity =
+                    serde_json::from_value(row.clone()).map_err(|source| JobError::Terminal {
+                        message: format!("row {i} for table {name} failed validation: {source}"),
+                    })?;
+            }
+        }
+    }
+    Ok(())
+}
 
 pub(super) fn payload_digest(table: Table, rows: &[Value]) -> Result<String, HandlerError> {
     let mut hasher = Sha256::new();
@@ -104,6 +221,7 @@ impl Ingest {
         Json(request): Json<IngestRequest>,
     ) -> Result<Json<IngestReply>, HandlerError> {
         let table = resolve_table(&request.table)?;
+        validate_rows(table, &request.rows)?;
         let store = Arc::clone(&self.store);
         let region = Arc::clone(&self.region);
         let operation = request.operation_id;

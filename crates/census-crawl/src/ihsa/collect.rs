@@ -94,14 +94,6 @@ async fn process_record(
     else {
         return Ok(());
     };
-    let mut batch = ctx.write_batch();
-    batch.append_many(Table::Schools, std::slice::from_ref(&school))?;
-    batch.append_many(
-        Table::SourceObservations,
-        ctx.school_observation(&SourceNamespace::association_school(ASSOCIATION), &school)
-            .as_slice(),
-    )?;
-    batch.commit()?;
 
     let staff_url = format!("{IHSA_API}/v1/schools/{}/staff2", record.school_id);
     let Some(staff) = fetch_staff(ctx, &staff_url, record, &journal_key, run, report).await? else {
@@ -119,6 +111,15 @@ async fn process_record(
         }),
         &coaches,
     )?;
+
+    let mut batch = ctx.write_batch();
+    batch.append_many(Table::Schools, std::slice::from_ref(&school))?;
+    batch.append_many(
+        Table::SourceObservations,
+        ctx.school_observation(&SourceNamespace::association_school(ASSOCIATION), &school)
+            .as_slice(),
+    )?;
+    batch.commit()?;
 
     run.processed = run.processed.saturating_add(1);
     Ok(())

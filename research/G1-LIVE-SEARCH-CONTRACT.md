@@ -1,10 +1,12 @@
-# G1 — the live Athletic.net search response contract
+# Athletic.net mixed-sport search — 2026-09-22 capture audit
 
-Settles the endgame question in `research/ENDGAME-GAPS.md` (G1): the pipeline's own envelope
-rejects every live search page, so **no live row has ever been accepted**. This document records
-(a) one fresh authorized capture attempt against the live endpoint, which came back as a Cloudflare
-managed challenge, and (b) the counted inventory of the live search bytes the pipeline itself
-retained, which is what settles the contract.
+Historical audit of the deleted workbook-search implementation, not a current census contract.
+No live row was accepted in the retained lane/pilot runs examined here; that is not a claim about
+every subsequent census. The contemporary gap-ledger evidence is retained in
+[verification evidence](../docs/VERIFICATION-EVIDENCE.md).
+This records one authorized live attempt that returned a Cloudflare managed challenge and the
+counted inventory of previously retained search bytes. Current source policy is in
+[the adapter guide](../SOURCE_ADAPTER_GUIDE.md).
 
 Every number below is a command output, not an estimate. Commands are quoted verbatim. Where a
 claim rests on bytes, the bytes are retained under `research/captures/g1/`.
@@ -462,10 +464,12 @@ intentional "unclaimed athlete" marker — the bytes show the markup, not the ca
 
 ---
 
-## 5. The contract question and the two candidates
+## 5. Historical parser alternatives and unresolved source semantics
 
-Everything above is one root fact: **the live search endpoint returns mixed-sport pages; the pipeline
-requires single-sport pages.** The owner must choose which side is wrong.
+The retained endpoint returned mixed-sport pages; that deleted parser required single-sport pages.
+The alternatives below record the 2026-09-22 tradeoff, not instructions to restore the old parser or
+silently weaken current acceptance. A replacement must account for valid, irrelevant, malformed and
+missing rows separately, preserve pagination uncertainty and qualify behavior against captured bytes.
 
 ### Contract A — a page that contains other-sport rows fails closed (status quo)
 
@@ -511,8 +515,9 @@ discarded (544 in the lane), and 147 of 167 pilot row-issue pages are mid-pagina
 would simply continue and those queries would reach acceptance-or-review on their merits rather than
 dying at page 1.
 
-Neither contract is implemented here. A clean-cut choice also needs the second decision above; the
-two are separable and both are the owner's.
+This audit implemented neither alternative. The historical status quo was Contract A; Contract B
+remained proposed. Any current implementation needs its own source/count/placeholder contract and
+verification, not an assumption that the proposed one-line change discharged the complete problem.
 
 ---
 

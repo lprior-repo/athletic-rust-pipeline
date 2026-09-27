@@ -1,8 +1,26 @@
 use super::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(transparent)]
 pub struct SchoolYear(i16);
+
+impl<'de> Deserialize<'de> for SchoolYear {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let start_year = i16::deserialize(deserializer)?;
+        SchoolYear::new(start_year).ok_or(serde::de::Error::invalid_value(
+            serde::de::Unexpected::Other("i16 value"),
+            &format!(
+                "school year in [{}, {}]",
+                SchoolYear::MIN_START_YEAR,
+                SchoolYear::MAX_START_YEAR
+            )
+            .as_str(),
+        ))
+    }
+}
 
 impl SchoolYear {
     pub const MIN_START_YEAR: i16 = 1900;
@@ -50,8 +68,24 @@ impl Default for SchoolYear {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct Grade(u8);
+
+impl<'de> Deserialize<'de> for Grade {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let grade = u8::deserialize(deserializer)?;
+        Grade::new(grade).ok_or_else(|| {
+            let expected = "grade in [9, 12]";
+            serde::de::Error::invalid_value(
+                serde::de::Unexpected::Other("u8 value"),
+                &(expected as &'static str),
+            )
+        })
+    }
+}
 
 impl Grade {
     pub fn new(grade: u8) -> Option<Self> {
@@ -69,9 +103,27 @@ impl fmt::Display for Grade {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(transparent)]
 pub struct GradYear(i16);
+
+impl<'de> Deserialize<'de> for GradYear {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let year = i16::deserialize(deserializer)?;
+        GradYear::new(year).ok_or(serde::de::Error::invalid_value(
+            serde::de::Unexpected::Other("i16 value"),
+            &format!(
+                "grad year in [{}, {}]",
+                GradYear::MIN_YEAR,
+                GradYear::MAX_YEAR
+            )
+            .as_str(),
+        ))
+    }
+}
 
 impl GradYear {
     pub const CO2027: GradYear = GradYear(2027);

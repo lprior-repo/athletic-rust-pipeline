@@ -4,6 +4,12 @@ This tree is the input side of the Class-of-2027 census: what each source publis
 what it costs to acquire, and whether it joins the identities the census already holds. Every lane is
 one source family, written by one agent, and every claim in it points at a raw capture in the same lane.
 
+Lane reports are **dated evidence**, not runnable plans: a report states what was observed on the dates
+it records, and nothing in this tree instructs the current collector. Source transport, admission and
+retry behavior are owned by [`ARCHITECTURE.md`](../ARCHITECTURE.md), the
+[source adapter guide](../SOURCE_ADAPTER_GUIDE.md) and `crates/census-crawl/src/registry/`. Older
+surveys, and the Midwest corpus named below, are historical context and stay labeled as such.
+
 ## Lane contract
 
 Each lane lives at `research/sources/<lane>/` and owes four things:
@@ -14,6 +20,12 @@ Each lane lives at `research/sources/<lane>/` and owes four things:
 | `samples/` | Byte-exact raw captures (HTML/JSON/CSV/XLSX) plus `samples/CAPTURES.md`: one line per file — URL, HTTP status, bytes, UTC timestamp, exact command. |
 | `schema.json` | The field and identifier schema actually observed, each field carrying one real example value and the capture file it came from. |
 | `coverage.json` | Machine-readable coverage: what enumerates, what does not, measured counts, and the gaps. |
+
+A lane may carry further dated evidence documents next to `SOURCE_REPORT.md` when a topic needs more
+room than the report's own sections: `athleticnet/CORPUS_BUILD_2026-09-20.md` (endpoint/field semantics
+measured during the 2026-09-20 corpus build), `timing-providers-national/ATHLETICLIVE_DATA_MODEL.md`
+(AthleticLIVE payload model), `national-aggregators/OPEN_DATASETS_2026-09-20.md` (bulk/open dataset
+probes). They are evidence files with the same citation rules, not a second report and not a plan.
 
 Required `SOURCE_REPORT.md` fields (objective §13):
 
@@ -61,20 +73,27 @@ Implementation recommendation
 
 ## Lanes
 
+Each lane below has landed its `SOURCE_REPORT.md` plus captures; "report landed" says nothing about
+whether the census has ingested the source.
+
 | Lane | Jurisdictions / scope | Status |
 | --- | --- | --- |
-| `milesplit-national/` | MileSplit, 51 jurisdictions | in progress |
-| `athleticnet/` | Athletic.net, 51 jurisdictions | in progress |
-| `national-aggregators/` | DirectAthletics/TFRRS, AthleticLIVE, RunnerSpace, MaxPreps, World Athletics | in progress |
-| `timing-providers-national/` | FlashResults, PrimeTime, Wayzata, FinishLynx/MeetPro, RACE RESULT, OpenTrack | in progress |
-| `coach-directories-national/` | Official coach/AD directories, 51 jurisdictions | in progress |
-| `state-assoc-westcoast/` | CA, OR, WA, AK, HI, NV | in progress |
-| `state-assoc-mountain/` | AZ, CO, ID, MT, NM, UT, WY | in progress |
-| `state-assoc-southcentral/` | AL, AR, KY, LA, MS, OK, TN, TX | in progress |
-| `state-assoc-southeast/` | FL, GA, NC, SC, VA, WV | in progress |
-| `state-assoc-midatlantic/` | DC, DE, MD, NJ, NY, PA, CT, MA, RI, NH, VT, ME | in progress |
-| `state-assoc-plains/` | IA, KS, MN, MO, ND, NE, SD (consolidation of the Midwest phase) | in progress |
-| `state-assoc-greatlakes/` | IL, IN, MI, OH, WI (consolidation of the Midwest phase) | in progress |
+| `milesplit-national/` | MileSplit, 51 jurisdictions | report landed |
+| `milesplit-cohort-enumerability/` | MileSplit alone as a Class-of-2027 identity source (six sub-questions with raw evidence) | report landed |
+| `athleticnet/` | Athletic.net, 51 jurisdictions | report landed |
+| `national-aggregators/` | DirectAthletics/TFRRS, AthleticLIVE, RunnerSpace, MaxPreps, World Athletics | report landed |
+| `timing-providers-national/` | FlashResults, PrimeTime, Wayzata, FinishLynx/MeetPro, RACE RESULT, OpenTrack | report landed |
+| `coach-directories-national/` | Official coach/AD directories, 51 jurisdictions | report landed |
+| `state-assoc-westcoast/` | CA, OR, WA, AK, HI, NV | report landed |
+| `state-assoc-mountain/` | AZ, CO, ID, MT, NM, UT, WY | report landed |
+| `state-assoc-southcentral/` | AL, AR, KY, LA, MS, OK, TN, TX | report landed |
+| `state-assoc-southeast/` | FL, GA, NC, SC, VA, WV | report landed |
+| `state-assoc-midatlantic/` | DC, DE, MD, NJ, NY, PA, CT, MA, RI, NH, VT, ME | report landed |
+| `state-assoc-plains/` | IA, KS, MN, MO, ND, NE, SD (consolidation of the Midwest phase) | report landed |
+| `state-assoc-greatlakes/` | IL, IN, MI, OH, WI (consolidation of the Midwest phase) | report landed |
+
+Cross-lane verdicts for the 49 current jurisdictions (48 states + DC) live in
+[`sources/applicability-matrix.md`](sources/applicability-matrix.md).
 
 A lane is a *source family*, not always a single provider: an association lane covers several states, and
 each provider inside it is one section of that lane's `SOURCE_REPORT.md` with its own `schema.json`
@@ -83,9 +102,12 @@ must stand alone — a reader who opens only that section can decide the recomme
 its siblings. (The objective's per-provider directory layout is satisfied by per-provider sections plus
 captures; splitting the tree per provider would fragment the capture evidence that supports them.)
 
-The prior Midwest phase lives outside this tree: `~/Downloads/midwest-tfxc-source-research/`
-(`research/midwest/01..46*.md`, `synthesis/*.md`, `data/*.csv`, `reports/*.xlsx`). Consolidation lanes
-cite it by path rather than copying it, so one copy stays authoritative.
+Two research corpora that lanes cite are **outside this repository and not present in it**: the prior
+Midwest phase at `~/Downloads/midwest-tfxc-source-research/` (`research/midwest/01..46*.md`,
+`synthesis/*.md`, `data/*.csv`, `reports/*.xlsx`, non-repo artifact) and the wave reports at
+`~/Downloads/census-source-research/*.md` (non-repo artifact). Lanes cite them by path rather than
+copying them, so one copy stays authoritative. A citation to those paths is a pointer to an external
+working copy, not a link this repository can resolve.
 
 ## From lanes to adapters
 

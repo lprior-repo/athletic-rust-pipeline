@@ -1,251 +1,88 @@
-# `xtask` — repository developer commands
+# xtask — developer command reference
 
-One binary that runs the repository's real tools, and prints the exact child command before it runs
-it, so a terminal session and this harness cannot drift apart. The measurement subcommands — `scan`,
-`comments`, `integrity`, `domain-purity`, `seams`, `quality-baseline`, `ratchet` — are the exception: they are
-the gate's measurement layer, which used to be a set of Python scripts under `tools/`. Everything
-else shells out, submits an invocation to the running Restate deployment, or writes files.
-
-## Running it
-
-```bash
-cargo xtask <command> [args]                  # via the alias in .cargo/config.toml
-cargo run -p xtask -- <command> [args]        # the same thing, spelled out
-```
-
-`.cargo/config.toml` holds that one alias — `xtask = "run -p xtask --"` — and nothing else, so the
-gate lanes keep running against the same toolchain and flags with or without it.
-
-Children always execute with the repository root as their working directory, whatever directory
-`xtask` was invoked from — so a relative `--store var/census-service` means here exactly what
-`AGENTS.md` documents.
-
-Errors go to stderr as `xtask: <message>`, the exit status is `1`, and a child's own exit code is
-named in the message; there is no stack trace.
+Run `cargo xtask <command> [args]`, or `cargo run -p xtask -- <command> [args]`.
+Child commands execute at the repository root, print their exact argument vector and propagate
+failure. Measurement commands emit their own reports. Run `cargo xtask --help` for the current CLI.
 
 ## Commands
 
-| Command | Runs |
-| --- | --- |
-| `gate [-- <args>]` | `bash tools/gate.sh [<args>]` |
-| `scan` | measures this repository's production code; JSON on stdout |
-| `comments` | rejects ordinary/doc comments and prose documentation attributes in project-owned Rust source, including tests, examples and benchmarks |
-| `integrity` | lists the domain type-integrity candidates; JSON on stdout |
-| `quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]` | rewrites the debt baseline |
-| `ratchet <baseline> <clippy.tsv> <scan.json>` | compares measurements with the debt baseline |
-| `domain-purity` | proves the `census-domain` tree carries no async/I/O package |
-| `seams` | checks every `crate::…` edge between the census crate's top-level modules against the allowed table; JSON on stdout, non-zero exit on a violation |
-| `source-test <source>` (alias `source-check`) | `cargo nextest run -p census-service -E 'test(<source>)'` |
-| `source-fixture <source>` | reads `crates/census-crawl/tests/fixtures/<source>/` and lists it |
-| `replay <name>` | replays `crates/census-crawl/tests/fixtures/<name>/` offline: prints each capture's parse result, same bytes every run |
-| `census-status <--store <dir>\|--ingress [<origin>]>` | `Census/status` on the running deployment, or the binary's `report --core` offline |
-| `coverage <--store <dir>\|--ingress [<origin>]>` | `Report/run` on the running deployment, or the binary's `report` (no flag = every source) offline |
-| `bench [-- <filter>]` | `cargo bench -p census-service [<filter>]` |
-| `export <--store <dir>\|--ingress [<origin>]> [--out <file>] [--grad-year <year>] [--core] [--limit <n>]` | `Workbook/run` on the running deployment, or the binary's `workbook` offline |
-| `new-source <name>` | writes the adapter scaffold described below |
+| Command | Current behavior |
+|---|---|
+| `gate [-- <args>]` | Invokes `tools/gate.sh`; gate policy and lane details are in [TESTING.md](../TESTING.md) |
+| `scan` | Production forbidden-construct and size measurements for workspace members, discovered with Cargo metadata; JSON |
+| `comments` | Lexical no-comments check over project Rust, including tests/examples/benches/fuzz; strings are data |
+| `contract` | Eight architecture checks, including scope, transports, retry ceilings, Python artifacts, admission, scan parity, front-door documents and adapter registration |
+| `seams` | Checks both module and sibling-crate allowed-edge tables; JSON and failing status on violation |
+| `integrity` | Domain type-integrity review candidates; JSON, not proof that types enforce their contracts |
+| `domain-purity` | Checks `census-domain` normal dependency tree for banned runtime/I/O dependencies |
+| `quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]` | Updates debt measurements; increases require the explicit flag and owner-authorized policy change |
+| `ratchet <baseline> <clippy.tsv> <scan.json>` | Fails on growing measured debt; emits `[DOWN]`/`[UP]` changes |
+| `source-test <source>` / `source-check <source>` | Runs Nextest **only in `census-service`**, selecting `test(<source>)`; not all extracted adapter tests |
+| `source-tests` | Colocated workspace source tests (`--lib --bins --examples`); Nextest, or Cargo test fallback; excludes integration binaries |
+| `source-fixture <source>` | Lists captured files beneath `crates/census-crawl/tests/fixtures/<source>/`; missing directory fails |
+| `replay <name>` | Offline supported fixture replay through published parse paths; unsupported/empty inputs fail |
+| `census-status` | Serving `Census/status`, or offline `report --core`; see routing below |
+| `coverage` | Serving `Report/run`, or offline all-source `report` |
+| `export` | Serving `Workbook/run`, or offline `workbook`; accepts `--out`, `--grad-year`, `--core`, `--limit` |
+| `bench [-- <args>]` | Forwards to `cargo bench -p census-service`; does not select every workspace benchmark |
+| `perf record`, `perf check`, `perf profile <group>` | Record/compare/profile configured benchmarks; [PERFORMANCE.md](../PERFORMANCE.md) owns interpretation and limits |
+| `kani [-- <harnesses>]` | Runs the tool's declared harness selection; [TESTING.md](../TESTING.md) distinguishes this inventory from all required proof kernels |
+| `dump-sheet <workbook> <sheets>...` | Prints nonempty worksheet rows as `column=value` fields |
+| `new-source <name>` | Writes a source scaffold and module declaration; not a qualified or fully registered adapter |
 
-### `gate`
+## Serving versus offline routing
 
-```bash
-cargo xtask gate                       # every lane, like tools/gate.sh
-cargo xtask gate -- --update-baseline  # arguments after `--` go to gate.sh
-cargo xtask gate -- --allow-increase   # (only with --update-baseline)
+`census-status`, `coverage` and `export` default to the serving census. `--ingress [<origin>]` uses
+loopback HTTP, default `http://127.0.0.1:18095/`, without credentials or a path. `--store <dir>` selects
+in-process offline execution and cannot be combined with `--ingress`.
+
+```sh
+cargo xtask census-status
+cargo xtask coverage --ingress http://127.0.0.1:18095/
+cargo xtask export --ingress --out out/census.xlsx --grad-year 2027
+cargo xtask census-status --store var/census-service
 ```
 
-The gate is the whole workspace: fmt, zero-code-comments enforcement, check `--all-targets`, doc, tests, strict clippy, the scans,
-the debt ratchet, and every optional tool lane that is installed. This command does not weaken any
-of it — it forwards arguments, prints the command, and reports the child's status.
+The last form requires the serving store owner to be stopped. A second-process Fjall lock error is
+correct; do not bypass it. Serving status is the handler's count view, whereas offline status builds
+a Core report; do not claim identical semantic populations merely because labels match. Export
+reads existing evidence and does not acquire missing history. See [operations](../docs/OPERATIONS.md)
+for lifecycle and current publication limitations.
 
-### `comments`
+## Measurement and fixture boundaries
 
-`cargo xtask comments` lexes project-owned Rust with the compiler lexer. It rejects line comments,
-nested block comments, rustdoc comments and prose `doc = ...` attributes, including conditional
-attributes. It preserves comment-shaped bytes inside ordinary, raw, byte and C string literals:
-captured evidence is data, not commentary. Non-prose directives such as `#[doc(hidden)]` are allowed.
+`scan` obtains members from Cargo metadata rather than a two-package list. Test-only regions and
+recognized test files are excluded from production measurements. `seams` is a separate structural
+check; a clean scan is not acceptance of identity, durability or coverage.
 
-The command includes test, example, benchmark and fuzz source. VCS directories, `target`, `var`,
-`vendor` and `node_modules` are excluded. Each source file is limited to 4 MiB; unreadable or invalid
-UTF-8 source, unterminated literals, excessive source count and an empty source tree fail closed.
-The lexer and its Unicode tables are locked together in `Cargo.lock`; dependency updates must
-preserve compatible Unicode versions. Design rationale belongs in separate documentation; CLI
-help belongs in explicit clap attributes rather than doc comments.
+`comments` uses the compiler lexer, rejects prose `doc = ...` attributes, and permits non-prose
+attributes such as `doc(hidden)`. Ordinary/raw/byte/C strings and captured comment-shaped bytes are
+not code comments. Unreadable/invalid source, unterminated literals, excessive source counts and an
+empty tree fail closed; the current per-file limit is 4 MiB.
 
-### `scan`, `integrity`, `domain-purity`, `seams`
+`replay` does not fetch, open a store or consult the live source clock. It needs the committed fixture
+bytes and associated format/year metadata. A successful replay establishes those captures only;
+`source-test`'s current service-only routing does not establish the crawl crate's complete coverage.
+Use the owning crate's focused tests where necessary and retain this routing gap as implementation
+work, not a reason to claim the wrapper runs more than it does.
 
-```bash
-cargo xtask scan           # JSON: forbidden constructs + size budgets, per crate
-cargo xtask integrity      # JSON: type-integrity candidates per domain root
-cargo xtask domain-purity  # the census-domain normal tree; fails on a banned package
-cargo xtask seams          # the census crate's top-level module edges; fails outside the table
-```
+## Source scaffolding
 
-`scan` and `integrity` write JSON to stdout and nothing else, which is how `tools/gate.sh` feeds them
-to `jq`. `scan` covers `src/` and `crates/census-service/src` — exactly the crates the debt baseline
-records — counts forbidden constructs in production-reachable code (a `#[cfg(test)]` that gates a
-module ends the region; test files are skipped throughout), and reports the size budgets
-(`files_over_300_lines`, `functions_over_60_lines`, `functions_over_25_logical_lines`).
+Hyphens normalize to underscores; invalid identifiers, keywords and existing module/fixture paths
+are refused. The scaffold creates `mod.rs`, `parse.rs`, `map.rs` and an adapter README under
+`crates/census-crawl/src/<name>/`, plus a fixture README, then appends the module declaration to
+`crates/census-crawl/src/lib.rs`. Creation/registration errors report partial files; they are not a
+transactional rollback.
 
-`domain-purity` runs `cargo tree -p census-domain --edges normal --prefix none` and fails when the
-tree carries an async runtime, store engine, HTTP client, service framework or browser engine: normal
-edges only, so dev-dependencies and build scripts cannot taint the verdict either way.
+The generated collector/parser/map are incomplete authoring aids. Replace them with real behavior,
+captures and assertions; complete registry/applicability/durable dispatch separately under
+[SOURCE_ADAPTER_GUIDE.md](../SOURCE_ADAPTER_GUIDE.md). Scaffolding does not run formatting, gates,
+source qualification or national coverage acceptance.
 
-`seams` walks every production `.rs` file under `crates/census-service/src`, resolves each `crate::…`
-reference to its top-level module, and fails when the `(from, to)` pair is outside the allowed-edge
-table in `xtask/src/seams.rs`. The table is the ratchet: adding an edge is a deliberate edit, and
-deleting a row makes that edge a violation again, because the check fails closed. Comment lines and
-test code are out of scope — `tests.rs`, files under a `tests/` directory, and the region after the
-`#[cfg(test)]` that opens a module — because none of them can reach production callers.
+## Retained search audit
 
-### `quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]`
-
-Rewrites the debt baseline from the gate's clippy tallies and a `scan` report. The shape is fixed —
-`note`, `clippy` (keyed `crate<TAB>lint`), `scan` (keyed by crate), `structure` — and the update
-refuses to raise any number without `--allow-increase`, because a burndown is the only legitimate
-reason for the baseline to move down.
-
-### `ratchet <baseline> <clippy.tsv> <scan.json>`
-
-Compares those same two measurements with the baseline, exits non-zero when any metric grew, and
-prints every change as `[DOWN]` or `[UP]`. A file over 300 lines is identified by its path: a new path
-is debt, a known path that grew is debt, and a known path that shrank prints as burndown.
-
-### `source-test <source>`
-
-```bash
-cargo xtask source-test wiaa
-```
-
-Nextest with a `test(<source>)` filter over the whole `census-service` package, which is how a
-source's tests are selected by name. It runs whatever matches; it does not prove the fixture set is
-complete — `source-fixture` shows what exists, and the fixture directories are the coverage list.
-
-### `source-fixture <source>`
-
-```bash
-cargo xtask source-fixture wiaa
-```
-
-Lists every regular file under the source's fixture directory, recursively, sorted, with byte sizes.
-The directory has to exist: a missing source is an error naming the fixture directories that do
-exist, not an empty listing.
-
-### `replay <name>`
-
-```bash
-cargo xtask replay wiaa_results
-```
-
-Reads every capture under `crates/census-crawl/tests/fixtures/<name>/` and runs each body through
-the same parse entry point that source's fixture tests call, printing what the parser published -
-counts, route names, the published school or meet names. Nothing is fetched, no clock is read, no
-store is opened and no environment is consulted, so two runs over the same tree print the same bytes:
-that is what makes it the verb to reach for while `census-serve` holds the store, on a machine with
-no network, or when a capture has to be re-read without re-crawling its host.
-
-Two kinds of input a capture cannot state about itself come from the same place the harnesses get
-them: a result file's format is classified from its extension and body by the adapter's own function,
-and its archive year is read from the fixture's record under `crates/census-service/tests/golden/`.
-
-Every capture is read this way: the arms reach the crate's published parse surface, the same
-functions the source's fixture tests call, and a capture or a source none of the arms claims is
-refused by name rather than skipped. Otherwise it is an error: `xtask: <message>` on stderr, exit 1,
-never a panic and never a missing capture reported as an empty parse. A missing fixture directory, an
-empty one, a capture no arm claims, an unreadable fixture record and a body whose parser refuses it
-each fail that way.
-
-### `census-status`, `coverage` and `export`
-
-All three default to the running deployment. The flag-free form and `--ingress [<origin>]` submit the
-matching handler to the census node; `--store <dir>` selects the offline path instead. Giving both is
-a usage error naming both. The origin defaults to the project node, so `--ingress` alone is the local
-deployment.
-
-```bash
-cargo xtask census-status                                   # Census/status, project node (18095)
-cargo xtask census-status --ingress http://127.0.0.1:18095  # the same invocation, spelled out
-cargo xtask census-status --store var/census-service        # census-service report --core, worker stopped
-cargo xtask coverage                                        # Report/run, every source
-cargo xtask coverage      --store var/census-service        # census-service report, every source
-```
-
-`--ingress` submits the handler the running deployment already owns and never opens the store, which
-is the mode that works *while* `census-serve` holds it. `--store` runs the shipped `census-service`
-binary, which opens the store in process: that is the backup-drill and CI path — the only one that
-works with no server running — and it needs the worker stopped, because the store is single-writer
-and a second handle fails with `FjallError: Locked`.
-
-Both modes report the same numbers under the same labels. `census-status` prints a `schools=` /
-`athletes=` line either way: offline it is the core report's totals plus the JSON/CSV paths it wrote,
-and through the ingress it is the store's own status — those two tables as `Census/status` counts
-them, with the observation count, on-disk footprint and date. `coverage` prints the every-source
-totals and the written paths in both modes.
-
-The offline paths forward no scope flag beyond the one the subcommand means — `census-status` is
-`--core` and `coverage` is every source — because the CLI has no `--scope` and no `--out` flag, and
-this command does not pretend otherwise. The ingress paths send the same scope as the wire value.
-
-### `bench [-- <filter>]`
-
-```bash
-cargo xtask bench                 # every criterion benchmark target in the crate
-cargo xtask bench -- parser       # criterion's own name filter, forwarded after `--`
-```
-
-Forwards to `cargo bench -p census-service`, so it needs the crate to build and the filter is a
-substring match over criterion benchmark ids, not a target name. The `--` separator is required:
-a bare `cargo xtask bench parser` is a clap error, and the wrapper prints the exact command it runs
-so a surprising filter is visible.
-
-### `export [--out <file>] [--grad-year <year>] [--core] [--limit <n>]`
-
-```bash
-cargo xtask export --ingress --out out/census.xlsx --limit 5000
-cargo xtask export --store var/census-service --out out/census.xlsx --limit 5000
-```
-
-Builds the census workbook from evidence the store already holds — no gathering, no network.
-`--grad-year` (default 2027), `--core` and `--limit` are forwarded to `census-service workbook`
-offline and carried in the `Workbook/run` request through the ingress, and both modes print the
-path they wrote and the cohort's graduation year. It is the short stable name for the artifact the
-recruiting projection consumes; offline the child's exit status is this command's exit status, and
-through the ingress a refused or failed invocation is a non-zero exit with Restate's own message.
-
-### `new-source <name>`
-
-```bash
-cargo xtask new-source sondre-land   # names the module sondre_land
-```
-
-Writes the decomposition-target layout and registers the module:
-
-```
-crates/census-crawl/src/<name>/mod.rs      module doc, SOURCE_ID, Options, collect (bails)
-crates/census-crawl/src/<name>/parse.rs    pure parsing placeholder + fixture-driven test
-crates/census-crawl/src/<name>/map.rs      canonical mapping placeholder
-crates/census-crawl/src/<name>/README.md   purpose, entry points, fixtures, commands
-crates/census-crawl/tests/fixtures/<name>/README.md what to capture, form, naming
-crates/census-crawl/src/mod.rs             one appended `pub mod <name>;` line
-```
-
-Hyphens become underscores (a module name is a Rust identifier); everything else is refused: names
-that are not lowercase identifiers, Rust keywords, or any name whose module directory, flat
-`<name>.rs`, or fixture directory already exists. The generated code compiles and does nothing: the
-adapter presents the registry's call shape (`CrawlResult<AdapterReport>`, the crate's own error type
-rather than `anyhow`), and the test in `parse.rs` passes while the fixture directory holds only its
-README, then fails as soon as a capture lands, until the real parser replaces the placeholder.
-
-## What it does not do
-
-- No reimplementation: `gate`, `source-test`, `census-status`, `coverage`, `bench` and `export` are
-  thin wrappers around the tools that own the behaviour — the census commands either run the
-  `census-service` binary or submit that deployment's own handlers (`Census/status`,
-  `Report/run`, `Workbook/run`) through Restate's ingress. The measurement subcommands do
-  implement the gate's measurements, because those measurements are this repository's own policy
-  rather than another tool's job — they are the Rust replacements for the deleted `tools/*.py`
-  scripts.
-- No shell interpretation: arguments are passed as an argument vector, so an argument with spaces or
-  quotes is never re-split. `--` separates this binary's flags from the child's.
-- No project-wide validation by itself: `new-source` writes files and prints paths, it does not run
-  `fmt`, clippy or the gate for you.
-- No silent success: a missing fixture directory, an existing scaffold target, and a non-zero child
-  exit are all errors.
+The auxiliary `g1-audit` binary lives at `xtask/src/g1/main.rs`:
+`cargo run -p xtask --bin g1-audit -- --help`.
+It inventories retained search response bodies offline; it is not a production census stage.
+The [2026-09-22 capture audit](../research/G1-LIVE-SEARCH-CONTRACT.md) owns its historical commands
+and findings.

@@ -1,3 +1,4 @@
+use crate::lifecycle::error::BrowserStartupError;
 use serde::{Deserialize, Serialize};
 use std::{path::PathBuf, time::Duration};
 use url::Url;
@@ -15,20 +16,20 @@ pub struct BrowserSettings {
 }
 
 impl BrowserSettings {
-    pub fn validate(&self) -> anyhow::Result<()> {
+    pub fn validate(&self) -> Result<(), BrowserStartupError> {
         if !(1..=8).contains(&self.tabs) {
-            anyhow::bail!("browser tab count must be in 1..=8");
+            return Err(BrowserStartupError::InvalidTabCount);
         }
         if !self.executable.is_absolute() || !self.profile_dir.is_absolute() {
-            anyhow::bail!("browser executable and profile paths must be absolute");
+            return Err(BrowserStartupError::InvalidPaths);
         }
         if !matches!(self.source_origin.scheme(), "http" | "https")
             || self.source_origin.host_str().is_none()
         {
-            anyhow::bail!("browser source origin must be an HTTP URL with a host");
+            return Err(BrowserStartupError::InvalidOrigin);
         }
         if self.request_timeout.is_zero() || self.challenge_wait.is_zero() {
-            anyhow::bail!("browser timeouts must be positive");
+            return Err(BrowserStartupError::InvalidTimeout);
         }
         if let Some(ref endpoint) = self.cdp_endpoint {
             validate_cdp_endpoint(endpoint)?;
@@ -56,29 +57,27 @@ pub struct BrowserStatus {
     pub cooldown_ms: u64,
 }
 
-fn validate_cdp_endpoint(url: &Url) -> anyhow::Result<()> {
+fn validate_cdp_endpoint(url: &Url) -> Result<(), BrowserStartupError> {
     if url.scheme() != "http" && url.scheme() != "https" {
-        anyhow::bail!("cdp endpoint must use http or https scheme");
+        return Err(BrowserStartupError::CdpBadScheme);
     }
-    let host = url
-        .host()
-        .ok_or_else(|| anyhow::anyhow!("cdp endpoint must have a host"))?;
+    let host = url.host().ok_or(BrowserStartupError::CdpNoHost)?;
     match host {
         url::Host::Domain("localhost") | url::Host::Ipv4(std::net::Ipv4Addr::LOCALHOST) => {}
         url::Host::Ipv6(std::net::Ipv6Addr::LOCALHOST) => {}
-        _ => anyhow::bail!("cdp endpoint must resolve to loopback only"),
+        _ => return Err(BrowserStartupError::CdpNotLoopback),
     }
     if url.port().is_none() {
-        anyhow::bail!("cdp endpoint must have an explicit port");
+        return Err(BrowserStartupError::CdpNoPort);
     }
     if url.path() != "/" {
-        anyhow::bail!("cdp endpoint path must be root (/)");
+        return Err(BrowserStartupError::CdpBadPath);
     }
     if !url.username().is_empty() || url.password().is_some() {
-        anyhow::bail!("cdp endpoint must have no credentials");
+        return Err(BrowserStartupError::CdpHasCredentials);
     }
     if url.query().is_some() || url.fragment().is_some() {
-        anyhow::bail!("cdp endpoint must have no query or fragment");
+        return Err(BrowserStartupError::CdpHasQueryFragment);
     }
     Ok(())
 }

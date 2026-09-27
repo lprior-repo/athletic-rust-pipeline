@@ -15,11 +15,6 @@ default-run = "xtask"
 [lints]
 workspace = true
 
-# The G1 audit lane: a read-only counted inventory of the retained Athletic.net `/Search.aspx`
-# runSearch response bodies, ported from the deleted Python inventory script. It used to be its own
-# package (`crates/g1-audit`); it is a second binary here because it is a tool, not a pipeline stage,
-# and nothing depends on it (see `docs/migration/module-map.md` §1.2). The binary name is unchanged:
-# `research/G1-LIVE-SEARCH-CONTRACT.md` and the retained corpora cite `g1-audit --raw …` verbatim.
 [[bin]]
 name = "g1-audit"
 path = "src/g1/main.rs"

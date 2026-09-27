@@ -38,6 +38,32 @@ run/operation IDs so the evidence distinguishes real recovery from starting a re
 | 16 | Replay frozen real captures and retained advice with fixed run semantics; exact IDs and semantic artifacts match. Separate nondeterministic operational measurements rather than fabricate them. |
 | 17 | Kill the actual worker while its batch is demonstrably in flight; prove the injection window, atomic batch visibility and exact remaining-unit recovery, not a guessed sleep. |
 
+## Required phase-boundary subcases
+
+The seventeen scenario IDs also cover the production-path boundaries retained from the superseded
+delivery brief; passing a broad restart test does not discharge them:
+
+- **Scenarios 1 and 6:** kill before issuing a source request; after receiving a response but before
+  capture commit; after capture commit but before parse completion; before the atomic Fjall
+  application; and after commit but before the Restate acknowledgement. Retain honest uncertain
+  attempt accounting, reuse committed captures, and expose neither partial rows nor partial receipts.
+- **Scenarios 6 and 17:** kill after some deterministic chunks of one source page. Reuse completed
+  chunks and finish the same manifest, without resetting ordinals or appending duplicate effects.
+- **Scenarios 1 and 2:** restart the endpoint and native Restate independently, preserving each
+  durable directory and the same invocation identity; a fresh deployment is not recovery.
+- **Scenario 16:** quarantine one malformed source object while unrelated objects continue; never
+  turn a parse failure into a successful empty source. Retain its bytes and rejection locator.
+- **Scenario 13:** malformed and timed-out model responses remain explicit review outcomes; transport
+  failure cannot manufacture a match or no-match.
+- **Scenarios 14 and 16:** interrupt export before promotion. The previous accepted generation remains
+  published, and a newer partial file is not selected by filename or timestamp.
+- **Scenario 15:** interrupt backup and restore. The original store and previous accepted backup
+  remain recoverable; restore uses a new owned destination.
+
+Injection seams must signal the reached boundary and be gated behind explicit test/injection
+configuration, unreachable in normal release operation. Record exact failpoint, process IDs,
+request counters, seeds, invocations, exit codes and hashes; a guessed sleep is not a reached fault.
+
 ## Required reconciliation
 
 For each fault, compare stable source-unit/capture/effect/decision IDs and content, not just counts.

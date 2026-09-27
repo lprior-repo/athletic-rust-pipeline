@@ -60,8 +60,8 @@ existing implementation exactly:
   second call.
 - **Indoor/outdoor:** distinguished by `SeasonID`/`allSeasons[].Display`, not by a result flag.
   Observed here: `IDSeason 2026 → "2026 Outdoor"`, `IDSeason 2025 → "2025 Outdoor"`. Indoor seasons
-  carry the `1xxxx` prefix (`12026` = 2026 indoor per repository evidence: `HANDOFF.md`, `SCOPE.md`,
-  nav fixture) — not exercised by any athlete in either HAR.
+  carry the `1xxxx` prefix (`12026` = 2026 indoor per the then-current repository contracts and
+  navigation fixture) — not exercised by either HAR; see [historical evidence](../../../../docs/VERIFICATION-EVIDENCE.md).
 - **Seasons / historical depth:** the request carries no season or date bound, so depth is whatever
   the athlete has. Observed for athlete `28872883`: 2 seasons (`2025`, `2026` outdoor), 53 results,
   18 meets, 5 event families, 1 school, grades for both seasons. A synthetic repository fixture
@@ -171,7 +171,7 @@ give you for free, and what does it save elsewhere.
    and **0 search requests** are needed for that athlete — up to 3 are avoided per source row
    against the current config.
 4. **Quantified avoidance (arithmetic on retained corpus counts, not a new observation):** the
-   retained outdoor-boys delivery covers 142,705 unique athletes (`SCOPE.md`, `HANDOFF.md`). The
+   retained outdoor-boys delivery covers 142,705 athletes ([historical baseline](../../README.md#research-baseline-and-attribution-corrections)). The
    repository's per-athlete profile plan issues 3 profile resources
    (`Bio{tf}`, `Bio{xc}`, `ProfileHtml` — `src/runtime/profile_worker.rs:178-195`) plus derived
    `TeamNav/Team` calls. Requesting 1 Bio instead of 3 for the TF-only subset saves 2 requests per
@@ -192,7 +192,7 @@ Availability from the Bio response, field by field (observed values from HAR2 #1
 | TF/XC distinction | `resultsTF` vs `resultsXC` (+`distancesXC`), `hasOtherSport`, `allSeasons[].Display` | `resultsTF[53]`, `resultsXC: null`, `hasOtherSport: false` | present per sport; **two calls for two-sport athletes** |
 | indoor/outdoor | `SeasonID`/`IDSeason`, `allSeasons[].Display` | `"2026 Outdoor"`, `"2025 Outdoor"` | present (indoor prefix form from repo evidence only) |
 | performances | `resultsTF[]`/`resultsXC[]` | 53 rows | present, full history, one response |
-| PRs | `PersonalBest` bit mask; `SeasonBest` bit mask | 13/53 rows with `PersonalBest&2 == 2`; 15/53 with `SeasonBest&1 == 1`; raw values `{0:38, 14:13, 16:2}` and `{0:35, 7:14, 8:3, 15:1}` | present but **masked flags, not booleans** (16 & 2 == 0); publisher claim kept distinct from computed best (`SCOPE.md`) |
+| PRs | `PersonalBest` bit mask; `SeasonBest` bit mask | 13/53 rows with `PersonalBest&2 == 2`; 15/53 with `SeasonBest&1 == 1`; raw values `{0:38, 14:13, 16:2}` and `{0:35, 7:14, 8:3, 15:1}` | present but **masked flags, not booleans** (16 & 2 == 0); publisher claim kept distinct from computed best ([domain contract](../../../../DOMAIN.md)) |
 | progression | `resultsTF[]` ordered by `ResultDate` + `SeasonID`; `SortInt`/`SortIntRaw` per mark | 2025→2026 rows interleaved by event | derivable client-side |
 | meets | `meets[{MeetID}]` + `resultsTF[].MeetID` | 18 meets with `MeetName` + `EndDate` | present; `resultsTF[].meetName` is **null**, so the join is mandatory |
 | athlete profile URL | not in the response body | — | trivially composed: `https://www.athletic.net/athlete/28872883/track-and-field` (repo does exactly this) |
@@ -306,7 +306,7 @@ plain HTTP client from this machine either.
   - `GET /api/v1/AthleteBio/GetAthleteBioData?athleteId=28872883&sport=tf&level=0` → **403**,
     5,707 bytes, `cf-mitigated: challenge`, body `<title>Just a moment...</title>` (Cloudflare
     managed-challenge interstitial, not the `Attention Required!` block page recorded in
-    `HANDOFF.md` for 2026-09-19 — same status class, different interstitial).
+    the 2026-09-19 handoff, now retained in [verification evidence](../../../../docs/VERIFICATION-EVIDENCE.md) — same status class, different interstitial).
   - `GET /athlete/28872883/track-and-field` → **403**, 5,481 bytes, `cf-mitigated: challenge`.
   - `GET /api/v1/tfRankings/GetNavInfo?seasonId=2026&level=4&gender=m` → **403**, 5,650 bytes,
     `cf-mitigated: challenge`.
@@ -379,7 +379,7 @@ re-architecting around it is the 142,705-athlete corpus that already exists.
 | + division chain and team URL slug | **+1** (`ProfileHtml`) only if the `ld+json` breadcrumb is actually consumed | state + division chain ids + `/team/{TeamID}/…` slug | HAR2 #0 |
 | + PR/rank panel | **+1** `General/GetRankings?athleteId=` — derived from the same results, so normally skippable | per-event PR with `Position`/`IDDivName` scoping | HAR2 #135 |
 
-Aggregate arithmetic on the retained corpus count (142,705 unique athletes, `SCOPE.md`): the current
+Aggregate arithmetic on the retained 142,705-athlete corpus ([baseline](../../README.md#research-baseline-and-attribution-corrections)): the historical
 3-request-per-athlete profile plan costs 428,115 profile requests for that corpus and up to 713,525
 once per-athlete team lookups are included, versus 142,705–285,410 at the recommended minimum — a
 saving of **285,410–428,115 requests**, before counting the up-to-3 eliminated `Search.aspx/runSearch`
@@ -436,7 +436,7 @@ Adopt, in order:
 | `https://www.athletic.net/athlete/28872883/track-and-field` | GET (curl, no cookies) | **403**, 5,481 B, `cf-mitigated: challenge` | same boundary for the document route; `cf-ray` present, `server: cloudflare` | 2026-09-20T04:15:31Z |
 | `https://www.athletic.net/api/v1/tfRankings/GetNavInfo?seasonId=2026&level=4&gender=m` | GET (curl, no cookies) | **403**, 5,650 B, `cf-mitigated: challenge` | the boundary is host-wide, not endpoint-specific; `set-cookie: _cfuvid=…` returned (value not reproduced) | 2026-09-20T04:15:34Z |
 | `/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/fixtures/public/athletic-source-contract.json` | file read | n/a | `GetAthleteBioData` named as field-metadata source; `isPR/isSR` snippet; `IDEvent/IDEventType` ↔ `EventID/EventTypeID` join; search may return TF and XC links for one identity | 2026-09-19 |
-| `src/runtime/profile_worker.rs:178-195`, `src/runtime/source/request.rs:112-119`, `src/profile/bio.rs:347-350,423-640,709-726`, `src/runtime/source/retry.rs`, `config.toml`, `config.native.toml`, `SCOPE.md`, `HANDOFF.md`, `CHROMIUM_DESIGN.md` | file reads | n/a | current per-athlete resource set (3), exact request construction, XC distance join contract, `/result/{shortCode}` URL, retry/`Retry-After` policy, pacing (`source_interval_ms=1000`), 142,705-athlete retained corpus, 2026-09-19 live 403 record | 2026-09-19 |
+| Then-current root-package profile/source/bio/retry modules, configuration and contracts (retired; [historical evidence](../../../../docs/VERIFICATION-EVIDENCE.md)) | file reads | n/a | then-current per-athlete resource set (3), exact request construction, XC distance join contract, `/result/{shortCode}` URL, retry/`Retry-After` policy, pacing (`source_interval_ms=1000`), 142,705-athlete retained corpus, 2026-09-19 live 403 record | 2026-09-19 |
 
 Total live requests issued to `www.athletic.net` by this assignment: **8** (4 + 4 probe sets,
 sequential, no cookies, no UA spoofing), all `GET`, ≤1 per ~2 s. All HAR evidence is from the two

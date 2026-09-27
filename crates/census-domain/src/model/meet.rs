@@ -53,34 +53,24 @@ where
         }),
     }
 }
+fn valid_date(date: &str) -> bool {
+    chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").is_ok()
+}
 
 impl CanonicalMeet {
-    pub fn mint(
-        state: Option<UsJurisdiction>,
-        date: &str,
-        name: &str,
-        _location: Option<&str>,
-    ) -> MeetId {
-        Id::mint(
-            "meet",
-            &[
-                state
-                    .map(UsJurisdiction::code)
-                    .unwrap_or(MEET_STATE_UNRESOLVED),
-                date,
-                &normalize_name(name),
-            ],
-        )
-    }
-
     pub fn new(
         state: Option<UsJurisdiction>,
         name: impl Into<String>,
         date: impl Into<String>,
         level: CompetitionLevel,
     ) -> Self {
-        let name = name.into();
-        let date = date.into();
+        let name: String = name.into();
+        let date: String = date.into();
+        debug_assert!(!name.is_empty(), "meet name must not be empty");
+        debug_assert!(
+            valid_date(&date),
+            "meet date {date:?} is not a valid ISO date"
+        );
         let normalized_name = normalize_name(&name);
         let id = CanonicalMeet::mint(state, &date, &name, None);
         Self {
@@ -98,5 +88,66 @@ impl CanonicalMeet {
             evidence: Vec::new(),
             retained_conflicts: Vec::new(),
         }
+    }
+
+    pub fn mint(
+        state: Option<UsJurisdiction>,
+        _date: &str,
+        name: &str,
+        division: Option<&str>,
+    ) -> MeetId {
+        let mut parts = Vec::new();
+        if let Some(s) = state {
+            parts.push(s.to_string());
+        }
+        parts.push(name.to_string());
+        if let Some(d) = division {
+            parts.push(d.to_string());
+        }
+        let mut hasher = Sha256::new();
+        hasher.update(b"meet:");
+        for part in &parts {
+            hasher.update([0x1f]);
+            hasher.update(part.as_bytes());
+        }
+        let digest = hasher.finalize();
+        let mut hex = String::with_capacity(16);
+        for byte in digest.iter().take(8) {
+            hex.push_str(&format!("{byte:02x}"));
+        }
+        Id::mint("meet", &[&hex])
+    }
+
+    pub fn new_checked(
+        state: Option<UsJurisdiction>,
+        name: impl Into<String>,
+        date: impl Into<String>,
+        level: CompetitionLevel,
+    ) -> Result<Self, String> {
+        let name: String = name.into();
+        let date: String = date.into();
+        if name.is_empty() {
+            return Err("meet name must not be empty".to_string());
+        }
+        if !valid_date(&date) {
+            return Err(format!("meet date {date:?} is not a valid ISO date"));
+        }
+        let normalized_name = normalize_name(&name);
+        let id = CanonicalMeet::mint(state, &date, &name, None);
+        Ok(Self {
+            id,
+            name,
+            normalized_name,
+            date,
+            end_date: None,
+            location: None,
+            state,
+            level,
+            sports: Vec::new(),
+            source_identities: Vec::new(),
+            source_urls: Vec::new(),
+            evidence: Vec::new(),
+            retained_conflicts: Vec::new(),
+        })
     }
 }

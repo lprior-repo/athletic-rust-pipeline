@@ -1,5 +1,8 @@
 # Acceptance answers — Midwest TF/XC Class-of-2027 source research (measured)
 
+Historical measured report; the [corpus index](../README.md) defines generations and corrections.
+Its source/adapter recommendations are not current policy or proof of the fresh 49-jurisdiction run.
+
 Nine questions, each answered from the newest artifacts on disk. Supersedes the estimate-only version of this
 file: the numbers below are measured, not modelled, wherever a measurement exists.
 
@@ -90,7 +93,7 @@ evidence source set per athlete:
 
 Because sources overlap, the per-source numbers sum to more than 190,087: 142,535 + 108,174 + 7,503 = 258,212
 attributions over 190,087 rows. Association **grade oracles** (state-meet cohorts, a research-phase measure, not
-a census source) total 3,993 grade-bearing Co2027 rows `[research/midwest/30-cross-source-pareto.md]`, and the
+a census source) total 3,993 grade-bearing Co2027 rows [retained baseline](../README.md#research-baseline-and-attribution-corrections), and the
 research-phase Athletic.net rankings sweep measured 40,695 Co2027 in 12 states / 2,728 requests, national
 142,705 in 4,233 requests `[research/midwest/04-athletic-net-rankings-discovery.md]`.
 
@@ -125,7 +128,7 @@ Consequences that must travel with any "unique athletes" figure:
 
 1. `report.json` `providers.athletic_net_urls_known` = 93,619 counts athletes whose `public_profile_urls` contains `athletic.net`; the store holds **95,236** athletes with a `legacy_athletic_net` identity entry, so 1,617 more athletes carry an Athletic.net id than carry a composable Athletic.net URL. Two measures, both printed.
 2. **10,131 Athletic.net athlete ids are each attached to two or more canonical Co2027 athletes** (worst case id `29753305` on 8). Under the documented dedupe priority (Athletic.net `AthleteID` first) those rows are duplicates; the store did not apply that key.
-3. The research phase's complement model — "AthleticLIVE and IHSA add zero new athletes because every row carries an Athletic.net id" `[research/midwest/30-cross-source-pareto.md]` — still holds for **identity, not for rows**: 43,229 Co2027 rows rest on AthleticLIVE evidence alone (Q4) and bring grade + school without a second witness.
+3. The research phase's complement model — "AthleticLIVE and IHSA add zero new athletes because every row carries an Athletic.net id" [retained baseline](../README.md#research-baseline-and-attribution-corrections) — concerns source-ID overlap, not proof of distinct people or independent corroboration: 43,229 Co2027 rows rest on AthleticLIVE evidence alone (Q4) and bring grade + school without a second witness.
 
 Unverified:
 - Whether the 10,131 shared Athletic.net ids are one person (duplicate records) or several people (a shared account, a merged/renamed athlete, or a school-team placeholder) is not decidable from the store: `athletes.jsonl` keeps `known_names` but no merge/alias provenance. A capture of `AthleteBio/GetAthleteBioData` for 20 of the shared ids against their two school/name variants would settle it (`[lane: athleticnet §13]` shows the endpoint answers anonymously with the full career + school).
@@ -215,7 +218,7 @@ Corroboration is very uneven by state (All sources; `reports/census-by-state.csv
 | ND | 3,004 | 985 | 32.8 % | 961 | 32.0 % |
 
 For contrast, the research phase's only estimate was 3,993 grade-corroborated rows = **9.8 %** of a 40,695
-corpus `[research/midwest/30-cross-source-pareto.md]`. That estimate is superseded: it counted state-meet grade
+corpus [retained baseline](../README.md#research-baseline-and-attribution-corrections). That estimate is superseded: it counted state-meet grade
 oracles as *rows*, while the measurement above counts athletes with two `source_identities` namespaces. Both are
 printed; the 31.2 % is the retained number.
 
@@ -413,7 +416,7 @@ spend because it is byte-countable and carries no "purged" step. Both numbers ar
 
 The total is **conservative by construction**: the full external spend (18,424) is charged against only the profile and meet baselines, while the MileSplit and association-directory responses are charged without claiming their own credit (row 4 is a capability the Athletic.net-only baseline cannot produce at any price). Charging only the row-1 external cost against the row-1 baseline gives the single cleanest exchange in the study: **613 requests for 167,277 Athletic.net athlete ids.**
 
-Sanity check against the research phase: it modelled 43,423 requests (2,728 discovery + 40,695 profiles) for the 12-state boys-outdoor cohort alone, or 124,813 under the 3-resource plan, and measured the *state-meet oracle set's* replacement cost as ~3,920–3,960 profile-class requests plus ~190 meet lookups `[research/midwest/30-cross-source-pareto.md]`.
+Sanity check against the research phase: it modelled 43,423 requests (2,728 discovery + 40,695 profiles) for the 12-state boys-outdoor cohort alone, or 124,813 under the 3-resource plan, and measured the *state-meet oracle set's* replacement cost as ~3,920–3,960 profile-class requests plus ~190 meet lookups [retained baseline](../README.md#research-baseline-and-attribution-corrections).
 Those ~4,110 requests cover one cohort's state meets, not the census's whole external spend; the 18,424 above covers the larger corpus (190,087 Co2027 rows, 167,277 distinct Athletic.net ids, 12 states of rosters and 27,580 coach rows). Both numbers are printed; they are different scopes, and the census's is the retained one for Q7.
 
 Unverified:
@@ -438,7 +441,7 @@ Ranked by measured size:
 
 | # | gap | measured size | states / providers responsible | citation |
 |---|---|---|---|---|
-| 1 | no coach-role data at all | **MI 22,073 + IN 16,931 + MO 15,168 + KS 10,077 = 64,249 Co2027 (33.8 %)** have `with_coach` = 0 (the research-phase estimate over its 40,695-athlete corpus was "6,302 athletes / 15.5 % sit in coach-less states" — MI+IN+MO only; superseded by the measured 64,249, which adds KS and the larger corpus) | MHSAA (robots `/DesktopModules/`), IHSAA/IN (no directory), MSHSAA (host-wide robots disallow), KSHSAA (AD-only) | `reports/census-by-state.csv`, `[lane: coach-directories-national §MI,§IN,§MO,§KS]`, `[lane: state-assoc-plains §0.3]`, `[research/midwest/30-cross-source-pareto.md]` §Q8 |
+| 1 | no coach-role data at all | **MI 22,073 + IN 16,931 + MO 15,168 + KS 10,077 = 64,249 Co2027 (33.8 %)** have `with_coach` = 0 (the research-phase estimate over its 40,695-athlete corpus was "6,302 athletes / 15.5 % sit in coach-less states" — MI+IN+MO only; superseded by the measured 64,249, which adds KS and the larger corpus) | MHSAA (robots `/DesktopModules/`), IHSAA/IN (no directory), MSHSAA (host-wide robots disallow), KSHSAA (AD-only) | `reports/census-by-state.csv`, `[lane: coach-directories-national §MI,§IN,§MO,§KS]`, `[lane: state-assoc-plains §0.3]`, [retained baseline](../README.md#research-baseline-and-attribution-corrections) |
 | 2 | coach names but **zero emails** | NE 9,200 + ND 3,004 = **12,204 (6.4 %)** | NSAA publishes no email field; NDHSAA names only | `reports/census-by-state.csv`, `[lane: coach-directories-national §NE,§ND]` |
 | 3 | no independent corroboration | **43,229 rows (22.7 %)** AthleticLIVE-only; worst SD 45.2 %, IA 37.9 %, NE 35.6 %, ND 32.0 % | measured from the 2026 meet inventory: SD `live_results` 372/`dakota` 283/`athleticlive` 61 of 753 · IA `live_results` 1,007/`aatiming` 297/`athleticlive` 160/`dakota` 120/`wayzata` 119 of 2,015 · NE `live_results` 591/`athleticlive` 307/`blacksquirrel` 184 of 1,198 · ND `live_results` 162/`athleticlive` 110/`heros` 52 of 324 | Q4 table, `[data/athleticlive-midwest-2026-meets-all.csv]`, `[store: var/census-service/out/athletes.jsonl]` |
 | 4 | thin public-profile depth | WI 17,921/22,074 = 81.2 % · IA 11,347/14,076 = 80.6 % · NE 7,868/9,200 = 85.5 % · IN 14,758/16,931 = 87.2 % | MileSplit `wi`/`ia`/`ne`/`in` roster coverage; ND/SD/KS/MO ≥ 96 % | `reports/census-by-state.csv` |

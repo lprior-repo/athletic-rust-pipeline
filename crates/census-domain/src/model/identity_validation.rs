@@ -24,7 +24,23 @@ pub enum IdentityDecisionIssue {
     UnresolvedReview,
     ConflictingApplications,
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum VerdictKind {
+    SamePerson,
+    DifferentPerson,
+    Insufficient,
+}
 
+impl VerdictKind {
+    pub const fn slug(self) -> &'static str {
+        match self {
+            Self::SamePerson => "same_person",
+            Self::DifferentPerson => "different_person",
+            Self::Insufficient => "insufficient_evidence",
+        }
+    }
+}
 pub(super) struct ReviewBindings<'a> {
     pub(super) cases: BTreeMap<&'a str, &'a ReviewCase>,
     pub(super) verdicts: BTreeMap<&'a str, &'a ReviewVerdictRecord>,
@@ -186,8 +202,8 @@ fn review_issue(
         return Ok(Some(Issue::MissingAcceptedVerdict));
     };
     let expected = match decision.kind {
-        AppliedIdentityKind::SamePerson => "same_person",
-        AppliedIdentityKind::DifferentPerson => "different_person",
+        AppliedIdentityKind::SamePerson => VerdictKind::SamePerson,
+        AppliedIdentityKind::DifferentPerson => VerdictKind::DifferentPerson,
         AppliedIdentityKind::SourceBound => return Ok(Some(Issue::InvalidMembership)),
     };
     if !verdict.accepted
@@ -196,7 +212,7 @@ fn review_issue(
         || verdict.field != "identity"
         || verdict.family != case.family
         || verdict.subject_id != case.subject_id
-        || verdict.value != expected
+        || !verdict.value.eq(expected.slug())
         || verdict.member_ids.len() != ids.len()
         || verdict.member_ids.iter().collect::<BTreeSet<_>>() != *ids
         || decision.verdict_digest.as_deref() != Some(identity_verdict_digest(verdict)?.as_str())

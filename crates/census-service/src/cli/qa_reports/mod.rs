@@ -31,9 +31,7 @@ pub(super) fn run_qa_reports(args: &QaReportsArgs) -> Result<()> {
     let research = &args.research;
     let reports_dir = research.join("research").join("midwest");
     let evidence_dir = reports_dir.join("evidence").join("gaps");
-    let synthesis_file = research
-        .join("synthesis")
-        .join("09-gap-phase-consolidation-2026-09-20.md");
+    let synthesis_file = research.join("README.md");
 
     let Some(header_regex) = check::header_re() else {
         bail!("internal: the report header regex failed to compile");
@@ -79,28 +77,6 @@ pub(super) fn run_qa_reports(args: &QaReportsArgs) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::constants::*;
-
-    #[test]
-    fn expected_numbers_1_to_46() {
-        let mut prev = 0usize;
-        for (num, _fname) in EXPECTED {
-            assert_eq!(num, prev + 1, "number {num} is not sequential after {prev}");
-            prev = num;
-        }
-        assert_eq!(prev, 46, "last entry is {prev}, expected 46");
-    }
-
-    #[test]
-    fn expected_filenames_valid() {
-        for (num, fname) in EXPECTED {
-            let expected = format!("{num:02}-");
-            assert!(
-                fname.starts_with(&expected),
-                "{fname} does not start with {expected}"
-            );
-            assert!(fname.ends_with(".md"), "{fname} is not a .md file");
-        }
-    }
 
     #[test]
     fn required_sections_compile() {

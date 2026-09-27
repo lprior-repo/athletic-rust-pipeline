@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use anyhow::{bail, Context, Result};
-
 use census_domain::model::{AccessBlockKind, ReviewCase, SourceAccessCondition};
 
 use super::{CensusState, SealEvidence, SealedCensus};
@@ -9,6 +7,26 @@ use census_report::report::{self, Scope};
 use census_store::{Store, StoreStats, Table};
 
 pub mod workbook;
+
+#[derive(Debug, thiserror::Error)]
+pub enum SealWorkflowError {
+    #[error("coverage report failed: {0}")]
+    Coverage(String),
+    #[error("census build failed: {0}")]
+    CensusBuild(String),
+    #[error("store operation failed: {0}")]
+    Store(String),
+    #[error("workbook inspection failed: {0}")]
+    Workbook(String),
+    #[error("no workbook found; run census workbook before sealing")]
+    WorkbookMissing,
+    #[error("phase detection failed: {0}")]
+    PhaseDetection(String),
+    #[error("seal recording failed: {0}")]
+    SealRecording(String),
+    #[error("seal write failed: {0}")]
+    SealWrite(String),
+}
 
 mod assembly;
 
@@ -51,33 +69,45 @@ impl SealOutcome {
     }
 }
 
-pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome> {
-    let coverage = report::coverage_report(store, Some(request.grad_year))?;
-    let census = report::build_census(store, request.scope)?;
-    let stats = store.stats()?;
-    let cases = store.scan::<ReviewCase>(Table::ReviewCases)?;
-    let access = store.scan::<SourceAccessCondition>(Table::SourceAccess)?;
+pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWorkflowError> {
+    let coverage = report::coverage_report(store, Some(request.grad_year))
+        .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
+    let census = report::build_census(store, request.scope)
+        .map_err(|error| SealWorkflowError::CensusBuild(error.to_string()))?;
+    let stats = store
+        .stats()
+        .map_err(|error| SealWorkflowError::Store(error.to_string()))?;
+    let cases = store
+        .scan::<ReviewCase>(Table::ReviewCases)
+        .map_err(|error| SealWorkflowError::Store(error.to_string()))?;
+    let access = store
+        .scan::<SourceAccessCondition>(Table::SourceAccess)
+        .map_err(|error| SealWorkflowError::Store(error.to_string()))?;
 
-    let Some(path) = workbook_path(store, request.workbook.as_deref())? else {
-        bail!(
-            "no workbook in {}: run `census-service workbook --grad-year {}` before sealing",
-            store.out_dir().display(),
-            request.grad_year
-        );
+    let Some(path) = workbook_path(store, request.workbook.as_deref())
+        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?
+    else {
+        return Err(SealWorkflowError::WorkbookMissing);
     };
-    let workbook = inspect_workbook(&path, store, request.grad_year, request.scope)?;
+    let workbook = inspect_workbook(&path, store, request.grad_year, request.scope)
+        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
     let evidence = assemble(
         &coverage, &census, &stats, &cases, &access, request, workbook,
     );
 
-    let mut state = reached_phase(&stats, &path)?;
-    let recorded = recorded_seal(store)?;
+    let mut state = reached_phase(&stats, &path)
+        .map_err(|error| SealWorkflowError::PhaseDetection(error.to_string()))?;
+    let recorded = recorded_seal(store)
+        .map_err(|error| SealWorkflowError::SealRecording(error.to_string()))?;
     let refusal = state
         .seal(evidence.clone())
         .err()
         .map(|blocked| blocked.to_string());
     let wrote = match (&refusal, request.write) {
-        (None, true) => Some(write_seal(store, &state)?),
+        (None, true) => Some(
+            write_seal(store, &state)
+                .map_err(|error| SealWorkflowError::SealWrite(error.to_string()))?,
+        ),
         _ => None,
     };
     Ok(SealOutcome {
@@ -115,21 +145,26 @@ fn table_rows(stats: &StoreStats, table: Table) -> u64 {
         .unwrap_or(0)
 }
 
-fn recorded_seal(store: &Store) -> Result<Option<SealedCensus>> {
+fn recorded_seal(store: &Store) -> Result<Option<SealedCensus>, SealWorkflowError> {
     let path = store.out_dir().join("seal.json");
     if !path.exists() {
         return Ok(None);
     }
-    let raw = std::fs::read(&path).with_context(|| format!("reading {}", path.display()))?;
-    let state: CensusState =
-        serde_json::from_slice(&raw).with_context(|| format!("parsing {}", path.display()))?;
+    let raw = std::fs::read(&path)
+        .map_err(|error| SealWorkflowError::SealRecording(error.to_string()))?;
+    let state: CensusState = serde_json::from_slice(&raw)
+        .map_err(|error| SealWorkflowError::SealRecording(error.to_string()))?;
     Ok(state.sealed().cloned())
 }
 
-fn write_seal(store: &Store, state: &CensusState) -> Result<PathBuf> {
+fn write_seal(store: &Store, state: &CensusState) -> Result<PathBuf, SealWorkflowError> {
     let out = store.out_dir().join("seal.json");
-    std::fs::write(&out, serde_json::to_vec_pretty(state)?)
-        .with_context(|| format!("writing {}", out.display()))?;
+    std::fs::write(
+        &out,
+        serde_json::to_vec_pretty(state)
+            .map_err(|error| SealWorkflowError::SealWrite(error.to_string()))?,
+    )
+    .map_err(|error| SealWorkflowError::SealWrite(error.to_string()))?;
     Ok(out)
 }
 

@@ -279,7 +279,7 @@ A full-text scan of every page fetched for this report found **exactly two** `at
 
 That URL is the official Athletic.net state-series page for Missouri. **It could not be loaded from this machine:
 HTTP 403, Cloudflare "Just a moment…" interstitial, 5,593 bytes** — consistent with the block recorded in the
-mission brief and in the repo (`HANDOFF.md`: `GetNavInfo`/`GetRankings` both return the 403 block page, 5,484 bytes).
+then-current research brief and repository handoff (`GetNavInfo`/`GetRankings` returned 403 block pages, 5,484 bytes; [historical evidence](../../../../docs/VERIFICATION-EVIDENCE.md)).
 **No `MeetID`, `TeamID`, `AthleteID` or result deep link is exposed anywhere on mshsaa.org.**
 
 The XC Championship Information Central page does **not** use Athletic.net — its "Results" block links back to
@@ -563,9 +563,9 @@ Host: `www.mshsaa.org` (≈47 requests total; no 429, no `Retry-After`).
 | `https://www.mshsaa.org/sitemap.xml` | GET | 200, 44 B, `text/xml` | **empty sitemap** — XML declaration only, 0 `<loc>` entries | 2026-09-19 23:18 CDT |
 | `https://www.athletic.net/track-and-field-outdoor/usa/high-school/missouri/mshsaa` | GET | **403** — Cloudflare "Just a moment…", 5,593 B | published by MSHSAA as the official T&F championship result host, but **not retrievable from this machine**; no MeetID extraction possible | 2026-09-19 23:15 CDT |
 
-Cross-references consulted (read-only, not this agent's slices): `HANDOFF.md` in
-`/home/lewis/src/ad-law-scrape/athletic-rust-pipeline` (Cloudflare 403 on `GetNavInfo`/`GetRankings`, 5,484 B block
-pages; division lists `168416` outdoor / `173005` indoor; season `12026`);
+Cross-references consulted (read-only): the then-current repository handoff, since consolidated into
+[historical verification evidence](../../../../docs/VERIFICATION-EVIDENCE.md), recorded Cloudflare 403 on
+`GetNavInfo`/`GetRankings` (5,484 B), division lists `168416` outdoor / `173005` indoor, season `12026`;
 `/home/lewis/Downloads/www.athletic.net.har` and `www.athletic.net2.har` — grepped for `mshsaa` (0 hits in both) and
 `missouri` (only a country/state code list in the second HAR) ⇒ **the HAR captures contain no Missouri state-series
 evidence**, so the MSHSAA→Athletic.net MeetID mapping is UNVERIFIED.

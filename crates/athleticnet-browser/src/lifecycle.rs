@@ -1,3 +1,4 @@
+use self::error::BrowserStartupError;
 use super::{actor::Command, gate::ProfileGate, BrowserStatus};
 use crate::clock::Clock;
 use std::sync::{Arc, Mutex, RwLock};
@@ -8,6 +9,7 @@ use tokio::{
 };
 
 mod commands;
+pub(crate) mod error;
 mod shutdown;
 mod startup;
 mod status;
@@ -19,7 +21,8 @@ pub struct BrowserManager {
     status: Arc<RwLock<BrowserStatus>>,
     cooldown_until: Arc<Mutex<Option<Instant>>>,
     gate: Arc<ProfileGate>,
-    join: Arc<AsyncMutex<Option<JoinHandle<anyhow::Result<()>>>>>,
+#[allow(clippy::type_complexity)]
+    join: Arc<AsyncMutex<Option<JoinHandle<Result<(), BrowserStartupError>>>>>,
     clock: Arc<dyn Clock>,
 }
 impl Drop for BrowserManager {

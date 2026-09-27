@@ -95,7 +95,7 @@ and their `robots.txt` status here once the walk exists.
 | `map.rs` | parsed rows to canonical entities from `crate::model` |
 
 When an adapter's tests outgrow `parse.rs`, its `#[cfg(test)]` module moves to the sibling `tests.rs`
-shown in `docs/DECOMPOSITION.md`; the scaffold starts with the fixture-driven test inside `parse.rs`.
+shown in `SOURCE_ADAPTER_GUIDE.md`; the scaffold starts with the fixture-driven test inside `parse.rs`.
 
 ## Fixtures
 

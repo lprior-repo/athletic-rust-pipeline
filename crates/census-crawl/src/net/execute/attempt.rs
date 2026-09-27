@@ -35,8 +35,8 @@ impl Fetcher {
 
     async fn attempt_once(&self, plan: &FetchPlan<'_>) -> Result<FetchOutcome, FetchError> {
         let response = self.dispatch(plan).await?;
+        self.check_redirect_admission(plan.url, &response)?;
         let status = response.status().as_u16();
-        self.count_request(plan.host, status).await;
         if let Some(kind) = blocking_kind(status) {
             self.record_access_condition(
                 plan.host,
@@ -168,6 +168,30 @@ impl Fetcher {
         Err(FetchError::Http {
             status: 304,
             url: plan.url.to_string(),
+        })
+    }
+
+    fn check_redirect_admission(
+        &self,
+        original_url: &str,
+        response: &reqwest::Response,
+    ) -> Result<(), FetchError> {
+        let final_url = response.url().as_str();
+        if final_url == original_url {
+            return Ok(());
+        }
+        let parsed = url::Url::parse(final_url).map_err(|source| FetchError::Policy {
+            detail: format!("cannot parse final URL after redirect: {source}"),
+        })?;
+        let final_host = parsed.host_str().unwrap_or_default().to_string();
+        if self.is_authorized_host(&final_host) {
+            return Ok(());
+        }
+        Err(FetchError::Policy {
+            detail: format!(
+                "redirect from {} to {} bypasses admission; host {} not authorized",
+                original_url, final_url, final_host
+            ),
         })
     }
 }
