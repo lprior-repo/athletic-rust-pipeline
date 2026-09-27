@@ -1,4 +1,3 @@
-
 use super::map::{published_gender, unmapped, AthleteRow, EventContext, Mapper, PerformanceRow};
 use super::parse::{
     class_token, event_label, finisher_grade, member_grade, parse_mark, round_label,
@@ -86,7 +85,13 @@ impl<'a> Mapper<'a> {
         }
     }
 
-    fn individual(&mut self, row: &FinisherRow, context: &EventContext<'_>, url: &str, row_index: usize) {
+    fn individual(
+        &mut self,
+        row: &FinisherRow,
+        context: &EventContext<'_>,
+        url: &str,
+        row_index: usize,
+    ) {
         let Some(school) =
             self.school(row.ihsa_school_id.as_deref(), row.team_name.as_deref(), url)
         else {
@@ -154,7 +159,13 @@ impl<'a> Mapper<'a> {
         );
     }
 
-    fn relay(&mut self, row: &FinisherRow, context: &EventContext<'_>, url: &str, row_index: usize) {
+    fn relay(
+        &mut self,
+        row: &FinisherRow,
+        context: &EventContext<'_>,
+        url: &str,
+        row_index: usize,
+    ) {
         let Some(school) =
             self.school(row.ihsa_school_id.as_deref(), row.team_name.as_deref(), url)
         else {

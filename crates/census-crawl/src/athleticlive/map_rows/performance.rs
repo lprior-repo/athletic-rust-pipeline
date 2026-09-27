@@ -1,4 +1,3 @@
-
 use super::super::map::{RowContext, Writer};
 use super::Mapped;
 use census_domain::model::{CanonicalPerformance, Evidence, Grade, Mark, TimingMethod};

@@ -1,4 +1,3 @@
-
 use super::super::map::{Accumulator, ResultStats, SOURCE_ID};
 use super::super::parse::infer_level;
 use super::super::wire::event_summary_url;

@@ -1,4 +1,3 @@
-
 use super::{meet_requests, metadata_request};
 
 fn urls_for(meet_id: i64) -> Vec<String> {

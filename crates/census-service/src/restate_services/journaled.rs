@@ -1,4 +1,3 @@
-
 use std::sync::Arc;
 
 use census_store::clock::Clock;

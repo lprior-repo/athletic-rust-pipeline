@@ -1,4 +1,3 @@
-
 use crate::{Store, Table};
 use census_domain::model::{
     normalize_name, CanonicalSchool, SourceAthleteObservation, SourceIdentity, SourceNamespace,

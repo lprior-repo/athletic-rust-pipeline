@@ -1,4 +1,3 @@
-
 use census_domain::model::VerdictBatch;
 use serde_json::Value;
 
@@ -31,7 +30,8 @@ pub fn parse_batch(content: &str) -> Result<VerdictBatch, ModelError> {
     if let Ok(batch) = serde_json::from_str::<VerdictBatch>(cleaned) {
         return Ok(batch);
     }
-    if let Ok(verdicts) = serde_json::from_str::<Vec<census_domain::model::ReviewVerdict>>(cleaned) {
+    if let Ok(verdicts) = serde_json::from_str::<Vec<census_domain::model::ReviewVerdict>>(cleaned)
+    {
         return Ok(VerdictBatch {
             subject_id: String::new(),
             verdicts,

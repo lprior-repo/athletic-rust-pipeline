@@ -37,9 +37,7 @@ pub enum EventKind {
     Pentathlon,
     Heptathlon,
     Decathlon,
-    Unmapped {
-        label: String,
-    },
+    Unmapped { label: String },
 }
 
 impl EventKind {

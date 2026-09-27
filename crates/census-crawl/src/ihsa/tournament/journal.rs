@@ -1,4 +1,3 @@
-
 use super::wire::{MeetRow, QualifiersEnvelope};
 use crate::{AdapterContext, CrawlResult};
 use serde_json::{json, Value};

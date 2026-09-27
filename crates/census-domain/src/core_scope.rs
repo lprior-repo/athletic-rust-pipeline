@@ -1,4 +1,3 @@
-
 pub const NON_CORE_SOURCE_IDS: [&str; 4] = [
     "athleticlive_athletes",
     "athleticlive_meets_csv",

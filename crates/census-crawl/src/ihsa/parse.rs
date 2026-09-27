@@ -1,4 +1,3 @@
-
 use crate::{CrawlError, CrawlResult};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};

@@ -4,9 +4,7 @@ mod tie;
 pub use classification::{classify_wind, is_wind_sensitive, resolve_timing};
 pub use tie::tie_break_later;
 
-use census_domain::model::{
-    CanonicalMeet, CanonicalPerformance, EventId, EventKind, Sport,
-};
+use census_domain::model::{CanonicalMeet, CanonicalPerformance, EventId, EventKind, Sport};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize)]
@@ -113,7 +111,6 @@ impl std::fmt::Display for PrKey {
     }
 }
 
-
 pub fn should_replace(
     candidate_value: i64,
     incumbent_value: i64,
@@ -126,9 +123,14 @@ pub fn should_replace(
     better: impl Fn(i64, i64) -> bool,
 ) -> bool {
     tie::should_replace_impl(
-        candidate_value, incumbent_value,
-        cand_date, cand_meet, cand_perf_id,
-        inc_date, inc_meet, inc_perf_id,
+        candidate_value,
+        incumbent_value,
+        cand_date,
+        cand_meet,
+        cand_perf_id,
+        inc_date,
+        inc_meet,
+        inc_perf_id,
         better,
     )
 }

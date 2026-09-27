@@ -1,4 +1,3 @@
-
 use super::super::map::{ensure_team, profile_url, Accumulator, PerformanceInput};
 use super::read::meet_date;
 use super::wire::MeetData;

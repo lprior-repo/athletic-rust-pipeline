@@ -1,4 +1,3 @@
-
 pub(super) const INDEXES: [&str; 2] = ["README.md", "AGENTS.md"];
 
 pub(super) fn references(text: &str) -> Vec<String> {

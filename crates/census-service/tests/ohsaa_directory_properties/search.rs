@@ -1,4 +1,3 @@
-
 use super::seam_config;
 use census_crawl::ohsaa::{parse_search, resolve_school_name};
 use census_domain::model::normalize_name;

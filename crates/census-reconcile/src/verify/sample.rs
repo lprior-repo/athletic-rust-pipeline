@@ -1,4 +1,3 @@
-
 const MAX_SAMPLES: usize = 5000;
 
 pub fn sample_indices(total_rows: usize, k: usize) -> Vec<usize> {

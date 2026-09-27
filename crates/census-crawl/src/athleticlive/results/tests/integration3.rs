@@ -91,8 +91,7 @@ async fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() {
         .expect("the import completes");
     assert_eq!(report.adapter, SOURCE_ID);
     assert_eq!(
-        report.rows,
-        136,
+        report.rows, 136,
         "the state final's 136 rows map, and the field event's club-labelled rows map none"
     );
     assert_eq!(report.errors, 0, "{}", joined(&report));
@@ -140,7 +139,8 @@ async fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() {
 #[tokio::test]
 async fn a_manifest_that_places_no_jurisdiction_fails_by_name() {
     let body = r#"{"meets":[{"athleticlive_meet_id":1,"tenant":"t","name":"n","state":"Atlantis","date":"2026-01-01"}]}"#;
-    let error = super::super::manifest::parse_manifest(body, OBSERVED_ON).expect_err("no jurisdiction");
+    let error =
+        super::super::manifest::parse_manifest(body, OBSERVED_ON).expect_err("no jurisdiction");
     assert!(
         error.to_string().contains("Atlantis"),
         "the refusal names the unknown jurisdiction: {error}"

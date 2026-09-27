@@ -1,4 +1,3 @@
-
 pub(crate) fn adapter_module(name: &str) -> String {
     format!(
         r#"use census_crawl::{{AdapterContext, AdapterReport, CrawlError, CrawlResult}};
@@ -155,4 +154,3 @@ input, and the fixture test skips them.
 "#
     )
 }
-

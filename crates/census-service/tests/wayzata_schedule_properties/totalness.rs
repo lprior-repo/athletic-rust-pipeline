@@ -1,4 +1,3 @@
-
 use super::{arbitrary_body, rows, seam_config, shaped_body};
 use proptest::prelude::*;
 

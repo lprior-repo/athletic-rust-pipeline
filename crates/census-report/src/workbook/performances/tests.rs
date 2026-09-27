@@ -1,4 +1,3 @@
-
 use super::*;
 use crate::report::retain_core_row;
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
@@ -87,7 +86,9 @@ fn observation() -> Evidence {
 
 fn fixture_source(id: &str) -> census_domain::model::SourceIdentity {
     census_domain::model::SourceIdentity::new(
-        census_domain::model::SourceNamespace::Other("fixture".to_owned()), id)
+        census_domain::model::SourceNamespace::Other("fixture".to_owned()),
+        id,
+    )
 }
 
 fn seed(store: &Store, fixture: &Fixture) -> String {
@@ -99,8 +100,13 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
     school.evidence.push(observation());
     store.append(Table::Schools, &school).unwrap();
 
-    let mut athlete = CanonicalAthlete::new(&school_id, fixture.athlete, GradYear::CO2027,
-        Gender::Boys, fixture_source(fixture.source_id));
+    let mut athlete = CanonicalAthlete::new(
+        &school_id,
+        fixture.athlete,
+        GradYear::CO2027,
+        Gender::Boys,
+        fixture_source(fixture.source_id),
+    );
     athlete.evidence.push(observation());
     store.append(Table::Athletes, &athlete).unwrap();
 
@@ -441,7 +447,13 @@ fn a_performance_the_store_cannot_join_is_still_written() {
     store.append(Table::Schools, &school).unwrap();
 
     let source = fixture_source("orphan");
-    let athlete = CanonicalAthlete::mint(&school_id, "Orphan", GradYear::CO2027, Gender::Boys, &source);
+    let athlete = CanonicalAthlete::mint(
+        &school_id,
+        "Orphan",
+        GradYear::CO2027,
+        Gender::Boys,
+        &source,
+    );
     let meet = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
         "2026-04-30",

@@ -1,4 +1,3 @@
-
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
     #[error("store open failed: {source}")]

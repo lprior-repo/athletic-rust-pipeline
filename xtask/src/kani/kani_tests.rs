@@ -1,4 +1,3 @@
-
 use crate::kani::classify_kani_output;
 use crate::kani::Outcome;
 

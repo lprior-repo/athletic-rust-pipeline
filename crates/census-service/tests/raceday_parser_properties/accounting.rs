@@ -1,4 +1,3 @@
-
 use super::{parse_body, rendered_rows, LAYOUTS};
 use census_domain::model::Mark;
 

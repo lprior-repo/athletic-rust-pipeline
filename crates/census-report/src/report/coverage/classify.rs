@@ -1,4 +1,3 @@
-
 use super::super::{retain_core, ReportResult};
 use super::gaps;
 use super::reads::{self, Published, Tables};

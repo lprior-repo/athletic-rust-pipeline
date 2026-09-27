@@ -1,4 +1,3 @@
-
 pub mod athletes;
 pub mod coaches;
 pub mod csv;
@@ -17,7 +16,9 @@ use census_store::read::read_rows;
 #[derive(Debug, Args)]
 #[command(about = "Arguments for the `export-data` subcommand")]
 pub(super) struct ExportDataArgs {
-    #[arg(help = "Directory containing the consolidated `*.jsonl` snapshots (athletes, schools, coaches, meets)")]
+    #[arg(
+        help = "Directory containing the consolidated `*.jsonl` snapshots (athletes, schools, coaches, meets)"
+    )]
     #[arg(long)]
     pub(super) store_out: PathBuf,
 

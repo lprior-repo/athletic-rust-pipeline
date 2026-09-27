@@ -1,4 +1,3 @@
-
 use super::attempt::{blocking_kind, FetchPlan};
 use crate::net::bridge::{Action, BrowserCapture, BrowserOutcome, RequestSpec};
 use crate::net::{FetchError, FetchOutcome, Fetcher};
@@ -8,7 +7,6 @@ use tokio::sync::Mutex;
 
 mod evidence;
 mod refusal;
-
 
 #[cfg(test)]
 use base64::engine::general_purpose::STANDARD as BASE64;

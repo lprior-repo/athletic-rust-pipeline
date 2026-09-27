@@ -1,4 +1,3 @@
-
 use census_store::clock::{Clock, SystemClock};
 
 pub fn now_iso8601() -> String {

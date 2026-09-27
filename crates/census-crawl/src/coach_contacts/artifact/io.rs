@@ -18,7 +18,11 @@ pub struct BoundedHashReader<R> {
 
 impl<R: Read> BoundedHashReader<R> {
     pub fn new(reader: R, limit: u64) -> Self {
-        Self { reader, hash: Sha256::new(), remaining: limit }
+        Self {
+            reader,
+            hash: Sha256::new(),
+            remaining: limit,
+        }
     }
 
     pub fn digest(self) -> String {
@@ -37,11 +41,17 @@ impl<R: Read> Read for BoundedHashReader<R> {
                 _ => Err(invalid("file exceeds size limit")),
             };
         }
-        let available = self.remaining.min(u64::try_from(buf.len()).map_err(io::Error::other)?);
+        let available = self
+            .remaining
+            .min(u64::try_from(buf.len()).map_err(io::Error::other)?);
         let available = usize::try_from(available).map_err(io::Error::other)?;
         let count = self.reader.read(&mut buf[..available])?;
-        let bytes = buf.get(..count).ok_or_else(|| invalid("reader returned an invalid length"))?;
-        self.remaining = self.remaining.checked_sub(u64::try_from(count).map_err(io::Error::other)?)
+        let bytes = buf
+            .get(..count)
+            .ok_or_else(|| invalid("reader returned an invalid length"))?;
+        self.remaining = self
+            .remaining
+            .checked_sub(u64::try_from(count).map_err(io::Error::other)?)
             .ok_or_else(|| invalid("file exceeds size limit"))?;
         self.hash.update(bytes);
         Ok(count)
@@ -56,7 +66,11 @@ pub struct BoundedHashWriter<W> {
 
 impl<W: Write> BoundedHashWriter<W> {
     pub fn new(writer: W, limit: u64) -> Self {
-        Self { writer, hash: Sha256::new(), remaining: limit }
+        Self {
+            writer,
+            hash: Sha256::new(),
+            remaining: limit,
+        }
     }
 
     pub fn finish(self) -> (W, String) {
@@ -71,8 +85,12 @@ impl<W: Write> Write for BoundedHashWriter<W> {
             return Err(invalid("file exceeds size limit"));
         }
         let count = self.writer.write(buf)?;
-        let bytes = buf.get(..count).ok_or_else(|| invalid("writer returned an invalid length"))?;
-        self.remaining = self.remaining.checked_sub(u64::try_from(count).map_err(io::Error::other)?)
+        let bytes = buf
+            .get(..count)
+            .ok_or_else(|| invalid("writer returned an invalid length"))?;
+        self.remaining = self
+            .remaining
+            .checked_sub(u64::try_from(count).map_err(io::Error::other)?)
             .ok_or_else(|| invalid("file exceeds size limit"))?;
         self.hash.update(bytes);
         Ok(count)
@@ -89,7 +107,9 @@ pub(super) fn invalid(message: &'static str) -> io::Error {
 
 pub(super) fn record_buffer() -> io::Result<Vec<u8>> {
     let mut bytes = Vec::new();
-    bytes.try_reserve_exact(MAX_RECORD_BYTES).map_err(io::Error::other)?;
+    bytes
+        .try_reserve_exact(MAX_RECORD_BYTES)
+        .map_err(io::Error::other)?;
     bytes.resize(MAX_RECORD_BYTES, 0);
     Ok(bytes)
 }

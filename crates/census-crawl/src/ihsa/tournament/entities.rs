@@ -1,4 +1,3 @@
-
 use super::map::{AthleteRow, EventContext, Mapper, PerformanceRow, ASSOCIATION, HIGH_SCHOOL};
 use super::wire::TeamRef;
 use census_domain::model::{
@@ -40,7 +39,11 @@ impl<'a> Mapper<'a> {
         id
     }
 
-    pub(super) fn athlete(&mut self, row: AthleteRow<'_>, evidence: Evidence) -> Option<(AthleteId, SourceIdentity)> {
+    pub(super) fn athlete(
+        &mut self,
+        row: AthleteRow<'_>,
+        evidence: Evidence,
+    ) -> Option<(AthleteId, SourceIdentity)> {
         let name = row.name.map(str::trim).filter(|value| !value.is_empty())?;
         let grade = row.grade?;
         let observation = ObservedGrade {
@@ -51,7 +54,12 @@ impl<'a> Mapper<'a> {
         let identities = athlete_identities(row.net_id, row.live_id, row.entry.as_deref());
         let grad_year = observation.grad_year();
         let source = identities.first().cloned().map_or_else(
-            || SourceIdentity::new(SourceNamespace::Other("ihsa_result_row".to_string()), row.source_key),
+            || {
+                SourceIdentity::new(
+                    SourceNamespace::Other("ihsa_result_row".to_string()),
+                    row.source_key,
+                )
+            },
             |source| source,
         );
         let id = CanonicalAthlete::mint(row.school, name, grad_year, row.gender, &source);

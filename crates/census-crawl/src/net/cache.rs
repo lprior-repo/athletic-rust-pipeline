@@ -1,4 +1,4 @@
-use super::{Fetcher, FetchError, MAX_BODY_BYTES};
+use super::{FetchError, Fetcher, MAX_BODY_BYTES};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs::File;
@@ -59,7 +59,9 @@ pub(super) fn content_digest(body: &[u8]) -> String {
 }
 
 fn is_valid_hex64(s: &str) -> bool {
-    s.len() == 64 && s.bytes().all(|byte| byte.is_ascii_digit() || matches!(byte, b'a'..=b'f'))
+    s.len() == 64
+        && s.bytes()
+            .all(|byte| byte.is_ascii_digit() || matches!(byte, b'a'..=b'f'))
 }
 
 fn read_cache_file(
@@ -104,18 +106,19 @@ pub(super) fn read_cache(
     if !meta_path.exists() || !body_path.exists() {
         return Ok(None);
     }
-    let meta_bytes = read_cache_file(meta_path, MAX_META_BYTES, None)?
-        .ok_or_else(|| FetchError::Cache {
+    let meta_bytes =
+        read_cache_file(meta_path, MAX_META_BYTES, None)?.ok_or_else(|| FetchError::Cache {
             path: meta_path.to_path_buf(),
             source: std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "cache metadata exceeds its limit or changed during reading",
             ),
         })?;
-    let meta: CacheMeta = serde_json::from_slice(&meta_bytes).map_err(|source| FetchError::Decode {
-        target: meta_path.display().to_string(),
-        source,
-    })?;
+    let meta: CacheMeta =
+        serde_json::from_slice(&meta_bytes).map_err(|source| FetchError::Decode {
+            target: meta_path.display().to_string(),
+            source,
+        })?;
     if meta.status != 200 || !is_valid_hex64(&meta.content_digest) || meta.bytes > MAX_BODY_BYTES {
         return Ok(None);
     }

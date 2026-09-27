@@ -1,4 +1,3 @@
-
 use super::*;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
@@ -88,8 +87,13 @@ fn fixture_store() -> (TempDir, Store) {
     ks_off_cohort.evidence.push(evidence("kshsaa_results"));
     store.append(Table::Athletes, &ks_off_cohort).unwrap();
 
-    let mut il_athlete =
-        CanonicalAthlete::new(&school_c_id, "Theo Vance", GradYear::CO2027, Gender::Boys, fixture_source("il-runner"));
+    let mut il_athlete = CanonicalAthlete::new(
+        &school_c_id,
+        "Theo Vance",
+        GradYear::CO2027,
+        Gender::Boys,
+        fixture_source("il-runner"),
+    );
     il_athlete.evidence.push(evidence("ihsa_results"));
     il_athlete
         .observed_grades
@@ -180,8 +184,13 @@ fn fixture_store() -> (TempDir, Store) {
     );
     store.append(Table::Performances, &unmapped_row).unwrap();
 
-    let never_stored =
-        CanonicalAthlete::new(&school_d_id, "Never Stored", GradYear::CO2027, Gender::Boys, fixture_source("never-stored"));
+    let never_stored = CanonicalAthlete::new(
+        &school_d_id,
+        "Never Stored",
+        GradYear::CO2027,
+        Gender::Boys,
+        fixture_source("never-stored"),
+    );
     let orphan = performance(
         &never_stored,
         &missing_event.id,
@@ -478,12 +487,22 @@ fn a_mirror_result_plane_row_is_counted_but_never_core() {
     let (school, school_id) =
         CanonicalSchool::new(UsJurisdiction::Ohio, "Dublin Coffman", "dublin coffman");
     store.append(Table::Schools, &school).unwrap();
-    let mut core_athlete =
-        CanonicalAthlete::new(&school_id, "Core Runner", GradYear::CO2027, Gender::Boys, fixture_source("oh-core"));
+    let mut core_athlete = CanonicalAthlete::new(
+        &school_id,
+        "Core Runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        fixture_source("oh-core"),
+    );
     core_athlete.evidence.push(evidence("ohsaa_results"));
     store.append(Table::Athletes, &core_athlete).unwrap();
-    let mut mirror_athlete =
-        CanonicalAthlete::new(&school_id, "Mirror Runner", GradYear::CO2027, Gender::Girls, fixture_source("oh-mirror"));
+    let mut mirror_athlete = CanonicalAthlete::new(
+        &school_id,
+        "Mirror Runner",
+        GradYear::CO2027,
+        Gender::Girls,
+        fixture_source("oh-mirror"),
+    );
     mirror_athlete
         .evidence
         .push(evidence("athleticlive_results"));
@@ -509,12 +528,22 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
     let (school, school_id) =
         CanonicalSchool::new(UsJurisdiction::Ohio, "Dublin Coffman", "dublin coffman");
     store.append(Table::Schools, &school).unwrap();
-    let mut core_athlete =
-        CanonicalAthlete::new(&school_id, "Core Runner", GradYear::CO2027, Gender::Boys, fixture_source("oh-core"));
+    let mut core_athlete = CanonicalAthlete::new(
+        &school_id,
+        "Core Runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        fixture_source("oh-core"),
+    );
     core_athlete.evidence.push(evidence("ohsaa_results"));
     store.append(Table::Athletes, &core_athlete).unwrap();
-    let mut mirror_athlete =
-        CanonicalAthlete::new(&school_id, "Mirror Runner", GradYear::CO2027, Gender::Girls, fixture_source("oh-mirror"));
+    let mut mirror_athlete = CanonicalAthlete::new(
+        &school_id,
+        "Mirror Runner",
+        GradYear::CO2027,
+        Gender::Girls,
+        fixture_source("oh-mirror"),
+    );
     mirror_athlete
         .evidence
         .push(evidence("athleticlive_results"));

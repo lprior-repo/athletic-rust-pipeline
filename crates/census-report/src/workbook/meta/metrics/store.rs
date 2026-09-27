@@ -1,4 +1,3 @@
-
 use crate::report::{io_error, ReportResult};
 use crate::workbook::cells::{row, Cell};
 use census_store::Store;

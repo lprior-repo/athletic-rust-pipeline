@@ -1,4 +1,3 @@
-
 use athleticnet_browser::clock::{Clock, ClockError};
 use athleticnet_browser::{BrowserError, BrowserOutcome, BrowserResponse, Verdict};
 use reqwest::header::{HeaderMap, HeaderValue};

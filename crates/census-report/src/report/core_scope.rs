@@ -1,4 +1,3 @@
-
 use census_domain::is_core_source;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, Evidence,

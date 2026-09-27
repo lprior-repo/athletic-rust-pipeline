@@ -1,4 +1,3 @@
-
 use super::super::parse::optional_text;
 use serde::Deserialize;
 

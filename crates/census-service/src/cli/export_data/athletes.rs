@@ -1,4 +1,3 @@
-
 use crate::cli::export_data::csv::write_csv;
 use crate::cli::export_data::helpers::*;
 use serde_json::Value;

@@ -1,4 +1,3 @@
-
 mod write;
 
 use anyhow::{bail, Result};
@@ -17,7 +16,9 @@ pub(super) struct VerifyCoachesArgs {
     #[arg(long, value_delimiter = ',', value_name = "PATH", required = true)]
     pub(super) fragments: Vec<PathBuf>,
 
-    #[arg(help = "HTTP cache directory — the store's cache by default, so gate fetches and pipeline fetches share one cache. The store itself is never opened: the gate reads and writes files")]
+    #[arg(
+        help = "HTTP cache directory — the store's cache by default, so gate fetches and pipeline fetches share one cache. The store itself is never opened: the gate reads and writes files"
+    )]
     #[arg(long, value_name = "DIR", default_value = "var/census-service/http")]
     pub(super) cache_dir: PathBuf,
 
@@ -37,11 +38,15 @@ pub(super) struct VerifyCoachesArgs {
     #[arg(long, value_name = "DIR")]
     pub(super) out: PathBuf,
 
-    #[arg(help = "Directory that receives one `<ST>.csv` per state — the shape `merge-coaches` consumes")]
+    #[arg(
+        help = "Directory that receives one `<ST>.csv` per state — the shape `merge-coaches` consumes"
+    )]
     #[arg(long, value_name = "DIR")]
     pub(super) union: Option<PathBuf>,
 
-    #[arg(help = "Freeze manifest: timestamp, one sha256 line per input fragment, then the verdict lines")]
+    #[arg(
+        help = "Freeze manifest: timestamp, one sha256 line per input fragment, then the verdict lines"
+    )]
     #[arg(long, value_name = "PATH")]
     pub(super) manifest: Option<PathBuf>,
 
@@ -73,11 +78,16 @@ pub(super) struct VerifyCoachesArgs {
     #[arg(long)]
     pub(super) no_nsaa_post: bool,
 
-    #[arg(help = "Treat every host the fragments cite as authorized for this collection", long_help = "Treat every host the fragments cite as authorized for this collection.\n\nrobots.txt is still read and cached, but a disallowed path on a cited host is counted as `robots_authorized` instead of blocking the request, which is the operator's statement that these pages were commissioned. Without it the gate refuses those pages and the rows citing them cannot ship.")]
+    #[arg(
+        help = "Treat every host the fragments cite as authorized for this collection",
+        long_help = "Treat every host the fragments cite as authorized for this collection.\n\nrobots.txt is still read and cached, but a disallowed path on a cited host is counted as `robots_authorized` instead of blocking the request, which is the operator's statement that these pages were commissioned. Without it the gate refuses those pages and the rows citing them cannot ship."
+    )]
     #[arg(long)]
     pub(super) authorize_cited_hosts: bool,
 
-    #[arg(help = "`pdftotext` binary for PDF citations (pass an empty string to disable inflation)")]
+    #[arg(
+        help = "`pdftotext` binary for PDF citations (pass an empty string to disable inflation)"
+    )]
     #[arg(long, value_name = "BIN")]
     pub(super) pdftotext: Option<String>,
 

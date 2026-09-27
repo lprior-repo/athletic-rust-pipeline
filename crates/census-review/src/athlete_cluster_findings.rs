@@ -1,4 +1,3 @@
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use census_domain::model::{
@@ -82,14 +81,16 @@ impl Observed {
 
     fn absorb(&mut self, row: &CanonicalAthlete) {
         let id = row.id.as_str().to_string();
-        for identity in row.identities() { self.objects_of
-            .entry((id.clone(), identity.namespace.clone()))
-            .or_default()
-            .insert(identity.id.clone());
-        self.by_object
-            .entry((identity.namespace.clone(), identity.id.clone()))
-            .or_default()
-            .insert(id.clone()); }
+        for identity in row.identities() {
+            self.objects_of
+                .entry((id.clone(), identity.namespace.clone()))
+                .or_default()
+                .insert(identity.id.clone());
+            self.by_object
+                .entry((identity.namespace.clone(), identity.id.clone()))
+                .or_default()
+                .insert(id.clone());
+        }
         self.rows.insert(id, Row::of(row, &self.schools));
     }
 

@@ -1,4 +1,3 @@
-
 use super::super::cells::{row, Cell};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;

@@ -1,4 +1,3 @@
-
 use super::seam_config;
 use census_crawl::wiaa::decode_cfemail;
 use proptest::prelude::*;

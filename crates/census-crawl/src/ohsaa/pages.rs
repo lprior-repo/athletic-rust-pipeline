@@ -1,4 +1,3 @@
-
 use super::map::{AdPage, CoachEntry};
 use super::parse::{
     collapse_whitespace, decode_entities, strip_honorific, strip_tags, valid_email,

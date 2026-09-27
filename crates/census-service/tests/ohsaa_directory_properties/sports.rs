@@ -1,4 +1,3 @@
-
 use super::seam_config;
 use census_crawl::ohsaa::{parse_coach_cell, parse_sport_label, parse_sports_table};
 use proptest::prelude::*;

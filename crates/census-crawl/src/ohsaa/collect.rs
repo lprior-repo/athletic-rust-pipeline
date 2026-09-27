@@ -1,4 +1,3 @@
-
 use super::map::{school_entities, SchoolExtract, SearchResult};
 use super::pages::parse_ad_page;
 use super::{Options, ASSOCIATION};
@@ -11,7 +10,6 @@ use census_store::Table;
 mod search;
 
 use search::resolve_schools;
-
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("ohsaa", "schools");
@@ -153,8 +151,14 @@ fn emit_school(
     let school_key = format!("OH:{}", sr.ohsaa_id);
     let mut batch = ctx.store.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(ASSOCIATION),
-    &extract.school,).as_slice())?;
+    batch.append_many(
+        Table::SourceObservations,
+        ctx.school_observation(
+            &SourceNamespace::association_school(ASSOCIATION),
+            &extract.school,
+        )
+        .as_slice(),
+    )?;
     report.rows = report.rows.saturating_add(1);
     let mut coach_emails = 0u64;
     for coach in &extract.coaches {

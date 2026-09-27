@@ -1,4 +1,3 @@
-
 use census_crawl::milesplit::{MeetRef, Season, Site};
 use census_crawl::net::Fetcher;
 use census_crawl::recording::RowSink;

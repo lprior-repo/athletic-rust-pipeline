@@ -1,5 +1,5 @@
-use calamine::Reader;
 use crate::{count_of, synthetic_corpus};
+use calamine::Reader;
 use census_domain::JurisdictionBucket;
 use census_domain::UsJurisdiction;
 use census_report::bests;
@@ -84,32 +84,65 @@ fn assert_census_counts(
 fn assert_complete_xlsx(path: &Path, corpus: &crate::Corpus) {
     let mut book: calamine::Xlsx<_> = calamine::open_workbook(path).unwrap();
     let athletes = book.worksheet_range("Athletes").unwrap();
-    let expected_athletes: std::collections::BTreeSet<_> =
-        corpus.athletes.iter().map(|athlete| athlete.id.to_string()).collect();
-    let actual_athletes: std::collections::BTreeSet<_> =
-        athletes.rows().skip(1).map(|row| row[0].to_string()).collect();
+    let expected_athletes: std::collections::BTreeSet<_> = corpus
+        .athletes
+        .iter()
+        .map(|athlete| athlete.id.to_string())
+        .collect();
+    let actual_athletes: std::collections::BTreeSet<_> = athletes
+        .rows()
+        .skip(1)
+        .map(|row| row[0].to_string())
+        .collect();
     assert_eq!(athletes.height() - 1, expected_athletes.len());
     assert_eq!(actual_athletes, expected_athletes);
 
     let prs = book.worksheet_range("PRs").unwrap();
     let performance_column = column(&prs, "Performance ID");
     let athlete_column = column(&prs, "Athlete ID");
-    let expected_winners: std::collections::BTreeSet<_> = corpus.athletes.iter().map(|athlete| {
-        let winner = corpus.performances.iter().filter(|row| row.athlete == athlete.id)
-            .max_by_key(|row| (&row.date, row.meet.as_str(), row.id.as_str())).unwrap();
-        assert!(corpus.performances.iter().filter(|row| row.athlete == athlete.id)
-            .all(|row| row.mark == winner.mark && row.date == winner.date));
-        (athlete.id.to_string(), winner.id.to_string())
-    }).collect();
-    let actual_winners: std::collections::BTreeSet<_> = prs.rows().skip(1)
-        .map(|row| (row[athlete_column].to_string(), row[performance_column].to_string())).collect();
+    let expected_winners: std::collections::BTreeSet<_> = corpus
+        .athletes
+        .iter()
+        .map(|athlete| {
+            let winner = corpus
+                .performances
+                .iter()
+                .filter(|row| row.athlete == athlete.id)
+                .max_by_key(|row| (&row.date, row.meet.as_str(), row.id.as_str()))
+                .unwrap();
+            assert!(corpus
+                .performances
+                .iter()
+                .filter(|row| row.athlete == athlete.id)
+                .all(|row| row.mark == winner.mark && row.date == winner.date));
+            (athlete.id.to_string(), winner.id.to_string())
+        })
+        .collect();
+    let actual_winners: std::collections::BTreeSet<_> = prs
+        .rows()
+        .skip(1)
+        .map(|row| {
+            (
+                row[athlete_column].to_string(),
+                row[performance_column].to_string(),
+            )
+        })
+        .collect();
     assert_eq!(prs.height() - 1, expected_winners.len());
     assert_eq!(actual_winners, expected_winners);
-    assert_eq!(book.worksheet_range("Performances_001").unwrap().height() - 1,
-        corpus.performances.len());
+    assert_eq!(
+        book.worksheet_range("Performances_001").unwrap().height() - 1,
+        corpus.performances.len()
+    );
     assert_eq!(book.worksheet_range("Coaches").unwrap().height(), 1);
 }
 
 fn column(range: &calamine::Range<calamine::Data>, name: &str) -> usize {
-    range.rows().next().unwrap().iter().position(|cell| cell.to_string() == name).unwrap()
+    range
+        .rows()
+        .next()
+        .unwrap()
+        .iter()
+        .position(|cell| cell.to_string() == name)
+        .unwrap()
 }

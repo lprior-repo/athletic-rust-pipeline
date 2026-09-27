@@ -1,4 +1,3 @@
-
 use super::super::{school_of, subject_of, Family, StoreRows};
 use super::{
     class_of_2027, queue_row, COHORT_UNVERIFIED, IDENTITY_UNVERIFIED, UNRESOLVED_SCHOOL,
@@ -30,10 +29,15 @@ pub(super) fn cohort_unverified(rows: &StoreRows, names: &HashMap<&str, &str>) -
     family
 }
 
-pub(super) fn identity_unverified(rows: &StoreRows, names: &HashMap<&str, &str>) -> crate::report::ReportResult<Family> {
+pub(super) fn identity_unverified(
+    rows: &StoreRows,
+    names: &HashMap<&str, &str>,
+) -> crate::report::ReportResult<Family> {
     let mut family = Family::new(IDENTITY_UNVERIFIED);
     for athlete in class_of_2027(&rows.athletes) {
-        let status = rows.identities.status(athlete.id.as_str())
+        let status = rows
+            .identities
+            .status(athlete.id.as_str())
             .map_err(census_store::StoreError::from)?;
         if status == census_domain::model::IdentityStatus::Verified {
             continue;

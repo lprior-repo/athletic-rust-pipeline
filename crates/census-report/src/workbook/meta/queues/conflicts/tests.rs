@@ -90,7 +90,9 @@ fn family_of(rows: &[CanonicalAthlete]) -> Family {
         index.observe(row).unwrap();
     }
     let identities = census_domain::model::IdentityProjectionBuilder::new(index, &[], &[])
-        .unwrap().finish().unwrap();
+        .unwrap()
+        .finish()
+        .unwrap();
     let store = StoreRows {
         schools: Vec::new(),
         meets: Vec::new(),

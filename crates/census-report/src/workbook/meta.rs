@@ -1,4 +1,3 @@
-
 use crate::bests::SharedSelection;
 use crate::report::{
     exclude_out_of_scope, in_run_scope, jurisdiction_of, retain_core, school_state_index, Census,
@@ -104,7 +103,11 @@ struct StoreRows {
     verdicts: Vec<ReviewVerdictRecord>,
 }
 impl StoreRows {
-    fn read(store: &Store, scope: Scope, school_year: census_domain::model::SchoolYear) -> ReportResult<Self> {
+    fn read(
+        store: &Store,
+        scope: Scope,
+        school_year: census_domain::model::SchoolYear,
+    ) -> ReportResult<Self> {
         let snapshot = store.snapshot();
         let mut schools: Vec<CanonicalSchool> = snapshot.scan(Table::Schools)?;
         let outside_schools = exclude_out_of_scope(&mut schools, |school| school.state.into());
@@ -113,7 +116,9 @@ impl StoreRows {
         let mut athletes: Vec<CanonicalAthlete> = snapshot.scan(Table::Athletes)?;
         let mut index = census_domain::model::AthleteIdentityIndex::default();
         for athlete in &athletes {
-            index.observe(athlete).map_err(census_store::StoreError::from)?;
+            index
+                .observe(athlete)
+                .map_err(census_store::StoreError::from)?;
         }
         let identities = snapshot.project_athlete_identities(index)?;
         let mut school_state = school_state_index(&schools);

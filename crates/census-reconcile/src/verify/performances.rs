@@ -1,4 +1,3 @@
-
 use std::collections::{HashMap, HashSet};
 
 use census_domain::model::{CanonicalEvent, CanonicalPerformance};

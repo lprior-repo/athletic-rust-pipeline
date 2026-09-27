@@ -1,4 +1,3 @@
-
 use crate::report::{coverage_report, CoverageReport, JurisdictionCoverage, ReportResult};
 use census_domain::model::GradYear;
 use census_store::Store;

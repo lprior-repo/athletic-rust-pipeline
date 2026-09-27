@@ -55,8 +55,12 @@ pub(in crate::workbook::recruiting) struct Heads {
 
 impl Heads {
     pub(super) fn insert(
-        &mut self, school: &str, slot: Slot, side: Gender,
-        rows: &[&CanonicalCoach], school_year: SchoolYear,
+        &mut self,
+        school: &str,
+        slot: Slot,
+        side: Gender,
+        rows: &[&CanonicalCoach],
+        school_year: SchoolYear,
     ) {
         let outcome = resolve(rows, school_year);
         if matches!(outcome, Outcome::Conflict | Outcome::TenureConflict) {
@@ -65,7 +69,9 @@ impl Heads {
                 _ => ContactState::ContactConflict,
             };
             self.disagreements.push(Disagreement {
-                school: school.to_owned(), role: role_label(slot, side), state,
+                school: school.to_owned(),
+                role: role_label(slot, side),
+                state,
                 rows: describe(rows, school_year),
             });
         }
@@ -84,7 +90,9 @@ impl Heads {
                 }
             }
         }
-        self.scopes.get(&(slot, Gender::Mixed)).unwrap_or(&Outcome::Unknown)
+        self.scopes
+            .get(&(slot, Gender::Mixed))
+            .unwrap_or(&Outcome::Unknown)
     }
 
     pub(super) fn into_disagreements(self) -> Vec<Disagreement> {
@@ -93,16 +101,21 @@ impl Heads {
 }
 
 pub(super) fn resolve(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Outcome {
-    owners(rows).into_values().fold(Outcome::Unknown, |outcome, owner| {
-        outcome.combine(resolve_owner(&owner, school_year))
-    })
+    owners(rows)
+        .into_values()
+        .fold(Outcome::Unknown, |outcome, owner| {
+            outcome.combine(resolve_owner(&owner, school_year))
+        })
 }
 
 pub(super) fn individuals(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Vec<Named> {
-    owners(rows).into_values().filter_map(|owner| match resolve_owner(&owner, school_year) {
-        Outcome::Current(named) => Some(named),
-        _ => None,
-    }).collect()
+    owners(rows)
+        .into_values()
+        .filter_map(|owner| match resolve_owner(&owner, school_year) {
+            Outcome::Current(named) => Some(named),
+            _ => None,
+        })
+        .collect()
 }
 
 fn owners<'a>(rows: &[&'a CanonicalCoach]) -> BTreeMap<&'a CoachId, Vec<&'a CanonicalCoach>> {
@@ -150,11 +163,19 @@ fn current_row(coach: &CanonicalCoach, school_year: SchoolYear) -> bool {
 }
 
 fn describe(rows: &[&CanonicalCoach], school_year: SchoolYear) -> Vec<String> {
-    let mut descriptions: Vec<_> = rows.iter().map(|coach| {
-        format!("{} [{}]: professional={:?}; personal={:?}; tenure={:?}",
-            coach.name, coach.id, coach.professional_email, coach.personal_email,
-            coach.tenure_state(school_year))
-    }).collect();
+    let mut descriptions: Vec<_> = rows
+        .iter()
+        .map(|coach| {
+            format!(
+                "{} [{}]: professional={:?}; personal={:?}; tenure={:?}",
+                coach.name,
+                coach.id,
+                coach.professional_email,
+                coach.personal_email,
+                coach.tenure_state(school_year)
+            )
+        })
+        .collect();
     descriptions.sort();
     descriptions
 }

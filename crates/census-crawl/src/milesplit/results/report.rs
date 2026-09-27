@@ -1,4 +1,3 @@
-
 use super::{EntityCounts, Stats};
 use crate::AdapterReport;
 use std::collections::HashMap;

@@ -1,4 +1,3 @@
-
 use crate::error::DomainError;
 use crate::jurisdiction::{
     bucket::JurisdictionBucket, meet_state::MeetState, table::UsJurisdiction,

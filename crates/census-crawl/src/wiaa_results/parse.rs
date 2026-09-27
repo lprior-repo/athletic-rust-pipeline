@@ -1,4 +1,3 @@
-
 use super::classify::ArtifactFormat;
 use crate::result_file::ParsedMeet;
 

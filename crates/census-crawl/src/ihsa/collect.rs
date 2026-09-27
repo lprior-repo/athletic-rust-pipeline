@@ -1,4 +1,3 @@
-
 use super::map::{parse_coach, parse_school};
 use super::parse::{parse_email, parse_schools, parse_staff, SchoolRecord, StaffPerson};
 use super::{Options, ASSOCIATION, IHSA_API};
@@ -97,7 +96,11 @@ async fn process_record(
     };
     let mut batch = ctx.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&school))?;
-    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(ASSOCIATION), &school).as_slice())?;
+    batch.append_many(
+        Table::SourceObservations,
+        ctx.school_observation(&SourceNamespace::association_school(ASSOCIATION), &school)
+            .as_slice(),
+    )?;
     batch.commit()?;
 
     let staff_url = format!("{IHSA_API}/v1/schools/{}/staff2", record.school_id);

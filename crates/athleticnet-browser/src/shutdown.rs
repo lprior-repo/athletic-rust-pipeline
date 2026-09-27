@@ -1,4 +1,3 @@
-
 use super::super::SHUTDOWN_TIMEOUT;
 use super::Actor;
 use crate::drain::{count, DrainReport, Outcome};

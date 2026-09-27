@@ -1,4 +1,3 @@
-
 use census_domain::model::*;
 use census_domain::UsJurisdiction;
 
@@ -15,12 +14,14 @@ fn school() -> CanonicalSchool {
 }
 
 fn athlete(school: &CanonicalSchool) -> CanonicalAthlete {
-    let source = SourceIdentity::new(
-        SourceNamespace::MilesplitAthlete,
-        "14399169",
+    let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
+    let mut athlete = CanonicalAthlete::new(
+        &school.id,
+        "Jane Doe",
+        GradYear::CO2027,
+        Gender::Girls,
+        source,
     );
-    let mut athlete =
-        CanonicalAthlete::new(&school.id, "Jane Doe", GradYear::CO2027, Gender::Girls, source);
     athlete.add_identity(SourceIdentity::new(
         SourceNamespace::AthleticNet {
             kind: "athlete".to_string(),
@@ -122,7 +123,9 @@ fn source_rows_count_what_each_namespace_contributes_per_table() {
     assert_eq!(milesplit.metrics.get("identities"), Some(&1));
     assert_eq!(milesplit.metrics.get("schools"), Some(&1));
 
-    let primary = rows.iter().find(|row| row.id == "source:milesplit_athlete")
+    let primary = rows
+        .iter()
+        .find(|row| row.id == "source:milesplit_athlete")
         .expect("the primary athlete source contributes its own coverage row");
     assert_eq!(primary.metrics.get("athletes"), Some(&1));
 
@@ -239,11 +242,14 @@ fn a_review_decision_survives_the_next_derivation() {
 }
 
 fn other_subject_under_one_id(school: &CanonicalSchool, id: &AthleteId) -> CanonicalAthlete {
-    let source = SourceIdentity::new(
-        SourceNamespace::MilesplitAthlete,
-        "14407777",
+    let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14407777");
+    let mut row = CanonicalAthlete::new(
+        &school.id,
+        "Marta Reyes",
+        GradYear::CO2027,
+        Gender::Girls,
+        source,
     );
-    let mut row = CanonicalAthlete::new(&school.id, "Marta Reyes", GradYear::CO2027, Gender::Girls, source);
     row.id = id.clone();
     row
 }

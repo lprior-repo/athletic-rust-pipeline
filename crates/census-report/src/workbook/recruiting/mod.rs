@@ -1,4 +1,3 @@
-
 use crate::bests;
 use crate::report::{ReportResult, Scope};
 use census_store::Store;

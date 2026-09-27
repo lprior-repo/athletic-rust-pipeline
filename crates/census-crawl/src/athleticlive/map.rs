@@ -1,4 +1,3 @@
-
 use std::collections::{BTreeMap, HashMap};
 
 use census_domain::model::{

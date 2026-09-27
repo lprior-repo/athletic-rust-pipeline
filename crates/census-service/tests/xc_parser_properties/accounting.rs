@@ -1,4 +1,3 @@
-
 use super::{parse_body, rows_of, LAYOUTS, REPLAYED};
 use census_domain::model::Gender;
 

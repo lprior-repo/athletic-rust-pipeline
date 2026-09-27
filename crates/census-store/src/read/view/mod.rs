@@ -1,10 +1,10 @@
-use crate::{Entity, StoreError, StoreResult, Table, MAX_ROWS_PER_TABLE};
 use crate::keys::table_prefix;
+use crate::{Entity, StoreError, StoreResult, Table, MAX_ROWS_PER_TABLE};
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow,
-    RetainedConflict, ReviewCase, ReviewVerdictRecord, SourceAccessCondition, SourceMeetRef,
-    SourceObservation, SourceObjectIdentity,
+    CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
+    CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase,
+    ReviewVerdictRecord, SourceAccessCondition, SourceMeetRef, SourceObjectIdentity,
+    SourceObservation,
 };
 use fjall::{Readable, Snapshot};
 use std::path::PathBuf;
@@ -18,10 +18,16 @@ pub struct StoreSnapshot<'s> {
 }
 
 impl<'s> StoreSnapshot<'s> {
-    pub(crate) fn new(snapshot: Snapshot, entities: &'s fjall::Keyspace, root: &'s std::path::Path)
-        -> Self
-    {
-        Self { snapshot, entities, root }
+    pub(crate) fn new(
+        snapshot: Snapshot,
+        entities: &'s fjall::Keyspace,
+        root: &'s std::path::Path,
+    ) -> Self {
+        Self {
+            snapshot,
+            entities,
+            root,
+        }
     }
 
     pub fn sequence(&self) -> u64 {
@@ -35,11 +41,16 @@ impl<'s> StoreSnapshot<'s> {
     ) -> StoreResult<()> {
         let prefix = table_prefix(table);
         let max = usize::try_from(MAX_ROWS_PER_TABLE).map_err(|_| StoreError::CounterOverflow)?;
-        self.snapshot.prefix(self.entities, &prefix).enumerate().try_for_each(|(index, guard)| {
-            merge::check_limit(index, max, table)?;
-            let (key, raw) = guard.into_inner().map_err(|source| StoreError::Read { source })?;
-            visit(merge::decode(table, &key, &raw)?)
-        })
+        self.snapshot
+            .prefix(self.entities, &prefix)
+            .enumerate()
+            .try_for_each(|(index, guard)| {
+                merge::check_limit(index, max, table)?;
+                let (key, raw) = guard
+                    .into_inner()
+                    .map_err(|source| StoreError::Read { source })?;
+                visit(merge::decode(table, &key, &raw)?)
+            })
     }
 
     pub fn for_each_merged<T: Entity>(
@@ -94,9 +105,11 @@ impl<'s> StoreSnapshot<'s> {
         Ok(crate::Consolidated { rows })
     }
 
-    pub fn consolidate_table(&self, table: Table, out_path: &std::path::Path)
-        -> StoreResult<crate::Consolidated>
-    {
+    pub fn consolidate_table(
+        &self,
+        table: Table,
+        out_path: &std::path::Path,
+    ) -> StoreResult<crate::Consolidated> {
         match table {
             Table::Schools => self.consolidate::<CanonicalSchool>(table, out_path),
             Table::Teams => self.consolidate::<CanonicalTeam>(table, out_path),

@@ -1,8 +1,7 @@
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CentiMetres, CentiPoints, CentiSeconds, EventId, EventKind, Gender,
-    Id, Mark, MeetId, PerformanceId, SourceIdentity, SourceNamespace, Sport, TeamId,
-    TimingMethod,
+    CanonicalSchool, CentiMetres, CentiPoints, CentiSeconds, EventId, EventKind, Gender, Id, Mark,
+    MeetId, PerformanceId, SourceIdentity, SourceNamespace, Sport, TeamId, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 
@@ -21,7 +20,6 @@ fn event_id() -> EventId {
 fn team_id() -> TeamId {
     Id::mint("team", &["test_team"])
 }
-
 
 fn performance_id() -> PerformanceId {
     Id::mint("perf", &["test_perf"])
@@ -76,7 +74,6 @@ fn test_performance(
     }
 }
 
-
 #[test]
 fn surface_indoor_only() {
     let meet = test_meet(vec![Sport::IndoorTrack]);
@@ -126,8 +123,12 @@ fn surface_empty_excluded() {
 fn wind_sensitive_sprints_hurdles() {
     assert!(crate::bests::key::is_wind_sensitive(&EventKind::Track100m));
     assert!(crate::bests::key::is_wind_sensitive(&EventKind::Track200m));
-    assert!(crate::bests::key::is_wind_sensitive(&EventKind::Track100mHurdles));
-    assert!(crate::bests::key::is_wind_sensitive(&EventKind::Track110mHurdles));
+    assert!(crate::bests::key::is_wind_sensitive(
+        &EventKind::Track100mHurdles
+    ));
+    assert!(crate::bests::key::is_wind_sensitive(
+        &EventKind::Track110mHurdles
+    ));
 }
 
 #[test]
@@ -139,15 +140,21 @@ fn wind_sensitive_jump_events() {
 #[test]
 fn wind_not_sensitive_400m_hurdles() {
     assert!(!crate::bests::key::is_wind_sensitive(&EventKind::Track400m));
-    assert!(!crate::bests::key::is_wind_sensitive(&EventKind::Track300mHurdles));
-    assert!(!crate::bests::key::is_wind_sensitive(&EventKind::Track400mHurdles));
+    assert!(!crate::bests::key::is_wind_sensitive(
+        &EventKind::Track300mHurdles
+    ));
+    assert!(!crate::bests::key::is_wind_sensitive(
+        &EventKind::Track400mHurdles
+    ));
 }
 
 #[test]
 fn wind_not_sensitive_field_xc() {
     assert!(!crate::bests::key::is_wind_sensitive(&EventKind::HighJump));
     assert!(!crate::bests::key::is_wind_sensitive(&EventKind::ShotPut));
-    assert!(!crate::bests::key::is_wind_sensitive(&EventKind::CrossCountry));
+    assert!(!crate::bests::key::is_wind_sensitive(
+        &EventKind::CrossCountry
+    ));
 }
 
 #[test]
@@ -201,9 +208,14 @@ fn wind_unknown_missing_wind() {
 #[test]
 fn non_finite_wind_cannot_establish_legal_or_assisted_results() {
     for wind in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-        assert_eq!(crate::bests::classify_wind(
-            crate::bests::SurfaceClass::Outdoor, &EventKind::Track100m, Some(wind)),
-            crate::bests::WindClass::Unknown);
+        assert_eq!(
+            crate::bests::classify_wind(
+                crate::bests::SurfaceClass::Outdoor,
+                &EventKind::Track100m,
+                Some(wind)
+            ),
+            crate::bests::WindClass::Unknown
+        );
     }
 }
 
@@ -315,17 +327,22 @@ fn timing_annotations_do_not_classify_field_marks() {
     );
 }
 
-
 #[test]
 fn measure_of_time() {
     let mark = Mark::TimeSeconds(CentiSeconds::new(1094));
-    assert_eq!(crate::bests::Measure::of(&mark), Some(crate::bests::Measure::Time));
+    assert_eq!(
+        crate::bests::Measure::of(&mark),
+        Some(crate::bests::Measure::Time)
+    );
 }
 
 #[test]
 fn measure_of_distance() {
     let mark = Mark::DistanceMetres(CentiMetres::new(642));
-    assert_eq!(crate::bests::Measure::of(&mark), Some(crate::bests::Measure::Distance));
+    assert_eq!(
+        crate::bests::Measure::of(&mark),
+        Some(crate::bests::Measure::Distance)
+    );
 }
 
 #[test]
@@ -334,13 +351,19 @@ fn measure_of_field_imperial_is_distance() {
         feet_mark: "20-00.00".to_string(),
         metres: CentiMetres::new(609),
     };
-    assert_eq!(crate::bests::Measure::of(&mark), Some(crate::bests::Measure::Distance));
+    assert_eq!(
+        crate::bests::Measure::of(&mark),
+        Some(crate::bests::Measure::Distance)
+    );
 }
 
 #[test]
 fn measure_of_points() {
     let mark = Mark::Points(CentiPoints::new(31200));
-    assert_eq!(crate::bests::Measure::of(&mark), Some(crate::bests::Measure::Points));
+    assert_eq!(
+        crate::bests::Measure::of(&mark),
+        Some(crate::bests::Measure::Points)
+    );
 }
 
 #[test]
@@ -358,7 +381,10 @@ fn measure_time_value() {
 #[test]
 fn measure_distance_value_metric_cm() {
     let mark = Mark::DistanceMetres(CentiMetres::new(642));
-    assert_eq!(crate::bests::Measure::Distance.value(&mark), Some(6_420_000i64));
+    assert_eq!(
+        crate::bests::Measure::Distance.value(&mark),
+        Some(6_420_000i64)
+    );
 }
 
 #[test]
@@ -373,7 +399,10 @@ fn measure_field_imperial_exact_micrometres() {
         feet_mark: "20-00.00".to_string(),
         metres: CentiMetres::new(609),
     };
-    assert_eq!(crate::bests::Measure::Distance.value(&mark), Some(6_096_000i64));
+    assert_eq!(
+        crate::bests::Measure::Distance.value(&mark),
+        Some(6_096_000i64)
+    );
 }
 
 #[test]
@@ -382,7 +411,10 @@ fn measure_field_imperial_hundredth_inch_exact() {
         feet_mark: "3-0.01".to_string(),
         metres: CentiMetres::new(91),
     };
-    assert_eq!(crate::bests::Measure::Distance.value(&mark), Some(914_654i64));
+    assert_eq!(
+        crate::bests::Measure::Distance.value(&mark),
+        Some(914_654i64)
+    );
 }
 
 #[test]
@@ -412,19 +444,28 @@ fn measure_points_better_is_higher() {
 #[test]
 fn measure_normalized_time() {
     let mark = Mark::TimeSeconds(CentiSeconds::new(1094));
-    assert_eq!(crate::bests::Measure::Time.normalized_mark(&mark), Some(10.94));
+    assert_eq!(
+        crate::bests::Measure::Time.normalized_mark(&mark),
+        Some(10.94)
+    );
 }
 
 #[test]
 fn measure_normalized_distance() {
     let mark = Mark::DistanceMetres(CentiMetres::new(642));
-    assert_eq!(crate::bests::Measure::Distance.normalized_mark(&mark), Some(6.42));
+    assert_eq!(
+        crate::bests::Measure::Distance.normalized_mark(&mark),
+        Some(6.42)
+    );
 }
 
 #[test]
 fn measure_normalized_points() {
     let mark = Mark::Points(CentiPoints::new(31200));
-    assert_eq!(crate::bests::Measure::Points.normalized_mark(&mark), Some(312.0));
+    assert_eq!(
+        crate::bests::Measure::Points.normalized_mark(&mark),
+        Some(312.0)
+    );
 }
 
 #[test]
@@ -433,11 +474,8 @@ fn measure_normalized_raw_is_none() {
     assert_eq!(crate::bests::Measure::Time.normalized_mark(&mark), None);
 }
 
-
 #[test]
 fn key_construction_outdoor() {
-    
-
     let meet = test_meet(vec![Sport::OutdoorTrack]);
     let perf = test_performance(
         EventKind::Track100m,
@@ -448,19 +486,24 @@ fn key_construction_outdoor() {
     );
     let measure = crate::bests::Measure::Time;
 
-    let result = crate::bests::PrKey::from_performance(&perf, &EventKind::Track100m, Some(&meet), measure);
+    let result =
+        crate::bests::PrKey::from_performance(&perf, &EventKind::Track100m, Some(&meet), measure);
     assert!(result.is_some());
     let key = result.unwrap();
-    assert!(matches!(key.surface, crate::bests::key::SurfaceClass::Outdoor));
-    assert!(matches!(key.wind_class, crate::bests::key::WindClass::Legal));
+    assert!(matches!(
+        key.surface,
+        crate::bests::key::SurfaceClass::Outdoor
+    ));
+    assert!(matches!(
+        key.wind_class,
+        crate::bests::key::WindClass::Legal
+    ));
     assert!(matches!(key.timing, crate::bests::key::TimingClass::Fat));
     assert_eq!(key.context, None);
 }
 
 #[test]
 fn key_excluded_unresolved_surface() {
-    
-
     let meet = test_meet(vec![Sport::IndoorTrack, Sport::OutdoorTrack]);
     let perf = test_performance(
         EventKind::Track100m,
@@ -470,14 +513,17 @@ fn key_excluded_unresolved_surface() {
         "2025-03-15",
     );
 
-    let result = crate::bests::PrKey::from_performance(&perf, &EventKind::Track100m, Some(&meet), crate::bests::Measure::Time);
+    let result = crate::bests::PrKey::from_performance(
+        &perf,
+        &EventKind::Track100m,
+        Some(&meet),
+        crate::bests::Measure::Time,
+    );
     assert!(result.is_none());
 }
 
 #[test]
 fn key_no_meet_is_excluded() {
-    
-
     let perf = test_performance(
         EventKind::Track100m,
         Mark::TimeSeconds(CentiSeconds::new(1094)),
@@ -486,7 +532,12 @@ fn key_no_meet_is_excluded() {
         "2025-03-15",
     );
 
-    let result = crate::bests::PrKey::from_performance(&perf, &EventKind::Track100m, None, crate::bests::Measure::Time);
+    let result = crate::bests::PrKey::from_performance(
+        &perf,
+        &EventKind::Track100m,
+        None,
+        crate::bests::Measure::Time,
+    );
     assert!(result.is_none());
 }
 
@@ -502,7 +553,10 @@ fn cross_country_events_do_not_compete_across_contexts() {
     );
     let key = |performance: &CanonicalPerformance| {
         crate::bests::PrKey::from_performance(
-            performance, &EventKind::CrossCountry, Some(&meet), crate::bests::Measure::Time,
+            performance,
+            &EventKind::CrossCountry,
+            Some(&meet),
+            crate::bests::Measure::Time,
         )
     };
     let first_event = key(&perf);
@@ -514,13 +568,17 @@ fn cross_country_events_do_not_compete_across_contexts() {
     assert_eq!(second_event, key(&perf));
 }
 
-
 #[test]
 fn should_replace_strictly_better() {
     assert!(crate::bests::key::should_replace(
-        1080, 1094,
-        "2025-03-15", "meet_a", "perf_1",
-        "2025-03-15", "meet_a", "perf_1",
+        1080,
+        1094,
+        "2025-03-15",
+        "meet_a",
+        "perf_1",
+        "2025-03-15",
+        "meet_a",
+        "perf_1",
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -528,9 +586,14 @@ fn should_replace_strictly_better() {
 #[test]
 fn should_replace_worse_value() {
     assert!(!crate::bests::key::should_replace(
-        1100, 1094,
-        "2025-06-15", "meet_b", "perf_2",
-        "2025-03-15", "meet_a", "perf_1",
+        1100,
+        1094,
+        "2025-06-15",
+        "meet_b",
+        "perf_2",
+        "2025-03-15",
+        "meet_a",
+        "perf_1",
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -538,9 +601,14 @@ fn should_replace_worse_value() {
 #[test]
 fn should_replace_equal_value_older_loses() {
     assert!(!crate::bests::key::should_replace(
-        1094, 1094,
-        "2025-01-01", "meet_a", "perf_1",
-        "2025-06-15", "meet_a", "perf_1",
+        1094,
+        1094,
+        "2025-01-01",
+        "meet_a",
+        "perf_1",
+        "2025-06-15",
+        "meet_a",
+        "perf_1",
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -548,9 +616,14 @@ fn should_replace_equal_value_older_loses() {
 #[test]
 fn should_replace_equal_value_later_wins() {
     assert!(crate::bests::key::should_replace(
-        1094, 1094,
-        "2025-06-15", "meet_a", "perf_2",
-        "2025-03-15", "meet_a", "perf_1",
+        1094,
+        1094,
+        "2025-06-15",
+        "meet_a",
+        "perf_2",
+        "2025-03-15",
+        "meet_a",
+        "perf_1",
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -558,9 +631,14 @@ fn should_replace_equal_value_later_wins() {
 #[test]
 fn should_replace_equal_value_same_date_meet_wins() {
     assert!(crate::bests::key::should_replace(
-        1094, 1094,
-        "2025-03-15", "meet_b", "perf_1",
-        "2025-03-15", "meet_a", "perf_1",
+        1094,
+        1094,
+        "2025-03-15",
+        "meet_b",
+        "perf_1",
+        "2025-03-15",
+        "meet_a",
+        "perf_1",
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -568,9 +646,14 @@ fn should_replace_equal_value_same_date_meet_wins() {
 #[test]
 fn should_replace_equal_value_same_meet_perf_wins() {
     assert!(crate::bests::key::should_replace(
-        1094, 1094,
-        "2025-03-15", "meet_a", "perf_2",
-        "2025-03-15", "meet_a", "perf_1",
+        1094,
+        1094,
+        "2025-03-15",
+        "meet_a",
+        "perf_2",
+        "2025-03-15",
+        "meet_a",
+        "perf_1",
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
@@ -644,7 +727,6 @@ fn test_parent_performance(
     }
 }
 
-
 #[test]
 fn reduction_selects_the_faster_result_without_inventing_a_team_school() {
     use crate::report::Scope;
@@ -654,18 +736,30 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() {
     let directory = tempfile::tempdir().unwrap();
     let store = Store::open(directory.path()).unwrap();
     let (school, school_id) = CanonicalSchool::new(
-        UsJurisdiction::Wisconsin, "Synthetic school", "synthetic school");
-    let athlete = CanonicalAthlete::new(&school_id, "Synthetic runner", GradYear::CO2027,
-        Gender::Boys, SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"));
+        UsJurisdiction::Wisconsin,
+        "Synthetic school",
+        "synthetic school",
+    );
+    let athlete = CanonicalAthlete::new(
+        &school_id,
+        "Synthetic runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
+    );
     let meet = test_meet(vec![Sport::OutdoorTrack]);
     let event = CanonicalEvent::new(&meet.id, EventKind::Track100m, Gender::Boys, None, None);
     store.append(Table::Schools, &school).unwrap();
     store.append(Table::Athletes, &athlete).unwrap();
     store.append(Table::Meets, &meet).unwrap();
     store.append(Table::Events, &event).unwrap();
-    let mut slower = test_performance(EventKind::Track100m,
-        Mark::TimeSeconds(CentiSeconds::new(1100)), Some(TimingMethod::Fat),
-        Some(1.0), "2025-03-01");
+    let mut slower = test_performance(
+        EventKind::Track100m,
+        Mark::TimeSeconds(CentiSeconds::new(1100)),
+        Some(TimingMethod::Fat),
+        Some(1.0),
+        "2025-03-01",
+    );
     slower.athlete = athlete.id.clone();
     slower.meet = meet.id;
     slower.event = event.id;
@@ -677,9 +771,15 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() {
     store.append(Table::Performances, &slower).unwrap();
     store.append(Table::Performances, &faster).unwrap();
 
-    let selected = crate::bests::build(&store, &crate::bests::Options {
-        scope: Scope::AllSources, grad_year: Some(2027), limit: None,
-    }).unwrap();
+    let selected = crate::bests::build(
+        &store,
+        &crate::bests::Options {
+            scope: Scope::AllSources,
+            grad_year: Some(2027),
+            limit: None,
+        },
+    )
+    .unwrap();
 
     assert_eq!(selected.len(), 1);
     assert_eq!(selected[0].performance_id, faster.id);
@@ -692,24 +792,31 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() {
 #[test]
 fn reduce_equal_value_picks_later_date() {
     assert!(crate::bests::key::should_replace(
-        1094, 1094,
-        "2025-06-15", "meet_b", "perf_2",
-        "2025-03-15", "meet_a", "perf_1",
+        1094,
+        1094,
+        "2025-06-15",
+        "meet_b",
+        "perf_2",
+        "2025-03-15",
+        "meet_a",
+        "perf_1",
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
     assert!(!crate::bests::key::should_replace(
-        1094, 1094,
-        "2025-03-15", "meet_a", "perf_1",
-        "2025-06-15", "meet_b", "perf_2",
+        1094,
+        1094,
+        "2025-03-15",
+        "meet_a",
+        "perf_1",
+        "2025-06-15",
+        "meet_b",
+        "perf_2",
         move |c, i| crate::bests::Measure::Time.better(c, i),
     ));
 }
 
-
 #[test]
 fn key_separates_timing_methods_at_one_meet() {
-    
-
     let meet = test_parent_meet(
         vec![Sport::OutdoorTrack],
         Some(UsJurisdiction::Wisconsin),
@@ -733,8 +840,18 @@ fn key_separates_timing_methods_at_one_meet() {
         Some(&meet),
     );
 
-    let result_fat = crate::bests::PrKey::from_performance(&perf_fat, &EventKind::Track100m, Some(&meet), crate::bests::Measure::Time);
-    let result_hand = crate::bests::PrKey::from_performance(&perf_hand, &EventKind::Track100m, Some(&meet), crate::bests::Measure::Time);
+    let result_fat = crate::bests::PrKey::from_performance(
+        &perf_fat,
+        &EventKind::Track100m,
+        Some(&meet),
+        crate::bests::Measure::Time,
+    );
+    let result_hand = crate::bests::PrKey::from_performance(
+        &perf_hand,
+        &EventKind::Track100m,
+        Some(&meet),
+        crate::bests::Measure::Time,
+    );
     assert!(result_fat.is_some());
     assert!(result_hand.is_some());
     assert_ne!(result_fat.unwrap().timing, result_hand.unwrap().timing);
@@ -742,8 +859,6 @@ fn key_separates_timing_methods_at_one_meet() {
 
 #[test]
 fn key_separates_wind_assisted_and_legal_results() {
-    
-
     let meet = test_parent_meet(
         vec![Sport::OutdoorTrack],
         Some(UsJurisdiction::Wisconsin),
@@ -767,17 +882,28 @@ fn key_separates_wind_assisted_and_legal_results() {
         Some(&meet),
     );
 
-    let result_legal = crate::bests::PrKey::from_performance(&perf_legal, &EventKind::Track100m, Some(&meet), crate::bests::Measure::Time);
-    let result_assisted = crate::bests::PrKey::from_performance(&perf_assisted, &EventKind::Track100m, Some(&meet), crate::bests::Measure::Time);
+    let result_legal = crate::bests::PrKey::from_performance(
+        &perf_legal,
+        &EventKind::Track100m,
+        Some(&meet),
+        crate::bests::Measure::Time,
+    );
+    let result_assisted = crate::bests::PrKey::from_performance(
+        &perf_assisted,
+        &EventKind::Track100m,
+        Some(&meet),
+        crate::bests::Measure::Time,
+    );
     assert!(result_legal.is_some());
     assert!(result_assisted.is_some());
-    assert_ne!(result_legal.unwrap().wind_class, result_assisted.unwrap().wind_class);
+    assert_ne!(
+        result_legal.unwrap().wind_class,
+        result_assisted.unwrap().wind_class
+    );
 }
 
 #[test]
 fn reduce_same_meet_different_dates_picks_later() {
-    
-
     let meet = test_parent_meet(
         vec![Sport::OutdoorTrack],
         Some(UsJurisdiction::Wisconsin),
@@ -801,8 +927,18 @@ fn reduce_same_meet_different_dates_picks_later() {
         Some(&meet),
     );
 
-    let result_earlier = crate::bests::PrKey::from_performance(&perf_earlier, &EventKind::Track100m, Some(&meet), crate::bests::Measure::Time);
-    let result_later = crate::bests::PrKey::from_performance(&perf_later, &EventKind::Track100m, Some(&meet), crate::bests::Measure::Time);
+    let result_earlier = crate::bests::PrKey::from_performance(
+        &perf_earlier,
+        &EventKind::Track100m,
+        Some(&meet),
+        crate::bests::Measure::Time,
+    );
+    let result_later = crate::bests::PrKey::from_performance(
+        &perf_later,
+        &EventKind::Track100m,
+        Some(&meet),
+        crate::bests::Measure::Time,
+    );
     assert!(result_earlier.is_some());
     assert!(result_later.is_some());
     assert_eq!(result_earlier, result_later);
@@ -810,8 +946,6 @@ fn reduce_same_meet_different_dates_picks_later() {
 
 #[test]
 fn reduce_different_events_different_keys() {
-    
-
     let meet = test_parent_meet(
         vec![Sport::OutdoorTrack],
         Some(UsJurisdiction::Wisconsin),
@@ -835,11 +969,24 @@ fn reduce_different_events_different_keys() {
         Some(&meet),
     );
 
-    let result_100m = crate::bests::PrKey::from_performance(&perf_100m, &EventKind::Track100m, Some(&meet), crate::bests::Measure::Time);
-    let result_200m = crate::bests::PrKey::from_performance(&perf_200m, &EventKind::Track200m, Some(&meet), crate::bests::Measure::Time);
+    let result_100m = crate::bests::PrKey::from_performance(
+        &perf_100m,
+        &EventKind::Track100m,
+        Some(&meet),
+        crate::bests::Measure::Time,
+    );
+    let result_200m = crate::bests::PrKey::from_performance(
+        &perf_200m,
+        &EventKind::Track200m,
+        Some(&meet),
+        crate::bests::Measure::Time,
+    );
     assert!(result_100m.is_some());
     assert!(result_200m.is_some());
-    assert_ne!(result_100m.unwrap().event_kind, result_200m.unwrap().event_kind);
+    assert_ne!(
+        result_100m.unwrap().event_kind,
+        result_200m.unwrap().event_kind
+    );
 }
 
 #[test]
@@ -854,7 +1001,6 @@ fn reduce_non_relay_included() {
     assert!(!crate::bests::is_relay(&kind));
 }
 
-
 #[test]
 fn imperial_parser_rejects_malformed_unicode_and_fraction() {
     for input in ["5-3.1é", "5-3.中", "5-3.+1", "5-3.001"] {
@@ -866,6 +1012,8 @@ fn imperial_parser_rejects_malformed_unicode_and_fraction() {
 #[test]
 fn metric_scaling_widens_before_multiplication() {
     let mark = Mark::DistanceMetres(CentiMetres::new(i32::MAX));
-    assert_eq!(crate::bests::Measure::Distance.value(&mark),
-        Some(i64::from(i32::MAX) * 10_000));
+    assert_eq!(
+        crate::bests::Measure::Distance.value(&mark),
+        Some(i64::from(i32::MAX) * 10_000)
+    );
 }

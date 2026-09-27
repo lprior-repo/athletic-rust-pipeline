@@ -1,4 +1,3 @@
-
 fn split_feet_inches(feet_mark: &str) -> Option<(&str, &str)> {
     let trimmed = feet_mark.trim();
     let (feet, inches) = match trimmed.split_once('\'') {

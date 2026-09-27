@@ -1,4 +1,3 @@
-
 use super::map::school_entities;
 use super::pages::parse_directory;
 use super::{Options, ASSOCIATION};
@@ -80,8 +79,14 @@ fn process_school(
 
     let mut batch = ctx.store.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(ASSOCIATION),
-    &extract.school,).as_slice())?;
+    batch.append_many(
+        Table::SourceObservations,
+        ctx.school_observation(
+            &SourceNamespace::association_school(ASSOCIATION),
+            &extract.school,
+        )
+        .as_slice(),
+    )?;
     report.rows = report.rows.saturating_add(1);
 
     let mut xc_tf_count = 0u64;

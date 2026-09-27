@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use census_report::report::Scope;
 use census_service::restate_services::{

@@ -1,4 +1,3 @@
-
 #[path = "records_tests/joins.rs"]
 mod joins;
 #[path = "records_tests/measure.rs"]

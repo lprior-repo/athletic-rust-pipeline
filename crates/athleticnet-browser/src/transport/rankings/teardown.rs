@@ -1,4 +1,3 @@
-
 use super::rankings_helper::BINDING_NAME;
 use crate::{gate::ProfileGate, BrowserError};
 use chromiumoxide::cdp::browser_protocol::page::{

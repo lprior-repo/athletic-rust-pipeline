@@ -1,4 +1,3 @@
-
 use anyhow::{bail, Result};
 use census_crawl::{self as providers, AdapterContext, AdapterReport};
 use census_store::Store;

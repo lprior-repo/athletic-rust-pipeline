@@ -1,4 +1,3 @@
-
 use crate::AdapterReport;
 
 #[derive(Debug, Default)]

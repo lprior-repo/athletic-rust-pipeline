@@ -1,5 +1,6 @@
 use census_domain::model::{
-    normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, Gender, Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, Gender, Grade,
+    ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 
 use super::wire::{Roster, RosterAthlete, Site, TeamRef};

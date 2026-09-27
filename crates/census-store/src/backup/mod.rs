@@ -1,4 +1,3 @@
-
 mod copy;
 mod errors;
 pub(super) mod files;
@@ -10,8 +9,6 @@ mod tree;
 
 use std::collections::BTreeMap;
 
-
-
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct BackupReport {
     pub to: String,
@@ -20,7 +17,6 @@ pub struct BackupReport {
     pub tables: BTreeMap<String, u64>,
     pub elapsed_ms: u64,
 }
-
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct RestoreReport {
@@ -31,7 +27,6 @@ pub struct RestoreReport {
     pub tables: BTreeMap<String, u64>,
 }
 
-
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct IntegrityReport {
     pub ok: bool,
@@ -39,7 +34,6 @@ pub struct IntegrityReport {
     pub unreadable_journals: Vec<String>,
     pub unreadable_entity_logs: Vec<String>,
 }
-
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct IntegrityTable {
@@ -50,15 +44,12 @@ pub struct IntegrityTable {
     pub details: Vec<String>,
 }
 
-
-
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(super) struct ManifestEntry {
     pub path: String,
     pub length: u64,
     pub sha256: String,
 }
-
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub(super) struct Manifest {

@@ -1,4 +1,3 @@
-
 use super::journal::Journal;
 use super::map::{school_year_of, EventContext, Mapper};
 use super::report::{narrate, Walked};

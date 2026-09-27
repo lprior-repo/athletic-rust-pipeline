@@ -1,4 +1,3 @@
-
 use super::parse::Bio;
 use super::SCHOOL_KIND;
 use census_domain::model::{

@@ -1,4 +1,3 @@
-
 use super::{rows, PAGES, SEASON};
 use proptest::prelude::*;
 

@@ -1,4 +1,3 @@
-
 use super::{parse_time, seam_config};
 use proptest::prelude::*;
 

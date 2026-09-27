@@ -1,4 +1,3 @@
-
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};

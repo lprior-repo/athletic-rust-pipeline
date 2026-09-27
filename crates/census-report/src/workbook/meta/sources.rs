@@ -1,4 +1,3 @@
-
 use crate::report::{Census, ReportResult};
 use census_crawl::{descriptors, SourceCapabilities, SourceDescriptor, TransportKind};
 use std::collections::BTreeMap;

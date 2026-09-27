@@ -1,4 +1,3 @@
-
 use super::super::*;
 use crate::model::{
     CanonicalAthlete, Gender, GradYear, Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity,
@@ -66,7 +65,13 @@ fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one() {
     let school = SchoolId::mint("sch", &["WI", "Madison West"]);
     let grad_year = GradYear::new(2028).expect("a class");
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
-    let mut athlete = CanonicalAthlete::new(&school, "Jordan Smith", grad_year, Gender::Girls, source.clone());
+    let mut athlete = CanonicalAthlete::new(
+        &school,
+        "Jordan Smith",
+        grad_year,
+        Gender::Girls,
+        source.clone(),
+    );
     athlete.observed_grades.push(ObservedGrade {
         grade: Grade::new(10).expect("a grade in 9..=12"),
         school_year: SchoolYear::new(2025).expect("a season"),
@@ -101,7 +106,13 @@ fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one() {
         "the class the source's own grade observation implies"
     );
     assert_eq!(observation.observed_on, "2026-09-22");
-    let no_match = CanonicalAthlete::new(&school, "Jordan Smith", grad_year, Gender::Girls, SourceIdentity::new(SourceNamespace::TfrrsAthlete, "tfrrs-999"));
+    let no_match = CanonicalAthlete::new(
+        &school,
+        "Jordan Smith",
+        grad_year,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::TfrrsAthlete, "tfrrs-999"),
+    );
     assert_eq!(
         SourceAthleteObservation::of_athlete(
             &SourceNamespace::MilesplitAthlete,

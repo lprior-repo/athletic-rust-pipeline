@@ -1,4 +1,3 @@
-
 pub(crate) const TITLE: &str = "Athletes";
 
 pub(crate) const HEADERS: [&str; 60] = [

@@ -1,4 +1,3 @@
-
 use crate::report::{xlsx_error, ReportError, ReportResult};
 use rust_xlsxwriter::{Format, Workbook, Worksheet};
 use std::path::Path;

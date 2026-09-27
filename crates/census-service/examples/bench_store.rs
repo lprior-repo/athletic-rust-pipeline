@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use census_domain::model::{normalize_name, CanonicalSchool, Evidence, SourceRef};
 use census_domain::UsJurisdiction;

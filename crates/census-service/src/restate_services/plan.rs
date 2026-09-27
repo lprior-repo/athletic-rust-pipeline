@@ -1,4 +1,3 @@
-
 use census_crawl::applicability::applicable_sources;
 use census_crawl::net::Fetcher;
 use census_crawl::registry::{AccessClass, SourceDescriptor};

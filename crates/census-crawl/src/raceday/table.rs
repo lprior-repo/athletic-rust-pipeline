@@ -1,4 +1,3 @@
-
 use crate::hytek::parse_time;
 use crate::result_file::ParsedRow;
 use census_domain::model::{Grade, Mark};

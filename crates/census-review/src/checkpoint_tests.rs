@@ -1,4 +1,3 @@
-
 use census_domain::model::{
     CanonicalAthlete, CanonicalSchool, Gender, GradYear, ReviewCase, ReviewState,
     ReviewVerdictKind, ReviewVerdictRecord, SourceIdentity, SourceNamespace,
@@ -185,9 +184,21 @@ fn reconcile_athletes_writes_both_tables_in_one_commit() {
     .id;
 
     let source_a = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
-    let mut a = CanonicalAthlete::new(&school_a, "Jordan Smith", GradYear::CO2027, Gender::Boys, source_a);
+    let mut a = CanonicalAthlete::new(
+        &school_a,
+        "Jordan Smith",
+        GradYear::CO2027,
+        Gender::Boys,
+        source_a,
+    );
     let source_b = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
-    let mut b = CanonicalAthlete::new(&school_b, "Jordan Smith", GradYear::CO2027, Gender::Boys, source_b);
+    let mut b = CanonicalAthlete::new(
+        &school_b,
+        "Jordan Smith",
+        GradYear::CO2027,
+        Gender::Boys,
+        source_b,
+    );
     store
         .append_many(Table::Athletes, &[a.clone(), b.clone()])
         .expect("athletes written");

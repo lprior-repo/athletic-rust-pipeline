@@ -15,7 +15,10 @@ pub(super) fn validate_structure(
         return Err(ContactProofError::UnverifiedClaim);
     }
     if claims.len() > super::MAX_CLAIMS {
-        return Err(ContactProofError::TooManyClaims(claims.len(), super::MAX_CLAIMS));
+        return Err(ContactProofError::TooManyClaims(
+            claims.len(),
+            super::MAX_CLAIMS,
+        ));
     }
     parse_date(&row.last_observed).ok_or(ContactProofError::LastObservedInvalid)?;
     if row.source_urls.is_empty() {
@@ -31,7 +34,10 @@ pub(super) fn validate_structure(
     }
     let fields = [
         ("coach_name", row.coach_name.as_str()),
-        ("public_professional_email", row.public_professional_email.as_str()),
+        (
+            "public_professional_email",
+            row.public_professional_email.as_str(),
+        ),
         ("ad_name", row.ad_name.as_str()),
         ("ad_email", row.ad_email.as_str()),
     ];
@@ -45,9 +51,15 @@ pub(super) fn validate_structure(
 
 fn validate_claim(claim: &ContactClaimEvidence) -> Result<(), ContactProofError> {
     if [
-        &claim.value, &claim.person, &claim.role, &claim.school,
-        &claim.state, &claim.span,
-    ].into_iter().any(|value| value.trim().is_empty())
+        &claim.value,
+        &claim.person,
+        &claim.role,
+        &claim.school,
+        &claim.state,
+        &claim.span,
+    ]
+    .into_iter()
+    .any(|value| value.trim().is_empty())
         || (claim.sport.trim().is_empty() && !is_director(claim.field))
     {
         return Err(ContactProofError::UnverifiedClaim);
@@ -75,24 +87,49 @@ fn validate_claim_against_row(
     covered: &mut [bool; 4],
 ) -> Result<(), ContactProofError> {
     let (value, person, role, present) = match claim.field {
-        ContactProofField::CoachName =>
-            (&row.coach_name, &row.coach_name, row.role.as_str(), &mut covered[0]),
-        ContactProofField::PublicProfessionalEmail =>
-            (&row.public_professional_email, &row.coach_name, row.role.as_str(), &mut covered[1]),
-        ContactProofField::AdName =>
-            (&row.ad_name, &row.ad_name, "Athletic Director", &mut covered[2]),
-        ContactProofField::AdEmail =>
-            (&row.ad_email, &row.ad_name, "Athletic Director", &mut covered[3]),
+        ContactProofField::CoachName => (
+            &row.coach_name,
+            &row.coach_name,
+            row.role.as_str(),
+            &mut covered[0],
+        ),
+        ContactProofField::PublicProfessionalEmail => (
+            &row.public_professional_email,
+            &row.coach_name,
+            row.role.as_str(),
+            &mut covered[1],
+        ),
+        ContactProofField::AdName => (
+            &row.ad_name,
+            &row.ad_name,
+            "Athletic Director",
+            &mut covered[2],
+        ),
+        ContactProofField::AdEmail => (
+            &row.ad_email,
+            &row.ad_name,
+            "Athletic Director",
+            &mut covered[3],
+        ),
     };
-    let sport_matches = claim.sport == row.sport
-        || (is_director(claim.field) && claim.sport.is_empty());
-    if &claim.value != value || &claim.person != person || claim.role != role
-        || claim.school != row.school || claim.state != row.state || !sport_matches
+    let sport_matches =
+        claim.sport == row.sport || (is_director(claim.field) && claim.sport.is_empty());
+    if &claim.value != value
+        || &claim.person != person
+        || claim.role != role
+        || claim.school != row.school
+        || claim.state != row.state
+        || !sport_matches
     {
-        return Err(ContactProofError::ValueMismatch(format!("{:?}", claim.field)));
+        return Err(ContactProofError::ValueMismatch(format!(
+            "{:?}",
+            claim.field
+        )));
     }
     if claim.claimed_observed_on != row.last_observed {
-        return Err(ContactProofError::ValueMismatch("claimed_observed_on".to_owned()));
+        return Err(ContactProofError::ValueMismatch(
+            "claimed_observed_on".to_owned(),
+        ));
     }
     if !row.source_urls.contains(&claim.source_url) {
         return Err(ContactProofError::SourceUrlNotFound);
@@ -102,11 +139,11 @@ fn validate_claim_against_row(
 }
 
 fn is_director(field: ContactProofField) -> bool {
-    matches!(field, ContactProofField::AdName | ContactProofField::AdEmail)
+    matches!(
+        field,
+        ContactProofField::AdName | ContactProofField::AdEmail
+    )
 }
-
-
-
 
 fn parse_date(value: &str) -> Option<NaiveDate> {
     let canonical = value.len() == 10
@@ -114,7 +151,9 @@ fn parse_date(value: &str) -> Option<NaiveDate> {
             4 | 7 => byte == b'-',
             _ => byte.is_ascii_digit(),
         });
-    canonical.then(|| NaiveDate::parse_from_str(value, "%Y-%m-%d").ok()).flatten()
+    canonical
+        .then(|| NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
+        .flatten()
 }
 
 fn validate_url(value: &str) -> Result<(), ContactProofError> {

@@ -2,7 +2,9 @@ use super::key::{should_replace, PrKey};
 use super::selection::{Conflict, Population, SharedSelection};
 use super::{is_relay, mark_text, Measure, Options, Parents};
 use crate::report::{retain_core_row, Scope};
-use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalPerformance, EventKind, Mark};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, EventKind, Mark,
+};
 use census_domain::{JurisdictionBucket, MeetState};
 use census_store::{Store, StoreResult, Table};
 use std::collections::HashMap;
@@ -68,7 +70,6 @@ fn fold(
         return;
     };
 
-
     let meet = parents.meet(performance.meet.as_str());
     let Some(key) = PrKey::from_performance(performance, kind, meet, measure) else {
         return;
@@ -88,7 +89,8 @@ fn fold(
     }
 
     let meet_name = meet.map(|m| m.name.clone()).unwrap_or_default();
-    entry.reports
+    entry
+        .reports
         .push((meet_name.clone(), format_mark(&performance.mark)));
 
     let wins = entry
@@ -110,7 +112,15 @@ fn fold(
         .unwrap_or(true);
 
     if wins {
-        entry.winner = Some(make_row(key, athlete, meet, performance, value, measure, parents));
+        entry.winner = Some(make_row(
+            key,
+            athlete,
+            meet,
+            performance,
+            value,
+            measure,
+            parents,
+        ));
     }
 }
 
@@ -130,7 +140,10 @@ fn close(slot: PrSlot) -> Option<SharedSelection> {
         if marks.len() > 1 {
             let unique: Vec<String> = marks.into_iter().collect();
             if unique.len() > 1 {
-                conflicts.push(Conflict { meet, marks: unique });
+                conflicts.push(Conflict {
+                    meet,
+                    marks: unique,
+                });
             }
         }
     }
@@ -198,10 +211,7 @@ fn make_row(
     }
 }
 
-fn resolve_school(
-    team_id: &census_domain::model::TeamId,
-    parents: &Parents,
-) -> Option<String> {
+fn resolve_school(team_id: &census_domain::model::TeamId, parents: &Parents) -> Option<String> {
     parents
         .team(team_id.as_str())
         .and_then(|team| parents.school(team.school.as_str()))

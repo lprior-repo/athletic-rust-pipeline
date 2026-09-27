@@ -1,4 +1,3 @@
-
 use census_domain::model::{
     id_collision, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, NaturalKey, RetainedConflict,
@@ -111,7 +110,6 @@ fn route_published_email(coach: &mut CanonicalCoach, address: Option<String>) {
     }
 }
 
-
 impl Entity for CanonicalAthlete {
     fn entity_id(&self) -> &str {
         self.id.as_str()
@@ -126,7 +124,10 @@ impl Entity for CanonicalAthlete {
         union_vec(&mut self.sports, &other.sports);
         union_vec(&mut self.public_profile_urls, &other.public_profile_urls);
         self.add_identity(other.source);
-        other.source_links.into_iter().for_each(|identity| self.add_identity(identity));
+        other
+            .source_links
+            .into_iter()
+            .for_each(|identity| self.add_identity(identity));
         union_vec(&mut self.evidence, &other.evidence);
         for observation in other.observed_grades {
             if !self.observed_grades.contains(&observation) {
@@ -135,7 +136,6 @@ impl Entity for CanonicalAthlete {
         }
         self.publish();
     }
-
 }
 
 impl Entity for CanonicalMeet {

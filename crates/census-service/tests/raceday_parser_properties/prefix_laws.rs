@@ -1,4 +1,3 @@
-
 use super::{parse_body, rendered_rows, seam_config, CAPTURE, DECLINED_ROW};
 use proptest::prelude::*;
 

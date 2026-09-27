@@ -1,4 +1,3 @@
-
 mod common;
 
 use anyhow::{bail, ensure, Context, Result};
@@ -11,7 +10,6 @@ use serde::Serialize;
 
 const OBSERVED_ON: &str = "2026-09-20";
 const SOURCE_ID: &str = "wiaa_results";
-
 
 #[derive(Serialize)]
 struct IndexRow {
@@ -227,7 +225,6 @@ struct Corpus {
     files: Vec<CorpusEntry>,
 }
 
-
 const ARCHIVE_YEARS: [(&str, i16); 6] = [
     ("d1boysstateresults-dash.htm", 2025),
     ("d1boysstateresults-dash.txt", 2025),
@@ -280,7 +277,6 @@ fn xc_claim(file: &str, body: &str, year: i16) -> Option<MeetView> {
     };
     xc::parse(&lines, source(), year).as_ref().map(MeetView::of)
 }
-
 
 #[test]
 fn wiaa_corpus_matches_its_goldens() -> Result<()> {
@@ -376,7 +372,6 @@ fn org_id_of(file: &str) -> Result<&str> {
     Ok(org_id)
 }
 
-
 #[test]
 fn wiaa_results_corpus_matches_its_goldens() -> Result<()> {
     let mut files = Vec::new();
@@ -442,7 +437,6 @@ fn raceday_finish_list_matches_its_golden() -> Result<()> {
     )
 }
 
-
 #[test]
 fn xc_layouts_match_their_goldens() -> Result<()> {
     for (name, capture, year) in [
@@ -474,7 +468,6 @@ fn xc_declines_every_archive_fixture() -> Result<()> {
     }
     Ok(())
 }
-
 
 const XC_STATE_BLOCKS: &str = r#"
 11/1/25, 1:38 PM                                                     WIAA State Cross Country Championships

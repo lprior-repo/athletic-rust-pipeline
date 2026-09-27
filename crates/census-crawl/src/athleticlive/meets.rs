@@ -1,4 +1,3 @@
-
 use std::collections::BTreeMap;
 
 use super::parse::{infer_level, MeetRow};
@@ -32,13 +31,10 @@ pub fn build_meets(rows: &[MeetRow], observed_on: &str, source_label: &str) -> V
         );
         push_identity(&mut entry.source_identities, timer_identity);
         if let Some(an_id) = &row.athleticnet_meet_id {
-            let an_identity = SourceIdentity::new(
-                SourceNamespace::athletic_net("meet"),
-                an_id.clone(),
-            )
-            .with_url(format!(
-                "https://www.athletic.net/TrackAndField/meet/{an_id}/info"
-            ));
+            let an_identity =
+                SourceIdentity::new(SourceNamespace::athletic_net("meet"), an_id.clone()).with_url(
+                    format!("https://www.athletic.net/TrackAndField/meet/{an_id}/info"),
+                );
             push_identity(&mut entry.source_identities, an_identity);
         }
     }

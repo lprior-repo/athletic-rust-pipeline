@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use census_crawl::{self as providers, AdapterContext, AdapterReport};
 use census_domain::model::{SchoolYear, SourceMeetRef};
@@ -27,7 +26,8 @@ pub(crate) async fn milesplit_report(
         .await
         .context("milesplit collection")?;
     let mut summary = AdapterReport::new("milesplit", "athletes");
-    summary.rows = u64::try_from(report.athletes_total).context("observed athlete count exceeds u64")?;
+    summary.rows =
+        u64::try_from(report.athletes_total).context("observed athlete count exceeds u64")?;
     summary.requests = report.transport.requests;
     summary.from_cache = report.transport.cache_hits;
     summary.errors = report.errors;

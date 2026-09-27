@@ -19,15 +19,22 @@ impl SchoolContacts {
 }
 
 pub(in crate::workbook::recruiting) fn contacts(
-    coaches: &[CanonicalCoach], school_year: SchoolYear,
+    coaches: &[CanonicalCoach],
+    school_year: SchoolYear,
 ) -> BTreeMap<String, SchoolContacts> {
     let mut buckets: BTreeMap<&SchoolId, Buckets<'_>> = BTreeMap::new();
     for coach in coaches {
         buckets.entry(&coach.school).or_default().push(coach);
     }
-    buckets.into_iter().map(|(school, buckets)| {
-        (school.as_str().to_owned(), buckets.contacts(school, school_year))
-    }).collect()
+    buckets
+        .into_iter()
+        .map(|(school, buckets)| {
+            (
+                school.as_str().to_owned(),
+                buckets.contacts(school, school_year),
+            )
+        })
+        .collect()
 }
 
 #[derive(Default)]
@@ -41,11 +48,17 @@ impl<'a> Buckets<'a> {
         match coach.role {
             CoachRole::HeadCoach => {
                 if let Some(sport) = coach.sport {
-                    self.heads.entry((Slot::of(sport), coach.gender)).or_default().push(coach);
+                    self.heads
+                        .entry((Slot::of(sport), coach.gender))
+                        .or_default()
+                        .push(coach);
                 }
             }
             CoachRole::AthleticDirector => {
-                self.heads.entry((Slot::Director, Gender::Mixed)).or_default().push(coach);
+                self.heads
+                    .entry((Slot::Director, Gender::Mixed))
+                    .or_default()
+                    .push(coach);
             }
             CoachRole::AssistantCoach => self.assistants.push(coach),
             CoachRole::Unknown => {}
@@ -58,7 +71,8 @@ impl<'a> Buckets<'a> {
             heads.insert(school.as_str(), *slot, *side, rows, school_year);
         }
         SchoolContacts {
-            school: school.clone(), heads,
+            school: school.clone(),
+            heads,
             assistants: individuals(&self.assistants, school_year),
         }
     }

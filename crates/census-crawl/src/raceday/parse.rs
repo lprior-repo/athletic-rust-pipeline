@@ -1,4 +1,3 @@
-
 use crate::result_file::{ParsedEvent, ParsedMeet};
 use crate::{CrawlError, CrawlResult};
 use census_domain::model::{EventKind, Gender, SourceRef};

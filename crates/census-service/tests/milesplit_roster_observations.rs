@@ -86,7 +86,9 @@ async fn a_roster_pass_files_an_observation_per_published_athlete() {
 
     let parsed = milesplit::parse_roster(WI_ROSTER_FIXTURE, first.clone())
         .expect("the roster fixture parses");
-    let roster = parsed.roster().expect("the roster fixture has readable athletes");
+    let roster = parsed
+        .roster()
+        .expect("the roster fixture has readable athletes");
     let published: BTreeMap<String, (&str, &str)> = roster
         .athletes
         .iter()
@@ -193,39 +195,76 @@ fn collect_options() -> CollectOptions {
 
 #[tokio::test]
 async fn partial_and_quarantined_rosters_remain_incomplete_after_reopening() {
-    let partial = WI_ROSTER_FIXTURE.replacen(
-        "column-grad-year\">2027", "column-grad-year\">invalid", 1);
-    for (body, accepted) in [(partial.as_str(), 24), ("<html>unrecognized page</html>", 0)] {
+    let partial =
+        WI_ROSTER_FIXTURE.replacen("column-grad-year\">2027", "column-grad-year\">invalid", 1);
+    for (body, accepted) in [
+        (partial.as_str(), 24),
+        ("<html>unrecognized page</html>", 0),
+    ] {
         let dir = tempfile::tempdir().expect("temp dir");
         let store = Store::open(dir.path()).expect("store");
-        let team = milesplit::parse_team_index(WI_TEAMS_FIXTURE).expect("index").remove(0);
-        seed_cache(&store.http_cache_dir(), &format!("{}/roster", team.url), body);
-        let fetcher = Fetcher::new(store.http_cache_dir(), None, Duration::from_millis(1),
-            std::collections::HashMap::new(), Vec::new()).expect("fetcher");
+        let team = milesplit::parse_team_index(WI_TEAMS_FIXTURE)
+            .expect("index")
+            .remove(0);
+        seed_cache(
+            &store.http_cache_dir(),
+            &format!("{}/roster", team.url),
+            body,
+        );
+        let fetcher = Fetcher::new(
+            store.http_cache_dir(),
+            None,
+            Duration::from_millis(1),
+            std::collections::HashMap::new(),
+            Vec::new(),
+        )
+        .expect("fetcher");
         let options = collect_options();
-        let first = census::collect_state_rosters(&fetcher, &store, std::slice::from_ref(&team),
-            &options, UsJurisdiction::Wisconsin).await.expect("persisting source outcome");
+        let first = census::collect_state_rosters(
+            &fetcher,
+            &store,
+            std::slice::from_ref(&team),
+            &options,
+            UsJurisdiction::Wisconsin,
+        )
+        .await
+        .expect("persisting source outcome");
         assert_eq!(first.rosters_committed, 0);
         assert_eq!(first.rosters_remaining, 1);
         assert_eq!(first.athletes, accepted);
         assert_eq!(first.errors.len(), 1);
         let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes).expect("athletes");
         assert_eq!(athletes.len(), accepted);
-        let observations: Vec<SourceObservation> = store.scan(Table::SourceObservations).expect("observations");
-        assert_eq!(observations.iter().filter(|row| matches!(row, SourceObservation::Athlete(_))).count(),
-            accepted);
+        let observations: Vec<SourceObservation> =
+            store.scan(Table::SourceObservations).expect("observations");
+        assert_eq!(
+            observations
+                .iter()
+                .filter(|row| matches!(row, SourceObservation::Athlete(_)))
+                .count(),
+            accepted
+        );
         let expected_observations = accepted + usize::from(accepted != 0);
         assert_eq!(observations.len(), expected_observations);
         drop(store);
         let reopened = Store::open(dir.path()).expect("reopening durable outcomes");
-        let resumed = census::collect_state_rosters(&fetcher, &reopened, std::slice::from_ref(&team),
-            &options, UsJurisdiction::Wisconsin).await.expect("resuming");
+        let resumed = census::collect_state_rosters(
+            &fetcher,
+            &reopened,
+            std::slice::from_ref(&team),
+            &options,
+            UsJurisdiction::Wisconsin,
+        )
+        .await
+        .expect("resuming");
         assert_eq!(resumed.errors, first.errors);
         assert_eq!(resumed.rosters_committed, 0);
         assert_eq!(resumed.rosters_remaining, 1);
         assert_eq!(resumed.rosters_skipped, 1);
         assert_eq!(resumed.athletes, accepted);
-        let persisted: Vec<SourceObservation> = reopened.scan(Table::SourceObservations).expect("observations");
+        let persisted: Vec<SourceObservation> = reopened
+            .scan(Table::SourceObservations)
+            .expect("observations");
         assert_eq!(persisted.len(), expected_observations);
         let stats = fetcher.stats().await;
         assert_eq!(stats.requests, 0);

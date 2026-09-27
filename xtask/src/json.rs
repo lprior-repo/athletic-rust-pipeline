@@ -1,4 +1,3 @@
-
 use serde_json::Value;
 
 pub fn count(value: usize) -> u64 {

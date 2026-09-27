@@ -1,9 +1,10 @@
-
 use super::*;
 use clap::Parser;
 
 #[derive(clap::Parser)]
-#[command(about = "A parser wrapper, because `Target` is a flattened argument group rather than a command")]
+#[command(
+    about = "A parser wrapper, because `Target` is a flattened argument group rather than a command"
+)]
 struct Wrapper {
     #[command(flatten)]
     target: Target,

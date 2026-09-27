@@ -1,4 +1,3 @@
-
 use super::{store_accumulated, RunState};
 use crate::athleticnet::absorb::absorb;
 use crate::athleticnet::parse::Bio;

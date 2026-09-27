@@ -19,7 +19,8 @@ pub fn wiaa_directory(corpus: &mut Corpus) -> Result<()> {
                 .unwrap_or(false)
         })
         .context("the wiaa corpus carries no directory letter")?;
-    let index = wiaa::parse_directory_letter(&common::fixture("wiaa", &common::file_name(letter)?)?);
+    let index =
+        wiaa::parse_directory_letter(&common::fixture("wiaa", &common::file_name(letter)?)?);
     ensure!(
         !index.is_empty(),
         "{}: the directory letter yielded no rows",

@@ -1,4 +1,3 @@
-
 use super::{RequestAction, RequestSpec};
 
 const CENSUS_BIO_REQUEST: &str =

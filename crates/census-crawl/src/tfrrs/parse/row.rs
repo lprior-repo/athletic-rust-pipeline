@@ -1,4 +1,3 @@
-
 use super::date::{published_date, PublishedDate};
 use super::html::{cell, links, text_of};
 use super::mark::{conversion_note, converted_metres, published_mark, wind_mps, ParsedMark};

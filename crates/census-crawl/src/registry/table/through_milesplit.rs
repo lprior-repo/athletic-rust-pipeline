@@ -1,4 +1,3 @@
-
 use super::super::policy::{
     artifact, fetched, FETCHER_RPS, SCHOOL_COACH_CONTACT, SCHOOL_COACH_NAMES,
 };

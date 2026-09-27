@@ -1,4 +1,3 @@
-
 use census_domain::model::{ReviewCase, ReviewState, ReviewVerdict, ReviewVerdictRecord};
 
 use super::verdicts::Adjudication;

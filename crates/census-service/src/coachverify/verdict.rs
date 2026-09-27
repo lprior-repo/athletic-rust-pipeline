@@ -7,14 +7,19 @@ fn row_identity(row: &RawContactRow) -> Vec<String> {
     urls.sort_unstable();
     urls.dedup();
     let fields = [
-        &row.school, &row.city, &row.state, &row.sport, &row.role,
-        &row.coach_name, &row.ad_name, &row.last_observed,
+        &row.school,
+        &row.city,
+        &row.state,
+        &row.sport,
+        &row.role,
+        &row.coach_name,
+        &row.ad_name,
+        &row.last_observed,
     ];
-    let emails = [
-        &row.public_professional_email,
-        &row.ad_email,
-    ];
-    fields.iter().map(|value| crate::coachverify::normalize(value))
+    let emails = [&row.public_professional_email, &row.ad_email];
+    fields
+        .iter()
+        .map(|value| crate::coachverify::normalize(value))
         .chain(emails.iter().map(|s| (*s).to_string()))
         .chain(urls.into_iter().map(str::to_string))
         .collect()
@@ -46,7 +51,9 @@ impl Verdict {
         }
     }
 
-    pub fn shipped(self) -> bool { self == Self::Ok }
+    pub fn shipped(self) -> bool {
+        self == Self::Ok
+    }
 
     pub const ALL: &'static [Self] = &[
         Self::Ok,
@@ -79,14 +86,19 @@ impl RowOutcome {
         urls.sort_unstable();
         urls.dedup();
         let fields = [
-            &self.row.school, &self.row.city, &self.row.state, &self.row.sport, &self.row.role,
-            &self.row.coach_name, &self.row.ad_name, &self.row.last_observed,
+            &self.row.school,
+            &self.row.city,
+            &self.row.state,
+            &self.row.sport,
+            &self.row.role,
+            &self.row.coach_name,
+            &self.row.ad_name,
+            &self.row.last_observed,
         ];
-        let emails = [
-            &self.row.public_professional_email,
-            &self.row.ad_email,
-        ];
-        fields.iter().map(|value| crate::coachverify::normalize(value))
+        let emails = [&self.row.public_professional_email, &self.row.ad_email];
+        fields
+            .iter()
+            .map(|value| crate::coachverify::normalize(value))
             .chain(emails.iter().map(|s| (*s).to_string()))
             .chain(urls.into_iter().map(str::to_string))
             .collect()
@@ -107,10 +119,13 @@ struct FragmentSummary<'a> {
     verdicts: &'a BTreeMap<Verdict, usize>,
 }
 
-
 impl FragmentOutcome {
     pub fn summary(&self) -> impl serde::Serialize + '_ {
-        FragmentSummary { fragment: &self.file, rows: self.rows.len(), verdicts: &self.counts }
+        FragmentSummary {
+            fragment: &self.file,
+            rows: self.rows.len(),
+            verdicts: &self.counts,
+        }
     }
 
     pub fn shipped(&self) -> impl Iterator<Item = &RowOutcome> {
@@ -144,7 +159,11 @@ pub fn reconcile(published: &Path, outcomes: &[FragmentOutcome]) -> anyhow::Resu
             .map_err(|e| anyhow::anyhow!("proof computation: {e}"))?;
         verified_map.insert(identity, digest);
     }
-    let mut report = Reconcile { verified: verified_map.len(), files: outcomes.len(), ..Default::default() };
+    let mut report = Reconcile {
+        verified: verified_map.len(),
+        files: outcomes.len(),
+        ..Default::default()
+    };
     for row in super::read_fragment(published)? {
         let evidence = super::read_fragment_evidence(published, &row)?;
         match verified_map.get(&row_identity(&row)) {

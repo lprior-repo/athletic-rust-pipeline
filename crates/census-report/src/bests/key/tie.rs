@@ -39,8 +39,12 @@ pub(crate) fn should_replace_impl(
 
     if candidate_value == incumbent_value {
         return tie_break_later(
-            cand_date, cand_meet, cand_perf_id,
-            inc_date, inc_meet, inc_perf_id,
+            cand_date,
+            cand_meet,
+            cand_perf_id,
+            inc_date,
+            inc_meet,
+            inc_perf_id,
         );
     }
 

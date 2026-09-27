@@ -1,4 +1,3 @@
-
 use crate::model::{CentiMetres, CentiPoints, CentiSeconds};
 
 #[test]

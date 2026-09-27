@@ -1,4 +1,3 @@
-
 use super::state::{bucket_mut, in_cohort, jurisdiction_of, Bucket, BucketMap, PerfTally};
 use super::JurisdictionCoverage;
 use census_domain::model::{CanonicalAthlete, CanonicalPerformance, Gender, Mark, Sport};
@@ -108,7 +107,8 @@ fn distinct_evidence_sources(athlete: &CanonicalAthlete) -> Vec<&str> {
 }
 
 fn distinct_namespaces(athlete: &CanonicalAthlete) -> usize {
-    let mut namespaces: Vec<String> = athlete.identities()
+    let mut namespaces: Vec<String> = athlete
+        .identities()
         .map(|identity| identity.namespace.to_string())
         .collect();
     namespaces.sort_unstable();

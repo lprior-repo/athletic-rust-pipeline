@@ -1,11 +1,11 @@
-
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::thread::JoinHandle;
 
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalSchool, Gender, GradYear, RetainedConflict,
-    ReviewCase, ReviewState, ReviewVerdictRecord, SourceIdentity, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
+    ReviewCase, ReviewState, ReviewVerdictRecord, SourceIdentity, SourceNamespace,
+    ATHLETE_IDENTITY_FAMILY,
 };
 use census_domain::UsJurisdiction;
 
@@ -31,9 +31,21 @@ impl Fixture {
         .0
         .id;
         let source_boys = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
-        let boys = CanonicalAthlete::new(&school, "Jordan Smith", GradYear::CO2027, Gender::Boys, source_boys);
+        let boys = CanonicalAthlete::new(
+            &school,
+            "Jordan Smith",
+            GradYear::CO2027,
+            Gender::Boys,
+            source_boys,
+        );
         let source_girls = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
-        let girls = CanonicalAthlete::new(&school, "Jordan Smith", GradYear::CO2027, Gender::Girls, source_girls);
+        let girls = CanonicalAthlete::new(
+            &school,
+            "Jordan Smith",
+            GradYear::CO2027,
+            Gender::Girls,
+            source_girls,
+        );
         store
             .append_many(Table::Athletes, &[boys.clone(), girls.clone()])
             .expect("the athletes are written");
@@ -70,7 +82,8 @@ fn options() -> ReviewOptions {
 }
 
 fn client(endpoint: &str) -> ModelClient {
-    ModelClient::new(ModelOptions::local(endpoint, "stub.gguf").expect("valid test endpoint")).expect("a client for the stub")
+    ModelClient::new(ModelOptions::local(endpoint, "stub.gguf").expect("valid test endpoint"))
+        .expect("a client for the stub")
 }
 
 fn batch(case: &ReviewCase, kind: &str, field: &str, value: &str) -> String {

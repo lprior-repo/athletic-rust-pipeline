@@ -1,4 +1,3 @@
-
 use census_domain::model::{ReviewCase, ReviewState, COHORT_DECISION_FAMILIES};
 use serde::{Deserialize, Serialize};
 

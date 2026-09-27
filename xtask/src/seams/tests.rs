@@ -1,4 +1,3 @@
-
 use super::parse::{crates_in_line, refs_in_line};
 use super::walk::top_module;
 use super::ALLOWED_CRATES;

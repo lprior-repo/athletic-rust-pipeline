@@ -28,17 +28,34 @@ async fn a_standings_capture_folds_into_the_event_that_published_its_run_key() {
     let performances: Vec<CanonicalPerformance> =
         store.scan(Table::Performances).expect("performances read");
     assert_eq!(performances.len(), 8);
-    let miriam: Vec<_> = performances.iter().filter(|row| row.place == Some(26)).collect();
-    assert_eq!(miriam.len(), 2, "a standings row cannot name-merge into a native athlete");
-    assert_ne!(miriam[0].source_athlete, miriam[1].source_athlete);
-    assert!(miriam.iter().all(|row| row.mark == Mark::TimeSeconds(CentiSeconds::new(122570))));
-    let sources: std::collections::BTreeSet<_> = miriam.iter()
-        .flat_map(|row| row.evidence.iter().filter_map(|evidence| evidence.source.url.clone()))
+    let miriam: Vec<_> = performances
+        .iter()
+        .filter(|row| row.place == Some(26))
         .collect();
-    assert_eq!(sources, std::collections::BTreeSet::from([
-        event_doc_url(2_150_205),
-        crate::athleticlive::wire::standings_url(STATE_MEET, "1-1").expect("valid run key"),
-    ]));
+    assert_eq!(
+        miriam.len(),
+        2,
+        "a standings row cannot name-merge into a native athlete"
+    );
+    assert_ne!(miriam[0].source_athlete, miriam[1].source_athlete);
+    assert!(miriam
+        .iter()
+        .all(|row| row.mark == Mark::TimeSeconds(CentiSeconds::new(122570))));
+    let sources: std::collections::BTreeSet<_> = miriam
+        .iter()
+        .flat_map(|row| {
+            row.evidence
+                .iter()
+                .filter_map(|evidence| evidence.source.url.clone())
+        })
+        .collect();
+    assert_eq!(
+        sources,
+        std::collections::BTreeSet::from([
+            event_doc_url(2_150_205),
+            crate::athleticlive::wire::standings_url(STATE_MEET, "1-1").expect("valid run key"),
+        ])
+    );
     let identities: Vec<String> = store
         .scan::<CanonicalAthlete>(Table::Athletes)
         .expect("athletes read")

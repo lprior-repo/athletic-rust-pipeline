@@ -1,4 +1,3 @@
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
 use std::os::unix::process::ExitStatusExt;
@@ -1537,7 +1536,9 @@ async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_ro
             .expect("scan athletes");
         let parsed = milesplit::parse_roster(WI_ROSTER_FIXTURE, teams[0].clone())
             .expect("the roster fixture parses");
-        let per_roster = parsed.roster().expect("the fixture contains readable athletes")
+        let per_roster = parsed
+            .roster()
+            .expect("the fixture contains readable athletes")
             .athletes
             .iter()
             .filter(|athlete| athlete.grad_year == GradYear::CO2027)

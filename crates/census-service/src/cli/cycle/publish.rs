@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use census_report::report;
 use census_report::{bests, workbook};
@@ -38,7 +37,8 @@ pub(super) fn publish_bests_and_workbook(
     };
     let rows = bests::build(store, &bests).context("reducing the best marks")?;
     let cohort = cohort_label(Some(grad_year));
-    let (jsonl, csv) = bests::write(&store.out_dir(), &rows, &cohort).context("writing the best marks")?;
+    let (jsonl, csv) =
+        bests::write(&store.out_dir(), &rows, &cohort).context("writing the best marks")?;
     println!(
         "bests\tcohort={cohort} rows={} scope={}\t{}",
         rows.len(),

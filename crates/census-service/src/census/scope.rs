@@ -1,6 +1,5 @@
-
-use census_domain::model::{Gender, GradYear, SchoolYear};
 use census_crawl::milesplit::{Roster, TeamRef};
+use census_domain::model::{Gender, GradYear, SchoolYear};
 use census_store::{Store, StoreResult};
 
 use super::rosters_phase;

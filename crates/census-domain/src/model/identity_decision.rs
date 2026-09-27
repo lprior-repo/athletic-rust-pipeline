@@ -1,5 +1,7 @@
 use super::serialization_digest::serialized_digest;
-use super::{AthleteCandidateId, AthleteId, CanonicalAthlete, ReviewVerdictRecord, SourceNamespace};
+use super::{
+    AthleteCandidateId, AthleteId, CanonicalAthlete, ReviewVerdictRecord, SourceNamespace,
+};
 use serde::{Deserialize, Serialize};
 
 pub const ATHLETE_IDENTITY_POLICY: u32 = 1;
@@ -45,12 +47,9 @@ pub fn person_provider(namespace: &SourceNamespace) -> Option<&'static str> {
 pub fn person_key(source: &super::SourceIdentity) -> Option<PersonKey> {
     let provider = person_provider(&source.namespace)?;
     let id = source.id.parse::<u64>().ok()?;
-    (id > 0
-        && source.id.bytes().all(|b| b.is_ascii_digit())
-        && !source.id.starts_with('0'))
+    (id > 0 && source.id.bytes().all(|b| b.is_ascii_digit()) && !source.id.starts_with('0'))
         .then_some((provider, id))
 }
-
 
 pub fn athlete_identity_digest(athlete: &CanonicalAthlete) -> Result<String, serde_json::Error> {
     serialized_digest(athlete)

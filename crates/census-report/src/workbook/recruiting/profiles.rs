@@ -1,4 +1,3 @@
-
 use census_domain::model::CanonicalAthlete;
 
 #[derive(Default)]
@@ -12,7 +11,8 @@ pub(super) fn profiles_of(athlete: &CanonicalAthlete) -> Profiles {
     let mut profiles = Profiles::default();
     let mut seen: Vec<String> = Vec::new();
     let candidates = athlete.public_profile_urls.iter().cloned().chain(
-        athlete.identities()
+        athlete
+            .identities()
             .filter_map(|identity| identity.url.clone()),
     );
     for url in candidates {

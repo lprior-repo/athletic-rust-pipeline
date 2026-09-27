@@ -1,4 +1,3 @@
-
 use census_crawl::ohsaa::{parse_ad_page, parse_search, resolve_school_name};
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};

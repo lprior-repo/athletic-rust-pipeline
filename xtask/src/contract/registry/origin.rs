@@ -1,4 +1,3 @@
-
 const LABEL_MAX: usize = 63;
 
 pub(super) fn is_host(origin: &str) -> bool {

@@ -93,11 +93,9 @@ async fn an_allowed_404_capture_is_observed_but_not_cached() {
         outcome.content_digest,
         "23c62f7de04040a4949182f3ca7f84a99b7106c3040e11734aae9e1329c0691b"
     );
-    assert!(
-        read_cache(&coordinates.body_path, &coordinates.meta_path)
-            .expect("read cache")
-            .is_none()
-    );
+    assert!(read_cache(&coordinates.body_path, &coordinates.meta_path)
+        .expect("read cache")
+        .is_none());
     assert!(!coordinates.body_path.exists());
     assert!(!coordinates.meta_path.exists());
 }
@@ -123,7 +121,8 @@ async fn a_disallowed_404_capture_returns_err() {
     );
 
     assert!(read_cache(&coordinates.body_path, &coordinates.meta_path)
-        .expect("read cache").is_none());
+        .expect("read cache")
+        .is_none());
     assert!(!coordinates.body_path.exists());
     assert!(!coordinates.meta_path.exists());
 }

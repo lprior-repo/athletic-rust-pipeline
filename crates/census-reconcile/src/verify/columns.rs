@@ -1,4 +1,3 @@
-
 use std::collections::{HashMap, HashSet};
 
 pub const ATHLETES_REQUIRED: &[&str] = &["Athlete ID", "Name", "School", "Graduation Year"];

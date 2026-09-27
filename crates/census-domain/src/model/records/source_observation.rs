@@ -1,4 +1,3 @@
-
 use serde::{Deserialize, Serialize};
 
 use super::observation::{SourceAthleteObservation, SourceSchoolObservation};
@@ -56,7 +55,8 @@ impl SourceSchoolObservation {
         observed_on: &str,
     ) -> Option<Self> {
         let identity = school
-            .source_identities.iter()
+            .source_identities
+            .iter()
             .find(|identity| &identity.namespace == namespace)?;
         let association_id = match namespace {
             SourceNamespace::AssociationSchool { .. } => Some(identity.id.clone()),

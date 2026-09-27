@@ -1,4 +1,3 @@
-
 use std::sync::{Mutex, PoisonError};
 
 use census_store::Table;

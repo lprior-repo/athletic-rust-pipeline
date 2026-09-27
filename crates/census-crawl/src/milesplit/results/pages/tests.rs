@@ -102,30 +102,59 @@ async fn an_unreadable_page_is_quarantined_and_the_walk_goes_on() {
 async fn an_unreachable_page_is_not_read_as_a_meet_without_results() {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let (_dir, fetcher) = scratch();
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.expect("loopback listener");
-    let failing = format!("http://{}/meets/888888-invite-2026/results", listener.local_addr().expect("address"));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+        .await
+        .expect("loopback listener");
+    let failing = format!(
+        "http://{}/meets/888888-invite-2026/results",
+        listener.local_addr().expect("address")
+    );
     let options = options();
     let serve = async {
-        for (status, body) in [("200 OK", "User-agent: *\nAllow: /\n"), ("500 Internal Server Error", "server error")] {
+        for (status, body) in [
+            ("200 OK", "User-agent: *\nAllow: /\n"),
+            ("500 Internal Server Error", "server error"),
+        ] {
             let (mut stream, _) = listener.accept().await.expect("request connection");
             let mut request = [0_u8; 8192];
             let mut filled = 0;
             for _ in 0..request.len() {
-                let count = stream.read(&mut request[filled..]).await.expect("request headers");
+                let count = stream
+                    .read(&mut request[filled..])
+                    .await
+                    .expect("request headers");
                 filled += count;
-                if count == 0 || request[..filled].ends_with(b"\r\n\r\n") { break; }
+                if count == 0 || request[..filled].ends_with(b"\r\n\r\n") {
+                    break;
+                }
             }
-            assert!(request[..filled].ends_with(b"\r\n\r\n"), "bounded HTTP request headers");
-            let response = format!("HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len());
-            stream.write_all(response.as_bytes()).await.expect("fixture response");
+            assert!(
+                request[..filled].ends_with(b"\r\n\r\n"),
+                "bounded HTTP request headers"
+            );
+            let response = format!(
+                "HTTP/1.1 {status}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream
+                .write_all(response.as_bytes())
+                .await
+                .expect("fixture response");
         }
     };
     let (result, ()) = tokio::time::timeout(std::time::Duration::from_secs(5), async {
-        tokio::join!(read_meet_pages(&fetcher, vec![page(&failing)], &options), serve)
-    }).await.expect("bounded local fixture");
+        tokio::join!(
+            read_meet_pages(&fetcher, vec![page(&failing)], &options),
+            serve
+        )
+    })
+    .await
+    .expect("bounded local fixture");
     let error = result.expect_err("a fetch failure propagates");
-    assert!(matches!(error, crate::CrawlError::Fetch(crate::net::FetchError::Http { status: 500, ref url }) if url == &failing),
-        "expected the origin's HTTP failure, got {error:?}");
+    assert!(
+        matches!(error, crate::CrawlError::Fetch(crate::net::FetchError::Http { status: 500, ref url }) if url == &failing),
+        "expected the origin's HTTP failure, got {error:?}"
+    );
 }
 
 #[tokio::test]

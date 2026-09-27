@@ -1,4 +1,3 @@
-
 use fjall::{Keyspace, OwnedWriteBatch, PersistMode};
 
 use super::keys::{split_observation_key, table_prefix, DERIVED_SEQUENCE};

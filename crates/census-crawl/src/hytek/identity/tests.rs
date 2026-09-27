@@ -1,4 +1,3 @@
-
 use super::individual_identity;
 use crate::hytek::{lines_from_html, parse};
 use crate::result_file::ParsedRow;

@@ -1,4 +1,3 @@
-
 use super::super::{actor::Command, BrowserState, SHUTDOWN_TIMEOUT};
 use super::status::write_state;
 use super::BrowserManager;

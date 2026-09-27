@@ -1,4 +1,3 @@
-
 const SCHOOL_LIST_WRAPPER: &str = "SchoolListWrapper";
 const SCHOOL_ID: &str = "SchoolID=";
 const SCHOOL_STAFF_TABLE: &str = "<table class='DirectoryStaffTable'>";

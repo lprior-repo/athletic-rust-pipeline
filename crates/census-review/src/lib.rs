@@ -1,4 +1,3 @@
-
 #![forbid(unsafe_code)]
 
 mod ask;
@@ -93,8 +92,7 @@ fn process_answers(
             } => {
                 report.answered = report.answered.saturating_add(1);
                 report.dropped = report.dropped.saturating_add(dropped);
-                let (rows, states, tally) =
-                    record_case(case, triaged, reviewer, observed_at);
+                let (rows, states, tally) = record_case(case, triaged, reviewer, observed_at);
                 report.absorb(tally);
                 verdicts.extend(rows);
                 closed.extend(states);

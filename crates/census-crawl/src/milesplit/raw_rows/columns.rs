@@ -1,4 +1,3 @@
-
 use crate::hytek;
 use crate::result_file::ParsedRow;
 use census_domain::model::{EventKind, Grade, Mark};

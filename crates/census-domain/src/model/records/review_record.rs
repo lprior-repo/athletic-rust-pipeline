@@ -1,4 +1,3 @@
-
 use serde::{Deserialize, Serialize};
 
 use crate::model::AthleteCandidateId;
@@ -67,10 +66,18 @@ pub struct ReviewCase {
 
 impl ReviewCase {
     pub fn matches_evidence(&self, evidence: &super::evidence::CaseEvidence) -> bool {
-        if self.family.is_empty() || self.subject_id.is_empty() { return false; }
-        let Some((binding, digest)) = self.id.rsplit_once(':') else { return false };
-        let Some((subject, policy)) = binding.rsplit_once(":p") else { return false };
-        let subject = subject.strip_prefix(self.family.as_str()).and_then(|s| s.strip_prefix(':'));
+        if self.family.is_empty() || self.subject_id.is_empty() {
+            return false;
+        }
+        let Some((binding, digest)) = self.id.rsplit_once(':') else {
+            return false;
+        };
+        let Some((subject, policy)) = binding.rsplit_once(":p") else {
+            return false;
+        };
+        let subject = subject
+            .strip_prefix(self.family.as_str())
+            .and_then(|s| s.strip_prefix(':'));
         subject == Some(self.subject_id.as_str())
             && !policy.starts_with('0')
             && policy.bytes().all(|byte| byte.is_ascii_digit())

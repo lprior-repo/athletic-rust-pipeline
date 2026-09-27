@@ -1,4 +1,3 @@
-
 use census_domain::UsJurisdiction;
 
 pub const HOST: &str = "https://mpa.cc";

@@ -1,4 +1,3 @@
-
 use super::coverage::{jurisdiction_of, school_state_index};
 use super::notes::{bump, census_notes, state_entry};
 use super::rows::{

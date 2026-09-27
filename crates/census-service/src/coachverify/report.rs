@@ -11,9 +11,8 @@ pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
     let mut totals: BTreeMap<&'static str, usize> = BTreeMap::new();
     let mut rows_total = 0usize;
     for outcome in outcomes {
-        let count = |verdict: super::verdict::Verdict| {
-            outcome.counts.get(&verdict).copied().unwrap_or(0)
-        };
+        let count =
+            |verdict: super::verdict::Verdict| outcome.counts.get(&verdict).copied().unwrap_or(0);
         let total = outcome.rows.len();
         let shipped = count(super::verdict::Verdict::Ok);
         rows_total = rows_total.saturating_add(total);
@@ -98,7 +97,9 @@ fn write_audit_csv_body(
     for outcome in outcomes {
         for row in &outcome.rows {
             let evidence = serde_json::to_string(&row.evidence).map_err(|error| {
-                census_store::StoreError::Invariant { detail: error.to_string() }
+                census_store::StoreError::Invariant {
+                    detail: error.to_string(),
+                }
             })?;
             writer
                 .write_record([
@@ -163,14 +164,19 @@ fn write_state_file_body(
         .from_path(temporary)
         .map_err(|error| census_store::read::csv_failure(published, error))?;
     writer
-        .write_record(census_domain::model::CONTACT_COLUMNS.iter().copied()
-            .chain(std::iter::once(census_domain::model::CONTACT_PROOF_COLUMN)))
+        .write_record(
+            census_domain::model::CONTACT_COLUMNS
+                .iter()
+                .copied()
+                .chain(std::iter::once(census_domain::model::CONTACT_PROOF_COLUMN)),
+        )
         .map_err(|error| census_store::read::csv_failure(published, error))?;
     for row in rows {
-        let proof = census_domain::model::compute_contact_proof(&row.row, &row.evidence)
-            .map_err(|source| census_store::StoreError::Invariant {
+        let proof = census_domain::model::compute_contact_proof(&row.row, &row.evidence).map_err(
+            |source| census_store::StoreError::Invariant {
                 detail: format!("contact proof failed before publication: {source}"),
-            })?;
+            },
+        )?;
         writer
             .write_record([
                 row.row.school.as_str(),

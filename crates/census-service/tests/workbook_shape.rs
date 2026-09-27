@@ -84,7 +84,13 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
             };
             let source_key = format!("test:{kind:?}:{mark}");
             let performance = CanonicalPerformance {
-                id: CanonicalPerformance::mint(&athlete.id, &meet_id, &kind, &meet.date, &source_key),
+                id: CanonicalPerformance::mint(
+                    &athlete.id,
+                    &meet_id,
+                    &kind,
+                    &meet.date,
+                    &source_key,
+                ),
                 athlete: athlete.id.clone(),
                 team: team_id.clone(),
                 event: event_id.clone(),
@@ -133,8 +139,13 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
         "Run Metrics",
     ];
     let expected: std::collections::BTreeSet<_> = published.iter().copied().collect();
-    assert_eq!(names.iter().map(String::as_str).collect::<std::collections::BTreeSet<_>>(),
-        expected);
+    assert_eq!(
+        names
+            .iter()
+            .map(String::as_str)
+            .collect::<std::collections::BTreeSet<_>>(),
+        expected
+    );
 
     let bests = bests::build(
         &store,
@@ -160,12 +171,24 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
     let range = book.worksheet_range("PRs").unwrap();
     assert_eq!(range.height(), 3);
     let headers = range.rows().next().unwrap();
-    let mark_column = headers.iter().position(|cell| cell.to_string() == "Mark Value").unwrap();
-    let unit_column = headers.iter().position(|cell| cell.to_string() == "Unit").unwrap();
-    let marks: std::collections::BTreeSet<_> = range.rows().skip(1)
-        .map(|row| (row[mark_column].to_string(), row[unit_column].to_string())).collect();
-    assert_eq!(marks, std::collections::BTreeSet::from([
-        ("48.55".to_string(), "s".to_string()),
-        ("6.42".to_string(), "m".to_string()),
-    ]));
+    let mark_column = headers
+        .iter()
+        .position(|cell| cell.to_string() == "Mark Value")
+        .unwrap();
+    let unit_column = headers
+        .iter()
+        .position(|cell| cell.to_string() == "Unit")
+        .unwrap();
+    let marks: std::collections::BTreeSet<_> = range
+        .rows()
+        .skip(1)
+        .map(|row| (row[mark_column].to_string(), row[unit_column].to_string()))
+        .collect();
+    assert_eq!(
+        marks,
+        std::collections::BTreeSet::from([
+            ("48.55".to_string(), "s".to_string()),
+            ("6.42".to_string(), "m".to_string()),
+        ])
+    );
 }

@@ -1,4 +1,3 @@
-
 mod table;
 
 use crate::registry::{bulk_first, SourceDescriptor};

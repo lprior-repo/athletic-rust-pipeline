@@ -1,4 +1,3 @@
-
 use super::{Cmd, GroupMeasurement};
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;

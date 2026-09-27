@@ -1,4 +1,3 @@
-
 use census_crawl::net::Fetcher;
 use census_crawl::AdapterContext;
 use census_domain::model::SchoolYear;

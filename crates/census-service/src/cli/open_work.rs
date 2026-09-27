@@ -1,4 +1,3 @@
-
 use anyhow::Result;
 use clap::Args;
 use restate_sdk::prelude::Json;
@@ -11,7 +10,9 @@ use census_service::ingress;
 #[derive(Debug, Args)]
 #[command(about = "`census-service open-work`")]
 pub(super) struct OpenWorkArgs {
-    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
+    #[arg(
+        help = "Ingress origin of the local Restate server. The local census deployment when omitted"
+    )]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
     #[arg(help = "Season start year: 2026 is the 2026-27 school year")]
@@ -20,7 +21,9 @@ pub(super) struct OpenWorkArgs {
     #[arg(help = "Run revision: the one the run was submitted under, not a new one")]
     #[arg(long, default_value_t = 1)]
     revision: u32,
-    #[arg(help = "Ingest object key to read, e.g. `milesplit_wi`. Repeatable, because an object key is the caller's to choose and the service cannot enumerate them: naming none leaves the count unmeasured rather than reporting it as zero")]
+    #[arg(
+        help = "Ingest object key to read, e.g. `milesplit_wi`. Repeatable, because an object key is the caller's to choose and the service cannot enumerate them: naming none leaves the count unmeasured rather than reporting it as zero"
+    )]
     #[arg(long = "source-object", value_name = "KEY")]
     source_objects: Vec<String>,
     #[arg(help = "Print the reply as JSON instead of a table")]

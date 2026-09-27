@@ -1,4 +1,3 @@
-
 use super::super::docs::{parse_event_document, parse_event_summary, EventDoc};
 use super::super::map::{Accumulator, ResultStats, RowContext, Writer, SOURCE_ID};
 use super::super::map_rows::{record_row, record_standing};

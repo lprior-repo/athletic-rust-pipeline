@@ -1,4 +1,3 @@
-
 use crate::scan::{self, Rules};
 use anyhow::Result;
 use regex::Regex;

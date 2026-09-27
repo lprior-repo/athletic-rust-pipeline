@@ -1,4 +1,3 @@
-
 pub const BLOB_ORIGIN: &str = "https://athleticlive.blob.core.windows.net";
 
 pub const RTDB_ORIGIN: &str = "https://s-gke-usc1-nssi3-33.firebaseio.com";

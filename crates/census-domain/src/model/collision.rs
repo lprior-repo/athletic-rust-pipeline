@@ -1,4 +1,3 @@
-
 use super::natural_key::NaturalKey;
 use super::{Evidence, RetainedConflict, SourceIdentity};
 

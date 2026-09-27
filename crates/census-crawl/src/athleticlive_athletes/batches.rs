@@ -180,7 +180,10 @@ fn fill_page<'t>(
     page.append_many(Table::Schools, &entities.schools)?;
     page.append_many(Table::Teams, &entities.teams)?;
     page.append_many(Table::Athletes, &entities.athletes)?;
-    page.append_many(Table::SourceObservations, &ctx.athlete_observations(&entities.athletes, &entities.schools))?;
+    page.append_many(
+        Table::SourceObservations,
+        &ctx.athlete_observations(&entities.athletes, &entities.schools),
+    )?;
     for target in batch {
         page.journal_done(
             "athleticlive_rosters",

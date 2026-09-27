@@ -1,4 +1,3 @@
-
 use super::seam_config;
 use census_crawl::ohsaa::{
     parse_ad_page, parse_coach_cell, parse_search, parse_sport_label, parse_sports_table,

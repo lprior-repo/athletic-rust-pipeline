@@ -1,4 +1,3 @@
-
 use anyhow::{ensure, Result};
 use census_domain::model::{normalize_name, CanonicalSchool, SchoolId};
 use census_domain::school_index::{SchoolIndex, SchoolMatch};

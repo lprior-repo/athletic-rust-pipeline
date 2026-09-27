@@ -1,10 +1,8 @@
-
 use crate::{Store, StoreError, StoreResult, StoreSnapshot, Table};
 use census_domain::model::{
     AppliedAthleteIdentity as AppliedIdentity, AthleteIdentityIndex, AthleteIdentityProjection,
     CanonicalAthlete, IdentityProjectionBuilder, ReviewCase, ReviewVerdictRecord,
 };
-
 
 impl Store {
     pub fn athlete_identity_index(&self) -> StoreResult<AthleteIdentityIndex> {
@@ -38,19 +36,16 @@ impl StoreSnapshot<'_> {
         let cases: Vec<ReviewCase> = self.scan(Table::ReviewCases)?;
         let verdicts: Vec<ReviewVerdictRecord> = self.scan(Table::IdentityVerdicts)?;
         let mut builder = IdentityProjectionBuilder::new(index, &cases, &verdicts)?;
-        self.for_each_merged::<AppliedIdentity>(
-            Table::AthleteIdentityDecisions,
-            |decision| {
-                if let Some(issue) = builder.consider(&decision)? {
-                    tracing::warn!(
-                        decision_id = %decision.id,
-                        issue = ?issue,
-                        "Rejecting unsupported identity application"
-                    );
-                }
-                Ok(())
-            },
-        )?;
+        self.for_each_merged::<AppliedIdentity>(Table::AthleteIdentityDecisions, |decision| {
+            if let Some(issue) = builder.consider(&decision)? {
+                tracing::warn!(
+                    decision_id = %decision.id,
+                    issue = ?issue,
+                    "Rejecting unsupported identity application"
+                );
+            }
+            Ok(())
+        })?;
         builder.finish().map_err(StoreError::from)
     }
 }

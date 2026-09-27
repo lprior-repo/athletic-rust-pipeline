@@ -1,4 +1,3 @@
-
 use fjall::{OwnedWriteBatch, PersistMode};
 use std::fs::File;
 use std::io::BufReader;

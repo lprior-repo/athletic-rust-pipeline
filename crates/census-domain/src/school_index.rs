@@ -1,4 +1,3 @@
-
 use crate::model::{normalize_name, CanonicalSchool, SchoolId};
 use crate::UsJurisdiction;
 use std::collections::HashMap;

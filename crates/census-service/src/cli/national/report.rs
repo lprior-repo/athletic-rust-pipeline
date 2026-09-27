@@ -1,4 +1,3 @@
-
 use anyhow::{bail, Result};
 use census_service::restate_services::{
     JurisdictionReport, JurisdictionSummary, NationalReport, SourcePlan,
@@ -52,11 +51,7 @@ pub(crate) fn print_national(report: &NationalReport, json: bool) -> Result<()> 
             summary.rosters_remaining,
             summary.athletes,
             summary.class_of_2027,
-            if summary.blocked {
-                "refused"
-            } else {
-                ""
-            },
+            if summary.blocked { "refused" } else { "" },
         );
     }
     println!(

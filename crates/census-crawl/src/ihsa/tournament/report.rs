@@ -1,4 +1,3 @@
-
 use super::map::Stats;
 use super::map_store::EntityCounts;
 use crate::AdapterReport;

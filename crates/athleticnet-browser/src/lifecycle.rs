@@ -1,4 +1,3 @@
-
 use super::{actor::Command, gate::ProfileGate, BrowserStatus};
 use crate::clock::Clock;
 use std::sync::{Arc, Mutex, RwLock};

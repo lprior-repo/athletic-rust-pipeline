@@ -39,11 +39,22 @@ mod tests {
     use std::collections::BTreeSet;
 
     fn school() -> CanonicalSchool {
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Example School", "example school").0
+        CanonicalSchool::new(
+            UsJurisdiction::Wisconsin,
+            "Example School",
+            "example school",
+        )
+        .0
     }
 
     fn athlete(school: &CanonicalSchool, source: SourceIdentity) -> CanonicalAthlete {
-        CanonicalAthlete::new(&school.id, "Alex Rivera", GradYear::CO2027, Gender::Boys, source)
+        CanonicalAthlete::new(
+            &school.id,
+            "Alex Rivera",
+            GradYear::CO2027,
+            Gender::Boys,
+            source,
+        )
     }
 
     #[test]
@@ -58,13 +69,16 @@ mod tests {
         );
         second.add_identity(first_source);
         let rows = athlete_observations_of(&[first, second], [&school], "2026-09-26");
-        let identities: BTreeSet<_> = rows.iter().map(|row| match row {
-            SourceObservation::Athlete(row) => {
-                assert_eq!(row.namespace, SourceNamespace::MilesplitAthlete);
-                row.source_athlete_id.as_str()
-            }
-            other => panic!("unexpected observation: {other:?}"),
-        }).collect();
+        let identities: BTreeSet<_> = rows
+            .iter()
+            .map(|row| match row {
+                SourceObservation::Athlete(row) => {
+                    assert_eq!(row.namespace, SourceNamespace::MilesplitAthlete);
+                    row.source_athlete_id.as_str()
+                }
+                other => panic!("unexpected observation: {other:?}"),
+            })
+            .collect();
         assert_eq!(identities, BTreeSet::from(["11111", "22222"]));
         assert_eq!(rows.len(), identities.len());
     }
@@ -76,13 +90,19 @@ mod tests {
         let source = SourceIdentity::new(namespace.clone(), "meet:5:event:2:row:9")
             .with_url("https://example.test/meet/5/event/2");
         let mut row = athlete(&school, source);
-        row.add_identity(SourceIdentity::new(SourceNamespace::MilesplitAthlete, "11111"));
+        row.add_identity(SourceIdentity::new(
+            SourceNamespace::MilesplitAthlete,
+            "11111",
+        ));
         let observations = athlete_observations_of(&[row], [&school], "2026-09-26");
         let [SourceObservation::Athlete(observation)] = observations.as_slice() else {
             panic!("expected exactly one row-owned observation");
         };
         assert_eq!(observation.namespace, namespace);
         assert_eq!(observation.source_athlete_id, "meet:5:event:2:row:9");
-        assert_eq!(observation.source_row_key, "https://example.test/meet/5/event/2");
+        assert_eq!(
+            observation.source_row_key,
+            "https://example.test/meet/5/event/2"
+        );
     }
 }

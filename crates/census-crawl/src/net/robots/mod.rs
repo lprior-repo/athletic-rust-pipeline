@@ -1,4 +1,3 @@
-
 use super::{FetchError, Fetcher};
 use futures::StreamExt;
 use regex::Regex;

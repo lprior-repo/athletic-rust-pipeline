@@ -1,4 +1,3 @@
-
 use super::super::parse::{metric_bare, parse_mark, published_date, published_token};
 use super::wire::{EventDivisions, PublishedEvent, PublishedLeg};
 use crate::hytek::{parse_field_mark, parse_time};

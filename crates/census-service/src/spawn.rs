@@ -1,4 +1,3 @@
-
 use std::future::Future;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::sync::{Mutex, MutexGuard};
@@ -95,13 +94,11 @@ impl Spawner {
         E: Send + 'static,
     {
         let (tx, rx) = oneshot::channel();
-        self.push_blocking(move || {
-            match catch_unwind(AssertUnwindSafe(job)) {
-                Ok(result) => publish(tx, Completion::Returned(result)),
-                Err(payload) => {
-                    publish(tx, Completion::Panicked);
-                    resume_unwind(payload);
-                }
+        self.push_blocking(move || match catch_unwind(AssertUnwindSafe(job)) {
+            Ok(result) => publish(tx, Completion::Returned(result)),
+            Err(payload) => {
+                publish(tx, Completion::Panicked);
+                resume_unwind(payload);
             }
         });
         match rx.await {

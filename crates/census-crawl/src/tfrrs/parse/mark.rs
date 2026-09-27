@@ -1,4 +1,3 @@
-
 use super::html::{attribute, collapse_whitespace, decode_entities, text_runs};
 
 use census_domain::model::CentiSeconds;

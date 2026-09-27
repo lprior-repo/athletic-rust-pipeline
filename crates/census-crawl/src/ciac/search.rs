@@ -1,4 +1,3 @@
-
 use super::map::{school_entities, SchoolExtract};
 use super::pages::parse_directory;
 use super::{Options, HOST};

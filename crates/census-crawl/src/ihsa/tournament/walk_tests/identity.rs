@@ -1,9 +1,9 @@
 use super::{Harness, Options};
+use census_domain::model::CentiMetres;
 use census_domain::model::{
     CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, Grade, Mark,
     SchoolYear, SourceIdentity, SourceNamespace,
 };
-use census_domain::model::CentiMetres;
 use census_domain::UsJurisdiction;
 use census_store::Table;
 
@@ -20,24 +20,26 @@ fn options() -> Options {
 #[tokio::test]
 async fn second_run_resumes_on_the_published_change_signal() {
     let harness = Harness::new();
-    let first = harness.run(&Options {
-        limit: Some(1),
-        refresh: false,
-        observed_on: "2026-09-20".to_string(),
-        states: Vec::new(),
-        school_names: Vec::new(),
-    })
-    .await;
+    let first = harness
+        .run(&Options {
+            limit: Some(1),
+            refresh: false,
+            observed_on: "2026-09-20".to_string(),
+            states: Vec::new(),
+            school_names: Vec::new(),
+        })
+        .await;
     assert_eq!(first.rows, 20);
 
-    let second = harness.run(&Options {
-        limit: Some(1),
-        refresh: false,
-        observed_on: "2026-09-20".to_string(),
-        states: Vec::new(),
-        school_names: Vec::new(),
-    })
-    .await;
+    let second = harness
+        .run(&Options {
+            limit: Some(1),
+            refresh: false,
+            observed_on: "2026-09-20".to_string(),
+            states: Vec::new(),
+            school_names: Vec::new(),
+        })
+        .await;
     assert_eq!(second.errors, 0, "notes: {:?}", second.notes);
     assert_eq!(second.requests, 0, "a resumed run reads nothing live");
     assert_eq!(

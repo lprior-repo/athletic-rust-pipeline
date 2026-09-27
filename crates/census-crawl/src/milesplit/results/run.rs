@@ -1,4 +1,3 @@
-
 use super::super::fetch::fetch_result_set;
 use super::super::map::absorb_result_set;
 use super::super::wire::ResultSetRef;

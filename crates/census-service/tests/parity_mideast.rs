@@ -1,4 +1,3 @@
-
 mod common;
 
 use census_domain::UsJurisdiction;
@@ -22,7 +21,6 @@ use serde::Serialize;
 const OBSERVED_ON: &str = "2026-09-20";
 const SEASON: i16 = 2026;
 const SEEDED_AT: &str = "2026-09-20T14:39:00Z";
-
 
 fn stem_of(file: &str) -> &str {
     file.split_once('.').map_or(file, |(stem, _)| stem)
@@ -123,7 +121,6 @@ fn assert_rollup(source: &str, cases: BTreeMap<String, String>, inputs: usize) -
     }
     common::assert_golden(&format!("{source}__rollup"), &Rollup { cases, inputs })
 }
-
 
 #[derive(Serialize)]
 struct SearchRow {
@@ -354,7 +351,6 @@ async fn ohsaa_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
     )
 }
 
-
 #[derive(Serialize)]
 struct SchoolRow {
     school_id: String,
@@ -531,7 +527,6 @@ fn ihsa_fixtures_match_the_golden_corpus() -> Result<()> {
     assert_rollup("ihsa", cases, paths.len())
 }
 
-
 #[derive(Serialize)]
 struct DirectoryRow {
     id: u64,
@@ -666,7 +661,6 @@ async fn ks_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
     )
 }
 
-
 #[derive(Serialize)]
 struct MeetRowFacts {
     date: String,
@@ -771,7 +765,6 @@ async fn wayzata_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
         },
     )
 }
-
 
 #[derive(Serialize)]
 struct MeetFacts {

@@ -1,4 +1,3 @@
-
 use super::state::{Absorb, AthleteFacts, RosterContext, TeamFacts};
 use crate::tfrrs::parse::{sport_from_route, ParsedRoster, RosterAthlete, YearToken};
 use census_domain::model::{Gender, GradYear, ObservedGrade, SchoolId, SchoolYear, Sport};

@@ -1,4 +1,3 @@
-
 use super::SharedSelection;
 use census_store::read::csv_failure;
 use census_store::{StoreError, StoreResult};
@@ -90,7 +89,11 @@ impl<'a> From<&'a SharedSelection> for Row<'a> {
     }
 }
 
-pub fn write(out_dir: &Path, rows: &[SharedSelection], cohort: &str) -> StoreResult<(PathBuf, PathBuf)> {
+pub fn write(
+    out_dir: &Path,
+    rows: &[SharedSelection],
+    cohort: &str,
+) -> StoreResult<(PathBuf, PathBuf)> {
     std::fs::create_dir_all(out_dir).map_err(|source| StoreError::Io {
         path: out_dir.to_path_buf(),
         source,
@@ -103,9 +106,7 @@ pub fn write(out_dir: &Path, rows: &[SharedSelection], cohort: &str) -> StoreRes
 }
 
 fn write_csv(path: &Path, rows: &[SharedSelection]) -> StoreResult<()> {
-    census_store::read::publish_atomically(path, |temporary| {
-        write_csv_body(temporary, rows)
-    })
+    census_store::read::publish_atomically(path, |temporary| write_csv_body(temporary, rows))
 }
 
 fn write_csv_body(temporary: &Path, rows: &[SharedSelection]) -> StoreResult<()> {

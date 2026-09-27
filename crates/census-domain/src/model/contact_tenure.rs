@@ -1,9 +1,7 @@
-
 use serde::{Deserialize, Serialize};
 
 use super::SchoolYear;
 use super::SourceRef;
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -29,9 +27,7 @@ impl CoachTenure {
     pub const fn is_unknown(&self) -> bool {
         matches!(self, Self::Unknown)
     }
-
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CoachTenureEvidence {
@@ -41,7 +37,6 @@ pub struct CoachTenureEvidence {
     pub retrieved_at: String,
     pub statement: String,
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum TenureValidation {
@@ -77,7 +72,9 @@ pub fn assess_coach_tenure<'a>(
             .map_err(|source| TenureAssessmentError::InvalidEvidence { index, source })?;
         match fact.tenure {
             CoachTenure::Current { school_year: year } if year != school_year => continue,
-            CoachTenure::Former { last_school_year: Some(year) } if year > school_year => continue,
+            CoachTenure::Former {
+                last_school_year: Some(year),
+            } if year > school_year => continue,
             _ => {}
         }
         state = match (state, fact.tenure) {
@@ -86,31 +83,48 @@ pub fn assess_coach_tenure<'a>(
             | (CoachTenure::Former { .. }, CoachTenure::Current { .. }) => {
                 return Err(TenureAssessmentError::Conflict);
             }
-            (CoachTenure::Former { last_school_year: left },
-                CoachTenure::Former { last_school_year: right }) => {
-                CoachTenure::Former { last_school_year: left.max(right) }
-            }
+            (
+                CoachTenure::Former {
+                    last_school_year: left,
+                },
+                CoachTenure::Former {
+                    last_school_year: right,
+                },
+            ) => CoachTenure::Former {
+                last_school_year: left.max(right),
+            },
             (current, _) => current,
         };
     }
     Ok(state)
 }
 
-pub fn validate_tenure_evidence(e: &CoachTenureEvidence) -> std::result::Result<(), TenureValidation> {
+pub fn validate_tenure_evidence(
+    e: &CoachTenureEvidence,
+) -> std::result::Result<(), TenureValidation> {
     if e.source.id.trim().is_empty() {
         return Err(TenureValidation::Missing { field: "source.id" });
     }
     if e.source_sha256.trim().is_empty() {
-        return Err(TenureValidation::Empty { field: "source_sha256" });
+        return Err(TenureValidation::Empty {
+            field: "source_sha256",
+        });
     }
-    if e.source_sha256.len() != 64 || !e.source_sha256.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-        return Err(TenureValidation::Malformed { field: "source_sha256" });
+    if e.source_sha256.len() != 64 || !e.source_sha256.bytes().all(|byte| byte.is_ascii_hexdigit())
+    {
+        return Err(TenureValidation::Malformed {
+            field: "source_sha256",
+        });
     }
     if e.retrieved_at.trim().is_empty() {
-        return Err(TenureValidation::Empty { field: "retrieved_at" });
+        return Err(TenureValidation::Empty {
+            field: "retrieved_at",
+        });
     }
     if chrono::DateTime::parse_from_rfc3339(&e.retrieved_at).is_err() {
-        return Err(TenureValidation::Malformed { field: "retrieved_at" });
+        return Err(TenureValidation::Malformed {
+            field: "retrieved_at",
+        });
     }
     if e.statement.trim().is_empty() {
         return Err(TenureValidation::Empty { field: "statement" });
@@ -123,7 +137,6 @@ pub fn validate_tenure_evidence(e: &CoachTenureEvidence) -> std::result::Result<
     }
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests;

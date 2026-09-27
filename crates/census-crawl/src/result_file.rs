@@ -1,4 +1,3 @@
-
 use census_domain::model::{EventKind, Gender, Grade, Mark};
 
 #[derive(Debug, Clone, PartialEq)]

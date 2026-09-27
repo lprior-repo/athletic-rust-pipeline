@@ -1,8 +1,8 @@
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
-    GradYear, Grade, Mark, ObservedGrade, SchoolId, SchoolYear, SourceIdentity,
-    SourceNamespace, SourceRef, Sport, TimingMethod,
+    GradYear, Grade, Mark, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
+    SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, StoreStats, Table};
@@ -63,8 +63,12 @@ fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
     );
     school.evidence.push(evidence());
     let team = CanonicalTeam {
-        id: CanonicalTeam::mint(&school_id, Sport::OutdoorTrack, Gender::Mixed,
-            SchoolYear::new(2025).expect("2025 is a school year")),
+        id: CanonicalTeam::mint(
+            &school_id,
+            Sport::OutdoorTrack,
+            Gender::Mixed,
+            SchoolYear::new(2025).expect("2025 is a school year"),
+        ),
         school: school_id.clone(),
         sport: Sport::OutdoorTrack,
         gender: Gender::Mixed,
@@ -194,9 +198,9 @@ fn assert_observation_counts(stats: &StoreStats) {
     assert_eq!(stats.observations, 3);
 }
 
-#[path = "fjall_restate_e2e/store_roundtrip.rs"]
-mod store_roundtrip;
 #[path = "fjall_restate_e2e/report_chain.rs"]
 mod report_chain;
 #[path = "fjall_restate_e2e/restate_endpoint.rs"]
 mod restate_endpoint;
+#[path = "fjall_restate_e2e/store_roundtrip.rs"]
+mod store_roundtrip;

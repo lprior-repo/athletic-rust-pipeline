@@ -1,4 +1,3 @@
-
 use std::sync::Arc;
 
 use restate_sdk::prelude::*;
@@ -118,7 +117,10 @@ fn assemble(
     NationalReport {
         season,
         revision,
-        rosters_total: jurisdictions.iter().map(|summary| summary.rosters_total).sum(),
+        rosters_total: jurisdictions
+            .iter()
+            .map(|summary| summary.rosters_total)
+            .sum(),
         athletes_total: jurisdictions.iter().map(|summary| summary.athletes).sum(),
         class_of_2027_total: jurisdictions
             .iter()

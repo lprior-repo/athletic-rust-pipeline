@@ -1,4 +1,3 @@
-
 use super::row::{grade_for, mark_of, source_key};
 use super::state::{Absorb, AthleteFacts, ListContext, TeamFacts};
 use crate::tfrrs::parse::{
@@ -7,7 +6,8 @@ use crate::tfrrs::parse::{
 };
 use census_domain::model::{
     AthleteId, CanonicalPerformance, EventId, EventKind, Evidence, EvidenceMethod, Gender,
-    GradYear, Grade, Mark, MeetId, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, Sport, TeamId,
+    GradYear, Grade, Mark, MeetId, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, Sport,
+    TeamId,
 };
 
 struct RowMints {

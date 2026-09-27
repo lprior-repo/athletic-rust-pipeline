@@ -11,17 +11,30 @@ pub(super) fn first_violation(source: &str) -> Result<Option<Violation>> {
     let mut offset = 0usize;
     let mut attribute = Attribute::default();
     for token in tokenize(source, FrontmatterAllowed::No) {
-        let end = offset.checked_add(usize::try_from(token.len)?)
+        let end = offset
+            .checked_add(usize::try_from(token.len)?)
             .context("Rust token position overflow")?;
         let text = source.get(offset..end).context("invalid Rust token span")?;
-        if matches!(token.kind, TokenKind::LineComment { .. } | TokenKind::BlockComment { .. }) {
-            return Ok(Some(Violation { offset, reason: "code comments are forbidden" }));
+        if matches!(
+            token.kind,
+            TokenKind::LineComment { .. } | TokenKind::BlockComment { .. }
+        ) {
+            return Ok(Some(Violation {
+                offset,
+                reason: "code comments are forbidden",
+            }));
         }
         if let TokenKind::Literal { kind, .. } = token.kind {
-            ensure!(literal_terminated(kind), "unterminated Rust literal at byte {offset}");
+            ensure!(
+                literal_terminated(kind),
+                "unterminated Rust literal at byte {offset}"
+            );
         }
         if let Some(offset) = attribute.advance(token.kind, text, offset)? {
-            return Ok(Some(Violation { offset, reason: "documentation attributes are forbidden" }));
+            return Ok(Some(Violation {
+                offset,
+                reason: "documentation attributes are forbidden",
+            }));
         }
         offset = end;
     }
@@ -49,7 +62,10 @@ impl Attribute {
             TokenKind::Pound => self.prefix = true,
             TokenKind::Bang if self.prefix => {}
             TokenKind::OpenBracket if self.prefix || self.brackets > 0 => {
-                self.brackets = self.brackets.checked_add(1).context("attribute nesting overflow")?;
+                self.brackets = self
+                    .brackets
+                    .checked_add(1)
+                    .context("attribute nesting overflow")?;
                 self.prefix = false;
             }
             TokenKind::CloseBracket => {
@@ -57,7 +73,8 @@ impl Attribute {
                 self.prefix = false;
             }
             TokenKind::Ident | TokenKind::RawIdent
-                if self.brackets > 0 && matches!(text, "doc" | "r#doc") => {
+                if self.brackets > 0 && matches!(text, "doc" | "r#doc") =>
+            {
                 self.doc = Some(offset);
                 self.prefix = false;
             }

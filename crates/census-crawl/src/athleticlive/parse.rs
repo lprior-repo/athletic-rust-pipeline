@@ -1,4 +1,3 @@
-
 use crate::{CrawlError, CrawlResult};
 use census_domain::model::CompetitionLevel;
 use census_domain::UsJurisdiction;

@@ -1,4 +1,3 @@
-
 use super::map::SchoolExtract;
 use super::search::resolve_schools;
 use super::{Options, ASSOCIATION};
@@ -56,10 +55,16 @@ fn emit_school(
 ) -> CrawlResult<()> {
     let mut batch = ctx.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::AssociationSchool {
-        association: ASSOCIATION.to_string(),
-    },
-    &extract.school,).as_slice())?;
+    batch.append_many(
+        Table::SourceObservations,
+        ctx.school_observation(
+            &SourceNamespace::AssociationSchool {
+                association: ASSOCIATION.to_string(),
+            },
+            &extract.school,
+        )
+        .as_slice(),
+    )?;
 
     for coach in &extract.coaches {
         tally.coach_rows = tally.coach_rows.saturating_add(1);

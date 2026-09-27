@@ -1,4 +1,3 @@
-
 #![forbid(unsafe_code)]
 
 use census_crawl::athleticnet::{meet_requests, metadata_request, parse_mark};

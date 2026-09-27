@@ -1,4 +1,3 @@
-
 use census_domain::model::SourceObservation;
 
 use super::super::Entity;

@@ -1,4 +1,3 @@
-
 use anyhow::{anyhow, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
@@ -13,15 +12,23 @@ const POLL: Duration = Duration::from_secs(10);
 const PROGRESS_EVERY: u64 = 6;
 
 #[derive(Args, Debug, Clone)]
-#[command(about = "The flags every command that submits a run shares: which deployment to address, which revision of the run it belongs to, and how long to observe it")]
+#[command(
+    about = "The flags every command that submits a run shares: which deployment to address, which revision of the run it belongs to, and how long to observe it"
+)]
 pub(super) struct WorkflowFlags {
-    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
+    #[arg(
+        help = "Ingress origin of the local Restate server. The local census deployment when omitted"
+    )]
     #[arg(long, value_name = "ORIGIN")]
     pub(super) ingress: Option<String>,
-    #[arg(help = "Run revision. A run that already exists is reattached to, and this is the deliberate way to invalidate completed work: the identity a run is addressed by carries the season, the run scope the parameters admit and this revision, so the same parameters reproduce their run while a changed jurisdiction set derives an identity of its own instead of re-attaching to another scope")]
+    #[arg(
+        help = "Run revision. A run that already exists is reattached to, and this is the deliberate way to invalidate completed work: the identity a run is addressed by carries the season, the run scope the parameters admit and this revision, so the same parameters reproduce their run while a changed jurisdiction set derives an identity of its own instead of re-attaching to another scope"
+    )]
     #[arg(long, default_value_t = 1)]
     pub(super) revision: u32,
-    #[arg(help = "Seconds to observe the run before returning. The run itself continues either way")]
+    #[arg(
+        help = "Seconds to observe the run before returning. The run itself continues either way"
+    )]
     #[arg(long, default_value_t = 172_800)]
     pub(super) timeout_seconds: u64,
 }
@@ -35,7 +42,9 @@ impl WorkflowFlags {
 }
 
 #[derive(Args, Debug, Clone)]
-#[command(about = "The flags the workflow-driving commands share: [`WorkflowFlags`] plus the season, which together with the run scope and the revision is a national run's identity, and how the report prints")]
+#[command(
+    about = "The flags the workflow-driving commands share: [`WorkflowFlags`] plus the season, which together with the run scope and the revision is a national run's identity, and how the report prints"
+)]
 pub(super) struct RunFlags {
     #[command(flatten)]
     workflow: WorkflowFlags,
@@ -80,13 +89,17 @@ fn named_season(year: i16) -> Result<SchoolYear> {
 pub(super) struct NationalArgs {
     #[command(flatten)]
     flags: RunFlags,
-    #[arg(help = "Jurisdictions to cover. Absent means all fifty states and the District of Columbia")]
+    #[arg(
+        help = "Jurisdictions to cover. Absent means all fifty states and the District of Columbia"
+    )]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
     #[arg(help = "Bypass cached bodies for this run")]
     #[arg(long)]
     refresh: bool,
-    #[arg(help = "Rosters per jurisdiction; absent means every team the jurisdiction's index lists")]
+    #[arg(
+        help = "Rosters per jurisdiction; absent means every team the jurisdiction's index lists"
+    )]
     #[arg(long)]
     limit_per_state: Option<usize>,
     #[arg(help = "Rosters one jurisdiction fetches concurrently")]
@@ -98,7 +111,9 @@ pub(super) struct NationalArgs {
 }
 
 #[derive(Args, Debug, Clone)]
-#[command(about = "`jurisdiction`: one jurisdiction's census, for qualification and for retrying a single state")]
+#[command(
+    about = "`jurisdiction`: one jurisdiction's census, for qualification and for retrying a single state"
+)]
 pub(super) struct JurisdictionArgs {
     #[command(flatten)]
     flags: RunFlags,
@@ -121,7 +136,9 @@ pub(super) struct JurisdictionArgs {
 #[derive(Args, Debug, Clone)]
 #[command(about = "`national-report`: the last report a national run wrote, without starting one")]
 pub(super) struct NationalReportArgs {
-    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
+    #[arg(
+        help = "Ingress origin of the local Restate server. The local census deployment when omitted"
+    )]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
     #[arg(help = "Season start year: 2026 is the 2026-27 school year")]
@@ -130,7 +147,10 @@ pub(super) struct NationalReportArgs {
     #[arg(help = "Run revision")]
     #[arg(long, default_value_t = 1)]
     revision: u32,
-    #[arg(help = "Jurisdictions the run covered. Absent means all fifty states and the District of Columbia", long_help = "Jurisdictions the run covered. Absent means all fifty states and the District of Columbia.\n\nThe set is part of the run's identity, so the report of a run submitted with `--states` is only reachable with the same list.")]
+    #[arg(
+        help = "Jurisdictions the run covered. Absent means all fifty states and the District of Columbia",
+        long_help = "Jurisdictions the run covered. Absent means all fifty states and the District of Columbia.\n\nThe set is part of the run's identity, so the report of a run submitted with `--states` is only reachable with the same list."
+    )]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
     #[arg(help = "Print the report as JSON")]

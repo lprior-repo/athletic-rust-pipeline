@@ -1,4 +1,3 @@
-
 use super::{arbitrary_token, number_of, parse_mark, seam_config, shaped_token};
 use census_domain::model::EventKind;
 use proptest::prelude::*;

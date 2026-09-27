@@ -1,4 +1,3 @@
-
 use census_domain::model::{
     CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId, SourceIdentity,
     SourceNamespace, SourceRef,

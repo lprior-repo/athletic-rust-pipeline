@@ -1,4 +1,3 @@
-
 use super::super::policy::{
     fetched, CRAWL_DELAY_TEN_RPS, FETCHER_RPS, SCHOOL_COACH_CONTACT, SCHOOL_COACH_NAMES,
 };

@@ -1,4 +1,3 @@
-
 use census_crawl::net::FetchStats;
 use census_domain::model::SchoolYear;
 use census_domain::model::SourceAccessCondition;
@@ -38,7 +37,6 @@ pub struct CollectOptions {
     pub observed_on: String,
     pub revision: std::num::NonZeroU32,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StateProgress {
@@ -145,7 +143,11 @@ fn teams_phase(jurisdiction: UsJurisdiction) -> String {
     )
 }
 
-fn rosters_phase(jurisdiction: UsJurisdiction, school_year: SchoolYear, revision: std::num::NonZeroU32) -> String {
+fn rosters_phase(
+    jurisdiction: UsJurisdiction,
+    school_year: SchoolYear,
+    revision: std::num::NonZeroU32,
+) -> String {
     format!(
         "milesplit_rosters_{}_{}_{}",
         jurisdiction.code().to_ascii_lowercase(),

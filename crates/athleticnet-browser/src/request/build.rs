@@ -1,4 +1,3 @@
-
 use super::{RankingsAction, RequestAction, RequestSpec};
 use anyhow::{bail, Result};
 use url::Url;

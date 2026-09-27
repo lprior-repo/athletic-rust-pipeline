@@ -1,4 +1,3 @@
-
 mod cases;
 
 use crate::paths;

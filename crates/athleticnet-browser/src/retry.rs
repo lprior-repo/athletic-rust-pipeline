@@ -1,4 +1,3 @@
-
 use crate::clock::{self, Clock};
 use httpdate::parse_http_date;
 use reqwest::header::{HeaderMap, RETRY_AFTER};

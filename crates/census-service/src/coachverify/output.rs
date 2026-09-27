@@ -1,4 +1,4 @@
-use census_domain::model::{CONTACT_COLUMNS, ContactClaimEvidence, RawContactRow};
+use census_domain::model::{ContactClaimEvidence, RawContactRow, CONTACT_COLUMNS};
 use std::path::Path;
 
 use super::fetch::verify_one_fragment;
@@ -43,8 +43,8 @@ fn read_evidence_jsonl(path: &Path) -> anyhow::Result<Vec<ContactClaimEvidence>>
     let mut claims = Vec::new();
     for line in reader.lines() {
         let line = line.with_context(|| format!("read evidence line from {path:?}"))?;
-        let claim: ContactClaimEvidence = serde_json::from_str(&line)
-            .with_context(|| format!("parse evidence from {path:?}"))?;
+        let claim: ContactClaimEvidence =
+            serde_json::from_str(&line).with_context(|| format!("parse evidence from {path:?}"))?;
         claims.push(claim);
     }
     Ok(claims)
@@ -63,9 +63,17 @@ pub fn write_fragment(path: &Path, outcomes: &[super::RowOutcome]) -> anyhow::Re
             let row = &outcome.row;
             writer
                 .write_record([
-                    &row.school, &row.city, &row.state, &row.sport, &row.role,
-                    &row.coach_name, &row.public_professional_email, &row.ad_name,
-                    &row.ad_email, &row.source_urls.join(" "), &row.last_observed,
+                    &row.school,
+                    &row.city,
+                    &row.state,
+                    &row.sport,
+                    &row.role,
+                    &row.coach_name,
+                    &row.public_professional_email,
+                    &row.ad_name,
+                    &row.ad_email,
+                    &row.source_urls.join(" "),
+                    &row.last_observed,
                 ])
                 .map_err(|error| census_store::read::csv_failure(path, error))?;
         }
@@ -78,13 +86,17 @@ pub fn write_fragment(path: &Path, outcomes: &[super::RowOutcome]) -> anyhow::Re
     })?)
 }
 
-pub fn read_fragment_evidence(path: &Path, row: &RawContactRow) -> anyhow::Result<Vec<ContactClaimEvidence>> {
+pub fn read_fragment_evidence(
+    path: &Path,
+    row: &RawContactRow,
+) -> anyhow::Result<Vec<ContactClaimEvidence>> {
     let file_name = fragment_file_name(path);
     let evidence_path = path.with_file_name(format!("{}.evidence.jsonl", file_name));
     let claims = read_evidence_jsonl(&evidence_path)?;
-    Ok(claims.into_iter().filter(|c| {
-        c.school == row.school && c.role == row.role && c.person == row.coach_name
-    }).collect())
+    Ok(claims
+        .into_iter()
+        .filter(|c| c.school == row.school && c.role == row.role && c.person == row.coach_name)
+        .collect())
 }
 
 pub fn fragment_file_name(path: &Path) -> String {

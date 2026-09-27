@@ -1,4 +1,3 @@
-
 use super::pages::{parse_gender, parse_sport_label};
 use super::{ASSOCIATION, HOST, SOURCE_ID, STATE};
 use census_domain::model::{

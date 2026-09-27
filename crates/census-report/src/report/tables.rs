@@ -1,4 +1,3 @@
-
 use super::notes::{add, bump};
 use super::rows::RowCounts;
 use super::{MeetCoverage, StateCensus};

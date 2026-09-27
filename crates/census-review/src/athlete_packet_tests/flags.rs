@@ -1,4 +1,3 @@
-
 use super::*;
 
 use crate::athlete_flags::{flags, FlagKind};
@@ -54,7 +53,13 @@ fn provider_objects_that_differ_are_stated_and_never_called_a_shared_one() {
     let (boys, girls, _) = rows();
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399170");
     let girls = CanonicalAthlete {
-        id: CanonicalAthlete::mint(&girls.school, &girls.canonical_name, girls.grad_year, girls.gender, &source),
+        id: CanonicalAthlete::mint(
+            &girls.school,
+            &girls.canonical_name,
+            girls.grad_year,
+            girls.gender,
+            &source,
+        ),
         source,
         ..girls
     };

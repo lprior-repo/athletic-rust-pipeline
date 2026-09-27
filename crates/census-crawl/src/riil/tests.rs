@@ -1,4 +1,3 @@
-
 use super::pages::{parse_directory, parse_sport_label};
 use census_domain::model::{Gender, Sport};
 

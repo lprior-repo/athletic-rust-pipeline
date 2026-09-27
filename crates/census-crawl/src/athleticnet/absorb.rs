@@ -1,4 +1,3 @@
-
 mod rows;
 
 use super::map::{profile_url, school_for, Accumulator, Stats};

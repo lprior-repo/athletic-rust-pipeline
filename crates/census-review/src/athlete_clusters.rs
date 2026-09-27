@@ -1,4 +1,3 @@
-
 use std::collections::BTreeSet;
 
 use census_domain::model::{ReviewCase, ReviewState, ReviewVerdictRecord};

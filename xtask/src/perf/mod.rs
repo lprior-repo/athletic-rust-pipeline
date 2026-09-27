@@ -1,4 +1,3 @@
-
 mod baseline;
 mod bench;
 pub(crate) mod compare;

@@ -1,4 +1,3 @@
-
 use super::*;
 use census_domain::model::{ReviewCaseFact, ReviewEvidenceFact, ReviewVerdict, ReviewVerdictKind};
 
@@ -27,7 +26,6 @@ fn ipv6_loopback_is_accepted() {
     let opts = ModelOptions::local("http://[::1]:52080", "model");
     assert!(opts.is_ok());
 }
-
 
 #[test]
 fn dns_name_is_rejected() {
@@ -78,7 +76,10 @@ fn userinfo_is_rejected() {
     let opts = ModelOptions::local("http://user:pass@127.0.0.1:52080", "model");
     assert!(opts.is_err());
     let password_only = ModelOptions::local("http://:pass@127.0.0.1:52080", "model");
-    assert!(matches!(password_only, Err(ModelError::InvalidEndpoint { .. })));
+    assert!(matches!(
+        password_only,
+        Err(ModelError::InvalidEndpoint { .. })
+    ));
 }
 
 #[test]
@@ -94,13 +95,11 @@ fn oversized_model_is_rejected() {
     assert!(opts.is_err());
 }
 
-
 #[test]
 fn max_tokens_is_capped_at_8192() {
     let opts = valid_options().with_max_tokens(16_000);
     let body = build_request_body(&packet(), &opts).expect("body serializes");
-    let parsed: serde_json::Value =
-        serde_json::from_slice(&body).expect("body is valid JSON");
+    let parsed: serde_json::Value = serde_json::from_slice(&body).expect("body is valid JSON");
     assert_eq!(parsed["max_tokens"], 8_192);
 }
 
@@ -129,10 +128,14 @@ fn the_encoded_request_limit_counts_escaping_and_accepts_the_exact_boundary() {
     let mut request = ReviewPacket::new("synthetic", "Quoted \"Évidence\"\ncontrol\r\\")
         .with_evidence(ReviewEvidenceFact::new("capture", "field", ""));
     let options = valid_options();
-    let base = build_request_body(&request, &options).expect("base request").len();
+    let base = build_request_body(&request, &options)
+        .expect("base request")
+        .len();
     let remaining = REQUEST_CAP - base;
     request.evidence[0].value = "\0".repeat(remaining / 6);
-    request.evidence[0].value.extend(std::iter::repeat_n('x', remaining % 6));
+    request.evidence[0]
+        .value
+        .extend(std::iter::repeat_n('x', remaining % 6));
     let exact = build_request_body(&request, &options).expect("exact encoded limit");
     assert_eq!(exact.len(), REQUEST_CAP);
     assert!(exact.capacity() <= REQUEST_CAP);
@@ -147,10 +150,11 @@ fn the_encoded_request_limit_counts_escaping_and_accepts_the_exact_boundary() {
 #[test]
 fn one_oversized_fact_returns_its_rejected_size_without_echoing_content() {
     let secret = "OVERSIZED-PRIVATE-SENTINEL";
-    let request = ReviewPacket::new("synthetic", "Subject")
-        .with_evidence(ReviewEvidenceFact::new(
-            "capture", "field", secret.repeat(REQUEST_CAP / secret.len() + 1),
-        ));
+    let request = ReviewPacket::new("synthetic", "Subject").with_evidence(ReviewEvidenceFact::new(
+        "capture",
+        "field",
+        secret.repeat(REQUEST_CAP / secret.len() + 1),
+    ));
     let error = build_request_body(&request, &valid_options()).expect_err("oversized fact");
     assert!(matches!(error, ModelError::RequestTooLarge { bytes } if bytes > REQUEST_CAP));
     assert!(!error.to_string().contains(secret));

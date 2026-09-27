@@ -1,4 +1,3 @@
-
 use crate::net::FetchOptions;
 use crate::AdapterContext;
 use census_domain::UsJurisdiction;
@@ -66,7 +65,6 @@ fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
 fn count(value: usize) -> u64 {
     u64::try_from(value).unwrap_or(u64::MAX)
 }
-
 
 #[cfg(test)]
 mod tests;

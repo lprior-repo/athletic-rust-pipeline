@@ -1,4 +1,3 @@
-
 use serde::Deserialize;
 
 use super::{Store, StoreError, StoreResult, Table, MAX_ID_BYTES};

@@ -1,4 +1,3 @@
-
 use crate::{CrawlError, CrawlResult};
 use regex::Regex;
 use std::borrow::Cow;

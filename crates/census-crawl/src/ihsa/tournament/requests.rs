@@ -1,4 +1,3 @@
-
 use super::parse;
 use super::wire::{EventSummary, EventsEnvelope, MeetRow};
 use crate::ihsa::IHSA_API;

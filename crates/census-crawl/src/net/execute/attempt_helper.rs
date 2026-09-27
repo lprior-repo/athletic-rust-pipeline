@@ -1,4 +1,3 @@
-
 use crate::net::request::build_request;
 use crate::net::{FetchError, Fetcher};
 use census_domain::model::AccessBlockKind;

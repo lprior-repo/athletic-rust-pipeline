@@ -13,8 +13,13 @@ fn performance(source_key: &str, identity: SourceIdentity) -> CanonicalPerforman
         "Abbotsford High School",
         "abbotsford",
     );
-    let athlete =
-        CanonicalAthlete::mint(&school, "Julian Aguilera", GradYear::CO2027, Gender::Boys, &identity);
+    let athlete = CanonicalAthlete::mint(
+        &school,
+        "Julian Aguilera",
+        GradYear::CO2027,
+        Gender::Boys,
+        &identity,
+    );
     let meet = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
         "2026-05-01",
@@ -68,15 +73,11 @@ fn conflicting_source_owner_is_retained_not_replaced() {
     assert_eq!(first.retained_conflicts.len(), 1);
 }
 
-
 #[test]
 fn the_source_athlete_survives_the_store() {
     let dir = tempfile::tempdir().expect("temp dir");
     let store = Store::open(dir.path().join("store")).expect("store");
-    let stamped = performance(
-        "perf-1",
-        identity("111").with_url("https://ms.test/a/111"),
-    );
+    let stamped = performance("perf-1", identity("111").with_url("https://ms.test/a/111"));
     store
         .append_many(Table::Performances, &[stamped.clone()])
         .expect("append");

@@ -1,4 +1,3 @@
-
 use anyhow::Result;
 use census_store::read::{csv_failure, publish_atomically};
 use census_store::{StoreError, StoreResult};

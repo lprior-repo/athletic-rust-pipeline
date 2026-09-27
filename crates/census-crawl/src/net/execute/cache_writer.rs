@@ -1,4 +1,3 @@
-
 use super::body_reader::read_checked_body;
 use crate::net::cache::{write_cache, CacheMeta};
 use crate::net::{host_of, now_iso8601, FetchOutcome, FetchStats};

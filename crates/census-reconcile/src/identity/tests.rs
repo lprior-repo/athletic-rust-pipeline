@@ -1,4 +1,3 @@
-
 use super::{scope_digest, Revision, WorkflowIdentity, MAX_IDENTITY_BYTES, MAX_PART_BYTES};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
@@ -129,8 +128,7 @@ fn identity_is_a_pure_function_of_its_fields() {
 #[test]
 fn every_jurisdiction_fits_the_identity_ceiling() {
     for jurisdiction in UsJurisdiction::ALL {
-        let identity =
-            WorkflowIdentity::jurisdiction(jurisdiction, season(), Revision(u32::MAX));
+        let identity = WorkflowIdentity::jurisdiction(jurisdiction, season(), Revision(u32::MAX));
         assert!(
             identity.as_str().len() <= MAX_IDENTITY_BYTES,
             "{} exceeds the ceiling: {} bytes for {}",

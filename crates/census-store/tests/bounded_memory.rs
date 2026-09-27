@@ -18,7 +18,10 @@ fn performance(index: usize, version: usize) -> CanonicalPerformance {
         "Abbotsford High School",
         "abbotsford",
     );
-    let identity = SourceIdentity::new(SourceNamespace::MilesplitAthlete, &format!("athlete-{index}"));
+    let identity = SourceIdentity::new(
+        SourceNamespace::MilesplitAthlete,
+        &format!("athlete-{index}"),
+    );
     let athlete = CanonicalAthlete::mint(
         &school,
         "Julian Aguilera",

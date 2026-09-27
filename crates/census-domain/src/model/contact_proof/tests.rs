@@ -1,8 +1,8 @@
-use super::{
-    compute_contact_proof, verify_contact_proof, ContactClaimEvidence,
-    ContactProofError, ContactProofField, RawContactRow,
-};
 use super::validation::validate_claimed_digest;
+use super::{
+    compute_contact_proof, verify_contact_proof, ContactClaimEvidence, ContactProofError,
+    ContactProofField, RawContactRow,
+};
 
 pub(crate) fn make_valid_coach_row() -> RawContactRow {
     RawContactRow {
@@ -84,7 +84,6 @@ pub(crate) fn make_valid_claims(row: &RawContactRow, fetched: &str) -> Vec<Conta
 mod claims;
 mod director;
 
-
 #[test]
 fn valid_coach_ad_row_computes_proof() {
     let row = make_valid_coach_row();
@@ -92,11 +91,9 @@ fn valid_coach_ad_row_computes_proof() {
     let proof = compute_contact_proof(&row, &claims).expect("should compute proof");
     assert_eq!(proof.len(), 64, "proof must be 64 hex chars");
 
-    let validated =
-        verify_contact_proof(&row, &claims, &proof).expect("should verify");
+    let validated = verify_contact_proof(&row, &claims, &proof).expect("should verify");
     assert_eq!(validated.as_str(), proof);
 }
-
 
 #[test]
 fn missing_email_claim_for_populated_email_field() {
@@ -138,7 +135,6 @@ fn wrong_digest_rejected() {
     }
 }
 
-
 #[test]
 fn future_claimed_date_rejected() {
     let row = make_valid_coach_row();
@@ -166,7 +162,6 @@ fn invalid_date_format_rejected() {
         other => panic!("expected ClaimedObservedOnInvalid, got {:?}", other),
     }
 }
-
 
 #[test]
 fn claimed_digest_rejects_unicode_fake_hex() {
@@ -203,7 +198,6 @@ fn source_hash_in_claim_must_be_valid_hex() {
     }
 }
 
-
 #[test]
 fn proof_from_another_school_cannot_verify_valid_claims() -> Result<(), ContactProofError> {
     let first = make_valid_coach_row();
@@ -218,7 +212,6 @@ fn proof_from_another_school_cannot_verify_valid_claims() -> Result<(), ContactP
     ));
     Ok(())
 }
-
 
 #[test]
 fn email_case_mismatch_causes_failure() {

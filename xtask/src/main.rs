@@ -1,4 +1,3 @@
-
 #![forbid(unsafe_code)]
 
 mod baseline;
@@ -41,20 +40,30 @@ struct Cli {
 }
 #[derive(Subcommand, Debug)]
 enum PerfCommand {
-    #[command(about = "Run the `census-service` criterion bench targets and write a baseline recording wall time, throughput and peak RSS per group, stamped with hardware and toolchain metadata")]
+    #[command(
+        about = "Run the `census-service` criterion bench targets and write a baseline recording wall time, throughput and peak RSS per group, stamped with hardware and toolchain metadata"
+    )]
     Record,
-    #[command(about = "Re-run the bench targets, compare throughput against the recorded baseline, and fail when any group regresses past the tolerance (default 5%, overridable with `--tolerance`)")]
+    #[command(
+        about = "Re-run the bench targets, compare throughput against the recorded baseline, and fail when any group regresses past the tolerance (default 5%, overridable with `--tolerance`)"
+    )]
     Check {
-        #[arg(help = "Override the default 5% regression tolerance (e.g. `--tolerance 0.1` for 10%)")]
+        #[arg(
+            help = "Override the default 5% regression tolerance (e.g. `--tolerance 0.1` for 10%)"
+        )]
         #[arg(long, default_value_t = 0.05)]
         tolerance: f64,
         #[arg(help = "Reason for running the check; stored alongside the baseline for audit")]
         #[arg(long)]
         reason: Option<String>,
     },
-    #[command(about = "Run one named group under `perf record --call-graph=dwarf`; prints the exact command and explains why it did not run when `perf` is absent")]
+    #[command(
+        about = "Run one named group under `perf record --call-graph=dwarf`; prints the exact command and explains why it did not run when `perf` is absent"
+    )]
     Profile {
-        #[arg(help = "Criterion group id to profile, e.g. `census/parse` or `pipeline/result_file`")]
+        #[arg(
+            help = "Criterion group id to profile, e.g. `census/parse` or `pipeline/result_file`"
+        )]
         group: String,
     },
 }
@@ -63,19 +72,31 @@ enum PerfCommand {
 enum Command {
     #[command(about = "Run the repository quality gate (`tools/gate.sh`)")]
     Gate {
-        #[arg(help = "Arguments for `tools/gate.sh`, given after `--`: `--update-baseline`, `--allow-increase`")]
+        #[arg(
+            help = "Arguments for `tools/gate.sh`, given after `--`: `--update-baseline`, `--allow-increase`"
+        )]
         #[arg(last = true, value_name = "GATE_ARG")]
         args: Vec<String>,
     },
-    #[command(about = "Count forbidden constructs and size-budget overruns in production code; JSON on stdout")]
+    #[command(
+        about = "Count forbidden constructs and size-budget overruns in production code; JSON on stdout"
+    )]
     Scan,
-    #[command(about = "Reject comments and prose documentation attributes in project-owned Rust code")]
+    #[command(
+        about = "Reject comments and prose documentation attributes in project-owned Rust code"
+    )]
     Comments,
-    #[command(about = "Assert the architectural constants other work relies on: one line per check, non-zero exit when any of the eight is violated")]
+    #[command(
+        about = "Assert the architectural constants other work relies on: one line per check, non-zero exit when any of the eight is violated"
+    )]
     Contract,
-    #[command(about = "Check every `crate::…` module reference and every sibling-crate reference in production code against the two allowed-edge tables; JSON on stdout, non-zero exit on a violation")]
+    #[command(
+        about = "Check every `crate::…` module reference and every sibling-crate reference in production code against the two allowed-edge tables; JSON on stdout, non-zero exit on a violation"
+    )]
     Seams,
-    #[command(about = "List the type-integrity review candidates of the domain modules; JSON on stdout")]
+    #[command(
+        about = "List the type-integrity review candidates of the domain modules; JSON on stdout"
+    )]
     Integrity,
     #[command(about = "Rewrite the debt baseline from current measurements")]
     QualityBaseline {
@@ -85,11 +106,15 @@ enum Command {
         clippy: PathBuf,
         #[arg(help = "The `scan` report the clippy tallies are ratcheted with")]
         scan: PathBuf,
-        #[arg(help = "Permit an increase: without it, the update refuses any number that would grow")]
+        #[arg(
+            help = "Permit an increase: without it, the update refuses any number that would grow"
+        )]
         #[arg(long)]
         allow_increase: bool,
     },
-    #[command(about = "Compare current measurements against the debt baseline; fail when any metric grew")]
+    #[command(
+        about = "Compare current measurements against the debt baseline; fail when any metric grew"
+    )]
     Ratchet {
         #[arg(help = "The baseline to compare against, e.g. `tools/quality-baseline.json`")]
         baseline: PathBuf,
@@ -100,56 +125,80 @@ enum Command {
     },
     #[command(about = "Prove the `census-domain` dependency tree carries no async or I/O package")]
     DomainPurity,
-    #[command(about = "Run the census-service tests that cover one source (`cargo nextest -E 'test(<source>)'`)")]
+    #[command(
+        about = "Run the census-service tests that cover one source (`cargo nextest -E 'test(<source>)'`)"
+    )]
     #[command(visible_alias = "source-check")]
     SourceTest {
-        #[arg(help = "Source name as it appears in test names, e.g. `wiaa`, `mshsl`, `wiaa_results`")]
+        #[arg(
+            help = "Source name as it appears in test names, e.g. `wiaa`, `mshsl`, `wiaa_results`"
+        )]
         source: String,
     },
-    #[command(about = "Run every crate's colocated source tests: the files named `tests.rs` and the inline `#[cfg(test)]` modules, without the `tests/` integration binaries")]
+    #[command(
+        about = "Run every crate's colocated source tests: the files named `tests.rs` and the inline `#[cfg(test)]` modules, without the `tests/` integration binaries"
+    )]
     SourceTests,
     #[command(about = "List the captured fixture files of one source")]
     SourceFixture {
         #[arg(help = "Fixture directory under the crate's `tests/fixtures/`")]
         source: String,
     },
-    #[command(about = "Replay one source's committed fixture captures through the same parse path its fixture tests use: offline, deterministically, with no network, no store and no clock, so two runs over the same tree print the same bytes")]
+    #[command(
+        about = "Replay one source's committed fixture captures through the same parse path its fixture tests use: offline, deterministically, with no network, no store and no clock, so two runs over the same tree print the same bytes"
+    )]
     Replay {
-        #[arg(help = "Fixture directory under the crate's `tests/fixtures/`, e.g. `wiaa`, `mshsl`, `wiaa_results`")]
+        #[arg(
+            help = "Fixture directory under the crate's `tests/fixtures/`, e.g. `wiaa`, `mshsl`, `wiaa_results`"
+        )]
         name: String,
     },
-    #[command(about = "Print the core-scope census: the store's own counts from the running deployment (`Census/status`), or a whole core report offline (`census-service report --core`)")]
+    #[command(
+        about = "Print the core-scope census: the store's own counts from the running deployment (`Census/status`), or a whole core report offline (`census-service report --core`)"
+    )]
     CensusStatus {
         #[command(flatten)]
         target: census::Target,
     },
-    #[command(about = "Print the census over every source: `Report/run` on the running deployment, or `census-service report` offline")]
+    #[command(
+        about = "Print the census over every source: `Report/run` on the running deployment, or `census-service report` offline"
+    )]
     Coverage {
         #[command(flatten)]
         target: census::Target,
     },
-    #[command(about = "Run the pipeline benchmark (`cargo bench -p census-service`), with filters after `--`: `cargo xtask bench -- parser` runs only the parser benchmarks")]
+    #[command(
+        about = "Run the pipeline benchmark (`cargo bench -p census-service`), with filters after `--`: `cargo xtask bench -- parser` runs only the parser benchmarks"
+    )]
     Bench {
         #[arg(help = "Filter arguments forwarded to `cargo bench`, given after `--`")]
         #[arg(last = true, value_name = "BENCH_ARG")]
         args: Vec<String>,
     },
-    #[command(about = "Record, check and profile throughput baselines for the `census-service` criterion bench targets")]
+    #[command(
+        about = "Record, check and profile throughput baselines for the `census-service` criterion bench targets"
+    )]
     Perf {
         #[command(subcommand)]
         command: PerfCommand,
     },
-    #[command(about = "Build the census workbook (`.xlsx`) and its text sidecars: `Workbook/run` on the running deployment, or `census-service workbook` offline")]
+    #[command(
+        about = "Build the census workbook (`.xlsx`) and its text sidecars: `Workbook/run` on the running deployment, or `census-service workbook` offline"
+    )]
     Export {
         #[command(flatten)]
         target: census::Target,
-        #[arg(help = "Where to write the `.xlsx` (defaults to `<store>/out/census-service-<generated-on>.xlsx`)")]
+        #[arg(
+            help = "Where to write the `.xlsx` (defaults to `<store>/out/census-service-<generated-on>.xlsx`)"
+        )]
         #[arg(long, value_name = "FILE")]
         out: Option<PathBuf>,
         #[arg(help = "Graduation year used for the cohort sheets (2027 = the class of 2027)")]
         #[arg(long, default_value_t = 2027)]
         grad_year: i32,
-        #[arg(help = "Reduce the best-results sheet over the core scope instead of every approved source")]
+        #[arg(
+            help = "Reduce the best-results sheet over the core scope instead of every approved source"
+        )]
         #[arg(long)]
         core: bool,
         #[arg(help = "Cap the per-athlete best-mark sheet at N rows")]
@@ -158,7 +207,9 @@ enum Command {
     },
     #[command(about = "Scaffold a new source adapter in the directory-module layout")]
     NewSource {
-        #[arg(help = "Adapter name: lowercase letters, digits and underscores; hyphens become underscores")]
+        #[arg(
+            help = "Adapter name: lowercase letters, digits and underscores; hyphens become underscores"
+        )]
         name: String,
     },
     #[command(about = "Print one `column=value` line per non-empty row for each named sheet")]
@@ -168,7 +219,9 @@ enum Command {
         #[arg(help = "Sheet names to dump")]
         sheets: Vec<String>,
     },
-    #[command(about = "Verify `census-domain` invariants via `cargo kani`: fixed-point bounds, PR comparison laws, identity contradiction, redirect cycle, retry limits, terminal state, StoreBatch arithmetic, and `CENSUS_SCOPE` scope size")]
+    #[command(
+        about = "Verify `census-domain` invariants via `cargo kani`: fixed-point bounds, PR comparison laws, identity contradiction, redirect cycle, retry limits, terminal state, StoreBatch arithmetic, and `CENSUS_SCOPE` scope size"
+    )]
     Kani {
         #[arg(help = "Harness names to verify; when omitted, all mandatory harnesses are run")]
         #[arg(last = true, value_name = "HARNESS")]

@@ -1,4 +1,3 @@
-
 use super::{DrainReport, DrainState};
 use std::sync::atomic::{AtomicU64, Ordering};
 

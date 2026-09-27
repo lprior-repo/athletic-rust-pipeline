@@ -1,4 +1,3 @@
-
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -39,7 +38,6 @@ const MIN_AUTHORIZED_DELAY: Duration = Duration::from_millis(500);
 pub const BLOCK_COOLDOWN_SECONDS: u64 = 6 * 60 * 60;
 
 const DEFAULT_SOURCE: &str = "unknown";
-
 
 pub struct Fetcher {
     client: reqwest::Client,
@@ -171,7 +169,6 @@ impl Fetcher {
             .any(|condition| condition.host == host && condition.is_blocking(now_iso8601))
     }
 }
-
 
 #[cfg(test)]
 mod tests;

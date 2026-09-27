@@ -1,4 +1,3 @@
-
 use super::*;
 use census_domain::model::*;
 use census_domain::UsJurisdiction;

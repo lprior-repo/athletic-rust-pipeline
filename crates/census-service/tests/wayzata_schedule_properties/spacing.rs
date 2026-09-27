@@ -1,4 +1,3 @@
-
 use super::{rendered_rows, rows, seam_config, SEASON};
 use proptest::prelude::*;
 

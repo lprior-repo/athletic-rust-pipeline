@@ -1,4 +1,3 @@
-
 use census_crawl::registry::descriptor;
 use census_domain::UsJurisdiction;
 

@@ -1,4 +1,3 @@
-
 use super::packets::{case_fact, fact};
 use super::*;
 use census_domain::model::{

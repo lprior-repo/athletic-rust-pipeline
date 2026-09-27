@@ -1,4 +1,3 @@
-
 use anyhow::{bail, Context, Result};
 use serde_json::{Map, Value};
 use std::fs;

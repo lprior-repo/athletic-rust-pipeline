@@ -1,7 +1,6 @@
-use super::{compute_contact_proof, verify_contact_proof, ContactProofError};
-use super::make_valid_coach_row;
 use super::make_valid_claims;
-
+use super::make_valid_coach_row;
+use super::{compute_contact_proof, verify_contact_proof, ContactProofError};
 
 #[test]
 fn wrong_person_for_email_claim() {
@@ -16,7 +15,6 @@ fn wrong_person_for_email_claim() {
         other => panic!("expected ValueMismatch, got {:?}", other),
     }
 }
-
 
 #[test]
 fn wrong_role_for_coach_claim() {
@@ -45,7 +43,6 @@ fn wrong_role_for_ad_claim() {
         other => panic!("expected ValueMismatch, got {:?}", other),
     }
 }
-
 
 #[test]
 fn wrong_school_rejected() {
@@ -89,7 +86,6 @@ fn wrong_sport_rejected() {
     }
 }
 
-
 #[test]
 fn source_url_not_in_row() {
     let row = make_valid_coach_row();
@@ -118,7 +114,6 @@ fn empty_source_url_in_claim() {
     }
 }
 
-
 #[test]
 fn mismatched_date_rejected() {
     let row = make_valid_coach_row();
@@ -126,13 +121,15 @@ fn mismatched_date_rejected() {
     let mut claims = make_valid_claims(&row, fetched);
     claims[0].claimed_observed_on = "2024-01-01".to_string();
     let result = compute_contact_proof(&row, &claims);
-    assert!(result.is_err(), "claimed_observed_on must match last_observed");
+    assert!(
+        result.is_err(),
+        "claimed_observed_on must match last_observed"
+    );
     match result.unwrap_err() {
         ContactProofError::ValueMismatch(_) => {}
         other => panic!("expected ValueMismatch, got {:?}", other),
     }
 }
-
 
 #[test]
 fn empty_evidence_span_cannot_verify_a_contact() -> Result<(), ContactProofError> {
@@ -140,7 +137,10 @@ fn empty_evidence_span_cannot_verify_a_contact() -> Result<(), ContactProofError
     let mut claims = make_valid_claims(&row, "2025-06-01T12:00:00+00:00");
     let proof = compute_contact_proof(&row, &claims)?;
     for span in ["", " \t\n"] {
-        claims.first_mut().ok_or(ContactProofError::UnverifiedClaim)?.span = span.to_owned();
+        claims
+            .first_mut()
+            .ok_or(ContactProofError::UnverifiedClaim)?
+            .span = span.to_owned();
         assert!(matches!(
             verify_contact_proof(&row, &claims, &proof),
             Err(ContactProofError::UnverifiedClaim)
@@ -149,7 +149,6 @@ fn empty_evidence_span_cannot_verify_a_contact() -> Result<(), ContactProofError
     Ok(())
 }
 
-
 #[test]
 fn valid_coach_and_ad_claims_pass() {
     let row = make_valid_coach_row();
@@ -157,11 +156,9 @@ fn valid_coach_and_ad_claims_pass() {
     let proof = compute_contact_proof(&row, &claims).expect("should compute proof");
     assert_eq!(proof.len(), 64);
 
-    let validated =
-        verify_contact_proof(&row, &claims, &proof).expect("should verify");
+    let validated = verify_contact_proof(&row, &claims, &proof).expect("should verify");
     assert_eq!(validated.as_str(), proof);
 }
-
 
 #[test]
 fn changed_source_hash_rejects_old_proof() {
@@ -177,7 +174,6 @@ fn changed_source_hash_rejects_old_proof() {
         other => panic!("expected DigestMismatch, got {:?}", other),
     }
 }
-
 
 #[test]
 fn changed_source_url_rejects_old_proof() {

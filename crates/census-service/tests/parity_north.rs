@@ -1,4 +1,3 @@
-
 mod common;
 
 use census_domain::UsJurisdiction;
@@ -75,7 +74,6 @@ fn seed_cache(cache_dir: &Path, url: &str, body: &str) -> Result<()> {
     .with_context(|| format!("writing the cached metadata for {url}"))?;
     Ok(())
 }
-
 
 #[test]
 fn mshsl_fixtures_match_golden() -> Result<()> {
@@ -392,7 +390,6 @@ async fn mshsl_collect_matches_golden() -> Result<()> {
     )
 }
 
-
 #[test]
 fn plain_names_fixtures_match_golden() -> Result<()> {
     let index = common::fixture(PLAIN_NAMES, "nd_schools_index.html")?;
@@ -625,7 +622,6 @@ async fn plain_names_collect_matches_golden() -> Result<()> {
         &json!({ "report": &report, "schools": &schools, "coaches": &coaches }),
     )
 }
-
 
 const HYTEK_FIXTURES: [(&str, &str); 5] = [
     ("d1boysstateresults-dash.htm", "html"),

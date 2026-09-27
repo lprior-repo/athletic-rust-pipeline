@@ -1,4 +1,3 @@
-
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, SourceNamespace, SourceRef,
 };

@@ -1,4 +1,3 @@
-
 use anyhow::{ensure, Context, Result};
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SourceIdentity,

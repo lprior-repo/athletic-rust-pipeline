@@ -5,8 +5,8 @@ use super::parse::{
     has_next_page, parse_meet_index, parse_meet_result_files, parse_roster, parse_team_index,
 };
 use super::raw::{parse_raw, RawPage};
-use super::wire::{MeetRef, MeetResultFile, ResultSetRef, Season, Site, TeamRef};
 use super::roster::{RosterOutcome, RosterQuarantine, RosterVerdict};
+use super::wire::{MeetRef, MeetResultFile, ResultSetRef, Season, Site, TeamRef};
 
 pub async fn fetch_team_index(
     fetcher: &Fetcher,
@@ -52,7 +52,10 @@ pub async fn fetch_roster(
         },
         status => return Err(CrawlError::Fetch(FetchError::Http { status, url })),
     };
-    Ok(RosterOutcome { capture: outcome, verdict })
+    Ok(RosterOutcome {
+        capture: outcome,
+        verdict,
+    })
 }
 
 pub async fn fetch_result_set(

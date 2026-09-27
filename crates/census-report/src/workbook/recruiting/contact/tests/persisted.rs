@@ -18,8 +18,12 @@ fn persisted_currentness_cannot_attach_an_undated_address_in_either_append_order
         assert_eq!(result.name, "Same owner");
         assert_eq!(result.email, "");
         assert_eq!(result.state, ContactState::CoachNameOnly);
-        assert!(observations.iter().any(|row| row.professional_email.as_deref() == Some("undated@example.invalid")
-            && row.tenure_evidence.is_empty()));
+        assert!(observations
+            .iter()
+            .any(
+                |row| row.professional_email.as_deref() == Some("undated@example.invalid")
+                    && row.tenure_evidence.is_empty()
+            ));
     }
 }
 
@@ -29,13 +33,21 @@ fn differing_tenure_interpretations_of_one_capture_survive_the_store_merge() {
     let store = Store::open(dir.path()).unwrap();
     let current = head("Same owner", Sport::OutdoorTrack, Gender::Boys);
     let mut former = current.clone();
-    former.tenure_evidence[0].tenure = CoachTenure::Former { last_school_year: Some(year()) };
+    former.tenure_evidence[0].tenure = CoachTenure::Former {
+        last_school_year: Some(year()),
+    };
     store.append(Table::Coaches, &current).unwrap();
     store.append(Table::Coaches, &former).unwrap();
     let merged: Vec<CanonicalCoach> = store.scan(Table::Coaches).unwrap();
-    assert_eq!(merged[0].tenure_state(year()), Err(census_domain::model::TenureAssessmentError::Conflict));
+    assert_eq!(
+        merged[0].tenure_state(year()),
+        Err(census_domain::model::TenureAssessmentError::Conflict)
+    );
     let observations = super::super::coach_observations(&store.snapshot()).unwrap();
-    assert_eq!(selected(&observations, &athlete()).state, ContactState::ContactTenureConflict);
+    assert_eq!(
+        selected(&observations, &athlete()).state,
+        ContactState::ContactTenureConflict
+    );
 }
 
 #[test]

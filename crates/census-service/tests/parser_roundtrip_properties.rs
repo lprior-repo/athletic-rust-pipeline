@@ -1,4 +1,3 @@
-
 #![forbid(unsafe_code)]
 
 use census_crawl::result_file::{ParsedEvent, ParsedMeet, ParsedRow};
@@ -13,7 +12,6 @@ mod edges;
 mod prefix_laws;
 #[path = "parser_roundtrip_properties/shapes.rs"]
 mod shapes;
-
 
 const DASH_HTML: &str =
     include_str!("../../census-crawl/tests/fixtures/wiaa_results/d1boysstateresults-dash.htm");
@@ -72,7 +70,6 @@ const FIXTURES: [(&str, &str, ArtifactFormat); 6] = [
         ArtifactFormat::RaceDay,
     ),
 ];
-
 
 fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)
@@ -195,7 +192,6 @@ fn legs_grew(shorter: &ParsedRow, longer: &ParsedRow) -> bool {
         && longer.points == shorter.points
         && longer.legs.starts_with(&shorter.legs)
 }
-
 
 #[test]
 fn every_fixture_dispatches_to_the_format_that_parses_it() {

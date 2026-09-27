@@ -1,4 +1,3 @@
-
 use super::{read_rows, sweep_stale_temporaries};
 use crate::StoreError;
 use census_domain::model::{normalize_name, CanonicalSchool};

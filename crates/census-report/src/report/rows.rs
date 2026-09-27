@@ -1,4 +1,3 @@
-
 use super::notes::bump;
 use super::{SportsBreakdown, StateCensus};
 use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalSchool, Gender, Sport};
@@ -118,7 +117,8 @@ pub(super) fn tally_co2027(
                 .or_default(),
         );
     }
-    let distinct: BTreeSet<String> = athlete.identities()
+    let distinct: BTreeSet<String> = athlete
+        .identities()
         .map(|identity| identity.namespace.to_string())
         .collect();
     if distinct.len() > 1 {

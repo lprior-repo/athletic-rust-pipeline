@@ -1,4 +1,3 @@
-
 use census_crawl::mshsl::{parse_next_listing_page, parse_school_detail, parse_school_list};
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};

@@ -1,4 +1,3 @@
-
 use super::seam_config;
 use census_crawl::mshsl::parse_school_detail;
 use proptest::prelude::*;

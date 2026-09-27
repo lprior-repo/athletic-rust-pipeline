@@ -1,4 +1,3 @@
-
 use super::map::{level_of, resolve_venue, VenueResolution};
 use super::parse::{schedule_rows, schedule_url, MeetRow, ScheduleSport};
 use super::{stats_of, Options, ADAPTER_ID, BASE, PARSE_VERSION, PROVIDER};

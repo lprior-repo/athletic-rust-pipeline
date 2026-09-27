@@ -1,4 +1,3 @@
-
 use crate::net::FetchOptions;
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 
@@ -57,7 +56,6 @@ use parse::email_regex;
 #[cfg(test)]
 use parse::split_person_names;
 
-
 fn observed_on(ctx: &AdapterContext<'_>, options: &Options) -> String {
     match nonempty(&options.observed_on) {
         Some(date) => date,
@@ -70,7 +68,6 @@ fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
     fetch.refresh = options.refresh || ctx.refresh;
     fetch
 }
-
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new(ADAPTER_ID, "schools");

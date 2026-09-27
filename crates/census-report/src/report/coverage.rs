@@ -1,4 +1,3 @@
-
 use super::{ReportError, ReportResult};
 use census_domain::JurisdictionBucket;
 use census_store::Store;

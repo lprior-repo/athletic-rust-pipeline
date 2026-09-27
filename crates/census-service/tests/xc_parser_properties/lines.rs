@@ -1,4 +1,3 @@
-
 use super::{parse_lines, rendered_rows, seam_config, ACCURACE, STATE, TABLE};
 use census_crawl::hytek::{lines_from_pdf_text, lines_from_text};
 use proptest::prelude::*;

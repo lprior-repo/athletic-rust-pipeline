@@ -1,4 +1,3 @@
-
 use super::seam_config;
 use census_crawl::ohsaa::parse_ad_page;
 use proptest::prelude::*;

@@ -1,7 +1,6 @@
-
 use census_domain::model::{
-    AppliedAthleteIdentity, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase, ReviewState,
-    ReviewVerdictRecord, SourceAccessCondition, SourceMeetRef, SourceObjectIdentity,
+    AppliedAthleteIdentity, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase,
+    ReviewState, ReviewVerdictRecord, SourceAccessCondition, SourceMeetRef, SourceObjectIdentity,
 };
 
 use super::super::Entity;
@@ -121,6 +120,10 @@ impl Entity for ReviewVerdictRecord {
 }
 
 impl Entity for AppliedAthleteIdentity {
-    fn entity_id(&self) -> &str { &self.id }
-    fn merge(&mut self, other: Self) { *self = other; }
+    fn entity_id(&self) -> &str {
+        &self.id
+    }
+    fn merge(&mut self, other: Self) {
+        *self = other;
+    }
 }

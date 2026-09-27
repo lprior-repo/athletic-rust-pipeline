@@ -1,6 +1,6 @@
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CoachRole, CoachTenure, CoachTenureEvidence,
-    Gender, GradYear, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    CanonicalAthlete, CanonicalCoach, CoachRole, CoachTenure, CoachTenureEvidence, Gender,
+    GradYear, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 
 use super::{contacts, scoped, ContactState, Preferred};
@@ -21,7 +21,10 @@ fn year() -> SchoolYear {
 fn claim(tenure: CoachTenure) -> CoachTenureEvidence {
     CoachTenureEvidence {
         tenure,
-        source: SourceRef::new("synthetic_directory", Some("https://example.invalid/staff".into())),
+        source: SourceRef::new(
+            "synthetic_directory",
+            Some("https://example.invalid/staff".into()),
+        ),
         source_sha256: "a".repeat(64),
         retrieved_at: "2026-08-01T00:00:00Z".into(),
         statement: "Synthetic academic-year tenure statement".into(),
@@ -30,7 +33,9 @@ fn claim(tenure: CoachTenure) -> CoachTenureEvidence {
 
 fn person(name: &str, sport: Option<Sport>, side: Gender, role: CoachRole) -> CanonicalCoach {
     let mut coach = CanonicalCoach::new(&school(), name, sport, side, role);
-    coach.tenure_evidence.push(claim(CoachTenure::Current { school_year: year() }));
+    coach.tenure_evidence.push(claim(CoachTenure::Current {
+        school_year: year(),
+    }));
     coach
 }
 
@@ -39,12 +44,22 @@ fn head(name: &str, sport: Sport, side: Gender) -> CanonicalCoach {
 }
 
 fn director() -> CanonicalCoach {
-    person("Current director", None, Gender::Mixed, CoachRole::AthleticDirector)
+    person(
+        "Current director",
+        None,
+        Gender::Mixed,
+        CoachRole::AthleticDirector,
+    )
 }
 
 fn athlete() -> CanonicalAthlete {
-    let mut athlete = CanonicalAthlete::new(&school(), "Synthetic runner", GradYear::CO2027,
-        Gender::Boys, SourceIdentity::new(SourceNamespace::Other("fixture".into()), "runner"));
+    let mut athlete = CanonicalAthlete::new(
+        &school(),
+        "Synthetic runner",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::Other("fixture".into()), "runner"),
+    );
     athlete.sports = vec![Sport::OutdoorTrack];
     athlete
 }
@@ -87,8 +102,10 @@ fn qualified_coach_mailboxes_outrank_director_without_becoming_professional() {
         let result = scope.preferred();
         assert_eq!(result.name, "Current coach");
         assert_eq!(result.state, expected);
-        assert_eq!(scope.professional_coach_email(),
-            (!personal).then_some("coach@example.invalid"));
+        assert_eq!(
+            scope.professional_coach_email(),
+            (!personal).then_some("coach@example.invalid")
+        );
     }
 }
 
@@ -127,9 +144,16 @@ fn personal_director_address_never_enters_a_professional_coach_column() {
 #[test]
 fn missing_coach_rows_do_not_invent_a_research_attempt_or_a_negative_finding() {
     let athlete = athlete();
-    assert_eq!(scoped(None, &athlete).preferred().state, ContactState::ContactResearchUnknown);
-    let assistant = person("Assistant", Some(Sport::OutdoorTrack), Gender::Boys,
-        CoachRole::AssistantCoach);
+    assert_eq!(
+        scoped(None, &athlete).preferred().state,
+        ContactState::ContactResearchUnknown
+    );
+    let assistant = person(
+        "Assistant",
+        Some(Sport::OutdoorTrack),
+        Gender::Boys,
+        CoachRole::AssistantCoach,
+    );
     let result = selected(&[assistant], &athlete);
     assert_eq!(result.state, ContactState::ContactResearchUnknown);
     assert_eq!(result.name, "");

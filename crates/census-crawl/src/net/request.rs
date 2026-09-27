@@ -1,4 +1,3 @@
-
 use super::cache::CacheMeta;
 use super::{FetchError, FetchOptions, FetchOutcome, Fetcher, REQUEST_TIMEOUT_SECS};
 

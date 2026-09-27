@@ -73,6 +73,5 @@ pub fn school_observations_of(
         .collect()
 }
 
-
 #[cfg(test)]
 mod observation_tests;

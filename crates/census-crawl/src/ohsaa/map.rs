@@ -1,4 +1,3 @@
-
 use super::pages::{parse_ad_page, parse_sport_label, parse_sports_table};
 use super::parse::{nonempty, sport_key, strip_honorific};
 use super::{AD_PATH, ASSOCIATION, HOST, SCHOOL_INFO_PATH, SOURCE_ID, SPORTS_PATH, STATE};

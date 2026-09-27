@@ -1,4 +1,3 @@
-
 mod browser_session;
 mod census_doc;
 mod command;
@@ -40,7 +39,9 @@ pub(super) const DEFAULT_STORE_ROOT: &str = "var/census-service";
     about = "Independent Midwest HS TF/XC recruiting census (MileSplit discovery, no broad Athletic.net crawling)"
 )]
 pub(super) struct Cli {
-    #[arg(help = "Store root (HTTP cache, journals, entity logs, output snapshots). Naming it selects the offline path: this command opens the store itself, which requires `census-serve` stopped, because a Fjall store has one writer. Omitted, a pipeline command submits its work to the running service through the Restate ingress instead and opens nothing")]
+    #[arg(
+        help = "Store root (HTTP cache, journals, entity logs, output snapshots). Naming it selects the offline path: this command opens the store itself, which requires `census-serve` stopped, because a Fjall store has one writer. Omitted, a pipeline command submits its work to the running service through the Restate ingress instead and opens nothing"
+    )]
     #[arg(long, global = true, value_name = "DIR")]
     store: Option<PathBuf>,
     #[arg(help = "Default per-host delay between requests, milliseconds")]
@@ -49,7 +50,9 @@ pub(super) struct Cli {
     #[arg(help = "Override the User-Agent sent with every request")]
     #[arg(long, global = true)]
     user_agent: Option<String>,
-    #[arg(help = "Operator-authorized host (repeatable). Its robots.txt rules are recorded on the run and the stats as `robots_authorized` instead of blocking requests, under the 2 rps per-host ceiling. A bare domain authorizes its subdomains. Default: every host's robots rules are enforced")]
+    #[arg(
+        help = "Operator-authorized host (repeatable). Its robots.txt rules are recorded on the run and the stats as `robots_authorized` instead of blocking requests, under the 2 rps per-host ceiling. A bare domain authorizes its subdomains. Default: every host's robots rules are enforced"
+    )]
     #[arg(long = "authorized-host", global = true, value_name = "HOST")]
     authorized_hosts: Vec<String>,
     #[command(subcommand)]

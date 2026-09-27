@@ -1,4 +1,3 @@
-
 use serde_json::{Map, Value};
 
 pub(super) fn build(meets: &Map<String, Value>) -> (Vec<Vec<String>>, Vec<Vec<String>>, usize) {

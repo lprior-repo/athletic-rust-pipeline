@@ -1,4 +1,3 @@
-
 use super::types::FetchStats;
 
 pub const LATENCY_BUCKET_EDGES_MS: [u64; 20] = [

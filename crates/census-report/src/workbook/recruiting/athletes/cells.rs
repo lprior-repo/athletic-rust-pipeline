@@ -1,4 +1,3 @@
-
 use super::super::super::cells::{row, Cell};
 use super::super::columns::{flag, published};
 use super::rules::PR_EVENTS;
@@ -25,14 +24,18 @@ pub(super) fn event_list(_athlete: &CanonicalAthlete, prs: &[&SharedSelection]) 
     if prs.is_empty() {
         return vec![Cell::Empty];
     }
-    let events: std::collections::BTreeSet<_> = prs.iter()
+    let events: std::collections::BTreeSet<_> = prs
+        .iter()
         .map(|pr| pr.key.event_kind.stable_key())
         .collect();
     let names: Vec<_> = events.iter().map(|event| pr_event_name(event)).collect();
     vec![Cell::text(names.join("; "))]
 }
 
-pub(super) fn headline_pr_summary(_athlete: &CanonicalAthlete, prs: &[&SharedSelection]) -> Vec<Cell> {
+pub(super) fn headline_pr_summary(
+    _athlete: &CanonicalAthlete,
+    prs: &[&SharedSelection],
+) -> Vec<Cell> {
     if prs.is_empty() {
         return vec![Cell::Empty];
     }
@@ -50,17 +53,24 @@ pub(super) fn headline_pr_summary(_athlete: &CanonicalAthlete, prs: &[&SharedSel
 }
 
 pub(super) fn pr_event_cells(prs: &[&SharedSelection]) -> Vec<Cell> {
-    PR_EVENTS.iter().map(|event| event_cell(prs, event)).collect()
+    PR_EVENTS
+        .iter()
+        .map(|event| event_cell(prs, event))
+        .collect()
 }
 
 fn event_cell(prs: &[&SharedSelection], event: &str) -> Cell {
-    let mut selected = prs.iter().copied()
+    let mut selected = prs
+        .iter()
+        .copied()
         .filter(|pr| pr.key.event_kind.stable_key() == event);
     let Some(first) = selected.next() else {
         return Cell::Empty;
     };
     let Some(second) = selected.next() else {
-        return first.normalized.map_or_else(|| Cell::text(first.mark_text()), Cell::Number);
+        return first
+            .normalized
+            .map_or_else(|| Cell::text(first.mark_text()), Cell::Number);
     };
     let mut text = String::new();
     append_qualified_mark(&mut text, first);

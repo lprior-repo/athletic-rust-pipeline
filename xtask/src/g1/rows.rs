@@ -1,4 +1,3 @@
-
 use regex::Regex;
 
 use crate::links::link_class;

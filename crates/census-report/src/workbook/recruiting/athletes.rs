@@ -1,4 +1,3 @@
-
 mod cells;
 mod rules;
 
@@ -19,7 +18,6 @@ use cells::{
     pr_event_cells, profile_cells, public_recruiting_gpa, tf_flag,
 };
 use census_domain::model::CanonicalAthlete;
-
 
 pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
     let mut ordered: Vec<(&CanonicalAthlete, (String, String, String))> = dataset
@@ -62,9 +60,18 @@ fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Ce
     cells.extend(participation_metrics(tally)?);
     cells.push(published(contacts.track_names()));
     cells.push(published(contacts.track_emails()));
-    cells.push(published(contacts.cross_country().map(|coach| coach.name.clone())));
-    cells.push(published(contacts.cross_country().and_then(|coach| coach.address()).map(str::to_owned)));
-    cells.push(published(contacts.professional_coach_email().map(str::to_owned)));
+    cells.push(published(
+        contacts.cross_country().map(|coach| coach.name.clone()),
+    ));
+    cells.push(published(
+        contacts
+            .cross_country()
+            .and_then(|coach| coach.address())
+            .map(str::to_owned),
+    ));
+    cells.push(published(
+        contacts.professional_coach_email().map(str::to_owned),
+    ));
     cells.push(published(director.map(|d| d.name.clone())));
     cells.push(published(director.and_then(|d| d.email.clone())));
     cells.extend(school_athletics_url(dataset, school));
@@ -98,7 +105,6 @@ fn identity_cells(dataset: &Dataset, athlete: &CanonicalAthlete) -> Vec<Cell> {
     )
 }
 
-
 fn school_athletics_url(dataset: &Dataset, school: &str) -> Vec<Cell> {
     let url = dataset
         .schools
@@ -113,7 +119,9 @@ fn audit_cells(
     tally: Option<&AthleteTally>,
     prs: &[&SharedSelection],
 ) -> ReportResult<Vec<Cell>> {
-    let status = dataset.identities.status(athlete.id.as_str())
+    let status = dataset
+        .identities
+        .status(athlete.id.as_str())
         .map_err(census_store::StoreError::from)?;
     Ok(row!(
         Cell::number(source_count(athlete))?,
@@ -123,11 +131,13 @@ fn audit_cells(
             !prs.is_empty()
         )),
         flag(status == census_domain::model::IdentityStatus::RetainedConflict),
-        Cell::text(if status == census_domain::model::IdentityStatus::Verified {
-            "verified"
-        } else {
-            "review"
-        }),
+        Cell::text(
+            if status == census_domain::model::IdentityStatus::Verified {
+                "verified"
+            } else {
+                "review"
+            }
+        ),
     ))
 }
 

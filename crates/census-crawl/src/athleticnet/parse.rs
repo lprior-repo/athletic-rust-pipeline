@@ -1,4 +1,3 @@
-
 use crate::hytek::{parse_field_mark, parse_time, NO_MARK};
 use census_domain::model::CentiPoints;
 use census_domain::model::{EventKind, Gender, Mark, Sport, TimingMethod};

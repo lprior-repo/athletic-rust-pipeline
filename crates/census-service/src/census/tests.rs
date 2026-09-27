@@ -1,4 +1,3 @@
-
 use super::TransportReport;
 use census_crawl::net::{FetchStats, HostTraffic};
 

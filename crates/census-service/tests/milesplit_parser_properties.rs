@@ -1,4 +1,3 @@
-
 #![forbid(unsafe_code)]
 
 use census_crawl::milesplit::ResultSetRef;
@@ -15,7 +14,6 @@ mod index_laws;
 #[path = "milesplit_parser_properties/totalness.rs"]
 mod totalness;
 
-
 const OH_INDEX: &str =
     include_str!("../../census-crawl/tests/fixtures/milesplit/oh_results_index.html");
 const OH_FILE_LIST: &str =
@@ -30,7 +28,6 @@ const OH_RAW_URL: &str =
     "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results/1321880/raw";
 
 const OH_RAW_ROWS: usize = 80;
-
 
 fn seam_config() -> ProptestConfig {
     ProptestConfig {

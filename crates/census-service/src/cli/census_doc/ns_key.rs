@@ -1,4 +1,3 @@
-
 use serde_json::Value;
 
 pub(super) fn ns_key(namespace: &Value) -> String {

@@ -1,4 +1,3 @@
-
 use super::super::{BrowserState, BrowserStatus};
 use crate::clock::Clock;
 use std::sync::{Mutex, RwLock};

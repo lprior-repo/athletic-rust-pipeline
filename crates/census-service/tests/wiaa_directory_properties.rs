@@ -1,4 +1,3 @@
-
 use census_crawl::wiaa::{parse_directory_letter, parse_school_page};
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};

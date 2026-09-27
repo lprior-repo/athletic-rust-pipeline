@@ -1,4 +1,3 @@
-
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, MEET_STATE_UNRESOLVED};
 use std::collections::{BTreeMap, HashMap};
 

@@ -1,5 +1,7 @@
 use crate::{assert_observation_counts, evidence};
-use census_domain::model::{CanonicalAthlete, CanonicalSchool, GradYear, Gender, SourceIdentity, SourceNamespace};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalSchool, Gender, GradYear, SourceIdentity, SourceNamespace,
+};
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 
@@ -13,14 +15,10 @@ fn store_round_trip_merges_observations_and_reports_stats() {
         "Round Trip High School",
         "round trip",
     );
-    first
-        .evidence
-        .push(evidence());
+    first.evidence.push(evidence());
     let mut duplicate = first.clone();
     duplicate.city = Some("Madison".to_string());
-    duplicate
-        .evidence
-        .push(evidence());
+    duplicate.evidence.push(evidence());
 
     store.append(Table::Schools, &first).unwrap();
     store.append(Table::Schools, &duplicate).unwrap();
@@ -67,13 +65,9 @@ fn legacy_jsonl_journals_are_imported_once() {
 
     let (mut school, _) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Legacy High School", "legacy");
-    school
-        .evidence
-        .push(evidence());
+    school.evidence.push(evidence());
     let mut later = school.clone();
-    later
-        .evidence
-        .push(evidence());
+    later.evidence.push(evidence());
     let log = format!(
         "{}\n{}\n",
         serde_json::to_string(&school).unwrap(),
@@ -119,9 +113,12 @@ fn legacy_jsonl_journals_are_imported_once() {
 
 fn raw_schools(store: &Store) -> Vec<CanonicalSchool> {
     let mut rows = Vec::new();
-    store.snapshot().for_each_observation(Table::Schools, |row| {
-        rows.push(row);
-        Ok(())
-    }).unwrap();
+    store
+        .snapshot()
+        .for_each_observation(Table::Schools, |row| {
+            rows.push(row);
+            Ok(())
+        })
+        .unwrap();
     rows
 }

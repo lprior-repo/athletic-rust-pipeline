@@ -1,4 +1,3 @@
-
 pub(super) fn find_from(haystack: &str, needle: &str, from: usize) -> Option<usize> {
     haystack
         .get(from..)?

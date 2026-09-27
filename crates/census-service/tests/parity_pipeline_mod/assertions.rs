@@ -1,4 +1,3 @@
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{bail, ensure, Context, Result};
@@ -9,8 +8,8 @@ use census_report::bests::{self, PrKey, SharedSelection};
 use census_report::report::{self, Census, Scope};
 use census_store::{Store, Table};
 
-use super::fixtures::Corpus;
 use super::constants;
+use super::fixtures::Corpus;
 
 pub fn assert_counts(counts: &[(String, usize)], expected: &[(&str, usize)]) -> Result<()> {
     for (table, rows) in expected {
@@ -116,11 +115,7 @@ pub fn assert_scope_split(store: &Store, core: &Census, all_sources: &Census) ->
     Ok(())
 }
 
-pub fn assert_best_reduction(
-    rows: &[SharedSelection],
-    store: &Store,
-    scope: Scope,
-) -> Result<()> {
+pub fn assert_best_reduction(rows: &[SharedSelection], store: &Store, scope: Scope) -> Result<()> {
     let mut athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
     let mut meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
     let mut events: Vec<CanonicalEvent> = store.scan(Table::Events)?;
@@ -159,7 +154,10 @@ pub fn assert_best_reduction(
             continue;
         };
         let Some(key) = PrKey::from_performance(
-            performance, kind, parents.get(performance.meet.as_str()).copied(), measure,
+            performance,
+            kind,
+            parents.get(performance.meet.as_str()).copied(),
+            measure,
         ) else {
             continue;
         };
@@ -216,4 +214,3 @@ pub fn assert_best_reduction(
 fn ids_of<T>(rows: &[T], id: impl Fn(&T) -> &str) -> BTreeSet<String> {
     rows.iter().map(|row| id(row).to_string()).collect()
 }
-

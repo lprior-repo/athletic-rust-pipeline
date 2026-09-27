@@ -1,4 +1,3 @@
-
 use census_domain::model::{Grade, SchoolYear, Sport};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

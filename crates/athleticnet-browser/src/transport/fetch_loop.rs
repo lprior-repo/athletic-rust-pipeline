@@ -1,4 +1,3 @@
-
 use std::time::Duration;
 
 use chromiumoxide::cdp::browser_protocol::network::{

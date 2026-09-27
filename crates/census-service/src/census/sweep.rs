@@ -3,9 +3,9 @@ use census_crawl::net::{FetchOptions, Fetcher};
 use census_crawl::{CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
 use census_store::{Application, Store};
-use std::time::Instant;
 use futures::stream::{self, StreamExt};
 use std::collections::HashSet;
+use std::time::Instant;
 use tokio::sync::Mutex;
 use tracing::info;
 
@@ -17,7 +17,9 @@ use crate::census::aggregate::summarize_states;
 
 use self::units::{roster_unit, RosterRun};
 use super::scope::pending_rosters;
-use super::{rosters_phase, teams_phase, CollectOptions, CollectReport, StateProgress, TransportReport};
+use super::{
+    rosters_phase, teams_phase, CollectOptions, CollectReport, StateProgress, TransportReport,
+};
 
 #[tracing::instrument(skip(fetcher, store))]
 pub async fn collect_state_teams(
@@ -54,7 +56,6 @@ struct Shared {
     blocked_skipped: usize,
     refusals: access::RefusalRun,
 }
-
 
 fn progress_of(
     jurisdiction: UsJurisdiction,
@@ -119,7 +120,13 @@ pub async fn collect_state_rosters(
     let phase = rosters_phase(jurisdiction, options.school_year, options.revision);
     let summary = roster::summarize(store, &phase, teams)?;
     let mut guard = shared.lock().await;
-    Ok(progress_of(jurisdiction, teams.len(), skipped, summary, &mut guard))
+    Ok(progress_of(
+        jurisdiction,
+        teams.len(),
+        skipped,
+        summary,
+        &mut guard,
+    ))
 }
 
 async fn walk_state(
@@ -189,10 +196,7 @@ pub async fn collect_milesplit(
     Ok(report)
 }
 
-async fn record_roster(
-    shared: &Mutex<Shared>,
-    outcome: CrawlResult<Application>,
-) {
+async fn record_roster(shared: &Mutex<Shared>, outcome: CrawlResult<Application>) {
     let mut guard = shared.lock().await;
     let refusal = match outcome {
         Ok(_) => access::Refusal::None,
@@ -202,5 +206,7 @@ async fn record_roster(
             refusal
         }
     };
-    if guard.refusals.observe(refusal) { guard.blocked = true; }
+    if guard.refusals.observe(refusal) {
+        guard.blocked = true;
+    }
 }

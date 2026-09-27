@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
 use restate_sdk::prelude::Json;
@@ -16,10 +15,14 @@ use census_service::ingress;
 #[derive(Debug, Args)]
 #[command(about = "`census-service browser-session <verb>`")]
 pub(super) struct BrowserSessionArgs {
-    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
+    #[arg(
+        help = "Ingress origin of the local Restate server. The local census deployment when omitted"
+    )]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
-    #[arg(help = "Profile key the endpoint serves. A deployment serves one profile, so this is its key")]
+    #[arg(
+        help = "Profile key the endpoint serves. A deployment serves one profile, so this is its key"
+    )]
     #[arg(long, default_value_t = SESSION_KEY.to_string())]
     key: String,
     #[command(subcommand)]
@@ -30,11 +33,15 @@ pub(super) struct BrowserSessionArgs {
 enum LaneVerb {
     #[command(about = "Launch the profile, or report the manager already live on it")]
     Start,
-    #[command(about = "Read whether the lane is running and what the engine says about the profile")]
+    #[command(
+        about = "Read whether the lane is running and what the engine says about the profile"
+    )]
     Status,
     #[command(about = "Drain the lane and report the tasks it took down")]
     Stop,
-    #[command(about = "Post one page request through the lane and print the transport's classified answer")]
+    #[command(
+        about = "Post one page request through the lane and print the transport's classified answer"
+    )]
     Fetch(FetchArgs),
 }
 
@@ -43,7 +50,9 @@ struct FetchArgs {
     #[arg(help = "Page to read, e.g. `https://www.athletic.net/api/v1/...`")]
     #[arg(long, value_name = "URL")]
     url: String,
-    #[arg(help = "The citation this read is filed under: what a receipt will name as the semantic URL")]
+    #[arg(
+        help = "The citation this read is filed under: what a receipt will name as the semantic URL"
+    )]
     #[arg(long, value_name = "TEXT")]
     semantic_url: String,
     #[arg(help = "Print the whole outcome as JSON instead of a summary line")]

@@ -1,4 +1,3 @@
-
 use census_domain::model::Grade;
 
 pub(crate) fn looks_like_a_name(name: &str) -> bool {

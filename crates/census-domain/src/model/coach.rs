@@ -79,7 +79,6 @@ impl CanonicalCoach {
         }
     }
 
-
     pub fn tenure_state(
         &self,
         school_year: SchoolYear,

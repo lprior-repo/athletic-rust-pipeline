@@ -1,4 +1,3 @@
-
 use anyhow::Result;
 use census_domain::UsJurisdiction;
 use std::collections::BTreeSet;

@@ -1,4 +1,3 @@
-
 use anyhow::{bail, ensure, Context, Result};
 use census_crawl::{hytek, milesplit, plain_names, raceday, wiaa_results};
 use census_domain::model::SourceRef;
@@ -154,7 +153,11 @@ fn milesplit_roster_case() -> Result<Case> {
         move |body| {
             let parsed = milesplit::parse_roster(body, team.clone())
                 .context("the graded roster page was rejected")?;
-            Ok(parsed.roster().context("the roster was quarantined")?.athletes.len())
+            Ok(parsed
+                .roster()
+                .context("the roster was quarantined")?
+                .athletes
+                .len())
         },
     )
 }

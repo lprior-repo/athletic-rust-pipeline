@@ -1,4 +1,3 @@
-
 mod common;
 
 use anyhow::{bail, Context, Result};
@@ -18,7 +17,6 @@ use std::time::Duration;
 
 const OBSERVED_ON: &str = "2026-09-20";
 const SCHOOL_YEAR: SchoolYear = SchoolYear::new(2026).expect("2026 is a season");
-
 
 struct Harness {
     store: Store,
@@ -89,7 +87,6 @@ fn hex_prefix(hasher: Sha256) -> Result<String> {
     Ok(head.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
-
 fn case(cases: &mut Vec<(String, String)>, name: &str, value: &Value) -> Result<()> {
     common::assert_golden(name, value).with_context(|| format!("golden case `{name}`"))?;
     let digest = common::digest(value).with_context(|| format!("digesting case `{name}`"))?;
@@ -108,7 +105,6 @@ fn file_stem(name: &str) -> Result<String> {
         .map(|stem| stem.to_string_lossy().into_owned())
         .with_context(|| format!("fixture `{name}` has no file stem"))
 }
-
 
 fn meet_row_json(row: &athleticlive::MeetRow) -> Value {
     json!({
@@ -177,7 +173,6 @@ async fn athleticlive_harvest_parity() -> Result<()> {
     }
     digest_all(SOURCE, &cases)
 }
-
 
 fn hits_from_response(body: &str) -> Result<Vec<AthleteHit>> {
     let value: Value = serde_json::from_str(body).context("an athlete_list response is JSON")?;
@@ -326,7 +321,6 @@ async fn athleticlive_athletes_fixture_corpus_parity() -> Result<()> {
     }
     digest_all(SOURCE, &cases)
 }
-
 
 fn team_json(team: &milesplit::TeamRef) -> Value {
     json!({
@@ -488,9 +482,14 @@ async fn milesplit_html_parity() -> Result<()> {
             milesplit::fetch_roster(&harness.fetcher, &team, &FetchOptions::default())
                 .await
                 .with_context(|| format!("fetching {roster_url}"))?;
-        ensure!(fetched_roster.verdict == parsed,
-            "the fetched roster and rejected-row evidence disagree with the parser for {file}");
-        let fetched_rows = fetched_roster.verdict.roster().context("fetched roster was quarantined")?;
+        ensure!(
+            fetched_roster.verdict == parsed,
+            "the fetched roster and rejected-row evidence disagree with the parser for {file}"
+        );
+        let fetched_rows = fetched_roster
+            .verdict
+            .roster()
+            .context("fetched roster was quarantined")?;
         let stats = harness.fetcher.stats().await;
         if stats.requests != 0 {
             bail!(
@@ -511,7 +510,6 @@ async fn milesplit_html_parity() -> Result<()> {
     }
     digest_all(SOURCE, &cases)
 }
-
 
 #[tokio::test]
 async fn coach_contacts_csv_parity() -> Result<()> {
@@ -612,7 +610,6 @@ async fn coach_contacts_csv_parity() -> Result<()> {
     }
     digest_all(SOURCE, &cases)
 }
-
 
 const REGISTRY: &str = "# season 2026\n28127170,AK\n\n26631105\n28127170,AK\n";
 

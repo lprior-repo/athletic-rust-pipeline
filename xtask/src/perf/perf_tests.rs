@@ -1,4 +1,3 @@
-
 use crate::perf::bench::parse_bencher_line;
 
 const BENCHER_SAMPLE: &str = "test census/parse/hynek_lines_from_html ... bench:   12,345 ns/iter (+/- 1,234)\ntest census/parse/hynek_parse ... bench:   23,456 ns/iter (+/- 2,345)\n";

@@ -1,4 +1,3 @@
-
 use census_store::{Store, StoreBatch, Table};
 use serde::Serialize;
 use serde_json::Value;

@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
@@ -18,19 +17,27 @@ use publish::{
 
 #[derive(Args, Debug)]
 pub(super) struct RunArgs {
-    #[arg(help = "Athletic.net athlete registry: one `athlete_id` or `athlete_id,ST` per line. Omitted, the cycle publishes whatever the store already holds")]
+    #[arg(
+        help = "Athletic.net athlete registry: one `athlete_id` or `athlete_id,ST` per line. Omitted, the cycle publishes whatever the store already holds"
+    )]
     #[arg(long)]
     input: Option<String>,
-    #[arg(help = "Jurisdictions for the registry, used only for lines that name no state (so exactly one)")]
+    #[arg(
+        help = "Jurisdictions for the registry, used only for lines that name no state (so exactly one)"
+    )]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
     #[arg(help = "Cap the athletes read from the registry, and the rows each later stage writes")]
     #[arg(long)]
     limit: Option<usize>,
-    #[arg(help = "Graduation year the best-mark reduction and the workbook are built for (2027 = class of 2027)")]
+    #[arg(
+        help = "Graduation year the best-mark reduction and the workbook are built for (2027 = class of 2027)"
+    )]
     #[arg(long, default_value_t = 2027)]
     grad_year: u16,
-    #[arg(help = "Restrict the best-mark reduction to the core scope, which excludes the Athletic.net source by design. Every approved source is what a plain run reduces")]
+    #[arg(
+        help = "Restrict the best-mark reduction to the core scope, which excludes the Athletic.net source by design. Every approved source is what a plain run reduces"
+    )]
     #[arg(long)]
     core: bool,
     #[arg(help = "Ignore cached HTTP bodies and re-fetch")]
@@ -39,7 +46,9 @@ pub(super) struct RunArgs {
     #[arg(help = "ISO date stamped into evidence (defaults to today)")]
     #[arg(long)]
     observed_on: Option<String>,
-    #[arg(help = "Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the whole-meet route (two requests per meet) instead of the per-athlete registry route, and needs no `--input`")]
+    #[arg(
+        help = "Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the whole-meet route (two requests per meet) instead of the per-athlete registry route, and needs no `--input`"
+    )]
     #[arg(long, value_delimiter = ',')]
     meets: Vec<i64>,
     #[arg(help = "Spend the third request per meet for the per-event type and hurdle metadata")]
@@ -51,7 +60,9 @@ pub(super) struct RunArgs {
     #[arg(help = "Workbook path (defaults to the store's own `out/` path)")]
     #[arg(long)]
     out: Option<PathBuf>,
-    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
+    #[arg(
+        help = "Ingress origin of the local Restate server. The local census deployment when omitted"
+    )]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
 }

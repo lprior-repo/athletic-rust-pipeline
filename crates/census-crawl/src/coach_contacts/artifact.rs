@@ -1,4 +1,3 @@
-
 mod csv_reader;
 mod envelopes;
 mod io;
@@ -10,8 +9,8 @@ pub use read::{read_raw_contacts, read_verified_contacts};
 pub use write::stage_verified_contacts;
 
 pub use io::{
-    BoundedHashReader, BoundedHashWriter, CSV_FILE, EVIDENCE_FILE, MANIFEST_FILE,
-    MAX_CSV_BYTES, MAX_JSONL_BYTES, MAX_MANIFEST_BYTES, MAX_RECORD_BYTES, MAX_ROWS,
+    BoundedHashReader, BoundedHashWriter, CSV_FILE, EVIDENCE_FILE, MANIFEST_FILE, MAX_CSV_BYTES,
+    MAX_JSONL_BYTES, MAX_MANIFEST_BYTES, MAX_RECORD_BYTES, MAX_ROWS,
 };
 
 use census_domain::model::RawContactRow;
@@ -160,7 +159,10 @@ pub enum ContactArtifactError {
     #[error("empty source_url in claim at row {row}")]
     EmptySourceUrl { row: usize },
     #[error("missing required file {file} in {dir}")]
-    MissingFile { dir: std::path::PathBuf, file: String },
+    MissingFile {
+        dir: std::path::PathBuf,
+        file: String,
+    },
     #[error("staging path {dir} already exists")]
     StagingPathExists { dir: std::path::PathBuf },
     #[error("serialization error: {detail}")]
@@ -209,7 +211,8 @@ impl ContactArtifactError {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct EvidenceEnvelope<P = String, C = Vec<census_domain::model::ContactClaimEvidence>> {
+pub(super) struct EvidenceEnvelope<P = String, C = Vec<census_domain::model::ContactClaimEvidence>>
+{
     proof_digest: P,
     claims: C,
 }
@@ -224,6 +227,6 @@ pub(super) struct Manifest {
 }
 
 #[cfg(test)]
-mod tests_edge;
-#[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_edge;

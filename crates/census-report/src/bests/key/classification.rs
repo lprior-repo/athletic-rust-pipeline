@@ -1,8 +1,7 @@
 use census_domain::model::{EventKind, Mark, TimingMethod};
 
-use super::{SurfaceClass, TimingClass, WindClass, PrKey};
 use super::super::Measure;
-
+use super::{PrKey, SurfaceClass, TimingClass, WindClass};
 
 pub const fn is_wind_sensitive(kind: &EventKind) -> bool {
     matches!(
@@ -38,4 +37,3 @@ pub fn resolve_timing(mark: &Mark, timing: Option<TimingMethod>) -> TimingClass 
         _ => TimingClass::NonTime,
     }
 }
-

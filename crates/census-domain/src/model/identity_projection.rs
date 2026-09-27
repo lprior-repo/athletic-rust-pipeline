@@ -1,11 +1,11 @@
-
 use super::identity_aliases::IdentityAliases;
 use super::identity_validation::{validate, ReviewBindings};
-use super::{AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId,
-    AthleteIdentityIndex, IdentityDecisionIssue, IdentityError, IdentityStatus, ReviewCase, ReviewState,
-    ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY, CANONICAL_ID_COLLISION_FAMILY};
+use super::{
+    AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId, AthleteIdentityIndex,
+    IdentityDecisionIssue, IdentityError, IdentityStatus, ReviewCase, ReviewState,
+    ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY, CANONICAL_ID_COLLISION_FAMILY,
+};
 use std::collections::{BTreeMap, BTreeSet};
-
 
 pub struct AthleteIdentityProjection {
     statuses: BTreeMap<AthleteCandidateId, IdentityStatus>,
@@ -15,7 +15,9 @@ pub struct AthleteIdentityProjection {
 
 impl AthleteIdentityProjection {
     pub fn status(&self, subject: &str) -> Result<IdentityStatus, IdentityError> {
-        self.statuses.get(subject).copied()
+        self.statuses
+            .get(subject)
+            .copied()
             .ok_or_else(|| IdentityError::UnknownSubject(subject.to_owned()))
     }
 
@@ -37,23 +39,39 @@ pub struct IdentityProjectionBuilder<'a> {
 }
 
 impl<'a> IdentityProjectionBuilder<'a> {
-    pub fn new(mut index: AthleteIdentityIndex, cases: &'a [ReviewCase],
-        verdicts: &'a [ReviewVerdictRecord]) -> Result<Self, IdentityError>
-    {
+    pub fn new(
+        mut index: AthleteIdentityIndex,
+        cases: &'a [ReviewCase],
+        verdicts: &'a [ReviewVerdictRecord],
+    ) -> Result<Self, IdentityError> {
         let reviews = ReviewBindings::new(&index, cases, verdicts)?;
         seed_statuses(&mut index, &reviews);
-        Ok(Self { index, reviews, aliases: IdentityAliases::default(),
-            different: Vec::new(), rejected: BTreeMap::new() })
+        Ok(Self {
+            index,
+            reviews,
+            aliases: IdentityAliases::default(),
+            different: Vec::new(),
+            rejected: BTreeMap::new(),
+        })
     }
 
-    pub fn consider(&mut self, decision: &AppliedAthleteIdentity)
-        -> Result<Option<IdentityDecisionIssue>, IdentityError>
-    {
+    pub fn consider(
+        &mut self,
+        decision: &AppliedAthleteIdentity,
+    ) -> Result<Option<IdentityDecisionIssue>, IdentityError> {
         let issue = validate(&self.index, decision, &self.reviews)?;
-        let issue = issue.or_else(|| decision.members.iter().any(|member| {
-            self.index.facts.get(member.subject.as_str())
-                .is_some_and(|fact| fact.status > IdentityStatus::Verified)
-        }).then_some(IdentityDecisionIssue::UnresolvedReview));
+        let issue = issue.or_else(|| {
+            decision
+                .members
+                .iter()
+                .any(|member| {
+                    self.index
+                        .facts
+                        .get(member.subject.as_str())
+                        .is_some_and(|fact| fact.status > IdentityStatus::Verified)
+                })
+                .then_some(IdentityDecisionIssue::UnresolvedReview)
+        });
         if let Some(issue) = issue {
             let count = self.rejected.entry(issue).or_default();
             *count = count.checked_add(1).ok_or(IdentityError::CounterOverflow)?;
@@ -69,10 +87,18 @@ impl<'a> IdentityProjectionBuilder<'a> {
                 }
             }
             AppliedIdentityKind::DifferentPerson => self.different.push(
-                decision.members.iter().map(|member| member.subject.clone()).collect()),
+                decision
+                    .members
+                    .iter()
+                    .map(|member| member.subject.clone())
+                    .collect(),
+            ),
         }
         for member in &decision.members {
-            let fact = self.index.facts.get_mut(member.subject.as_str())
+            let fact = self
+                .index
+                .facts
+                .get_mut(member.subject.as_str())
                 .ok_or_else(|| IdentityError::UnknownSubject(member.subject.to_string()))?;
             fact.authorized = true;
         }
@@ -85,39 +111,63 @@ impl<'a> IdentityProjectionBuilder<'a> {
         aliases.retain(|_, root| !conflicts.contains(root));
         let mut rejected = self.rejected;
         if !conflicts.is_empty() {
-            let count = u64::try_from(conflicts.len()).map_err(|_| IdentityError::CounterOverflow)?;
+            let count =
+                u64::try_from(conflicts.len()).map_err(|_| IdentityError::CounterOverflow)?;
             rejected.insert(IdentityDecisionIssue::ConflictingApplications, count);
         }
         let facts = self.index.into_facts();
-        let statuses = facts.into_iter().map(|(id, fact)| {
-            let root = self.aliases.root(&id)?;
-            let status = if conflicts.contains(root) { IdentityStatus::RetainedConflict }
-                else if fact.status > IdentityStatus::Verified { fact.status }
-                else if fact.authorized { IdentityStatus::Verified }
-                else { IdentityStatus::Unverified };
-            Ok((id, status))
-        }).collect::<Result<_, IdentityError>>()?;
-        Ok(AthleteIdentityProjection { statuses, aliases, rejected_applications: rejected })
+        let statuses = facts
+            .into_iter()
+            .map(|(id, fact)| {
+                let root = self.aliases.root(&id)?;
+                let status = if conflicts.contains(root) {
+                    IdentityStatus::RetainedConflict
+                } else if fact.status > IdentityStatus::Verified {
+                    fact.status
+                } else if fact.authorized {
+                    IdentityStatus::Verified
+                } else {
+                    IdentityStatus::Unverified
+                };
+                Ok((id, status))
+            })
+            .collect::<Result<_, IdentityError>>()?;
+        Ok(AthleteIdentityProjection {
+            statuses,
+            aliases,
+            rejected_applications: rejected,
+        })
     }
 
-    fn conflicting_roots(&self, aliases: &BTreeMap<AthleteCandidateId, AthleteCandidateId>)
-        -> Result<BTreeSet<AthleteCandidateId>, IdentityError>
-    {
+    fn conflicting_roots(
+        &self,
+        aliases: &BTreeMap<AthleteCandidateId, AthleteCandidateId>,
+    ) -> Result<BTreeSet<AthleteCandidateId>, IdentityError> {
         let mut conflicts = BTreeSet::new();
         for distinct in &self.different {
             let mut seen = BTreeSet::new();
             for member in distinct {
                 let root = self.aliases.root(member)?;
-                if !seen.insert(root) { conflicts.insert(root.clone()); }
+                if !seen.insert(root) {
+                    conflicts.insert(root.clone());
+                }
             }
         }
         let mut genders = BTreeMap::new();
         for (member, root) in aliases {
-            let parent = self.index.facts.get(root.as_str())
+            let parent = self
+                .index
+                .facts
+                .get(root.as_str())
                 .ok_or_else(|| IdentityError::UnknownSubject(root.to_string()))?;
-            let child = self.index.facts.get(member.as_str())
+            let child = self
+                .index
+                .facts
+                .get(member.as_str())
                 .ok_or_else(|| IdentityError::UnknownSubject(member.to_string()))?;
-            let gender = genders.entry(root).or_insert_with(|| gender_bit(parent.gender));
+            let gender = genders
+                .entry(root)
+                .or_insert_with(|| gender_bit(parent.gender));
             *gender |= gender_bit(child.gender);
             if *gender == 3 || child.grad_year != parent.grad_year {
                 conflicts.insert(root.clone());
@@ -127,16 +177,22 @@ impl<'a> IdentityProjectionBuilder<'a> {
     }
 }
 fn gender_bit(gender: super::Gender) -> u8 {
-    match gender { super::Gender::Boys => 1, super::Gender::Girls => 2, _ => 0 }
+    match gender {
+        super::Gender::Boys => 1,
+        super::Gender::Girls => 2,
+        _ => 0,
+    }
 }
-
 
 fn seed_statuses(index: &mut AthleteIdentityIndex, reviews: &ReviewBindings<'_>) {
     for fact in index.facts.values_mut().filter(|fact| fact.conflicted) {
         fact.status = IdentityStatus::RetainedConflict;
     }
     for case in reviews.cases.values().filter(|case| {
-        matches!(case.family.as_str(), ATHLETE_IDENTITY_FAMILY | CANONICAL_ID_COLLISION_FAMILY)
+        matches!(
+            case.family.as_str(),
+            ATHLETE_IDENTITY_FAMILY | CANONICAL_ID_COLLISION_FAMILY
+        )
     }) {
         let status = case_status(case, reviews.verdicts.get(case.id.as_str()).copied());
         let Some(status) = status else { continue };
@@ -160,10 +216,17 @@ fn case_status(case: &ReviewCase, verdict: Option<&ReviewVerdictRecord>) -> Opti
         ReviewState::Pending => Some(IdentityStatus::Pending),
         ReviewState::Retained => Some(if verdict.is_some_and(|row| !row.accepted) {
             IdentityStatus::Rejected
-        } else { IdentityStatus::RetainedConflict }),
+        } else {
+            IdentityStatus::RetainedConflict
+        }),
         ReviewState::Resolved => match verdict {
-            Some(row) if row.accepted && row.field == "identity"
-                && matches!(row.value.as_str(), "same_person" | "different_person") => None,
+            Some(row)
+                if row.accepted
+                    && row.field == "identity"
+                    && matches!(row.value.as_str(), "same_person" | "different_person") =>
+            {
+                None
+            }
             Some(row) if !row.accepted => Some(IdentityStatus::Rejected),
             _ => Some(IdentityStatus::Pending),
         },

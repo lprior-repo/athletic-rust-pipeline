@@ -83,10 +83,7 @@ fn decode_row<'a>(
         out.rows_without_school = out.rows_without_school.saturating_add(1);
         return None;
     };
-    let source = SourceRef::new(
-        "athleticlive_athletes",
-        Some(ENDPOINT.to_owned()),
-    );
+    let source = SourceRef::new("athleticlive_athletes", Some(ENDPOINT.to_owned()));
     let evidence = Evidence::parsed(source.clone(), observed_on);
     let gender = hit
         .g
@@ -238,7 +235,11 @@ fn note_team_ids(
     }
 }
 
-fn source_identity(hit: &AthleteHit, provider: &str, capture_url: Option<&str>) -> Option<SourceIdentity> {
+fn source_identity(
+    hit: &AthleteHit,
+    provider: &str,
+    capture_url: Option<&str>,
+) -> Option<SourceIdentity> {
     let mut identity = match hit.athletic_net_athlete_id() {
         Some(id) => SourceIdentity::new(SourceNamespace::athletic_net("athlete"), id.to_string()),
         None => {

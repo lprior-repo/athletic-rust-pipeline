@@ -1,4 +1,3 @@
-
 use super::map::SchoolTable;
 
 pub fn parse_sport_label(label: &str) -> Option<census_domain::model::Sport> {

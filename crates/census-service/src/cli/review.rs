@@ -1,4 +1,3 @@
-
 use anyhow::{bail, Context, Result};
 use census_review::{
     reconcile_athletes, run_lanes, ModelClient, ModelOptions, ReviewFamily, ReviewOptions,
@@ -9,7 +8,9 @@ use clap::Args;
 #[derive(Args, Debug)]
 #[command(about = "What `review` was asked to do")]
 pub(super) struct ReviewArgs {
-    #[arg(help = "Family to ask about (repeatable): `school-jurisdiction`, `meet-jurisdiction`, `athlete-identity`. Default: every family the lane asks about")]
+    #[arg(
+        help = "Family to ask about (repeatable): `school-jurisdiction`, `meet-jurisdiction`, `athlete-identity`. Default: every family the lane asks about"
+    )]
     #[arg(long = "family", value_name = "FAMILY")]
     family: Vec<String>,
     #[arg(help = "Ask about at most this many cases")]
@@ -18,10 +19,14 @@ pub(super) struct ReviewArgs {
     #[arg(help = "Ask and validate, but write no verdicts and leave every case pending")]
     #[arg(long)]
     dry_run: bool,
-    #[arg(help = "Base URL of a local model server (repeatable). One request is kept in flight per lane, because the local llama.cpp servers run a single slot")]
+    #[arg(
+        help = "Base URL of a local model server (repeatable). One request is kept in flight per lane, because the local llama.cpp servers run a single slot"
+    )]
     #[arg(long, default_value = "http://127.0.0.1:11000")]
     endpoint: Vec<String>,
-    #[arg(help = "Model name to ask for. One value applies to every endpoint, or give one per endpoint (the machine's two lanes load different quantizations)")]
+    #[arg(
+        help = "Model name to ask for. One value applies to every endpoint, or give one per endpoint (the machine's two lanes load different quantizations)"
+    )]
     #[arg(long, default_value = "Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf")]
     model: Vec<String>,
     #[arg(help = "Per-request timeout in seconds")]

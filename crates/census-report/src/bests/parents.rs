@@ -37,7 +37,9 @@ impl Parents {
             if grad_year.is_some_and(|year| athlete.grad_year.get() != year) {
                 return Ok(());
             }
-            let state = schools.get(athlete.school.as_str()).and_then(|school| school.state);
+            let state = schools
+                .get(athlete.school.as_str())
+                .and_then(|school| school.state);
             if in_run_scope(state.into()) {
                 athletes.insert(athlete.id.as_str().to_string(), athlete);
             }
@@ -67,8 +69,6 @@ impl Parents {
             Ok(())
         })?;
 
-
-
         Ok(Self {
             athletes,
             meets,
@@ -97,5 +97,4 @@ impl Parents {
     pub(crate) fn school(&self, id: &str) -> Option<&CanonicalSchool> {
         self.schools.get(id)
     }
-
 }

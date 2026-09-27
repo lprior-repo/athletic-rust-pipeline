@@ -1,4 +1,3 @@
-
 use super::nsaa::{nsaa_school_url, parse_nsaa_directory, NsaaRow, NsaaSchool};
 use super::nsaa_coaches::{nsaa_coaches, parse_nsaa_row, parse_nsaa_school};
 use super::parse::{email_regex, split_person_names};
@@ -158,8 +157,14 @@ impl NsaaWalk {
 
         let mut batch = ctx.store.write_batch();
         batch.append_many(Table::Schools, std::slice::from_ref(&school))?;
-        batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(super::NSAA_ADAPTER_ID),
-        &school,).as_slice())?;
+        batch.append_many(
+            Table::SourceObservations,
+            ctx.school_observation(
+                &SourceNamespace::association_school(super::NSAA_ADAPTER_ID),
+                &school,
+            )
+            .as_slice(),
+        )?;
         batch.append_many(Table::Coaches, &coaches)?;
         self.school_rows = self.school_rows.saturating_add(1);
         self.coach_rows = self.coach_rows.saturating_add(coach_count);

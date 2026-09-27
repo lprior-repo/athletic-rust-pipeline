@@ -1,4 +1,3 @@
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 #[error(
     "{} is outside the census run scope: the 48 continental states plus the District of Columbia \

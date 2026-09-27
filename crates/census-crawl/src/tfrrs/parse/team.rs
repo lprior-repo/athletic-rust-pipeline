@@ -1,4 +1,3 @@
-
 use super::html::{links, text_of};
 use super::route::{athlete_id, href_name, href_school};
 use super::season::{season_from_label, Season, YearToken};

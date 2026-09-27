@@ -1,22 +1,19 @@
-
 use fjall::Keyspace;
 use std::collections::HashSet;
 use std::path::Path;
 
 use super::keys::{key_label, split_observation_key, table_prefix};
-use super::{
-    Consolidated, Entity, Store, StoreError, StoreResult, StoreStats, Table,
-};
+use super::{Consolidated, Entity, Store, StoreError, StoreResult, StoreStats, Table};
 
 mod directory;
+mod identity;
 mod snapshot;
 mod view;
-mod identity;
 
 pub(crate) use directory::directory_bytes;
+pub(crate) use snapshot::sweep_stale_temporaries;
 pub use snapshot::{csv_failure, publish_atomically, read_rows, write_snapshot_rows};
 pub use view::StoreSnapshot;
-pub(crate) use snapshot::sweep_stale_temporaries;
 
 impl Store {
     pub(super) fn last_sequence(entities: &Keyspace, table: Table) -> StoreResult<Option<u64>> {

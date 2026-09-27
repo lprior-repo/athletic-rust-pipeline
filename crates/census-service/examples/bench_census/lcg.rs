@@ -1,4 +1,3 @@
-
 pub(super) const SEED: u32 = 0x5eed_2027;
 
 pub(super) struct Lcg(u32);

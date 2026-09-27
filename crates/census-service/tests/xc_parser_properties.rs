@@ -1,4 +1,3 @@
-
 #![forbid(unsafe_code)]
 
 use census_crawl::hytek::lines_from_text;
@@ -16,7 +15,6 @@ mod lines;
 mod prefix_laws;
 #[path = "xc_parser_properties/totalness.rs"]
 mod totalness;
-
 
 const ARCHIVE_YEAR: i16 = 2025;
 
@@ -93,7 +91,6 @@ fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)
 }
 
-
 fn lines(body: &str) -> Vec<String> {
     lines_from_text(body)
 }
@@ -121,7 +118,6 @@ fn rows_of(meet: &ParsedMeet, gender: Gender) -> Vec<&ParsedRow> {
         .flat_map(|event| event.rows.iter())
         .collect()
 }
-
 
 fn seam_config() -> ProptestConfig {
     ProptestConfig {

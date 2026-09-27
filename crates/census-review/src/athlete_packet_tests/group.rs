@@ -1,4 +1,3 @@
-
 use super::*;
 
 use crate::athlete_packet::{packet as athlete_packet, AthleteIndex};

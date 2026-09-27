@@ -1,4 +1,3 @@
-
 use std::collections::BTreeMap;
 
 const PREFIX: [char; 7] = ['c', 'r', 'a', 't', 'e', ':', ':'];

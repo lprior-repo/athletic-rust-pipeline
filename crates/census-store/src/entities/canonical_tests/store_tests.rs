@@ -16,10 +16,9 @@ fn two_same_named_athletes_from_different_schools_stay_two_rows() {
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111"),
     );
-    abbotsford.source_links.push(SourceIdentity::new(
-        SourceNamespace::TfrrsAthlete,
-        "333",
-    ));
+    abbotsford
+        .source_links
+        .push(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "333"));
     let mut marshall = CanonicalAthlete::new(
         &second_school(),
         "Jordan Blake",
@@ -27,10 +26,9 @@ fn two_same_named_athletes_from_different_schools_stay_two_rows() {
         Gender::Boys,
         SourceIdentity::new(SourceNamespace::MilesplitAthlete, "222"),
     );
-    marshall.source_links.push(SourceIdentity::new(
-        SourceNamespace::TfrrsAthlete,
-        "444",
-    ));
+    marshall
+        .source_links
+        .push(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "444"));
 
     assert_ne!(
         abbotsford.id, marshall.id,

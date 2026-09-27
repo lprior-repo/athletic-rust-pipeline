@@ -1,4 +1,3 @@
-
 mod fixtures;
 
 use anyhow::{ensure, Context, Result};

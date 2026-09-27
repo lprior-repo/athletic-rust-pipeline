@@ -1,4 +1,3 @@
-
 #![forbid(unsafe_code)]
 
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
@@ -31,6 +30,7 @@ mod write_batch;
 
 pub use backup::{BackupReport, IntegrityReport, IntegrityTable, RestoreReport};
 pub use error::{StoreError, StoreResult};
+pub use read::StoreSnapshot;
 pub use receipt::{Application, Pruned, Receipt, MAX_DIGEST_BYTES, MAX_OPERATION_BYTES};
 pub use rows::TableWalk;
 pub use table::{
@@ -38,7 +38,6 @@ pub use table::{
     MAX_ROWS_PER_TABLE,
 };
 pub use write_batch::StoreBatch;
-pub use read::StoreSnapshot;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Consolidated {

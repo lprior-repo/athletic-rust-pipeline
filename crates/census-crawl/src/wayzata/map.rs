@@ -1,4 +1,3 @@
-
 use census_domain::model::CompetitionLevel;
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;

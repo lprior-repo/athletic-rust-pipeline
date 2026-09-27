@@ -1,4 +1,3 @@
-
 #[path = "bench_census/corpus.rs"]
 mod corpus;
 #[path = "bench_census/fixtures.rs"]
@@ -26,7 +25,9 @@ const DEFAULT_SCHOOLS: usize = 500;
     about = "Synthetic-corpus throughput harness: append, consolidate, census, bests, workbook"
 )]
 struct Options {
-    #[arg(help = "Schools in the synthetic corpus; athletes, meets and performances scale from this")]
+    #[arg(
+        help = "Schools in the synthetic corpus; athletes, meets and performances scale from this"
+    )]
     #[arg(long, default_value_t = DEFAULT_SCHOOLS)]
     schools: usize,
 }

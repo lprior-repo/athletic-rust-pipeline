@@ -82,27 +82,13 @@ pub enum SourceNamespace {
     TfrrsMeet,
     DirectAthleticsTeam,
     DirectAthleticsAthlete,
-    AssociationSchool {
-        association: String,
-    },
-    AssociationAthlete {
-        association: String,
-    },
-    TimerTeam {
-        provider: String,
-    },
-    TimerAthlete {
-        provider: String,
-    },
-    TimerMeet {
-        provider: String,
-    },
-    LegacyAthleticNet {
-        kind: String,
-    },
-    AthleticNet {
-        kind: String,
-    },
+    AssociationSchool { association: String },
+    AssociationAthlete { association: String },
+    TimerTeam { provider: String },
+    TimerAthlete { provider: String },
+    TimerMeet { provider: String },
+    LegacyAthleticNet { kind: String },
+    AthleticNet { kind: String },
     Other(String),
 }
 

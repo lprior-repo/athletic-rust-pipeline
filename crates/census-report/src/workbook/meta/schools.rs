@@ -1,4 +1,3 @@
-
 use census_domain::model::{CanonicalSchool, MEET_STATE_UNRESOLVED};
 use census_domain::UsJurisdiction;
 

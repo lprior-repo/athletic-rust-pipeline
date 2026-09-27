@@ -14,7 +14,6 @@ mod walk;
 
 use walk::{absorb_targets, flush_batch};
 
-
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     if !options.meets.is_empty() {
         return super::meet::collect_meets(ctx, options).await;
@@ -123,11 +122,17 @@ pub(super) fn store_accumulated(
     let events: Vec<CanonicalEvent> = accumulated.events.into_values().collect();
     let performances: Vec<CanonicalPerformance> = accumulated.performances.into_values().collect();
     page.append_many(Table::Schools, &schools)?;
-    page.append_many(Table::SourceObservations, &ctx.school_observations(&SourceNamespace::athletic_net(SCHOOL_KIND), &schools))?;
+    page.append_many(
+        Table::SourceObservations,
+        &ctx.school_observations(&SourceNamespace::athletic_net(SCHOOL_KIND), &schools),
+    )?;
     page.append_many(Table::Meets, &meets)?;
     page.append_many(Table::Teams, &teams)?;
     page.append_many(Table::Athletes, &athletes)?;
-    page.append_many(Table::SourceObservations, &ctx.athlete_observations(&athletes, &schools))?;
+    page.append_many(
+        Table::SourceObservations,
+        &ctx.athlete_observations(&athletes, &schools),
+    )?;
     page.append_many(Table::Events, &events)?;
     page.append_many(Table::Performances, &performances)?;
     Ok(EntityCounts {

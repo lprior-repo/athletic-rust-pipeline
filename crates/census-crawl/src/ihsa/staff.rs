@@ -1,4 +1,3 @@
-
 use census_domain::model::{CoachRole, Gender, Sport};
 
 pub fn strip_honorific(value: &str) -> String {

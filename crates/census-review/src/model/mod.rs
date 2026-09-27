@@ -1,4 +1,3 @@
-
 use std::time::Duration;
 
 use census_domain::model::{ReviewPacket, VerdictBatch};

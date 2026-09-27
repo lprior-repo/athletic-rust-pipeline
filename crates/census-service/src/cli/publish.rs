@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use census_report::report;
 use census_report::{bests, workbook};
@@ -54,10 +53,14 @@ pub(super) struct ReportArgs {
     #[arg(help = "Print the census JSON to stdout as well as writing files")]
     #[arg(long)]
     print: bool,
-    #[arg(help = "Restrict the census to core evidence: Athletic.net and the AthleticLIVE derivative are excluded, exactly as they are when those adapters are never registered")]
+    #[arg(
+        help = "Restrict the census to core evidence: Athletic.net and the AthleticLIVE derivative are excluded, exactly as they are when those adapters are never registered"
+    )]
     #[arg(long)]
     core: bool,
-    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
+    #[arg(
+        help = "Ingress origin of the local Restate server. The local census deployment when omitted"
+    )]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
 }
@@ -94,7 +97,9 @@ pub(super) struct BestsArgs {
     #[arg(help = "Reduce every athlete in the core scope instead of one graduating class")]
     #[arg(long)]
     all: bool,
-    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
+    #[arg(
+        help = "Ingress origin of the local Restate server. The local census deployment when omitted"
+    )]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
 }
@@ -140,7 +145,9 @@ fn run_bests_offline(store: &Store, args: &BestsArgs, grad_year: Option<i16>) ->
 
 #[derive(Args, Debug)]
 pub(super) struct WorkbookArgs {
-    #[arg(help = "Where to write the `.xlsx` (defaults to `<store>/out/census-service-<generated-on>.xlsx`)")]
+    #[arg(
+        help = "Where to write the `.xlsx` (defaults to `<store>/out/census-service-<generated-on>.xlsx`)"
+    )]
     #[arg(long)]
     out: Option<PathBuf>,
     #[arg(help = "Graduation year used for the cohort sheets (2027 = the class of 2027)")]
@@ -149,10 +156,14 @@ pub(super) struct WorkbookArgs {
     #[arg(help = "Cap the per-athlete best-mark sheet at N rows")]
     #[arg(long)]
     limit: Option<usize>,
-    #[arg(help = "Reduce the best-results sheet over the core scope instead of every approved source")]
+    #[arg(
+        help = "Reduce the best-results sheet over the core scope instead of every approved source"
+    )]
     #[arg(long)]
     core: bool,
-    #[arg(help = "Ingress origin of the local Restate server. The local census deployment when omitted")]
+    #[arg(
+        help = "Ingress origin of the local Restate server. The local census deployment when omitted"
+    )]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
 }

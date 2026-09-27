@@ -1,4 +1,3 @@
-
 use anyhow::{bail, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;

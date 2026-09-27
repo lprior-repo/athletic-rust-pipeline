@@ -1,4 +1,3 @@
-
 use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 

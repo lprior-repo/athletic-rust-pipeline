@@ -1,6 +1,5 @@
 use super::*;
 
-
 #[test]
 fn graduation_follows_grade_and_school_year() {
     let of = |grade, year| GradYear::of(Grade::new(grade).unwrap(), SchoolYear::new(year).unwrap());
@@ -114,7 +113,6 @@ fn a_legacy_unresolved_meet_state_decodes_to_none() {
     assert_eq!(decode("wi"), Ok(Some(UsJurisdiction::Wisconsin)));
     assert!(decode("PR").is_err(), "a territory is not a jurisdiction");
 }
-
 
 #[test]
 fn school_jurisdiction_separates_identity() {

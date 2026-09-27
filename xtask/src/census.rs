@@ -1,4 +1,3 @@
-
 use anyhow::{bail, Result};
 use census_report::report::Scope;
 use std::path::{Path, PathBuf};
@@ -13,13 +12,20 @@ mod service;
 mod tests;
 
 #[derive(clap::Args, Debug)]
-#[command(about = "Where a census subcommand reads from: the store directly, or the running deployment", long_about = "Where a census subcommand reads from: the store directly, or the running deployment.\n\n`--store` selects the offline mode; without it the command submits to the running deployment, so the flag-free form works exactly while `census-serve` holds the store. The two are exclusive by construction: `--store` opens the store in process, which is only possible with the worker stopped, and the ingress asks the worker that holds it.")]
+#[command(
+    about = "Where a census subcommand reads from: the store directly, or the running deployment",
+    long_about = "Where a census subcommand reads from: the store directly, or the running deployment.\n\n`--store` selects the offline mode; without it the command submits to the running deployment, so the flag-free form works exactly while `census-serve` holds the store. The two are exclusive by construction: `--store` opens the store in process, which is only possible with the worker stopped, and the ingress asks the worker that holds it."
+)]
 #[group(multiple = false)]
 pub struct Target {
-    #[arg(help = "Store root (HTTP cache, journals, entity logs, output snapshots). Needs `census-serve` stopped: the store is single-writer")]
+    #[arg(
+        help = "Store root (HTTP cache, journals, entity logs, output snapshots). Needs `census-serve` stopped: the store is single-writer"
+    )]
     #[arg(long, value_name = "DIR")]
     store: Option<PathBuf>,
-    #[arg(help = "Restate ingress origin of the running deployment; `--ingress` alone uses the project node origin (http://127.0.0.1:18095/)")]
+    #[arg(
+        help = "Restate ingress origin of the running deployment; `--ingress` alone uses the project node origin (http://127.0.0.1:18095/)"
+    )]
     #[arg(long, value_name = "ORIGIN", num_args = 0..=1, default_missing_value = ingress::NODE_ORIGIN)]
     ingress: Option<String>,
 }

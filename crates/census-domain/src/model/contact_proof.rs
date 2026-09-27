@@ -1,12 +1,20 @@
 use super::serialization_digest::serialized_digest;
-use validation::{validate_claimed_digest, validate_structure};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use validation::{validate_claimed_digest, validate_structure};
 
 pub const CONTACT_COLUMNS: &[&str; 11] = &[
-    "school", "city", "state", "sport", "role",
-    "coach_name", "public_professional_email", "ad_name",
-    "ad_email", "source_url", "last_observed",
+    "school",
+    "city",
+    "state",
+    "sport",
+    "role",
+    "coach_name",
+    "public_professional_email",
+    "ad_name",
+    "ad_email",
+    "source_url",
+    "last_observed",
 ];
 pub const CONTACT_PROOF_COLUMN: &str = "verified_proof_digest";
 

@@ -1,4 +1,3 @@
-
 use super::AthleteCandidateId;
 use serde::{Deserialize, Serialize};
 

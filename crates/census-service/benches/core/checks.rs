@@ -1,4 +1,3 @@
-
 use anyhow::{ensure, Result};
 use census_domain::model::{published_email, CanonicalCoach, CanonicalSchool, MailboxKind};
 

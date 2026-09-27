@@ -1,4 +1,3 @@
-
 use census_store::{StorageMode, Store, Table};
 use std::collections::HashMap;
 

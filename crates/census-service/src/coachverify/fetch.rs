@@ -22,7 +22,11 @@ impl Default for GateOptions {
 }
 
 enum Fetched {
-    Text { text: String, sha256: String, fetched_at: String },
+    Text {
+        text: String,
+        sha256: String,
+        fetched_at: String,
+    },
     Robots,
     Failed,
 }
@@ -129,7 +133,11 @@ async fn run_passes(
     let mut evidence = super::evidence::RowEvidence::default();
     for url in &row.source_urls {
         match fetch_text(fetcher, url, false, options).await {
-            Fetched::Text { text, sha256, fetched_at } => evidence.absorb(&text, row, url, &fetched_at, &sha256)?,
+            Fetched::Text {
+                text,
+                sha256,
+                fetched_at,
+            } => evidence.absorb(&text, row, url, &fetched_at, &sha256)?,
             Fetched::Robots => evidence.robots = true,
             Fetched::Failed => evidence.failed = true,
         }
@@ -137,7 +145,11 @@ async fn run_passes(
     if options.xhr_pass && !(evidence.found && evidence.role_near) {
         for url in &row.source_urls {
             match fetch_text(fetcher, url, true, options).await {
-                Fetched::Text { text, sha256, fetched_at } => evidence.absorb(&text, row, url, &fetched_at, &sha256)?,
+                Fetched::Text {
+                    text,
+                    sha256,
+                    fetched_at,
+                } => evidence.absorb(&text, row, url, &fetched_at, &sha256)?,
                 Fetched::Robots => evidence.robots = true,
                 Fetched::Failed => evidence.failed = true,
             }
@@ -150,7 +162,11 @@ async fn run_passes(
             .filter(|url| url.contains(crate::coachverify::NSAA_EXPORT_SCREEN))
         {
             match fetch_nsaa_post(fetcher, url, &row.school, options).await {
-                Fetched::Text { text, sha256, fetched_at } => evidence.absorb(&text, row, url, &fetched_at, &sha256)?,
+                Fetched::Text {
+                    text,
+                    sha256,
+                    fetched_at,
+                } => evidence.absorb(&text, row, url, &fetched_at, &sha256)?,
                 Fetched::Robots => evidence.robots = true,
                 Fetched::Failed => evidence.failed = true,
             }
@@ -167,10 +183,11 @@ pub(super) async fn verify_one_fragment(
 ) -> anyhow::Result<super::verdict::FragmentOutcome> {
     let rows = crate::coachverify::read_fragment(path)?;
     let mut outcomes = Vec::with_capacity(rows.len());
-    let mut counts: std::collections::BTreeMap<super::Verdict, usize> = super::verdict::Verdict::ALL
-        .iter()
-        .map(|v| (*v, 0usize))
-        .collect();
+    let mut counts: std::collections::BTreeMap<super::Verdict, usize> =
+        super::verdict::Verdict::ALL
+            .iter()
+            .map(|v| (*v, 0usize))
+            .collect();
     for row in rows {
         let evidence = run_passes(fetcher, &row, options).await?;
         let verdict = evidence.verdict();
@@ -182,7 +199,8 @@ pub(super) async fn verify_one_fragment(
             evidence: evidence.claims,
         });
     }
-    let claims: Vec<&census_domain::model::ContactClaimEvidence> = outcomes.iter().flat_map(|row| &row.evidence).collect();
+    let claims: Vec<&census_domain::model::ContactClaimEvidence> =
+        outcomes.iter().flat_map(|row| &row.evidence).collect();
     census_store::read::write_snapshot_rows(
         &out_dir.join(format!(
             "{}.evidence.jsonl",

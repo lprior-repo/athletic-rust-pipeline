@@ -109,7 +109,15 @@ impl CanonicalAthlete {
         source: &SourceIdentity,
     ) -> AthleteId {
         let index = AthleteCandidateKey::new(school, name, grad_year, gender).index_id();
-        Id::mint("ath_subject", &[index.as_str(), &source.namespace.to_string(), &source.id, gender.stable_key()])
+        Id::mint(
+            "ath_subject",
+            &[
+                index.as_str(),
+                &source.namespace.to_string(),
+                &source.id,
+                gender.stable_key(),
+            ],
+        )
     }
 
     pub fn candidate_key(&self) -> AthleteCandidateKey {

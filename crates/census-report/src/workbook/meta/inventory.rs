@@ -1,4 +1,3 @@
-
 use crate::workbook::cells::{row, Cell};
 use census_domain::model::{
     CanonicalMeet, CompetitionLevel, SourceIdentity, Sport, MEET_STATE_UNRESOLVED,

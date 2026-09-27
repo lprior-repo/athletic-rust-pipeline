@@ -1,4 +1,3 @@
-
 use census_domain::model::Grade;
 
 use super::columns::{grade_from_token, looks_like_a_name};

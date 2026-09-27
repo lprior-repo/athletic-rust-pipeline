@@ -1,5 +1,5 @@
 use super::*;
-use census_domain::model::{CanonicalSchool, Grade, normalize_name};
+use census_domain::model::{normalize_name, CanonicalSchool, Grade};
 
 #[test]
 fn raw_rows_without_a_high_school_grade_are_counted_not_minted() {

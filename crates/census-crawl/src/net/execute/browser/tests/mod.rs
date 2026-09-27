@@ -1,8 +1,8 @@
 use super::*;
-use base64::Engine as _;
 use crate::net::bridge::BrowserResponse;
 use crate::net::cache::read_cache;
 use crate::net::FetchOptions;
+use base64::Engine as _;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -262,10 +262,7 @@ async fn a_host_with_no_lane_is_refused_by_name() {
             retryable,
         } => {
             assert_eq!(url, URL);
-            assert!(
-                !retryable,
-                "a missing lane is terminal, not retryable"
-            );
+            assert!(!retryable, "a missing lane is terminal, not retryable");
         }
         other => panic!("expected a lane refusal, got {other:?}"),
     }

@@ -35,10 +35,14 @@ impl Default for Options {
 pub fn build(store: &Store, options: &Options) -> ReportResult<PathBuf> {
     let core = build_census(store, Scope::Core)?;
     let all_sources = build_census(store, Scope::AllSources)?;
-    let school_year = options.school_year
+    let school_year = options
+        .school_year
         .or_else(|| census_domain::model::SchoolYear::from_date(&core.generated_on))
         .ok_or_else(|| crate::report::ReportError::Invariant {
-            detail: format!("cannot determine contact school year from {}", core.generated_on),
+            detail: format!(
+                "cannot determine contact school year from {}",
+                core.generated_on
+            ),
         })?;
     let bests = bests::build(
         store,
@@ -92,16 +96,22 @@ fn write_workbook(
         std::fs::create_dir_all(parent).map_err(|source| io_error(parent, source))?;
     }
     let mut book = Workbook::new();
-    let recruiting = recruiting::Recruiting::load(
-        store, options.scope, options.grad_year, school_year, bests,
-    )?;
+    let recruiting =
+        recruiting::Recruiting::load(store, options.scope, options.grad_year, school_year, bests)?;
     let views = Views {
         core,
         all_sources,
         recruiting: &recruiting,
         school_year,
     };
-    write_objective_sheets(&mut book, path, store, views, options.scope, options.grad_year)?;
+    write_objective_sheets(
+        &mut book,
+        path,
+        store,
+        views,
+        options.scope,
+        options.grad_year,
+    )?;
     book.save(path).map_err(|source| xlsx_error(path, source))?;
     Ok(())
 }

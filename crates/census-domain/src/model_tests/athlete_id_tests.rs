@@ -26,13 +26,15 @@ fn candidate_key_equality_agrees_with_the_retained_athlete_key() {
     let class = GradYear::new(2027).expect("2027 is a class the census places");
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
     let raw = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Girls, source.clone());
-    let respelled = CanonicalAthlete::new(&school, "jane  DOE", class, Gender::Girls, source.clone());
+    let respelled =
+        CanonicalAthlete::new(&school, "jane  DOE", class, Gender::Girls, source.clone());
     assert_eq!(raw.id, respelled.id);
     assert_eq!(raw.candidate_key(), respelled.candidate_key());
     assert!(raw.same_natural_key(&respelled));
 
     let mixed = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Mixed, source.clone());
-    let unknown = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Unknown, source.clone());
+    let unknown =
+        CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Unknown, source.clone());
     assert_ne!(mixed.id, unknown.id);
     assert_ne!(mixed.candidate_key(), unknown.candidate_key());
     assert!(!mixed.same_natural_key(&unknown));

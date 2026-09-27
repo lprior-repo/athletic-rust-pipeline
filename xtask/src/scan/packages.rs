@@ -1,4 +1,3 @@
-
 use crate::cmd::Cmd;
 use crate::paths;
 use anyhow::{Context, Result};

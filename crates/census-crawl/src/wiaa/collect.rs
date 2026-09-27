@@ -1,4 +1,3 @@
-
 use crate::net::{FetchError, FetchOutcome, FetchStats};
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
@@ -13,7 +12,6 @@ use super::{count, fetch_options, letters_for, Options, HOST, INDEX_PATH};
 mod collect_schools;
 
 use collect_schools::{plan_schools, process_school, SchoolTally};
-
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("wiaa", "schools");

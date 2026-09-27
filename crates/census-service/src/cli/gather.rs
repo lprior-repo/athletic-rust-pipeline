@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
@@ -15,13 +14,19 @@ use super::{build_fetcher, resolve_states, school_year, Cli, Route};
 
 #[derive(Args, Debug)]
 pub(super) struct TeamsArgs {
-    #[arg(help = "Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted). Default: WI")]
+    #[arg(
+        help = "Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted). Default: WI"
+    )]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
-    #[arg(help = "Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`")]
+    #[arg(
+        help = "Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`"
+    )]
     #[arg(long)]
     all_states: bool,
-    #[arg(help = "Season start year: 2026 is the 2026-27 season, the same convention as `--school-year`")]
+    #[arg(
+        help = "Season start year: 2026 is the 2026-27 season, the same convention as `--school-year`"
+    )]
     #[arg(long, default_value_t = 2026)]
     season: i16,
     #[arg(help = "Ignore caches and re-read every page (robots still enforced)")]
@@ -33,13 +38,19 @@ pub(super) struct TeamsArgs {
 
 #[derive(Args, Debug)]
 pub(super) struct MeetsArgs {
-    #[arg(help = "Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted). Default: WI")]
+    #[arg(
+        help = "Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted). Default: WI"
+    )]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
-    #[arg(help = "Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`")]
+    #[arg(
+        help = "Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`"
+    )]
     #[arg(long)]
     all_states: bool,
-    #[arg(help = "Season start year, the same convention as `--school-year` (2026 = the 2026-27 season)")]
+    #[arg(
+        help = "Season start year, the same convention as `--school-year` (2026 = the 2026-27 season)"
+    )]
     #[arg(long, default_value_t = 2026)]
     year: u16,
     #[arg(help = "Ignore caches and re-read every page (robots still enforced)")]
@@ -176,10 +187,14 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
 
 #[derive(Args, Debug)]
 pub(super) struct CollectArgs {
-    #[arg(help = "Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted). Default: WI")]
+    #[arg(
+        help = "Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted). Default: WI"
+    )]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
-    #[arg(help = "Walk the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`")]
+    #[arg(
+        help = "Walk the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`"
+    )]
     #[arg(long)]
     all_states: bool,
     #[arg(help = "Cap the number of rosters fetched per state (for smoke runs)")]
@@ -194,7 +209,9 @@ pub(super) struct CollectArgs {
     #[arg(help = "Ignore caches and re-fetch (robots still enforced)")]
     #[arg(long)]
     refresh: bool,
-    #[arg(help = "School year the rosters belong to, as its starting calendar year (2026 = 2026-27)")]
+    #[arg(
+        help = "School year the rosters belong to, as its starting calendar year (2026 = 2026-27)"
+    )]
     #[arg(long, default_value_t = 2026)]
     school_year: i16,
     #[arg(help = "ISO date stamped into evidence (defaults to today)")]
@@ -214,7 +231,10 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
         school_year: SchoolYear::new(args.school_year).ok_or_else(|| {
             anyhow::anyhow!("--school-year {} is not a school year", args.school_year)
         })?,
-        observed_on: args.observed_on.clone().map_or_else(census_crawl::net::today_iso, |date| date),
+        observed_on: args
+            .observed_on
+            .clone()
+            .map_or_else(census_crawl::net::today_iso, |date| date),
         revision: std::num::NonZeroU32::new(args.flags.revision)
             .ok_or_else(|| anyhow::anyhow!("--revision must be greater than zero"))?,
     })

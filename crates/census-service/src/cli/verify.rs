@@ -1,4 +1,3 @@
-
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -19,7 +18,9 @@ pub struct VerifyArgs {
     #[arg(long)]
     pub workbook: Option<PathBuf>,
 
-    #[arg(help = "Sampling stride: check every k-th data row. Larger values check fewer rows. At most 5 000 samples per sheet regardless of k")]
+    #[arg(
+        help = "Sampling stride: check every k-th data row. Larger values check fewer rows. At most 5 000 samples per sheet regardless of k"
+    )]
     #[arg(long, default_value_t = 10)]
     pub sample_every: usize,
 }

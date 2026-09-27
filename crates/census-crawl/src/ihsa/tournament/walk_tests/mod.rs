@@ -1,7 +1,10 @@
 use super::collect;
 use crate::ihsa::Options;
 use crate::{AdapterContext, AdapterReport};
-use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, SchoolYear, SourceNamespace};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, SchoolYear,
+    SourceNamespace,
+};
 use census_store::{Store, Table};
 
 const FIXTURE_MEETS: &str =
@@ -10,8 +13,9 @@ const FIXTURE_EVENTS: &str =
     include_str!("../../../../tests/fixtures/ihsa_tournament/track_field_2026_boys_events.json");
 const FIXTURE_HJ: &str =
     include_str!("../../../../tests/fixtures/ihsa_tournament/event_2790204_boys_hj_1a_finals.json");
-const FIXTURE_RELAY: &str =
-    include_str!("../../../../tests/fixtures/ihsa_tournament/event_500937_boys_4x800_1a_finals.json");
+const FIXTURE_RELAY: &str = include_str!(
+    "../../../../tests/fixtures/ihsa_tournament/event_500937_boys_4x800_1a_finals.json"
+);
 const FIXTURE_TERMS: &str = include_str!("../../../../tests/fixtures/ihsa_tournament/terms.json");
 const FIXTURE_XC_688: &str =
     include_str!("../../../../tests/fixtures/ihsa_tournament/cc_qualifiers_2025-26_688.json");
@@ -176,7 +180,6 @@ async fn walk_reads_the_captured_meet_and_the_six_lists() {
     );
     assert_eq!(report.unit, "performances");
 
-
     assert_eq!(harness.scan::<CanonicalMeet>(Table::Meets).len(), 1);
     assert_eq!(
         harness
@@ -186,11 +189,28 @@ async fn walk_reads_the_captured_meet_and_the_six_lists() {
     );
     assert_eq!(harness.scan::<CanonicalSchool>(Table::Schools).len(), 240);
     let athletes = harness.scan::<CanonicalAthlete>(Table::Athletes);
-    assert_eq!(athletes.len(), 1637, "source-owned athletes are not merged by candidate name");
-    assert_eq!(athletes.iter().filter(|athlete|
-        athlete.source.namespace == SourceNamespace::athletic_net("athlete")).count(), 68);
-    assert_eq!(athletes.iter().filter(|athlete|
-        athlete.source.namespace == SourceNamespace::AssociationAthlete { association: "ihsa".to_owned() }).count(), 1569);
+    assert_eq!(
+        athletes.len(),
+        1637,
+        "source-owned athletes are not merged by candidate name"
+    );
+    assert_eq!(
+        athletes
+            .iter()
+            .filter(|athlete| athlete.source.namespace == SourceNamespace::athletic_net("athlete"))
+            .count(),
+        68
+    );
+    assert_eq!(
+        athletes
+            .iter()
+            .filter(|athlete| athlete.source.namespace
+                == SourceNamespace::AssociationAthlete {
+                    association: "ihsa".to_owned()
+                })
+            .count(),
+        1569
+    );
     let dual = athletes
         .iter()
         .filter(|athlete| {
@@ -206,7 +226,10 @@ async fn walk_reads_the_captured_meet_and_the_six_lists() {
             })
         })
         .count();
-    assert_eq!(dual, 0, "an unreviewed name match cannot combine independent source owners");
+    assert_eq!(
+        dual, 0,
+        "an unreviewed name match cannot combine independent source owners"
+    );
 }
 
 mod identity;

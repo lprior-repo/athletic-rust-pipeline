@@ -1,4 +1,3 @@
-
 use super::{number_of, parse_mark, seam_config};
 use census_domain::model::{CentiSeconds, EventKind, Mark};
 use proptest::prelude::*;

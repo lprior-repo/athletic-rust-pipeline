@@ -41,14 +41,20 @@ pub fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
         .with_context(|| format!("the team index does not list team {team_id}"))?
         .clone();
     let verdict = milesplit::parse_roster(&roster_body, team)?;
-    let parsed = verdict.roster().context("the roster fixture was quarantined")?;
+    let parsed = verdict
+        .roster()
+        .context("the roster fixture was quarantined")?;
     ensure!(
         !parsed.athletes.is_empty(),
         "the roster fixture parses to no athletes"
     );
     let site = milesplit::Site::for_jurisdiction(UsJurisdiction::Wisconsin);
-    let (school, athletes, school_teams) =
-        milesplit::roster_entities(&parsed, constants::SCHOOL_YEAR, constants::OBSERVED_ON, &site);
+    let (school, athletes, school_teams) = milesplit::roster_entities(
+        &parsed,
+        constants::SCHOOL_YEAR,
+        constants::OBSERVED_ON,
+        &site,
+    );
     corpus.schools.push(school);
     corpus.athletes.extend(athletes);
     corpus.teams.extend(school_teams);
@@ -64,8 +70,11 @@ pub fn athleticlive_meets(corpus: &mut Corpus) -> Result<()> {
         );
         let rows = athleticlive::parse_meets_csv(&common::fixture("athleticlive", &name)?)?;
         ensure!(!rows.is_empty(), "{name}: no meet rows");
-        let meets =
-            athleticlive::build_meets(&rows, constants::OBSERVED_ON, constants::SOURCE_ATHLETICLIVE_MEETS);
+        let meets = athleticlive::build_meets(
+            &rows,
+            constants::OBSERVED_ON,
+            constants::SOURCE_ATHLETICLIVE_MEETS,
+        );
         ensure!(!meets.is_empty(), "{name}: no canonical meet");
         corpus.meets.extend(meets);
     }
@@ -115,7 +124,8 @@ pub fn athleticlive_athletes(corpus: &mut Corpus) -> Result<()> {
             SourceRef::new(constants::SOURCE_ATHLETICLIVE_MEETS, None),
             constants::OBSERVED_ON,
         ));
-        let selection = athleticlive_athletes::meet_targets(&[meet.clone()], &[UsJurisdiction::Kansas]);
+        let selection =
+            athleticlive_athletes::meet_targets(&[meet.clone()], &[UsJurisdiction::Kansas]);
         let by_id: HashMap<u64, &athleticlive_athletes::MeetTarget> = selection
             .targets
             .iter()
@@ -153,5 +163,5 @@ pub fn athleticlive_athletes(corpus: &mut Corpus) -> Result<()> {
     Ok(())
 }
 
-use std::collections::HashMap;
 use census_domain::UsJurisdiction;
+use std::collections::HashMap;

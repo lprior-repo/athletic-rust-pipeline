@@ -13,10 +13,16 @@ fn only_the_queried_academic_year_qualifies_a_current_claim() {
         let athlete = athlete();
         let scope = scoped(contacts.get(school().as_str()), &athlete);
         if declared == 2026 {
-            assert_eq!(scope.preferred().state, ContactState::ProfessionalCoachEmail);
+            assert_eq!(
+                scope.preferred().state,
+                ContactState::ProfessionalCoachEmail
+            );
             assert_eq!(scope.all_emails(), "coach@example.invalid");
         } else {
-            assert_eq!(scope.preferred().state, ContactState::ContactResearchUnknown);
+            assert_eq!(
+                scope.preferred().state,
+                ContactState::ContactResearchUnknown
+            );
             assert_eq!(scope.track_names(), None);
             assert_eq!(scope.all_emails(), "");
         }
@@ -27,14 +33,24 @@ fn only_the_queried_academic_year_qualifies_a_current_claim() {
 fn a_recently_fetched_legacy_row_without_tenure_is_not_current() {
     let mut coach = head("Undated coach", Sport::OutdoorTrack, Gender::Boys);
     coach.professional_email = Some("undated@example.invalid".into());
-    coach.evidence = vec![Evidence::parsed(SourceRef::new("fixture", None), "2026-10-01")];
+    coach.evidence = vec![Evidence::parsed(
+        SourceRef::new("fixture", None),
+        "2026-10-01",
+    )];
     let mut encoded = serde_json::to_value(coach).unwrap();
-    assert!(encoded.as_object_mut().unwrap().remove("tenure_evidence").is_some());
+    assert!(encoded
+        .as_object_mut()
+        .unwrap()
+        .remove("tenure_evidence")
+        .is_some());
     let legacy: CanonicalCoach = serde_json::from_value(encoded).unwrap();
     let contacts = contacts(&[legacy], year());
     let athlete = athlete();
     let scope = scoped(contacts.get(school().as_str()), &athlete);
-    assert_eq!(scope.preferred().state, ContactState::ContactResearchUnknown);
+    assert_eq!(
+        scope.preferred().state,
+        ContactState::ContactResearchUnknown
+    );
     assert_eq!(scope.track_emails(), None);
     assert_eq!(scope.all_emails(), "");
 }
@@ -82,7 +98,10 @@ fn incomplete_tenure_metadata_refuses_selection_but_remains_a_distinct_state() {
     let contacts = contacts(&[coach], year());
     let athlete = athlete();
     let scope = scoped(contacts.get(school().as_str()), &athlete);
-    assert_eq!(scope.preferred().state, ContactState::ContactEvidenceInvalid);
+    assert_eq!(
+        scope.preferred().state,
+        ContactState::ContactEvidenceInvalid
+    );
     assert_eq!(scope.track_emails(), None);
     assert_eq!(scope.all_emails(), "");
 }

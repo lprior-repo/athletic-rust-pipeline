@@ -1,4 +1,3 @@
-
 use super::state::{Absorb, AthleteFacts, Page, TeamFacts};
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Evidence, SchoolId,
@@ -52,20 +51,41 @@ impl<'a> Absorb<'a> {
         }
         id
     }
-    pub(super) fn athlete_for(&mut self, page: Page<'_>, facts: &AthleteFacts<'_>) -> (AthleteId, SourceIdentity) {
+    pub(super) fn athlete_for(
+        &mut self,
+        page: Page<'_>,
+        facts: &AthleteFacts<'_>,
+    ) -> (AthleteId, SourceIdentity) {
         let source = SourceIdentity {
-            namespace: if facts.tfrrs_id.is_some() { SourceNamespace::TfrrsAthlete }
-                else { SourceNamespace::Other("tfrrs_document_row".to_string()) },
-            id: facts.tfrrs_id.map_or_else(|| facts.source_key.clone(), |id| id.to_string()),
+            namespace: if facts.tfrrs_id.is_some() {
+                SourceNamespace::TfrrsAthlete
+            } else {
+                SourceNamespace::Other("tfrrs_document_row".to_string())
+            },
+            id: facts
+                .tfrrs_id
+                .map_or_else(|| facts.source_key.clone(), |id| id.to_string()),
             url: facts.url.clone(),
         };
-        let id = CanonicalAthlete::mint(facts.school, facts.name, facts.grad_year, facts.gender, &source);
+        let id = CanonicalAthlete::mint(
+            facts.school,
+            facts.name,
+            facts.grad_year,
+            facts.gender,
+            &source,
+        );
         let athlete = self
             .accumulator
             .athletes
             .entry(id.as_str().to_string())
             .or_insert_with(|| {
-                let mut athlete = CanonicalAthlete::new(facts.school, facts.name, facts.grad_year, facts.gender, source);
+                let mut athlete = CanonicalAthlete::new(
+                    facts.school,
+                    facts.name,
+                    facts.grad_year,
+                    facts.gender,
+                    source,
+                );
                 athlete
                     .evidence
                     .push(Evidence::parsed(page.source.clone(), page.observed_on));

@@ -1,4 +1,3 @@
-
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, GradYear, SourceNamespace,
 };

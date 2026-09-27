@@ -1,4 +1,3 @@
-
 use census_domain::model::{ReviewCase, ReviewPacket, ReviewVerdict, ReviewVerdictKind};
 
 use crate::packets::{case_fact, fact};

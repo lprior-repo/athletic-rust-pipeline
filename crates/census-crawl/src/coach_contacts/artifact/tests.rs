@@ -1,14 +1,20 @@
-use super::{read_raw_contacts, read_verified_contacts, stage_verified_contacts, ContactArtifactError, CONTACT_COLUMNS};
+use super::{
+    read_raw_contacts, read_verified_contacts, stage_verified_contacts, ContactArtifactError,
+    CONTACT_COLUMNS,
+};
 use census_domain::model::{ContactClaimEvidence, RawContactRow};
 pub(super) mod helpers;
-use helpers::{sample_claims, sample_row, write_raw_csv, write_staged, reseal};
+use helpers::{reseal, sample_claims, sample_row, write_raw_csv, write_staged};
 mod limits;
 
 #[test]
 fn raw_contacts_preserve_fields_and_all_source_urls() {
     let dir = tempfile::tempdir().unwrap();
     let row = sample_row();
-    assert_eq!(read_raw_contacts(&write_raw_csv(&dir, &row)).unwrap(), vec![row]);
+    assert_eq!(
+        read_raw_contacts(&write_raw_csv(&dir, &row)).unwrap(),
+        vec![row]
+    );
 }
 
 #[test]
@@ -29,15 +35,30 @@ fn header_only_raw_csv_and_empty_staged_artifact_have_zero_rows() {
     let dir = tempfile::tempdir().unwrap();
     let raw = dir.path().join("raw.csv");
     std::fs::write(&raw, CONTACT_COLUMNS.join(",") + "\n").unwrap();
-    assert_eq!(read_raw_contacts(&raw).unwrap(), Vec::<RawContactRow>::new());
-    let artifact = stage_verified_contacts(&dir.path().join("stage"), std::iter::empty::<(&RawContactRow, &[ContactClaimEvidence])>()).unwrap();
-    assert_eq!(read_verified_contacts(&artifact.staging_dir).unwrap().row_count(), 0);
+    assert_eq!(
+        read_raw_contacts(&raw).unwrap(),
+        Vec::<RawContactRow>::new()
+    );
+    let artifact = stage_verified_contacts(
+        &dir.path().join("stage"),
+        std::iter::empty::<(&RawContactRow, &[ContactClaimEvidence])>(),
+    )
+    .unwrap();
+    assert_eq!(
+        read_verified_contacts(&artifact.staging_dir)
+            .unwrap()
+            .row_count(),
+        0
+    );
 }
 
 #[test]
 fn existing_empty_staging_directory_is_not_reused() {
     let dir = tempfile::tempdir().unwrap();
-    assert!(matches!(stage_verified_contacts(dir.path(), std::iter::empty()), Err(ContactArtifactError::StagingPathExists { .. })));
+    assert!(matches!(
+        stage_verified_contacts(dir.path(), std::iter::empty()),
+        Err(ContactArtifactError::StagingPathExists { .. })
+    ));
 }
 
 #[test]
@@ -48,7 +69,10 @@ fn refusing_replacement_preserves_the_prior_artifact() {
     let mut replacement = row.clone();
     replacement.coach_name = "Different Person".to_owned();
     let claims = sample_claims(&replacement);
-    assert!(matches!(stage_verified_contacts(&path, [(&replacement, claims.as_slice())]), Err(ContactArtifactError::StagingPathExists { .. })));
+    assert!(matches!(
+        stage_verified_contacts(&path, [(&replacement, claims.as_slice())]),
+        Err(ContactArtifactError::StagingPathExists { .. })
+    ));
     assert_eq!(read_verified_contacts(&path).unwrap().rows()[0].row(), &row);
 }
 
@@ -59,7 +83,13 @@ fn quoted_unicode_and_url_fields_roundtrip_without_normalization() {
         |row| row.ad_name = "Smith \"The Chief\" Jr".to_owned(),
         |row| row.school = "High\nSchool".to_owned(),
         |row| row.source_urls[0] = "https://example.org/schools/test-high,extra".to_owned(),
-        |row| row.source_urls = vec!["https://first.org/school/1/".to_owned(), "https://second.org/staff/2".to_owned(), "https://third.org/directory/3".to_owned()],
+        |row| {
+            row.source_urls = vec![
+                "https://first.org/school/1/".to_owned(),
+                "https://second.org/staff/2".to_owned(),
+                "https://third.org/directory/3".to_owned(),
+            ]
+        },
     ];
     for mutate in mutations {
         let dir = tempfile::tempdir().unwrap();
@@ -80,5 +110,12 @@ fn raw_eleven_column_csv_cannot_be_read_as_verified() {
     write_raw_csv(&dir, &sample_row());
     std::fs::write(dir.path().join("contacts.csv.evidence.jsonl"), "").unwrap();
     reseal(dir.path(), 1);
-    assert!(matches!(read_verified_contacts(dir.path()), Err(ContactArtifactError::HeaderMismatch { expected: 12, actual: 11, .. })));
+    assert!(matches!(
+        read_verified_contacts(dir.path()),
+        Err(ContactArtifactError::HeaderMismatch {
+            expected: 12,
+            actual: 11,
+            ..
+        })
+    ));
 }

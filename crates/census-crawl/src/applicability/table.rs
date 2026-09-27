@@ -1,4 +1,3 @@
-
 use super::Applicability;
 use census_domain::UsJurisdiction;
 

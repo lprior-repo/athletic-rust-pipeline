@@ -1,4 +1,3 @@
-
 use super::rows::RowCounts;
 use super::{Scope, StateCensus, NON_CORE_SOURCE_IDS};
 use census_domain::JurisdictionBucket;

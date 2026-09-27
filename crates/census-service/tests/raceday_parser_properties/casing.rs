@@ -1,4 +1,3 @@
-
 use super::{parse_body, rendered_rows, seam_config, ParsedMeet};
 use census_domain::model::Gender;
 use proptest::prelude::*;

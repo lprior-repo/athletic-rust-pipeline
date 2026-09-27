@@ -1,4 +1,3 @@
-
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalSchool, Gender, GradYear, Grade, ObservedGrade,
     ReviewCase, ReviewPacket, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,

@@ -6,8 +6,14 @@ fn fetch_recency_and_mailboxes_do_not_resolve_distinct_current_coaches() {
     for with_addresses in [false, true] {
         let mut older = head("Older observation", Sport::OutdoorTrack, Gender::Boys);
         let mut newer = head("Newer observation", Sport::OutdoorTrack, Gender::Boys);
-        older.evidence = vec![Evidence::parsed(SourceRef::new("fixture", None), "2026-08-01")];
-        newer.evidence = vec![Evidence::parsed(SourceRef::new("fixture", None), "2026-10-01")];
+        older.evidence = vec![Evidence::parsed(
+            SourceRef::new("fixture", None),
+            "2026-08-01",
+        )];
+        newer.evidence = vec![Evidence::parsed(
+            SourceRef::new("fixture", None),
+            "2026-10-01",
+        )];
         if with_addresses {
             older.professional_email = Some("older@example.invalid".into());
             newer.professional_email = Some("newer@example.invalid".into());
@@ -22,8 +28,14 @@ fn fetch_recency_and_mailboxes_do_not_resolve_distinct_current_coaches() {
             assert_eq!(scope.all_emails(), "");
             let findings = super::super::disagreements(&rows, year());
             assert_eq!(findings[0].state, ContactState::ContactConflict);
-            assert!(findings[0].rows.iter().any(|row| row.contains("Older observation")));
-            assert!(findings[0].rows.iter().any(|row| row.contains("Newer observation")));
+            assert!(findings[0]
+                .rows
+                .iter()
+                .any(|row| row.contains("Older observation")));
+            assert!(findings[0]
+                .rows
+                .iter()
+                .any(|row| row.contains("Newer observation")));
         }
     }
 }
@@ -50,8 +62,14 @@ fn complementary_current_fields_of_one_owner_merge_without_reclassifying_persona
     let athlete = athlete();
     let scope = scoped(contacts.get(school().as_str()), &athlete);
     assert_eq!(scope.preferred().email, "coach@example.invalid");
-    assert_eq!(scope.preferred().state, ContactState::ProfessionalCoachEmail);
-    assert_eq!(scope.all_emails(), "coach@example.invalid; coach@outlook.com");
+    assert_eq!(
+        scope.preferred().state,
+        ContactState::ProfessionalCoachEmail
+    );
+    assert_eq!(
+        scope.all_emails(),
+        "coach@example.invalid; coach@outlook.com"
+    );
 }
 
 #[test]

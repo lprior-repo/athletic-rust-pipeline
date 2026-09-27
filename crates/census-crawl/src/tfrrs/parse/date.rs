@@ -1,4 +1,3 @@
-
 use super::html::text_of;
 use census_domain::model::SchoolYear;
 

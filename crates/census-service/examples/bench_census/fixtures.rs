@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use census_domain::model::{
     CanonicalMeet, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, Grade, Id,

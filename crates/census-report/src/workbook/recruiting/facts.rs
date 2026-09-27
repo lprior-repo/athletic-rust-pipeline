@@ -1,4 +1,3 @@
-
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalPerformance, CanonicalSchool, EventKind,
 };
@@ -20,14 +19,12 @@ pub(super) fn school_index(schools: &[CanonicalSchool]) -> BTreeMap<String, Cano
         .collect()
 }
 
-
 pub(super) fn kind_index(events: &[CanonicalEvent]) -> BTreeMap<String, EventKind> {
     events
         .iter()
         .map(|event| (event.id.as_str().to_string(), event.kind.clone()))
         .collect()
 }
-
 
 pub(super) fn tally(
     athletes: &[CanonicalAthlete],

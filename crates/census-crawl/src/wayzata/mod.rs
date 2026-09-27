@@ -1,4 +1,3 @@
-
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::school_index::SchoolIndex;
 
@@ -67,7 +66,6 @@ async fn stats_of(ctx: &AdapterContext<'_>) -> (u64, u64) {
     let stats = ctx.fetcher.stats().await;
     (stats.requests, stats.cache_hits)
 }
-
 
 #[cfg(test)]
 mod tests;

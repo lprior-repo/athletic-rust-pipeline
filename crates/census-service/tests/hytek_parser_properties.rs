@@ -1,4 +1,3 @@
-
 #![forbid(unsafe_code)]
 
 use census_crawl::hytek::{parse_field_mark, parse_time};

@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use clap::Args;
 use serde_json::Value;

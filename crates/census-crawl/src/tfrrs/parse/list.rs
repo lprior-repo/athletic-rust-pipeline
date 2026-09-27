@@ -1,4 +1,3 @@
-
 use super::html::text_of;
 use super::row::{parse_row, ParsedRow};
 use census_domain::model::Gender;

@@ -1,4 +1,3 @@
-
 use anyhow::Result;
 
 mod checks;

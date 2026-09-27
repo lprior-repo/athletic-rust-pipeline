@@ -1,4 +1,3 @@
-
 use super::super::map::{school_entities, SchoolExtract};
 use super::super::parse::{parse_school_page, IndexEntry, SchoolPage};
 use super::super::{count, fetch_options, Options};
@@ -131,8 +130,14 @@ fn record_school(
 ) -> CrawlResult<()> {
     let mut batch = ctx.store.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(super::super::ASSOCIATION),
-    &extract.school,).as_slice())?;
+    batch.append_many(
+        Table::SourceObservations,
+        ctx.school_observation(
+            &SourceNamespace::association_school(super::super::ASSOCIATION),
+            &extract.school,
+        )
+        .as_slice(),
+    )?;
     batch.append_many(Table::Coaches, &extract.coaches)?;
 
     let school_with_email = extract

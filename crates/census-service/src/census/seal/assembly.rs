@@ -1,4 +1,3 @@
-
 use census_domain::model::{ReviewCase, SourceAccessCondition};
 
 use super::{count, retained_access, table_rows, JournalCounts, SealRequest};

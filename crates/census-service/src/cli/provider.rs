@@ -1,4 +1,3 @@
-
 use anyhow::{bail, Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
@@ -11,18 +10,26 @@ mod arms;
 
 #[derive(Args, Debug)]
 pub(super) struct ProviderArgs {
-    #[arg(help = "Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_athletes, athleticlive_results, athleticnet, milesplit, milesplit_results, coach_contacts")]
+    #[arg(
+        help = "Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_athletes, athleticlive_results, athleticnet, milesplit, milesplit_results, coach_contacts"
+    )]
     name: String,
     #[arg(help = "Cap the number of schools processed (smoke runs)")]
     #[arg(long)]
     limit: Option<usize>,
-    #[arg(help = "Restrict meet selection to this season year. Without it, all stored seasons are selected")]
+    #[arg(
+        help = "Restrict meet selection to this season year. Without it, all stored seasons are selected"
+    )]
     #[arg(long)]
     season_year: Option<u16>,
-    #[arg(help = "Restrict to these jurisdictions (adapters that span several states). The `milesplit` arm walks the list and defaults to Wisconsin; every other adapter reads an empty list as its own coverage, and the list must include that state or the run reports the mismatch")]
+    #[arg(
+        help = "Restrict to these jurisdictions (adapters that span several states). The `milesplit` arm walks the list and defaults to Wisconsin; every other adapter reads an empty list as its own coverage, and the list must include that state or the run reports the mismatch"
+    )]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
-    #[arg(help = "Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`")]
+    #[arg(
+        help = "Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be combined with `--states`"
+    )]
     #[arg(long)]
     all_states: bool,
     #[arg(help = "Restrict to these archive years (result-archive adapters only)")]
@@ -34,7 +41,9 @@ pub(super) struct ProviderArgs {
     #[arg(help = "Input artifact for import-style adapters")]
     #[arg(long)]
     input: Option<String>,
-    #[arg(help = "Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the whole-meet route (two requests per meet) instead of the per-athlete registry route")]
+    #[arg(
+        help = "Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the whole-meet route (two requests per meet) instead of the per-athlete registry route"
+    )]
     #[arg(long, value_delimiter = ',')]
     meets: Vec<i64>,
     #[arg(help = "Spend the third request per meet for the per-event type and hurdle metadata")]

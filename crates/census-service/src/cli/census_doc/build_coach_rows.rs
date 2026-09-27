@@ -1,4 +1,3 @@
-
 use std::collections::{BTreeMap, HashMap};
 
 pub(super) fn build(coaches: &[HashMap<String, String>]) -> Vec<Vec<String>> {

@@ -229,7 +229,10 @@ fn acceptance_agreement() {
         ],
     );
 
-    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
+    let args = VerifyArgs {
+        workbook: Some(dir.path().join("verify-test.xlsx")),
+        sample_every: 1,
+    };
     let result = run_verify(&store, &args);
     assert!(result.is_ok(), "verify should succeed: {:?}", result.err());
 }
@@ -274,7 +277,10 @@ fn acceptance_event_id_where_the_store_has_a_label() {
         )],
     );
 
-    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
+    let args = VerifyArgs {
+        workbook: Some(dir.path().join("verify-test.xlsx")),
+        sample_every: 1,
+    };
     let result = run_verify(&store, &args);
     let err = result
         .expect_err("an id printed where the store holds a label is a disagreement")
@@ -324,7 +330,10 @@ fn acceptance_empty_event_cell_with_no_store_row() {
         )],
     );
 
-    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
+    let args = VerifyArgs {
+        workbook: Some(dir.path().join("verify-test.xlsx")),
+        sample_every: 1,
+    };
     let result = run_verify(&store, &args);
     assert!(result.is_ok(), "verify should succeed: {:?}", result.err());
 }
@@ -359,7 +368,10 @@ fn acceptance_disagreement() {
         &[],
     );
 
-    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
+    let args = VerifyArgs {
+        workbook: Some(dir.path().join("verify-test.xlsx")),
+        sample_every: 1,
+    };
     let result = run_verify(&store, &args);
     assert!(result.is_err(), "verify should fail: got Ok");
     let err = result.unwrap_err().to_string();
@@ -399,7 +411,10 @@ fn acceptance_school_id_where_the_store_has_a_name() {
         &[],
     );
 
-    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
+    let args = VerifyArgs {
+        workbook: Some(dir.path().join("verify-test.xlsx")),
+        sample_every: 1,
+    };
     let result = run_verify(&store, &args);
     let err = result
         .expect_err("an id printed where the store holds a name is a disagreement")
@@ -440,7 +455,10 @@ fn acceptance_school_id_with_no_store_row() {
         &[],
     );
 
-    let args = VerifyArgs { workbook: Some(dir.path().join("verify-test.xlsx")), sample_every: 1 };
+    let args = VerifyArgs {
+        workbook: Some(dir.path().join("verify-test.xlsx")),
+        sample_every: 1,
+    };
     let result = run_verify(&store, &args);
     assert!(result.is_ok(), "verify should succeed: {:?}", result.err());
 }
@@ -484,7 +502,10 @@ fn acceptance_missing_column() {
     let _ = book.save(&path);
 
     let store = Store::open(dir.path()).unwrap();
-    let args = VerifyArgs { workbook: Some(path), sample_every: 1 };
+    let args = VerifyArgs {
+        workbook: Some(path),
+        sample_every: 1,
+    };
     let result = run_verify(&store, &args);
     assert!(result.is_err(), "verify should fail: got Ok");
     let err = result.unwrap_err().to_string();

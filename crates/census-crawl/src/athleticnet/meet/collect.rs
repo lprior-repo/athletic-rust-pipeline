@@ -1,4 +1,3 @@
-
 use super::read::EventMetadata;
 use super::wire::{AllResults, MeetData};
 use super::{meet_requests, metadata_request, MEET_ENDPOINT};

@@ -1,4 +1,3 @@
-
 use crate::json::count;
 use crate::paths;
 use crate::scan::{compile, is_test_file};

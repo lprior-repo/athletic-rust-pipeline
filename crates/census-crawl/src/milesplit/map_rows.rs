@@ -1,4 +1,3 @@
-
 use super::{MeetContext, RowWriter};
 use crate::hytek;
 use crate::result_file::ParsedRow;
@@ -32,7 +31,14 @@ pub(super) fn record_row(
         context.school_year,
         context.evidence,
     );
-    let (athlete_id, source_athlete) = record_athlete(writer, context, &school_id, &row.name, shape.grade, row_index);
+    let (athlete_id, source_athlete) = record_athlete(
+        writer,
+        context,
+        &school_id,
+        &row.name,
+        shape.grade,
+        row_index,
+    );
     record_performance(
         writer,
         context,

@@ -1,4 +1,3 @@
-
 use census_domain::model::SourceRef;
 
 use crate::hytek::{substring, tokens};

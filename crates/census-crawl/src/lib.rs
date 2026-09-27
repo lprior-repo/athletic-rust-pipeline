@@ -4,7 +4,6 @@ pub const CONCURRENCY_BOUND: usize = 8;
 
 pub const FLUSH_UNITS: usize = 64;
 
-
 #[derive(Debug, thiserror::Error)]
 pub enum CrawlError {
     #[error(transparent)]

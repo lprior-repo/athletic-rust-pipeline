@@ -1,4 +1,3 @@
-
 use super::*;
 use census_service::restate_services::{JurisdictionSummary, NationalFailure};
 

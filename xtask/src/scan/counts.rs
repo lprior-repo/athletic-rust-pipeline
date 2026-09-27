@@ -1,4 +1,3 @@
-
 use crate::json::count;
 use crate::scan::mask::CodeMask;
 use crate::scan::rules::Rules;

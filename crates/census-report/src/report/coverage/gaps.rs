@@ -1,4 +1,3 @@
-
 use super::JurisdictionCoverage;
 use census_domain::JurisdictionBucket;
 use serde::Serialize;

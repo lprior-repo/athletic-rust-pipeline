@@ -1,4 +1,3 @@
-
 use census_report::report::Scope;
 use census_store::Table;
 use restate_sdk::prelude::TerminalError;

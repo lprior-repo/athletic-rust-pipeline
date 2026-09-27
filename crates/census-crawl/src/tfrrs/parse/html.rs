@@ -1,4 +1,3 @@
-
 pub(super) fn text_runs(fragment: &str) -> impl Iterator<Item = String> + '_ {
     fragment
         .split('<')

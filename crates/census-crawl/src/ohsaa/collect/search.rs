@@ -1,4 +1,3 @@
-
 use super::super::map::SearchResult;
 use super::super::parse::resolve_school_name;
 use super::super::{Options, ASSOCIATION, HOST, SEARCH_PATH};

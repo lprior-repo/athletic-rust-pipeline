@@ -1,4 +1,3 @@
-
 use crate::paths;
 use anyhow::{bail, Context, Result};
 use std::fs;

@@ -27,7 +27,10 @@ impl Named {
 
     pub(super) fn merge(&mut self, coach: &CanonicalCoach) -> bool {
         if differs(self.email.as_deref(), nonempty(&coach.professional_email))
-            || differs(self.personal_email.as_deref(), nonempty(&coach.personal_email))
+            || differs(
+                self.personal_email.as_deref(),
+                nonempty(&coach.personal_email),
+            )
         {
             return false;
         }
@@ -86,7 +89,12 @@ impl Preferred {
     }
 
     pub(super) fn unnamed(state: ContactState) -> Self {
-        Self { name: String::new(), role: String::new(), email: String::new(), state }
+        Self {
+            name: String::new(),
+            role: String::new(),
+            email: String::new(),
+            state,
+        }
     }
 }
 

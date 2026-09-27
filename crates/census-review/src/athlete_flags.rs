@@ -1,4 +1,3 @@
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use census_domain::model::{normalize_name, CanonicalAthlete, ReviewEvidenceFact, SourceNamespace};
@@ -113,9 +112,11 @@ type NamespaceIds<'a> = BTreeMap<&'a SourceNamespace, BTreeSet<&'a str>>;
 
 fn namespace_ids(row: &CanonicalAthlete) -> NamespaceIds<'_> {
     let mut ids: NamespaceIds<'_> = BTreeMap::new();
-    for identity in row.identities() { ids.entry(&identity.namespace)
-        .or_default()
-        .insert(identity.id.as_str()); }
+    for identity in row.identities() {
+        ids.entry(&identity.namespace)
+            .or_default()
+            .insert(identity.id.as_str());
+    }
     ids
 }
 

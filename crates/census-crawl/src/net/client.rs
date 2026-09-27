@@ -1,4 +1,3 @@
-
 use super::{FetchError, FetchStats, Fetcher, DEFAULT_USER_AGENT, REQUEST_TIMEOUT_SECS};
 use std::collections::HashMap;
 use std::path::Path;

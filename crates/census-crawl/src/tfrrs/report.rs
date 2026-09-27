@@ -1,4 +1,3 @@
-
 use super::map::Stats;
 use super::run::Run;
 use crate::AdapterReport;

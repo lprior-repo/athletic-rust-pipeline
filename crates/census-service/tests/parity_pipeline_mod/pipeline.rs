@@ -1,4 +1,3 @@
-
 use std::collections::HashMap;
 use std::path::Path;
 use std::time::Duration;
@@ -140,7 +139,6 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
         workbook: Workbook::read(&workbook_path, root)?,
     })
 }
-
 
 async fn collect_wiaa_results(
     _store: &Store,

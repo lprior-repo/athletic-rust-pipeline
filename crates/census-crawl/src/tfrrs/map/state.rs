@@ -1,4 +1,3 @@
-
 use crate::tfrrs::parse::{ListPath, TeamPath, YearToken};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,

@@ -1,4 +1,3 @@
-
 use super::seam_config;
 use census_crawl::mshsl::{
     parse_admin_entries, parse_next_listing_page, parse_school_detail, parse_school_list,

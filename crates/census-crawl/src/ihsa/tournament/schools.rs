@@ -1,4 +1,3 @@
-
 use super::map::{Accumulator, Origin, ASSOCIATION};
 use crate::{AdapterContext, CrawlResult};
 use census_domain::model::{

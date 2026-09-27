@@ -92,10 +92,13 @@ pub(in crate::workbook) struct Disagreement {
 }
 
 pub(in crate::workbook) fn disagreements(
-    coaches: &[CanonicalCoach], school_year: SchoolYear,
+    coaches: &[CanonicalCoach],
+    school_year: SchoolYear,
 ) -> Vec<Disagreement> {
-    contacts(coaches, school_year).into_values()
-        .flat_map(|facts| facts.heads.into_disagreements()).collect()
+    contacts(coaches, school_year)
+        .into_values()
+        .flat_map(|facts| facts.heads.into_disagreements())
+        .collect()
 }
 
 pub(super) struct ScopedContacts<'a> {
@@ -108,30 +111,40 @@ pub(super) struct ScopedContacts<'a> {
 }
 
 pub(super) fn scoped<'a>(
-    school: Option<&'a SchoolContacts>, athlete: &'a CanonicalAthlete,
+    school: Option<&'a SchoolContacts>,
+    athlete: &'a CanonicalAthlete,
 ) -> ScopedContacts<'a> {
     let school = school.filter(|school| school.school == athlete.school);
     let resolve = |sport| {
         if !athlete.sports.contains(&sport) {
             return &Outcome::Unknown;
         }
-        school.map(|school| school.heads.resolve(Slot::of(sport), athlete.gender))
+        school
+            .map(|school| school.heads.resolve(Slot::of(sport), athlete.gender))
             .unwrap_or(&Outcome::Unknown)
     };
     ScopedContacts {
-        outdoor: resolve(Sport::OutdoorTrack), indoor: resolve(Sport::IndoorTrack),
+        outdoor: resolve(Sport::OutdoorTrack),
+        indoor: resolve(Sport::IndoorTrack),
         cross_country: resolve(Sport::CrossCountry),
-        director: school.map(|school| school.heads.resolve(Slot::Director, Gender::Mixed))
+        director: school
+            .map(|school| school.heads.resolve(Slot::Director, Gender::Mixed))
             .unwrap_or(&Outcome::Unknown),
-        assistants: school.map(|school| school.assistants.as_slice()).unwrap_or(&[]),
+        assistants: school
+            .map(|school| school.assistants.as_slice())
+            .unwrap_or(&[]),
         athlete,
     }
 }
 
 impl ScopedContacts<'_> {
     fn heads(&self) -> impl Iterator<Item = (Slot, &Outcome)> {
-        [(Slot::OutdoorTrack, self.outdoor), (Slot::IndoorTrack, self.indoor),
-            (Slot::CrossCountry, self.cross_country)].into_iter()
+        [
+            (Slot::OutdoorTrack, self.outdoor),
+            (Slot::IndoorTrack, self.indoor),
+            (Slot::CrossCountry, self.cross_country),
+        ]
+        .into_iter()
     }
 
     pub(super) fn preferred(&self) -> Preferred {
@@ -161,7 +174,11 @@ impl ScopedContacts<'_> {
         if let Some((slot, coach)) = named {
             return Preferred::named(slot, coach);
         }
-        Preferred::unnamed(self.director.blocker().unwrap_or(ContactState::ContactResearchUnknown))
+        Preferred::unnamed(
+            self.director
+                .blocker()
+                .unwrap_or(ContactState::ContactResearchUnknown),
+        )
     }
 
     pub(super) fn track_names(&self) -> Option<String> {
@@ -175,9 +192,16 @@ impl ScopedContacts<'_> {
     fn track_field(&self, field: fn(&Named) -> Option<&str>) -> Option<String> {
         let multiple = self.outdoor.named().is_some() && self.indoor.named().is_some();
         let mut text = String::new();
-        for (slot, outcome) in [(Slot::OutdoorTrack, self.outdoor), (Slot::IndoorTrack, self.indoor)] {
-            let Some(value) = outcome.named().and_then(field) else { continue };
-            if !text.is_empty() { text.push_str("; "); }
+        for (slot, outcome) in [
+            (Slot::OutdoorTrack, self.outdoor),
+            (Slot::IndoorTrack, self.indoor),
+        ] {
+            let Some(value) = outcome.named().and_then(field) else {
+                continue;
+            };
+            if !text.is_empty() {
+                text.push_str("; ");
+            }
             if multiple {
                 text.push_str(slot.label());
                 text.push_str(": ");
@@ -196,23 +220,37 @@ impl ScopedContacts<'_> {
     }
 
     pub(super) fn professional_coach_email(&self) -> Option<&str> {
-        self.heads().find_map(|(_, outcome)| outcome.named()?.email.as_deref())
+        self.heads()
+            .find_map(|(_, outcome)| outcome.named()?.email.as_deref())
     }
 
     pub(super) fn all_emails(&self) -> String {
         let assistants = self.assistants.iter().filter(|coach| {
-            coach.sport.is_some_and(|sport| self.athlete.sports.contains(&sport))
+            coach
+                .sport
+                .is_some_and(|sport| self.athlete.sports.contains(&sport))
                 && matches_side(coach.side, self.athlete.gender)
         });
-        let eligible = self.heads().filter_map(|(_, outcome)| outcome.named())
-            .chain(self.director()).chain(assistants);
+        let eligible = self
+            .heads()
+            .filter_map(|(_, outcome)| outcome.named())
+            .chain(self.director())
+            .chain(assistants);
         let mut addresses = BTreeSet::new();
         for coach in eligible {
-            addresses.extend(coach.email.iter().chain(&coach.personal_email).map(String::as_str));
+            addresses.extend(
+                coach
+                    .email
+                    .iter()
+                    .chain(&coach.personal_email)
+                    .map(String::as_str),
+            );
         }
         let mut text = String::new();
         for address in addresses {
-            if !text.is_empty() { text.push_str("; "); }
+            if !text.is_empty() {
+                text.push_str("; ");
+            }
             text.push_str(address);
         }
         text
@@ -221,5 +259,8 @@ impl ScopedContacts<'_> {
 
 fn matches_side(coach: Gender, athlete: Gender) -> bool {
     matches!(coach, Gender::Mixed)
-        || matches!((coach, athlete), (Gender::Boys, Gender::Boys) | (Gender::Girls, Gender::Girls))
+        || matches!(
+            (coach, athlete),
+            (Gender::Boys, Gender::Boys) | (Gender::Girls, Gender::Girls)
+        )
 }

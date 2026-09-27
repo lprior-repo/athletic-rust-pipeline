@@ -1,4 +1,3 @@
-
 use census_domain::model::{ReviewPacket, ReviewVerdict, ReviewVerdictKind};
 
 use super::families::IDENTITY_FIELD;

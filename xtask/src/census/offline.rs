@@ -1,4 +1,3 @@
-
 use anyhow::Result;
 use census_report::report::Scope;
 use std::path::Path;

@@ -1,4 +1,3 @@
-
 use super::gaps::GapCounters;
 use super::{CoverageGap, CoverageTotals, JurisdictionCoverage};
 use census_domain::model::CanonicalAthlete;

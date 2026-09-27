@@ -50,7 +50,11 @@ pub(super) fn map_identity(
         entry.id.clone()
     };
     let (athlete, source) = record_athlete(writer, context, school_id, identity, gender, row_index);
-    Mapped { athlete, team, source_athlete: source }
+    Mapped {
+        athlete,
+        team,
+        source_athlete: source,
+    }
 }
 
 fn record_athlete(
@@ -63,10 +67,12 @@ fn record_athlete(
 ) -> (AthleteId, SourceIdentity) {
     let grad_year = GradYear::of(identity.grade, context.school_year);
     let mut source = identity.an_athlete_id.map_or_else(
-        || SourceIdentity::new(
-            SourceNamespace::Other("athleticlive_result_row".to_owned()),
-            format!("{}:{}:row:{row_index}", context.provider, context.event_key),
-        ),
+        || {
+            SourceIdentity::new(
+                SourceNamespace::Other("athleticlive_result_row".to_owned()),
+                format!("{}:{}:row:{row_index}", context.provider, context.event_key),
+            )
+        },
         |id| SourceIdentity::new(SourceNamespace::athletic_net("athlete"), id.to_string()),
     );
     source.url.clone_from(&context.source.url);

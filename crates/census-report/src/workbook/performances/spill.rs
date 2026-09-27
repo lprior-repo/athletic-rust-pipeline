@@ -1,4 +1,3 @@
-
 use super::join::{Lookups, Parents};
 use super::rows::{sheet_order, PerformanceRow};
 use crate::report::{io_error, retain_core_row, ReportError, ReportResult, Scope};

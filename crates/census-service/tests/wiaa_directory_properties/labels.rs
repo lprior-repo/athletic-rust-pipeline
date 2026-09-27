@@ -1,4 +1,3 @@
-
 use super::seam_config;
 use census_crawl::wiaa::{parse_admin_role, parse_coach_role, parse_sport_label, strip_honorific};
 use proptest::prelude::*;

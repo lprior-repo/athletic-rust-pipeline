@@ -1,4 +1,3 @@
-
 #[path = "core/fixtures.rs"]
 mod fixtures;
 #[path = "core/labels.rs"]

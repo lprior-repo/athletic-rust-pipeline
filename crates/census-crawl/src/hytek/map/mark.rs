@@ -1,4 +1,3 @@
-
 use census_domain::model::CentiMetres;
 use census_domain::model::CentiSeconds;
 use census_domain::model::{EventKind, Mark};

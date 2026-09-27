@@ -1,4 +1,3 @@
-
 use athleticnet_browser::clock::SystemClock;
 use athleticnet_browser::BrowserSettings;
 
@@ -44,7 +43,6 @@ mod sweep;
 mod teams_arms;
 mod wire;
 
-
 pub use wire::{
     BestsReply, BestsRequest, ConsolidateReply, ConsolidateRequest, ConsolidatedTable,
     EndpointObservation, IngestReply, IngestRequest, IngestState, JurisdictionOpen,
@@ -55,12 +53,10 @@ pub use wire::{
     WindowRequest, WorkbookReply, WorkbookRequest,
 };
 
-
 pub use plan::{
     owed, plan, plan_sources, sweepable, BrowserLaneState, Dispatch, PlannedUnit, Refusal,
     UnitDisposition,
 };
-
 
 #[allow(unused_imports)]
 pub(super) use jobs::collect_error;

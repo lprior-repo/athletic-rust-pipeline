@@ -1,5 +1,5 @@
-use super::{stage_verified_contacts, ContactArtifactError};
 use super::tests::helpers::{sample_claims, sample_row};
+use super::{stage_verified_contacts, ContactArtifactError};
 use census_domain::model::RawContactRow;
 
 #[path = "tests/edge_cases.rs"]
@@ -17,6 +17,12 @@ fn email_school_and_role_changes_cannot_reuse_prior_claims() {
         let mut row = sample_row();
         let original_claims = sample_claims(&row);
         mutate(&mut row);
-        assert!(matches!(stage_verified_contacts(&dir.path().join("stage"), [(&row, original_claims.as_slice())]), Err(ContactArtifactError::Domain(_))));
+        assert!(matches!(
+            stage_verified_contacts(
+                &dir.path().join("stage"),
+                [(&row, original_claims.as_slice())]
+            ),
+            Err(ContactArtifactError::Domain(_))
+        ));
     }
 }

@@ -7,8 +7,8 @@ use census_crawl::result_file::ParsedMeet;
 use census_crawl::{hytek, raceday, wiaa_results};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, GradYear, Grade, SourceIdentity, SourceNamespace,
-    SourceRef, Sport,
+    CanonicalSchool, CanonicalTeam, GradYear, Grade, SourceIdentity, SourceNamespace, SourceRef,
+    Sport,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -155,8 +155,8 @@ fn expected_ids_for(
         wiaa_results::level_of(&meet.name),
     );
     expected.meets.insert(expected_meet.id.as_str().to_string());
-    let school_year =
-        wiaa_results::school_year_for(&meet.date, sport, artifact.year).with_context(|| {
+    let school_year = wiaa_results::school_year_for(&meet.date, sport, artifact.year)
+        .with_context(|| {
             format!(
                 "{} (archive {}) names no school season",
                 meet.date, artifact.year

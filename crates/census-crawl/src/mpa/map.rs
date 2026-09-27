@@ -1,4 +1,3 @@
-
 use super::pages::CoachRow;
 use super::{ASSOCIATION, HOST_WWW, SOURCE_ID, STATE};
 use super::{DIRECTORY_PATH, STAFF_PATH};

@@ -94,7 +94,10 @@ impl SharedSelection {
     }
 }
 
-pub(crate) fn publish(mut rows: Vec<SharedSelection>, limit: Option<usize>) -> Vec<SharedSelection> {
+pub(crate) fn publish(
+    mut rows: Vec<SharedSelection>,
+    limit: Option<usize>,
+) -> Vec<SharedSelection> {
     rows.sort_unstable_by(|left, right| left.order_key().cmp(&right.order_key()));
     if let Some(limit) = limit {
         rows.truncate(limit);

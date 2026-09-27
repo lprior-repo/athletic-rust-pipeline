@@ -1,4 +1,3 @@
-
 use super::{PerfBaseline, BASELINE_FILE};
 use crate::paths;
 use anyhow::{Context, Result};

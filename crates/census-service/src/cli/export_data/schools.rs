@@ -1,4 +1,3 @@
-
 use crate::cli::export_data::{csv::write_csv, helpers::*};
 use serde_json::Value;
 use std::collections::BTreeSet;

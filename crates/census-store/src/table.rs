@@ -1,4 +1,3 @@
-
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 pub const MAX_ROWS_PER_TABLE: u64 = 20_000_000;
@@ -105,9 +104,10 @@ impl Table {
             | Table::Performances
             | Table::SourceMeets
             | Table::SourceObservations => StorageMode::ObservationLog,
-            Table::SourceIdentities | Table::Conflicts | Table::Coverage | Table::AthleteIdentityDecisions => {
-                StorageMode::DerivedSnapshot
-            }
+            Table::SourceIdentities
+            | Table::Conflicts
+            | Table::Coverage
+            | Table::AthleteIdentityDecisions => StorageMode::DerivedSnapshot,
             Table::ReviewCases
             | Table::Snapshots
             | Table::SourceAccess

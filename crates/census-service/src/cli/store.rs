@@ -1,4 +1,3 @@
-
 use anyhow::{Context, Result};
 use census_store::{Store, Table};
 use clap::Args;

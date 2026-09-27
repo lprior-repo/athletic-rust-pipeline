@@ -68,7 +68,8 @@ fn documentation_attributes_cannot_replace_doc_comments() -> Result<()> {
         "#[cfg_attr(test, cfg_attr(unix, doc = \"text\"))] fn f() {}",
         "# [ r#doc = \"text\" ] fn f() {}",
     ] {
-        let finding = first_violation(source)?.ok_or_else(|| anyhow::anyhow!("missed documentation"))?;
+        let finding =
+            first_violation(source)?.ok_or_else(|| anyhow::anyhow!("missed documentation"))?;
         assert_eq!(finding.reason, "documentation attributes are forbidden");
     }
     Ok(())
@@ -76,7 +77,12 @@ fn documentation_attributes_cannot_replace_doc_comments() -> Result<()> {
 
 #[test]
 fn unterminated_literals_fail_closed() {
-    for source in ["\"unterminated", "r##\"unterminated", "br##\"unterminated", "cr##\"unterminated"] {
+    for source in [
+        "\"unterminated",
+        "r##\"unterminated",
+        "br##\"unterminated",
+        "cr##\"unterminated",
+    ] {
         assert!(first_violation(source).is_err(), "{source}");
     }
 }
@@ -88,7 +94,10 @@ fn generated_adapter_code_obeys_the_comment_policy() -> Result<()> {
         crate::templates::parse_module("policy_fixture"),
         crate::templates::map_module(),
     ] {
-        assert!(first_violation(&source)?.is_none(), "generated adapter violates code policy");
+        assert!(
+            first_violation(&source)?.is_none(),
+            "generated adapter violates code policy"
+        );
     }
     Ok(())
 }

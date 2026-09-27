@@ -15,7 +15,10 @@ fn distinct_sources_yield_distinct_subjects() {
         athlete_b.candidate_key().index_id(),
         "candidate search bucket is shared"
     );
-    assert_ne!(athlete_a.id, athlete_b.id, "different source owners produce different subjects");
+    assert_ne!(
+        athlete_a.id, athlete_b.id,
+        "different source owners produce different subjects"
+    );
 }
 
 #[test]
@@ -56,10 +59,8 @@ fn grade_agreement_is_cohort_evidence_not_identity() {
     let source_a = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
     let source_b = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "98765432");
 
-    let mut athlete_a =
-        CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Girls, source_a);
-    let mut athlete_b =
-        CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Girls, source_b);
+    let mut athlete_a = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Girls, source_a);
+    let mut athlete_b = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Girls, source_b);
 
     let obs = ObservedGrade {
         grade: Grade::new(11).expect("a grade"),
@@ -69,40 +70,70 @@ fn grade_agreement_is_cohort_evidence_not_identity() {
     athlete_a.observed_grades.push(obs.clone());
     athlete_b.observed_grades.push(obs);
 
-    assert_eq!(athlete_a.derived_cohort_confidence(), Some(Confidence::HIGH));
-    assert_eq!(athlete_b.derived_cohort_confidence(), Some(Confidence::HIGH));
+    assert_eq!(
+        athlete_a.derived_cohort_confidence(),
+        Some(Confidence::HIGH)
+    );
+    assert_eq!(
+        athlete_b.derived_cohort_confidence(),
+        Some(Confidence::HIGH)
+    );
     assert_ne!(athlete_a.id, athlete_b.id);
 }
 
 fn observed_athlete(school: &str, source: SourceIdentity) -> CanonicalAthlete {
     let school = SchoolId::mint("sch", &["WI", school]);
-    let mut athlete = CanonicalAthlete::new(&school, "Synthetic Runner", GradYear::CO2027,
-        Gender::Girls, source);
+    let mut athlete = CanonicalAthlete::new(
+        &school,
+        "Synthetic Runner",
+        GradYear::CO2027,
+        Gender::Girls,
+        source,
+    );
     athlete.evidence.push(Evidence::parsed(
-        SourceRef::new("fixture", Some("https://example.test/results".to_owned())), "2026-09-26"));
+        SourceRef::new("fixture", Some("https://example.test/results".to_owned())),
+        "2026-09-26",
+    ));
     athlete
 }
 
 #[test]
 fn source_bound_identity_requires_a_checked_primary_person_identifier() {
     for id in ["", "0", "01", "-1", "１", "1 ", "18446744073709551616"] {
-        let athlete = observed_athlete("School A", SourceIdentity::new(SourceNamespace::MilesplitAthlete, id));
+        let athlete = observed_athlete(
+            "School A",
+            SourceIdentity::new(SourceNamespace::MilesplitAthlete, id),
+        );
         let mut index = AthleteIdentityIndex::default();
         index.observe(&athlete).expect("observation");
-        assert!(!index.isolated_source(&athlete.id.cast()), "invalid primary identifier: {id:?}");
+        assert!(
+            !index.isolated_source(&athlete.id.cast()),
+            "invalid primary identifier: {id:?}"
+        );
     }
     for id in ["1", "18446744073709551615"] {
-        let athlete = observed_athlete("School A", SourceIdentity::new(SourceNamespace::MilesplitAthlete, id));
+        let athlete = observed_athlete(
+            "School A",
+            SourceIdentity::new(SourceNamespace::MilesplitAthlete, id),
+        );
         let mut index = AthleteIdentityIndex::default();
         index.observe(&athlete).expect("observation");
-        assert!(index.isolated_source(&athlete.id.cast()), "valid primary identifier: {id}");
+        assert!(
+            index.isolated_source(&athlete.id.cast()),
+            "valid primary identifier: {id}"
+        );
     }
 }
 
 #[test]
 fn advisory_person_links_cannot_promote_a_result_row_to_source_bound_identity() {
-    let mut athlete = observed_athlete("School A",
-        SourceIdentity::new(SourceNamespace::Other("timer_result_row".to_owned()), "meet:1:row:2"));
+    let mut athlete = observed_athlete(
+        "School A",
+        SourceIdentity::new(
+            SourceNamespace::Other("timer_result_row".to_owned()),
+            "meet:1:row:2",
+        ),
+    );
     athlete.add_identity(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "999"));
     let mut index = AthleteIdentityIndex::default();
     index.observe(&athlete).expect("observation");
@@ -111,8 +142,10 @@ fn advisory_person_links_cannot_promote_a_result_row_to_source_bound_identity() 
 
 #[test]
 fn a_fetched_page_alone_does_not_establish_a_parsed_person_identity() {
-    let mut athlete = observed_athlete("School A",
-        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111"));
+    let mut athlete = observed_athlete(
+        "School A",
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111"),
+    );
     athlete.evidence[0].method = EvidenceMethod::Fetched;
     let mut index = AthleteIdentityIndex::default();
     index.observe(&athlete).expect("observation");
@@ -121,16 +154,23 @@ fn a_fetched_page_alone_does_not_establish_a_parsed_person_identity() {
 
 #[test]
 fn shared_advisory_links_do_not_authorize_homonym_merges() {
-    let mut first = observed_athlete("School A",
-        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111"));
-    let mut second = observed_athlete("School A",
-        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "222"));
+    let mut first = observed_athlete(
+        "School A",
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111"),
+    );
+    let mut second = observed_athlete(
+        "School A",
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "222"),
+    );
     first.add_identity(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "999"));
     second.add_identity(SourceIdentity::new(SourceNamespace::TfrrsAthlete, "999"));
     let mut index = AthleteIdentityIndex::default();
     index.observe(&first).expect("first observation");
     index.observe(&second).expect("second observation");
-    assert!(!index.supports_identity(AppliedIdentityKind::SamePerson, &[first.id.cast(), second.id.cast()]));
+    assert!(!index.supports_identity(
+        AppliedIdentityKind::SamePerson,
+        &[first.id.cast(), second.id.cast()]
+    ));
 }
 
 #[test]
@@ -142,5 +182,8 @@ fn the_same_primary_person_identifier_can_support_a_reviewed_transfer() {
     let mut index = AthleteIdentityIndex::default();
     index.observe(&first).expect("first observation");
     index.observe(&second).expect("second observation");
-    assert!(index.supports_identity(AppliedIdentityKind::SamePerson, &[first.id.cast(), second.id.cast()]));
+    assert!(index.supports_identity(
+        AppliedIdentityKind::SamePerson,
+        &[first.id.cast(), second.id.cast()]
+    ));
 }

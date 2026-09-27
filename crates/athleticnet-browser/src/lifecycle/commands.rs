@@ -1,4 +1,3 @@
-
 use super::super::{actor::Command, BrowserError, BrowserOutcome, BrowserState, BrowserStatus};
 use super::status::{read_status, remaining_ms, usable_manager, write_state};
 use super::BrowserManager;

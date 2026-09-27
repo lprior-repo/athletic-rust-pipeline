@@ -1,4 +1,3 @@
-
 use crate::common;
 
 use std::collections::BTreeSet;
@@ -65,8 +64,16 @@ impl Corpus {
 
     pub fn tables(&self) -> [(&'static str, usize, BTreeSet<String>); 7] {
         [
-            ("schools", self.schools.len(), ids_of(&self.schools, |row| row.id.as_str())),
-            ("teams", self.teams.len(), ids_of(&self.teams, |row| row.id.as_str())),
+            (
+                "schools",
+                self.schools.len(),
+                ids_of(&self.schools, |row| row.id.as_str()),
+            ),
+            (
+                "teams",
+                self.teams.len(),
+                ids_of(&self.teams, |row| row.id.as_str()),
+            ),
             (
                 "coaches",
                 self.coaches.len(),
@@ -77,8 +84,16 @@ impl Corpus {
                 self.athletes.len(),
                 ids_of(&self.athletes, |row| row.id.as_str()),
             ),
-            ("meets", self.meets.len(), ids_of(&self.meets, |row| row.id.as_str())),
-            ("events", self.events.len(), ids_of(&self.events, |row| row.id.as_str())),
+            (
+                "meets",
+                self.meets.len(),
+                ids_of(&self.meets, |row| row.id.as_str()),
+            ),
+            (
+                "events",
+                self.events.len(),
+                ids_of(&self.events, |row| row.id.as_str()),
+            ),
             (
                 "performances",
                 self.performances.len(),
@@ -90,9 +105,7 @@ impl Corpus {
     pub fn merge_report(&self) -> Vec<(String, usize)> {
         self.tables()
             .into_iter()
-            .map(|(table, rows, ids)| {
-                (format!("{table}_merged"), rows.saturating_sub(ids.len()))
-            })
+            .map(|(table, rows, ids)| (format!("{table}_merged"), rows.saturating_sub(ids.len())))
             .collect()
     }
 
@@ -117,9 +130,7 @@ impl Corpus {
                         "meets" => ids.extend(self.expected.meets.iter().cloned()),
                         "events" => ids.extend(self.expected.events.iter().cloned()),
                         "teams" => ids.extend(self.expected.teams.iter().cloned()),
-                        "performances" => ids.extend(
-                            self.expected.performances.iter().cloned(),
-                        ),
+                        "performances" => ids.extend(self.expected.performances.iter().cloned()),
                         _ => {}
                     }
                 }

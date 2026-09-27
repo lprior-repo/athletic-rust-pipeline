@@ -1,13 +1,13 @@
-
 use super::*;
 use crate::bests;
 use crate::workbook::Options;
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     normalize_name, AthleteId, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiMetres, CentiSeconds, CoachRole, CoachTenure, CoachTenureEvidence,
-    CompetitionLevel, EventId, EventKind, Evidence, Gender, GradYear, Grade, Mark, MeetId,
-    ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiMetres, CentiSeconds, CoachRole,
+    CoachTenure, CoachTenureEvidence, CompetitionLevel, EventId, EventKind, Evidence, Gender,
+    GradYear, Grade, Mark, MeetId, ObservedGrade, SchoolId, SchoolYear, SourceIdentity,
+    SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -41,10 +41,21 @@ fn school(store: &Store, state: UsJurisdiction, name: &str) -> SchoolId {
 fn julian(store: &Store, school: &SchoolId) -> (AthleteId, SourceIdentity) {
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "wi-999")
         .with_url("https://wi.milesplit.com/athletes/999");
-    let id = CanonicalAthlete::mint(school, "Julian Aguilera", GradYear::CO2027, Gender::Boys, &source);
+    let id = CanonicalAthlete::mint(
+        school,
+        "Julian Aguilera",
+        GradYear::CO2027,
+        Gender::Boys,
+        &source,
+    );
     for _ in 0..2 {
-        let mut athlete = CanonicalAthlete::new(school, "Julian Aguilera", GradYear::CO2027,
-            Gender::Boys, source.clone());
+        let mut athlete = CanonicalAthlete::new(
+            school,
+            "Julian Aguilera",
+            GradYear::CO2027,
+            Gender::Boys,
+            source.clone(),
+        );
         athlete.observed_grades.push(ObservedGrade {
             grade: Grade::new(11).unwrap(),
             school_year: SchoolYear::new(2025).expect("2025 is a season"),
@@ -52,9 +63,10 @@ fn julian(store: &Store, school: &SchoolId) -> (AthleteId, SourceIdentity) {
         });
         athlete.sports = vec![Sport::OutdoorTrack, Sport::CrossCountry];
         athlete.public_profile_urls = vec!["https://example.test/julian".to_string()];
-        athlete.add_identity(SourceIdentity::new(
-            SourceNamespace::athletic_net("athlete"), "123")
-            .with_url("https://www.athletic.net/athlete/123"));
+        athlete.add_identity(
+            SourceIdentity::new(SourceNamespace::athletic_net("athlete"), "123")
+                .with_url("https://www.athletic.net/athlete/123"),
+        );
         athlete.evidence = evidence("wiaa_results", None);
         store.append(Table::Athletes, &athlete).unwrap();
     }
@@ -62,8 +74,13 @@ fn julian(store: &Store, school: &SchoolId) -> (AthleteId, SourceIdentity) {
 }
 
 fn nadia(store: &Store, school: &SchoolId) -> AthleteId {
-    let mut athlete = CanonicalAthlete::new(school, "Nadia Berger", GradYear::CO2027,
-        Gender::Girls, SourceIdentity::new(SourceNamespace::Other("fixture".to_owned()), "nadia"));
+    let mut athlete = CanonicalAthlete::new(
+        school,
+        "Nadia Berger",
+        GradYear::CO2027,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::Other("fixture".to_owned()), "nadia"),
+    );
     athlete.sports = vec![Sport::CrossCountry];
     athlete.evidence = evidence("mshsl_results", None);
     store.append(Table::Athletes, &athlete).unwrap();
@@ -114,11 +131,22 @@ fn performance(store: &Store, context: &PerformanceRow<'_>, mark: Mark, source: 
         Gender::Boys,
         school_year,
     );
-    store.append(Table::Teams, &CanonicalTeam {
-        id: team.clone(), school: context.school.clone(), sport: Sport::OutdoorTrack,
-        gender: Gender::Boys, school_year, level: None, source_identities: Vec::new(),
-        evidence: evidence(source, Some(url)), retained_conflicts: Vec::new(),
-    }).unwrap();
+    store
+        .append(
+            Table::Teams,
+            &CanonicalTeam {
+                id: team.clone(),
+                school: context.school.clone(),
+                sport: Sport::OutdoorTrack,
+                gender: Gender::Boys,
+                school_year,
+                level: None,
+                source_identities: Vec::new(),
+                evidence: evidence(source, Some(url)),
+                retained_conflicts: Vec::new(),
+            },
+        )
+        .unwrap();
     let source_key = format!("{source}:{}:{}", context.date, mark.raw());
     store
         .append(
@@ -193,8 +221,13 @@ fn personal_coach(store: &Store, school: &SchoolId) {
 
 fn current_tenure() -> CoachTenureEvidence {
     CoachTenureEvidence {
-        tenure: CoachTenure::Current { school_year: SchoolYear::new(2026).unwrap() },
-        source: SourceRef::new("synthetic_directory", Some("https://contacts.test/schools".into())),
+        tenure: CoachTenure::Current {
+            school_year: SchoolYear::new(2026).unwrap(),
+        },
+        source: SourceRef::new(
+            "synthetic_directory",
+            Some("https://contacts.test/schools".into()),
+        ),
         source_sha256: "a".repeat(64),
         retrieved_at: "2026-09-20T00:00:00Z".into(),
         statement: "Synthetic academic-year appointment".into(),
@@ -338,7 +371,15 @@ fn fixture() -> Fixture {
 }
 
 fn recruiting(store: &Store, scope: Scope, grad_year: Option<i16>) -> Recruiting {
-    let prs = bests::build(store, &bests::Options { scope, grad_year, limit: None }).unwrap();
+    let prs = bests::build(
+        store,
+        &bests::Options {
+            scope,
+            grad_year,
+            limit: None,
+        },
+    )
+    .unwrap();
     Recruiting::load(store, scope, grad_year, SchoolYear::new(2026).unwrap(), prs).unwrap()
 }
 
@@ -452,11 +493,17 @@ fn the_athletes_sheet_publishes_the_objective_columns_and_the_stored_facts() {
     assert_eq!(text(&range, row, 45), "", "Public Recruiting GPA is blank");
     assert_eq!(text(&range, row, 46), "", "GPA Source is blank");
     let addresses = text(&range, row, 47);
-    assert_eq!(addresses.split("; ").collect::<std::collections::BTreeSet<_>>(),
+    assert_eq!(
+        addresses
+            .split("; ")
+            .collect::<std::collections::BTreeSet<_>>(),
         std::collections::BTreeSet::from([
-            "dvoss@abbotsford.k12.wi.us", "kruiz@abbotsford.k12.wi.us",
-            "ladams@abbotsford.k12.wi.us", "pnolan@abbotsford.k12.wi.us",
-        ]));
+            "dvoss@abbotsford.k12.wi.us",
+            "kruiz@abbotsford.k12.wi.us",
+            "ladams@abbotsford.k12.wi.us",
+            "pnolan@abbotsford.k12.wi.us",
+        ])
+    );
     assert_eq!(text(&range, row, 48), "Dana Voss");
     assert_eq!(text(&range, row, 50), "dvoss@abbotsford.k12.wi.us");
     assert_eq!(text(&range, row, 51), "professional_coach_email");
@@ -471,10 +518,18 @@ fn the_athletes_sheet_publishes_the_objective_columns_and_the_stored_facts() {
     );
     assert_eq!(text(&range, row, 54), "https://example.test/julian");
     assert_eq!(text(&range, row, 55), "1");
-    assert_eq!(text(&range, row, 56), "unverified", "agreeing grades are not an identity decision");
+    assert_eq!(
+        text(&range, row, 56),
+        "unverified",
+        "agreeing grades are not an identity decision"
+    );
     assert_eq!(text(&range, row, 57), "pr");
     assert_eq!(text(&range, row, 58), "", "no conflict");
-    assert_eq!(text(&range, row, 59), "review", "no accepted identity decision exists");
+    assert_eq!(
+        text(&range, row, 59),
+        "review",
+        "no accepted identity decision exists"
+    );
 }
 
 #[test]
@@ -553,7 +608,6 @@ fn the_prs_sheet_retains_shared_winners_units_dates_and_provenance() {
         canonical.len(),
         "one row per athlete/event"
     );
-
 
     let sprint = row_of_event(&range, fixture.julian.as_str(), "Track400m");
     assert_eq!(text(&range, sprint, 1), "Julian Aguilera");
@@ -664,4 +718,3 @@ fn the_run_audits_every_sheet_against_the_store_counts_behind_it() {
         "no cohort filter publishes every in-scope athlete"
     );
 }
-

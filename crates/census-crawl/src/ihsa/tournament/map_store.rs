@@ -29,11 +29,20 @@ impl Mapper<'_> {
         let performances = drain(&mut self.accumulated.performances);
         let mut batch = ctx.store.write_batch();
         batch.append_many(Table::Schools, &schools)?;
-        batch.append_many(Table::SourceObservations, &ctx.school_observations(&census_domain::model::SourceNamespace::association_school(ASSOCIATION), &schools))?;
+        batch.append_many(
+            Table::SourceObservations,
+            &ctx.school_observations(
+                &census_domain::model::SourceNamespace::association_school(ASSOCIATION),
+                &schools,
+            ),
+        )?;
         batch.append_many(Table::Meets, &meets)?;
         batch.append_many(Table::Teams, &teams)?;
         batch.append_many(Table::Athletes, &athletes)?;
-        batch.append_many(Table::SourceObservations, &ctx.athlete_observations(&athletes, &schools))?;
+        batch.append_many(
+            Table::SourceObservations,
+            &ctx.athlete_observations(&athletes, &schools),
+        )?;
         batch.append_many(Table::Events, &events)?;
         batch.append_many(Table::Performances, &performances)?;
         for (key, payload) in entries {

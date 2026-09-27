@@ -1,4 +1,3 @@
-
 use super::{metres_of, parse_field_mark};
 use census_domain::model::{CentiMetres, Mark};
 

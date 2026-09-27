@@ -206,13 +206,17 @@ fn the_sheets_render_the_rows_the_store_retains() {
                 .to_lowercase()
         ));
         conflicted_coach.evidence.push(evidence.clone());
-        conflicted_coach.tenure_evidence.push(census_domain::model::CoachTenureEvidence {
-            tenure: census_domain::model::CoachTenure::Current { school_year: SchoolYear::new(2026).unwrap() },
-            source: SourceRef::new("synthetic_directory", None),
-            source_sha256: "a".repeat(64),
-            retrieved_at: "2026-09-20T00:00:00Z".into(),
-            statement: "Synthetic academic-year appointment".into(),
-        });
+        conflicted_coach
+            .tenure_evidence
+            .push(census_domain::model::CoachTenureEvidence {
+                tenure: census_domain::model::CoachTenure::Current {
+                    school_year: SchoolYear::new(2026).unwrap(),
+                },
+                source: SourceRef::new("synthetic_directory", None),
+                source_sha256: "a".repeat(64),
+                retrieved_at: "2026-09-20T00:00:00Z".into(),
+                statement: "Synthetic academic-year appointment".into(),
+            });
         store.append(Table::Coaches, &conflicted_coach).unwrap();
     }
 

@@ -1,4 +1,3 @@
-
 use census_domain::model::EventKind;
 
 pub const fn is_relay(kind: &EventKind) -> bool {

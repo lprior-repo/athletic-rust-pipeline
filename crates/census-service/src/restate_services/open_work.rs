@@ -1,4 +1,3 @@
-
 use restate_sdk::prelude::*;
 
 use census_domain::model::SchoolYear;

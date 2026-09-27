@@ -1,6 +1,9 @@
+use crate::{
+    model::{MAX_TOKENS_CAP, REQUEST_CAP},
+    ModelError, ModelOptions,
+};
 use census_domain::model::ReviewPacket;
 use serde::ser::{Serialize, Serializer};
-use crate::{ModelError, ModelOptions, model::{REQUEST_CAP, MAX_TOKENS_CAP}};
 
 #[derive(Default)]
 struct BoundedWriter {
@@ -15,10 +18,15 @@ impl std::io::Write for BoundedWriter {
             None => usize::MAX,
         };
         if self.attempted > REQUEST_CAP {
-            return Err(std::io::Error::other("model request exceeds its size limit"));
+            return Err(std::io::Error::other(
+                "model request exceeds its size limit",
+            ));
         }
         if self.attempted > self.buf.capacity() {
-            let capacity = self.buf.capacity().saturating_mul(2)
+            let capacity = self
+                .buf
+                .capacity()
+                .saturating_mul(2)
                 .max(256)
                 .max(self.attempted)
                 .min(REQUEST_CAP);
@@ -43,7 +51,12 @@ impl Serialize for RequestBody<'_> {
         use serde::ser::SerializeStruct;
         let mut state = serializer.serialize_struct("RequestBody", 6)?;
         state.serialize_field("model", self.options.model_name())?;
-        state.serialize_field("messages", &Messages { packet: self.packet })?;
+        state.serialize_field(
+            "messages",
+            &Messages {
+                packet: self.packet,
+            },
+        )?;
         let capped = self.options.max_tokens().min(MAX_TOKENS_CAP);
         state.serialize_field("temperature", &0u32)?;
         state.serialize_field("max_tokens", &capped)?;
@@ -62,7 +75,9 @@ impl Serialize for Messages<'_> {
         use serde::ser::SerializeSeq;
         let mut seq = serializer.serialize_seq(Some(2))?;
         seq.serialize_element(&SystemMessage)?;
-        seq.serialize_element(&UserMessage { packet: self.packet })?;
+        seq.serialize_element(&UserMessage {
+            packet: self.packet,
+        })?;
         seq.end()
     }
 }
@@ -88,7 +103,12 @@ impl Serialize for UserMessage<'_> {
         use serde::ser::SerializeStruct;
         let mut state = serializer.serialize_struct("Message", 2)?;
         state.serialize_field("role", "user")?;
-        state.serialize_field("content", &DisplayAsString(PacketDisplay { packet: self.packet }))?;
+        state.serialize_field(
+            "content",
+            &DisplayAsString(PacketDisplay {
+                packet: self.packet,
+            }),
+        )?;
         state.end()
     }
 }
@@ -145,12 +165,17 @@ impl Serialize for ChatTemplateKwargs {
     }
 }
 
-pub fn build_request_body(packet: &ReviewPacket, options: &ModelOptions) -> Result<Vec<u8>, ModelError> {
+pub fn build_request_body(
+    packet: &ReviewPacket,
+    options: &ModelOptions,
+) -> Result<Vec<u8>, ModelError> {
     let mut writer = BoundedWriter::default();
     let body = RequestBody { packet, options };
     serde_json::to_writer(&mut writer, &body).map_err(|_| {
         if writer.attempted > REQUEST_CAP {
-            ModelError::RequestTooLarge { bytes: writer.attempted }
+            ModelError::RequestTooLarge {
+                bytes: writer.attempted,
+            }
         } else {
             ModelError::RequestFailed
         }

@@ -1,4 +1,3 @@
-
 use crate::report::{Census, ReportResult};
 use crate::workbook::cells::{row, Cell};
 

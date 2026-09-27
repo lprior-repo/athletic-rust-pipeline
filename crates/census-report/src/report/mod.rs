@@ -1,11 +1,9 @@
-
 pub use census_domain::{JurisdictionBucket, MeetState};
 use serde::ser::SerializeMap;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::path::Path;
-
 
 #[derive(Debug, thiserror::Error)]
 pub enum ReportError {

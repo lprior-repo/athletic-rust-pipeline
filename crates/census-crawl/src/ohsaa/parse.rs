@@ -1,4 +1,3 @@
-
 use super::map::SearchResult;
 use census_domain::model::{normalize_name, Sport};
 use std::collections::{BTreeMap, HashSet};

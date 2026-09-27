@@ -1,4 +1,3 @@
-
 use super::{arbitrary_token, metres_of, parse_field_mark, parse_time, seam_config, shaped_token};
 use proptest::prelude::*;
 

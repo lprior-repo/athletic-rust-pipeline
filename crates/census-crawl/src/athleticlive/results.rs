@@ -106,7 +106,10 @@ fn append(
     page.append_many(Table::Events, &entities.events)?;
     page.append_many(Table::Teams, &entities.teams)?;
     page.append_many(Table::Athletes, &entities.athletes)?;
-    page.append_many(Table::SourceObservations, &ctx.athlete_observations(&entities.athletes, schools))?;
+    page.append_many(
+        Table::SourceObservations,
+        &ctx.athlete_observations(&entities.athletes, schools),
+    )?;
     page.append_many(Table::Performances, &entities.performances)?;
     for (path, payload) in &entries {
         page.journal_done(PHASE, path, payload)?;

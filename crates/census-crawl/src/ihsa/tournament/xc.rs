@@ -1,4 +1,3 @@
-
 use super::journal::Journal;
 use super::map::{joined_name, school_year_of_term, AthleteRow, Mapper, XcList};
 use super::parse::{parse_error, parse_grade, parse_qualifiers};

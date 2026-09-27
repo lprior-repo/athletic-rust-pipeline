@@ -1,4 +1,3 @@
-
 use super::state::Stats;
 use crate::tfrrs::parse::{
     clock_seconds, feet_inches_metres, ParsedMark, ParsedMeet, ParsedRow, ParsedSection,

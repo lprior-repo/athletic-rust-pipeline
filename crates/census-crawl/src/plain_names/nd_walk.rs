@@ -1,4 +1,3 @@
-
 use super::nd::{
     parse_nd_offerings, parse_nd_school_page, parse_nd_staff, NdOffering, NdSchoolRef, NdStaffRole,
 };
@@ -159,8 +158,14 @@ impl NdWalk {
 
         let mut batch = ctx.store.write_batch();
         batch.append_many(Table::Schools, std::slice::from_ref(&page.school))?;
-        batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(super::ND_ADAPTER_ID),
-        &page.school,).as_slice())?;
+        batch.append_many(
+            Table::SourceObservations,
+            ctx.school_observation(
+                &SourceNamespace::association_school(super::ND_ADAPTER_ID),
+                &page.school,
+            )
+            .as_slice(),
+        )?;
         batch.append_many(Table::Coaches, &coaches)?;
         self.school_rows = self.school_rows.saturating_add(1);
         self.coach_rows = self.coach_rows.saturating_add(coaches.len());

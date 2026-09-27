@@ -37,9 +37,17 @@ pub struct RosterRejection {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RosterVerdict {
-    Complete { roster: Roster },
-    Partial { roster: Roster, rejected: Vec<RosterRejection> },
-    Quarantined { reason: RosterQuarantine, rejected: Vec<RosterRejection> },
+    Complete {
+        roster: Roster,
+    },
+    Partial {
+        roster: Roster,
+        rejected: Vec<RosterRejection>,
+    },
+    Quarantined {
+        reason: RosterQuarantine,
+        rejected: Vec<RosterRejection>,
+    },
 }
 
 impl RosterVerdict {

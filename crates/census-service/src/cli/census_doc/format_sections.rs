@@ -1,4 +1,3 @@
-
 use super::{fmt_comma, fmt_pct};
 
 fn to_f64(val: usize) -> f64 {

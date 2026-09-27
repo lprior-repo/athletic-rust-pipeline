@@ -1,4 +1,3 @@
-
 use crate::replay::{ensure_rows, unmapped, Capture};
 use anyhow::{ensure, Context, Result};
 use census_crawl::milesplit;
@@ -18,11 +17,14 @@ pub(super) fn capture(capture: &Capture<'_>) -> Result<String> {
     if let Some((site, team_id)) = roster_fixture(file) {
         let team = index_team(&site, &team_id, capture)?;
         let parsed = milesplit::parse_roster(body, team)?;
-        let roster = parsed.roster().context("roster quarantined: no readable athletes")?;
+        let roster = parsed
+            .roster()
+            .context("roster quarantined: no readable athletes")?;
         ensure_rows(file, roster.athletes.len(), "athletes")?;
         return Ok(format!(
             "roster site={site} team={team_id} athletes={} rejected={}",
-            roster.athletes.len(), parsed.rejections().len()
+            roster.athletes.len(),
+            parsed.rejections().len()
         ));
     }
     if let Some((site, meet_id, rsid)) = raw_fixture(file) {

@@ -1,4 +1,3 @@
-
 use super::map::{CoachRow, SchoolTable};
 use census_domain::model::Sport;
 

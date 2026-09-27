@@ -1,4 +1,3 @@
-
 use reqwest::{header::HeaderMap, StatusCode};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

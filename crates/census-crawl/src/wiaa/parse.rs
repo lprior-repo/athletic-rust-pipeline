@@ -1,4 +1,3 @@
-
 use super::primitives::{
     attribute_value, cell_email, clean, element_bodies, element_text, find_from, labelled_texts,
     meaningful, nonempty, nth, nth_owned, strip_tags, table_slice,

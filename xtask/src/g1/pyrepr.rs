@@ -1,4 +1,3 @@
-
 use serde_json::Value;
 
 pub(crate) fn fmt_dict<K: AsRef<str>, V: std::fmt::Display>(items: &[(K, V)]) -> String {

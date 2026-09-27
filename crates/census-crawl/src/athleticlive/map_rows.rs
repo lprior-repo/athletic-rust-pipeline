@@ -1,4 +1,3 @@
-
 use super::docs::{value_u64, DocRow, DocTeam};
 use super::map::{ResultStats, RowContext, Writer};
 use super::standings::StandingRow;

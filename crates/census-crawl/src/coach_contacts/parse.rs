@@ -1,4 +1,3 @@
-
 use census_domain::model::{CoachRole, Gender, Sport};
 
 pub(super) fn clean(value: &str) -> String {

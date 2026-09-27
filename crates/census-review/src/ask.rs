@@ -1,4 +1,3 @@
-
 use census_domain::model::{ReviewCase, ReviewVerdict};
 
 use super::model::{ModelClient, ModelError};

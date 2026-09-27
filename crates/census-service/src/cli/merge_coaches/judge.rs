@@ -1,4 +1,3 @@
-
 use super::{email_re, phone_re, url_re, vacant_re, Row, PERSONAL_MAIL};
 
 pub(super) fn judge(row: &Row, state: &str) -> Option<String> {

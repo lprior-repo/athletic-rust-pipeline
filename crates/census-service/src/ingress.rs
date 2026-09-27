@@ -1,4 +1,3 @@
-
 use anyhow::{bail, Result};
 use restate_sdk::ingress::{ClientError, ReqwestClient};
 use std::time::Duration;

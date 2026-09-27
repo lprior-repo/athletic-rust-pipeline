@@ -1,4 +1,3 @@
-
 use super::super::{
     actor::{Actor, ActorHandles, BrowserConnection, Command, HandlerEvent},
     gate::ProfileGate,

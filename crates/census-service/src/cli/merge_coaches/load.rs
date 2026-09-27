@@ -111,7 +111,10 @@ pub(super) fn load_rows(path: &Path, expected_state: &str) -> (Vec<(usize, Row)>
             state_field
         };
         if row.verified_proof_digest.is_empty() {
-            return (Vec::new(), Some(format!("missing proof digest at line {line_no}")));
+            return (
+                Vec::new(),
+                Some(format!("missing proof digest at line {line_no}")),
+            );
         }
         records.push((line_no, row));
     }

@@ -1,4 +1,3 @@
-
 use census_domain::model::{CanonicalMeet, SourceNamespace};
 use census_domain::UsJurisdiction;
 use std::collections::{BTreeSet, HashMap};

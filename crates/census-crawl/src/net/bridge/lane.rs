@@ -1,4 +1,3 @@
-
 use super::wire::{BrowserOutcome, RequestSpec};
 use crate::net::FetchError;
 use restate_sdk::ingress::{ClientError, RequestTarget, ReqwestClient};

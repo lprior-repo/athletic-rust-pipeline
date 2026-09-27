@@ -1,4 +1,3 @@
-
 use super::super::Stats;
 use super::{MeetContext, RowWriter};
 use crate::result_file::ParsedRow;
@@ -97,7 +96,8 @@ fn record_members(
         }
         athlete_rows = athlete_rows.saturating_add(1);
         let source_key = performance_key(context, row_index, leg_position);
-        let (athlete_id, source_athlete) = record_athlete(writer, context, school_id, &member_name, grade, &source_key);
+        let (athlete_id, source_athlete) =
+            record_athlete(writer, context, school_id, &member_name, grade, &source_key);
         let performance_id = CanonicalPerformance::mint(
             &athlete_id,
             &context.meet.id,

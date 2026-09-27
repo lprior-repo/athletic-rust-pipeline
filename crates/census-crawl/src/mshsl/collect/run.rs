@@ -163,7 +163,12 @@ impl<'a> MshslRun<'a> {
         };
         let mut batch = self.ctx.store.write_batch();
         batch.append_many(Table::Schools, std::slice::from_ref(school))?;
-        batch.append_many(Table::SourceObservations, self.ctx.school_observation(&SourceNamespace::association_school(SOURCE_ID), school).as_slice())?;
+        batch.append_many(
+            Table::SourceObservations,
+            self.ctx
+                .school_observation(&SourceNamespace::association_school(SOURCE_ID), school)
+                .as_slice(),
+        )?;
         batch.append_many(Table::Coaches, &ads)?;
         batch.append_many(Table::Coaches, &sport_coaches)?;
         for note in notes {

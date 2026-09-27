@@ -25,7 +25,9 @@ fn parses_team_index_rows() {
 fn parses_roster_rows_with_grad_year_and_seasons() {
     let teams = parse_team_index(TEAMS).unwrap();
     let parsed = parse_roster(ROSTER, teams[0].clone()).unwrap();
-    let roster = parsed.roster().expect("the fixture has readable roster rows");
+    let roster = parsed
+        .roster()
+        .expect("the fixture has readable roster rows");
     assert_eq!(roster.athletes.len(), 25);
     let first = &roster.athletes[0];
     assert_eq!(first.name, "Julian Aguilera");
@@ -52,7 +54,9 @@ fn parses_roster_rows_with_grad_year_and_seasons() {
 fn roster_entities_are_canonical_and_source_independent() {
     let teams = parse_team_index(TEAMS).unwrap();
     let parsed = parse_roster(ROSTER, teams[0].clone()).unwrap();
-    let roster = parsed.roster().expect("the fixture has readable roster rows");
+    let roster = parsed
+        .roster()
+        .expect("the fixture has readable roster rows");
     let site = Site::for_jurisdiction(UsJurisdiction::Wisconsin);
     let (school, athletes, teams_out) = roster_entities(
         &roster,
@@ -89,13 +93,18 @@ fn malformed_html_fails_loudly() {
     assert!(parse_team_index("<html><body>no rows</body></html>").is_err());
     let teams = parse_team_index(TEAMS).unwrap();
     let outcome = parse_roster("<html></html>", teams[0].clone()).unwrap();
-    assert!(matches!(outcome, RosterVerdict::Quarantined {
-        reason: RosterQuarantine::UnknownTemplate, ..
-    }));
+    assert!(matches!(
+        outcome,
+        RosterVerdict::Quarantined {
+            reason: RosterQuarantine::UnknownTemplate,
+            ..
+        }
+    ));
 }
 
 const OH_TEAMS: &str = include_str!("../../../tests/fixtures/milesplit/oh_teams_index.html");
-const OH_ROSTER: &str = include_str!("../../../tests/fixtures/milesplit/oh_roster_10002_mason.html");
+const OH_ROSTER: &str =
+    include_str!("../../../tests/fixtures/milesplit/oh_roster_10002_mason.html");
 const OH_RAW: &str =
     include_str!("../../../tests/fixtures/milesplit/oh_meet_770621_rs1321880_raw.html");
 const OH_RAW_URL: &str =
@@ -132,7 +141,9 @@ fn oh_roster_pins_319_graded_rows_and_96_class_of_2027() {
         .unwrap()
         .clone();
     let parsed = parse_roster(OH_ROSTER, mason).unwrap();
-    let roster = parsed.roster().expect("the fixture has readable roster rows");
+    let roster = parsed
+        .roster()
+        .expect("the fixture has readable roster rows");
     assert_eq!(roster.athletes.len(), 318);
     let co2027 = roster
         .athletes
@@ -178,14 +189,16 @@ fn raw_result_set_body_pins_80_rows_in_two_sections() {
     assert_eq!(first.grade, None);
     assert!(matches!(first.mark, Mark::TimeSeconds(_)));
 }
-mod roster;
 mod parsing;
+mod roster;
 
 #[test]
 fn rejected_rows_keep_their_provider_identity_and_exact_utf8_span() {
     let team = parse_team_index(TEAMS).unwrap().remove(0);
-    let body = format!("é\n{}", ROSTER.replacen(
-        "column-grad-year\">2027", "column-grad-year\">invalid", 1));
+    let body = format!(
+        "é\n{}",
+        ROSTER.replacen("column-grad-year\">2027", "column-grad-year\">invalid", 1)
+    );
     let RosterVerdict::Partial { roster, rejected } = parse_roster(&body, team).unwrap() else {
         panic!("one malformed graduation year must not discard the readable rows");
     };
@@ -198,9 +211,16 @@ fn rejected_rows_keep_their_provider_identity_and_exact_utf8_span() {
     assert!(span.contains("column-grad-year\">invalid"));
     let id = rejection.athlete_id.as_deref().unwrap();
     assert!(span.contains(&format!("/athletes/{id}-")));
-    assert!(roster.athletes.iter().all(|athlete| athlete.athlete_id != id));
-    assert_eq!(locator.ordinal as usize + 1,
-        body[..locator.byte_offset].matches("<li class=\"athlete-row data-row\">").count());
+    assert!(roster
+        .athletes
+        .iter()
+        .all(|athlete| athlete.athlete_id != id));
+    assert_eq!(
+        locator.ordinal as usize + 1,
+        body[..locator.byte_offset]
+            .matches("<li class=\"athlete-row data-row\">")
+            .count()
+    );
 }
 
 #[test]

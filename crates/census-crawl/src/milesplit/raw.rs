@@ -1,4 +1,3 @@
-
 use crate::result_file::ParsedMeet;
 use crate::{CrawlError, CrawlResult};
 use census_domain::model::{SchoolYear, Sport};

@@ -1,4 +1,3 @@
-
 use census_crawl::CrawlResult;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
@@ -36,8 +35,12 @@ pub(super) fn summarize_states(
         match outcome {
             Ok(progress) => {
                 let new_teams = report.teams_total.saturating_add(progress.rosters_total);
-                let new_fetched = report.rosters_fetched.saturating_add(progress.rosters_committed);
-                let new_co2027 = report.class_of_2027_total.saturating_add(progress.class_of_2027);
+                let new_fetched = report
+                    .rosters_fetched
+                    .saturating_add(progress.rosters_committed);
+                let new_co2027 = report
+                    .class_of_2027_total
+                    .saturating_add(progress.class_of_2027);
                 let new_errors = report.errors.saturating_add(count(progress.errors.len()));
                 let new_athletes = report.athletes_total.saturating_add(progress.athletes);
                 report.teams_total = new_teams;

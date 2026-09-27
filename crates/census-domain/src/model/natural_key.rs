@@ -1,4 +1,3 @@
-
 use super::collision::{evidence_list, source_list};
 use super::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,

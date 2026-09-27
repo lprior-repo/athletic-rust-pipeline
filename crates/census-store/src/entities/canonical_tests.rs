@@ -82,7 +82,10 @@ fn two_observations_of_one_athlete_merge_as_before() {
         SourceNamespace::MilesplitAthlete,
         "111",
     );
-    seen_again.add_identity(SourceIdentity::new(SourceNamespace::MilesplitAthlete, "333"));
+    seen_again.add_identity(SourceIdentity::new(
+        SourceNamespace::MilesplitAthlete,
+        "333",
+    ));
     assert_eq!(seen_again.id, id, "the same material mints the same id");
 
     kept.merge(seen_again);
@@ -218,7 +221,6 @@ fn malformed_mailboxes_are_refused_from_either_field() {
     assert_eq!(coach.personal_email, None);
 }
 
-
 fn observing(row: &mut CanonicalAthlete, grade: u8, season: i16) {
     row.observed_grades.push(ObservedGrade {
         grade: Grade::new(grade).expect("9..=12 is a grade"),
@@ -279,8 +281,7 @@ fn an_observation_that_disagrees_derives_low_cohort_confidence() {
     );
 }
 
-#[path = "canonical_tests/store_tests.rs"]
-mod store_tests;
 #[path = "canonical_tests/coach_tests.rs"]
 mod coach_tests;
-
+#[path = "canonical_tests/store_tests.rs"]
+mod store_tests;

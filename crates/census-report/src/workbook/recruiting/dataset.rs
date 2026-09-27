@@ -1,4 +1,3 @@
-
 use crate::report::{
     exclude_out_of_scope, in_run_scope, jurisdiction_of, retain_core, school_state_index,
     ReportResult, Scope,
@@ -107,7 +106,9 @@ impl ScopedTables {
         let store_athletes = athletes.len();
         let mut index = census_domain::model::AthleteIdentityIndex::default();
         for athlete in &athletes {
-            index.observe(athlete).map_err(census_store::StoreError::from)?;
+            index
+                .observe(athlete)
+                .map_err(census_store::StoreError::from)?;
         }
         let identities = snapshot.project_athlete_identities(index)?;
         athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
@@ -142,7 +143,11 @@ impl ScopedTables {
         })
     }
 
-    fn assemble(self, prs: Vec<SharedSelection>, school_year: census_domain::model::SchoolYear) -> Dataset {
+    fn assemble(
+        self,
+        prs: Vec<SharedSelection>,
+        school_year: census_domain::model::SchoolYear,
+    ) -> Dataset {
         let Self {
             scope,
             grad_year,

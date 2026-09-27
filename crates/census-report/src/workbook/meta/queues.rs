@@ -1,8 +1,7 @@
-
 use census_domain::model::{
     CanonicalAthlete, GradYear, ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY,
-    COHORT_EVIDENCE_FAMILY, IDENTITY_UNVERIFIED_FAMILY, COHORT_UNVERIFIED_FAMILY,
-    CONTACT_CONFLICT_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
+    COHORT_EVIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY, CONTACT_CONFLICT_FAMILY,
+    IDENTITY_UNVERIFIED_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
     UNRESOLVED_VENUE_FAMILY,
 };
 use census_review::ReviewFamily;
@@ -192,7 +191,10 @@ pub(super) fn conflict_families(rows: &StoreRows, names: &HashMap<&str, &str>) -
     ]
 }
 
-pub(super) fn review_families(rows: &StoreRows, names: &HashMap<&str, &str>) -> ReportResult<Vec<Family>> {
+pub(super) fn review_families(
+    rows: &StoreRows,
+    names: &HashMap<&str, &str>,
+) -> ReportResult<Vec<Family>> {
     Ok(vec![
         cohort_unverified(rows, names),
         identity_unverified(rows, names)?,
@@ -218,10 +220,11 @@ fn queue_row(id: &str, subject: String, detail: String) -> QueueRow {
 pub fn retained_records(store: &Store) -> ReportResult<RetainedRecords> {
     use census_store::clock::Clock;
     let today = census_store::clock::SystemClock.today();
-    let school_year = census_domain::model::SchoolYear::from_date(&today)
-        .ok_or_else(|| crate::report::ReportError::Invariant {
+    let school_year = census_domain::model::SchoolYear::from_date(&today).ok_or_else(|| {
+        crate::report::ReportError::Invariant {
             detail: format!("cannot determine contact school year from {today}"),
-        })?;
+        }
+    })?;
     let rows = StoreRows::read(store, Scope::AllSources, school_year)?;
     let names = school_name_index(&rows.schools);
     Ok(RetainedRecords {

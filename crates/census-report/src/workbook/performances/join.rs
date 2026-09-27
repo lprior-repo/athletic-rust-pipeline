@@ -1,4 +1,3 @@
-
 use super::rows::PerformanceRow;
 use crate::bests::{mark_text, sport_of, Measure};
 use crate::report::{

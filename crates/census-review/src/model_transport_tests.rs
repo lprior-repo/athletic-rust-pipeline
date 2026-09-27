@@ -55,12 +55,14 @@ async fn serve(stream: TcpStream, reply: Reply) {
             stream.write_all(headers.as_bytes()).await.unwrap();
         }
         Reply::StalledBody => {
-            let headers = "HTTP/1.1 200 Fixture\r\nContent-Length: 1000\r\nConnection: close\r\n\r\n";
+            let headers =
+                "HTTP/1.1 200 Fixture\r\nContent-Length: 1000\r\nConnection: close\r\n\r\n";
             stream.write_all(headers.as_bytes()).await.unwrap();
             std::future::pending::<()>().await;
         }
         Reply::ChunkOverflow => {
-            let headers = "HTTP/1.1 200 Fixture\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n";
+            let headers =
+                "HTTP/1.1 200 Fixture\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n";
             stream.write_all(headers.as_bytes()).await.unwrap();
             let chunk = "X".repeat(300_000);
             let chunk_line = format!("{:x}\r\n{}\r\n", chunk.len(), chunk);
@@ -83,7 +85,8 @@ async fn request(reply: Reply) -> Result<VerdictBatch, ModelError> {
         .await
         .expect("HTTP fixture exceeded its deadline");
     });
-    let mut options = ModelOptions::local(&format!("http://{address}"), "fixture-model").expect("valid endpoint");
+    let mut options =
+        ModelOptions::local(&format!("http://{address}"), "fixture-model").expect("valid endpoint");
     options = options.with_timeout(if stalled {
         Duration::from_millis(100)
     } else {
@@ -103,12 +106,14 @@ async fn request(reply: Reply) -> Result<VerdictBatch, ModelError> {
 
 #[tokio::test]
 async fn http_503_returns_status_error() {
-    match request(Reply::Complete(503, "overloaded")).await.unwrap_err() {
+    match request(Reply::Complete(503, "overloaded"))
+        .await
+        .unwrap_err()
+    {
         ModelError::Status { status } => assert_eq!(status, 503),
         other => panic!("expected HTTP status failure, got {other:?}"),
     }
 }
-
 
 #[tokio::test]
 async fn malformed_batch_returns_content_error() {
@@ -117,7 +122,6 @@ async fn malformed_batch_returns_content_error() {
     assert!(matches!(error, ModelError::Content { .. }));
     assert!(!error.to_string().contains("PRIVATE_MODEL_SENTINEL"));
 }
-
 
 #[tokio::test]
 async fn empty_message_returns_empty_error() {
@@ -152,7 +156,11 @@ async fn redirect_is_not_followed() {
         request(Reply::Redirect(302, format!("http://{address}"))).await,
         Err(ModelError::Status { status: 302 })
     ));
-    assert!(tokio::time::timeout(Duration::from_millis(50), listener.accept()).await.is_err());
+    assert!(
+        tokio::time::timeout(Duration::from_millis(50), listener.accept())
+            .await
+            .is_err()
+    );
 }
 #[tokio::test]
 async fn chunked_overflow_returns_response_error() {
@@ -162,4 +170,3 @@ async fn chunked_overflow_returns_response_error() {
         other => panic!("expected response overflow, got {other:?}"),
     }
 }
-

@@ -1,4 +1,3 @@
-
 use super::map::{school_entities, ParsedSchool, SchoolExtract};
 use super::pages::parse_directory;
 use super::{Options, ASSOCIATION, HOST_WWW};
@@ -162,8 +161,14 @@ fn emit_school(
     let key = &extract.source_school_id;
     let mut batch = ctx.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
-    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(ASSOCIATION),
-    &extract.school,).as_slice())?;
+    batch.append_many(
+        Table::SourceObservations,
+        ctx.school_observation(
+            &SourceNamespace::association_school(ASSOCIATION),
+            &extract.school,
+        )
+        .as_slice(),
+    )?;
     report.rows = report.rows.saturating_add(1);
 
     tally.coach_rows = tally.coach_rows.saturating_add(extract.coaches.len());

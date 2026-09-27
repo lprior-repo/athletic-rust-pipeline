@@ -1,4 +1,3 @@
-
 use crate::report::ReportResult;
 use census_domain::model::CanonicalCoach;
 
@@ -26,7 +25,9 @@ pub(super) const HEADERS: [&str; 16] = [
     "Assessment School Year",
 ];
 
-pub(super) const WIDTHS: [u16; 16] = [20, 30, 20, 8, 14, 26, 16, 32, 32, 18, 26, 32, 40, 14, 24, 22];
+pub(super) const WIDTHS: [u16; 16] = [
+    20, 30, 20, 8, 14, 26, 16, 32, 32, 18, 26, 32, 40, 14, 24, 22,
+];
 
 pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
     let mut ordered: Vec<(&CanonicalCoach, SortKey)> = dataset
@@ -87,7 +88,10 @@ fn row_for(dataset: &Dataset, coach: &CanonicalCoach) -> Vec<Cell> {
     )
 }
 
-fn tenure_label(coach: &CanonicalCoach, school_year: census_domain::model::SchoolYear) -> &'static str {
+fn tenure_label(
+    coach: &CanonicalCoach,
+    school_year: census_domain::model::SchoolYear,
+) -> &'static str {
     use census_domain::model::{CoachTenure, TenureAssessmentError};
     match coach.tenure_state(school_year) {
         Ok(CoachTenure::Current { .. }) => "current_declared",

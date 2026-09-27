@@ -1,4 +1,3 @@
-
 use super::schools::Schools;
 use crate::{AdapterContext, CrawlResult};
 use census_domain::model::{

@@ -1,4 +1,3 @@
-
 use super::{io_error, Census, ReportError, ReportResult, Scope, StateCensus};
 use census_store::read::publish_atomically;
 use census_store::{Store, StoreError, StoreResult};

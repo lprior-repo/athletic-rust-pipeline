@@ -1,4 +1,3 @@
-
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CollectionSnapshot, NaturalKey, RetainedConflict, ReviewCase,

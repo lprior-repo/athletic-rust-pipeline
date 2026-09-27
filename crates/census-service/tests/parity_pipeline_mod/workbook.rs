@@ -1,4 +1,3 @@
-
 use std::collections::BTreeMap;
 use std::path::Path;
 
@@ -20,10 +19,7 @@ impl Workbook {
         let mut book = open_workbook_auto(path)
             .with_context(|| format!("opening {} with calamine", path.display()))?;
         let sheet_names = book.sheet_names().to_vec();
-        ensure!(
-            !sheet_names.is_empty(),
-            "the workbook carries no sheets"
-        );
+        ensure!(!sheet_names.is_empty(), "the workbook carries no sheets");
 
         let mut sheets: Vec<serde_json::Value> = Vec::with_capacity(sheet_names.len());
         let mut cells: Vec<String> = Vec::new();

@@ -1,4 +1,3 @@
-
 use census_domain::model::{Gender, Grade, SchoolYear, Sport};
 
 pub fn grade_from_token(token: &str) -> Option<Grade> {

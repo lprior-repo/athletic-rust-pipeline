@@ -1,4 +1,3 @@
-
 use crate::report::Scope;
 
 mod events;
@@ -10,11 +9,10 @@ mod reduce;
 mod selection;
 mod write;
 
-
 pub use events::{is_relay, sport_of};
 pub use key::{
-    classify_wind, is_wind_sensitive, resolve_timing, should_replace, tie_break_later,
-    PrKey, SurfaceClass, TimingClass, WindClass,
+    classify_wind, is_wind_sensitive, resolve_timing, should_replace, tie_break_later, PrKey,
+    SurfaceClass, TimingClass, WindClass,
 };
 pub use measure::{field_micrometres, mark_unit, Measure};
 pub use notation::{disagreement, format_time, mark_text};

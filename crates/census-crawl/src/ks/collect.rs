@@ -127,8 +127,14 @@ fn collect_record(
 
     let mut batch = ctx.store.write_batch();
     batch.append_many(Table::Schools, std::slice::from_ref(&school))?;
-    batch.append_many(Table::SourceObservations, ctx.school_observation(&SourceNamespace::association_school(super::ASSOCIATION),
-    &school,).as_slice())?;
+    batch.append_many(
+        Table::SourceObservations,
+        ctx.school_observation(
+            &SourceNamespace::association_school(super::ASSOCIATION),
+            &school,
+        )
+        .as_slice(),
+    )?;
     if let Some(row) = coach.as_ref() {
         batch.append_many(Table::Coaches, std::slice::from_ref(row))?;
     }

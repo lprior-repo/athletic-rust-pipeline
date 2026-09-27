@@ -1,4 +1,3 @@
-
 use super::html::collapse_whitespace;
 use super::season::{Season, YearToken};
 use census_domain::model::{Gender, Sport};

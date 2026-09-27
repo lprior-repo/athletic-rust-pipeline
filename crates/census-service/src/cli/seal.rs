@@ -1,4 +1,3 @@
-
 use std::path::PathBuf;
 
 use anyhow::{bail, Result};
@@ -14,7 +13,10 @@ use super::{scope_of, Cli, Route};
 use census_service::ingress;
 
 #[derive(Debug, Args)]
-#[command(about = "`census-service seal`", long_about = "`census-service seal`\n\nThe export phase reads the workbook's own meta sheets: `Coverage` must carry every jurisdiction the classifier produced, and `Run Metrics` must name the cohort the store counted. A workbook that disagrees with the store refuses the seal and says which number disagreed.")]
+#[command(
+    about = "`census-service seal`",
+    long_about = "`census-service seal`\n\nThe export phase reads the workbook's own meta sheets: `Coverage` must carry every jurisdiction the classifier produced, and `Run Metrics` must name the cohort the store counted. A workbook that disagrees with the store refuses the seal and says which number disagreed."
+)]
 pub(super) struct SealArgs {
     #[arg(help = "Graduation year of the cohort being certified")]
     #[arg(long, default_value_t = 2027)]
@@ -25,19 +27,27 @@ pub(super) struct SealArgs {
     #[arg(help = "The workbook to certify. Defaults to the newest `out/*.xlsx`")]
     #[arg(long)]
     workbook: Option<PathBuf>,
-    #[arg(help = "Write the seal to `out/seal.json` so a later run reads it instead of re-deriving it")]
+    #[arg(
+        help = "Write the seal to `out/seal.json` so a later run reads it instead of re-deriving it"
+    )]
     #[arg(long)]
     write: bool,
-    #[arg(help = "Drive the running service instead of opening the store here: the only route that measures the run's own open work, and therefore the only one a finished census can seal through")]
+    #[arg(
+        help = "Drive the running service instead of opening the store here: the only route that measures the run's own open work, and therefore the only one a finished census can seal through"
+    )]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
     #[arg(help = "Season start year of the run whose journal supplies those counts. Online only")]
     #[arg(long, default_value_t = 2026)]
     season: i16,
-    #[arg(help = "Run revision of that run: the one it was submitted under, not a new one. Online only")]
+    #[arg(
+        help = "Run revision of that run: the one it was submitted under, not a new one. Online only"
+    )]
     #[arg(long, default_value_t = 1)]
     revision: u32,
-    #[arg(help = "Ingest object key to read, e.g. `milesplit_wi`. Repeatable, because an object key is the caller's to choose and the service cannot enumerate them: naming none leaves §70 item 2 unmeasured rather than reporting it as zero. Online only")]
+    #[arg(
+        help = "Ingest object key to read, e.g. `milesplit_wi`. Repeatable, because an object key is the caller's to choose and the service cannot enumerate them: naming none leaves §70 item 2 unmeasured rather than reporting it as zero. Online only"
+    )]
     #[arg(long = "source-object", value_name = "KEY")]
     source_objects: Vec<String>,
 }

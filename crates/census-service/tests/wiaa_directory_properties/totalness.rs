@@ -1,4 +1,3 @@
-
 use super::seam_config;
 use census_crawl::wiaa::{parse_directory_letter, parse_enrollment, parse_school_page};
 use proptest::prelude::*;

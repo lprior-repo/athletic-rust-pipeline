@@ -1,4 +1,3 @@
-
 use super::super::read::{grade_of, meet_mark};
 use super::super::store::{athlete, store, AthleteRow};
 use super::super::wire::{FlatRow, PublishedLeg};
@@ -53,7 +52,8 @@ impl MeetCtx<'_> {
             self.counts.rows_no_mark = self.counts.rows_no_mark.saturating_add(1);
             return;
         };
-        let (athlete_id, source_athlete) = self.athlete_of(provider_id, &school, &name, grade, block.gender);
+        let (athlete_id, source_athlete) =
+            self.athlete_of(provider_id, &school, &name, grade, block.gender);
         let entry = Entry {
             school: &school,
             athlete: &athlete_id,
@@ -132,7 +132,8 @@ impl MeetCtx<'_> {
             self.counts.legs_no_grade = self.counts.legs_no_grade.saturating_add(1);
             return;
         };
-        let (athlete_id, source_athlete) = self.athlete_of(provider_id, school, name, grade, block.gender);
+        let (athlete_id, source_athlete) =
+            self.athlete_of(provider_id, school, name, grade, block.gender);
         let entry = Entry {
             school,
             athlete: &athlete_id,

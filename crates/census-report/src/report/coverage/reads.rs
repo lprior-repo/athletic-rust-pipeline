@@ -1,4 +1,3 @@
-
 use super::state::{in_cohort, jurisdiction_of};
 use super::CoverageTotals;
 use census_domain::model::{

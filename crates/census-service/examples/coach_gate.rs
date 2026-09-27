@@ -1,4 +1,3 @@
-
 use census_crawl as sources;
 use census_crawl::net::Fetcher;
 use census_service::coachverify::{self, FragmentOutcome, GateOptions};

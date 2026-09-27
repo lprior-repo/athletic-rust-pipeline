@@ -1,4 +1,3 @@
-
 use tracing::warn;
 
 use census_crawl::net::{FetchError, Fetcher};

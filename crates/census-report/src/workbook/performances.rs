@@ -1,4 +1,3 @@
-
 use crate::report::{ReportError, ReportResult, Scope};
 use census_store::Store;
 use rust_xlsxwriter::Workbook;

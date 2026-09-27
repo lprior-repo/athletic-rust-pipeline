@@ -1,4 +1,3 @@
-
 use super::FetchPlan;
 use crate::net::bridge::{BrowserCapture, BrowserError, Verdict};
 use crate::net::{FetchError, FetchOutcome, Fetcher};

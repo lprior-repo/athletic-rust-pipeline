@@ -1,4 +1,3 @@
-
 use crate::paths;
 use crate::templates::{adapter_module, adapter_readme, fixture_readme, map_module, parse_module};
 use anyhow::{bail, Context, Result};

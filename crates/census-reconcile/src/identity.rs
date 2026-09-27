@@ -1,4 +1,3 @@
-
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use sha2::{Digest, Sha256};

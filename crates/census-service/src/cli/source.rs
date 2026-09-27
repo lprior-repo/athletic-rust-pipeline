@@ -1,4 +1,3 @@
-
 use anyhow::Result;
 use census_crawl::milesplit::Site;
 use census_crawl::net::{FetchOptions, Fetcher};
