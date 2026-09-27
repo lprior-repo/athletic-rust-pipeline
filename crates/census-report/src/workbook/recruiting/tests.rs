@@ -176,7 +176,7 @@ fn performance(store: &Store, context: &PerformanceRow<'_>, mark: Mark, source: 
                 observed_grade: None,
                 evidence: evidence(source, Some(url)),
                 source_key,
-                source_athlete,
+                source_athlete: Some(source_athlete),
                 retained_conflicts: Vec::new(),
             },
         )

@@ -80,6 +80,15 @@ serialized entity. Used for replay after a crash.
 All values are `serde_json::to_vec(entity)`. A `StoreError::Decode{key,source}` is raised
 on any row that is not valid JSON for the expected type `T`.
 
+`CanonicalAthlete` and `CanonicalPerformance` accept two stored shapes and write one (ADR-014).
+Current rows carry `source` (the owner identity) plus `source_links`, or `source_athlete`; rows
+persisted before the source-owned identity cutover (`99f88c9`) carry
+`source_identities: [first, rest…]`, no identity at all, or no `source_athlete` — 74,468 of the
+2,374,515 athletes and all 204,102 performances in the delivered census. The athlete decode map
+(`serde(from = "PersistedAthlete")`) maps the first list entry to `source` and the rest to
+`source_links`, the performance owner is `#[serde(default)]`, so `scan`, `consolidate` and every
+`serde_json::from_slice` reader accept the old bytes; only the current shape is ever written.
+
 ## 4. Read path
 
 `scan::<T>` (`read/mod.rs:134`, over the shared prefix walk):
@@ -128,27 +137,7 @@ count, the 20M cap cannot be exhausted by re-deriving, and `stats()` keeps count
 **No `try_reserve` calls exist in the census store.** The root crate had ~10 sites (historical: root package deleted 2026-09-23); census
 has zero. This is a P7 gap named in PERFORMANCE.md §6.
 
-
-## 6. Legacy import
-
-The pre-Fjall resume ledger — `<root>/journal/<phase>.jsonl`, one entry per finished unit of work —
-is imported by `Store::import_legacy_resume_journals` (`legacy/resume.rs:27`), under the entity
-journals' policy because the stakes are the same: this ledger is the store's only record that a
-unit of work finished, so an entry that vanishes becomes work a later run repeats.
-
-- A complete line imports byte for byte; a line that is not a JSON object, or carries no `key`,
-  fails the import naming the file and the line.
-- One unterminated trailing line is the head of a line a writer died in the middle of: the import
-  stops at the line boundary before it.
-- Rows are buffered through `ImportChunk` (`legacy/chunk.rs:50`) and refused at the row ceiling
-  (`legacy/chunk.rs:75`).
-- The completion mark (`imported:resume-journals` in `meta`) rides in the same batch as the entries
-  it describes, so the two land together or not at all: **the import is exactly-once** — a refusal
-  leaves no mark and the import runs again, a finished import is never repeated.
-
-The cost of that shape is memory: one ledger file is one WriteBatch before commit.
-
-## 7. Tuning knobs
+## 6. Tuning knobs
 
 | Knob | Census | Root (acquisition) (historical: root package deleted 2026-09-23) | Fjall default |
 |---|---|---|---|
@@ -163,7 +152,7 @@ The cost of that shape is memory: one ledger file is one WriteBatch before commi
 | Write buffer | default (64 MiB/keyspace) | same | 64 MiB/keyspace |
 | Max journal size | 512 MiB (then rotate) | same | 512 MiB |
 
-## 8. Sharp edges
+## 7. Sharp edges
 
 1. **20M read-only cap** (`MAX_ROWS_PER_TABLE`): `scan` aborts the entire table scan if
    the prefix walk exceeds 20M rows. A single-table overflow kills `report`, `bests`,
@@ -172,33 +161,30 @@ The cost of that shape is memory: one ledger file is one WriteBatch before commi
    process heap. No streaming output.
 3. **Single writer**: `append_many` acquires no lock but commits one WriteBatch at a time.
    Concurrent appends from different tasks serialize at commit.
-4. **One ledger is one batch**: the resume-ledger import (`legacy/resume.rs:27`) accumulates a
-   whole file into a single WriteBatch before commit, so a very large ledger's rows are resident
-   until it lands (bounded by `MAX_ROWS_PER_TABLE`).
-5. **Backup and restore are `backup/`, not `Database::snapshot()`**: `backup::backup`
+4. **Backup and restore are `backup/`, not `Database::snapshot()`**: `backup::backup`
    (`backup/copy.rs:36`) copies a closed store under a lock with a digest manifest, and
    `backup::restore` (`backup/restore.rs:29`) validates that manifest before writing.
    `backup/mod.rs:12-15` records why `Database::snapshot()` alone is not enough: it pins the LSM
    version for reads but stops neither compaction from rewriting SSTs nor the write-ahead journal
    from rotating mid-frame.
-6. **No `try_reserve` in census**: all externally-sized growth points (legacy ledger ingest,
-   parser buffers, journal payloads, observation batches) use `Vec::with_capacity` or
+5. **No `try_reserve` in census**: all externally-sized growth points (parser buffers, journal
+   payloads, observation batches) use `Vec::with_capacity` or
    `Vec::new()` without bounded pre-allocation.
-7. **`println!`/`eprintln!` sit in the entry points, not the library**: the print sites are the
-   `cli/` subtree and `bin/`; `bootstrap.rs`, `spawn.rs`, and `restate_services/` carry none, and the
-   only print in `census-store` is in a test (`legacy_tests.rs`).
-8. **StoreError is thiserror, not anyhow**: contrary to earlier claims that "store.rs uses
+6. **`println!`/`eprintln!` sit in the entry points, not the library**: the print sites are the
+   `cli/` subtree and `bin/`; `bootstrap.rs`, `spawn.rs`, and `restate_services/` carry none, and
+   `census-store` carries none at all.
+7. **StoreError is thiserror, not anyhow**: contrary to earlier claims that "store.rs uses
    anyhow throughout", census has a dedicated `StoreError` enum (`error.rs:9`)
    with `thiserror` derives. Zero `anyhow` matches under `src/` (historical: root package deleted 2026-09-23).
-9. **StoreStats counts are exact, not approximate**: `stats()` reads `AtomicU64` sequence
+8. **StoreStats counts are exact, not approximate**: `stats()` reads `AtomicU64` sequence
    counters, not Fjall's `approximate_len` (corrected 2026-09-22, near `pub fn stats`).
-10. **Journal payloads clone per row**: `journal_payloads` (`read/mod.rs:260`)
+9. **Journal payloads clone per row**: `journal_payloads` (`read/mod.rs:260`)
     allocates a fresh `Vec` and clones each payload — no `try_reserve`.
-11. **Poison row aborts scan**: a single malformed JSON row in `scan` aborts the entire
+10. **Poison row aborts scan**: a single malformed JSON row in `scan` aborts the entire
     table scan (→ `StoreError::Decode`), and there is no tolerant
     reader anywhere in census to appeal to: the published-snapshot reader is strict as well
     (`read/snapshot.rs`, `StoreError::SnapshotRow`, tested for a bad middle row and
     a bad last row), so corruption fails loudly on every read path rather than being skipped.
-12. **No `#[instrument]` on spawn**: zero `.instrument(…)` calls on any production spawn site,
+11. **No `#[instrument]` on spawn**: zero `.instrument(…)` calls on any production spawn site,
     and the spawns are centralized in `spawn.rs` (one `Spawner`, one `JoinSet`, drain accounting)
     plus the memory-guard watcher.

@@ -26,7 +26,7 @@ Schema, keyspaces and key format: [`FJALL_SCHEMA.md`](FJALL_SCHEMA.md). Store co
 | `fjall/` | All canonical state: keyspaces `entities` (all sixteen tables, `crates/census-store/src/table.rs:72-104`), `journal` (per-phase dispatch logs), `meta` (markers, e.g. the legacy-import marker) | **Required** |
 | `http/` | Source response cache | Optional - dropping it costs re-fetches, not correctness |
 | `out/` | Regenerable exports (`report.json`, `census-by-state.csv`, `*.jsonl` snapshots) | No - rebuild with `consolidate` / `report` |
-| `entities/`, `journal/` | Pre-Fjall JSONL logs; imported once by `import-legacy` (opening never imports, `crates/census-store/src/lib.rs:53-56`) and recorded by a marker in `meta` | No, once that marker exists |
+| `entities/`, `journal/` | Pre-Fjall JSONL logs, written before the 2026-09 row-shape revision; nothing in this tree reads them any more (the one-time import was removed 2026-09-27) | No - inert |
 
 `fjall/` in the drill store is 12 files / 229,232 bytes:
 
@@ -90,7 +90,9 @@ operator to stop the writer. The snapshot shape still does not exist, so the res
 
 Store built from this checkout's raw logs (`var/census-service/`) so the drill carries real data
 without touching the network: 200 schools + 100 coaches + 100 meets = **400 observations**, plus one
-journal phase.
+journal phase. The seed step is historical: it used the `import-legacy` path, removed 2026-09-27, and
+the counts below are that run's record. Reproduce the drill with `tools/ops-backup-drill.sh <store-dir>`,
+which copies a store the pipeline built instead of importing journals.
 
 ```console
 $ DRILL=/tmp/census-backup-drill
@@ -99,7 +101,7 @@ $ head -n 200 var/census-service/entities/schools.jsonl > $DRILL/live/entities/s
 $ head -n 100 var/census-service/entities/coaches.jsonl > $DRILL/live/entities/coaches.jsonl
 $ head -n 100 var/census-service/entities/meets.jsonl   > $DRILL/live/entities/meets.jsonl
 $ head -n 1   var/census-service/journal/kshsaa_schools.jsonl > $DRILL/live/journal/kshsaa_schools.jsonl
-$ target/debug/census-service --store $DRILL/live import-legacy
+$ target/debug/census-service --store $DRILL/live import-legacy   # removed 2026-09-27
 legacy	schools	89426 bytes	/tmp/census-backup-drill/live/entities/schools.jsonl
 legacy	teams	absent
 legacy	coaches	49163 bytes	/tmp/census-backup-drill/live/entities/coaches.jsonl
@@ -162,12 +164,12 @@ census document and `Store::stats()`, never by a size column.
 **Sharp edge, measured.** fjall preallocates a fresh journal to 64 MiB
 (`fjall-3.1.10/src/journal/writer.rs:19`, `set_len(64 * 1024 * 1024)`) and only a later *reopen*
 truncates it back to the frames actually written. On this machine, one `import-legacy` run over 200
-schools left a store of **67,212,350** bytes on disk (`0.jnl` = 67,108,864 bytes, and `du` counted all
+schools (2026-09-24, before that path was removed) left a store of **67,212,350** bytes on disk (`0.jnl` = 67,108,864 bytes, and `du` counted all
 of it - the preallocation is not sparse on this filesystem); one `fjall-stats` run later the same store
 was **196,402** bytes with a 101,301-byte journal:
 
 ```console
-$ target/debug/census-service --store $D import-legacy | tail -3
+$ target/debug/census-service --store $D import-legacy | tail -3   # removed 2026-09-27
 observations	200
 bytes_on_disk	0
 store_bytes	67212350
@@ -202,12 +204,9 @@ CLI's own restore is `census-service store-restore --from <backup dir> --to <fre
 (`crates/census-store/src/backup/restore.rs:29`), which streams the directory `store-backup` wrote -
 `fjall/` plus its `backup.json` manifest - checks every file's length and SHA-256 as the bytes pass,
 and reconciles the restored row counts against the manifest before renaming the staging directory into
-place (`crates/census-store/src/backup/mod.rs:38-45`). The fresh root
-must **not** contain the pre-Fjall `entities/`/`journal/` logs of the source root; if it does, the
-legacy import is marker-guarded per table (`imported:<table>` in the `meta` keyspace travels with the
-database, `crates/census-store/src/legacy.rs:25-27,79-86`), so the logs are not read a second time -
-and if the marker were ever missing, a re-import appends at a freshly reserved sequence base instead of
-overwriting (`crates/census-store/src/legacy/chunk.rs:51-66`). Do not restore a backup over a root that is
+place (`crates/census-store/src/backup/mod.rs:38-45`). The fresh root does not need the source root's
+pre-Fjall `entities/`/`journal/` logs: nothing reads them any more, so copying them only spends bytes
+(2.7 GB of journals in the delivered Midwest census). Do not restore a backup over a root that is
 being served - the lock (§2) will reject it, or worse, a running process holds an in-memory view of the
 files you are replacing.
 
@@ -404,7 +403,6 @@ and the restored copy's observation history row for row.
 | `the_restored_store_reopens_and_appends_without_overwriting` | a restore that seeded its sequence counter wrong would hand out a sequence already in use and overwrite a restored observation. After the restore an append must add a row rather than replace one, join the history as a fourth observation, survive a reopen, and resume from the restored store's high-water mark |
 | `a_copy_taken_while_the_store_handle_is_open_keeps_every_committed_batch` | a copy taken from an open handle with **no** `flush()` is still complete, because `append_many` commits at `SyncData`. Pins the regression that matters for backups: a durability downgrade to `Buffer` would make the copy lose its unpersisted tail - silently |
 | `a_second_open_of_a_live_store_is_refused` | the "cold" in cold copy is enforced by the database, not by convention: a second `Store::open` of a live store fails with the typed `StoreError::Open`, and the path opens again once the first handle is dropped |
-| `the_restored_store_does_not_re_import_the_legacy_journals_it_carries` | a whole-root backup carries `entities/*.jsonl` and `journal/*.jsonl` next to the database; the import markers in the copied `meta` keyspace must stop a restore from doubling the counts of exactly the tables that still have a log. Asserted over two consecutive opens, including the resume-journal keys |
 | `a_copy_whose_journal_stops_mid_batch_keeps_the_complete_prefix` | the racing copy itself. Cutting one byte into the second batch's frame keeps **exactly** the first batch (6 rows → 2), every surviving row still merges, the lost batch's rows are gone rather than invented, and the source store is untouched by the copy's damage. Cutting one byte short of the journal keeps exactly the first two batches |
 | `a_copy_with_a_torn_byte_inside_a_row_never_yields_an_invented_row` | the other half of that hazard: each byte of a real row *value* is flipped in turn (14 bytes) and every outcome must be one of "refused the open" or "opened with every surviving row byte-identical to the source". Measured: 14 refused, 0 opened - the tear is detected, never silently absorbed - and no row is ever changed or invented. The counts are printed, so run with `--nocapture` to see them. The tear is aimed at a value on purpose: one byte earlier, in fjall's entry header, is fjall's own debug assertion (§3.5) |
 
@@ -458,9 +456,6 @@ machine-level services. A successful empty-store drill is not census evidence.
   from a cold copy rather than from a held-open handle, for the reason above.
 * **Restoring while a unit is serving.** Not attempted: the lock forbids part of it, and nothing
   coordinates the in-memory view.
-* **Legacy re-import in the shell drill.** The shell drill uses the whole-root
-  backup API; the specific legacy-marker invariant is asserted by
-  `the_restored_store_does_not_re_import_the_legacy_journals_it_carries` (§4).
 * **The `http/` response cache** is treated as optional and never verified after a restore.
 * **Cross-machine and cross-filesystem restore** (permission bits, sparse files, encrypted volumes).
 * **A supported hot backup.** Impossible without an API change; see §2.

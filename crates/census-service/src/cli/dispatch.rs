@@ -27,7 +27,6 @@ pub(super) async fn dispatch(cli: &Cli, store: &Store) -> Result<()> {
         Command::Index => publish::run_index(store)?,
         Command::Verify(args) => verify::run_verify(store, args)?,
         Command::FjallStats => store::print_store_stats(store)?,
-        Command::ImportLegacy => store::run_legacy_import(store)?,
         Command::StoreRestore(args) => store::run_restore(args)?,
         Command::StoreIntegrity => store::run_integrity(store)?,
         Command::ExportData(args) => export_data::run_export_data(args)?,

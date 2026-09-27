@@ -60,7 +60,7 @@ async fn a_standings_capture_folds_into_the_event_that_published_its_run_key() {
         .scan::<CanonicalAthlete>(Table::Athletes)
         .expect("athletes read")
         .into_iter()
-        .flat_map(|athlete| std::iter::once(athlete.source).chain(athlete.source_links))
+        .flat_map(|athlete| athlete.source.into_iter().chain(athlete.source_links))
         .map(|identity| identity.id)
         .collect();
     assert!(

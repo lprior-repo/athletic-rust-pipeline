@@ -8,7 +8,11 @@ use std::collections::HashMap;
 use census_report::report::ReportResult;
 use census_store::{Entity, Store, Table};
 
+mod apply;
 mod coverage;
+
+#[cfg(test)]
+mod application_tests;
 
 use coverage::coverage_rows;
 
@@ -20,6 +24,7 @@ pub struct IndexReport {
     pub coverage: usize,
     pub snapshots: usize,
     pub superseded: usize,
+    pub identity_applications: usize,
 }
 
 impl IndexReport {
@@ -29,6 +34,7 @@ impl IndexReport {
             .saturating_add(self.reviews)
             .saturating_add(self.coverage)
             .saturating_add(self.snapshots)
+            .saturating_add(self.identity_applications)
     }
 }
 
@@ -74,6 +80,7 @@ fn supersede(
 
 pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<IndexReport> {
     let pass = canonical_pass(store)?;
+    let identity_applications = apply::apply_decisions(store, finished_at)?;
     let retained = census_report::workbook::retained_records(store)?;
     let coverage = coverage_rows(store, &pass.identities)?;
 
@@ -110,6 +117,7 @@ pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<Ind
         coverage: coverage.len(),
         snapshots: 1,
         superseded,
+        identity_applications,
     })
 }
 

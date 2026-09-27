@@ -84,7 +84,7 @@ impl<'a> Absorb<'a> {
                     facts.name,
                     facts.grad_year,
                     facts.gender,
-                    source,
+                    source.clone(),
                 );
                 athlete
                     .evidence
@@ -99,7 +99,7 @@ impl<'a> Absorb<'a> {
                 athlete.observed_grades.push(grade.clone());
             }
         }
-        (id.clone(), athlete.source.clone())
+        (id.clone(), source)
     }
 }
 pub(super) fn push_identity(

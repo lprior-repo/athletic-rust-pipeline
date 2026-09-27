@@ -72,10 +72,6 @@ pub(super) enum Command {
         about = "Print the Fjall store's per-table observation counts and on-disk footprint"
     )]
     FjallStats,
-    #[command(
-        about = "Import pre-Fjall JSONL journals into the store (one-time), then print the store stats"
-    )]
-    ImportLegacy,
     #[command(about = "Back up the store's durable material into a directory")]
     StoreBackup(BackupArgs),
     #[command(about = "Restore a backup into a new directory")]

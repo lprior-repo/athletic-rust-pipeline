@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use census_store::{Store, Table};
+use census_store::Store;
 use clap::Args;
 use std::path::{Path, PathBuf};
 
@@ -13,38 +13,6 @@ pub(super) fn print_store_stats(store: &Store) -> Result<()> {
     println!("bytes_on_disk\t{}", stats.bytes_on_disk);
     println!("store_bytes\t{}", stats.store_bytes);
     Ok(())
-}
-
-pub(super) fn run_legacy_import(store: &Store) -> Result<()> {
-    let imported = store
-        .import_legacy()
-        .context("importing the pre-Fjall JSONL journals")?;
-    println!("imported\t{}\tobservations", imported.observations);
-    println!("skipped\t{}\tderived journals", imported.skipped);
-    for table in Table::ALL {
-        let path = store.table_path(table);
-        match legacy_journal_bytes(&path)? {
-            Some(bytes) => println!(
-                "legacy\t{}\t{bytes} bytes\t{}",
-                table.file(),
-                path.display()
-            ),
-            None => println!("legacy\t{}\tabsent", table.file()),
-        }
-    }
-    println!(
-        "legacy_journal_dir\t{}",
-        store.root().join("journal").display()
-    );
-    print_store_stats(store)
-}
-
-fn legacy_journal_bytes(path: &Path) -> Result<Option<u64>> {
-    match std::fs::metadata(path) {
-        Ok(metadata) => Ok(Some(metadata.len())),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(error) => Err(error).with_context(|| format!("reading {}", path.display())),
-    }
 }
 
 #[derive(Debug, Args)]

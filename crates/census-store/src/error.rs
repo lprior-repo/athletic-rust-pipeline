@@ -65,8 +65,6 @@ pub enum StoreError {
     },
     #[error("{detail}")]
     Refused { detail: String },
-    #[error("legacy import failed: {detail}")]
-    Legacy { detail: String },
 }
 
 pub type StoreResult<T> = std::result::Result<T, StoreError>;

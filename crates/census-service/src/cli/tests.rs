@@ -156,7 +156,7 @@ fn make_perf(
         observed_grade: None,
         evidence: Vec::new(),
         source_key: "test".to_string(),
-        source_athlete: source.clone(),
+        source_athlete: Some(source.clone()),
         retained_conflicts: Vec::new(),
     }
 }
@@ -185,8 +185,24 @@ fn acceptance_agreement() {
 
     let e1 = make_event(EventKind::Track200m, Gender::Girls);
     let e2 = make_event(EventKind::Track100m, Gender::Boys);
-    let p1 = make_perf(&a1.id, &team, &e1, &a1.source, 26);
-    let p2 = make_perf(&a2.id, &team, &e2, &a2.source, 11);
+    let p1 = make_perf(
+        &a1.id,
+        &team,
+        &e1,
+        a1.source
+            .as_ref()
+            .expect("the fixture athlete carries a source"),
+        26,
+    );
+    let p2 = make_perf(
+        &a2.id,
+        &team,
+        &e2,
+        a2.source
+            .as_ref()
+            .expect("the fixture athlete carries a source"),
+        11,
+    );
 
     let store = Store::open(dir.path()).expect("open temp store");
     store
@@ -252,7 +268,15 @@ fn acceptance_event_id_where_the_store_has_a_label() {
         fixture_source("athlete-1"),
     );
     let e1 = make_event(EventKind::Track200m, Gender::Girls);
-    let p1 = make_perf(&a1.id, &team, &e1, &a1.source, 26);
+    let p1 = make_perf(
+        &a1.id,
+        &team,
+        &e1,
+        a1.source
+            .as_ref()
+            .expect("the fixture athlete carries a source"),
+        26,
+    );
 
     let store = Store::open(dir.path()).expect("open temp store");
     store
@@ -306,7 +330,15 @@ fn acceptance_empty_event_cell_with_no_store_row() {
         fixture_source("athlete-1"),
     );
     let e1 = make_event(EventKind::Track200m, Gender::Girls);
-    let p1 = make_perf(&a1.id, &team, &e1, &a1.source, 26);
+    let p1 = make_perf(
+        &a1.id,
+        &team,
+        &e1,
+        a1.source
+            .as_ref()
+            .expect("the fixture athlete carries a source"),
+        26,
+    );
 
     let store = Store::open(dir.path()).expect("open temp store");
     store

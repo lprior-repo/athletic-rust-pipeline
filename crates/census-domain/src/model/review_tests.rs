@@ -117,3 +117,20 @@ fn a_confidence_outside_the_field_range_is_clamped_not_trusted() {
     assert_eq!(admitted[0].confidence, 100);
     assert!(admitted[0].proposes_a_value());
 }
+
+#[test]
+fn another_subject_cannot_supply_a_verdict_for_a_requested_case() {
+    for subject_id in ["", "school:another-school"] {
+        let batch = VerdictBatch {
+            subject_id: subject_id.to_string(),
+            verdicts: vec![verdict(
+                "School jurisdiction unresolved:school:madison-west",
+                ReviewVerdictKind::ValueProposed,
+                95,
+            )],
+        };
+        let (admitted, dropped) = batch.sanitize(&packet());
+        assert!(admitted.is_empty());
+        assert_eq!(dropped, 1);
+    }
+}

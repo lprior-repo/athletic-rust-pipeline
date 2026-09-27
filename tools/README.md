@@ -47,7 +47,7 @@ silently dropping the check.
 | module seams | `cargo xtask seams` | a top-level module re-exports a symbol that should be private (the gate prints the violation set on FAIL) |
 | baseline update | `cargo xtask quality-baseline` | only with `--update-baseline`; refuses to raise a number without `--allow-increase` |
 | debt ratchet | `cargo xtask ratchet` | any metric grew against the baseline |
-| deny | `cargo deny check` | a dependency policy violation (needs `cargo-deny`; a missing tool fails this lane) |
+| deny | `cargo deny check advisories bans sources` | a dependency security or source-provenance violation (needs `cargo-deny`; a missing tool fails this lane) |
 | audit | `cargo audit --quiet` | an advisory covers a locked crate (a missing `cargo-audit` SKIPs in dev and fails `--release`) |
 | vet | `cargo vet --locked` | a locked crate is neither audited nor exempted in `supply-chain/` (a missing `cargo-vet` SKIPs in dev and fails `--release`) |
 | machete | `$(command -v cargo-machete) .` | an unused dependency is declared (a missing `cargo-machete` SKIPs in dev and fails `--release`; plain `cargo machete` fails through a mise shim) |
@@ -57,6 +57,9 @@ silently dropping the check.
 | mutants | `cargo mutants --workspace --in-place` | a mutant survives the test suite (only with `--full`, which `--release` implies; a missing `cargo-mutants` SKIPs in dev and fails `--release`) |
 
 ## Supply chain
+
+License enforcement is excluded by owner direction. The deny lane retains advisories, bans and
+source-provenance checks; audit and vet remain required independently.
 
 `supply-chain/` is the `cargo-vet` ledger: `config.toml` holds the exemptions the tree was
 initialized with, `audits.toml` the audits, `imports.lock` the peer imports. The vet lane runs

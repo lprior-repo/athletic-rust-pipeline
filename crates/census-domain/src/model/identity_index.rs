@@ -40,7 +40,7 @@ pub(super) struct IdentityFact {
 
 impl IdentityFact {
     fn of(athlete: &CanonicalAthlete) -> Result<Self, IdentityError> {
-        let primary = person_key(&athlete.source);
+        let primary = athlete.source.as_ref().and_then(person_key);
         let mut links: Vec<_> = athlete
             .source_links
             .iter()

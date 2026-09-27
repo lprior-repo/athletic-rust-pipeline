@@ -177,14 +177,9 @@ fn fence_stripping_works() {
 }
 
 #[test]
-fn bare_array_is_accepted() {
+fn a_verdict_array_without_its_subject_envelope_is_rejected() {
     let bare = r#"[{"case_id":"c","kind":"insufficient_evidence","field":"","value":"","confidence":10,"rationale":"none"}]"#;
-    let batch = parse_batch(bare).expect("a bare array");
-    assert_eq!(batch.subject_id, "");
-    assert_eq!(
-        batch.verdicts[0].kind,
-        ReviewVerdictKind::InsufficientEvidence
-    );
+    assert!(matches!(parse_batch(bare), Err(ModelError::Content { .. })));
 }
 
 #[test]

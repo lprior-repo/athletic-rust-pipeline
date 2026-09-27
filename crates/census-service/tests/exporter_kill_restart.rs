@@ -128,7 +128,7 @@ fn build_corpus(n: usize) -> Corpus {
                 observed_grade: Some(Grade::new(11).unwrap()),
                 evidence: vec![evidence()],
                 source_key: format!("kill-{i}-{s}"),
-                source_athlete: source,
+                source_athlete: Some(source),
                 retained_conflicts: Vec::new(),
             });
         }

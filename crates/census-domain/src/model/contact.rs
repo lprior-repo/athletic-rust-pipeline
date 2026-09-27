@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const CONSUMER_MAIL_DOMAINS: [&str; 12] = [
+const CONSUMER_MAIL_DOMAINS: [&str; 26] = [
     "gmail.com",
     "googlemail.com",
     "hotmail.com",
@@ -13,6 +13,20 @@ pub const CONSUMER_MAIL_DOMAINS: [&str; 12] = [
     "me.com",
     "protonmail.com",
     "proton.me",
+    "comcast.net",
+    "sbcglobal.net",
+    "att.net",
+    "verizon.net",
+    "ymail.com",
+    "mail.com",
+    "aim.com",
+    "earthlink.net",
+    "juno.com",
+    "rr.com",
+    "cox.net",
+    "windstream.net",
+    "centurytel.net",
+    "frontier.com",
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -23,12 +37,14 @@ pub enum MailboxKind {
 }
 
 pub fn is_consumer_domain(domain: &str) -> bool {
-    let domain = domain.to_ascii_lowercase();
     CONSUMER_MAIL_DOMAINS.iter().any(|base| {
-        domain == *base
-            || domain
-                .strip_suffix(base)
-                .is_some_and(|prefix| prefix.ends_with('.'))
+        domain
+            .len()
+            .checked_sub(base.len())
+            .and_then(|offset| domain.split_at_checked(offset))
+            .is_some_and(|(prefix, suffix)| {
+                (prefix.is_empty() || prefix.ends_with('.')) && suffix.eq_ignore_ascii_case(base)
+            })
     })
 }
 

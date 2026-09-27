@@ -18,6 +18,7 @@ mod event_performance;
 mod fixed_mark;
 mod identifiers;
 mod identity_aliases;
+mod identity_application;
 mod identity_decision;
 mod identity_index;
 mod identity_projection;
@@ -36,7 +37,7 @@ pub use classification::{CanonicalTeam, CompetitionLevel, Gender, Sport};
 pub use coach::{CanonicalCoach, CoachRole};
 pub use cohort::{GradYear, Grade, ObservedGrade, SchoolYear};
 pub use collision::{id_collision, CANONICAL_ID_COLLISION_FAMILY};
-pub use contact::{is_consumer_domain, published_email, MailboxKind, CONSUMER_MAIL_DOMAINS};
+pub use contact::{is_consumer_domain, published_email, MailboxKind};
 pub use contact_proof::{
     compute_contact_proof, verify_contact_proof, ContactClaimEvidence, ContactProofError,
     ContactProofField, RawContactRow, ValidatedContactProof, CONTACT_COLUMNS, CONTACT_PROOF_COLUMN,
@@ -52,6 +53,7 @@ pub use identifiers::{
     tag, AthleteCandidateId, AthleteId, AthleteIndexId, CoachId, EventId, Id, MeetId,
     PerformanceId, SchoolId, TeamId,
 };
+pub use identity_application::{AcceptedAthleteIdentity, IdentityApplication};
 pub use identity_decision::{
     athlete_identity_digest, identity_verdict_digest, person_provider, AppliedAthleteIdentity,
     AppliedIdentityKind, IdentityMember, ATHLETE_IDENTITY_POLICY,

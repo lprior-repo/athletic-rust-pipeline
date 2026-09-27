@@ -46,23 +46,23 @@ review outcomes.
 
 * No database server, pool, migration tool or network hop on the critical path: `Store::open` fails
   with the reason when another process holds the store (`crates/census-store/src/lib.rs:149-152`),
-  and concurrent appends serialize at commit (`docs/FJALL_SCHEMA.md:159-160`).
+  and concurrent appends serialize at commit (`docs/FJALL_SCHEMA.md` §7, sharp edge 3).
 * Schema evolution is explicit: new fields are additive in the stored JSON payloads, and a
   key-encoding change needs a revision marker in `meta`, because Fjall enforces no constraint for us.
 * The store is bounded by construction: `MAX_ROWS_PER_TABLE = 20_000_000`
   (`crates/census-store/src/table.rs:19`) aborts a scan with a typed error
   (`docs/FJALL_SCHEMA.md:78-79`), and a scan materializes the merged map in the process heap
-  (`docs/FJALL_SCHEMA.md:157-158`).
+  (`docs/FJALL_SCHEMA.md` §7, sharp edge 2).
 * Closed 2026-09-22 (`7790501`): the cold backup entry points exist — `Store::backup`
   (`crates/census-store/src/backup/copy.rs:36`), `Store::restore` (`backup/restore.rs:29`) and
   `Store::integrity` (`backup/integrity.rs:23`). The half that is still absent is the live one: no
   `fjall::Snapshot` is exposed, so a copy of an open store stays refused rather than published
   (`crates/census-store/src/backup/mod.rs:9-27`).
 * The root crate used `Database::snapshot()` (historical: root package deleted 2026-09-23;
-  census backup is in `docs/FJALL_SCHEMA.md` §8, sharp edge 5, and `docs/FJALL_BACKUP.md`).
+  census backup is in `docs/FJALL_SCHEMA.md` §7, sharp edge 4, and `docs/FJALL_BACKUP.md`).
 * Closed 2026-09-22 (`7790501`): `StoreStats` is documented as exact counts, not LSM
   `approximate_len` estimates (`crates/census-store/src/lib.rs:103-105`), which is what `stats()`
-  reads (`docs/FJALL_SCHEMA.md:85-88,179-180`).
+  reads (`docs/FJALL_SCHEMA.md:85-88`; §7, sharp edge 8).
 
 ## Alternatives considered
 
@@ -88,6 +88,6 @@ in-flight artifact, and the store is `crates/census-store/src/**`.
 
 Cited through the doc, not re-derived: the scan/consolidate/stats lines
 (`crates/census-store/src/read/mod.rs:134,152-175,202`), the 20M cap
-(`crates/census-store/src/table.rs:19`), single-writer and legacy-import sharp edges, and the
-root-crate `Database::snapshot()` sites (`docs/FJALL_SCHEMA.md:10-19,39-68,90-117,119-137`, historical:
+(`crates/census-store/src/table.rs:19`), single-writer sharp edges, and the
+root-crate `Database::snapshot()` sites (`docs/FJALL_SCHEMA.md` §1-§5, historical:
 root package deleted 2026-09-23). No heap measurement exists, and no restore timing is claimed.

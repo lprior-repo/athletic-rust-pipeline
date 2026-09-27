@@ -168,22 +168,9 @@ async fn open_store(region: &Spawner, data_dir: PathBuf) -> Result<Arc<Store>, B
                 source,
             })?;
             let store = Store::open(&data_dir).map_err(|source| BootstrapError::StoreOpen {
-                path: data_dir.clone(),
+                path: data_dir,
                 source,
             })?;
-            let imported = store
-                .import_legacy()
-                .map_err(|source| BootstrapError::StoreOpen {
-                    path: data_dir,
-                    source,
-                })?;
-            if imported.observations > 0 || imported.skipped > 0 {
-                tracing::info!(
-                    observations = imported.observations,
-                    skipped = imported.skipped,
-                    "imported the pre-Fjall journals"
-                );
-            }
             Ok(Arc::new(store))
         })
         .await;

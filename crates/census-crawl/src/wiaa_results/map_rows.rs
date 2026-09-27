@@ -126,7 +126,7 @@ fn record_members(
                 observed_grade: Some(grade),
                 evidence: vec![evidence],
                 source_key,
-                source_athlete,
+                source_athlete: Some(source_athlete),
                 retained_conflicts: Vec::new(),
             });
     }
@@ -163,7 +163,7 @@ fn record_athlete(
                 member_name,
                 grad_year,
                 context.event.gender,
-                source,
+                source.clone(),
             );
             athlete.sports.push(context.sport);
             athlete
@@ -186,7 +186,7 @@ fn record_athlete(
     {
         entry.evidence.push(context.evidence.clone());
     }
-    (athlete_id, entry.source.clone())
+    (athlete_id, source)
 }
 
 fn round_label(round: &Option<String>) -> &str {

@@ -20,7 +20,7 @@ pub use reduce::build;
 pub use selection::{Conflict, Population, SharedSelection};
 pub use write::write;
 
-pub(crate) use parents::Parents;
+pub(crate) use parents::{Parents, Referenced};
 
 #[derive(Debug, Clone)]
 pub struct Options {

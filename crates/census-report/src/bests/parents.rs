@@ -1,9 +1,25 @@
 use crate::report::{in_run_scope, retain_core_row, Scope};
 use census_domain::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalSchool, CanonicalTeam, EventKind,
+    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
+    CanonicalTeam, EventKind,
 };
 use census_store::{StoreResult, Table};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
+
+pub(crate) struct Referenced {
+    athletes: HashSet<String>,
+}
+
+impl Referenced {
+    pub(crate) fn collect(snapshot: &census_store::StoreSnapshot<'_>) -> StoreResult<Self> {
+        let mut athletes = HashSet::new();
+        snapshot.for_each_merged(Table::Performances, |performance: CanonicalPerformance| {
+            athletes.insert(performance.athlete.as_str().to_string());
+            Ok(())
+        })?;
+        Ok(Self { athletes })
+    }
+}
 
 pub(crate) struct Parents {
     pub(crate) athletes: BTreeMap<String, CanonicalAthlete>,
@@ -18,9 +34,10 @@ impl Parents {
         snapshot: &census_store::StoreSnapshot<'_>,
         scope: Scope,
         grad_year: Option<i16>,
+        referenced: &Referenced,
     ) -> StoreResult<Self> {
         let schools = load_schools(snapshot)?;
-        let athletes = load_athletes(snapshot, &schools, scope, grad_year)?;
+        let athletes = load_athletes(snapshot, &schools, scope, grad_year, &referenced.athletes)?;
         let meets = load_meets(snapshot, scope)?;
         let events = load_events(snapshot, scope)?;
         let teams = load_teams(snapshot)?;
@@ -70,23 +87,28 @@ fn load_athletes(
     schools: &BTreeMap<String, CanonicalSchool>,
     scope: Scope,
     grad_year: Option<i16>,
+    selected: &HashSet<String>,
 ) -> StoreResult<BTreeMap<String, CanonicalAthlete>> {
     let mut athletes: BTreeMap<String, CanonicalAthlete> = BTreeMap::new();
-    snapshot.for_each_merged(Table::Athletes, |mut athlete: CanonicalAthlete| {
-        if scope == Scope::Core && !retain_core_row(&mut athlete) {
-            return Ok(());
-        }
-        if grad_year.is_some_and(|year| athlete.grad_year.get() != year) {
-            return Ok(());
-        }
-        let state = schools
-            .get(athlete.school.as_str())
-            .and_then(|school| school.state);
-        if in_run_scope(state.into()) {
-            athletes.insert(athlete.id.as_str().to_string(), athlete);
-        }
-        Ok(())
-    })?;
+    snapshot.for_each_merged_selected(
+        Table::Athletes,
+        selected,
+        |mut athlete: CanonicalAthlete| {
+            if scope == Scope::Core && !retain_core_row(&mut athlete) {
+                return Ok(());
+            }
+            if grad_year.is_some_and(|year| athlete.grad_year.get() != year) {
+                return Ok(());
+            }
+            let state = schools
+                .get(athlete.school.as_str())
+                .and_then(|school| school.state);
+            if in_run_scope(state.into()) {
+                athletes.insert(athlete.id.as_str().to_string(), athlete);
+            }
+            Ok(())
+        },
+    )?;
     Ok(athletes)
 }
 

@@ -66,10 +66,10 @@ fn test_performance(
         observed_grade: None,
         evidence: vec![],
         source_key: "test_key".to_string(),
-        source_athlete: SourceIdentity::new(
+        source_athlete: Some(SourceIdentity::new(
             census_domain::model::SourceNamespace::MilesplitAthlete,
             "test_athlete_id",
-        ),
+        )),
         retained_conflicts: vec![],
     }
 }
@@ -695,10 +695,10 @@ fn test_parent_performance(
         observed_grade: None,
         evidence: vec![],
         source_key: "test_key".to_string(),
-        source_athlete: SourceIdentity::new(
+        source_athlete: Some(SourceIdentity::new(
             census_domain::model::SourceNamespace::MilesplitAthlete,
             "test_athlete_id",
-        ),
+        )),
         retained_conflicts: vec![],
     }
 }
@@ -739,7 +739,7 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() {
     slower.athlete = athlete.id.clone();
     slower.meet = meet.id;
     slower.event = event.id;
-    slower.source_athlete = athlete.source;
+    slower.source_athlete = athlete.source.clone();
     let mut faster = slower.clone();
     faster.id = Id::mint("perf", &["faster"]);
     faster.source_key = "faster".into();

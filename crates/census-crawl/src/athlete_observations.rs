@@ -20,12 +20,8 @@ pub fn athlete_observations_of<'a>(
             let school = names
                 .get(athlete.school.as_str())
                 .map(|name| (*name).to_string());
-            SourceAthleteObservation::of_athlete(
-                &athlete.source.namespace,
-                athlete,
-                school,
-                observed_on,
-            )
+            let source = athlete.source.as_ref()?;
+            SourceAthleteObservation::of_athlete(&source.namespace, athlete, school, observed_on)
         })
         .map(SourceObservation::Athlete)
         .collect()

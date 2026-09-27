@@ -113,14 +113,15 @@ fn append_athlete(
     meet_id: &MeetId,
 ) -> Result<()> {
     let gender = gender_of(index, slot);
-    let athlete = athlete_of(school_id, index, slot, gender)?;
+    let owner = athlete_identity(index, slot);
+    let athlete = athlete_of(school_id, index, slot, gender, owner.clone())?;
     let kind = event_kind(rng.next());
     let event = event_of(meet_id, &kind, gender);
     corpus.distinct_events.insert(event.id.as_str().to_string());
     for attempt in 0..PERFORMANCES_PER_ATHLETE {
         let source_key = format!("perf-{index}-{slot}-{attempt}");
         let performance =
-            performance_of(&athlete, team_id, meet_id, &event, &kind, source_key, rng)?;
+            performance_of(&athlete, &owner, team_id, meet_id, &event, source_key, rng)?;
         corpus.performances.push(performance);
     }
     corpus.events.push(event);
@@ -136,16 +137,20 @@ fn gender_of(index: usize, slot: usize) -> Gender {
     }
 }
 
+fn athlete_identity(index: usize, slot: usize) -> SourceIdentity {
+    SourceIdentity::new(
+        SourceNamespace::MilesplitAthlete,
+        format!("profile-{index}-{slot}"),
+    )
+}
+
 fn athlete_of(
     school_id: &SchoolId,
     index: usize,
     slot: usize,
     gender: Gender,
+    source: SourceIdentity,
 ) -> Result<CanonicalAthlete> {
-    let source = SourceIdentity::new(
-        SourceNamespace::MilesplitAthlete,
-        format!("profile-{index}-{slot}"),
-    );
     let mut athlete = CanonicalAthlete::new(
         school_id,
         format!("Runner {index}-{slot}"),
@@ -170,13 +175,14 @@ fn event_of(meet_id: &MeetId, kind: &EventKind, gender: Gender) -> CanonicalEven
 
 fn performance_of(
     athlete: &CanonicalAthlete,
+    owner: &SourceIdentity,
     team_id: &TeamId,
     meet_id: &MeetId,
     event: &CanonicalEvent,
-    kind: &EventKind,
     source_key: String,
     rng: &mut Lcg,
 ) -> Result<CanonicalPerformance> {
+    let kind = &event.kind;
     let id = CanonicalPerformance::mint(&athlete.id, meet_id, kind, MEET_DATE, &source_key);
     let mark = Mark::TimeSeconds(
         CentiSeconds::try_from_seconds_f64(base_seconds(kind, rng))
@@ -199,7 +205,7 @@ fn performance_of(
         observed_grade: Some(grade(11)?),
         evidence: vec![evidence()],
         source_key,
-        source_athlete: athlete.source.clone(),
+        source_athlete: Some(owner.clone()),
         retained_conflicts: Vec::new(),
     })
 }

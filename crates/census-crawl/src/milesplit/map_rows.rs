@@ -126,7 +126,7 @@ fn record_performance(
             observed_grade: Some(shape.grade),
             evidence: vec![evidence],
             source_key,
-            source_athlete: athlete.source.clone(),
+            source_athlete: Some(athlete.source.clone()),
             retained_conflicts: Vec::new(),
         });
 }
@@ -198,7 +198,7 @@ fn record_athlete(
                 member_name,
                 grad_year,
                 context.event.gender,
-                source,
+                source.clone(),
             );
             if let Some(sport) = context.sport {
                 athlete.sports.push(sport);
@@ -225,7 +225,7 @@ fn record_athlete(
     {
         entry.evidence.push(context.evidence.clone());
     }
-    (athlete_id, entry.source.clone())
+    (athlete_id, source)
 }
 
 fn performance_key(context: &MeetContext<'_>, row_index: usize) -> String {

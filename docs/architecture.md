@@ -15,7 +15,7 @@ census, no input workbook, and generated recruiter outputs. It does not certify 
 
 | Area | Current implementation / required cutover |
 |---|---|
-| Geography | `UsJurisdiction::CENSUS_SCOPE` is still 49; Alaska/Hawaii, validation and coverage/seal denominators must migrate to 51. |
+| Geography | `UsJurisdiction::ALL` models 51 states and D.C.; `UsJurisdiction::CENSUS_SCOPE` is the 49-jurisdiction run scope (48 contiguous + D.C.). Alaska, Hawaii and territories are refused by scope; ADR-013's 51-jurisdiction target is withdrawn. |
 | Fresh run | Preserve old stores; bind a new store to unused durable run identities so old completions cannot populate it. |
 | Application | The durable acquisition handlers exist; batch-only reconciliation/review/gap paths must join one application path. |
 | Evidence | Capture metadata and parsed rows do not prove an immutable byte archive; the new run requires retrievable captured evidence. |

@@ -7,8 +7,9 @@ retains the binding numbered standards; [architecture.md](architecture.md) descr
 
 ## 1. Product and fresh-run boundary
 
-Discover the Class-of-2027 high-school Track & Field / Cross Country population across all 50 states
-plus D.C. Include source-supported boys' and girls' XC, indoor and outdoor participation, legitimate
+Discover the Class-of-2027 high-school Track & Field / Cross Country population across the 48
+contiguous states plus D.C. Include source-supported boys' and girls' XC, indoor and outdoor
+participation, legitimate
 events and evidenced relay membership. Do not infer participation, graduation year, GPA or identity
 from a matching name. Never collect athlete personal contact information.
 
@@ -239,9 +240,9 @@ coding job per GPU; do not parallelize competing writers or disguise staffing li
 | 2 — Evidence | One real source-object discovery/capture/parse/atomic-ingest path, exact provenance and partial-result behavior. |
 | 3 — Decisions | Source-owned subjects, time-scoped cohort/affiliation, reversible deterministic acceptance and both local advice lanes. |
 | 4 — Vertical proof | Real discovery-to-census-to-output qualification run; restart and increased execution budget resume exact remaining work. |
-| 5 — Breadth | All named source families, linked document formats, all 51 jurisdictions, history and persisted public-contact research. |
+| 5 — Breadth | All named source families, linked document formats, every jurisdiction of the run scope, history and persisted public-contact research. |
 | 6 — Publication | Shared snapshot projection, exact PR/contact parity, independent verification and atomic output generations. |
-| 7 — National run | Fresh source-discovered acquisition across all 51; independently reconcile obligations, decisions, findings and artifacts. |
+| 7 — National run | Fresh source-discovered acquisition across the whole run scope; independently reconcile obligations, decisions, findings and artifacts. |
 | 8 — Assurance | All F01–F15 checks, all 17 native faults, security/async review, hostile-input and measured resource gates; repair failures. |
 | 9 — Release | Verified final generation and seal, reproducible evidence and operations docs; Main commits/pushes only verified delivery. |
 
@@ -281,15 +282,19 @@ their exact recovery obligations and isolation rules. It is part of this plan, n
 ## 15. Quality gates and current implementation gaps
 
 Run the four workspace gates in ARCHITECTURE §11, contract checks, the zero-comment lexical gate,
-dependency/license/security audits and async review. Exercise CLI/native Restate/export behavior,
+dependency/security audits and async review. Exercise CLI/native Restate/export behavior,
 not just unit tests. Keep focused regressions for real consumer-visible failures, adversarial
 identity/contact/result fixtures, proptest and parser fuzzing; use mutation on acceptance rules and
 Loom on the actual shared concurrency kernel rather than a disconnected replica.
+License enforcement is excluded by owner direction; dependency security checks remain required.
 
-Current scope code still declares 49 jurisdictions. Batch-only application stages still need
-integration; capture metadata is not proof of an immutable archive; partial-resume and whole-bundle
+Geographic contracts are settled: `UsJurisdiction::ALL` models 51 states and D.C. while the census
+scope is `UsJurisdiction::CENSUS_SCOPE`, the 49 jurisdictions of ADR-009 (48 contiguous + D.C.);
+ADR-013's 51-jurisdiction target is withdrawn by owner direction. Fresh nationwide acquisition
+remains unproven.
+Batch-only stages still need integration; capture metadata is not proof of an immutable archive; partial-resume and whole-bundle
 publication require end-to-end evidence. Historical Midwest/49-jurisdiction exports and seals do not
-satisfy this fresh 51-jurisdiction run. These are delivery obligations, not claims fixed by this plan.
+satisfy this fresh run. These are delivery obligations, not claims fixed by this plan.
 
 Design reference basis: mandatory `rust-contract` and `scott-ddd-refactor`; Holzmann references
 `references/nasa-jpl-standards.md`, `references/runtime-performance-architecture.md`,

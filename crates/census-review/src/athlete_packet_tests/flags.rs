@@ -60,7 +60,7 @@ fn provider_objects_that_differ_are_stated_and_never_called_a_shared_one() {
             girls.gender,
             &source,
         ),
-        source,
+        source: Some(source),
         ..girls
     };
 

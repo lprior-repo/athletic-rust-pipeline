@@ -205,23 +205,35 @@ fn a_verdict_that_names_another_case_decides_nothing() {
 }
 
 #[test]
-fn the_three_answers_parse_in_the_spellings_a_model_drifts_between() {
+fn identity_advice_uses_only_the_declared_answer_vocabulary() {
+    for answer in [
+        "SAME PERSON",
+        " Different-Person ",
+        "insufficient evidence",
+        "sameperson",
+    ] {
+        assert_eq!(
+            read(&proposal(answer), &packet()),
+            Err(Refusal::InvalidValue)
+        );
+    }
+}
+
+#[test]
+fn a_matching_name_school_and_cohort_does_not_admit_same_person() {
+    let case = case();
+    let packet = ReviewPacket::new(case.subject_id.clone(), case.subject.clone())
+        .with_case(case_fact(&case))
+        .with_evidence(fact(
+            "flag",
+            "name_school_cohort_agree: same candidate bucket",
+        ));
     assert_eq!(
-        AthleteVerdict::parse("SAME PERSON"),
-        Some(AthleteVerdict::SamePerson)
+        validate(
+            ReviewFamily::AthleteIdentity,
+            &proposal("same_person"),
+            &packet
+        ),
+        Adjudication::Refused(Refusal::InvalidValue)
     );
-    assert_eq!(
-        AthleteVerdict::parse(" Different-Person "),
-        Some(AthleteVerdict::DifferentPerson)
-    );
-    assert_eq!(
-        AthleteVerdict::parse("insufficient evidence"),
-        Some(AthleteVerdict::InsufficientEvidence)
-    );
-    assert_eq!(
-        AthleteVerdict::parse("same_person").map(AthleteVerdict::slug),
-        Some("same_person"),
-        "the slug a decision records is the spelling the packet asked for"
-    );
-    assert_eq!(AthleteVerdict::parse("twins"), None);
 }

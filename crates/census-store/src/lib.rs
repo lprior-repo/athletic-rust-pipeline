@@ -18,8 +18,8 @@ mod batch;
 pub mod clock;
 mod entities;
 mod error;
+mod identity;
 mod keys;
-mod legacy;
 pub mod read;
 mod receipt;
 mod rows;
@@ -30,6 +30,7 @@ mod write_batch;
 
 pub use backup::{BackupReport, IntegrityReport, IntegrityTable, RestoreReport};
 pub use error::{StoreError, StoreResult};
+pub use identity::MAX_IDENTITY_APPLICATION_BATCH;
 pub use read::StoreSnapshot;
 pub use receipt::{Application, Pruned, Receipt, MAX_DIGEST_BYTES, MAX_OPERATION_BYTES};
 pub use rows::TableWalk;
@@ -164,8 +165,6 @@ impl Store {
 #[cfg(test)]
 #[path = "backup_tests.rs"]
 mod backup_tests;
-#[cfg(test)]
-mod legacy_tests;
 #[cfg(all(feature = "loom", test))]
 mod loom_tests;
 #[cfg(test)]

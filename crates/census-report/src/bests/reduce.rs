@@ -1,6 +1,6 @@
 use super::key::{should_replace, MarkOrdering, PrKey};
 use super::selection::{Conflict, Population, SharedSelection};
-use super::{is_relay, mark_text, Measure, Options, Parents};
+use super::{is_relay, mark_text, Measure, Options, Parents, Referenced};
 use crate::report::{retain_core_row, Scope};
 use census_domain::model::{
     CanonicalAthlete, CanonicalMeet, CanonicalPerformance, Mark, SourceIdentity,
@@ -11,7 +11,8 @@ use std::collections::HashMap;
 
 pub fn build(store: &Store, options: &Options) -> StoreResult<Vec<SharedSelection>> {
     let snapshot = store.snapshot();
-    let parents = Parents::read(&snapshot, options.scope, options.grad_year)?;
+    let referenced = Referenced::collect(&snapshot)?;
+    let parents = Parents::read(&snapshot, options.scope, options.grad_year, &referenced)?;
     build_with(&snapshot, &parents, options)
 }
 
@@ -95,8 +96,10 @@ impl<'a> Candidate<'a> {
 
     fn record(&self, entry: &mut PrSlot, parents: &Parents) {
         entry.marks = entry.marks.saturating_add(1);
-        if !entry.sources.contains(&self.performance.source_athlete) {
-            entry.sources.push(self.performance.source_athlete.clone());
+        if let Some(owner) = owner_of(self.performance, self.athlete) {
+            if !entry.sources.contains(owner) {
+                entry.sources.push(owner.clone());
+            }
         }
         let meet_name = self.meet.map(|meet| meet.name.clone()).unwrap_or_default();
         entry
@@ -224,7 +227,9 @@ fn make_row(
         timing: performance.timing,
         result_url,
         performance_id: performance.id.clone(),
-        source_athlete: performance.source_athlete.id.clone(),
+        source_athlete: owner_of(performance, athlete)
+            .map(|identity| identity.id.clone())
+            .unwrap_or_default(),
         source_key: performance.source_key.clone(),
         athlete: athlete.canonical_name.clone(),
         gender: athlete.gender,
@@ -240,6 +245,16 @@ fn make_row(
         population: Population::default(),
         conflicts: Vec::new(),
     }
+}
+
+fn owner_of<'a>(
+    performance: &'a CanonicalPerformance,
+    athlete: &'a CanonicalAthlete,
+) -> Option<&'a SourceIdentity> {
+    performance
+        .source_athlete
+        .as_ref()
+        .or(athlete.source.as_ref())
 }
 
 fn resolve_school(team_id: &census_domain::model::TeamId, parents: &Parents) -> Option<String> {

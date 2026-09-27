@@ -197,17 +197,25 @@ async fn walk_reads_the_captured_meet_and_the_six_lists() {
     assert_eq!(
         athletes
             .iter()
-            .filter(|athlete| athlete.source.namespace == SourceNamespace::athletic_net("athlete"))
+            .filter(|athlete| {
+                athlete.source.as_ref().is_some_and(|source| {
+                    source.namespace == SourceNamespace::athletic_net("athlete")
+                })
+            })
             .count(),
         68
     );
     assert_eq!(
         athletes
             .iter()
-            .filter(|athlete| athlete.source.namespace
-                == SourceNamespace::AssociationAthlete {
-                    association: "ihsa".to_owned()
+            .filter(|athlete| {
+                athlete.source.as_ref().is_some_and(|source| {
+                    source.namespace
+                        == SourceNamespace::AssociationAthlete {
+                            association: "ihsa".to_owned(),
+                        }
                 })
+            })
             .count(),
         1569
     );

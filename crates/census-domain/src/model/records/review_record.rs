@@ -61,6 +61,7 @@ pub struct ReviewCase {
     pub subject: String,
     pub detail: String,
     pub state: ReviewState,
+    #[serde(default)]
     pub member_ids: Vec<AthleteCandidateId>,
 }
 

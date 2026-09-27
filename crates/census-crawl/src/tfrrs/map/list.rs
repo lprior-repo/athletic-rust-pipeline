@@ -192,7 +192,7 @@ impl<'a> Absorb<'a> {
             observed_grade: Some(grade),
             evidence: row_evidence(context, row),
             source_key,
-            source_athlete: mints.source_athlete,
+            source_athlete: Some(mints.source_athlete),
             retained_conflicts: Vec::new(),
         };
         self.accumulator

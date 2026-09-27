@@ -487,7 +487,7 @@ fn a_performance_the_store_cannot_join_is_still_written() {
         observed_grade: None,
         evidence: vec![observation()],
         source_key: "test:orphan".to_string(),
-        source_athlete: source,
+        source_athlete: Some(source),
         retained_conflicts: Vec::new(),
     };
     store.append(Table::Performances, &performance).unwrap();

@@ -31,8 +31,8 @@ impl AthleteIdentityProjection {
 }
 
 pub struct IdentityProjectionBuilder<'a> {
-    index: AthleteIdentityIndex,
-    reviews: ReviewBindings<'a>,
+    pub(super) index: AthleteIdentityIndex,
+    pub(super) reviews: ReviewBindings<'a>,
     aliases: IdentityAliases,
     different: Vec<Vec<AthleteCandidateId>>,
     rejected: BTreeMap<IdentityDecisionIssue, u64>,
@@ -59,19 +59,7 @@ impl<'a> IdentityProjectionBuilder<'a> {
         &mut self,
         decision: &AppliedAthleteIdentity,
     ) -> Result<Option<IdentityDecisionIssue>, IdentityError> {
-        let issue = validate(&self.index, decision, &self.reviews)?;
-        let issue = issue.or_else(|| {
-            decision
-                .members
-                .iter()
-                .any(|member| {
-                    self.index
-                        .facts
-                        .get(member.subject.as_str())
-                        .is_some_and(|fact| fact.status > IdentityStatus::Verified)
-                })
-                .then_some(IdentityDecisionIssue::UnresolvedReview)
-        });
+        let issue = self.decision_issue(decision)?;
         if let Some(issue) = issue {
             let count = self.rejected.entry(issue).or_default();
             *count = count.checked_add(1).ok_or(IdentityError::CounterOverflow)?;
@@ -103,6 +91,24 @@ impl<'a> IdentityProjectionBuilder<'a> {
             fact.authorized = true;
         }
         Ok(None)
+    }
+
+    pub(super) fn decision_issue(
+        &self,
+        decision: &AppliedAthleteIdentity,
+    ) -> Result<Option<IdentityDecisionIssue>, IdentityError> {
+        Ok(validate(&self.index, decision, &self.reviews)?.or_else(|| {
+            decision
+                .members
+                .iter()
+                .any(|member| {
+                    self.index
+                        .facts
+                        .get(member.subject.as_str())
+                        .is_some_and(|fact| fact.status > IdentityStatus::Verified)
+                })
+                .then_some(IdentityDecisionIssue::UnresolvedReview)
+        }))
     }
 
     pub fn finish(self) -> Result<AthleteIdentityProjection, IdentityError> {

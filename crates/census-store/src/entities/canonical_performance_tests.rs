@@ -54,7 +54,7 @@ fn performance(source_key: &str, identity: SourceIdentity) -> CanonicalPerforman
         observed_grade: None,
         evidence: Vec::new(),
         source_key: source_key.to_string(),
-        source_athlete: identity,
+        source_athlete: Some(identity),
         retained_conflicts: Vec::new(),
     }
 }
@@ -69,7 +69,7 @@ fn conflicting_source_owner_is_retained_not_replaced() {
     let mut other = performance("perf-1", identity("222"));
     other.id = first.id.clone();
     first.merge(other);
-    assert_eq!(first.source_athlete, identity("111"));
+    assert_eq!(first.source_athlete, Some(identity("111")));
     assert_eq!(first.retained_conflicts.len(), 1);
 }
 

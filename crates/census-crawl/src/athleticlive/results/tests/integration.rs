@@ -104,7 +104,9 @@ async fn collect_maps_a_captured_state_final_into_the_canonical_tables() {
     let native = performances
         .iter()
         .filter(|performance| {
-            performance.source_athlete.namespace == SourceNamespace::athletic_net("athlete")
+            performance.source_athlete.as_ref().is_some_and(|identity| {
+                identity.namespace == SourceNamespace::athletic_net("athlete")
+            })
         })
         .count();
     assert_eq!(native, 132, "owned through the provider athlete id");
@@ -118,13 +120,15 @@ async fn collect_maps_a_captured_state_final_into_the_canonical_tables() {
             "the owner is the athlete's own primary source: {:?}",
             performance.source_athlete
         );
+        let owner = performance
+            .source_athlete
+            .as_ref()
+            .expect("the owner is recorded");
         assert!(
-            !performance.source_athlete.id.is_empty(),
+            !owner.id.is_empty(),
             "the owner carries the provider's own id"
         );
-        if performance.source_athlete.namespace
-            == SourceNamespace::Other("athleticlive_result_row".to_string())
-        {
+        if owner.namespace == SourceNamespace::Other("athleticlive_result_row".to_string()) {
             row_scoped += 1;
         }
     }

@@ -106,10 +106,10 @@ impl Fixture {
                 format!("2025-06-{:02}", seen.saturating_add(6)),
             )],
             source_key: self.source_key.clone(),
-            source_athlete: SourceIdentity::new(
+            source_athlete: Some(SourceIdentity::new(
                 SourceNamespace::Other("fixture".to_string()),
                 format!("athlete-{:05}", self.index),
-            ),
+            )),
             retained_conflicts: Vec::new(),
         })
     }

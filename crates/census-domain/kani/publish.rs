@@ -1,20 +1,17 @@
-
 use crate::model::{
-    published_email, CanonicalCoach, CanonicalSchool, CoachRole, Gender, MailboxKind,
-    CONSUMER_MAIL_DOMAINS, normalize_name,
+    normalize_name, published_email, CanonicalCoach, CanonicalSchool, CoachRole, Gender,
+    MailboxKind,
 };
 
 const ADDRESS_BYTES: usize = 12;
 
 fn any_address() -> String {
     let bytes: [u8; ADDRESS_BYTES] = kani::any();
-    let mut address = String::with_capacity(ADDRESS_BYTES);
     for byte in bytes {
         kani::assume(byte >= 32);
         kani::assume(byte <= 126);
-        address.push(char::from(byte));
     }
-    address
+    String::from_utf8(bytes.to_vec()).expect("the modeled bytes are printable ASCII")
 }
 
 #[kani::proof]
@@ -22,19 +19,14 @@ fn any_address() -> String {
 fn check_published_email_printable_ascii_contract() {
     let address = any_address();
     let trimmed = address.trim();
-    let expected = match trimmed.split_once('@') {
-        Some((local, domain)) => !local.is_empty() && !domain.is_empty(),
-        None => false,
-    };
+    let expected = trimmed.bytes().filter(|byte| *byte == b'@').count() == 1
+        && !trimmed.starts_with('@')
+        && !trimmed.ends_with('@');
 
     let published = published_email(&address);
-    assert_eq!(
-        published.is_some(),
-        expected,
-        "published_email accepted the wrong printable-ASCII shape: {address:?}"
-    );
+    assert!(published.is_some() == expected);
     if let Some((normalized, _)) = published {
-        assert_eq!(normalized, trimmed, "published_email must trim its input");
+        assert!(normalized == trimmed);
     }
 }
 
@@ -56,12 +48,13 @@ fn check_published_email_classifies_domains() {
         "user@proton.me",
         "user@sub.gmail.com",
         "  coach@GMAIL.COM  ",
+        "coach@COMCAST.NET",
+        "coach@sub.frontier.com",
     ] {
-        assert_eq!(
-            published_email(address).map(|(_, kind)| kind),
-            Some(MailboxKind::Personal),
-            "{address} must classify as personal"
-        );
+        assert!(matches!(
+            published_email(address),
+            Some((_, MailboxKind::Personal))
+        ));
     }
     for address in [
         "coach@school.edu",
@@ -69,39 +62,35 @@ fn check_published_email_classifies_domains() {
         "user@xoutlook.com",
         "a@b.gmail.example",
     ] {
-        assert_eq!(
-            published_email(address).map(|(_, kind)| kind),
-            Some(MailboxKind::Professional),
-            "{address} must classify as professional"
-        );
+        assert!(matches!(
+            published_email(address),
+            Some((_, MailboxKind::Professional))
+        ));
     }
-    assert_eq!(
-        CONSUMER_MAIL_DOMAINS.len(),
-        12,
-        "the concrete table covers the configured consumer domains"
-    );
 }
 
 #[kani::proof]
-#[kani::unwind(64)]
+#[kani::unwind(16)]
 fn check_published_email_malformed() {
-    for address in ["", "noatsign", "@nodomain", "local@", " @ ", "   "] {
-        assert!(
-            published_email(address).is_none(),
-            "{address:?} is malformed"
-        );
-    }
+    let addresses = ["", "noatsign", "@nodomain", "local@", " @ ", "   "];
+    let choice = usize::from(kani::any::<u8>());
+    kani::assume(choice < addresses.len());
+    kani::cover!(choice == 0, "empty address");
+    kani::cover!(choice == 1, "missing separator");
+    kani::cover!(choice == 2, "missing local part");
+    kani::cover!(choice == 3, "missing domain");
+    kani::cover!(choice == 4, "whitespace around separator");
+    kani::cover!(choice == 5, "whitespace only");
+    assert!(published_email(addresses[choice]).is_none());
 }
 
 fn proof_coach() -> CanonicalCoach {
-    let school = CanonicalSchool::mint(crate::UsJurisdiction::Wisconsin, "Test High School", "test high school");
-    CanonicalCoach::new(
-        &school,
-        "Coach",
-        None,
-        Gender::Boys,
-        CoachRole::HeadCoach,
-    )
+    let school = CanonicalSchool::mint(
+        crate::UsJurisdiction::Wisconsin,
+        "Test High School",
+        "test high school",
+    );
+    CanonicalCoach::new(&school, "Coach", None, Gender::Boys, CoachRole::HeadCoach)
 }
 
 #[kani::proof]
@@ -119,7 +108,10 @@ fn check_set_published_email_routes_by_kind() {
 
         match expected {
             Some((normalized, MailboxKind::Professional)) => {
-                assert_eq!(coach.professional_email.as_deref(), Some(normalized.as_str()));
+                assert_eq!(
+                    coach.professional_email.as_deref(),
+                    Some(normalized.as_str())
+                );
                 assert_eq!(coach.personal_email, None);
             }
             Some((normalized, MailboxKind::Personal)) => {
@@ -142,7 +134,10 @@ fn check_set_published_email_idempotent() {
     coach.set_published_email(&address);
     let once = coach.clone();
     coach.set_published_email(&address);
-    assert_eq!(coach, once, "routing the same address twice must be idempotent");
+    assert_eq!(
+        coach, once,
+        "routing the same address twice must be idempotent"
+    );
 }
 
 #[kani::proof]
@@ -150,7 +145,10 @@ fn check_set_published_email_idempotent() {
 fn check_normalize_diacritics() {
     assert_eq!(normalize_name("M\u{00fc}nchen"), normalize_name("Munchen"));
     assert_eq!(normalize_name("Caf\u{00e9}"), normalize_name("Cafe"));
-    assert_eq!(normalize_name("\u{0141}\u{00f3}d\u{017a}"), normalize_name("Lodz"));
+    assert_eq!(
+        normalize_name("\u{0141}\u{00f3}d\u{017a}"),
+        normalize_name("Lodz")
+    );
 
     assert_eq!(normalize_name("M\u{00fc}nchen"), "munchen");
     assert_eq!(normalize_name("Caf\u{00e9}"), "cafe");

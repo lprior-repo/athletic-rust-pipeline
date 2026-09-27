@@ -146,9 +146,8 @@ the research stays outside the repository as a read-only cache.
 
 ## ADR-009 — Run scope: the 48 contiguous states plus D.C.
 
-**Superseded by [ADR-013](ADR-013-fresh-national-source-census.md).** The binding target is now all
-50 states plus D.C. (51 jurisdictions). The decision below is historical; its 49-jurisdiction code
-still requires migration and must not be presented as the completed new national scope.
+**Amended 2026-09-27:** the run scope below stands. ADR-013's 51-jurisdiction target was withdrawn
+by owner direction; Alaska, Hawaii and the territories remain outside the census.
 
 **Decision.** `UsJurisdiction` models every state and D.C. The census run requires the 48 contiguous
 states plus the District of Columbia — forty-nine jurisdictions. Alaska and Hawaii are valid values
@@ -253,18 +252,18 @@ engine, the extraction happens then, under its own record.
 ## ADR-013 — Fresh nationwide source census, not workbook enrichment
 
 **Decision.** Discover the Class-of-2027 high-school TF/XC population from qualified public sources
-across all 50 states plus D.C. Do not import an admissions/seed workbook or use its rows as the
-population or coverage denominator. Excel is generated output; public result spreadsheets remain
-eligible captured source documents.
+across the 49-jurisdiction run scope of ADR-009 (48 contiguous states plus D.C.). Do not import an
+admissions/seed workbook or use its rows as the population or coverage denominator. Excel is
+generated output; public result spreadsheets remain eligible captured source documents.
 
 Use a fresh named store and unused durable run namespace/revision. Preserve historical stores and
 artifacts without importing their evidence, canonical population, completion receipts or seals.
 Reuse maintained code, fixtures and qualified source entry points; acquire this run's evidence
 afresh, then reuse its completed work during recovery.
 
-**Supersession.** Replaces ADR-009's geographic restriction and ADR-010's old-corpus prerequisite
-for this fresh census. It does not reinstate the deleted root pipeline or authorize data deletion.
-The current 49-jurisdiction implementation must migrate before a run satisfies this decision.
+**Supersession.** Replaces ADR-010's old-corpus prerequisite for this fresh census, and not ADR-009's
+geographic restriction: the run scope stays the 48 contiguous states plus D.C. (owner direction,
+2026-09-27). It does not reinstate the deleted root pipeline or authorize data deletion.
 
 **Contract.** [Full decision](ADR-013-fresh-national-source-census.md) and
 [active implementation master plan](../NATIONAL-CENSUS-PLAN.md), including F01–F15 and all 17 faults.

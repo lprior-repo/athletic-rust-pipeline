@@ -159,7 +159,10 @@ async fn a_roster_pass_files_an_observation_per_published_athlete() {
     let athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes).expect("athletes read");
     assert_eq!(athletes.len(), published.len());
     for athlete in &athletes {
-        let identity = &athlete.source;
+        let identity = athlete
+            .source
+            .as_ref()
+            .expect("the published athlete carries a source identity");
         assert_eq!(identity.namespace, SourceNamespace::MilesplitAthlete);
         assert!(
             filed.contains_key(identity.id.as_str()),

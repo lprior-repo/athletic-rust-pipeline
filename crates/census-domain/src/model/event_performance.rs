@@ -100,7 +100,8 @@ pub struct CanonicalPerformance {
     pub observed_grade: Option<Grade>,
     pub evidence: Vec<Evidence>,
     pub source_key: String,
-    pub source_athlete: SourceIdentity,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_athlete: Option<SourceIdentity>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retained_conflicts: Vec<RetainedConflict>,
 }

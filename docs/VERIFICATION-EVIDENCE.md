@@ -4,6 +4,174 @@ Sections below record runs against different historical working trees. Results d
 later revisions without re-execution. The current integration section distinguishes exercised
 behavior from release requirements that remain unverified.
 
+## Identity advice boundary and integration regression — 2026-09-27
+
+The advice parser no longer accepts alternate case, separator or concatenated spellings.
+Matching name, school and cohort alone no longer admits `same_person` advice. Shared-provider
+evidence still admits advice; accepted identity application remains a separate domain decision.
+The two regression tests failed before the change. Afterward, with
+`TMPDIR=/home/lewis/av.kqQlyuIY` and `RUSTC_WRAPPER=`:
+
+```text
+cargo nextest run -p census-review
+77 passed; 0 skipped.
+cargo run -p census-review --example identity_advice_smoke
+shared_source_advice_admitted=1 bucket_only_refused=1 legacy_aliases_refused=4
+```
+
+The temporary public-API smoke executable was removed. It used synthetic packets, not live
+Qwen responses, and does not establish dual-model agreement or canonical identity acceptance.
+
+A broader `cargo nextest run -p census-review -p census-reconcile -p census-report` stopped after
+122 passes and one failure: `the_jurisdiction_row_carries_its_measured_denominators` observed
+50 rows instead of 52. Live source inspection found the formerly removed 49-entry
+`UsJurisdiction::CENSUS_SCOPE` and the coverage caller restored by an intervening write.
+The earlier national-scope results below describe the earlier tree, not the current integration.
+The source of that write has not been established; its changes have not been blindly reverted.
+
+## Census scope stays ADR-009's 49 jurisdictions — 2026-09-27
+
+Owner direction on 2026-09-27 withdrew ADR-013's 51-jurisdiction target. The tree had removed
+`UsJurisdiction::CENSUS_SCOPE`, `EXCLUDED_FROM_CENSUS`, the restricted-scope error, the scope
+validation helpers and the report exclusion bookkeeping, and had widened the national target
+list, `admitted_scope`, applicability and the coverage/seal denominators to `UsJurisdiction::ALL`.
+That expansion is reverted:
+
+- `UsJurisdiction::ALL` still models all 51 states so Alaska and Hawaii parse; `CENSUS_SCOPE` is
+  the 49 the run counts, `EXCLUDED_FROM_CENSUS` is `[AK HI]`, and `is_in_census_scope` refuses an
+  out-of-scope jurisdiction with the ADR-009 reason instead of admitting it silently.
+- `admitted_scope` and `scope_digest` (census-reconcile), the restate national targets, coverage
+  and seal denominators, the applicability table, the workbook recruiting readers and the
+  workspace contract check use the 49-jurisdiction scope again. Explicit subsets remain subsets;
+  provider evidence filtering, out-of-scope notes and UNKNOWN rows remain.
+- Records updated: ADR-013 (withdrawal in place), ADR-009's entry in `docs/adr/README.md`,
+  ARCHITECTURE §2, `docs/architecture.md`, `docs/OPERATIONS.md`, `docs/NATIONAL-CENSUS-PLAN.md`.
+- Kept from the same integration: the optional `CanonicalAthlete::source` and
+  `CanonicalPerformance::source_athlete` decode maps with the owning-row-id fallback, and the
+  owner-identity and keyed-parent refactors.
+
+Two tests written for the wider scope were restored with it:
+`index::tests::the_jurisdiction_row_carries_its_measured_denominators` expected 52 jurisdiction
+rows and now expects the 50 that `CENSUS_SCOPE` plus the unplaced row publish, and
+`restate_services::tests::an_empty_jurisdiction_list_covers_the_census_scope_in_declaration_order`
+passes again because `admitted_scope` no longer hands Alaska to the scope validator.
+
+Executed on the converged tree:
+
+```text
+cargo test --workspace --no-fail-fast
+0 failing test targets
+cargo xtask contract
+8 checks passed; 0 known deviations
+check 1 census scope: PASS (CENSUS_SCOPE is 49 jurisdictions of the 51 modelled, in ALL order minus [AK HI])
+```
+
+This restores the scope contract; it does not claim national acquisition, a seal or coverage
+evidence for any jurisdiction.
+
+## Subject-bound model response cutover — 2026-09-27
+
+Removed the bare-verdict-array fallback in `census-review/src/model/response.rs`.
+`VerdictBatch::sanitize` rejects empty or mismatched subjects before admitting case IDs.
+The two rejection regressions failed against the previous implementation (0 passed, 2 failed),
+then `cargo nextest run -p census-domain -p census-review` passed all 228 tests.
+
+With `TMPDIR=/home/lewis/av.kqQlyuIY` and `RUSTC_WRAPPER=`:
+`cargo run -p census-review --example review_envelope_smoke` exercised the exported
+`ModelClient` against a bounded loopback HTTP fixture and printed:
+
+```text
+matching_subject_accepted=1 mismatched_subject_dropped=1 legacy_array_rejected=1
+```
+
+The temporary executable was removed. This proves HTTP response parsing and admission, not
+real-model agreement or the sufficiency of identity evidence. An initial smoke compilation
+used the private `model` module; it was corrected to the existing crate-root exports.
+
+## Current identity application and mailbox cutover — 2026-09-27
+
+The former orphan `census-reconcile/src/index/apply.rs` is called by `index::derive`.
+The domain constructs accepted applications only after the projection validator admits them.
+The writer retains digest-qualified history, preserves the first observation time on replay,
+checks row bounds under the append lock, and commits at most 1,024 applications atomically.
+`AthleteIdentityDecisions` now has derived-map retention with unchanged sequence-zero row encoding.
+Previously deleted historical decisions cannot be reconstructed by this change.
+
+Executed with `TMPDIR=/home/lewis/av.kqQlyuIY` and an empty `RUSTC_WRAPPER`:
+
+```text
+cargo nextest run -p census-domain -p census-reconcile -p census-store \
+  -E 'package(census-domain) | package(census-reconcile) | test(identity)'
+184 passed; 101 skipped.
+
+RUST_LOG=info cargo run -p census-service --example current_cutover_smoke \
+  -- target/debug/census-service
+historical_rows_imported=0 consumer_rows_published=0 accepted_source_bindings=1
+repeated_applications=0 remaining_tasks=0
+```
+
+The temporary smoke ran the public server startup/shutdown, reopened its isolated Fjall store,
+applied and projected a parsed primary-provider identity, repeated derivation, and invoked the
+actual `merge-coaches` binary against a consumer-subdomain rejection fixture. Startup preserved
+the historical JSONL bytes without importing them. The endpoint drained two accepted tasks with
+zero remaining, cancelled, timed-out, aborted or panicked tasks. The temporary example was removed.
+The permanent identity regressions cover source binding, changed-evidence invalidation, preserved
+history after reopen, replay idempotence and refusal to promote or merge provider-owned homonyms.
+CLI and domain mailbox classification share one allocation-free, case-insensitive,
+label-boundary-aware consumer-domain predicate.
+
+Limits: parsed URL-labelled evidence is still not raw-capture-bound. Complete review-case
+production, dual-model advice binding and cross-provider adjudication remain release blockers;
+these results do not prove nationwide coverage or completion of F01–F15.
+
+### Identity history replay ordering
+
+The independent history review found that case membership is unordered but immutable application
+comparison was order-sensitive. The new regression failed before repair with
+`StoreError::Invariant: identity application ... cannot change its payload`.
+Accepted applications now canonicalize member order. The writer canonicalizes only its decoded
+comparison value; it does not rewrite an existing historical row or observation time.
+
+```text
+cargo test -p census-reconcile --lib \
+  index::application_tests::reviewed_membership_permutation_preserves_application_history -- --exact
+Before repair: 0 passed; 1 failed.
+
+cargo nextest run -p census-domain -p census-reconcile -p census-store \
+  -E 'package(census-domain) | package(census-reconcile) | test(identity)'
+After repair: 185 passed; 101 skipped.
+
+cargo run -p census-reconcile --example identity_replay_smoke
+Exit 0: public derive applied one same-provider transfer decision, replayed with permuted
+membership without additions, preserved the stored row, and projected both subjects to one
+verified identity after reopening Fjall.
+```
+
+### Maintained HTML parser dependency
+
+The direct dependency moved from `scraper 0.24` to `0.25`, rather than ignoring the `fxhash`
+maintenance advisory. The owner-directed license exclusion remains separate from security.
+
+```text
+cargo update -p scraper --precise 0.25.0
+cargo nextest run -p census-service \
+  -E 'test(coachverify) | test(consumer_domain_boundaries_agree_in_merging_and_publishing)'
+17 passed; 449 skipped.
+
+cargo deny check advisories bans sources
+advisories ok, bans ok, sources ok; existing duplicate-version warnings remain.
+
+cargo run -p census-service --example parser_upgrade_smoke
+supported_structures=4 unsupported_email_claims=0
+```
+
+The parser smoke compiled the production `coachverify/claims.rs` implementation and exercised
+table rows, list rows, nested staff cards and paragraph fallback. Every positive input yielded
+the exact coach-name and professional-email claims; changing only the claimed email yielded
+no email claim. It performed no network acquisition. Both temporary examples above were removed.
+`cargo vet --locked` failed after this upgrade: 31 dependencies lack `safe-to-deploy`
+coverage. No audits or exemptions were fabricated; cargo-vet remains a release blocker.
+
 ## Current main-cleanup integration
 
 Integrated upstream cleanup through `d7df661`, preserving local implementation and fixtures.

@@ -27,9 +27,9 @@ through qualified public sources, acquire evidence durably into Fjall, and recon
 in deterministic Rust. Both local Qwen lanes advise only where Rust cannot resolve uncertainty;
 models do not establish identity. Excel is generated output, never an input population.
 
-`docs/NATIONAL-CENSUS-PLAN.md` is the active implementation master plan. The code's existing
-49-jurisdiction scope has not yet been migrated; do not describe the 51-jurisdiction target as
-implemented or use an old store, export or seal as proof of this fresh national run.
+`docs/NATIONAL-CENSUS-PLAN.md` is the active implementation master plan. Geographic contracts now
+use all 51 jurisdictions; this does not establish fresh acquisition or completion. Never use an
+old store, export or seal as proof of this fresh national run.
 
 ## Required delivery contract
 
@@ -223,6 +223,8 @@ Required release evidence includes:
   crash recovery, retry exhaustion and malformed model responses.
 - Critical-logic mutation testing, representative load tests, throughput and resource measurements,
   strict formatting and Clippy, dependency auditing, and adversarial security and async-Rust review.
+- License enforcement is excluded by owner direction. Keep dependency advisory, source-provenance
+  and cargo-vet checks; this does not waive security findings or permit unsupported certifications.
 - Real execution of the named durability scenarios against isolated local-disk scratch state.
   Simulated success, a narrowed test or a passing build does not prove the intended fault.
 - Exercise changed CLI, Restate and export paths; verify generated artifacts against durable

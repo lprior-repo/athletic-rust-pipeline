@@ -71,7 +71,6 @@ pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
             let store = Store::open(root)?;
-            store.import_legacy()?;
             run_offline(cli, &store, args).await
         }
         Route::Ingress(origin) => run_live(origin, args).await,

@@ -341,7 +341,7 @@ runs even after one fails.
 | domain type integrity | review candidates only (boolean signatures, primitive id parameters, structs with ≥2 `Option` fields) in `crates/census-domain/src/` (the single root in `xtask/src/integrity.rs`); **printed, not ratcheted** | `cargo xtask integrity` |
 | debt ratchet | baseline comparison; fails on any increase | `cargo xtask ratchet tools/quality-baseline.json <clippy.tsv> <scan.json>` |
 | domain purity | the census domain crate's *normal* dependency tree contains only `serde` + `sha2` | `cargo xtask domain-purity` |
-| deny | `cargo deny check` (licenses, advisories, bans) | `cargo deny check` |
+| deny | advisories, bans and source provenance; license enforcement excluded by owner direction | `cargo deny check advisories bans sources` |
 | audit | `cargo audit --quiet` | `cargo audit --quiet` |
 | machete | unused dependencies | `cargo machete` |
 | geiger | unsafe-surface report (JSON to /dev/null) | `cargo geiger --workspace --all-features --output-format Json > /dev/null` |

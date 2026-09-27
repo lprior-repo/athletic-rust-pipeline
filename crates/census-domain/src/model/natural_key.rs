@@ -113,8 +113,7 @@ impl NaturalKey for CanonicalAthlete {
             && self.grad_year == other.grad_year
             && self.gender == other.gender
             && same_name(&self.canonical_name, &other.canonical_name)
-            && self.source.namespace == other.source.namespace
-            && self.source.id == other.source.id
+            && self.source == other.source
     }
 
     fn natural_key(&self) -> String {

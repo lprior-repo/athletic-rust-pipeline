@@ -123,7 +123,7 @@ lane_check() {
   cargo -Zallow-features="$FEATURE_ALLOWLIST" check --workspace --all-targets --all-features
 }
 lane_doc() { cargo doc --workspace --all-features --no-deps; }
-lane_deny() { cargo deny check; }
+lane_deny() { cargo deny check advisories bans sources; }
 lane_audit() { cargo audit --quiet; }
 lane_vet() { cargo vet --locked; }
 # `cargo machete` hands the tool the subcommand token as `argv[1]`, and cargo-machete 0.9.2 strips

@@ -7,6 +7,7 @@ use census_domain::model::{
     SourceObservation,
 };
 use fjall::{Readable, Snapshot};
+use std::collections::HashSet;
 use std::path::PathBuf;
 
 mod merge;
@@ -51,6 +52,37 @@ impl<'s> StoreSnapshot<'s> {
                     .map_err(|source| StoreError::Read { source })?;
                 visit(merge::decode(table, &key, &raw)?)
             })
+    }
+
+    pub fn for_each_merged_selected<T: Entity>(
+        &self,
+        table: Table,
+        selected: &HashSet<String>,
+        mut visit: impl FnMut(T) -> StoreResult<()>,
+    ) -> StoreResult<u64> {
+        let prefix = table_prefix(table);
+        let max = usize::try_from(MAX_ROWS_PER_TABLE).map_err(|_| StoreError::CounterOverflow)?;
+        let mut merged: Option<T> = None;
+        let mut published = 0_u64;
+        self.snapshot
+            .prefix(self.entities, &prefix)
+            .enumerate()
+            .try_for_each(|(index, guard)| -> StoreResult<()> {
+                merge::check_limit(index, max, table)?;
+                let (key, raw) = guard
+                    .into_inner()
+                    .map_err(|source| StoreError::Read { source })?;
+                if !selected.contains(merge::observation_id(&key)?) {
+                    return Ok(());
+                }
+                let row = merge::decode(table, &key, &raw)?;
+                published = merge::accept(&mut merged, row, &mut visit, published)?;
+                Ok(())
+            })?;
+        match merged {
+            Some(row) => merge::publish(row, &mut visit, published),
+            None => Ok(published),
+        }
     }
 
     pub fn for_each_merged<T: Entity>(

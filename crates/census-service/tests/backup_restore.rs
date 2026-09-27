@@ -223,7 +223,7 @@ fn add_athlete(
             observed_grade: Some(Grade::new(11).expect("grade 11 is a school grade")),
             evidence: vec![observation(SOURCE, MEET_DATE)],
             source_key,
-            source_athlete: source.clone(),
+            source_athlete: Some(source.clone()),
             retained_conflicts: Vec::new(),
         });
     }
@@ -866,66 +866,6 @@ fn a_second_open_of_a_live_store_is_refused() {
 }
 
 #[test]
-fn the_restored_store_does_not_re_import_the_legacy_journals_it_carries() {
-    let dir = tempfile::tempdir().expect("a temporary drill directory");
-    let live = dir.path().join("live");
-    let backup = dir.path().join("backup");
-    let restored = dir.path().join("restored");
-    write_legacy_journals(&live);
-
-    let (tables, observations, keys) = {
-        let store = Store::open(&live).expect("opening the live store");
-        let imported = store
-            .import_legacy()
-            .expect("importing the legacy journals");
-        assert_eq!(
-            imported.observations, 2,
-            "two school observations are imported"
-        );
-        assert_eq!(imported.skipped, 0, "no derived table's journal is present");
-        let stats = store.stats().expect("store stats");
-        let keys = store
-            .journal_keys("drill_phase")
-            .expect("the imported resume keys");
-        (stats.tables, stats.observations, keys)
-    };
-    assert_eq!(
-        tables
-            .iter()
-            .find(|(name, _)| name == "schools")
-            .map(|(_, count)| *count),
-        Some(2),
-        "the legacy log holds one school under two observations"
-    );
-    assert_eq!(observations, 2);
-
-    copy_tree(&live, &backup);
-    copy_tree(&backup, &restored);
-
-    for attempt in 1..=2 {
-        let store = Store::open(&restored)
-            .unwrap_or_else(|error| panic!("restored open {attempt} failed: {error}"));
-        let reimported = store.import_legacy().expect("re-importing after restore");
-        assert_eq!(
-            (reimported.observations, reimported.skipped),
-            (0, 0),
-            "restored open {attempt}: the copied `meta` markers must stop the import"
-        );
-        let stats = store.stats().expect("restored store stats");
-        assert_eq!(
-            stats.tables, tables,
-            "restored open {attempt}: the markers in the copied `meta` keyspace must stop the import"
-        );
-        assert_eq!(stats.observations, observations);
-        assert_eq!(
-            store.journal_keys("drill_phase").expect("resume keys"),
-            keys,
-            "restored open {attempt}: the resume journal must not be imported twice"
-        );
-    }
-}
-
-#[test]
 fn a_copy_whose_journal_stops_mid_batch_keeps_the_complete_prefix() {
     let dir = tempfile::tempdir().expect("a temporary drill directory");
     let live = dir.path().join("live");
@@ -1036,34 +976,4 @@ fn a_copy_with_a_torn_byte_inside_a_row_never_yields_an_invented_row() {
         changed.is_empty(),
         "a torn byte must never change or invent a row: {changed:?}"
     );
-}
-
-fn write_legacy_journals(root: &Path) {
-    let (mut school, _) = CanonicalSchool::new(
-        UsJurisdiction::Wisconsin,
-        "Legacy High School",
-        "legacy high school",
-    );
-    school.evidence.push(observation(SOURCE, FIRST_DATE));
-    let mut later = school.clone();
-    later.city = Some("Legacy City".to_string());
-    later.evidence = vec![observation(SECOND_SOURCE, SECOND_DATE)];
-    let rows = format!(
-        "{}\n{}\n",
-        serde_json::to_string(&school).expect("a school serializes"),
-        serde_json::to_string(&later).expect("a school serializes")
-    );
-    let entities = root.join("entities");
-    let journal = root.join("journal");
-    fs::create_dir_all(&entities).expect("creating the legacy entities directory");
-    fs::create_dir_all(&journal).expect("creating the legacy journal directory");
-    fs::write(entities.join("schools.jsonl"), rows).expect("writing the legacy entity log");
-    fs::write(
-        journal.join("drill_phase.jsonl"),
-        format!(
-            "{}\n",
-            serde_json::json!({"key": "wi:legacy", "at": FIRST_DATE, "payload": {"schools": 2}})
-        ),
-    )
-    .expect("writing the legacy resume journal");
 }

@@ -96,6 +96,9 @@ pub struct VerdictBatch {
 
 impl VerdictBatch {
     pub fn sanitize(self, packet: &ReviewPacket) -> (Vec<ReviewVerdict>, usize) {
+        if self.subject_id.is_empty() || self.subject_id != packet.subject_id {
+            return (Vec::new(), self.verdicts.len());
+        }
         let asked = packet.case_ids();
         let mut admitted: Vec<ReviewVerdict> = Vec::with_capacity(self.verdicts.len());
         let mut dropped = 0_usize;

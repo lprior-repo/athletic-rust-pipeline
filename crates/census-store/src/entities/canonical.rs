@@ -123,10 +123,10 @@ impl Entity for CanonicalAthlete {
         union_vec(&mut self.known_names, &other.known_names);
         union_vec(&mut self.sports, &other.sports);
         union_vec(&mut self.public_profile_urls, &other.public_profile_urls);
-        self.add_identity(other.source);
         other
-            .source_links
+            .source
             .into_iter()
+            .chain(other.source_links)
             .for_each(|identity| self.add_identity(identity));
         union_vec(&mut self.evidence, &other.evidence);
         for observation in other.observed_grades {
@@ -200,6 +200,9 @@ impl Entity for CanonicalPerformance {
         }
         if self.timing.is_none() {
             self.timing = other.timing;
+        }
+        if self.source_athlete.is_none() {
+            self.source_athlete = other.source_athlete;
         }
         union_vec(&mut self.evidence, &other.evidence);
     }

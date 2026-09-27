@@ -31,7 +31,6 @@ impl From<StoreError> for JobError {
             | StoreError::JournalTooLarge { .. }
             | StoreError::CounterOverflow
             | StoreError::Refused { .. }
-            | StoreError::Legacy { .. }
             | StoreError::Identity(_)
             | StoreError::Invariant { .. } => Self::Terminal { message },
         }

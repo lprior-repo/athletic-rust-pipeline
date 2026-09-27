@@ -66,7 +66,7 @@ fn performance(index: usize, version: usize) -> CanonicalPerformance {
         observed_grade: None,
         evidence: Vec::new(),
         source_key: format!("athlete-{index}"),
-        source_athlete: identity,
+        source_athlete: Some(identity),
         retained_conflicts: Vec::new(),
     }
 }

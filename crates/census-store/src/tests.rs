@@ -42,7 +42,6 @@ fn derived(id: &str, note: u32) -> DerivedRow {
 mod batch_atomicity;
 mod derived_rows;
 mod journal_limits;
-mod legacy_import;
 mod observation_laws;
 mod sequence_bounds;
 mod snapshot_publication;

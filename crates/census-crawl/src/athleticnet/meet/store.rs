@@ -91,6 +91,12 @@ pub(super) fn athlete(
         school_year: row.school_year,
         source: source.clone(),
     };
+    let profile = u64::try_from(row.provider_id).ok().map(profile_url);
+    let identity = SourceIdentity {
+        namespace: SourceNamespace::athletic_net("athlete"),
+        id: row.provider_id.to_string(),
+        url: profile.clone(),
+    };
     if let Some(athlete) = accumulated.athletes.get_mut(&key) {
         if !athlete.observed_grades.contains(&observation) {
             athlete.observed_grades.push(observation);
@@ -98,19 +104,14 @@ pub(super) fn athlete(
         if !athlete.sports.contains(&row.sport) {
             athlete.sports.push(row.sport);
         }
-        return (athlete.id.clone(), athlete.source.clone());
+        return (athlete.id.clone(), identity);
     }
-    let profile = u64::try_from(row.provider_id).ok().map(profile_url);
     let mut athlete = CanonicalAthlete::new(
         row.school,
         row.name,
         observation.grad_year(),
         row.gender,
-        SourceIdentity {
-            namespace: SourceNamespace::athletic_net("athlete"),
-            id: row.provider_id.to_string(),
-            url: profile.clone(),
-        },
+        identity.clone(),
     );
     if let Some(url) = profile.clone() {
         athlete.public_profile_urls.push(url);
@@ -120,7 +121,7 @@ pub(super) fn athlete(
     athlete
         .evidence
         .push(Evidence::parsed(source.clone(), observed_on));
-    let subject = (athlete.id.clone(), athlete.source.clone());
+    let subject = (athlete.id.clone(), identity);
     accumulated.athletes.insert(key, athlete);
     subject
 }
@@ -163,7 +164,7 @@ pub(super) fn store(
                 observed_grade: input.grade,
                 evidence: vec![evidence],
                 source_key: input.source_key,
-                source_athlete: input.source_athlete,
+                source_athlete: Some(input.source_athlete),
                 retained_conflicts: Vec::new(),
             }
         });

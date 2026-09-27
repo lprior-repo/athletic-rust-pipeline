@@ -104,14 +104,14 @@ impl Table {
             | Table::Performances
             | Table::SourceMeets
             | Table::SourceObservations => StorageMode::ObservationLog,
-            Table::SourceIdentities
-            | Table::Conflicts
-            | Table::Coverage
-            | Table::AthleteIdentityDecisions => StorageMode::DerivedSnapshot,
+            Table::SourceIdentities | Table::Conflicts | Table::Coverage => {
+                StorageMode::DerivedSnapshot
+            }
             Table::ReviewCases
             | Table::Snapshots
             | Table::SourceAccess
-            | Table::IdentityVerdicts => StorageMode::DerivedMap,
+            | Table::IdentityVerdicts
+            | Table::AthleteIdentityDecisions => StorageMode::DerivedMap,
         }
     }
 }

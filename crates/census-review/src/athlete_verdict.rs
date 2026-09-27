@@ -46,17 +46,10 @@ impl AthleteVerdict {
     }
 
     pub fn parse(value: &str) -> Option<Self> {
-        let normalized = value
-            .trim()
-            .to_ascii_lowercase()
-            .replace(['-', '_'], " ")
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join(" ");
-        match normalized.as_str() {
-            "same person" | "sameperson" => Some(Self::SamePerson),
-            "different person" | "differentperson" => Some(Self::DifferentPerson),
-            "insufficient evidence" | "insufficientevidence" => Some(Self::InsufficientEvidence),
+        match value {
+            "same_person" => Some(Self::SamePerson),
+            "different_person" => Some(Self::DifferentPerson),
+            "insufficient_evidence" => Some(Self::InsufficientEvidence),
             _ => None,
         }
     }
@@ -70,10 +63,7 @@ fn has_positive_evidence(packet: &ReviewPacket) -> bool {
         .evidence
         .iter()
         .filter(|fact| fact.field == "flag")
-        .any(|fact| {
-            fact.value.starts_with("shared_source_identity:")
-                || fact.value.starts_with("name_school_cohort_agree:")
-        })
+        .any(|fact| fact.value.starts_with("shared_source_identity:"))
 }
 
 fn hard_contradiction(packet: &ReviewPacket) -> Option<HardContradiction> {

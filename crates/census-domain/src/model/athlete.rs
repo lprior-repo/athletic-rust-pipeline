@@ -64,6 +64,7 @@ impl Ord for AthleteCandidateKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(from = "PersistedAthlete")]
 pub struct CanonicalAthlete {
     pub id: AthleteId,
     pub canonical_name: String,
@@ -74,7 +75,8 @@ pub struct CanonicalAthlete {
     pub sports: Vec<Sport>,
     pub observed_grades: Vec<ObservedGrade>,
     pub public_profile_urls: Vec<String>,
-    pub source: SourceIdentity,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<SourceIdentity>,
     pub source_links: Vec<SourceIdentity>,
     pub evidence: Vec<Evidence>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -88,16 +90,22 @@ impl CanonicalAthlete {
     }
 
     pub fn identities(&self) -> impl Iterator<Item = &SourceIdentity> {
-        std::iter::once(&self.source).chain(self.source_links.iter())
+        self.source.iter().chain(self.source_links.iter())
     }
 
     pub fn add_identity(&mut self, identity: SourceIdentity) {
-        if identity.namespace == self.source.namespace && identity.id == self.source.id {
-            if self.source.url.is_none() {
-                self.source.url = identity.url;
+        match self.source.as_mut() {
+            Some(source) if source.namespace == identity.namespace && source.id == identity.id => {
+                if source.url.is_none() {
+                    source.url = identity.url;
+                }
             }
-        } else if !self.source_links.contains(&identity) {
-            self.source_links.push(identity);
+            Some(_) => {
+                if !self.source_links.contains(&identity) {
+                    self.source_links.push(identity);
+                }
+            }
+            None => self.source = Some(identity),
         }
     }
 
@@ -148,7 +156,7 @@ impl CanonicalAthlete {
             sports: Vec::new(),
             observed_grades: Vec::new(),
             public_profile_urls: Vec::new(),
-            source,
+            source: Some(source),
             source_links: Vec::new(),
             evidence: Vec::new(),
             retained_conflicts: Vec::new(),
@@ -173,3 +181,58 @@ impl CanonicalAthlete {
         }
     }
 }
+
+#[derive(Debug, Deserialize)]
+struct PersistedAthlete {
+    id: AthleteId,
+    canonical_name: String,
+    known_names: Vec<String>,
+    grad_year: GradYear,
+    school: SchoolId,
+    gender: Gender,
+    sports: Vec<Sport>,
+    observed_grades: Vec<ObservedGrade>,
+    public_profile_urls: Vec<String>,
+    #[serde(default)]
+    source: Option<SourceIdentity>,
+    #[serde(default)]
+    source_links: Vec<SourceIdentity>,
+    #[serde(default)]
+    source_identities: Vec<SourceIdentity>,
+    evidence: Vec<Evidence>,
+    #[serde(default)]
+    retained_conflicts: Vec<RetainedConflict>,
+}
+
+impl From<PersistedAthlete> for CanonicalAthlete {
+    fn from(persisted: PersistedAthlete) -> Self {
+        let mut source_links = persisted.source_links;
+        let source = persisted
+            .source
+            .or_else(|| persisted.source_identities.first().cloned());
+        for identity in persisted.source_identities {
+            if Some(&identity) != source.as_ref() && !source_links.contains(&identity) {
+                source_links.push(identity);
+            }
+        }
+        Self {
+            id: persisted.id,
+            canonical_name: persisted.canonical_name,
+            known_names: persisted.known_names,
+            grad_year: persisted.grad_year,
+            school: persisted.school,
+            gender: persisted.gender,
+            sports: persisted.sports,
+            observed_grades: persisted.observed_grades,
+            public_profile_urls: persisted.public_profile_urls,
+            source,
+            source_links,
+            evidence: persisted.evidence,
+            retained_conflicts: persisted.retained_conflicts,
+        }
+    }
+}
+
+#[cfg(test)]
+#[path = "athlete_tests.rs"]
+mod tests;

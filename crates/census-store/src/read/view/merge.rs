@@ -40,6 +40,15 @@ pub(super) fn decode<T: Entity>(table: Table, key: &[u8], raw: &[u8]) -> StoreRe
     Ok(row)
 }
 
+pub(super) fn observation_id(key: &[u8]) -> StoreResult<&str> {
+    let (_, id, _) = split_observation_key(key).ok_or_else(|| StoreError::Invariant {
+        detail: format!("malformed observation key {}", key_label(key)),
+    })?;
+    std::str::from_utf8(id).map_err(|_| StoreError::Invariant {
+        detail: format!("observation key {} is not text", key_label(key)),
+    })
+}
+
 pub(super) fn accept<T: Entity>(
     current: &mut Option<T>,
     row: T,

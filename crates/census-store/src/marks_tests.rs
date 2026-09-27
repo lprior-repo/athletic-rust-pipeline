@@ -151,41 +151,6 @@ fn a_store_written_without_marks_learns_them_from_one_scan() {
 }
 
 #[test]
-fn an_import_carries_the_row_count_it_resumed_from() {
-    let dir = tempfile::tempdir().unwrap();
-    let root = dir.path().to_path_buf();
-    std::fs::create_dir_all(root.join("entities")).unwrap();
-    let store = Store::open(&root).unwrap();
-    assert_eq!(
-        store.count(Table::Schools).unwrap(),
-        0,
-        "an open seeds the count of an empty table"
-    );
-
-    let mut journal = serde_json::to_string(&school("Abbotsford")).unwrap();
-    journal.push('\n');
-    std::fs::write(root.join("entities/schools.jsonl"), &journal).unwrap();
-    store.meta.remove("imported:schools").unwrap();
-    store.import_legacy().unwrap();
-    assert_eq!(
-        store.count(Table::Schools).unwrap(),
-        1,
-        "the import counts the row it stored"
-    );
-
-    journal.push_str(&serde_json::to_string(&school("Colby")).unwrap());
-    journal.push('\n');
-    std::fs::write(root.join("entities/schools.jsonl"), &journal).unwrap();
-    store.meta.remove("imported:schools").unwrap();
-    store.import_legacy().unwrap();
-    assert_eq!(store.count(Table::Schools).unwrap(), 2);
-    assert_eq!(
-        store.scan::<CanonicalSchool>(Table::Schools).unwrap().len(),
-        2
-    );
-}
-
-#[test]
 fn an_open_with_a_mark_never_walks_the_table() {
     let dir = tempfile::tempdir().unwrap();
     {

@@ -35,7 +35,6 @@ cargo run --release -p census-service -- <command>
                   [--input PATH] [--states WI,MN] [--limit N] [--grad-year 2027] [--core]
                   [--refresh] [--observed-on YYYY-MM-DD] [--out PATH]
   fjall-stats     Print per-table observation counts and the database footprint
-  import-legacy   Run the one-time pre-Fjall JSONL import, then print the store stats
   serve           Print the command that runs the `census-serve` Restate endpoint
 
 Global: --store <dir> (default var/census-service), --delay-ms <n>, --user-agent <ua>,
@@ -53,8 +52,7 @@ produced. Each provider takes `--seasons`, `--limit` and `--refresh`.
 athlete in the core scope instead, and is rejected in combination with `--grad-year` rather than
 silently ignoring it. The cohort selector is a `u16` on the command line, so a negative year never
 reaches the store and a year above `i16::MAX` is rejected instead of truncated. `fjall-stats` reports
-what the database holds, table by table, and `import-legacy` runs the one-time import and then prints
-the same statistics. `serve` prints the service command; it never starts a server itself.
+what the database holds, table by table. `serve` prints the service command; it never starts a server itself.
 
 The CLI holds the store for the life of the command because the Fjall database takes an exclusive
 lock, which is what keeps two runs from interleaving writes. The same lock means `census-serve` and
@@ -97,12 +95,11 @@ counts observations read, not merged rows. The LSM cache is bounded at 256 MiB.
 consolidation pass, and the snapshot is what goes out as the tabular record beside them. `bests`
 writing `out/best-results-*.jsonl` therefore needs no prior `consolidate`.
 
-Databases created before this substrate keep their rows in `<store>/entities/*.jsonl` and their
-resume ledger in `<store>/journal/*.jsonl`. `Store::open` imports both exactly once: a table is
-marked imported only after all of its observations are committed, so an interrupted import resumes
-instead of restarting, and later opens skip it. The JSONL files stay in place as the record of what
-the database was built from, and `import-legacy` runs that path and prints the import source next to
-the resulting store statistics.
+Databases created before the 2026-09 row-shape revision keep their rows in `<store>/entities/*.jsonl`
+and their resume ledger in `<store>/journal/*.jsonl`. Nothing in this tree reads those journals any
+more, and the one-time import that did (`import-legacy`) was removed 2026-09-27: a store whose rows
+predate the revision does not decode, so rebuild such a census from the source graph rather than
+migrating it.
 
 ## Merge laws
 

@@ -1,6 +1,7 @@
 # ADR-013 — Fresh nationwide source census, not workbook enrichment
 
-Status: accepted owner correction; implementation cutover and national execution remain required.
+Status: accepted owner correction; the geography clause is withdrawn (owner direction, 2026-09-27),
+the fresh-run program and national execution remain required.
 
 ## Decision
 
@@ -8,8 +9,12 @@ Build the Class-of-2027 high-school Track & Field / Cross Country census from sc
 qualified public sources. The population is discovered, not supplied by an admissions workbook,
 a recruit list, an existing export, or the previous canonical corpus.
 
-The national target is all 50 states plus D.C.: 51 jurisdictions, including Alaska and Hawaii.
-Territories and freely associated states are not implicitly added to the jurisdiction model.
+The census scope is ADR-009's: the 48 contiguous states plus D.C. — 49
+jurisdictions. Owner direction on 2026-09-27 withdrew this ADR's 51-jurisdiction target: Alaska,
+Hawaii and every territory stay outside the census, and no coverage, seal or workbook denominator
+counts them. `UsJurisdiction` still models all 51 states so their identifiers parse and are refused
+by scope instead of silently widening coverage.
+
 Subset runs are explicitly labeled qualification runs, never the delivered national census.
 
 Recruiter workbooks are generated outputs. Do not implement workbook intake, admissions matching,
@@ -42,12 +47,13 @@ national population. That is the wrong product. National completeness must be me
 jurisdictions, qualified source objects, programs, seasons, discovery and acquisition obligations,
 not a spreadsheet's rows. Historical corpus size and old seals cannot certify a new acquisition.
 
-## Required cutover
+## Scope
 
-The current `UsJurisdiction::CENSUS_SCOPE` still contains 49 values and excludes Alaska and Hawaii.
-This decision does not claim that the implementation or source coverage already includes them.
-Main must migrate scope validation, source qualification, durable run identities, coverage and
-seal denominators, CLI behavior and tests together before calling any run national.
+Owner direction on 2026-09-27 withdrew this ADR's 51-jurisdiction target. The run scope stays
+ADR-009's: the 48 contiguous states plus D.C. `UsJurisdiction::CENSUS_SCOPE` holds those 49 and
+`EXCLUDED_FROM_CENSUS` names Alaska and Hawaii, which parse and are refused by scope. The
+fresh-run program below is unaffected: a fresh store, unused durable run identities and an
+explicit revision are still required, and no historical corpus or seal certifies a new census.
 
 A fresh directory alone is insufficient: existing Restate keys can replay old completed work.
 Bind the new store and run revision explicitly, and prove that old completions cannot seed it.

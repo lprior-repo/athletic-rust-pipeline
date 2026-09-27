@@ -71,14 +71,15 @@ impl<'a> Mapper<'a> {
             push_once(&mut athlete.evidence, evidence);
             return Some((athlete.id.clone(), source.clone()));
         }
-        let mut athlete = CanonicalAthlete::new(row.school, name, grad_year, row.gender, source);
+        let mut athlete =
+            CanonicalAthlete::new(row.school, name, grad_year, row.gender, source.clone());
         athlete.observed_grades.push(observation);
         athlete.sports.push(row.sport);
         for identity in identities {
             athlete.add_identity(identity);
         }
         athlete.evidence.push(evidence);
-        let subject = (athlete.id.clone(), athlete.source.clone());
+        let subject = (athlete.id.clone(), source);
         self.accumulated.athletes.insert(key, athlete);
         Some(subject)
     }
@@ -118,7 +119,7 @@ impl<'a> Mapper<'a> {
             observed_grade: row.grade,
             evidence: vec![self.origin.evidence(url)],
             source_key: row.source_key,
-            source_athlete: subject.1,
+            source_athlete: Some(subject.1),
             retained_conflicts: Vec::new(),
         };
         self.accumulated.performances.insert(key, performance);

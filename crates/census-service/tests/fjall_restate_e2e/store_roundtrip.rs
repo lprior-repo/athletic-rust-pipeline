@@ -56,61 +56,6 @@ fn store_round_trip_merges_observations_and_reports_stats() {
     assert_observation_counts(&store.stats().unwrap());
 }
 
-#[test]
-fn legacy_jsonl_journals_are_imported_once() {
-    let dir = tempfile::tempdir().unwrap();
-    let root = dir.path();
-    std::fs::create_dir_all(root.join("entities")).unwrap();
-    std::fs::create_dir_all(root.join("journal")).unwrap();
-
-    let (mut school, _) =
-        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Legacy High School", "legacy");
-    school.evidence.push(evidence());
-    let mut later = school.clone();
-    later.evidence.push(evidence());
-    let log = format!(
-        "{}\n{}\n",
-        serde_json::to_string(&school).unwrap(),
-        serde_json::to_string(&later).unwrap()
-    );
-    std::fs::write(root.join("entities/schools.jsonl"), log).unwrap();
-    std::fs::write(
-        root.join("journal/mshsl_schools.jsonl"),
-        "{\"key\":\"wi:1\",\"at\":\"2026-04-01\",\"payload\":{\"schools\":1}}\n",
-    )
-    .unwrap();
-
-    {
-        let store = Store::open(root).unwrap();
-        store.import_legacy().unwrap();
-        let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
-        assert_eq!(
-            rows.len(),
-            1,
-            "the legacy log holds one school under two observations"
-        );
-        assert_eq!(rows[0].evidence, school.evidence);
-        assert_eq!(raw_schools(&store), vec![school.clone(), later.clone()]);
-        assert!(store
-            .journal_keys("mshsl_schools")
-            .unwrap()
-            .contains("wi:1"));
-        assert_eq!(store.journal_payloads("mshsl_schools").unwrap().len(), 1);
-    }
-
-    let store = Store::open(root).unwrap();
-    store.import_legacy().unwrap();
-    let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
-    assert_eq!(
-        rows.len(),
-        1,
-        "reopening must not import the legacy log a second time"
-    );
-    assert_eq!(rows[0].evidence, school.evidence);
-    assert_eq!(raw_schools(&store), vec![school, later]);
-    assert_eq!(store.journal_keys("mshsl_schools").unwrap().len(), 1);
-}
-
 fn raw_schools(store: &Store) -> Vec<CanonicalSchool> {
     let mut rows = Vec::new();
     store

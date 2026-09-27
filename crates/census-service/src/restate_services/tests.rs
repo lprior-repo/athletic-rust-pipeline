@@ -715,11 +715,6 @@ fn deterministic_store_errors_classify_terminal() {
     });
     assert!(matches!(error, JobError::Terminal { .. }));
 
-    let error = JobError::from(StoreError::Legacy {
-        detail: "column count mismatch".to_string(),
-    });
-    assert!(matches!(error, JobError::Terminal { .. }));
-
     let error = JobError::from(StoreError::Invariant {
         detail: "row id missing".to_string(),
     });

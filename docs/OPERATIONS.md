@@ -77,9 +77,9 @@ stages — are the ones left to route.
 **Jurisdiction default (critical):** with neither `--states` nor `--all-states`, the gather commands
 (`teams`, `meets`, `collect`) cover **Wisconsin alone** (`crates/census-service/src/cli/mod.rs:239`,
 pinned by `crates/census-service/src/cli/tests.rs:15`) — a one-state quick test, not the run scope.
-The implemented `UsJurisdiction::CENSUS_SCOPE` is still 49; `--all-states` selects it and still
-excludes Alaska and Hawaii. ADR-013 requires all 50 states plus D.C.; the scope, validation,
-source qualification and coverage/seal denominators must migrate before a run satisfies it.
+The implemented `UsJurisdiction::CENSUS_SCOPE` is the 49-jurisdiction run scope; `--all-states`
+selects it and excludes Alaska and Hawaii, which is the scope ADR-009 fixes and owner direction
+reaffirmed on 2026-09-27 when ADR-013's 51-jurisdiction target was withdrawn.
 Do not describe current `--all-states` output or a historical seal as the fresh national delivery.
 The `provider` subcommands use the restriction form: no flag means no restriction (`cli/mod.rs:252`,
 pinned at `cli/tests.rs:34`). A Wisconsin default or provider invocation is not national completion.

@@ -6,7 +6,7 @@ commit messages reference them, so edit a section's content without renumbering 
 ## 1. Mission
 
 Build a fresh, source-discovered recruiting census of U.S. Class-of-2027 high-school Track & Field
-and Cross Country athletes across all 50 states plus D.C. Discover the population through qualified
+and Cross Country athletes across the 48 contiguous states plus D.C. Discover the population through qualified
 public sources, reconcile identities, collect athletic histories, calculate comparable PRs, retain
 contested events and source profiles, resolve time-scoped school affiliation and public coaching
 contacts, and generate recruiter workbooks with auditable evidence. No workbook supplies the
@@ -37,11 +37,12 @@ root manifest's header records the same fact, and §4's `acq-*` note says what b
 
 ## 2. Scope
 
-- **Geography (§2)**: the target is **all 50 states plus D.C. — 51 jurisdictions**, including Alaska
-  and Hawaii. [ADR-013](docs/adr/ADR-013-fresh-national-source-census.md) supersedes ADR-009's
-  contiguous-state restriction. `UsJurisdiction::CENSUS_SCOPE` still implements 49; scope validation,
-  source qualification, coverage/seal denominators and tests must migrate together. Territories and
-  freely associated states remain unmodelled; adding one requires an explicit domain decision.
+- **Geography (§2)**: the census scope is the **48 contiguous states plus D.C. — 49 jurisdictions**;
+  Alaska, Hawaii and the territories are outside it, per [ADR-009](docs/adr/README.md). ADR-013's
+  51-jurisdiction target was withdrawn by owner direction on 2026-09-27. `UsJurisdiction::ALL`
+  models all 51 states and `UsJurisdiction::CENSUS_SCOPE` is the 49 the run and every coverage or
+  seal denominator count; a jurisdiction in `ALL` but outside the scope parses and is refused,
+  never silently counted. Adding one requires an explicit domain decision.
 - **Cohort (§3)**: `GraduationYear(2027)` is the durable target, never "junior". Grade is
   time-scoped evidence (`GradeObservation { grade, academic_year, source }`) — `2025-2026 → Grade 11`
   and `2026-2027 → Grade 12` both support the same canonical cohort. No source-specific query
