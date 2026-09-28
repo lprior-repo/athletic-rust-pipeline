@@ -27,6 +27,7 @@ skill rather than silently proceeding:
 | Physical storage and snapshots | `FJALL_SCHEMA.md` |
 | Implemented durable handlers and replay boundaries | `RESTATE_WORKFLOWS.md` |
 | Operating the census | `docs/OPERATIONS.md` |
+| External Restate vendor documentation | `docs/restate/README.md` |
 | Backup/restore and deployment | `docs/FJALL_BACKUP.md`, `docs/deployment-lifecycle.md` |
 | Test/gate and benchmark procedures | `TESTING.md`, `PERFORMANCE.md` |
 | Dated command evidence and limitations | `docs/VERIFICATION-EVIDENCE.md` |
@@ -36,6 +37,45 @@ Keep implementation facts, target requirements and historical results distinct. 
 document instead of creating a second architecture, handoff, status or execution plan. ADRs explain
 why; references explain current APIs; evidence records what actually ran. Preserve unique source
 captures and audit evidence. Scraped Restate references are external material, not project policy.
+
+## Local Restate deployment lifecycle
+
+No container runtime is used here. The node is the native binary at `/home/lewis/bin/restate-server`
+with one config per run (`var/<run>/restate.toml`, conventional loopback ingress 18095 and admin
+19095). `census-serve` owns the Fjall store: one process owns one root, and a second opener failing on
+the lock is correct, not a defect to work around.
+
+Tearing down a previous run, in this order:
+
+1. `kill -TERM <census-serve pid>` and wait for exit. Read the drain certificate it appends to
+   `var/<run>/serve.log` (`drained: accepted=… completed=… cancelled=… timed_out=… aborted=…
+   panicked=…`) and keep it as evidence of what was stopped.
+2. `kill -TERM <restate-server pid>` for each node and wait; the node config's `shutdown-timeout`
+   bounds that wait.
+3. Confirm nothing listens on the run's ports and that no `restate-server` or `census-serve`
+   process remains.
+4. Preserve `var/<run>/`, the node's `base-dir` and every artifact under `var/<run>/out/`. Never
+   SIGKILL, never delete another run's durable state, and never reuse its store directory: a fresh
+   census needs a new store path, a new endpoint port and a fresh registration.
+
+Starting a fresh run:
+
+1. Write `var/<run>/restate.toml` from the previous run's config with new node/cluster names and a
+   new `base-dir`, start `restate-server --no-logo -c` it, and wait for the `Admin:` and
+   `HTTP Ingress:` banner lines.
+2. Start `target/release/census-serve --listen 127.0.0.1:<port> --data-dir var/<run>
+   --max-concurrent <n> --drain-timeout <seconds> --browser-profile var/<run>/browser-profile
+   --browser-executable /usr/bin/chromium --browser-headless`.
+3. Register it: `curl -X POST http://127.0.0.1:19095/deployments -H 'content-type: application/json'
+   -d '{"uri":"http://127.0.0.1:<port>/"}'`, then confirm all ten services appear in
+   `GET /deployments`.
+4. Submit the run with `census-service national --ingress http://127.0.0.1:18095/ --detach` and
+   observe it through the admin query API and `census-service open-work`, never by opening the store
+   from a second process.
+
+Vendor Restate reference material is local under `docs/restate/`; it is external documentation, not
+project policy. `docs/OPERATIONS.md` owns runnable procedures and `docs/deployment-lifecycle.md` owns
+registration, immutability and handover rules.
 
 ## Ownership
 
