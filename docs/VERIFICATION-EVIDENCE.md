@@ -5356,6 +5356,27 @@ store write or metrics projection was exercised. The golden samples 18 captured 
 the national lane covers 15 associations, so this is a sample, not a census-scale equivalence proof. Row
 order is not compared (S20); the comparison is on row sets.
 
+## Zero-Python run path: the audit, what remains, and where it lives (2026-09-29)
+
+Claim checked: no census *run path* invokes Python. Search: `python3?|\.py\b` over `xtask/`, `crates/`
+and `tools/` (`.moon/` and `.github/` are absent at this base). Result by location:
+
+- **Run path — clean.** No `crates/**` or `xtask/**` code shells out to Python. The only Python string on
+  a run path is documentation text: `crates/census-service/src/cli/census_doc/format_sections.rs:207`
+  emits `python3 tools/make_census_doc.py` into a generated census document's reproduce block — the known
+  blocked item, whose Rust replacement needs the census-service verbs that do not compile at this base.
+- **Contract — enforced, not reviewed.** `xtask/src/contract/tree.rs::python_free` is contract check 4 of
+  7 ("no python files"): a committed `.py`, `.pyc` or `__pycache__` fails the contract lane.
+- **Retained, off the run path.** `tools/port_chsaa.py` (fixture/golden porting helper, to be replaced by
+  the planned `xtask` fixture-copy verb), `tools/durability/*.sh` (the 17 native fault scenarios build
+  JSON payloads with `python3 -c`), and the `PROVENANCE.json` `generator` strings under
+  `crates/census-crawl/tests/fixtures/{chsaa,coach_directories}/`, which record which prototype script
+  produced each golden — audit history, not an invocation. `research/` and the prototype stay Python by
+  design.
+- **Where this is not yet written.** `AGENTS.md` names `TESTING.md`, `PERFORMANCE.md`,
+  `SOURCE_ADAPTER_GUIDE.md` and `DOMAIN.md` as owning documents, but none exists in this base or in the
+  main worktree, so the audit's durable home is this ledger until they do.
+
 ## Review round: registry-enforced pacing, cooldowns and revisit semantics (2026-09-29)
 
 Three read-only reviewers ran over the DragonFly lane and the `net` core: black-hat parity
