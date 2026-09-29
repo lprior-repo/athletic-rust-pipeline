@@ -2862,6 +2862,18 @@ that a fresh qualification number needs a cleared cache. (4) An offline probe th
 body records `offline`, which cannot be told apart from a live 404 recorded as `http`; the taxonomy is
 documented as a mapping, not parity.
 
+**Landed.** `main` fast-forwards to this work; the landed tree was then built and tested *in the main
+worktree*: `cargo test -p census-crawl` → **473 passed, 0 failed** (10 s, incremental). That worktree
+carried a divergent, two-day-old (2026-09-27) line of the same lane — an `Ingress` abstraction, a
+`Pace` struct returned by `Fetcher::pace`, and a rename of the MileSplit DC fixture to an NC one —
+whose `BrowserLane`/`browser.rs`/`results/tests.rs` call APIs this work replaced, so it could not
+compile against the landed tree. The superseded files were restored to the landed revision (their
+staged copies — `src/ingress.rs`, `raw_rows/tests.rs`, `tests/fixtures/coach-directories/*`,
+`tests/golden/*`, `chsaa-test/` — were left in place as untracked captures rather than deleted) and a
+full snapshot of the worktree as it stood before the landing is in the main worktree's `stash@{0}`
+("omp: snapshot of main's pre-land WIP"). Nothing from that line was reconciled by hand: it is
+recorded here as the reason for the pre-land snapshot, not as work this delivery claims.
+
 ## Consolidated historical evidence — imported 2026-09-27
 
 The following facts came from retired handoffs, implementation plans and duplicate operating
