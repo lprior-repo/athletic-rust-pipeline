@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 
@@ -21,7 +22,7 @@ pub use types::{FetchError, FetchOptions, FetchOutcome, FetchStats, HostTraffic}
 
 pub(crate) use types::host_of;
 
-use client::HostState;
+pub use client::PacingState;
 use robots::RobotsPolicy;
 
 pub const DEFAULT_USER_AGENT: &str =
@@ -42,10 +43,10 @@ pub struct Fetcher {
     default_delay: Duration,
     host_delays: HashMap<String, Duration>,
     family_delays: HashMap<String, Duration>,
-    families: Mutex<HashMap<String, HostState>>,
+    pacing: Arc<PacingState>,
     authorized_hosts: Vec<String>,
-    hosts: Mutex<HashMap<String, HostState>>,
     robots: Mutex<HashMap<String, RobotsPolicy>>,
+    robots_gates: Mutex<HashMap<String, Arc<Mutex<()>>>>,
     stats: Mutex<FetchStats>,
     source: String,
     blocks: Mutex<HashMap<String, SourceAccessCondition>>,
@@ -100,6 +101,15 @@ impl Fetcher {
     pub fn with_browser_lane(mut self, lane: bridge::BrowserLane) -> Self {
         self.lane = Some(lane);
         self
+    }
+
+    pub fn with_shared_pacing(mut self, shared: Arc<PacingState>) -> Self {
+        self.pacing = shared;
+        self
+    }
+
+    pub fn pacing_state(&self) -> Arc<PacingState> {
+        Arc::clone(&self.pacing)
     }
 
     pub fn has_browser_lane(&self) -> bool {

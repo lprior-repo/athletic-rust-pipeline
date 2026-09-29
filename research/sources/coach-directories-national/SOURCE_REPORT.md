@@ -1437,8 +1437,9 @@ the director rows the mapper constructs.
 **Defects found and fixed in this lane's own parser (2026-09-29).** Matching only the `Boys'`/`Girls'`
 spelling cost **3 139 staff entries across the eight then-crawled states**; the survey's captures hold
 17 distinct track/XC labels (`Boys'`/`Girls'` 68 612 teams, `Boy's`/`Girl's` 19 357, `Mixed`/`Unified`
-1 893). The corrected mapper also raised MT 9.0 → 11.2 and NC 19.2 → 20.5 sampled census rows per
-school (`notes/verification.md`, "Defects found").
+1 893). The corrected mapper also raised MT 9.0 → 11.2, NC 19.2 → 20.5 and NM 1.5 → 3.5 sampled census
+rows per school (`notes/verification.md`, "Defects found"; the NM figure is evidenced by `sources.py`'s
+stale note string against the committed `out/dragonfly_probe.json`).
 
 **A 200 can still be an error body.** A summary keyed by `orgId` instead of `shortCode` answers HTTP
 200 with a 490-byte S3 `AccessDenied` XML body. Any implementation must treat a non-JSON 200 as a

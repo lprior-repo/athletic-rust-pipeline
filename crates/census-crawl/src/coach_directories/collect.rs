@@ -1,4 +1,7 @@
-use super::map::{absorb_summary, coach_entities, directory_school};
+use super::map::{
+    absorb_summary, coach_entities, directory_school, CoachCounters, CoachEmission,
+    DirectoryAdmission, EmissionScope,
+};
 use super::parse::{parse_directory, parse_summary, DirectorySchool};
 use super::{directory_page_url, summary_url, Options, MAX_DIRECTORY_PAGES, REGISTERED, SOURCE_ID};
 use crate::net::{FetchOptions, FetchOutcome, FetchStats};
@@ -42,6 +45,8 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         skipped: 0,
         coach_rows: 0,
         with_email: 0,
+        counters: CoachCounters::default(),
+        dropped_school_rows: 0,
     };
     for (state, association) in requested {
         run.walk_state(state, association).await?;
@@ -68,6 +73,8 @@ struct Run<'a> {
     skipped: usize,
     coach_rows: usize,
     with_email: u64,
+    counters: CoachCounters,
+    dropped_school_rows: u64,
 }
 
 impl<'a> Run<'a> {
@@ -119,17 +126,24 @@ impl<'a> Run<'a> {
             self.skipped = self.skipped.saturating_add(1);
             return Ok(());
         }
-        let Some((mut school, school_id)) = directory_school(
+        let (mut school, school_id) = match directory_school(
             state,
             association,
             row,
             directory_url,
             self.options.observed_on.as_str(),
-        ) else {
-            self.report.note(format!(
-                "directory row {directory_url}: no school name or short code"
-            ));
-            return Ok(());
+        )? {
+            DirectoryAdmission::School(school, id) => (school, id),
+            DirectoryAdmission::MissingShortCode => {
+                self.report.note(format!(
+                    "directory row {directory_url}: no short code to fetch a summary with"
+                ));
+                return Ok(());
+            }
+            DirectoryAdmission::DroppedName => {
+                self.dropped_school_rows = self.dropped_school_rows.saturating_add(1);
+                return Ok(());
+            }
         };
         if !self.wanted.is_empty() && !self.wanted.contains(&school.normalized_name) {
             return Ok(());
@@ -145,7 +159,7 @@ impl<'a> Run<'a> {
             },
             None => None,
         };
-        let coaches = match summary.as_ref() {
+        let emission = match summary.as_ref() {
             Some(summary) => {
                 absorb_summary(
                     &mut school,
@@ -153,11 +167,18 @@ impl<'a> Run<'a> {
                     &url,
                     self.options.observed_on.as_str(),
                 );
-                coach_entities(summary, &school_id, &url, self.options.observed_on.as_str())
+                coach_entities(
+                    summary,
+                    &school_id,
+                    &url,
+                    self.options.observed_on.as_str(),
+                    EmissionScope::Census,
+                )?
             }
-            None => Vec::new(),
+            None => CoachEmission::default(),
         };
-        self.write(&key, &school, &coaches, short_code.as_str())?;
+        self.write(&key, &school, &emission.coaches, short_code.as_str())?;
+        self.counters.absorb(&emission.counters);
         self.processed = self.processed.saturating_add(1);
         Ok(())
     }
@@ -232,9 +253,19 @@ impl<'a> Run<'a> {
             "{} school(s) processed ({} already journalled): {} coach row(s), {} with a published address",
             self.processed, self.skipped, self.coach_rows, self.with_email
         ));
-        self.report.note(
-            "directory pages carry school identity and the association's competition levels; summaries carry the school's teams and staff, and every track, cross-country and athletic-director row the school publishes is emitted, at every level (the census model stores no coach level, so sub-varsity rows are kept rather than filtered)",
-        );
+        let breakdown = self.counters.breakdown();
+        let sub_varsity = if breakdown.is_empty() {
+            "none".to_string()
+        } else {
+            breakdown
+        };
+        self.report.note(format!(
+            "directory pages carry school identity and the association's competition levels; summaries carry the school's teams and staff, and the lane emits the prototype's varsity scope (ADR-016 S12/S13): {} coach row(s) dropped for a non-varsity level ({sub_varsity}), {} dropped for a vendor address, {} dropped as a post rather than a person, {} directory row(s) dropped for an empty or vendor school name",
+            self.counters.dropped_total(),
+            self.counters.dropped_vendor,
+            self.counters.dropped_person,
+            self.dropped_school_rows,
+        ));
         self.report
     }
 }

@@ -1,0 +1,198 @@
+{
+ "source": "coach_directories",
+ "captured": "2026-09-27 (census-prototype raw cache, maxinfosite-api-live.dragonflyathletics.com)",
+ "fixtures": [
+  {
+   "fixture": "probe/AK/directory-1.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/states/ASAA/directory/1",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__63f6b1792325939b8f2e9c85",
+   "sha256": "707ba7dd3db762f8f658d483845d2f2237ff70154a8ae53fd094dd1779330b50",
+   "bytes": 98255
+  },
+  {
+   "fixture": "probe/WY/directory-1.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/states/WHSAA/directory/1",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__a03aad7607760a2442716c4a",
+   "sha256": "b34ca663db6208dd5456d6335a760154049d2f89f669356b7b10995cf006a0ad",
+   "bytes": 113274
+  },
+  {
+   "fixture": "nchsaa_directory_p1.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/states/NCHSAA/directory/1",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__75bd88979a3b9db5a5c8664a",
+   "sha256": "4cca3a67f7eecd8e143ae02e18939f7f9aefb91d8d8106ccdada87b2e72cb814",
+   "bytes": 800064
+  },
+  {
+   "fixture": "ghsa_directory_p2.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/states/GHSA/directory/2",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__6ccc8435684d91ba0da1cd12",
+   "sha256": "16d518c8d137a77664a22963d8df99b0d98cc9c85cbd6915a8bc9bb7b9900167",
+   "bytes": 479004
+  },
+  {
+   "fixture": "probe/AK/summary-DEX2BG.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/DEX2BG/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__8de3b84554a58472729548d9",
+   "sha256": "a32f582ea2dc4da484610d6ae944878c06b1da8f3635a50456a44ba63a03fa89",
+   "bytes": 286728
+  },
+  {
+   "fixture": "probe/AK/summary-HU9FJ6.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/HU9FJ6/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__0797a913266de8d8af3fec58",
+   "sha256": "35dd32061bedf607bef77a02834f5fba8c853ca3563c2eb9ab86f4a83d34fe18",
+   "bytes": 286737
+  },
+  {
+   "fixture": "probe/AK/summary-LHB72E.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/LHB72E/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__f0357b627bd9615867698240",
+   "sha256": "2ddedc9fb936e78c11694040552437c44f7137385b3b0de405305dc36378f9c1",
+   "bytes": 286753
+  },
+  {
+   "fixture": "probe/AK/summary-WFRCLF.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/WFRCLF/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__0bec50077c1b741f3627da56",
+   "sha256": "139982757ac939959a74e76991a60feb429ab3c7b6f7c38c385517bb278b2d2a",
+   "bytes": 286761
+  },
+  {
+   "fixture": "probe/AL/summary-42XLF4.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/42XLF4/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__e492de8d043a750f280494a0",
+   "sha256": "a9e3571018c47798f5706b453b5eee93c231155e725433e661016a8a59a4974e",
+   "bytes": 766940
+  },
+  {
+   "fixture": "probe/AL/summary-4E52LB.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/4E52LB/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__e3963e2e3f3a5042085a14fb",
+   "sha256": "9b53ad6c82970ff84fc51eb465b11c53e3de660dfc4a8aa6444c09d42f790615",
+   "bytes": 195740
+  },
+  {
+   "fixture": "probe/AL/summary-SVXJDF.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/SVXJDF/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__2b0bbb85e0fe0175c9ba583b",
+   "sha256": "3be37752c4dea272616989cb7b296b669d759e4d8bab31b52bcbc0bd9d961d0c",
+   "bytes": 811615
+  },
+  {
+   "fixture": "probe/AL/summary-VHY8C9.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/VHY8C9/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__1701ebbc39cebc852235a039",
+   "sha256": "31ee7a4faeb7cd62b08e8a08bcda9f6f3f17f0d4895496d1d03e1d645365929b",
+   "bytes": 705822
+  },
+  {
+   "fixture": "probe/GA/summary-4VHDT8.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/4VHDT8/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__a45b27fa3fa7d0b02bb856c8",
+   "sha256": "8259d9f604c0b9107377417b892f5041c20d06a339fcd7cb3c69d6bc9083a13c",
+   "bytes": 200633
+  },
+  {
+   "fixture": "probe/GA/summary-5T6GB4.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/5T6GB4/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__b3f954cbc2f7790a10298536",
+   "sha256": "6b7d5509b9e994e0195408ad7ef6ea0216743fe8d9f39b18bbd2b3494227e1e9",
+   "bytes": 279065
+  },
+  {
+   "fixture": "probe/GA/summary-UVERCT.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/UVERCT/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__c87ef43c9265d4b873888a18",
+   "sha256": "4ff6eefc56721d9c27aa76c99972c31aa4260cad87d5b94dcb0e7b7236a8abbf",
+   "bytes": 279065
+  },
+  {
+   "fixture": "probe/GA/summary-ZF9KFM.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/ZF9KFM/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__571a617617b9fc087a21477d",
+   "sha256": "7f101e5336e76ae499da4c483c13f573e7ae0a11c5c4547e37a91ef3722bd7de",
+   "bytes": 214133
+  },
+  {
+   "fixture": "probe/WY/summary-BV8LHG.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/BV8LHG/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__f418c640963ef2b872a0e9c7",
+   "sha256": "4395131890a775310f38b7af8167a13178cd3f026bd4331cc11a73674d2c2534",
+   "bytes": 856654
+  },
+  {
+   "fixture": "probe/WY/summary-JNXGSZ.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/JNXGSZ/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__d51497e7e548ab23f32c6e4d",
+   "sha256": "96a5808af69bb2bd1945d20e4a9338e34d19e1e3db52ad08ae431a5c426cffa6",
+   "bytes": 1045442
+  },
+  {
+   "fixture": "probe/WY/summary-SS28UB.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/SS28UB/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__b2c0fe261d21d55237df5769",
+   "sha256": "fb007b098875d34dd2afef5f2fff9e2410217cd4d506c6cd7a20157ea7193216",
+   "bytes": 839118
+  },
+  {
+   "fixture": "probe/WY/summary-YZQ9H7.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/YZQ9H7/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__a1ca7a58826b9705a20ff19a",
+   "sha256": "ca7df16919ee76e62d7b685f9f29912a2fe7e000b91a894a4f7ddbb799d783c0",
+   "bytes": 937321
+  },
+  {
+   "fixture": "in_staff_summary_qwugx2.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/QWUGX2/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__0b602e795b782ad5ebb245ec",
+   "sha256": "81f644daa771c70bf1732a88dcaeab53232338b370387f813dc1458b6caa7f90",
+   "bytes": 174719
+  },
+  {
+   "fixture": "nc_staff_summary_zcum49.json",
+   "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/ZCUM49/summary",
+   "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__9250481e29dbe001b17c5ae2",
+   "sha256": "ed24ab23e0a76bd8fb705bc7cd72eae771ba19bbfa4200dea498e299e8b43d2a",
+   "bytes": 671271
+  }
+ ],
+ "goldens": [
+  {
+   "file": "golden_directory_rows.json",
+   "generator": "python3 -c \"import sys,json,pathlib; sys.path.insert(0,'/home/lewis/src/ad-law-scrape/census-prototype'); from parsers.dragonfly_directory import parse; base=pathlib.Path('crates/census-crawl/tests/fixtures/coach_directories'); pages={'probe/AK/directory-1.json':base/'probe/AK/directory-1.json','probe/WY/directory-1.json':base/'probe/WY/directory-1.json','nchsaa_directory_p1.json':base/'nchsaa_directory_p1.json'}; print(json.dumps({k:parse(p.read_bytes())['schools'] for k,p in pages.items()},indent=1,sort_keys=True))\"",
+   "rows": 900,
+   "pages": {
+    "probe/AK/directory-1.json": 355,
+    "probe/WY/directory-1.json": 93,
+    "nchsaa_directory_p1.json": 452
+   }
+  },
+  {
+   "file": "golden_summary_rows.json",
+   "generator": "python3 - <<'PY'\nimport json, pathlib, sys\nsys.path.insert(0, \"/home/lewis/src/ad-law-scrape/census-prototype\")\nfrom parsers.dragonfly_school import parse as parse_school\nimport run\nbase = pathlib.Path(\"crates/census-crawl/tests/fixtures/coach_directories\")\ngolden = {}\nfor path in sorted(base.glob(\"probe/*/summary-*.json\")) + sorted(base.glob(\"*_staff_summary_*.json\")):\n    parsed = parse_school(path.read_bytes())\n    kept = [c for c in parsed[\"coaches\"] if (c.get(\"level\") or \"Varsity\") == \"Varsity\"]\n    dropped = {}\n    for c in parsed[\"coaches\"]:\n        label = c.get(\"level\") or \"Varsity\"\n        if label != \"Varsity\":\n            dropped[label] = dropped.get(label, 0) + 1\n    parts = path.relative_to(base).parts\n    state = parts[parts.index(\"probe\") + 1] if \"probe\" in parts else (\"NC\" if \"nc_staff\" in path.name else \"IN\")\n    merged = run.merge_state(state, [({\"source_id\": \"detail:\" + path.stem, \"status\": \"ok\"}, parsed[\"schools\"], kept)])\n    school = parsed[\"schools\"][0]\n    golden[str(path.relative_to(base))] = {\n        \"school\": {\"name\": school.get(\"name\", \"\"), \"city\": school.get(\"city\", \"\")},\n        \"school_unslotted\": {f: school.get(f, \"\") for f in (\"address\", \"zip\", \"phone\", \"association_id\")},\n        \"coaches\": [{f: row.get(f, \"\") for f in (\"person\", \"sport\", \"role\", \"gender\", \"email\", \"phone\", \"code\")} for row in merged[\"coach_rows\"]],\n        \"dropped_counts\": dropped,\n    }\nprint(json.dumps(golden, indent=1, sort_keys=True))\nPY",
+   "rows": 48,
+   "fixtures": 18,
+   "sha256": "61d45c4e5d8d16137ea10b7a0a1aadf9133b2abf70bf9ae23f5713e53398dff5"
+  },
+  {
+   "file": "probe/dragonfly_probe_records.json",
+   "generator": "cp /home/lewis/src/ad-law-scrape/census-prototype/out/dragonfly_probe.json crates/census-crawl/tests/fixtures/coach_directories/probe/dragonfly_probe_records.json",
+   "source": "census-prototype/out/dragonfly_probe.json (the prototype probe's own 51-association artifact; the same run rewrote it byte-identically, so it is the file the prototype produced)",
+   "records": 51,
+   "sha256": "b4191c5be5af1660b96b26316821bac7886db4b74d4a8b45630c5bb43f746305"
+  },
+  {
+   "file": "probe/dragonfly_probe_table.txt",
+   "generator": "census-prototype/dragonfly_probe.py main() with Fetcher and probe stubbed to out/dragonfly_probe.json; the 51 lines come from the module's own print statement, not a reimplementation, and the captured stdout is trimmed of the trailing blank line and the `report: <path>` summary line",
+   "lines": 51,
+   "sha256": "f5207a34385b6a06220d50f2ce6a702df92ca9e394adc449f98a4f8a2b46c5c5"
+  }
+ ],
+ "url_evidence": {
+  "probe/AK/directory-1.json": "ASAA page 1: currentPage 1, totalPages 1, totalResults 355, 355 rows; no competitionLevels on any row, so no row carries a classification",
+  "probe/WY/directory-1.json": "WHSAA page 1: currentPage 1, totalPages 1, totalResults 93, 93 rows; 73 rows carry whsaaClassification",
+  "nchsaa_directory_p1.json": "NCHSAA page 1: currentPage 1, totalPages 1, totalResults 452, 452 rows; 451 rows carry nchsaaClassification, and one row is the vendor fixture NC Test School 1",
+  "ghsa_directory_p2.json": "GHSA page 2: currentPage 2, totalPages 3, totalResults 2825, 1000 rows; used for the page-totals parity record, not in the golden"
+ }
+}

@@ -332,3 +332,51 @@ Python never applied; document it as dead and exclude it from the parity checkli
   (`applicability/table.rs:99-103`); neither was re-measured.
 * `census-service` export code was not audited line-by-line; it is named only as the proposed home
   for artifact-level rules.
+
+---
+
+## 7. Addendum — port status (2026-09-29, written after the port landed)
+
+Sections 1–6 are the pre-port analysis and are unchanged. The table's "Rust" column records the
+tree as it was read in that pass; the statuses below are what the landed port does, and are backed
+by executed tests rather than by source reading.
+
+Closed, with executed evidence:
+
+| Item | Where it now lives |
+|---|---|
+| S03 `sanitize_person` | `census-crawl/src/row_hygiene.rs` (`sanitize_person`, `strip_post`); the E2 rule tables are ported as unit tests |
+| S04/S05 vendor drops | `row_hygiene::is_vendor_school`, `is_vendor_email` |
+| S06 whitespace/NBSP | `row_hygiene::clean_text`, applied to person, contacts and school names at emission |
+| S09 empty school key | `directory_school` answers `DirectoryAdmission::DroppedName` when the sanitized name is empty |
+| S12 varsity-only filter | `row_hygiene::is_varsity_level` at emission for `EmissionScope::Census`; `Probe` keeps every level. A row with no level is varsity, as in `run.py` |
+| S13 junior-high pages | closed at emission (rows), not at fetch: a sub-varsity summary is still fetched and then filtered |
+| S14 `level` not stored | deliberate: the filter runs at emission (§S12) and `level_label` only names the drop |
+| S16 sport/gender typing | typed `Sport`/`Gender`; the parity projection maps the family back to `"Track"` |
+
+Recorded rather than closed:
+
+* **S10** — gender stays in the Rust coach identity. The parity comparison collapses by
+  `(person, sport, role)` to compare with the prototype and states the 13 extra rows over the
+  goldened captures.
+* **S11** — unchanged; the AD collapse exists with `Gender::Mixed` and no sport.
+* **G4** — partially closed: the directory classification rule now also accepts a key ending
+  `class`, which was missing all 793 AHSAA rows (measured coverage in
+  [dragonfly-directory-parity.md](dragonfly-directory-parity.md)). The `normalize_school` rule
+  difference itself stays recorded.
+* **G9** — partially closed: field-mapping tables for both lanes now exist in the two parity docs;
+  the projection into artifact columns belongs to the export layer.
+
+Still open: S01 (name-key rules differ in both directions), S02/G6 (Rust folds case and diacritics
+in coach identity, the prototype does not; `normalize_person` stays dead), S07/S08/S19/S20 (artifact
+shape, `sources` accumulation and contested-field winner order), S25 (metrics projection), S26/S27
+(enrichment lanes).
+
+Parity evidence produced after this analysis:
+
+* [dragonfly-directory-parity.md](dragonfly-directory-parity.md) — 3,693 directory rows, 0 field
+  divergences, 900 rows pinned by a golden test.
+* [dragonfly-summary-parity.md](dragonfly-summary-parity.md) — 18 summaries, 48 kept rows, 0
+  row/field divergences after the S10 collapse, 15 sub-varsity drops; the harness caught a real
+  claim-order defect in the port (the prototype de-duplicates before the level filter), now pinned
+  by `coach_directories::tests::a_live_coach_row_is_decided_by_the_first_team_that_publishes_the_key`.

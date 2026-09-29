@@ -6,6 +6,92 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## DragonFly directory parse parity — 2026-09-29
+
+The prototype's directory parser and the Rust lane were executed over the same six captured
+pages and compared field for field (3,693 rows): 0 divergent fields, 0 row-count differences, 0
+`currentPage`/`totalPages`/`totalResults` differences. Execution: `census-prototype/parsers/
+dragonfly_directory.parse` over the fixture bodies on one side, `parse_directory` plus
+`directory_school` over the same bytes on the other; the comparison details, the field mapping
+and the three recorded divergences (rows without a short code, the unpersisted raw
+`dragonfly_levels` map, the classification key rule) are in
+[the parity record](../research/sources/coach-directories-national/dragonfly-directory-parity.md).
+
+Three pages are now permanent: `tests/fixtures/coach_directories/golden_directory_rows.json`
+holds the prototype's own rows for ASAA, WHSAA and NCHSAA page 1 (generator and digests in the
+fixture `PROVENANCE.json`), and `coach_directories::tests::
+the_live_directory_pages_reproduce_the_prototypes_rows` asserts the Rust parse against them.
+
+The comparison found a real projection gap rather than a parse gap: the classification rule
+accepted only keys ending `classification(s)`, and the live AHSAA pages name the class
+`ahsaaClass`, so Alabama's 793 captured rows carried no class. The rule now accepts a key ending
+`class` as well; measured coverage is 1,336 of 3,693 rows (AL 485, GA 157, WY 73, NC 450, GHSA p2
+171, AK 0), against an independent count of 1,340 whose 4-row difference is exactly the
+classified subset of the 12 vendor-fixture rows the lane drops.
+
+```text
+cargo test -p census-crawl
+test result: ok. 462 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+cargo clippy -p census-crawl --all-targets -- -D warnings
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.50s
+cargo fmt -p census-crawl -- --check
+(no output)
+```
+
+Not established here: fetching, caching, pacing or store writes; no prototype `out/` artifact was
+reproduced; the golden covers three of the six compared pages. The throwaway Rust dumper used for
+the six-page comparison was removed after the run.
+
+## ADR-016 row hygiene and census-scope filters in the DragonFly lane — 2026-09-29
+
+The prototype's per-row hygiene and its level scope now exist in Rust.
+`crates/census-crawl/src/row_hygiene.rs` carries S03 (post suffix, post-only and
+non-coach leads, `Dean` leads), S04 (`\btest\s+school\b`), S05
+(`@dragonflyathletics.com`), S06 (`[\s\u{a0}]+` collapse, Python's whitespace
+set) and S09 (empty key), with the audit's executed case tables ported as tests
+(23 person cases, 8 vendor cases, the whitespace table, the level table).
+`coach_directories/map.rs` applies them at census emission and drops any row
+whose `(level or "Varsity")` is not `Varsity`, counted per level; `collect`
+reports the counters in its notes.
+
+The prototype orders the level filter per page, before merge:
+`census-prototype/run.py:190-194` filters the detail record's coaches, and only
+then does the merge collapse duplicates, so every sub-varsity row is a level
+drop and none of them takes part in deduplication. The first Rust port
+deduplicated first. That kept the same emitted row set — the level filter never
+inserts a row, so no sub-varsity row could claim a key — but it misattributed
+drops: a sub-varsity row that matched an already-kept varsity row read as a
+duplicate and vanished from the counters. Executing the Wyoming test against the
+dedup-first order produced `dropped_levels.get("JV") == Some(1)` instead of
+`Some(4)` with the four varsity rows emitted in both orders; the filter now runs
+before the duplicate check.
+
+Executed in this tree (`crates/census-crawl`), with `RUSTC_WRAPPER=`:
+
+```text
+cargo test -p census-crawl
+test result: ok. 461 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+cargo clippy -p census-crawl --all-targets -- -D warnings
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.61s
+cargo fmt -p census-crawl -- --check
+(no output)
+```
+
+Two of those 461 tests read captured live payloads, not synthetic bodies:
+`a_live_middle_school_page_keeps_only_its_director_and_counts_each_level`
+(`tests/fixtures/coach_directories/probe/AL/summary-SVXJDF.json`, Rainbow Middle
+School: one athletic-director row kept, 6 middle-school rows counted) and
+`a_live_coach_on_junior_varsity_and_varsity_teams_keeps_the_varsity_rows`
+(`.../probe/WY/summary-SS28UB.json`, Arapaho Charter High School: 4 varsity rows
+kept, 4 `JV` rows counted). The Wyoming case fails against the dedup-first
+order, so it is the regression for the ordering above. The lane README now
+states the emission scope.
+
+Not established here: no store-level or service-level run, no national census
+evidence, and no comparison against prototype output rows — the prototype's
+`out/` artifacts for these two schools were not reproduced. Workspace-wide gates
+are not run: `census-report` does not compile at this revision.
+
 ## Identity advice boundary and integration regression — 2026-09-27
 
 The advice parser no longer accepts alternate case, separator or concatenated spellings.
@@ -2506,8 +2592,11 @@ Worktree `arh-coach-acquisition`, branch `coach-acquisition-rust`. The prototype
 with fixtures captured from the live API for four associations (AK/AL/WY/GA), their sampled summaries, and the
 prototype's own record for each.
 
-- `cargo test -p census-crawl --lib coach_directories` -> **30 passed, 0 failed** (26 pre-existing plus four
-  oracle-parity tests and four sampling/report tests). Each oracle test drives `probe_one` through an offline
+- `cargo test -p census-crawl --lib coach_directories` -> **30 passed, 0 failed** at the time of that run
+  (22 pre-existing lane tests plus four oracle-parity tests and four sampling/report tests; the bullet
+  originally said "26 pre-existing", which does not sum to 30 — corrected on review 2026-09-29). Re-measured
+  after the parity review: **44 passed, 0 failed**, the same filter (`425 filtered out`), = 23 tests in
+  `coach_directories::tests` + 21 in `coach_directories::survey_tests`. Each oracle test drives `probe_one` through an offline
   fetcher over a seeded HTTP cache and asserts the record the prototype wrote for that association: AK
   `schools=355, with_address=355, pages=1, sampled=4, staff=0, coaches=0, sports={}, 0.0/0.0`; AL
   `793, 730, 1, 4, 77, 20, {Track:6, CrossCountry:7, AthleticDirector:7}, 19.2/5.0`; WY
@@ -2523,9 +2612,59 @@ prototype's own record for each.
   990 vs 950 in GA, 92 vs 88 in WY - every association would have been overstated); and `probe_one` reads only
   the first directory page, which is what the prototype reads (`pages` and `directory_total` are reported, not
   walked).
+- **Argument handling, report bytes and the printed table (2026-09-29).** `report_json` now serializes with the
+  prototype's one-space indent and insertion-ordered sports counts, so for the same records its output is
+  byte-identical to `census-prototype/out/dragonfly_probe.json`: measured 51 records / 14,450 bytes, equal, and
+  the prototype artifact is committed as `probe/dragonfly_probe_records.json` with provenance. The prototype's
+  own printed table (its `main()` run with the fetcher and `probe` stubbed to that artifact, so the lines come
+  from its print statement and not from a reimplementation) is committed as `probe/dragonfly_probe_table.txt`;
+  `survey_tests::the_prototype_table_lines_are_reproduced` compares all 51 rendered lines, including the
+  Python-style sports mapping (`{'Track': 6, 'AthleticDirector': 7, ...}`). The same capture run rewrote
+  `out/dragonfly_probe.json` byte-identically, which is what establishes the committed fixture as the file the
+  prototype produced. `--states` is ported as `parse_state_filter` + `selected_associations` (comma separated,
+  trimmed, upper-cased; empty selects all 51; `DC` resolves by its two-letter key) and pinned by
+  `survey_tests::the_state_filter_selects_the_named_associations`; `--offline` maps onto
+  `Fetcher::with_offline(true)`, which serves the cache and fails with `FetchError::Offline` on a miss.
+  Recorded divergence: a record without a page count prints `?` where Python prints `None` for a present-but-null
+  key, because Rust's `Option` cannot distinguish absent from null; no captured association instantiates it.
+  The verb itself stays unwired: ADR-015 freezes it as a `census-service` verb
+  (`survey --states <list> --offline --out out/dragonfly_probe.json`) and `census-service` does not compile at
+  this base.
+- **Failure records are bare, as the prototype writes them (2026-09-29).** `probe_one` kept whatever it had
+  already counted when a later fetch failed, so an association whose directory answered but whose summary did
+  not produced `schools`/`with_address`/`pages`/`directory_total`/`sampled` alongside the error, where the
+  prototype's `except` branch writes a fresh `{state, ruleset, status, error}` record. Failure paths now build
+  that record from scratch; `survey_tests::a_summary_failure_records_only_the_failure_like_the_prototype` pins
+  the key set (AK directory cached, first summary missing → `status: "offline"`, four keys, no counts). The
+  status strings are a recorded taxonomy mapping, not parity: `status` carries the Rust kind
+  (`http`, `rate_limited`, `offline`, `json`, `transport`, `timeout`, `policy`, `invariant`, `map`) where the
+  prototype carries the Python exception class name (`HTTPError`, `JSONDecodeError`, `KeyError`, …).
+- **Review corrections after the adversarial parity review (2026-09-29).** Four fidelity items found by the
+  black-hat review of this lane are fixed, each pinned by a test, and the `VERIFIED` notes were corrected
+  against the committed artifact. (1) `VERIFIED` carried the prototype `sources.py` note strings, whose
+  "census rows per sampled school" figures predate the parser correction the source report records (MT 9.0
+  vs measured 11.2, NC 19.2 vs 20.5, NM 1.5 vs 3.5); the notes now carry the artifact's values and
+  `survey_tests::every_verified_note_restates_the_committed_probe_artifact` formats each note from the
+  artifact's `staff_per_school`/`coaches_per_school` and compares all 15, so the two committed sources
+  cannot drift apart again. (2) Probe scope dropped a nameless pass-1 row that the prototype's probe counts;
+  the drop is now census-only (name hygiene still removes it there), pinned by
+  `tests::a_nameless_team_member_counts_for_the_probe_and_is_dropped_from_the_census`. (3) `team_sport`
+  stripped both `Unified `/`Mixed ` prefixes where the prototype breaks after the first, so
+  `"Unified Mixed Track, Outdoor"` mapped in Rust and to no sport in the prototype; the break is added and
+  pinned in `tests::the_possessive_and_genderless_labels_all_map`. (4) The level scope now runs before name
+  hygiene and the vendor drop, matching the prototype's merge order, where a sub-varsity row is always a
+  level drop; the goldens are unchanged because no capture holds a row that is both sub-varsity and
+  hygiene-dropped. Recorded but not changed: the claim key trims name parts where the prototype joins them
+  untrimmed (no capture pads a name); a payload missing `totalPages`/`totalResults` renders `0` where the
+  prototype's `payload.get` yields `null` (the live API always sends both keys); and the committed table
+  fixture is the print loop's 51 lines, trimmed of its trailing blank line and `report:` line — the recorded
+  sha256s of both probe artifacts (`b4191c5b…`, `f5207a34…`) and the 14,450-byte record file were
+  recomputed here and match.
 - **Limit.** Only these four associations have prototype parity; the other 47 run the same code path but their
   numbers were not re-verified in Rust, and no live run covers them. Rows without a `shortCode` are skipped in
-  the summary pass where the prototype would fail on them.
+  the summary pass where the prototype would fail on them. The report-bytes and table parity above hold for the
+  prototype's records; the Rust probe was not re-run live over all 51 associations, so those bytes are not a
+  claim that a fresh Rust run of 47 associations would reproduce the prototype's numbers.
 
 ## CHSAA member-directory adapter ported to Rust (2026-09-29)
 
@@ -2621,6 +2760,56 @@ for the probe's offline replay test.
 **Limitations.** Both artifacts live under `target/` and are not committed; the method above is the
 reproduction path, not a committed script. The census covers the URLs `sources.py` names, not
 endpoints nobody has found. Nothing here fetched from the network.
+
+## DragonFly summary lane: claim semantics and prototype parity (2026-09-29)
+
+Worktree `arh-coach-acquisition`, branch `coach-acquisition-rust`. Two defects in the ADR-016 port were
+found and repaired, and the school-summary lane now has a prototype-parity harness.
+
+**1. Claim-before-filter.** The lane filtered rows by level before claiming the duplicate key, so a school
+that lists a junior-varsity team before the varsity team of the same person, sport family, role and gender
+kept the *varsity* row. The prototype's parser de-duplicates first (`parsers/dragonfly_school.py:133-138`)
+and the level filter runs afterwards (`run.py:190-194`), so the junior-varsity row is what gets filtered and
+the varsity row never replaces it. `coach_directories::map` now claims `(raw person name, sport family,
+role, gender)` before hygiene and the level filter; `tests::a_live_coach_row_is_decided_by_the_first_team_that_publishes_the_key`
+pins the affected school (`probe/WY/summary-SS28UB.json`): 3 emitted rows with one `JV` drop where the port
+previously emitted 4 with none. Rows whose key is already claimed are absorbed silently and are not counted,
+which is the prototype's parser behaviour.
+
+**2. Summary parity harness.** `census-prototype/parsers/dragonfly_school.py:parse`, the extras lane's
+varsity filter and `run.merge_state` were executed over the same 18 captured summaries the Rust lane parses;
+the merged rows are committed as `crates/census-crawl/tests/fixtures/coach_directories/golden_summary_rows.json`
+with 18 provenance entries appended to `PROVENANCE.json` (URL, prototype cache file, sha256, bytes) and
+asserted by `coach_directories::tests::the_live_summary_pages_reproduce_the_prototypes_rows`.
+
+| Measure | Prototype | Rust | Difference |
+|---|---|---|---|
+| Published coach rows over 18 summaries | 76 | 61 | — |
+| Sub-varsity rows dropped by level | 15 (`Middle School` 9, `All Teams` 5, `JV` 1) | 15, same labels | none |
+| Kept rows | 48 | 48 after the prototype's gender collapse (S10) | none |
+| person/sport/role/gender/email/phone/code | 48 rows | 48 rows | 0 field divergences |
+| School name / city | 18 / 18 | 18 / 17 | one trailing-space difference (`probe/AL/summary-SVXJDF.json`, `"Rainbow City "`) |
+
+Generating the golden exposed a measurement bug in the harness itself: an absent `level` was counted as a
+sub-varsity row because the classifier tested the raw string (`level != "Varsity"`), when the prototype
+treats a missing level as varsity (`(level or "Varsity") == "Varsity"`). The counts above are from the
+corrected classifier, which is also what `row_hygiene::is_varsity_level` implements.
+
+**Recorded gaps (not closed).** School `address`, `zip` and `phone` reach the lane from the summary body and
+are asserted to do so by the golden test, but `CanonicalSchool` has no slot for them at this revision, so
+they are parsed and dropped; the prototype's school row carries all three. `association_id` (`payload.id`)
+is likewise not stored — the school's `association_school` identity is the directory row's short code.
+
+Commands: `python3` prototype run over the 18 fixtures (throwaway script, not retained),
+`cargo run -p census-crawl --example dragonfly_school_dump` for the Rust side (throwaway example, deleted
+after the run), `cargo test -p census-crawl` -> **463 passed, 0 failed**,
+`cargo clippy -p census-crawl --all-targets --all-features` -> 0 warnings,
+`cargo fmt -p census-crawl -- --check` -> clean.
+
+**Limits.** Parsing and row mapping only: no prototype `out/` artifact was reproduced and no live fetch,
+store write or metrics projection was exercised. The golden samples 18 captured summaries (48 kept rows);
+the national lane covers 15 associations, so this is a sample, not a census-scale equivalence proof. Row
+order is not compared (S20); the comparison is on row sets.
 
 ## Consolidated historical evidence — imported 2026-09-27
 

@@ -6,8 +6,6 @@ use std::sync::LazyLock;
 static TAG_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"<[^>]*>"));
 static COMMENT_REGEX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?s)<!--.*?-->"));
-static WHITESPACE_REGEX: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r"\s+"));
 static EMAIL_REGEX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"));
 static COOP_REGEX: LazyLock<Result<Regex, regex::Error>> =
@@ -27,15 +25,6 @@ fn comment_regex() -> CrawlResult<&'static Regex> {
         .as_ref()
         .map_err(|source| CrawlError::RegexInit {
             pattern: "comment",
-            source: source.clone(),
-        })
-}
-
-fn whitespace_regex() -> CrawlResult<&'static Regex> {
-    WHITESPACE_REGEX
-        .as_ref()
-        .map_err(|source| CrawlError::RegexInit {
-            pattern: "whitespace",
             source: source.clone(),
         })
 }
@@ -95,10 +84,7 @@ pub(super) fn clean_text(raw: &str) -> CrawlResult<String> {
         .replace("&lt;", "<")
         .replace("&gt;", ">")
         .replace("&amp;", "&");
-    Ok(whitespace_regex()?
-        .replace_all(&decoded, " ")
-        .trim()
-        .to_string())
+    Ok(crate::row_hygiene::clean_text(&decoded))
 }
 
 pub(super) fn nonempty(value: &str) -> Option<String> {

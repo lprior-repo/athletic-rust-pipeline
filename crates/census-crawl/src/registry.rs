@@ -96,10 +96,24 @@ pub fn descriptor(slug: &str) -> Option<&'static SourceDescriptor> {
     descriptors().find(|entry| entry.slug == slug)
 }
 
+pub fn descriptor_for_host(host: &str) -> Option<&'static SourceDescriptor> {
+    descriptors().find(|entry| entry.admission.origin.eq_ignore_ascii_case(host))
+}
+
 pub fn transport_for_host(host: &str) -> Option<TransportKind> {
-    descriptors()
-        .find(|entry| entry.admission.origin.eq_ignore_ascii_case(host))
-        .map(|entry| entry.transport)
+    descriptor_for_host(host).map(|entry| entry.transport)
+}
+
+pub fn declared_delay_for_host(host: &str) -> Option<std::time::Duration> {
+    let admission = descriptor_for_host(host)?.admission;
+    if admission.origin == policy::ARTIFACT_ORIGIN {
+        return None;
+    }
+    let rate = admission.target_requests_per_second;
+    if !rate.is_finite() || rate <= 0.0 {
+        return None;
+    }
+    Some(std::time::Duration::from_secs_f64(1.0 / rate))
 }
 
 pub fn bulk_first(slugs: &[&str]) -> Vec<&'static SourceDescriptor> {

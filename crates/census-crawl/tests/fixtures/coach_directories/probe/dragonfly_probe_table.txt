@@ -1,0 +1,51 @@
+AK  ASAA       ok               rows=  355 pages=1 staff/school=  0.0 coach/school=  0.0 {}
+AL  AHSAA      ok               rows=  793 pages=1 staff/school= 19.2 coach/school=  5.0 {'Track': 6, 'AthleticDirector': 7, 'CrossCountry': 7}
+AR  ArkAA      ok               rows=  521 pages=1 staff/school= 33.5 coach/school=  6.0 {'CrossCountry': 10, 'AthleticDirector': 7, 'Track': 7}
+AZ  AIA        ok               rows= 1000 pages=3 staff/school=  0.0 coach/school=  0.0 {}
+CA  CIF        ok               rows= 1000 pages=13 staff/school=  0.0 coach/school=  0.0 {}
+CO  CHSAA      ok               rows= 1000 pages=3 staff/school=  0.0 coach/school=  0.0 {}
+CT  CIAC       ok               rows= 1000 pages=2 staff/school=  0.0 coach/school=  0.0 {}
+DC  DCSAA      ok               rows=  112 pages=1 staff/school= 14.5 coach/school=  1.5 {'CrossCountry': 3, 'AthleticDirector': 2, 'Track': 1}
+DE  DIAA       ok               rows=  320 pages=1 staff/school= 14.0 coach/school=  3.0 {'CrossCountry': 5, 'Track': 5, 'AthleticDirector': 2}
+FL  FHSAA      ok               rows= 1000 pages=6 staff/school=  0.0 coach/school=  0.0 {}
+GA  GHSA       ok               rows= 1000 pages=3 staff/school= 46.8 coach/school=  7.5 {'CrossCountry': 16, 'Track': 11, 'AthleticDirector': 3}
+HI  HHSAA      ok               rows=  390 pages=1 staff/school=  0.0 coach/school=  0.0 {}
+IA  IoHSAA     ok               rows=  586 pages=1 staff/school=  1.5 coach/school=  0.2 {'Track': 1}
+ID  IdHSAA     ok               rows=  461 pages=1 staff/school= 21.5 coach/school=  6.5 {'CrossCountry': 3, 'Track': 22, 'AthleticDirector': 1}
+IL  IHSA       ok               rows= 1000 pages=5 staff/school=  0.0 coach/school=  0.0 {}
+IN  InHSAA     ok               rows= 1000 pages=2 staff/school=  0.0 coach/school=  0.0 {}
+KS  KSHSAA     ok               rows= 1000 pages=2 staff/school=  0.0 coach/school=  0.0 {}
+KY  KHSAA      ok               rows= 1000 pages=2 staff/school=  0.0 coach/school=  0.0 {}
+LA  LHSAA      ok               rows= 1000 pages=2 staff/school=  0.0 coach/school=  0.0 {}
+MA  MIAA       ok               rows= 1000 pages=2 staff/school=  0.0 coach/school=  0.0 {}
+MD  MPSSAA     ok               rows=  215 pages=1 staff/school= 16.5 coach/school=  1.8 {'AthleticDirector': 2, 'CrossCountry': 2, 'Track': 3}
+ME  MPA        ok               rows=  594 pages=1 staff/school=  3.0 coach/school=  0.0 {}
+MI  MichHSAA   ok               rows= 1000 pages=4 staff/school=  0.0 coach/school=  0.0 {}
+MN  MSHSL      ok               rows= 1000 pages=3 staff/school=  0.0 coach/school=  0.0 {}
+MO  MSHSAA     ok               rows= 1000 pages=3 staff/school=  0.0 coach/school=  0.0 {}
+MS  MHSAA      ok               rows= 1000 pages=2 staff/school= 24.8 coach/school=  4.2 {'Track': 11, 'AthleticDirector': 4, 'CrossCountry': 2}
+MT  MHSA       ok               rows=  358 pages=1 staff/school= 28.8 coach/school= 11.2 {'Track': 28, 'AthleticDirector': 3, 'CrossCountry': 14}
+NC  NCHSAA     ok               rows=  452 pages=1 staff/school= 53.5 coach/school= 20.5 {'CrossCountry': 26, 'Track': 46, 'AthleticDirector': 10}
+ND  NDHSAA     ok               rows=  548 pages=1 staff/school=  2.0 coach/school=  0.8 {'Track': 2, 'AthleticDirector': 1}
+NE  NSAA       ok               rows= 1000 pages=2 staff/school=  0.0 coach/school=  0.0 {}
+NH  NHIAA      ok               rows=  480 pages=1 staff/school=  0.0 coach/school=  0.0 {}
+NJ  NJSIAA     ok               rows= 1000 pages=3 staff/school=  0.0 coach/school=  0.0 {}
+NM  NMAA       ok               rows=  751 pages=1 staff/school= 19.5 coach/school=  3.5 {'AthleticDirector': 6, 'CrossCountry': 2, 'Track': 6}
+NV  NIAA       ok               rows=  700 pages=1 staff/school=  0.0 coach/school=  0.0 {}
+NY  NYSPHSAA   ok               rows= 1000 pages=5 staff/school=  0.0 coach/school=  0.0 {}
+OH  OHSAA      ok               rows= 1000 pages=4 staff/school=  0.0 coach/school=  0.0 {}
+OK  OSSAA      ok               rows=  878 pages=1 staff/school=  0.0 coach/school=  0.0 {}
+OR  OSAA       ok               rows= 1000 pages=2 staff/school=  0.0 coach/school=  0.0 {}
+PA  PIAA       ok               rows= 1000 pages=3 staff/school=  0.0 coach/school=  0.0 {}
+RI  RIIL       ok               rows=  310 pages=1 staff/school=  0.0 coach/school=  0.0 {}
+SC  SCHSL      ok               rows= 1000 pages=2 staff/school= 24.0 coach/school=  3.0 {'CrossCountry': 5, 'Track': 6, 'AthleticDirector': 1}
+SD  SDHSAA     ok               rows=  687 pages=1 staff/school=  0.0 coach/school=  0.0 {}
+TN  TSSAA      ok               rows= 1000 pages=2 staff/school= 11.2 coach/school=  3.5 {'CrossCountry': 8, 'Track': 5, 'AthleticDirector': 1}
+TX  UIL        ok               rows= 1000 pages=9 staff/school=  0.0 coach/school=  0.0 {}
+UT  UHSAA      ok               rows= 1000 pages=2 staff/school=  0.0 coach/school=  0.0 {}
+VA  VHSL       ok               rows= 1000 pages=3 staff/school=  1.0 coach/school=  0.0 {}
+VT  VPA        ok               rows=  307 pages=1 staff/school=  0.0 coach/school=  0.0 {}
+WA  WIAA       ok               rows= 1000 pages=3 staff/school=  0.0 coach/school=  0.0 {}
+WI  WisIAA     ok               rows= 1000 pages=3 staff/school=  0.0 coach/school=  0.0 {}
+WV  WVSSAC     ok               rows=  716 pages=1 staff/school=  0.0 coach/school=  0.0 {}
+WY  WHSAA      ok               rows=   93 pages=1 staff/school= 11.0 coach/school=  3.2 {'CrossCountry': 2, 'Track': 8, 'AthleticDirector': 3}

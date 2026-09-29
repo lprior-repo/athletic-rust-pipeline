@@ -6,12 +6,18 @@ mod survey;
 mod survey_tests;
 
 pub use collect::collect;
-pub use map::{absorb_summary, coach_entities, directory_school};
+pub use map::{
+    absorb_summary, coach_entities, directory_school, CoachCounters, CoachEmission,
+    DirectoryAdmission, EmissionScope,
+};
 pub use parse::{
     parse_directory, parse_summary, DirectoryPage, DirectorySchool, SchoolSummary, StaffMember,
     SummaryAddress, SummaryTel, TeamEntry,
 };
-pub use survey::{probe_one, report_json, survey, ProbeRecord, ASSOCIATIONS, VERIFIED};
+pub use survey::{
+    parse_state_filter, probe_one, report_json, selected_associations, survey, table_line,
+    ProbeRecord, ASSOCIATIONS, VERIFIED,
+};
 
 use census_domain::UsJurisdiction;
 use std::collections::BTreeMap;
@@ -66,7 +72,10 @@ pub fn summary_url(short_code: &str) -> String {
 pub(crate) fn classification(levels: &BTreeMap<String, serde_json::Value>) -> Option<String> {
     levels.iter().find_map(|(key, value)| {
         let lowered = key.to_ascii_lowercase();
-        if !lowered.ends_with("classification") && !lowered.ends_with("classifications") {
+        let names_a_class = lowered.ends_with("class")
+            || lowered.ends_with("classification")
+            || lowered.ends_with("classifications");
+        if !names_a_class {
             return None;
         }
         let text = value.as_str()?.trim();

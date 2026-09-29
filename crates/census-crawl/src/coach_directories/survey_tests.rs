@@ -1,11 +1,12 @@
 use super::survey::{
-    probe_one, report_json, round_half_even, sample_rows, ProbeRecord, ASSOCIATIONS, VERIFIED,
+    parse_state_filter, probe_one, report_json, round_half_even, sample_rows,
+    selected_associations, table_line, ProbeRecord, ASSOCIATIONS, VERIFIED,
 };
 use super::API_HOST;
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::Fetcher;
 use census_domain::UsJurisdiction;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::time::Duration;
 
 fn seed_cache(fetcher: &Fetcher, url: &str, status: u16, body: &[u8]) {
@@ -392,4 +393,126 @@ fn associations_table_has_51_entries() {
 #[test]
 fn verified_table_has_15_entries() {
     assert_eq!(VERIFIED.len(), 15);
+}
+
+#[test]
+fn the_state_filter_selects_the_named_associations() {
+    assert!(parse_state_filter("").is_empty());
+    assert!(parse_state_filter(" , ,, ").is_empty());
+
+    let wanted = parse_state_filter(" nc , al ,,");
+    assert_eq!(
+        wanted.iter().cloned().collect::<Vec<String>>(),
+        vec!["AL".to_string(), "NC".to_string()]
+    );
+    assert_eq!(
+        selected_associations(&wanted),
+        vec![
+            (UsJurisdiction::Alabama, "AHSAA"),
+            (UsJurisdiction::NorthCarolina, "NCHSAA"),
+        ]
+    );
+    assert_eq!(
+        selected_associations(&parse_state_filter("DC")),
+        vec![(UsJurisdiction::DistrictOfColumbia, "DCSAA")],
+        "DC is filtered by its two-letter key"
+    );
+    assert_eq!(
+        selected_associations(&BTreeSet::new()).len(),
+        ASSOCIATIONS.len(),
+        "an empty filter is every association"
+    );
+    assert!(selected_associations(&parse_state_filter("ZZ")).is_empty());
+}
+
+#[test]
+fn the_prototype_table_lines_are_reproduced() {
+    let text = fixture("coach_directories/probe/dragonfly_probe_records.json");
+    let records: Vec<ProbeRecord> = serde_json::from_str(&text).expect("prototype probe records");
+    assert_eq!(records.len(), 51);
+
+    let table = fixture("coach_directories/probe/dragonfly_probe_table.txt");
+    let expected: Vec<&str> = table.lines().collect();
+    assert_eq!(expected.len(), records.len());
+
+    let mut sorted = records.clone();
+    super::survey::sort_records(&mut sorted);
+    for (position, (record, want)) in sorted.iter().zip(expected).enumerate() {
+        assert_eq!(table_line(record), want, "table line {position}");
+    }
+}
+
+#[test]
+fn the_probe_report_is_byte_identical_to_the_prototype_artifact() {
+    let text = fixture("coach_directories/probe/dragonfly_probe_records.json");
+    let records: Vec<ProbeRecord> = serde_json::from_str(&text).expect("prototype probe records");
+    assert_eq!(
+        report_json(&records).expect("report"),
+        text,
+        "census-prototype/out/dragonfly_probe.json, reproduced field for field and byte for byte"
+    );
+}
+
+#[test]
+fn every_verified_note_restates_the_committed_probe_artifact() {
+    let text = fixture("coach_directories/probe/dragonfly_probe_records.json");
+    let records: Vec<ProbeRecord> = serde_json::from_str(&text).expect("prototype probe records");
+    for (state, schools, pages, note) in VERIFIED {
+        let record = records
+            .iter()
+            .find(|record| record.state == state.code())
+            .expect("a verified association carries a probe record");
+        assert_eq!(record.status, "ok", "{}", state.code());
+        assert_eq!(
+            record.directory_total,
+            Some(schools),
+            "{} directory rows",
+            state.code()
+        );
+        assert_eq!(record.pages, Some(pages), "{} pages", state.code());
+        let staff = record.staff_per_school.expect("staff per school");
+        let coaches = record.coaches_per_school.expect("coaches per school");
+        assert_eq!(
+            note,
+            format!("{staff:.1} staff and {coaches:.1} census rows per sampled school"),
+            "{}",
+            state.code()
+        );
+    }
+}
+
+#[tokio::test]
+async fn a_summary_failure_records_only_the_failure_like_the_prototype() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fetcher = make_offline_fetcher(dir.path());
+
+    let body = fixture("coach_directories/probe/AK/directory-1.json");
+    let url = format!("{API_HOST}/states/ASAA/directory/1");
+    seed_cache(&fetcher, &url, 200, body.as_bytes());
+
+    let record = probe_one(&fetcher, UsJurisdiction::Alaska, "ASAA").await;
+    assert_eq!(record.status, "offline", "the first summary is not cached");
+    assert!(record.error.is_some());
+    assert_eq!(
+        (record.schools, record.with_address, record.pages, record.directory_total, record.sampled),
+        (None, None, None, None, None),
+        "a failed association carries only state, ruleset, status and error, as the prototype's except branch writes"
+    );
+    assert_eq!(record.staff, None);
+    assert_eq!(record.coaches, None);
+    assert!(record.sports.is_none());
+    let rendered = report_json(std::slice::from_ref(&record)).expect("report");
+    let shape: serde_json::Value = serde_json::from_str(&rendered).expect("report parses");
+    let mut keys: Vec<String> = shape[0]
+        .as_object()
+        .expect("record object")
+        .keys()
+        .cloned()
+        .collect();
+    keys.sort();
+    assert_eq!(
+        keys,
+        ["error", "ruleset", "state", "status"],
+        "a failed association carries only state, ruleset, status and error, as the prototype's except branch writes"
+    );
 }

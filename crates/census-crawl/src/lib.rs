@@ -71,6 +71,7 @@ pub mod recording;
 pub mod registry;
 pub mod result_file;
 pub mod riil;
+pub mod row_hygiene;
 pub mod tfrrs;
 pub mod wayzata;
 pub mod wiaa;

@@ -3,8 +3,9 @@ use super::{directory_page_url, map, summary_url, SOURCE_ID};
 use crate::{CrawlError, CrawlResult};
 use census_domain::model::Sport;
 use census_domain::UsJurisdiction;
-use serde::Serialize;
-use std::collections::BTreeMap;
+use indexmap::IndexMap;
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 pub const ASSOCIATIONS: [(UsJurisdiction, &str); 51] = [
     (UsJurisdiction::Alaska, "ASAA"),
@@ -113,13 +114,13 @@ pub const VERIFIED: [(UsJurisdiction, usize, usize, &str); 15] = [
         UsJurisdiction::Montana,
         358,
         1,
-        "28.8 staff and 9.0 census rows per sampled school",
+        "28.8 staff and 11.2 census rows per sampled school",
     ),
     (
         UsJurisdiction::NorthCarolina,
         452,
         1,
-        "53.5 staff and 19.2 census rows per sampled school",
+        "53.5 staff and 20.5 census rows per sampled school",
     ),
     (
         UsJurisdiction::NorthDakota,
@@ -131,7 +132,7 @@ pub const VERIFIED: [(UsJurisdiction, usize, usize, &str); 15] = [
         UsJurisdiction::NewMexico,
         751,
         1,
-        "19.5 staff and 1.5 census rows per sampled school",
+        "19.5 staff and 3.5 census rows per sampled school",
     ),
     (
         UsJurisdiction::SouthCarolina,
@@ -153,7 +154,7 @@ pub const VERIFIED: [(UsJurisdiction, usize, usize, &str); 15] = [
     ),
 ];
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProbeRecord {
     pub state: String,
     pub ruleset: String,
@@ -175,7 +176,7 @@ pub struct ProbeRecord {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub coaches: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sports: Option<BTreeMap<String, usize>>,
+    pub sports: Option<IndexMap<String, usize>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub staff_per_school: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -202,13 +203,15 @@ impl ProbeRecord {
         }
     }
 
-    fn with_error(mut self, status: &str, error: Option<&str>) -> Self {
+    fn with_error(mut self, status: &str, error: &str) -> Self {
         self.status = status.to_string();
-        if let Some(msg) = error {
-            self.error = Some(truncate(msg, 200));
-        }
+        self.error = Some(truncate(error, 200));
         self
     }
+}
+
+fn failed(state: UsJurisdiction, ruleset: &str, status: &str, message: &str) -> ProbeRecord {
+    ProbeRecord::new(state_key(state), ruleset.to_string()).with_error(status, message)
 }
 
 fn truncate(input: &str, max_chars: usize) -> String {
@@ -253,33 +256,93 @@ pub(crate) fn round_half_even(numerator: usize, denominator: usize, scale: usize
     rounded / divisor
 }
 
+pub fn state_key(state: UsJurisdiction) -> String {
+    match state {
+        UsJurisdiction::DistrictOfColumbia => "DC".to_string(),
+        other => other.to_string(),
+    }
+}
+
+pub fn parse_state_filter(states: &str) -> BTreeSet<String> {
+    states
+        .split(',')
+        .map(|part| part.trim().to_ascii_uppercase())
+        .filter(|part| !part.is_empty())
+        .collect()
+}
+
+pub fn selected_associations(wanted: &BTreeSet<String>) -> Vec<(UsJurisdiction, &'static str)> {
+    ASSOCIATIONS
+        .iter()
+        .copied()
+        .filter(|(state, _)| wanted.is_empty() || wanted.contains(&state_key(*state)))
+        .collect()
+}
+
+pub fn table_line(record: &ProbeRecord) -> String {
+    format!(
+        "{state:<3} {ruleset:<10} {status:<16} rows={rows:>5} pages={pages} \
+staff/school={staff:>5} coach/school={coaches:>5} {sports}",
+        state = record.state,
+        ruleset = record.ruleset,
+        status = record.status,
+        rows = record.schools.unwrap_or(0),
+        pages = record
+            .pages
+            .map_or_else(|| "?".to_string(), |value| value.to_string()),
+        staff = record
+            .staff_per_school
+            .map_or_else(|| "0".to_string(), per_school),
+        coaches = record
+            .coaches_per_school
+            .map_or_else(|| "0".to_string(), per_school),
+        sports = sports_repr(record.sports.as_ref()),
+    )
+}
+
+fn per_school(value: f64) -> String {
+    format!("{value:.1}")
+}
+
+fn sports_repr(sports: Option<&IndexMap<String, usize>>) -> String {
+    let Some(sports) = sports else {
+        return "{}".to_string();
+    };
+    let mut rendered = String::from("{");
+    for (position, (key, count)) in sports.iter().enumerate() {
+        if position > 0 {
+            rendered.push_str(", ");
+        }
+        rendered.push('\'');
+        rendered.push_str(key);
+        rendered.push_str("': ");
+        rendered.push_str(count.to_string().as_str());
+    }
+    rendered.push('}');
+    rendered
+}
+
 pub async fn probe_one(
     fetcher: &crate::net::Fetcher,
     state: UsJurisdiction,
     ruleset: &str,
 ) -> ProbeRecord {
-    let state_key = match state {
-        UsJurisdiction::DistrictOfColumbia => "DC".to_string(),
-        other => other.to_string(),
-    };
-    let mut record = ProbeRecord::new(state_key, ruleset.to_string());
-
     let url = directory_page_url(ruleset, 1);
     let options = crate::net::FetchOptions::default();
     let outcome = match fetcher.get(&url, &options).await {
         Ok(outcome) => outcome,
         Err(error) => {
-            let (status, msg) = classify_error(&error);
-            return record.with_error(status, Some(&msg));
+            let (status, message) = classify_error(&error);
+            return failed(state, ruleset, status, &message);
         }
     };
 
     let page = match parse_directory(&outcome.body) {
         Ok(page) => page,
-        Err(error) => {
-            return record.with_error("json", Some(&error.to_string()));
-        }
+        Err(error) => return failed(state, ruleset, "json", &error.to_string()),
     };
+
+    let mut record = ProbeRecord::new(state_key(state), ruleset.to_string());
 
     let schools = page.results.len();
     let with_address = page
@@ -313,7 +376,7 @@ pub async fn probe_one(
 
     let mut staff_count: usize = 0;
     let mut coach_count: usize = 0;
-    let mut sports: BTreeMap<String, usize> = BTreeMap::new();
+    let mut sports: IndexMap<String, usize> = IndexMap::new();
 
     for row in &sampled {
         let short_code = match row.short_code.as_deref() {
@@ -326,25 +389,29 @@ pub async fn probe_one(
             Ok(outcome) => outcome,
             Err(error) => {
                 let (status, message) = classify_error(&error);
-                return record.with_error(status, Some(&message));
+                return failed(state, ruleset, status, &message);
             }
         };
 
         let summary = match parse_summary(&summary_outcome.body) {
             Ok(summary) => summary,
-            Err(error) => return record.with_error("json", Some(&error.to_string())),
+            Err(error) => return failed(state, ruleset, "json", &error.to_string()),
         };
 
         staff_count += summary.staff.len();
 
-        let entities = map::coach_entities(
+        let emission = match map::coach_entities(
             &summary,
             &census_domain::model::SchoolId::mint("sch", &["survey", short_code.as_str()]),
             &summary_url,
             "2026-09-29",
-        );
+            map::EmissionScope::Probe,
+        ) {
+            Ok(emission) => emission,
+            Err(error) => return failed(state, ruleset, "map", &error.to_string()),
+        };
 
-        for entity in entities {
+        for entity in emission.coaches {
             coach_count += 1;
             let sport_key = artifact_sport_key(entity.sport);
             let counter = sports.entry(sport_key).or_insert(0);
@@ -397,9 +464,17 @@ fn artifact_sport_key(sport: Option<Sport>) -> String {
 pub fn report_json(records: &[ProbeRecord]) -> CrawlResult<String> {
     let mut sorted: Vec<ProbeRecord> = records.to_vec();
     sort_records(&mut sorted);
-    serde_json::to_string_pretty(&sorted).map_err(|source| CrawlError::Encode {
-        table: SOURCE_ID.to_string(),
-        source,
+    let mut buffer: Vec<u8> = Vec::new();
+    let formatter = serde_json::ser::PrettyFormatter::with_indent(b" ");
+    let mut serializer = serde_json::Serializer::with_formatter(&mut buffer, formatter);
+    sorted
+        .serialize(&mut serializer)
+        .map_err(|source| CrawlError::Encode {
+            table: SOURCE_ID.to_string(),
+            source,
+        })?;
+    String::from_utf8(buffer).map_err(|error| CrawlError::Invariant {
+        detail: format!("probe report is not utf-8: {error}"),
     })
 }
 

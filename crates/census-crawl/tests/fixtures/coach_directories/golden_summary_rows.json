@@ -1,0 +1,707 @@
+{
+ "in_staff_summary_qwugx2.json": {
+  "coaches": [],
+  "dropped_counts": {},
+  "school": {
+   "city": "Muncie",
+   "name": "Muncie Central High School"
+  },
+  "school_unslotted": {
+   "address": "801 N Walnut St",
+   "association_id": "5e2e520beb8fa480a8b483b7",
+   "phone": "(765) 747-5260",
+   "zip": "47305"
+  }
+ },
+ "nc_staff_summary_zcum49.json": {
+  "coaches": [
+   {
+    "code": "62d8474280c6fc79e74437b5",
+    "email": "coachhonea@gmail.com",
+    "gender": "Boys",
+    "person": "David Honea",
+    "phone": "(828) 964-6841",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   },
+   {
+    "code": "62d8474280c6fc79e74437b5",
+    "email": "coachhonea@gmail.com",
+    "gender": "Boys",
+    "person": "David Honea",
+    "phone": "(828) 964-6841",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "62eca4f049e965fe2a108f36",
+    "email": "william.morgan@bcsemail.org",
+    "gender": "Boys",
+    "person": "Andy Morgan",
+    "phone": "(828) 442-2193",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "69b2e80a3743cb4feb44fcff",
+    "email": "rocky.bilotta@gmail.com",
+    "gender": "Boys",
+    "person": "Rocky Bilotta",
+    "phone": "(828) 429-8255",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "6998d040c347ef25166bb811",
+    "email": "ameliarogers78@gmail.com",
+    "gender": "Boys",
+    "person": "Amelia Rogers-roper",
+    "phone": "(828) 736-5862",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "634dd43a151601ec584bff73",
+    "email": "william.greer@bcsemail.org",
+    "gender": "Boys",
+    "person": "William Greer",
+    "phone": "(865) 789-7559",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "634e9eddce75809254a78e7b",
+    "email": "ivy.briggs@bcsemail.org",
+    "gender": "Girls",
+    "person": "Ivy Briggs",
+    "phone": "(828) 691-7779",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   },
+   {
+    "code": "67b487b31e33d91faa364680",
+    "email": "maura.brouwer@bcsemail.org",
+    "gender": "Girls",
+    "person": "Maura Brouwer",
+    "phone": "(828) 577-3198",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "62a72bd209490905c34dc278",
+    "email": "david.ball@bcsemail.org",
+    "gender": "",
+    "person": "David Ball",
+    "phone": "(828) 777-7665",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   },
+   {
+    "code": "62b4d25c4c5045c6a741b13d",
+    "email": "charles.mccurry@bcsemail.org",
+    "gender": "",
+    "person": "Steve Mccurry",
+    "phone": "(828) 552-2255",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   }
+  ],
+  "dropped_counts": {},
+  "school": {
+   "city": "Asheville",
+   "name": "A.C. Reynolds High School"
+  },
+  "school_unslotted": {
+   "address": "1 Rocket Drive",
+   "association_id": "6285bff87f770402d0000006",
+   "phone": "(828) 298-2500",
+   "zip": "28803"
+  }
+ },
+ "probe/AK/summary-DEX2BG.json": {
+  "coaches": [],
+  "dropped_counts": {},
+  "school": {
+   "city": "Akhiok",
+   "name": "Akhiok School"
+  },
+  "school_unslotted": {
+   "address": "PO Box 5049",
+   "association_id": "5e2e4e43da09257d71fe1f28",
+   "phone": "(907) 836-2223",
+   "zip": "99615"
+  }
+ },
+ "probe/AK/summary-HU9FJ6.json": {
+  "coaches": [],
+  "dropped_counts": {},
+  "school": {
+   "city": "Eagle",
+   "name": "Eagle Community School"
+  },
+  "school_unslotted": {
+   "address": "Box 168",
+   "association_id": "5e2e4e5fda09257d71fe1fa9",
+   "phone": "(907) 547-2210",
+   "zip": "99738"
+  }
+ },
+ "probe/AK/summary-LHB72E.json": {
+  "coaches": [],
+  "dropped_counts": {},
+  "school": {
+   "city": "Kodiak",
+   "name": "Kodiak High School"
+  },
+  "school_unslotted": {
+   "address": "722 Mill Bay Rd",
+   "association_id": "5e2e4e68da09257d71fe2024",
+   "phone": "(907) 486-7400",
+   "zip": "99615"
+  }
+ },
+ "probe/AK/summary-WFRCLF.json": {
+  "coaches": [],
+  "dropped_counts": {},
+  "school": {
+   "city": "Napaskiak",
+   "name": "Qugcuun Memorial School"
+  },
+  "school_unslotted": {
+   "address": "PO Box 6199",
+   "association_id": "5e2e4e70da09257d71fe2098",
+   "phone": "(907) 737-7214",
+   "zip": "99559"
+  }
+ },
+ "probe/AL/summary-42XLF4.json": {
+  "coaches": [
+   {
+    "code": "64c41eff1befa1f3a9b3dfa4",
+    "email": "alabamafred5@gmail.com",
+    "gender": "Boys",
+    "person": "Frederick Culver",
+    "phone": "(904) 891-6640",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "5ee031b421672b0ad89b79c4",
+    "email": "bbuck@henrycountyboe.org",
+    "gender": "Boys",
+    "person": "Brandon Buck",
+    "phone": "(229) 886-0088",
+    "role": "HeadCoach",
+    "sport": "Track"
+   },
+   {
+    "code": "5ecd666e776d0b0adc0c33ae",
+    "email": "rotyty5@gmail.com",
+    "gender": "",
+    "person": "Robin Tyra",
+    "phone": "(334) 479-3027",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   }
+  ],
+  "dropped_counts": {},
+  "school": {
+   "city": "Abbeville",
+   "name": "Abbeville High School"
+  },
+  "school_unslotted": {
+   "address": "411 Graball Cutoff ",
+   "association_id": "595653f4e20edca45d132a96",
+   "phone": "(334) 585-2065",
+   "zip": "36310"
+  }
+ },
+ "probe/AL/summary-4E52LB.json": {
+  "coaches": [
+   {
+    "code": "5ef511680c867a0ae5a0b000",
+    "email": "rozierwalter257@gmail.com",
+    "gender": "",
+    "person": "Walter Rozier",
+    "phone": "(251) 246-3597",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   }
+  ],
+  "dropped_counts": {},
+  "school": {
+   "city": "Jackson",
+   "name": "Jackson Middle School"
+  },
+  "school_unslotted": {
+   "address": "235 College Ave",
+   "association_id": "595653f4e20edca45d132bff",
+   "phone": "(251) 246-3597",
+   "zip": "36545"
+  }
+ },
+ "probe/AL/summary-SVXJDF.json": {
+  "coaches": [
+   {
+    "code": "5b6dcfaab6553d4d8a35c18c",
+    "email": "allison_lee@ecboe.org",
+    "gender": "",
+    "person": "Allison Lee",
+    "phone": "(256) 295-7974",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   }
+  ],
+  "dropped_counts": {
+   "Middle School": 6
+  },
+  "school": {
+   "city": "Rainbow City ",
+   "name": "Rainbow Middle School"
+  },
+  "school_unslotted": {
+   "address": "454 Lumley Road",
+   "association_id": "595653f4e20edca45d132cb7",
+   "phone": "(256) 442-1095",
+   "zip": "35906"
+  }
+ },
+ "probe/AL/summary-VHY8C9.json": {
+  "coaches": [
+   {
+    "code": "5b648c015acefa19283de342",
+    "email": "chkelsoe@morgank12.org",
+    "gender": "",
+    "person": "Chad Kelsoe",
+    "phone": "(256) 318-5195",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   },
+   {
+    "code": "59b2a9d6270993ca0bbe5b9e",
+    "email": "clmccain@morgank12.org",
+    "gender": "",
+    "person": "Cody Mccain",
+    "phone": "(256) 590-7716",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   },
+   {
+    "code": "5ef23481b714770a7dd46849",
+    "email": "blvest@morgank12.org",
+    "gender": "",
+    "person": "Brent Vest",
+    "phone": "(256) 303-5161",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   },
+   {
+    "code": "5b72ed1798566c282a784685",
+    "email": "ltvines@morgank12.org",
+    "gender": "",
+    "person": "Laura Vines",
+    "phone": "(256) 302-6114",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   }
+  ],
+  "dropped_counts": {
+   "Middle School": 3
+  },
+  "school": {
+   "city": "DANVILLE",
+   "name": "Danville Middle School"
+  },
+  "school_unslotted": {
+   "address": "5933 Highway 36 W",
+   "association_id": "5b648e3e739b501a02000001",
+   "phone": "(256) 773-7723",
+   "zip": "35619"
+  }
+ },
+ "probe/GA/summary-4VHDT8.json": {
+  "coaches": [
+   {
+    "code": "6a7f6a92927027fddd55126c",
+    "email": "jgwestrick@gmail.com",
+    "gender": "Boys",
+    "person": "Jack Westrick",
+    "phone": "(678) 718-0288",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   },
+   {
+    "code": "6a7ba3384a355dd95dc9389f",
+    "email": "jeffsw917@gmail.com",
+    "gender": "Boys",
+    "person": "Jeff Wieland",
+    "phone": "(678) 314-9844",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   },
+   {
+    "code": "6a81acd8bafb339c9187760e",
+    "email": "awb366@gmail.com",
+    "gender": "Boys",
+    "person": "Aaron Bensley",
+    "phone": "(678) 977-7714",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "6a7ba3384a355dd95dc9389f",
+    "email": "jeffsw917@gmail.com",
+    "gender": "Boys",
+    "person": "Jeff Wieland",
+    "phone": "(678) 314-9844",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "6a6cde3b8fa9b8b3e818da7a",
+    "email": "mcduffiejeremy@gmail.com",
+    "gender": "Boys",
+    "person": "Jeremy Mcduffie",
+    "phone": "(678) 920-2855",
+    "role": "Coach",
+    "sport": "Track"
+   }
+  ],
+  "dropped_counts": {
+   "All Teams": 5
+  },
+  "school": {
+   "city": "Dunwoody",
+   "name": "Dunwoody High School"
+  },
+  "school_unslotted": {
+   "address": "5035 Vermack Road",
+   "association_id": "5b64787e72fe0104ef00000e",
+   "phone": "",
+   "zip": "30338"
+  }
+ },
+ "probe/GA/summary-5T6GB4.json": {
+  "coaches": [
+   {
+    "code": "61981636227979cf1460267d",
+    "email": "landra.winder@brantley.k12.ga.us",
+    "gender": "Boys",
+    "person": "Landra Winder",
+    "phone": "(912) 462-5121",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   },
+   {
+    "code": "5f358cb38bec2f08f0544f58",
+    "email": "clay.johns@brantley.k12.ga.us",
+    "gender": "Boys",
+    "person": "Clay Johns",
+    "phone": "(912) 462-5121",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   },
+   {
+    "code": "68939667b719b7b09354c949",
+    "email": "william.forman@brantley.k12.ga.us",
+    "gender": "Boys",
+    "person": "William Forman",
+    "phone": "(404) 731-0183",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "688d08261537a5cfd2a2111d",
+    "email": "corey.fulton@brantley.k12.ga.us",
+    "gender": "Boys",
+    "person": "Corey Fulton",
+    "phone": "(618) 477-9391",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "65579062540b6bf8ab4bea11",
+    "email": "rusty.bryan@brantley.k12.ga.us",
+    "gender": "Boys",
+    "person": "Rusty Bryan",
+    "phone": "(904) 507-3346",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "66aa7b089439426d9e0eba93",
+    "email": "liz.rowell@brantley.k12.ga.us",
+    "gender": "Girls",
+    "person": "Elizabeth Rowell",
+    "phone": "(912) 614-5436",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   },
+   {
+    "code": "6543a1ba527d080d47ee3b2d",
+    "email": "amanda.depratter@brantley.k12.ga.us",
+    "gender": "Girls",
+    "person": "Amanda Depratter",
+    "phone": "(912) 276-3087",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "5f358a346ab9a10acf7ca64f",
+    "email": "arron.beck@brantley.k12.ga.us",
+    "gender": "",
+    "person": "Arron Beck",
+    "phone": "(912) 282-9520",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   },
+   {
+    "code": "6157939fc7b35536a473743c",
+    "email": "max.stieve@brantley.k12.ga.us",
+    "gender": "",
+    "person": "Max Stieve",
+    "phone": "(912) 270-0400",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   }
+  ],
+  "dropped_counts": {},
+  "school": {
+   "city": "Nahunta",
+   "name": "Brantley County High School"
+  },
+  "school_unslotted": {
+   "address": "10804 Highway 82",
+   "association_id": "5e2e51c4eb8fa480a8b47233",
+   "phone": "(912) 462-5121",
+   "zip": "31553"
+  }
+ },
+ "probe/GA/summary-UVERCT.json": {
+  "coaches": [
+   {
+    "code": "6a7b500c5d3922cca3cf4a8f",
+    "email": "tberger@chslions.com",
+    "gender": "Girls",
+    "person": "Tiffany Berger",
+    "phone": "(937) 266-3319",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   },
+   {
+    "code": "688688e9a9614c8f6a1a9f74",
+    "email": "rtriplett@chslions.com",
+    "gender": "Girls",
+    "person": "Riley Triplett",
+    "phone": "(706) 676-5690",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   }
+  ],
+  "dropped_counts": {},
+  "school": {
+   "city": "Dalton",
+   "name": "Christian Heritage School "
+  },
+  "school_unslotted": {
+   "address": "1600 Martin Luther King Jr. Blvd.",
+   "association_id": "5f440884e630927c59000005",
+   "phone": "(706) 277-1198",
+   "zip": "30721"
+  }
+ },
+ "probe/GA/summary-ZF9KFM.json": {
+  "coaches": [
+   {
+    "code": "68938134ce799adbc23bbcae",
+    "email": "julia.resendiz@acemacon.org",
+    "gender": "Boys",
+    "person": "Julia Resendiz",
+    "phone": "(478) 697-2420",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   },
+   {
+    "code": "66b3bcc381c1b2a6e65583db",
+    "email": "shawn.cannon@acemacon.org",
+    "gender": "Boys",
+    "person": "William Cannon",
+    "phone": "(478) 832-4552",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   },
+   {
+    "code": "688fc3a09c89cf0d83c84bd4",
+    "email": "titus.scarlett@acemacon.org",
+    "gender": "Boys",
+    "person": "Titus Scarlett",
+    "phone": "(478) 342-8520",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "64c80b305b2ce82798b88e99",
+    "email": "henry.avery@acemacon.org",
+    "gender": "Boys",
+    "person": "Henry Avery",
+    "phone": "(478) 207-4976",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "5f22d1575db3b60ae7ffb39b",
+    "email": "thomas.darrah@acemacon.org",
+    "gender": "",
+    "person": "Thomas Darrah",
+    "phone": "(770) 301-8047",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   }
+  ],
+  "dropped_counts": {},
+  "school": {
+   "city": "Macon",
+   "name": "Academy For Classical Education"
+  },
+  "school_unslotted": {
+   "address": "5665 New Forsyth Rd",
+   "association_id": "5e2e51c2eb8fa480a8b47178",
+   "phone": "(770) 301-8047",
+   "zip": "31210"
+  }
+ },
+ "probe/WY/summary-BV8LHG.json": {
+  "coaches": [
+   {
+    "code": "61aa72e332571eef7f979f3b",
+    "email": "gabeyta@fortwashakieschool.com",
+    "gender": "Boys",
+    "person": "George Abeyta",
+    "phone": "(307) 349-9456",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "66cf6f6b9e93819ec861ab25",
+    "email": "growan@fortwashakieschool.com",
+    "gender": "",
+    "person": "Gale Rowan",
+    "phone": "(307) 349-1078",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   }
+  ],
+  "dropped_counts": {},
+  "school": {
+   "city": "Ft. Washakie",
+   "name": "Ft. Washakie High School"
+  },
+  "school_unslotted": {
+   "address": "90 Ethete Rd.",
+   "association_id": "5e2e552b08483b851128e017",
+   "phone": "(307) 332-0142",
+   "zip": "82514"
+  }
+ },
+ "probe/WY/summary-JNXGSZ.json": {
+  "coaches": [
+   {
+    "code": "5f27580e72b8d90ae20e3956",
+    "email": "tchristiansen@bighorn1.com",
+    "gender": "Boys",
+    "person": "Tobee Christiansen",
+    "phone": "(307) 272-5967",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "5f27580e72b8d90ae20e3956",
+    "email": "tchristiansen@bighorn1.com",
+    "gender": "",
+    "person": "Tobee Christiansen",
+    "phone": "(307) 272-5967",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   },
+   {
+    "code": "66ce05724ef9a573757cdd66",
+    "email": "",
+    "gender": "",
+    "person": "Rod Winland",
+    "phone": "",
+    "role": "AthleticDirector",
+    "sport": "AthleticDirector"
+   }
+  ],
+  "dropped_counts": {},
+  "school": {
+   "city": "Cowley",
+   "name": "Rocky Mountain High School"
+  },
+  "school_unslotted": {
+   "address": "P.O. Box 280",
+   "association_id": "5e2e552c08483b851128e0aa",
+   "phone": "(307) 548-2723",
+   "zip": "82420"
+  }
+ },
+ "probe/WY/summary-SS28UB.json": {
+  "coaches": [
+   {
+    "code": "6a7a1411ef8a0e912d9b1300",
+    "email": "nicole.biltoft@fremont38.com",
+    "gender": "Boys",
+    "person": "Nicole Biltoft",
+    "phone": "",
+    "role": "Coach",
+    "sport": "Track"
+   },
+   {
+    "code": "6a7a1411ef8a0e912d9b1300",
+    "email": "nicole.biltoft@fremont38.com",
+    "gender": "Girls",
+    "person": "Nicole Biltoft",
+    "phone": "",
+    "role": "Coach",
+    "sport": "CrossCountry"
+   }
+  ],
+  "dropped_counts": {
+   "JV": 1
+  },
+  "school": {
+   "city": "Arapahoe",
+   "name": "Arapaho Charter High School"
+  },
+  "school_unslotted": {
+   "address": "445 Little Wind River Bottom R",
+   "association_id": "5e2e552b08483b851128dfb4",
+   "phone": "(307) 856-9333",
+   "zip": "82510"
+  }
+ },
+ "probe/WY/summary-YZQ9H7.json": {
+  "coaches": [
+   {
+    "code": "5f2ab754f13b380a79c3d569",
+    "email": "andersond@lymanschools.org",
+    "gender": "Boys",
+    "person": "Dale Anderson",
+    "phone": "(208) 220-7911",
+    "role": "Coach",
+    "sport": "Track"
+   }
+  ],
+  "dropped_counts": {},
+  "school": {
+   "city": "Lyman",
+   "name": "Lyman High School"
+  },
+  "school_unslotted": {
+   "address": "P.O. Box 1090",
+   "association_id": "5e2e552b08483b851128e05d",
+   "phone": "(307) 786-4100",
+   "zip": "82937"
+  }
+ }
+}

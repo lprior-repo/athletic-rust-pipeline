@@ -1,4 +1,8 @@
-use super::{bulk_first, descriptor, descriptors, transport_for_host, AccessClass, TransportKind};
+use super::{
+    bulk_first, declared_delay_for_host, descriptor, descriptors, transport_for_host, AccessClass,
+    TransportKind,
+};
+use std::time::Duration;
 
 const PLAN_SLUGS: [&str; 19] = [
     "athleticlive",
@@ -286,6 +290,34 @@ fn one_origin_has_one_transport() {
             None => seen.push((origin, entry.transport)),
         }
     }
+}
+
+#[test]
+fn the_declared_rate_for_a_host_is_read_from_the_table() {
+    assert_eq!(
+        declared_delay_for_host("www.mpa.cc"),
+        Some(Duration::from_secs(1)),
+        "a one-request-per-second origin paces at one second"
+    );
+    assert_eq!(
+        declared_delay_for_host("www.wayzataresults.com"),
+        Some(Duration::from_secs(10)),
+        "the crawl-delay origin paces at the rate its row declares"
+    );
+    assert_eq!(
+        declared_delay_for_host("WWW.WayzataResults.COM"),
+        Some(Duration::from_secs(10))
+    );
+    assert_eq!(
+        declared_delay_for_host("example.invalid"),
+        None,
+        "an unregistered host declares no rate for the fetcher to floor against"
+    );
+    assert_eq!(
+        declared_delay_for_host("local-artifact"),
+        None,
+        "an artifact origin is not a host to pace"
+    );
 }
 
 #[test]

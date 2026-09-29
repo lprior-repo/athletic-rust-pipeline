@@ -62,7 +62,11 @@ impl Fetcher {
         }
     }
 
-    async fn host_gate(&self, host: &str, robots_delay: Option<Duration>) -> Arc<Mutex<()>> {
+    pub(super) async fn host_gate(
+        &self,
+        host: &str,
+        robots_delay: Option<Duration>,
+    ) -> Arc<Mutex<()>> {
         let scope = self.pace_scope(host);
         let configured = self.configured_delay(&scope);
         let mut effective = match robots_delay {
@@ -72,11 +76,14 @@ impl Fetcher {
         if self.is_authorized_host(host) && effective < MIN_AUTHORIZED_DELAY {
             effective = MIN_AUTHORIZED_DELAY;
         }
+        if let Some(declared) = crate::registry::declared_delay_for_host(host) {
+            effective = effective.max(declared);
+        }
         let kind = scope.kind();
         let key = scope.into_key();
         let mut buckets = match kind {
-            ScopeKind::Family => self.families.lock().await,
-            ScopeKind::Host => self.hosts.lock().await,
+            ScopeKind::Family => self.pacing.families.lock().await,
+            ScopeKind::Host => self.pacing.hosts.lock().await,
         };
         let state = buckets.entry(key).or_insert_with(|| HostState {
             gate: Arc::new(Mutex::new(())),
@@ -87,14 +94,14 @@ impl Fetcher {
         state.gate.clone()
     }
 
-    async fn wait_turn(&self, host: &str) {
+    pub(super) async fn wait_turn(&self, host: &str) {
         let scope = self.pace_scope(host);
         let kind = scope.kind();
         let key = scope.into_key();
         let wait = {
             let mut buckets = match kind {
-                ScopeKind::Family => self.families.lock().await,
-                ScopeKind::Host => self.hosts.lock().await,
+                ScopeKind::Family => self.pacing.families.lock().await,
+                ScopeKind::Host => self.pacing.hosts.lock().await,
             };
             match buckets.get_mut(&key) {
                 Some(s) => {
@@ -147,7 +154,12 @@ impl Fetcher {
         }
 
         let (host, origin) = request_target(url)?;
-        let crawl_delay = self.robots_for(&origin).await.crawl_delay;
+        if self.host_blocked(&host, &super::now_iso8601()).await {
+            return Err(FetchError::Policy {
+                detail: format!("host {host} is inside a recorded access cooldown"),
+            });
+        }
+        let crawl_delay = self.robots_for(&origin, &host).await.crawl_delay;
         let gate = self.host_gate(&host, crawl_delay).await;
         let plan = FetchPlan {
             method,

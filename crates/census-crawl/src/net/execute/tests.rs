@@ -1,5 +1,5 @@
 use super::*;
-use crate::net::Fetcher;
+use crate::net::{Fetcher, PacingState};
 use census_domain::model::AccessBlockKind;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -89,6 +89,70 @@ async fn an_authorized_host_is_never_paced_faster_than_the_policy_ceiling() {
         tokio::time::Instant::now().duration_since(start),
         MIN_AUTHORIZED_DELAY,
         "an authorized host's spacing must stay at the policy ceiling"
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_registered_host_is_never_paced_faster_than_its_declared_rate() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fetcher = fetcher_in(dir.path(), Duration::from_millis(1), Vec::new());
+    fetcher
+        .host_gate("www.wayzataresults.com", Some(Duration::from_millis(1)))
+        .await;
+
+    let start = tokio::time::Instant::now();
+    fetcher.wait_turn("www.wayzataresults.com").await;
+    fetcher.wait_turn("www.wayzataresults.com").await;
+    assert_eq!(
+        tokio::time::Instant::now().duration_since(start),
+        Duration::from_secs(10),
+        "the registry's 0.1 request/s row paces the host even at a one-millisecond default"
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_host_with_a_recorded_cooldown_is_refused_before_dispatch() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fetcher = fetcher_in(dir.path(), Duration::from_millis(1), Vec::new());
+    let condition = fetcher
+        .record_access_condition(
+            "www.example.test",
+            AccessBlockKind::RateLimited,
+            429,
+            Some(60),
+            "rate limited",
+        )
+        .await;
+    assert!(condition.is_blocking(&crate::net::now_iso8601()));
+
+    let error = fetcher
+        .get("https://www.example.test/page", &FetchOptions::default())
+        .await
+        .expect_err("a blocked host is refused");
+    assert!(
+        matches!(error, FetchError::Policy { .. }),
+        "the refusal is a policy error, not a request: {error:?}"
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn two_fetchers_sharing_one_pacing_state_share_the_host_budget() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let shared = Arc::new(PacingState::new());
+    let first = fetcher_in(dir.path(), Duration::from_millis(1), Vec::new())
+        .with_shared_pacing(Arc::clone(&shared));
+    let second = fetcher_in(dir.path(), Duration::from_millis(1), Vec::new())
+        .with_shared_pacing(Arc::clone(&shared));
+    first.host_gate(HOST, Some(Duration::from_secs(3))).await;
+    second.host_gate(HOST, Some(Duration::from_secs(3))).await;
+
+    let start = tokio::time::Instant::now();
+    first.wait_turn(HOST).await;
+    second.wait_turn(HOST).await;
+    assert_eq!(
+        tokio::time::Instant::now().duration_since(start),
+        Duration::from_secs(3),
+        "a second fetcher on the same host spends the first fetcher's reserved slot"
     );
 }
 

@@ -1,12 +1,64 @@
 use super::parse::{DirectorySchool, SchoolSummary, StaffMember};
 use super::{classification, nonempty, SOURCE_ID};
+use crate::{row_hygiene, CrawlResult};
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DirectoryAdmission {
+    School(Box<CanonicalSchool>, SchoolId),
+    MissingShortCode,
+    DroppedName,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CoachCounters {
+    pub dropped_person: usize,
+    pub dropped_vendor: usize,
+    pub dropped_levels: BTreeMap<String, usize>,
+}
+
+impl CoachCounters {
+    pub fn absorb(&mut self, other: &CoachCounters) {
+        self.dropped_person = self.dropped_person.saturating_add(other.dropped_person);
+        self.dropped_vendor = self.dropped_vendor.saturating_add(other.dropped_vendor);
+        for (label, count) in &other.dropped_levels {
+            let slot = self.dropped_levels.entry(label.clone()).or_insert(0);
+            *slot = slot.saturating_add(*count);
+        }
+    }
+
+    pub fn dropped_total(&self) -> usize {
+        self.dropped_levels
+            .values()
+            .fold(0usize, |total, count| total.saturating_add(*count))
+    }
+
+    pub fn breakdown(&self) -> String {
+        self.dropped_levels
+            .iter()
+            .map(|(label, count)| format!("{label}={count}"))
+            .collect::<Vec<String>>()
+            .join(", ")
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct CoachEmission {
+    pub coaches: Vec<CanonicalCoach>,
+    pub counters: CoachCounters,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EmissionScope {
+    Census,
+    Probe,
+}
 
 pub fn directory_school(
     state: UsJurisdiction,
@@ -14,9 +66,13 @@ pub fn directory_school(
     row: &DirectorySchool,
     source_url: &str,
     observed_on: &str,
-) -> Option<(CanonicalSchool, SchoolId)> {
-    let name = row.name.as_deref().and_then(nonempty)?;
-    let short_code = row.short_code.as_deref().and_then(nonempty)?;
+) -> CrawlResult<DirectoryAdmission> {
+    let Some(short_code) = row.short_code.as_deref().and_then(nonempty) else {
+        return Ok(DirectoryAdmission::MissingShortCode);
+    };
+    let Some(name) = row_hygiene::sanitize_school(row.name.as_deref().unwrap_or_default())? else {
+        return Ok(DirectoryAdmission::DroppedName);
+    };
     let (mut school, id) = CanonicalSchool::new(state, name.as_str(), normalize_name(&name));
     school.city = row.city.as_deref().and_then(nonempty);
     school.association = Some(association.to_string());
@@ -32,7 +88,7 @@ pub fn directory_school(
         SourceRef::new(SOURCE_ID, Some(source_url.to_string())),
         observed_on,
     ));
-    Some((school, id))
+    Ok(DirectoryAdmission::School(Box::new(school), id))
 }
 
 pub fn absorb_summary(
@@ -63,7 +119,9 @@ pub fn coach_entities(
     school_id: &SchoolId,
     source_url: &str,
     observed_on: &str,
-) -> Vec<CanonicalCoach> {
+    scope: EmissionScope,
+) -> CrawlResult<CoachEmission> {
+    let mut counters = CoachCounters::default();
     let staff = dedup_staff(&summary.staff);
     let index: HashMap<&str, usize> = staff
         .iter()
@@ -73,6 +131,7 @@ pub fn coach_entities(
         .collect();
     let mut placed: Vec<&str> = Vec::new();
     let mut rows: Vec<Row<'_>> = Vec::new();
+    let mut claims: Vec<Claim> = Vec::new();
     for team in &summary.teams {
         let Some((sport, gender)) = team_sport(team.name.as_deref().unwrap_or_default()) else {
             continue;
@@ -89,11 +148,17 @@ pub fn coach_entities(
             }
             push_row(
                 &mut rows,
-                member,
-                Some(sport),
-                gender,
-                coach_role(member.title.as_deref().unwrap_or_default()),
-            );
+                &mut claims,
+                &mut counters,
+                scope,
+                RowDraft {
+                    member,
+                    sport: Some(sport),
+                    gender,
+                    role: coach_role(member.title.as_deref().unwrap_or_default()),
+                    level: team.level.as_deref(),
+                },
+            )?;
         }
     }
     for member in &staff {
@@ -106,11 +171,17 @@ pub fn coach_entities(
         };
         push_row(
             &mut rows,
-            member,
-            Some(sport),
-            gender,
-            coach_role(member.title.as_deref().unwrap_or_default()),
-        );
+            &mut claims,
+            &mut counters,
+            scope,
+            RowDraft {
+                member,
+                sport: Some(sport),
+                gender,
+                role: coach_role(member.title.as_deref().unwrap_or_default()),
+                level: member.team_level.as_deref(),
+            },
+        )?;
     }
     for member in &staff {
         if !is_director(member.title.as_deref().unwrap_or_default()) {
@@ -118,15 +189,23 @@ pub fn coach_entities(
         }
         push_row(
             &mut rows,
-            member,
-            None,
-            Gender::Mixed,
-            CoachRole::AthleticDirector,
-        );
+            &mut claims,
+            &mut counters,
+            scope,
+            RowDraft {
+                member,
+                sport: None,
+                gender: Gender::Mixed,
+                role: CoachRole::AthleticDirector,
+                level: None,
+            },
+        )?;
     }
-    rows.into_iter()
+    let coaches: Vec<CanonicalCoach> = rows
+        .into_iter()
         .map(|row| build_coach(&row, school_id, source_url, observed_on))
-        .collect()
+        .collect();
+    Ok(CoachEmission { coaches, counters })
 }
 
 struct Row<'a> {
@@ -137,25 +216,76 @@ struct Row<'a> {
     role: CoachRole,
 }
 
-fn push_row<'a>(
-    rows: &mut Vec<Row<'a>>,
+struct Claim {
+    person: String,
+    sport: &'static str,
+    gender: Gender,
+    role: CoachRole,
+}
+
+struct RowDraft<'a> {
     member: &'a StaffMember,
     sport: Option<Sport>,
     gender: Gender,
     role: CoachRole,
-) {
-    let person = person_name(member);
-    if person.is_empty() {
-        return;
-    }
-    let duplicate = rows.iter().any(|row| {
-        row.person == person
-            && sport_family(row.sport) == sport_family(sport)
-            && row.gender == gender
-            && row.role == role
+    level: Option<&'a str>,
+}
+
+fn push_row<'a>(
+    rows: &mut Vec<Row<'a>>,
+    claims: &mut Vec<Claim>,
+    counters: &mut CoachCounters,
+    scope: EmissionScope,
+    draft: RowDraft<'a>,
+) -> CrawlResult<()> {
+    let RowDraft {
+        member,
+        sport,
+        gender,
+        role,
+        level,
+    } = draft;
+    let mut person = person_name(member);
+    let family = sport_family(sport);
+    let claimed = claims.iter().any(|claim| {
+        claim.person == person
+            && claim.sport == family
+            && claim.gender == gender
+            && claim.role == role
     });
-    if duplicate {
-        return;
+    if claimed {
+        return Ok(());
+    }
+    claims.push(Claim {
+        person: person.clone(),
+        sport: family,
+        gender,
+        role,
+    });
+    if scope == EmissionScope::Census && !row_hygiene::is_varsity_level(level) {
+        let slot = counters
+            .dropped_levels
+            .entry(row_hygiene::level_label(level))
+            .or_insert(0);
+        *slot = slot.saturating_add(1);
+        return Ok(());
+    }
+    if scope == EmissionScope::Census {
+        let Some(sanitized) = row_hygiene::sanitize_person(&person)? else {
+            counters.dropped_person = counters.dropped_person.saturating_add(1);
+            return Ok(());
+        };
+        person = sanitized;
+        let vendor_address = member
+            .emails
+            .first()
+            .map(String::as_str)
+            .and_then(nonempty)
+            .is_some_and(|address| row_hygiene::is_vendor_contact(&address));
+        if vendor_address {
+            counters.dropped_vendor = counters.dropped_vendor.saturating_add(1);
+            return Ok(());
+        }
     }
     rows.push(Row {
         member,
@@ -164,6 +294,7 @@ fn push_row<'a>(
         gender,
         role,
     });
+    Ok(())
 }
 
 fn build_coach(
@@ -271,6 +402,7 @@ pub(crate) fn team_sport(label: &str) -> Option<(Sport, Gender)> {
     for prefix in ["Unified ", "Mixed "] {
         if let Some(value) = rest.strip_prefix(prefix) {
             rest = value.trim_start();
+            break;
         }
     }
     if rest.starts_with("Cross Country") {

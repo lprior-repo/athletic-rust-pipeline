@@ -11,6 +11,26 @@ pub(super) struct HostState {
     pub(super) delay: Duration,
 }
 
+pub struct PacingState {
+    pub(super) families: Mutex<HashMap<String, HostState>>,
+    pub(super) hosts: Mutex<HashMap<String, HostState>>,
+}
+
+impl PacingState {
+    pub fn new() -> Self {
+        Self {
+            families: Mutex::new(HashMap::new()),
+            hosts: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl Default for PacingState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Fetcher {
     pub fn new(
         cache_dir: impl AsRef<Path>,
@@ -38,14 +58,14 @@ impl Fetcher {
             default_delay,
             host_delays,
             family_delays: HashMap::new(),
-            families: Mutex::new(HashMap::new()),
+            pacing: Arc::new(PacingState::new()),
             authorized_hosts: authorized_hosts
                 .into_iter()
                 .map(|host| host.trim().to_ascii_lowercase())
                 .filter(|host| !host.is_empty())
                 .collect(),
-            hosts: Mutex::new(HashMap::new()),
             robots: Mutex::new(HashMap::new()),
+            robots_gates: Mutex::new(HashMap::new()),
             stats: Mutex::new(FetchStats::default()),
             source: super::DEFAULT_SOURCE.to_string(),
             blocks: Mutex::new(HashMap::new()),

@@ -1,6 +1,8 @@
 use super::{FetchError, Fetcher};
 use futures::StreamExt;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 use tracing::debug;
 
 const ROBOTS_MAX_BODY: usize = 64 * 1024;
@@ -11,13 +13,24 @@ pub(super) struct RobotsPolicy {
 }
 
 impl Fetcher {
-    pub(super) async fn robots_for(&self, scheme_host: &str) -> RobotsPolicy {
+    pub(super) async fn robots_for(&self, scheme_host: &str, host: &str) -> RobotsPolicy {
+        let single = {
+            let mut gates = self.robots_gates.lock().await;
+            gates
+                .entry(scheme_host.to_string())
+                .or_insert_with(|| Arc::new(Mutex::new(())))
+                .clone()
+        };
+        let _single = single.lock().await;
         {
             let robots = self.robots.lock().await;
             if let Some(policy) = robots.get(scheme_host) {
                 return policy.clone();
             }
         }
+        let gate = self.host_gate(host, None).await;
+        let _permit = gate.lock().await;
+        self.wait_turn(host).await;
         let url = format!("{scheme_host}/robots.txt");
         let policy = match self.fetch_robots(&url).await {
             Ok((200, body)) => parse_robots(&String::from_utf8_lossy(&body)),
