@@ -2579,7 +2579,8 @@ respected (`User-agent: *` allows `/` and disallows only `/history/champions/ind
   model decision, not a parser loss.
 - **Limit.** The live source was not re-fetched in this pass: no `collect` run touched chsaanow.com, so the
   adapter's behaviour against the live site (status codes, shape drift) is unverified and the fixtures plus
-  goldens are the compiled evidence. `cargo xtask scan` cannot run at this base (`census-report` does not
+  goldens are the compiled evidence. No service verb calls this adapter yet (`census-service` does not compile
+  at this base). `cargo xtask scan` cannot run at this base (`census-report` does not
   compile against the committed `census-domain` API), so its source counters were not re-measured; the tree's
   pre-existing `milesplit` test lint and the unrelated `census-report` build breakage are outside this slice.
 
