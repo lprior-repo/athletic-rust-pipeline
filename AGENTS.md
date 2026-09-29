@@ -27,6 +27,7 @@ skill rather than silently proceeding:
 | Physical storage and snapshots | `FJALL_SCHEMA.md` |
 | Implemented durable handlers and replay boundaries | `RESTATE_WORKFLOWS.md` |
 | Operating the census | `docs/OPERATIONS.md` |
+| External Restate vendor documentation | `docs/restate/README.md` |
 | Backup/restore and deployment | `docs/FJALL_BACKUP.md`, `docs/deployment-lifecycle.md` |
 | Test/gate and benchmark procedures | `TESTING.md`, `PERFORMANCE.md` |
 | Dated command evidence and limitations | `docs/VERIFICATION-EVIDENCE.md` |
@@ -36,6 +37,45 @@ Keep implementation facts, target requirements and historical results distinct. 
 document instead of creating a second architecture, handoff, status or execution plan. ADRs explain
 why; references explain current APIs; evidence records what actually ran. Preserve unique source
 captures and audit evidence. Scraped Restate references are external material, not project policy.
+
+## Local Restate deployment lifecycle
+
+No container runtime is used here. The node is the native binary at `/home/lewis/bin/restate-server`
+with one config per run (`var/<run>/restate.toml`, conventional loopback ingress 18095 and admin
+19095). `census-serve` owns the Fjall store: one process owns one root, and a second opener failing on
+the lock is correct, not a defect to work around.
+
+Tearing down a previous run, in this order:
+
+1. `kill -TERM <census-serve pid>` and wait for exit. Read the drain certificate it appends to
+   `var/<run>/serve.log` (`drained: accepted=… completed=… cancelled=… timed_out=… aborted=…
+   panicked=…`) and keep it as evidence of what was stopped.
+2. `kill -TERM <restate-server pid>` for each node and wait; the node config's `shutdown-timeout`
+   bounds that wait.
+3. Confirm nothing listens on the run's ports and that no `restate-server` or `census-serve`
+   process remains.
+4. Preserve `var/<run>/`, the node's `base-dir` and every artifact under `var/<run>/out/`. Never
+   SIGKILL, never delete another run's durable state, and never reuse its store directory: a fresh
+   census needs a new store path, a new endpoint port and a fresh registration.
+
+Starting a fresh run:
+
+1. Write `var/<run>/restate.toml` from the previous run's config with new node/cluster names and a
+   new `base-dir`, start `restate-server --no-logo -c` it, and wait for the `Admin:` and
+   `HTTP Ingress:` banner lines.
+2. Start `target/release/census-serve --listen 127.0.0.1:<port> --data-dir var/<run>
+   --max-concurrent <n> --drain-timeout <seconds> --browser-profile var/<run>/browser-profile
+   --browser-executable /usr/bin/chromium --browser-headless`.
+3. Register it: `curl -X POST http://127.0.0.1:19095/deployments -H 'content-type: application/json'
+   -d '{"uri":"http://127.0.0.1:<port>/"}'`, then confirm all ten services appear in
+   `GET /deployments`.
+4. Submit the run with `census-service national --ingress http://127.0.0.1:18095/ --detach` and
+   observe it through the admin query API and `census-service open-work`, never by opening the store
+   from a second process.
+
+Vendor Restate reference material is local under `docs/restate/`; it is external documentation, not
+project policy. `docs/OPERATIONS.md` owns runnable procedures and `docs/deployment-lifecycle.md` owns
+registration, immutability and handover rules.
 
 ## Ownership
 
@@ -107,3 +147,83 @@ certify unexercised behavior.
 Use: **TASK / OWNERSHIP / DO NOT MODIFY / INPUT CONTRACT / OUTPUT CONTRACT / ACCEPTANCE / HANDOFF**.
 Report changed files, exact commands and observed results, evidence limits and remaining blockers.
 Workers do not commit; Main owns verified integration and landing.
+
+<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:970c3bf2 -->
+## Beads Issue Tracker
+
+This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
+
+### Quick Reference
+
+```bash
+bd ready              # Find available work
+bd show <id>          # View issue details
+bd update <id> --claim  # Claim work
+bd close <id>         # Complete work
+```
+
+### Rules
+
+- Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
+- Run `bd prime` for detailed command reference and session close protocol
+- Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
+
+**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
+
+## Agent Context Profiles
+
+The managed Beads block is task-tracking guidance, not permission to override repository, user, or orchestrator instructions.
+
+- **Conservative (default)**: Use `bd` for task tracking. Do not run git commits, git pushes, or Dolt remote sync unless explicitly asked. At handoff, report changed files, validation, and suggested next commands.
+- **Minimal**: Keep tool instruction files as pointers to `bd prime`; use the same conservative git policy unless active instructions say otherwise.
+- **Team-maintainer**: Only when the repository explicitly opts in, agents may close beads, run quality gates, commit, and push as part of session close. A current "do not commit" or "do not push" instruction still wins.
+
+## Session Completion
+
+This protocol applies when ending a Beads implementation workflow. It is subordinate to explicit user, repository, and orchestrator instructions.
+
+1. **File issues for remaining work** - Create beads for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **Handle git/sync by active profile**:
+   ```bash
+   # Conservative/minimal/default: report status and proposed commands; wait for approval.
+   git status
+
+   # Team-maintainer opt-in only, unless current instructions forbid it:
+   git pull --rebase
+   bd dolt push
+   git push
+   git status
+   ```
+5. **Hand off** - Summarize changes, validation, issue status, and any blocked sync/commit/push step
+
+**Critical rules:**
+- Explicit user or orchestrator instructions override this Beads block.
+- Do not commit or push without clear authority from the active profile or the current user request.
+- If a required sync or push is blocked, stop and report the exact command and error.
+<!-- END BEADS INTEGRATION -->
+
+<!-- BEGIN BEADS CODEX SETUP: generated by bd setup codex -->
+## Beads Issue Tracker
+
+Use Beads (`bd`) for durable task tracking in repositories that include it. Use the `beads` skill at `.agents/skills/beads/SKILL.md` (project install) or `~/.agents/skills/beads/SKILL.md` (global install) for Beads workflow guidance, then use the `bd` CLI for issue operations.
+
+### Quick Reference
+
+```bash
+bd ready                # Find available work
+bd show <id>            # View issue details
+bd update <id> --claim  # Claim work
+bd close <id>           # Complete work
+bd prime                # Refresh Beads context
+```
+
+### Rules
+
+- Use `bd` for all task tracking; do not create markdown TODO lists.
+- Run `bd prime` when Beads context is missing or stale. Codex 0.129.0+ can load Beads context automatically through native hooks; use `/hooks` to inspect or toggle them.
+- Keep persistent project memory in Beads via `bd remember`; do not create ad hoc memory files.
+
+**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
+<!-- END BEADS CODEX SETUP -->
