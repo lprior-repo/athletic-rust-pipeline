@@ -1,8 +1,6 @@
 use super::map::{absorb_summary, coach_entities, directory_school};
 use super::parse::{parse_directory, parse_summary, DirectorySchool};
-use super::{
-    directory_page_url, summary_url, Options, MAX_DIRECTORY_PAGES, REGISTERED, SOURCE_ID,
-};
+use super::{directory_page_url, summary_url, Options, MAX_DIRECTORY_PAGES, REGISTERED, SOURCE_ID};
 use crate::net::{FetchOptions, FetchOutcome, FetchStats};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{normalize_name, CanonicalCoach, CanonicalSchool, SourceNamespace};
@@ -149,7 +147,12 @@ impl<'a> Run<'a> {
         };
         let coaches = match summary.as_ref() {
             Some(summary) => {
-                absorb_summary(&mut school, summary, &url, self.options.observed_on.as_str());
+                absorb_summary(
+                    &mut school,
+                    summary,
+                    &url,
+                    self.options.observed_on.as_str(),
+                );
                 coach_entities(summary, &school_id, &url, self.options.observed_on.as_str())
             }
             None => Vec::new(),
@@ -220,7 +223,9 @@ impl<'a> Run<'a> {
     async fn finish(mut self, stats_before: FetchStats) -> AdapterReport {
         let stats_after = self.ctx.fetcher.stats().await;
         self.report.requests = stats_after.requests.saturating_sub(stats_before.requests);
-        self.report.from_cache = stats_after.cache_hits.saturating_sub(stats_before.cache_hits);
+        self.report.from_cache = stats_after
+            .cache_hits
+            .saturating_sub(stats_before.cache_hits);
         self.report.rows = u64::try_from(self.processed).unwrap_or(u64::MAX);
         self.report.with_email = self.with_email;
         self.report.note(format!(

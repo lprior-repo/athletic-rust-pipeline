@@ -50,6 +50,7 @@ impl Fetcher {
             source: super::DEFAULT_SOURCE.to_string(),
             blocks: Mutex::new(HashMap::new()),
             lane: None,
+            offline: false,
         })
     }
 }

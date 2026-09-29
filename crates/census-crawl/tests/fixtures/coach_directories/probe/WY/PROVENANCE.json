@@ -1,0 +1,46 @@
+{
+  "state": "WY",
+  "ruleset": "WHSAA",
+  "directory": {
+    "url": "https://maxinfosite-api-live.dragonflyathletics.com/states/WHSAA/directory/1",
+    "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__a03aad7607760a2442716c4a",
+    "sha256": "b34ca663db6208dd5456d6335a760154049d2f89f669356b7b10995cf006a0ad",
+    "bytes": 113274
+  },
+  "sampled_codes": [
+    "SS28UB",
+    "BV8LHG",
+    "YZQ9H7",
+    "JNXGSZ"
+  ],
+  "summaries": [
+    {
+      "code": "BV8LHG",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/BV8LHG/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__f418c640963ef2b872a0e9c7",
+      "sha256": "4395131890a775310f38b7af8167a13178cd3f026bd4331cc11a73674d2c2534",
+      "bytes": 856654
+    },
+    {
+      "code": "JNXGSZ",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/JNXGSZ/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__d51497e7e548ab23f32c6e4d",
+      "sha256": "96a5808af69bb2bd1945d20e4a9338e34d19e1e3db52ad08ae431a5c426cffa6",
+      "bytes": 1045442
+    },
+    {
+      "code": "SS28UB",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/SS28UB/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__b2c0fe261d21d55237df5769",
+      "sha256": "fb007b098875d34dd2afef5f2fff9e2410217cd4d506c6cd7a20157ea7193216",
+      "bytes": 839118
+    },
+    {
+      "code": "YZQ9H7",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/YZQ9H7/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__a1ca7a58826b9705a20ff19a",
+      "sha256": "ca7df16919ee76e62d7b685f9f29912a2fe7e000b91a894a4f7ddbb799d783c0",
+      "bytes": 937321
+    }
+  ]
+}

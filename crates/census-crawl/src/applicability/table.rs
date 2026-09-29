@@ -1,7 +1,7 @@
 use super::Applicability;
 use census_domain::UsJurisdiction;
 
-pub(super) const TABLE: [Applicability; 18] = [
+pub(super) const TABLE: [Applicability; 19] = [
     Applicability {
         slug: "athleticlive",
         jurisdictions: &[
@@ -75,6 +75,12 @@ pub(super) const TABLE: [Applicability; 18] = [
                    column. Cost: 1 request.",
         refusal: "One league's directory: no other jurisdiction in the corpus publishes on this host, and the lane's \
                   rows for the rest name a different provider or none.",
+    },
+    Applicability {
+        slug: "chsaa",
+        jurisdictions: &[UsJurisdiction::Colorado],
+        evidence: "378 member schools with embedded JSON at chsaanow.com/schools/ (schoolCode, name, officialName, city, streetAddress, zipCode); per-school coach JSON at chsaanow.com/schools/<slug>/ with activityName and positions[].title (Head Coach/Assistant Coach). 378/378 have streetAddress, 376/378 have zipCode. robots.txt allows / with only /history/champions/individual/totals/repeat/ and /preview/ disallowed.",
+        refusal: "One association's directory: no other jurisdiction in the corpus publishes on this host.",
     },
     Applicability {
         slug: "coach_directories",

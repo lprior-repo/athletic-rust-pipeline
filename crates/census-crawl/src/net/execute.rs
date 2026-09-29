@@ -140,6 +140,11 @@ impl Fetcher {
                 return Ok(outcome);
             }
         }
+        if self.offline {
+            return Err(FetchError::Offline {
+                url: url.to_string(),
+            });
+        }
 
         let (host, origin) = request_target(url)?;
         let crawl_delay = self.robots_for(&origin).await.crawl_delay;
@@ -197,7 +202,6 @@ impl Fetcher {
             body,
         }))
     }
-
 }
 
 fn request_target(url: &str) -> Result<(String, String), FetchError> {

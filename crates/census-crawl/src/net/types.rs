@@ -63,6 +63,8 @@ pub enum FetchError {
     Invariant { detail: String },
     #[error("policy: {detail}")]
     Policy { detail: String },
+    #[error("offline and not cached: {url}")]
+    Offline { url: String },
 }
 
 impl FetchError {
@@ -78,7 +80,8 @@ impl FetchError {
             | Self::Encode { .. }
             | Self::Client { .. }
             | Self::Policy { .. }
-            | Self::Invariant { .. } => false,
+            | Self::Invariant { .. }
+            | Self::Offline { .. } => false,
         }
     }
 }

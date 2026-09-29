@@ -1,0 +1,46 @@
+{
+  "state": "GA",
+  "ruleset": "GHSA",
+  "directory": {
+    "url": "https://maxinfosite-api-live.dragonflyathletics.com/states/GHSA/directory/1",
+    "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__8557875520ea8f7ff08d843f",
+    "sha256": "8dd73b025582b3a7dc849ed9ffcefe62de01a3631866cdff2ffc442f2ec16254",
+    "bytes": 458802
+  },
+  "sampled_codes": [
+    "ZF9KFM",
+    "5T6GB4",
+    "UVERCT",
+    "4VHDT8"
+  ],
+  "summaries": [
+    {
+      "code": "4VHDT8",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/4VHDT8/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__a45b27fa3fa7d0b02bb856c8",
+      "sha256": "8259d9f604c0b9107377417b892f5041c20d06a339fcd7cb3c69d6bc9083a13c",
+      "bytes": 200633
+    },
+    {
+      "code": "5T6GB4",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/5T6GB4/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__b3f954cbc2f7790a10298536",
+      "sha256": "6b7d5509b9e994e0195408ad7ef6ea0216743fe8d9f39b18bbd2b3494227e1e9",
+      "bytes": 279065
+    },
+    {
+      "code": "UVERCT",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/UVERCT/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__c87ef43c9265d4b873888a18",
+      "sha256": "4ff6eefc56721d9c27aa76c99972c31aa4260cad87d5b94dcb0e7b7236a8abbf",
+      "bytes": 279065
+    },
+    {
+      "code": "ZF9KFM",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/ZF9KFM/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__571a617617b9fc087a21477d",
+      "sha256": "7f101e5336e76ae499da4c483c13f573e7ae0a11c5c4547e37a91ef3722bd7de",
+      "bytes": 214133
+    }
+  ]
+}

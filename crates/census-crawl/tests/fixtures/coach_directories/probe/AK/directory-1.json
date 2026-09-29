@@ -1,0 +1,3202 @@
+{
+    "currentPage": 1,
+    "totalPages": 1,
+    "results": [
+        {
+            "orgId": "5e2e4e43da09257d71fe1f28",
+            "shortCode": "DEX2BG",
+            "name": "Akhiok School",
+            "city": "Akhiok",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 5049"
+        },
+        {
+            "orgId": "5e2e4e43da09257d71fe1f29",
+            "shortCode": "TFLLL5",
+            "name": "Akiachak School",
+            "city": "Akiachak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 51189"
+        },
+        {
+            "orgId": "5e2e4e43da09257d71fe1f2a",
+            "shortCode": "T84SB5",
+            "name": "Akiak School",
+            "city": "Akiak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 49"
+        },
+        {
+            "orgId": "5e2e4e43da09257d71fe1f2b",
+            "shortCode": "PV43V4",
+            "name": "Akiuk Memorial School",
+            "city": "Kasigluk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e43da09257d71fe1f2d",
+            "shortCode": "9KYMW4",
+            "name": "Akula Elitnaurvik School",
+            "city": "Kasigluk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 79"
+        },
+        {
+            "orgId": "5e2e4e43da09257d71fe1f2e",
+            "shortCode": "JGYUMP",
+            "name": "Akutan School",
+            "city": "Akutan",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 25"
+        },
+        {
+            "orgId": "5e2e4e43da09257d71fe1f2f",
+            "shortCode": "RX7V9W",
+            "name": "Alak School",
+            "city": "Wainwright",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 10"
+        },
+        {
+            "orgId": "5e2e4e43da09257d71fe1f30",
+            "shortCode": "DBYLYR",
+            "name": "Alakanuk School",
+            "city": "Alakanuk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 9"
+        },
+        {
+            "orgId": "5e2e4e44da09257d71fe1f35",
+            "shortCode": "R7DL92",
+            "name": "Aleknagik School",
+            "city": "Aleknagik",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 84"
+        },
+        {
+            "orgId": "5e2e4e44da09257d71fe1f36",
+            "shortCode": "PV9FJ2",
+            "name": "Allakaket School",
+            "city": "Allakaket",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 69"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e114",
+            "shortCode": "K56CAM",
+            "name": "AMAZING GRACE ACADEMY",
+            "city": "PALMER",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO BOX 3229"
+        },
+        {
+            "orgId": "5e2e4e44da09257d71fe1f39",
+            "shortCode": "TZYV9B",
+            "name": "Ambler School",
+            "city": "Ambler",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 109"
+        },
+        {
+            "orgId": "5e2e4e57da09257d71fe1f3d",
+            "shortCode": "KVR55H",
+            "name": "Anderson School",
+            "city": "Anderson",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 3120"
+        },
+        {
+            "orgId": "5e2e4e58da09257d71fe1f3e",
+            "shortCode": "JDN377",
+            "name": "Andrew K. Demoski School",
+            "city": "Nulato",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 65029"
+        },
+        {
+            "orgId": "5e2e4e58da09257d71fe1f3f",
+            "shortCode": "AZDTLT",
+            "name": "Angoon School",
+            "city": "Angoon",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 109"
+        },
+        {
+            "orgId": "5e2e4e58da09257d71fe1f40",
+            "shortCode": "JNW4RJ",
+            "name": "Aniak Jr/Sr High School",
+            "city": "Aniak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 29"
+        },
+        {
+            "orgId": "5e2e4e58da09257d71fe1f41",
+            "shortCode": "AXGCJG",
+            "name": "Aniguiin School",
+            "city": "Elim",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 29"
+        },
+        {
+            "orgId": "5e2e4e58da09257d71fe1f42",
+            "shortCode": "QAHACD",
+            "name": "Anna Tobeluk Memorial School",
+            "city": "Nunapitchuk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 150"
+        },
+        {
+            "orgId": "5e2e4e58da09257d71fe1f44",
+            "shortCode": "NBGPWX",
+            "name": "Anthony A. Andrews School",
+            "city": "St. Michael",
+            "stateCode": "AK",
+            "media": [],
+            "address": "100 Baker St"
+        },
+        {
+            "orgId": "5e2e4e58da09257d71fe1f4a",
+            "shortCode": "749YKA",
+            "name": "Arviq School",
+            "city": "Platinum",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 28"
+        },
+        {
+            "orgId": "5e2e4e59da09257d71fe1f4f",
+            "shortCode": "EQMFKD",
+            "name": "AVAIL School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "425 C St"
+        },
+        {
+            "orgId": "5e2e4e59da09257d71fe1f50",
+            "shortCode": "3BWZ8X",
+            "name": "Ayagina'ar Elitnaurvik",
+            "city": "Kongiganak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 5109"
+        },
+        {
+            "orgId": "5e2e4e59da09257d71fe1f51",
+            "shortCode": "26DVSE",
+            "name": "Ayaprun Elitnaurvik",
+            "city": "Bethel",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 1468"
+        },
+        {
+            "orgId": "5e2e4e59da09257d71fe1f52",
+            "shortCode": "MZYUCQ",
+            "name": "Ayaprun School",
+            "city": "Newtok",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box WWT"
+        },
+        {
+            "orgId": "5e2e4e59da09257d71fe1f54",
+            "shortCode": "MSYCUH",
+            "name": "Barnette Magnet School",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1000 Barnette St"
+        },
+        {
+            "orgId": "5e2e4e59da09257d71fe1f55",
+            "shortCode": "VRU254",
+            "name": "Barrow High School",
+            "city": "Utqiagvik",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 960"
+        },
+        {
+            "orgId": "5e2e4e59da09257d71fe1f56",
+            "shortCode": "4JWFVZ",
+            "name": "Barry Craig Stewart Kasaan School",
+            "city": "Ketchikan",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box KXA"
+        },
+        {
+            "orgId": "5e2e4e59da09257d71fe1f57",
+            "shortCode": "XWDCBP",
+            "name": "Bartlett High School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1101 Golden Bear Dr"
+        },
+        {
+            "orgId": "5e2e4e5ada09257d71fe1f5b",
+            "shortCode": "Q7KB3S",
+            "name": "Ben Eielson Jr/Sr High School",
+            "city": "Eielson AFB",
+            "stateCode": "AK",
+            "media": [],
+            "address": "675 Raven's Way"
+        },
+        {
+            "orgId": "5e2e4e5ada09257d71fe1f5c",
+            "shortCode": "EL7ALQ",
+            "name": "Benson Secondary/S.E.A.R.C.H.",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "4515 Campbell Airstrip Rd"
+        },
+        {
+            "orgId": "5e2e4e5ada09257d71fe1f5d",
+            "shortCode": "44534W",
+            "name": "Beryozova School",
+            "city": "Willow",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 69"
+        },
+        {
+            "orgId": "5e2e4e5ada09257d71fe1f5e",
+            "shortCode": "RR4JWX",
+            "name": "Bethel Regional High School",
+            "city": "Bethel",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 700"
+        },
+        {
+            "orgId": "5e2e4e5ada09257d71fe1f5f",
+            "shortCode": "XHHHZA",
+            "name": "Bethel Youth Facility",
+            "city": "Bethel",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 1989"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e119",
+            "shortCode": "7573FE",
+            "name": "BIRCHWOOD CHRISTIAN SCHOOL",
+            "city": "CHUGIAK",
+            "stateCode": "AK",
+            "media": [],
+            "address": "22208 BIRCHWOOD LOOP RD"
+        },
+        {
+            "orgId": "5e2e4e5ada09257d71fe1f63",
+            "shortCode": "FMXK2L",
+            "name": "Blackwell School",
+            "city": "Anvik",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 90"
+        },
+        {
+            "orgId": "5e2e4e5ada09257d71fe1f64",
+            "shortCode": "3RLVV9",
+            "name": "Blatchley Middle School",
+            "city": "Sitka",
+            "stateCode": "AK",
+            "media": [],
+            "address": "601 Halibut Point Rd"
+        },
+        {
+            "orgId": "5e2e4e5ada09257d71fe1f67",
+            "shortCode": "ACEJEU",
+            "name": "Brevig Mission School",
+            "city": "Brevig Mission",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e5ada09257d71fe1f68",
+            "shortCode": "2XWCTM",
+            "name": "Bristol Bay Correspondence",
+            "city": "Naknek",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Po Box 169"
+        },
+        {
+            "orgId": "5e2e4e5ada09257d71fe1f69",
+            "shortCode": "BW2TWZ",
+            "name": "Bristol Bay Middle/High School",
+            "city": "Naknek",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 169"
+        },
+        {
+            "orgId": "5e2e4e5bda09257d71fe1f6a",
+            "shortCode": "JZC3MG",
+            "name": "Buckland School",
+            "city": "Buckland",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 91"
+        },
+        {
+            "orgId": "5e2e4e5bda09257d71fe1f6b",
+            "shortCode": "QLYPWY",
+            "name": "Burchell High School",
+            "city": "Wasilla",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1775 W Parks Hwy"
+        },
+        {
+            "orgId": "5e2e4e5bda09257d71fe1f6e",
+            "shortCode": "HCYW8T",
+            "name": "Cantwell School",
+            "city": "Cantwell",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 29"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e11b",
+            "shortCode": "EMYRFH",
+            "name": "CATHOLIC SCHOOLS OF FAIRBANKS",
+            "city": "FAIRBANKS",
+            "stateCode": "AK",
+            "media": [],
+            "address": "615 MONROE ST"
+        },
+        {
+            "orgId": "5e2e4e5bda09257d71fe1f6f",
+            "shortCode": "63RJ9F",
+            "name": "Central Middle School of Science",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1405 E St"
+        },
+        {
+            "orgId": "5e2e4e5bda09257d71fe1f70",
+            "shortCode": "SA4ZFZ",
+            "name": "Chapman School",
+            "city": "Anchor Point",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 1109"
+        },
+        {
+            "orgId": "5e2e4e5bda09257d71fe1f71",
+            "shortCode": "R94496",
+            "name": "Chaputnguak School",
+            "city": "Chefornak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 50"
+        },
+        {
+            "orgId": "5e2e4e5bda09257d71fe1f72",
+            "shortCode": "GHZPPL",
+            "name": "Charles R. Leask Sr. Middle School",
+            "city": "Metlakatla",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 7"
+        },
+        {
+            "orgId": "5e2e4e5bda09257d71fe1f73",
+            "shortCode": "P3AK5T",
+            "name": "Chatham Correspondence",
+            "city": "Angoon",
+            "stateCode": "AK",
+            "media": [],
+            "address": "P O Box 109"
+        },
+        {
+            "orgId": "5e2e4e5bda09257d71fe1f74",
+            "shortCode": "W4U56M",
+            "name": "Chenega Bay School",
+            "city": "Chenega Bay",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 8030"
+        },
+        {
+            "orgId": "5e2e4e5bda09257d71fe1f76",
+            "shortCode": "LGVDPB",
+            "name": "Chevak School",
+            "city": "Chevak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 345"
+        },
+        {
+            "orgId": "5e2e4e5cda09257d71fe1f77",
+            "shortCode": "JR82WN",
+            "name": "Chief Ivan Blunka School",
+            "city": "New Stuyahok",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 29"
+        },
+        {
+            "orgId": "5e2e4e5cda09257d71fe1f78",
+            "shortCode": "DPAJMF",
+            "name": "Chief Paul Memorial School",
+            "city": "Kipnuk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 19"
+        },
+        {
+            "orgId": "5e2e4e5cda09257d71fe1f79",
+            "shortCode": "2KXU8V",
+            "name": "Chignik Bay School",
+            "city": "Chignik Bay",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e5cda09257d71fe1f7a",
+            "shortCode": "QP37XY",
+            "name": "Chignik Lagoon School",
+            "city": "Chignik Lagoon",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e5cda09257d71fe1f7b",
+            "shortCode": "XYSHLD",
+            "name": "Chignik Lake School",
+            "city": "Chignik Lake",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e5cda09257d71fe1f7c",
+            "shortCode": "JJEMYZ",
+            "name": "Chiniak School",
+            "city": "Chiniak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 5529"
+        },
+        {
+            "orgId": "5e2e4e5cda09257d71fe1f81",
+            "shortCode": "C77285",
+            "name": "Chugiak High School",
+            "city": "Chugiak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "16525 S Birchwood Loop Rd"
+        },
+        {
+            "orgId": "5e2e4e5cda09257d71fe1f82",
+            "shortCode": "Y84RKX",
+            "name": "Circle School",
+            "city": "Circle",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 49"
+        },
+        {
+            "orgId": "5e2e4e5cda09257d71fe1f83",
+            "shortCode": "B9UYJS",
+            "name": "Clark Middle School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "150 South Bragaw St"
+        },
+        {
+            "orgId": "5e2e4e5dda09257d71fe1f84",
+            "shortCode": "RCSHPM",
+            "name": "Clarks Point School",
+            "city": "Clarks Point",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 29"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e11c",
+            "shortCode": "6VYK75",
+            "name": "CLOVER PASS CHRISTIAN SCHOOL",
+            "city": "KETCHIKAN",
+            "stateCode": "AK",
+            "media": [],
+            "address": "105 N POINT HIGGINS RD"
+        },
+        {
+            "orgId": "5e2e4e5dda09257d71fe1f86",
+            "shortCode": "DEF8UE",
+            "name": "Colony Middle School",
+            "city": "Palmer",
+            "stateCode": "AK",
+            "media": [],
+            "address": "9250 E Bogard Rd"
+        },
+        {
+            "orgId": "5e2e4e5dda09257d71fe1f87",
+            "shortCode": "Q43DHH",
+            "name": "Connections",
+            "city": "Soldotna",
+            "stateCode": "AK",
+            "media": [],
+            "address": "143 E Park Ave"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e11d",
+            "shortCode": "EXGYL7",
+            "name": "COOK INLET ACADEMY",
+            "city": "SOLDOTNA",
+            "stateCode": "AK",
+            "media": [],
+            "address": "45872 KALIFORNSKY BEACH RD"
+        },
+        {
+            "orgId": "5e2e4e5dda09257d71fe1f88",
+            "shortCode": "J7YHL9",
+            "name": "Cooper Landing School",
+            "city": "Cooper Landing",
+            "stateCode": "AK",
+            "media": [],
+            "address": "19030 Bean Creek Rd"
+        },
+        {
+            "orgId": "5e2e4e5dda09257d71fe1f89",
+            "shortCode": "9U4XRR",
+            "name": "Cordova Jr/Sr High School",
+            "city": "Cordova",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 1330"
+        },
+        {
+            "orgId": "5e2e4e5dda09257d71fe1f8a",
+            "shortCode": "F9R5AW",
+            "name": "Cordova School District Innovative Learning",
+            "city": "Cordova",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 1330"
+        },
+        {
+            "orgId": "5e2e4e5dda09257d71fe1f8d",
+            "shortCode": "SMSJSB",
+            "name": "Craig High School",
+            "city": "Craig",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 800"
+        },
+        {
+            "orgId": "5e2e4e5dda09257d71fe1f8e",
+            "shortCode": "MLEY5E",
+            "name": "Craig Middle School",
+            "city": "Craig",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 800"
+        },
+        {
+            "orgId": "5e2e4e5eda09257d71fe1f91",
+            "shortCode": "NHYKED",
+            "name": "Crossroads School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "3350 Commercial Dr # 101"
+        },
+        {
+            "orgId": "5e2e4e5eda09257d71fe1f92",
+            "shortCode": "Y5S2SV",
+            "name": "Crow Village Sam School",
+            "city": "Chuathbaluk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box CHU"
+        },
+        {
+            "orgId": "5e2e4e5eda09257d71fe1f93",
+            "shortCode": "SAMYGW",
+            "name": "Cruikshank School",
+            "city": "Beaver",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 24050"
+        },
+        {
+            "orgId": "5e2e4e5eda09257d71fe1f94",
+            "shortCode": "AB2S4X",
+            "name": "CyberLynx Correspondence Program",
+            "city": "Nenana",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 599"
+        },
+        {
+            "orgId": "5e2e4e5eda09257d71fe1f95",
+            "shortCode": "Q4KU8F",
+            "name": "David Louis Memorial School",
+            "city": "Grayling",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 90"
+        },
+        {
+            "orgId": "5e2e4e5eda09257d71fe1f96",
+            "shortCode": "WKWEQZ",
+            "name": "Davis-Ramoth School",
+            "city": "Selawik",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 119"
+        },
+        {
+            "orgId": "5e2e4e5eda09257d71fe1f97",
+            "shortCode": "F3966F",
+            "name": "Deering School",
+            "city": "Deering",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 36009"
+        },
+        {
+            "orgId": "5e2e4e5eda09257d71fe1f99",
+            "shortCode": "KHB9DE",
+            "name": "Delta Junction High School",
+            "city": "Delta Junction",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 647"
+        },
+        {
+            "orgId": "5e2e4e5eda09257d71fe1f9a",
+            "shortCode": "5JNXF9",
+            "name": "Delta Junction Junior High School",
+            "city": "Delta Junction",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 546"
+        },
+        {
+            "orgId": "5e2e4e5eda09257d71fe1f9b",
+            "shortCode": "4EKALZ",
+            "name": "Delta/Greely Homeschool",
+            "city": "Delta Junction",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 369"
+        },
+        {
+            "orgId": "5e2e4e5eda09257d71fe1f9f",
+            "shortCode": "JTGT8U",
+            "name": "Denali PEAK",
+            "city": "Healy",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 280"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e11e",
+            "shortCode": "BESPDH",
+            "name": "DILLINGHAM ADVENTIST SCHOOL",
+            "city": "DILLINGHAM",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO BOX 182"
+        },
+        {
+            "orgId": "5e2e4e5fda09257d71fe1fa0",
+            "shortCode": "Z2QECZ",
+            "name": "Dillingham Correspondence School",
+            "city": "Dillingham",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 170"
+        },
+        {
+            "orgId": "5e2e4e5fda09257d71fe1fa2",
+            "shortCode": "UA8A9W",
+            "name": "Dillingham Middle/High School",
+            "city": "Dillingham",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 170"
+        },
+        {
+            "orgId": "5e2e4e5fda09257d71fe1fa3",
+            "shortCode": "2N5U3A",
+            "name": "Dimond High School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2909 W 88th Ave"
+        },
+        {
+            "orgId": "5e2e4e5fda09257d71fe1fa4",
+            "shortCode": "89M55Z",
+            "name": "Diomede School",
+            "city": "Diomede",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 7099"
+        },
+        {
+            "orgId": "5e2e4e5fda09257d71fe1fa5",
+            "shortCode": "9U6475",
+            "name": "Distance Learning/Corresp. Ctr.",
+            "city": "Eagle River",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 772182"
+        },
+        {
+            "orgId": "5e2e4e5fda09257d71fe1fa6",
+            "shortCode": "5W6PEH",
+            "name": "Dot Lake School",
+            "city": "Dot Lake",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 2280"
+        },
+        {
+            "orgId": "5e2e4e5fda09257d71fe1fa7",
+            "shortCode": "ENLLMT",
+            "name": "Dzantik'i Heeni Middle School",
+            "city": "Juneau",
+            "stateCode": "AK",
+            "media": [],
+            "address": "10014 Crazy Horse Dr"
+        },
+        {
+            "orgId": "5e2e4e5fda09257d71fe1fa9",
+            "shortCode": "HU9FJ6",
+            "name": "Eagle Community School",
+            "city": "Eagle",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 168"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e11f",
+            "shortCode": "NZ6FBX",
+            "name": "EAGLE RIVER CHRISTIAN SCHOOL",
+            "city": "EAGLE RIVER",
+            "stateCode": "AK",
+            "media": [],
+            "address": "10336 E EAGLE RIVER LOOP RD"
+        },
+        {
+            "orgId": "5e2e4e5fda09257d71fe1fab",
+            "shortCode": "H3HUZJ",
+            "name": "Eagle River High School",
+            "city": "Eagle River",
+            "stateCode": "AK",
+            "media": [],
+            "address": "8701 Yosemite Dr"
+        },
+        {
+            "orgId": "5e2e4e5fda09257d71fe1fae",
+            "shortCode": "SL99RS",
+            "name": "East High School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "4025 E Northern Lights Blvd"
+        },
+        {
+            "orgId": "5e2e4e60da09257d71fe1faf",
+            "shortCode": "4JL7G8",
+            "name": "Eben Hopson Middle School",
+            "city": "Utqiagvik",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 509"
+        },
+        {
+            "orgId": "5e2e4e60da09257d71fe1fb0",
+            "shortCode": "G47N3P",
+            "name": "Eek School",
+            "city": "Eek",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 050"
+        },
+        {
+            "orgId": "5e2e4e60da09257d71fe1fb1",
+            "shortCode": "LSC7JV",
+            "name": "Effie Kokrine Charter School",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "601 Loftus Rd"
+        },
+        {
+            "orgId": "5e2e4e60da09257d71fe1fb2",
+            "shortCode": "ARN2JW",
+            "name": "Ella B. Vernetti School",
+            "city": "Koyukuk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 70"
+        },
+        {
+            "orgId": "5e2e4e60da09257d71fe1fb3",
+            "shortCode": "6D52JB",
+            "name": "Emmonak School",
+            "city": "Emmonak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 267"
+        },
+        {
+            "orgId": "5e2e4e60da09257d71fe1fb5",
+            "shortCode": "BJ423P",
+            "name": "Extensions Correspondence",
+            "city": "Nome",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 131"
+        },
+        {
+            "orgId": "5e2e4e60da09257d71fe1fb6",
+            "shortCode": "B5RZ97",
+            "name": "Fairbanks B.E.S.T.",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "520 Fifth Ave"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e121",
+            "shortCode": "J34NXR",
+            "name": "FAIRHILL CHRISTIAN SCHOOL",
+            "city": "FAIRBANKS",
+            "stateCode": "AK",
+            "media": [],
+            "address": "101 CITY LIGHTS BLVD"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e122",
+            "shortCode": "86GLSC",
+            "name": "FAITH COMMUNITY SCHOOL",
+            "city": "JUNEAU",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO BOX 3317"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e123",
+            "shortCode": "9BTKED",
+            "name": "FAITH EVANGELICAL LUTHERAN SCHOOL",
+            "city": "ANCHORAGE",
+            "stateCode": "AK",
+            "media": [],
+            "address": "5200 LAKE OTIS PKWY"
+        },
+        {
+            "orgId": "5e2e4e60da09257d71fe1fb8",
+            "shortCode": "YAJAJ9",
+            "name": "False Pass School",
+            "city": "False Pass",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 30"
+        },
+        {
+            "orgId": "5e2e4e60da09257d71fe1fba",
+            "shortCode": "F2ZBD4",
+            "name": "Fast Track",
+            "city": "Ketchikan",
+            "stateCode": "AK",
+            "media": [],
+            "address": "333 Schoenbar Rd"
+        },
+        {
+            "orgId": "5e2e4e61da09257d71fe1fbf",
+            "shortCode": "M96LSY",
+            "name": "Floyd Dryden Middle School",
+            "city": "Juneau",
+            "stateCode": "AK",
+            "media": [],
+            "address": "10014 Crazy Horse Dr"
+        },
+        {
+            "orgId": "5e2e4e61da09257d71fe1fc0",
+            "shortCode": "L7TR5X",
+            "name": "FOCUS Homeschool",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "9312 Vanguard Dr"
+        },
+        {
+            "orgId": "5e2e4e61da09257d71fe1fc1",
+            "shortCode": "GSSN38",
+            "name": "Fort Yukon School",
+            "city": "Fort Yukon",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 129"
+        },
+        {
+            "orgId": "5e2e4e61da09257d71fe1fc7",
+            "shortCode": "QKWUBH",
+            "name": "Gambell School",
+            "city": "Gambell",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 169"
+        },
+        {
+            "orgId": "5e2e4e61da09257d71fe1fc8",
+            "shortCode": "YY9R98",
+            "name": "George H. Gilson Middle School",
+            "city": "Valdez",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 398"
+        },
+        {
+            "orgId": "5e2e4e61da09257d71fe1fc9",
+            "shortCode": "NKMM2A",
+            "name": "George Morgan Sr. H.S.",
+            "city": "Kalskag",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 30"
+        },
+        {
+            "orgId": "5e2e4e61da09257d71fe1fca",
+            "shortCode": "NA9WKU",
+            "name": "Gerstle River School",
+            "city": "Delta Junction",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 369"
+        },
+        {
+            "orgId": "5e2e4e61da09257d71fe1fcb",
+            "shortCode": "MBZCAL",
+            "name": "Girdwood School",
+            "city": "Girdwood",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 189"
+        },
+        {
+            "orgId": "5e2e4e61da09257d71fe1fcd",
+            "shortCode": "BJUD4H",
+            "name": "Glacier View School",
+            "city": "Sutton",
+            "stateCode": "AK",
+            "media": [],
+            "address": "65975 S Wolverine Circle"
+        },
+        {
+            "orgId": "5e2e4e62da09257d71fe1fce",
+            "shortCode": "37YJ8C",
+            "name": "Gladys Dart School",
+            "city": "Manley Hot Springs",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 29"
+        },
+        {
+            "orgId": "5e2e4e62da09257d71fe1fd2",
+            "shortCode": "Q5R9EK",
+            "name": "Glennallen Jr/Sr High School",
+            "city": "Glennallen",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 108"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e124",
+            "shortCode": "QJJEMR",
+            "name": "GOLDEN HEART CHRISTIAN SCHOOL",
+            "city": "FAIRBANKS",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO BOX 82997"
+        },
+        {
+            "orgId": "5e2e4e62da09257d71fe1fd4",
+            "shortCode": "QURHX2",
+            "name": "Goldenview Middle School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "15800 Goldenview Dr"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e125",
+            "shortCode": "J9MHWQ",
+            "name": "GRACE CHRISTIAN SCHOOL",
+            "city": "ANCHORAGE",
+            "stateCode": "AK",
+            "media": [],
+            "address": "12407 PINTAIL ST"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e126",
+            "shortCode": "XNNP4T",
+            "name": "GRACE EVANGELICAL LUTHERAN SCHOOL",
+            "city": "KENAI",
+            "stateCode": "AK",
+            "media": [],
+            "address": "47585 CIECHANSKI RD"
+        },
+        {
+            "orgId": "5e2e4e62da09257d71fe1fd7",
+            "shortCode": "T7GXJD",
+            "name": "Gruening Middle School",
+            "city": "Eagle River",
+            "stateCode": "AK",
+            "media": [],
+            "address": "9601 Lee St"
+        },
+        {
+            "orgId": "5e2e4e62da09257d71fe1fd8",
+            "shortCode": "HXJV7K",
+            "name": "Gustavus School",
+            "city": "Gustavus",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 120"
+        },
+        {
+            "orgId": "5e2e4e62da09257d71fe1fd9",
+            "shortCode": "QW3AY2",
+            "name": "Gusty Michael School",
+            "city": "Stony River",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e62da09257d71fe1fdb",
+            "shortCode": "4RJZCP",
+            "name": "Haines High School",
+            "city": "Haines",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 1289"
+        },
+        {
+            "orgId": "5e2e4e62da09257d71fe1fdc",
+            "shortCode": "R75HTT",
+            "name": "Haines Home School",
+            "city": "Haines",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 1289"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e127",
+            "shortCode": "4L9WG8",
+            "name": "HAMILTON ACRES BAPTIST SCHOOL",
+            "city": "FAIRBANKS",
+            "stateCode": "AK",
+            "media": [],
+            "address": "138 FAREWELL AVE"
+        },
+        {
+            "orgId": "5e2e4e62da09257d71fe1fdd",
+            "shortCode": "9TBQWX",
+            "name": "Hanshew Middle School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "10121 Lake Otis Pkwy"
+        },
+        {
+            "orgId": "5e2e4e63da09257d71fe1fdf",
+            "shortCode": "ZL6FK8",
+            "name": "Harold Kaveolook School",
+            "city": "Kaktovik",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 20"
+        },
+        {
+            "orgId": "5e2e4e63da09257d71fe1fe2",
+            "shortCode": "F5HQDT",
+            "name": "Hogarth Kingeekuk Sr. Memorial School",
+            "city": "Savoonga",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 200"
+        },
+        {
+            "orgId": "5e2e4e63da09257d71fe1fe3",
+            "shortCode": "F2BUZX",
+            "name": "Hollis School",
+            "city": "Craig",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 803"
+        },
+        {
+            "orgId": "5e2e4e63da09257d71fe1fe4",
+            "shortCode": "8JEU9E",
+            "name": "Holy Cross School",
+            "city": "Holy Cross",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 210"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e128",
+            "shortCode": "2Z4US4",
+            "name": "HOLY NAME CATHOLIC SCHOOL",
+            "city": "KETCHIKAN",
+            "stateCode": "AK",
+            "media": [],
+            "address": "433 JACKSON ST"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e129",
+            "shortCode": "6FFUD2",
+            "name": "HOLY ROSARY ACADEMY",
+            "city": "ANCHORAGE",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1010 W FIREWEED LN"
+        },
+        {
+            "orgId": "5e2e4e63da09257d71fe1fe5",
+            "shortCode": "ZA9BNE",
+            "name": "HomeBRIDGE",
+            "city": "Juneau",
+            "stateCode": "AK",
+            "media": [],
+            "address": "10014 Crazy Horse Dr"
+        },
+        {
+            "orgId": "5e2e4e63da09257d71fe1fe6",
+            "shortCode": "9UT4ET",
+            "name": "Homer Flex School",
+            "city": "Homer",
+            "stateCode": "AK",
+            "media": [],
+            "address": "4122 Ben Walters Ln"
+        },
+        {
+            "orgId": "5e2e4e63da09257d71fe1fe7",
+            "shortCode": "NZYXWQ",
+            "name": "Homer Middle School",
+            "city": "Homer",
+            "stateCode": "AK",
+            "media": [],
+            "address": "500 Sterling Hwy"
+        },
+        {
+            "orgId": "5e2e4e63da09257d71fe1fea",
+            "shortCode": "LRRQ5Y",
+            "name": "Hoonah Jr/Sr High School",
+            "city": "Hoonah",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 157"
+        },
+        {
+            "orgId": "5e2e4e63da09257d71fe1feb",
+            "shortCode": "QCUVJY",
+            "name": "Hooper Bay School",
+            "city": "Hooper Bay",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 249"
+        },
+        {
+            "orgId": "5e2e4e64da09257d71fe1fec",
+            "shortCode": "G5JEA9",
+            "name": "Hope School",
+            "city": "Hope",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 47"
+        },
+        {
+            "orgId": "5e2e4e64da09257d71fe1fee",
+            "shortCode": "3R5W3W",
+            "name": "Houston High School",
+            "city": "Houston",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 940315"
+        },
+        {
+            "orgId": "5e2e4e64da09257d71fe1fef",
+            "shortCode": "TF52JY",
+            "name": "Houston Middle School",
+            "city": "Big Lake",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 520920"
+        },
+        {
+            "orgId": "5e2e4e64da09257d71fe1ff0",
+            "shortCode": "RLVGAH",
+            "name": "Howard Valentine Coffman Cove School",
+            "city": "Coffman Cove",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 18002"
+        },
+        {
+            "orgId": "5e2e4e64da09257d71fe1ff3",
+            "shortCode": "M98ANV",
+            "name": "Hutchison High School",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "3750 Geist Rd"
+        },
+        {
+            "orgId": "5e2e4e64da09257d71fe1ff4",
+            "shortCode": "NJK8W8",
+            "name": "Hydaburg School",
+            "city": "Hydaburg",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 109"
+        },
+        {
+            "orgId": "5e2e4e64da09257d71fe1ff5",
+            "shortCode": "JEPHGG",
+            "name": "Hyder School",
+            "city": "Hyder",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 130"
+        },
+        {
+            "orgId": "5e2e4e64da09257d71fe1ff7",
+            "shortCode": "9RRKVN",
+            "name": "Igiugig School",
+            "city": "Igiugig",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e12a",
+            "shortCode": "XCG9KK",
+            "name": "IMMACULATE CONCEPTION SCHOOL",
+            "city": "FAIRBANKS",
+            "stateCode": "AK",
+            "media": [],
+            "address": "615 MONROE ST"
+        },
+        {
+            "orgId": "5e2e4e65da09257d71fe1ff9",
+            "shortCode": "VGZ4R4",
+            "name": "Innoko River School",
+            "city": "Shageluk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 49"
+        },
+        {
+            "orgId": "5e2e4e65da09257d71fe1ffa",
+            "shortCode": "CVVKN6",
+            "name": "Interior Distance Education of Alaska (IDEA)",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2157 Van Horn Rd"
+        },
+        {
+            "orgId": "5e2e4e65da09257d71fe1ffb",
+            "shortCode": "X2LLNM",
+            "name": "Jack Egnaty Sr. School",
+            "city": "Sleetmute",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 69"
+        },
+        {
+            "orgId": "5e2e4e65da09257d71fe1ffc",
+            "shortCode": "96NUBV",
+            "name": "James C. Isabell School",
+            "city": "Teller",
+            "stateCode": "AK",
+            "media": [],
+            "address": "100 Airport Ave"
+        },
+        {
+            "orgId": "5e2e4e65da09257d71fe1ffd",
+            "shortCode": "GK8KYD",
+            "name": "Jimmy Huntington School",
+            "city": "Huslia",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 110"
+        },
+        {
+            "orgId": "5e2e4e65da09257d71fe1ffe",
+            "shortCode": "AX3UP9",
+            "name": "Joann A. Alexie Memorial School",
+            "city": "Atmautluak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box ATT"
+        },
+        {
+            "orgId": "5e2e4e65da09257d71fe1fff",
+            "shortCode": "39UCE7",
+            "name": "Joe Redington Senior Jr/Sr High School",
+            "city": "Wasilla",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 877130"
+        },
+        {
+            "orgId": "5e2e4e65da09257d71fe2000",
+            "shortCode": "5BGM5J",
+            "name": "John Fredson School",
+            "city": "Venetie",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 881039"
+        },
+        {
+            "orgId": "5e2e4e65da09257d71fe2002",
+            "shortCode": "3RTGHA",
+            "name": "Johnnie John Sr. School",
+            "city": "Crooked Creek",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 20"
+        },
+        {
+            "orgId": "5e2e4e65da09257d71fe2003",
+            "shortCode": "JS57ZJ",
+            "name": "Johnny Oldman School",
+            "city": "Hughes",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 30"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e12d",
+            "shortCode": "QP9Y9D",
+            "name": "JUNEAU SDA CHRISTIAN SCHOOL",
+            "city": "JUNEAU",
+            "stateCode": "AK",
+            "media": [],
+            "address": "4890 GLACIER HWY"
+        },
+        {
+            "orgId": "5e2e4e66da09257d71fe2009",
+            "shortCode": "89YMJX",
+            "name": "Juneau-Douglas High School",
+            "city": "Juneau",
+            "stateCode": "AK",
+            "media": [],
+            "address": "10014 Crazy Horse Dr"
+        },
+        {
+            "orgId": "5e2e4e66da09257d71fe200a",
+            "shortCode": "RCGBQH",
+            "name": "Kachemak Selo School",
+            "city": "Fritz Creek",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 15007"
+        },
+        {
+            "orgId": "5e2e4e66da09257d71fe200c",
+            "shortCode": "8TJEK8",
+            "name": "Kaleidoscope School of Arts & Science",
+            "city": "Kenai",
+            "stateCode": "AK",
+            "media": [],
+            "address": "549 N Forest Dr"
+        },
+        {
+            "orgId": "5e2e4e66da09257d71fe200d",
+            "shortCode": "WQ32D7",
+            "name": "Kali School",
+            "city": "Point Lay",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 59077"
+        },
+        {
+            "orgId": "5e2e4e66da09257d71fe200f",
+            "shortCode": "6L2649",
+            "name": "Kaltag School",
+            "city": "Kaltag",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 30"
+        },
+        {
+            "orgId": "5e2e4e67da09257d71fe2010",
+            "shortCode": "ZFDU9L",
+            "name": "Karluk School",
+            "city": "Karluk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e67da09257d71fe2013",
+            "shortCode": "KTFAJ6",
+            "name": "Kenai Alternative High School",
+            "city": "Kenai",
+            "stateCode": "AK",
+            "media": [],
+            "address": "705 Frontage Road #c"
+        },
+        {
+            "orgId": "5e2e4e67da09257d71fe2014",
+            "shortCode": "K5E7KT",
+            "name": "Kenai Central High School",
+            "city": "Kenai",
+            "stateCode": "AK",
+            "media": [],
+            "address": "9583 Kenai Spur Hwy"
+        },
+        {
+            "orgId": "5e2e4e67da09257d71fe2015",
+            "shortCode": "9XNC5V",
+            "name": "Kenai Middle School",
+            "city": "Kenai",
+            "stateCode": "AK",
+            "media": [],
+            "address": "201 Tinker Lane"
+        },
+        {
+            "orgId": "5e2e4e67da09257d71fe2016",
+            "shortCode": "325934",
+            "name": "Kenny Lake School",
+            "city": "Copper Center",
+            "stateCode": "AK",
+            "media": [],
+            "address": "HC 60 Box 224"
+        },
+        {
+            "orgId": "5e2e4e67da09257d71fe2017",
+            "shortCode": "TU77UC",
+            "name": "Ket'acik/Aapalluk Memorial School",
+            "city": "Kwethluk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 150"
+        },
+        {
+            "orgId": "5e2e4e67da09257d71fe2019",
+            "shortCode": "D8TPDE",
+            "name": "Ketchikan High School",
+            "city": "Ketchikan",
+            "stateCode": "AK",
+            "media": [],
+            "address": "333 Schoenbar Rd"
+        },
+        {
+            "orgId": "5e2e4e67da09257d71fe201a",
+            "shortCode": "VFCE3Q",
+            "name": "Kiana School",
+            "city": "Kiana",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 190"
+        },
+        {
+            "orgId": "5e2e4e67da09257d71fe201b",
+            "shortCode": "8V9N9C",
+            "name": "Kiita Learning Community",
+            "city": "Utqiagvik",
+            "stateCode": "AK",
+            "media": [],
+            "address": "P O Box 169"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe201e",
+            "shortCode": "LJC7B5",
+            "name": "King Cove School",
+            "city": "King Cove",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 69"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe2020",
+            "shortCode": "G8KCP8",
+            "name": "Klawock City School",
+            "city": "Klawock",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 9"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe2021",
+            "shortCode": "ECBKG9",
+            "name": "Klukwan School",
+            "city": "Haines",
+            "stateCode": "AK",
+            "media": [],
+            "address": "HCO 60 Box 2222"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe2023",
+            "shortCode": "X3WACC",
+            "name": "Kobuk School",
+            "city": "Kobuk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 40"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e12e",
+            "shortCode": "YJE8LU",
+            "name": "KODIAK CHRISTIAN SCHOOL",
+            "city": "KODIAK",
+            "stateCode": "AK",
+            "media": [],
+            "address": "3300 REZANOF DR E"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe2024",
+            "shortCode": "LHB72E",
+            "name": "Kodiak High School",
+            "city": "Kodiak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "722 Mill Bay Rd"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe2025",
+            "shortCode": "Q39QGR",
+            "name": "Kodiak Middle School",
+            "city": "Kodiak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "722 Mill Bay Rd"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe2026",
+            "shortCode": "4DDHV5",
+            "name": "Kokhanok School",
+            "city": "Kokhanok",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe2027",
+            "shortCode": "6VNHM7",
+            "name": "Koliganek School",
+            "city": "Koliganek",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 5052"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe2028",
+            "shortCode": "2SCK8K",
+            "name": "Kotlik School",
+            "city": "Kotlik",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 20129"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe2029",
+            "shortCode": "XAK426",
+            "name": "Kotzebue Middle/High School",
+            "city": "Kotzebue",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 264"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe202a",
+            "shortCode": "6WF4SJ",
+            "name": "Koyuk-Malimiut School",
+            "city": "Koyuk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 53009"
+        },
+        {
+            "orgId": "5e2e4e68da09257d71fe202b",
+            "shortCode": "SVU79V",
+            "name": "Kuinerrarmiut Elitnaurviat",
+            "city": "Quinhagak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 49"
+        },
+        {
+            "orgId": "5e2e4e69da09257d71fe202d",
+            "shortCode": "RKHGHB",
+            "name": "Kwigillingok School",
+            "city": "Kwigillingok",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 109"
+        },
+        {
+            "orgId": "5e2e4e69da09257d71fe2031",
+            "shortCode": "PZ5TT6",
+            "name": "Lakeview Home School",
+            "city": "King Salmon",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 498"
+        },
+        {
+            "orgId": "5e2e4e69da09257d71fe2032",
+            "shortCode": "JCLCHT",
+            "name": "Larsen Bay School",
+            "city": "Larsen Bay",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 70"
+        },
+        {
+            "orgId": "5e2e4e69da09257d71fe2034",
+            "shortCode": "4C2M2R",
+            "name": "Lathrop High School",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "901 Airport Way"
+        },
+        {
+            "orgId": "5e2e4e69da09257d71fe2035",
+            "shortCode": "TWLL8J",
+            "name": "LEAD Correspondence",
+            "city": "Yakutat",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 429"
+        },
+        {
+            "orgId": "5e2e4e69da09257d71fe2036",
+            "shortCode": "TX9WUN",
+            "name": "Levelock School",
+            "city": "Levelock",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e69da09257d71fe2037",
+            "shortCode": "AJ8JVN",
+            "name": "Lewis Angapak Memorial School",
+            "city": "Tuntutuliak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 8087"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e130",
+            "shortCode": "MW8J4U",
+            "name": "LUMEN CHRISTI HIGH SCHOOL",
+            "city": "ANCHORAGE",
+            "stateCode": "AK",
+            "media": [],
+            "address": "8110D JEWEL LAKE RD"
+        },
+        {
+            "orgId": "5e2e4e69da09257d71fe2039",
+            "shortCode": "CTD5NM",
+            "name": "Manokotak School",
+            "city": "Manokotak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 30"
+        },
+        {
+            "orgId": "5e2e4e69da09257d71fe203a",
+            "shortCode": "UVPQJZ",
+            "name": "Marathon School",
+            "city": "Kenai",
+            "stateCode": "AK",
+            "media": [],
+            "address": "405 Marathon Rd"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe203b",
+            "shortCode": "VYJEF4",
+            "name": "Marshall School",
+            "city": "Marshall",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 89"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe203c",
+            "shortCode": "LAANLP",
+            "name": "Martin L. Olson School",
+            "city": "Golovin",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 62040"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe203d",
+            "shortCode": "9QGKMK",
+            "name": "Mat-Su Career & Tech Ed High School",
+            "city": "Wasilla",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2472 N Seward Meridian Pkwy"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe203e",
+            "shortCode": "RJHPZY",
+            "name": "Mat-Su Central School",
+            "city": "Wasilla",
+            "stateCode": "AK",
+            "media": [],
+            "address": "600 E Railroad Ave #6"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe203f",
+            "shortCode": "T75X9W",
+            "name": "Mat-Su Day School",
+            "city": "Wasilla",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2360 N Tait Dr"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe2040",
+            "shortCode": "5RW49U",
+            "name": "Mat-Su Middle College School",
+            "city": "Palmer",
+            "stateCode": "AK",
+            "media": [],
+            "address": "8295 East College Drive"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe2041",
+            "shortCode": "WHEVGN",
+            "name": "Mat-Su Youth Facility",
+            "city": "Palmer",
+            "stateCode": "AK",
+            "media": [],
+            "address": "581 S Outer Springer Lp"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe2042",
+            "shortCode": "52JF6E",
+            "name": "Maudrey J. Sommer School",
+            "city": "Tanana",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 89"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe2043",
+            "shortCode": "JYACUC",
+            "name": "McGrath School",
+            "city": "McGrath",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 290"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe2044",
+            "shortCode": "M77NCN",
+            "name": "McLaughlin Secondary School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2600 Providence Dr"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe2046",
+            "shortCode": "XMVJJF",
+            "name": "McQueen School",
+            "city": "Kivalina",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e6ada09257d71fe2047",
+            "shortCode": "TJHZNL",
+            "name": "Meade River School",
+            "city": "Atqasuk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 91030"
+        },
+        {
+            "orgId": "5e2e4e6bda09257d71fe2049",
+            "shortCode": "6HU5YT",
+            "name": "Mears Middle School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2700 W 100th"
+        },
+        {
+            "orgId": "5e2e4e6bda09257d71fe204a",
+            "shortCode": "HR742Y",
+            "name": "Mendenhall River Community School",
+            "city": "Juneau",
+            "stateCode": "AK",
+            "media": [],
+            "address": "10014 Crazy Horse Dr"
+        },
+        {
+            "orgId": "5e2e4e6bda09257d71fe204b",
+            "shortCode": "WDPT5D",
+            "name": "Mentasta Lake School",
+            "city": "Mentasta Lake",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 6039"
+        },
+        {
+            "orgId": "5e2e4e6bda09257d71fe204c",
+            "shortCode": "DJE2AY",
+            "name": "Merreline A Kangas School",
+            "city": "Ruby",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 68110"
+        },
+        {
+            "orgId": "5e2e4e6bda09257d71fe204d",
+            "shortCode": "J5GZLT",
+            "name": "Meshik School",
+            "city": "Port Heiden",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e6bda09257d71fe204e",
+            "shortCode": "XY26M6",
+            "name": "Metlakatla High School",
+            "city": "Metlakatla",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 7"
+        },
+        {
+            "orgId": "5e2e4e6bda09257d71fe2051",
+            "shortCode": "KHZH59",
+            "name": "Mikelnguut Elitnaurviat",
+            "city": "Bethel",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 900"
+        },
+        {
+            "orgId": "5e2e4e6bda09257d71fe2052",
+            "shortCode": "RA9TZC",
+            "name": "Minto School",
+            "city": "Minto",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 81"
+        },
+        {
+            "orgId": "5e2e4e6cda09257d71fe2053",
+            "shortCode": "3BSZXG",
+            "name": "Mirror Lake Middle School",
+            "city": "Chugiak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "22901 Lake Hill Dr"
+        },
+        {
+            "orgId": "5e2e4e6cda09257d71fe2054",
+            "shortCode": "CMZVDF",
+            "name": "Mitkof Middle School",
+            "city": "Petersburg",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 289"
+        },
+        {
+            "orgId": "5e2e4e6cda09257d71fe2056",
+            "shortCode": "8UTH7X",
+            "name": "Moose Pass School",
+            "city": "Moose Pass",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 46"
+        },
+        {
+            "orgId": "5e2e4e6cda09257d71fe2058",
+            "shortCode": "NZDX69",
+            "name": "Mountain Village School",
+            "city": "Mountain Village",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 32105"
+        },
+        {
+            "orgId": "5e2e4e6cda09257d71fe205a",
+            "shortCode": "JDJQJ7",
+            "name": "Mt. Edgecumbe High School",
+            "city": "Sitka",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1330 Seward Ave"
+        },
+        {
+            "orgId": "5e2e4e6cda09257d71fe205f",
+            "shortCode": "W6QNQ5",
+            "name": "Nanwalek School",
+            "city": "Nanwalek",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 8007"
+        },
+        {
+            "orgId": "5e2e4e6cda09257d71fe2060",
+            "shortCode": "MZ8BQT",
+            "name": "Napaaqtugmiut School",
+            "city": "Noatak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 49"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe2061",
+            "shortCode": "WXKXQ5",
+            "name": "Naukati School",
+            "city": "Naukati",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box NKI"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe2062",
+            "shortCode": "Y5KC4A",
+            "name": "Negtemiut Elitnaurviat School",
+            "city": "Nightmute",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe2063",
+            "shortCode": "FGHBTR",
+            "name": "Nelson Island Area School",
+            "city": "Toksook Bay",
+            "stateCode": "AK",
+            "media": [],
+            "address": "101 Sunny Side Rd"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe2064",
+            "shortCode": "CCB7YN",
+            "name": "Nenana City School",
+            "city": "Nenana",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 10"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe2065",
+            "shortCode": "QM38D3",
+            "name": "Newhalen School",
+            "city": "Iliamna",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe2066",
+            "shortCode": "8DGVZV",
+            "name": "Nicholas J. Begich Middle School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "7440 Creekside Center Dr"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe2067",
+            "shortCode": "SVZFYT",
+            "name": "Nikiski Middle/Senior High School",
+            "city": "Nikiski",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 7112"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe2069",
+            "shortCode": "4B8W2G",
+            "name": "Nikolaevsk School",
+            "city": "Nikolaevsk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 5129"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe206a",
+            "shortCode": "KZ9CAT",
+            "name": "Ninilchik School",
+            "city": "Ninilchik",
+            "stateCode": "AK",
+            "media": [],
+            "address": "15735 Sterling Hwy"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe206c",
+            "shortCode": "U6CTPA",
+            "name": "Nome Youth Facility",
+            "city": "Nome",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 131"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe206d",
+            "shortCode": "FKMK4W",
+            "name": "Nome-Beltz Jr/Sr High",
+            "city": "Nome",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 131"
+        },
+        {
+            "orgId": "5e2e4e6dda09257d71fe206e",
+            "shortCode": "SAPFZH",
+            "name": "Nondalton School",
+            "city": "Nondalton",
+            "stateCode": "AK",
+            "media": [],
+            "address": "100 School Rd"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e131",
+            "shortCode": "FMFSCL",
+            "name": "NORTH POLE CHRISTIAN SCHOOL",
+            "city": "NORTH POLE",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2936 BADGER RD"
+        },
+        {
+            "orgId": "5e2e4e6eda09257d71fe2071",
+            "shortCode": "ERM3TH",
+            "name": "North Pole High School",
+            "city": "North Pole",
+            "stateCode": "AK",
+            "media": [],
+            "address": "601 NPHS Blvd"
+        },
+        {
+            "orgId": "5e2e4e6eda09257d71fe2072",
+            "shortCode": "MSQ4U4",
+            "name": "North Pole Middle School",
+            "city": "North Pole",
+            "stateCode": "AK",
+            "media": [],
+            "address": "300 East 8th Ave"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e132",
+            "shortCode": "GGNZTF",
+            "name": "NORTHERN LIGHT MENNONITE SCHOOL",
+            "city": "WASILLA",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO BOX 879031"
+        },
+        {
+            "orgId": "5e2e4e6eda09257d71fe2075",
+            "shortCode": "KU8U4X",
+            "name": "Northern Lights ABC K-8 School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2424 East Dowling Rd"
+        },
+        {
+            "orgId": "5e2e4e6eda09257d71fe2076",
+            "shortCode": "UAZVTY",
+            "name": "Northwood ABC",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "4807 Northwood Dr"
+        },
+        {
+            "orgId": "5e2e4e6eda09257d71fe2077",
+            "shortCode": "6TPHA6",
+            "name": "Nuiqsut Trapper School",
+            "city": "Nuiqsut",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 89167"
+        },
+        {
+            "orgId": "5e2e4e6eda09257d71fe2079",
+            "shortCode": "LVMWKN",
+            "name": "Nunam Iqua School",
+            "city": "Nunam Iqua",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 32"
+        },
+        {
+            "orgId": "5e2e4e6eda09257d71fe207a",
+            "shortCode": "XY2KJ6",
+            "name": "Nunamiut School",
+            "city": "Anaktuvuk Pass",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 21029"
+        },
+        {
+            "orgId": "5e2e4e6eda09257d71fe207b",
+            "shortCode": "4TD7ZJ",
+            "name": "Nuniwarmiut School",
+            "city": "Mekoryuk",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 49"
+        },
+        {
+            "orgId": "5e2e4e6eda09257d71fe207c",
+            "shortCode": "JXZEEA",
+            "name": "NWABSD Home School",
+            "city": "Kotzebue",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 51"
+        },
+        {
+            "orgId": "5e2e4e6fda09257d71fe207f",
+            "shortCode": "NVA5EX",
+            "name": "Old Harbor School",
+            "city": "Old Harbor",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 49"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e133",
+            "shortCode": "RRPZZE",
+            "name": "OUR LADY OF THE VALLEY CATHOLIC SCHOOL",
+            "city": "WASILLA",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1201 E BOGARD RD"
+        },
+        {
+            "orgId": "5e2e4e6fda09257d71fe2081",
+            "shortCode": "Y2RX59",
+            "name": "Ouzinkie School",
+            "city": "Ouzinkie",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 49"
+        },
+        {
+            "orgId": "5e2e4e6fda09257d71fe2082",
+            "shortCode": "UQD4KA",
+            "name": "PACE Correspondence",
+            "city": "Craig",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 800"
+        },
+        {
+            "orgId": "5e2e4e6fda09257d71fe2083",
+            "shortCode": "S5H637",
+            "name": "Pacific High School",
+            "city": "Sitka",
+            "stateCode": "AK",
+            "media": [],
+            "address": "509 Lincoln"
+        },
+        {
+            "orgId": "5e2e4e6fda09257d71fe2084",
+            "shortCode": "GWWJJG",
+            "name": "PAIDEIA Cooperative School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "616 W 10th Ave"
+        },
+        {
+            "orgId": "5e2e4e6fda09257d71fe2085",
+            "shortCode": "XPQK3Q",
+            "name": "Palmer High School",
+            "city": "Palmer",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1170 W Bogard Rd"
+        },
+        {
+            "orgId": "5e2e4e6fda09257d71fe2086",
+            "shortCode": "DA8BH2",
+            "name": "Palmer Middle School",
+            "city": "Palmer",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1159 S Chugach"
+        },
+        {
+            "orgId": "5e2e4e6fda09257d71fe2088",
+            "shortCode": "D2GXDG",
+            "name": "Paul T. Albert Memorial School",
+            "city": "Tununak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 49"
+        },
+        {
+            "orgId": "5e2e4e6fda09257d71fe208a",
+            "shortCode": "SAPQWM",
+            "name": "Pelican School",
+            "city": "Pelican",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 90"
+        },
+        {
+            "orgId": "5e2e4e6fda09257d71fe208b",
+            "shortCode": "5SB66B",
+            "name": "Perryville School",
+            "city": "Perryville",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e70da09257d71fe208c",
+            "shortCode": "LZAJCW",
+            "name": "Petersburg High School",
+            "city": "Petersburg",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 289"
+        },
+        {
+            "orgId": "5e2e4e70da09257d71fe208e",
+            "shortCode": "TN2GU2",
+            "name": "Pilot Point School",
+            "city": "Pilot Point",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e70da09257d71fe208f",
+            "shortCode": "5849KH",
+            "name": "Pilot Station School",
+            "city": "Pilot Station",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 5090"
+        },
+        {
+            "orgId": "5e2e4e70da09257d71fe2091",
+            "shortCode": "R6838W",
+            "name": "Point Higgins School",
+            "city": "Ketchikan",
+            "stateCode": "AK",
+            "media": [],
+            "address": "333 Schoenbar Rd"
+        },
+        {
+            "orgId": "5e2e4e70da09257d71fe2092",
+            "shortCode": "VSVLTH",
+            "name": "Polaris K-12 School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "6200 Ashwood St"
+        },
+        {
+            "orgId": "5e2e4e70da09257d71fe2093",
+            "shortCode": "UZAAAC",
+            "name": "Port Alexander School",
+            "city": "Port Alexander",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 8170"
+        },
+        {
+            "orgId": "5e2e4e70da09257d71fe2094",
+            "shortCode": "G5B6MD",
+            "name": "Port Graham School",
+            "city": "Port Graham",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 5550"
+        },
+        {
+            "orgId": "5e2e4e70da09257d71fe2095",
+            "shortCode": "8MZC9S",
+            "name": "Port Lions School",
+            "city": "Port Lions",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 109"
+        },
+        {
+            "orgId": "5e2e4e70da09257d71fe2096",
+            "shortCode": "KLK6UQ",
+            "name": "PSD Correspondence Program",
+            "city": "St. George",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e70da09257d71fe2098",
+            "shortCode": "WFRCLF",
+            "name": "Qugcuun Memorial School",
+            "city": "Napaskiak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 6199"
+        },
+        {
+            "orgId": "5e2e4e71da09257d71fe209b",
+            "shortCode": "LF7M57",
+            "name": "Rampart School",
+            "city": "Rampart",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e71da09257d71fe209c",
+            "shortCode": "BUZTGV",
+            "name": "Randy Smith Middle School",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1401 Bainbridge"
+        },
+        {
+            "orgId": "5e2e4e71da09257d71fe209d",
+            "shortCode": "7528MA",
+            "name": "Raven School",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "4762 Old Airport Way"
+        },
+        {
+            "orgId": "5e2e4e71da09257d71fe209f",
+            "shortCode": "ENAP7L",
+            "name": "Razdolna School",
+            "city": "Homer",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 15098"
+        },
+        {
+            "orgId": "5e2e4e71da09257d71fe20a1",
+            "shortCode": "KDZLB4",
+            "name": "Revilla Jr/Sr High School",
+            "city": "Ketchikan",
+            "stateCode": "AK",
+            "media": [],
+            "address": "333 Schoenbar Rd"
+        },
+        {
+            "orgId": "5e2e4e71da09257d71fe20a6",
+            "shortCode": "V4VRF7",
+            "name": "Rocky Mountain School",
+            "city": "Goodnews Bay",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 153"
+        },
+        {
+            "orgId": "5e2e4e72da09257d71fe20a8",
+            "shortCode": "YFTR89",
+            "name": "Romig Middle School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2500 Minnesota Dr"
+        },
+        {
+            "orgId": "5e2e4e72da09257d71fe20aa",
+            "shortCode": "3KZZJV",
+            "name": "Russian Mission School",
+            "city": "Russian Mission",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 90"
+        },
+        {
+            "orgId": "5e2e4e72da09257d71fe20ab",
+            "shortCode": "9D6DZC",
+            "name": "Ryan Middle School",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "951 Airport Way"
+        },
+        {
+            "orgId": "5e2e4e72da09257d71fe20ad",
+            "shortCode": "5KTH49",
+            "name": "Saint Mary's School",
+            "city": "Saint Mary's",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 9"
+        },
+        {
+            "orgId": "5e2e4e72da09257d71fe20b0",
+            "shortCode": "6HAAQJ",
+            "name": "Sand Point School",
+            "city": "Sand Point",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 269"
+        },
+        {
+            "orgId": "5e2e4e72da09257d71fe20ac",
+            "shortCode": "XMXB2U",
+            "name": "S.A.V.E. High School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "410 East 56th"
+        },
+        {
+            "orgId": "5e2e4e72da09257d71fe20b1",
+            "shortCode": "EL3RPJ",
+            "name": "Say?ik: Gastineau Community School",
+            "city": "Juneau",
+            "stateCode": "AK",
+            "media": [],
+            "address": "10014 Crazy Horse Dr"
+        },
+        {
+            "orgId": "5e2e4e72da09257d71fe20b2",
+            "shortCode": "EJ5MU4",
+            "name": "Scammon Bay School",
+            "city": "Scammon Bay",
+            "stateCode": "AK",
+            "media": [],
+            "address": "103 Askinuk St"
+        },
+        {
+            "orgId": "5e2e4e73da09257d71fe20b4",
+            "shortCode": "CBUNXM",
+            "name": "Schoenbar Middle School",
+            "city": "Ketchikan",
+            "stateCode": "AK",
+            "media": [],
+            "address": "333 Schoenbar Rd"
+        },
+        {
+            "orgId": "5e2e4e73da09257d71fe20b5",
+            "shortCode": "P9TZT6",
+            "name": "SE Island Correspondence",
+            "city": "Thorne Bay",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 19569"
+        },
+        {
+            "orgId": "5e2e4e73da09257d71fe20b6",
+            "shortCode": "ACAKNS",
+            "name": "Service High School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "5577 Abbott Rd"
+        },
+        {
+            "orgId": "5e2e4e73da09257d71fe20b7",
+            "shortCode": "7KQ6WV",
+            "name": "Seward High School",
+            "city": "Seward",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 1049"
+        },
+        {
+            "orgId": "5e2e4e73da09257d71fe20b8",
+            "shortCode": "XWSXGD",
+            "name": "Seward Middle School",
+            "city": "Seward",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 1149"
+        },
+        {
+            "orgId": "5e2e4e73da09257d71fe20b9",
+            "shortCode": "MUB3Q8",
+            "name": "Shaktoolik School",
+            "city": "Shaktoolik",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 40"
+        },
+        {
+            "orgId": "5e2e4e73da09257d71fe20bb",
+            "shortCode": "GAMLL4",
+            "name": "Shishmaref School",
+            "city": "Shishmaref",
+            "stateCode": "AK",
+            "media": [],
+            "address": "#1 Seaview Ln"
+        },
+        {
+            "orgId": "5e2e4e73da09257d71fe20bc",
+            "shortCode": "N7HBEH",
+            "name": "Shungnak School",
+            "city": "Shungnak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 79"
+        },
+        {
+            "orgId": "5e2e4e73da09257d71fe20be",
+            "shortCode": "EVXE9T",
+            "name": "Sidney C. Huntington Jr/Sr High School",
+            "city": "Galena",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 299"
+        },
+        {
+            "orgId": "5e2e4e73da09257d71fe20bf",
+            "shortCode": "M42KHG",
+            "name": "Sitka High School",
+            "city": "Sitka",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1000 Lake St"
+        },
+        {
+            "orgId": "5e2e4e74da09257d71fe20c0",
+            "shortCode": "WGQ8CD",
+            "name": "Sitka REACH",
+            "city": "Sitka",
+            "stateCode": "AK",
+            "media": [],
+            "address": "305 Baranof St"
+        },
+        {
+            "orgId": "5e2e4e74da09257d71fe20c1",
+            "shortCode": "UHLJ5B",
+            "name": "Skagway School",
+            "city": "Skagway",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 497"
+        },
+        {
+            "orgId": "5e2e4e74da09257d71fe20c2",
+            "shortCode": "RABTVK",
+            "name": "Skyview Middle School",
+            "city": "Soldotna",
+            "stateCode": "AK",
+            "media": [],
+            "address": "46188 Sterling Hwy"
+        },
+        {
+            "orgId": "5e2e4e74da09257d71fe20c3",
+            "shortCode": "Z5PFSH",
+            "name": "Slana School",
+            "city": "Slana",
+            "stateCode": "AK",
+            "media": [],
+            "address": "P.O. Box 883"
+        },
+        {
+            "orgId": "5e2e4e74da09257d71fe20c7",
+            "shortCode": "CZ9V98",
+            "name": "Soldotna Prep School",
+            "city": "Soldotna",
+            "stateCode": "AK",
+            "media": [],
+            "address": "426 West Redoubt"
+        },
+        {
+            "orgId": "5e2e4e74da09257d71fe20c8",
+            "shortCode": "44LVCK",
+            "name": "South Anchorage High School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "13400 Elmore Rd"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e137",
+            "shortCode": "HLP6WA",
+            "name": "ST ELIZABETH ANN SETON SCHOOL",
+            "city": "ANCHORAGE",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2901 HUFFMAN RD"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e138",
+            "shortCode": "VG4BL9",
+            "name": "ST JOHN ORTHODOX CHRISTIAN SCHOOL",
+            "city": "EAGLE RIVER",
+            "stateCode": "AK",
+            "media": [],
+            "address": "18940 MONASTERY DR"
+        },
+        {
+            "orgId": "5e2e4e74da09257d71fe20ca",
+            "shortCode": "W8W9CE",
+            "name": "St Paul School",
+            "city": "St. Paul",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 207"
+        },
+        {
+            "orgId": "5e2e4e74da09257d71fe20cb",
+            "shortCode": "VSVDWA",
+            "name": "Star of the North Secondary School",
+            "city": "North Pole",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2945 Monk Ct"
+        },
+        {
+            "orgId": "5e2e4e74da09257d71fe20cc",
+            "shortCode": "42ZHG7",
+            "name": "Steller Secondary School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2508 Blueberry Ln"
+        },
+        {
+            "orgId": "5e2e4e74da09257d71fe20ce",
+            "shortCode": "KGKLFL",
+            "name": "Stikine Middle School",
+            "city": "Wrangell",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 1935"
+        },
+        {
+            "orgId": "5e2e4e74da09257d71fe20cf",
+            "shortCode": "SNKPDV",
+            "name": "Susan B English School",
+            "city": "Seldovia",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 171"
+        },
+        {
+            "orgId": "5e2e4e75da09257d71fe20d1",
+            "shortCode": "CDJBNL",
+            "name": "Susitna Valley High",
+            "city": "Talkeetna",
+            "stateCode": "AK",
+            "media": [],
+            "address": "HC 89 Box 8580"
+        },
+        {
+            "orgId": "5e2e4e75da09257d71fe20d4",
+            "shortCode": "KEAFC5",
+            "name": "Takotna Community School",
+            "city": "Takotna",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 90"
+        },
+        {
+            "orgId": "5e2e4e75da09257d71fe20d7",
+            "shortCode": "U8SM3G",
+            "name": "Tanacross School",
+            "city": "Tanacross",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 76030"
+        },
+        {
+            "orgId": "5e2e4e75da09257d71fe20d9",
+            "shortCode": "2S8SU3",
+            "name": "Tanalian School",
+            "city": "Port Alsworth",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e75da09257d71fe20da",
+            "shortCode": "9BU8EY",
+            "name": "Tanana Middle School",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "600 Trainor Gate Rd"
+        },
+        {
+            "orgId": "5e2e4e75da09257d71fe20db",
+            "shortCode": "UTSERA",
+            "name": "Tatitlek Community School",
+            "city": "Tatitlek",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 167"
+        },
+        {
+            "orgId": "5e2e4e75da09257d71fe20dc",
+            "shortCode": "EGPEW4",
+            "name": "Tebughna School",
+            "city": "Tyonek",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 82010"
+        },
+        {
+            "orgId": "5e2e4e75da09257d71fe20dd",
+            "shortCode": "CPRVFN",
+            "name": "Teeland Middle School",
+            "city": "Wasilla",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2788 N Seward Meridian Pkwy"
+        },
+        {
+            "orgId": "5e2e4e75da09257d71fe20de",
+            "shortCode": "8ZUEHK",
+            "name": "Tetlin School",
+            "city": "Tok",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 277"
+        },
+        {
+            "orgId": "5e2e4e76da09257d71fe20df",
+            "shortCode": "J7GYDH",
+            "name": "The New Path High School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1400 East 4th Ave"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e13a",
+            "shortCode": "NZ66SC",
+            "name": "THE SEER SCHOOL",
+            "city": "SITKA",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO BOX 1031"
+        },
+        {
+            "orgId": "5e2e4e76da09257d71fe20e0",
+            "shortCode": "YZUUV2",
+            "name": "Thorne Bay School",
+            "city": "Thorne Bay",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 19005"
+        },
+        {
+            "orgId": "5e2e4e76da09257d71fe20e1",
+            "shortCode": "MJ8QS8",
+            "name": "Thunder Mountain High School",
+            "city": "Juneau",
+            "stateCode": "AK",
+            "media": [],
+            "address": "10014 Crazy Horse Dr"
+        },
+        {
+            "orgId": "5e2e4e76da09257d71fe20e3",
+            "shortCode": "Z2N79T",
+            "name": "Tikigaq School",
+            "city": "Point Hope",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 148"
+        },
+        {
+            "orgId": "5e2e4e76da09257d71fe20e4",
+            "shortCode": "PPMWC8",
+            "name": "Togiak School",
+            "city": "Togiak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 50"
+        },
+        {
+            "orgId": "5e2e4e76da09257d71fe20e5",
+            "shortCode": "A4SPVY",
+            "name": "Tok School",
+            "city": "Tok",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 249"
+        },
+        {
+            "orgId": "5e2e4e76da09257d71fe20e7",
+            "shortCode": "N4D3VX",
+            "name": "Top of the Kuskokwim School",
+            "city": "Nikolai",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 9190"
+        },
+        {
+            "orgId": "5e2e4e76da09257d71fe20e8",
+            "shortCode": "Z2RABT",
+            "name": "Totem Correspondence School",
+            "city": "Hydaburg",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 109"
+        },
+        {
+            "orgId": "5e2e4e76da09257d71fe20eb",
+            "shortCode": "J7KXDG",
+            "name": "Tri-Valley School",
+            "city": "Healy",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 400"
+        },
+        {
+            "orgId": "5e2e4e76da09257d71fe20ec",
+            "shortCode": "RSVC8X",
+            "name": "Tsuk Taih School",
+            "city": "Chalkyitsik",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e77da09257d71fe20ee",
+            "shortCode": "M94EEF",
+            "name": "Tukurngailnguq School",
+            "city": "Stebbins",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e77da09257d71fe20ef",
+            "shortCode": "7PW2GQ",
+            "name": "Tuluksak School",
+            "city": "Tuluksak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 115"
+        },
+        {
+            "orgId": "5e2e4e77da09257d71fe20f2",
+            "shortCode": "C2LUMX",
+            "name": "Twin Hills School",
+            "city": "Twin Hills",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box TWA"
+        },
+        {
+            "orgId": "5e2e4e77da09257d71fe20f4",
+            "shortCode": "77356M",
+            "name": "Two Rivers School",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "520 Fifth Ave"
+        },
+        {
+            "orgId": "5e2e4e77da09257d71fe20f5",
+            "shortCode": "RL4BTF",
+            "name": "Unalakleet School",
+            "city": "Unalakleet",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 130"
+        },
+        {
+            "orgId": "5e2e4e77da09257d71fe20f6",
+            "shortCode": "E2AQ3P",
+            "name": "Unalaska Jr/Sr High School",
+            "city": "Unalaska",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 570"
+        },
+        {
+            "orgId": "5e2e4e77da09257d71fe20f8",
+            "shortCode": "A7CVQY",
+            "name": "Upstream Learning Correspondence",
+            "city": "Glennallen",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 108"
+        },
+        {
+            "orgId": "5e2e4e77da09257d71fe20fb",
+            "shortCode": "9GHAU6",
+            "name": "Valdez High School",
+            "city": "Valdez",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 398"
+        },
+        {
+            "orgId": "5e2e4e77da09257d71fe20fc",
+            "shortCode": "ASVRPQ",
+            "name": "Valdez Home School",
+            "city": "Valdez",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 398"
+        },
+        {
+            "orgId": "5e2e4e78da09257d71fe20fd",
+            "shortCode": "BRWGAV",
+            "name": "Valley Pathways",
+            "city": "Palmer",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 4897"
+        },
+        {
+            "orgId": "5e2e4e78da09257d71fe20fe",
+            "shortCode": "GMY99J",
+            "name": "Voznesenka School",
+            "city": "Fritz Creek",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 15336"
+        },
+        {
+            "orgId": "5e2e4e78da09257d71fe20ff",
+            "shortCode": "EKMLXM",
+            "name": "Wales School",
+            "city": "Wales",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 490"
+        },
+        {
+            "orgId": "5e2e4e78da09257d71fe2100",
+            "shortCode": "4R7L27",
+            "name": "Walter Northway School",
+            "city": "Northway",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 519"
+        },
+        {
+            "orgId": "5e2e4e78da09257d71fe2101",
+            "shortCode": "J4CWYF",
+            "name": "Wasilla High School",
+            "city": "Wasilla",
+            "stateCode": "AK",
+            "media": [],
+            "address": "701 E Bogard Rd"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e13b",
+            "shortCode": "XUAHED",
+            "name": "WASILLA LAKE CHRISTIAN SCHOOL",
+            "city": "WASILLA",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2001 E PALMER WASILLA HWY"
+        },
+        {
+            "orgId": "5e2e4e78da09257d71fe2102",
+            "shortCode": "LWFH4D",
+            "name": "Wasilla Middle School",
+            "city": "Wasilla",
+            "stateCode": "AK",
+            "media": [],
+            "address": "650 Bogard Rd"
+        },
+        {
+            "orgId": "5e2e4e78da09257d71fe2105",
+            "shortCode": "2R2G2K",
+            "name": "Wendler Middle School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2905 Lake Otis Pkwy"
+        },
+        {
+            "orgId": "5e2e4e78da09257d71fe2106",
+            "shortCode": "M8J8P5",
+            "name": "West High School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "1700 Hillcrest Dr"
+        },
+        {
+            "orgId": "5e2e4e78da09257d71fe2108",
+            "shortCode": "FR9MU9",
+            "name": "West Valley High School",
+            "city": "Fairbanks",
+            "stateCode": "AK",
+            "media": [],
+            "address": "3800 Geist Rd"
+        },
+        {
+            "orgId": "5e2e4e78da09257d71fe2109",
+            "shortCode": "MCA8V5",
+            "name": "Whale Pass School",
+            "city": "Whale Pass",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box WWP"
+        },
+        {
+            "orgId": "5e2e4e79da09257d71fe210a",
+            "shortCode": "B5JZYC",
+            "name": "Whaley School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "2220 Nichols St"
+        },
+        {
+            "orgId": "5e2e4e79da09257d71fe210b",
+            "shortCode": "WQ8G5T",
+            "name": "White Mountain School",
+            "city": "White Mountain",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 55"
+        },
+        {
+            "orgId": "5e2e4e79da09257d71fe210c",
+            "shortCode": "V7KH4G",
+            "name": "Whittier Community School",
+            "city": "Whittier",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 638"
+        },
+        {
+            "orgId": "5e2e4e79da09257d71fe210f",
+            "shortCode": "FCHNKX",
+            "name": "William Miller Memorial School",
+            "city": "Napakiak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 34050"
+        },
+        {
+            "orgId": "5e2e4e79da09257d71fe210d",
+            "shortCode": "EA5EJX",
+            "name": "William \"Sonny\" Nelson School",
+            "city": "Ekwok",
+            "stateCode": "AK",
+            "media": [],
+            "address": "General Delivery"
+        },
+        {
+            "orgId": "5e2e4e79da09257d71fe2114",
+            "shortCode": "PPXZ4V",
+            "name": "Winterberry School",
+            "city": "Anchorage",
+            "stateCode": "AK",
+            "media": [],
+            "address": "4802 Bryn Mawr Ct"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e13d",
+            "shortCode": "35QUTS",
+            "name": "WORLD HARVEST CHRISTIAN SCHOOL",
+            "city": "EAGLE RIVER",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO BOX 770454"
+        },
+        {
+            "orgId": "5e2e4e79da09257d71fe2117",
+            "shortCode": "F2Z9AV",
+            "name": "Wrangell High School",
+            "city": "Wrangell",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 651"
+        },
+        {
+            "orgId": "5e2e4e7ada09257d71fe2118",
+            "shortCode": "VBFGLH",
+            "name": "Yaakoosge Daakahidi Alt. H.S.",
+            "city": "Juneau",
+            "stateCode": "AK",
+            "media": [],
+            "address": "10014 Crazy Horse Dr"
+        },
+        {
+            "orgId": "5e2e4e7ada09257d71fe2119",
+            "shortCode": "GN8ZQQ",
+            "name": "Yakov E. Netsvetov School",
+            "city": "Atka",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 47050"
+        },
+        {
+            "orgId": "5e2e4e7ada09257d71fe211a",
+            "shortCode": "HWGAXP",
+            "name": "Yakutat School",
+            "city": "Yakutat",
+            "stateCode": "AK",
+            "media": [],
+            "address": "Box 429"
+        },
+        {
+            "orgId": "5e2e4e7ada09257d71fe211b",
+            "shortCode": "GRZ2LL",
+            "name": "Yukon Flats Distance Education Program",
+            "city": "Fort Yukon",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 350"
+        },
+        {
+            "orgId": "5e2e4e7ada09257d71fe211c",
+            "shortCode": "EPBUMM",
+            "name": "Z. John Williams Memorial School",
+            "city": "Napaskiak",
+            "stateCode": "AK",
+            "media": [],
+            "address": "PO Box 6089"
+        }
+    ],
+    "totalResults": 355
+}

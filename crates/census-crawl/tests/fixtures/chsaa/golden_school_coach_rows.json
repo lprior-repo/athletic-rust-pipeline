@@ -1,0 +1,402 @@
+[
+  {
+    "school": "Cherry Creek",
+    "person": "Ethan Dusto",
+    "sport": "CrossCountry",
+    "role": "HeadCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Eric Anderson",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Lucas Bond",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Katie Gillilan",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Matt Gracey",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Brian Herf",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Holly Lane",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Olivia Mack",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Charles Remillard",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Jack Swartz",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Ethan Dusto",
+    "sport": "CrossCountry",
+    "role": "HeadCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Eric Anderson",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Katie Gillilan",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Matt Gracey",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Brian Herf",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Holly Lane",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Olivia Mack",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Charles Remillard",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Jack Swartz",
+    "sport": "CrossCountry",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Jack Swartz",
+    "sport": "Track",
+    "role": "HeadCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Lucas Bond",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Jeremy Bubb",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Mikal Chancy",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Lauren Chatwin",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Donald Duvall",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Kelly Faulkner",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Dustin Greenwood",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Ethan Hoff",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Jordan Jasperson",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Rory Leeds",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Ethan Mayfield",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Mark McCarthy",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Sarah Swartz",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Nick Vinson",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Alec Wiater",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Boys",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Jack Swartz",
+    "sport": "Track",
+    "role": "HeadCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Jeremy Bubb",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Mikal Chancy",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Lauren Chatwin",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Donald Duvall",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Kelly Faulkner",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Dustin Greenwood",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Ethan Hoff",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Jordan Jasperson",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Rory Leeds",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Ethan Mayfield",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Mark McCarthy",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Sarah Swartz",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Nick Vinson",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  },
+  {
+    "school": "Cherry Creek",
+    "person": "Alec Wiater",
+    "sport": "Track",
+    "role": "AssistantCoach",
+    "gender": "Girls",
+    "level": "Varsity"
+  }
+]

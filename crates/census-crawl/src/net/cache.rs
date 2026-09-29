@@ -8,30 +8,30 @@ use std::path::{Path, PathBuf};
 const MAX_META_BYTES: usize = 64 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub(super) struct CacheMeta {
-    pub(super) url: String,
-    pub(super) method: String,
-    pub(super) status: u16,
-    pub(super) content_digest: String,
-    pub(super) bytes: usize,
-    pub(super) fetched_at: String,
+pub(crate) struct CacheMeta {
+    pub(crate) url: String,
+    pub(crate) method: String,
+    pub(crate) status: u16,
+    pub(crate) content_digest: String,
+    pub(crate) bytes: usize,
+    pub(crate) fetched_at: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(super) etag: Option<String>,
+    pub(crate) etag: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(super) last_modified: Option<String>,
+    pub(crate) last_modified: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(super) content_type: Option<String>,
+    pub(crate) content_type: Option<String>,
 }
 
 impl Fetcher {
-    pub(super) fn cache_paths(&self, key: &str) -> (PathBuf, PathBuf) {
+    pub(crate) fn cache_paths(&self, key: &str) -> (PathBuf, PathBuf) {
         (
             self.cache_dir.join(format!("{key}.body")),
             self.cache_dir.join(format!("{key}.meta.json")),
         )
     }
 
-    pub(super) fn key_for(method: &str, url: &str, extra: &str) -> String {
+    pub(crate) fn key_for(method: &str, url: &str, extra: &str) -> String {
         let mut hasher = Sha256::new();
         hasher.update(method.as_bytes());
         hasher.update([0x1f]);
@@ -42,7 +42,7 @@ impl Fetcher {
     }
 }
 
-pub(super) fn sha256_prefix16(hasher: Sha256) -> String {
+pub(crate) fn sha256_prefix16(hasher: Sha256) -> String {
     let digest = hasher.finalize();
     let head = match digest.get(..16) {
         Some(head) => head,
@@ -51,7 +51,7 @@ pub(super) fn sha256_prefix16(hasher: Sha256) -> String {
     head.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-pub(super) fn content_digest(body: &[u8]) -> String {
+pub(crate) fn content_digest(body: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(body);
     let d = hasher.finalize();
@@ -99,7 +99,7 @@ fn read_snapshot(reader: &mut impl Read, size: usize) -> std::io::Result<Option<
     }
 }
 
-pub(super) fn read_cache(
+pub(crate) fn read_cache(
     body_path: &Path,
     meta_path: &Path,
 ) -> Result<Option<(CacheMeta, Vec<u8>)>, FetchError> {
@@ -131,7 +131,7 @@ pub(super) fn read_cache(
     Ok(Some((meta, body)))
 }
 
-pub(super) fn write_cache(
+pub(crate) fn write_cache(
     body_path: &Path,
     meta_path: &Path,
     body: &[u8],

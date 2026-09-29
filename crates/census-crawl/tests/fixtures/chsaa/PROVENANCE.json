@@ -1,0 +1,44 @@
+{
+  "source": "chsaa",
+  "captured": "2026-09-27 (census-prototype raw cache)",
+  "fixtures": [
+    {
+      "fixture": "directory.html",
+      "url": "https://chsaanow.com/schools/",
+      "prototype_file": "chsaanow.com__40e1a856a5c5e92c9d387b56",
+      "sha256": "5b6fcae4a8ac9844ba4da74cf23512b00beb1ec30a6dd5078a7c263f229778f9",
+      "bytes": 344492
+    },
+    {
+      "fixture": "school_cherry_creek.html",
+      "url": "https://chsaanow.com/schools/cherry-creek/",
+      "prototype_file": "chsaanow.com__77e77972161ec3e260659b8d",
+      "sha256": "784e16bbabec8e7dfc373b9f8dbb601eb4d281bd3f60310f5362312c59db90da",
+      "bytes": 351964
+    },
+    {
+      "fixture": "robots.txt",
+      "url": "https://chsaanow.com/robots.txt",
+      "prototype_file": "chsaanow.com__7a2cddcff53e3f24106efd5f",
+      "sha256": "79fc8b6901f68cec28bac4e745a40f88c6b28d30ce5e72d0416e9c10ee2ebd07",
+      "bytes": 1130
+    }
+  ],
+  "goldens": [
+    {
+      "file": "golden_directory_rows.json",
+      "generator": "python3 -c \"import sys; sys.path.insert(0,'.'); from parsers import co_chsaanow; import json; print(json.dumps(co_chsaanow.parse(open('raw/chsaanow.com__40e1a856a5c5e92c9d387b56','rb').read())['schools'], indent=2))\"",
+      "rows": 378
+    },
+    {
+      "file": "golden_school_coach_rows.json",
+      "generator": "python3 -c \"import sys; sys.path.insert(0,'.'); from parsers import co_school; import json; print(json.dumps(co_school.parse(open('raw/chsaanow.com__77e77972161ec3e260659b8d','rb').read())['coaches'], indent=2))\"",
+      "rows": 50
+    }
+  ],
+  "url_evidence": {
+    "directory.html": "notes/co-chsaa.md records /schools/ at 200 / 344,492 B; the body carries 378 schoolCode values; co_chsaanow.parse returns 378 schools",
+    "school_cherry_creek.html": "notes/co-chsaa.md records /schools/cherry-creek/ at 200 / 351,964 B; the body carries the Cherry Creek activity JSON",
+    "robots.txt": "User-agent: * / Allow: / with Disallow: /history/champions/individual/totals/repeat/ and /preview/; the AI-crawler blocks that precede it name other agents"
+  }
+}

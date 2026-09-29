@@ -1,0 +1,46 @@
+{
+  "state": "AK",
+  "ruleset": "ASAA",
+  "directory": {
+    "url": "https://maxinfosite-api-live.dragonflyathletics.com/states/ASAA/directory/1",
+    "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__63f6b1792325939b8f2e9c85",
+    "sha256": "707ba7dd3db762f8f658d483845d2f2237ff70154a8ae53fd094dd1779330b50",
+    "bytes": 98255
+  },
+  "sampled_codes": [
+    "DEX2BG",
+    "HU9FJ6",
+    "LHB72E",
+    "WFRCLF"
+  ],
+  "summaries": [
+    {
+      "code": "DEX2BG",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/DEX2BG/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__8de3b84554a58472729548d9",
+      "sha256": "a32f582ea2dc4da484610d6ae944878c06b1da8f3635a50456a44ba63a03fa89",
+      "bytes": 286728
+    },
+    {
+      "code": "HU9FJ6",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/HU9FJ6/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__0797a913266de8d8af3fec58",
+      "sha256": "35dd32061bedf607bef77a02834f5fba8c853ca3563c2eb9ab86f4a83d34fe18",
+      "bytes": 286737
+    },
+    {
+      "code": "LHB72E",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/LHB72E/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__f0357b627bd9615867698240",
+      "sha256": "2ddedc9fb936e78c11694040552437c44f7137385b3b0de405305dc36378f9c1",
+      "bytes": 286753
+    },
+    {
+      "code": "WFRCLF",
+      "url": "https://maxinfosite-api-live.dragonflyathletics.com/schools/WFRCLF/summary",
+      "prototype_file": "maxinfosite-api-live.dragonflyathletics.com__0bec50077c1b741f3627da56",
+      "sha256": "139982757ac939959a74e76991a60feb429ab3c7b6f7c38c385517bb278b2d2a",
+      "bytes": 286761
+    }
+  ]
+}

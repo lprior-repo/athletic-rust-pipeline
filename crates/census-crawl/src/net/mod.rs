@@ -7,7 +7,7 @@ use census_domain::model::{AccessBlockKind, SourceAccessCondition};
 
 pub mod bridge;
 
-mod cache;
+pub(crate) mod cache;
 mod client;
 mod execute;
 mod latency;
@@ -50,6 +50,7 @@ pub struct Fetcher {
     source: String,
     blocks: Mutex<HashMap<String, SourceAccessCondition>>,
     lane: Option<bridge::BrowserLane>,
+    offline: bool,
 }
 
 impl Fetcher {
@@ -103,6 +104,14 @@ impl Fetcher {
 
     pub fn has_browser_lane(&self) -> bool {
         self.lane.is_some()
+    }
+    pub fn with_offline(mut self, offline: bool) -> Self {
+        self.offline = offline;
+        self
+    }
+
+    pub fn is_offline(&self) -> bool {
+        self.offline
     }
 
     pub async fn record_access_condition(

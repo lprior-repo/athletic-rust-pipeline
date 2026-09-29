@@ -210,6 +210,15 @@ Machine-readable companions: `schema.json` (observed keys + one real example eac
     per-sport external link of choice is MaxPreps:
     `https://www.maxpreps.com/local/team/schedule.aspx?schoolid=2ffb2809-94ad-4f52-9425-b918046fbeaf&gendersport=boys%2Ctrack&season=spring`
     (`samples/chsaa-school-academy.html`).
+  - **Rust port (2026-09-29, branch `coach-acquisition-rust`).** `crates/census-crawl/src/chsaa/` now
+    implements this source with the captures below as fixtures and the prototype's outputs as goldens:
+    directory 378/378 rows field-for-field, Cherry Creek 50/50 mapped coach rows
+    `(person, sport, role, gender)`, and one end-to-end `collect` over a seeded cache. The first
+    delivery of the port shipped a 120-byte stub fixture, never compiled, and searched the directory
+    payload for unescaped JSON where the page escapes it; all three were fixed here, and the directory's
+    street address, ZIP, phone, district, member type, school type and setting stay parsed-but-unstored
+    because the census school record has no such fields. Evidence:
+    `docs/VERIFICATION-EVIDENCE.md`, "CHSAA member-directory adapter ported to Rust".
 
 ---
 

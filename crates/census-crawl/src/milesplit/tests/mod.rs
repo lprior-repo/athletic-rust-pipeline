@@ -59,7 +59,7 @@ fn roster_entities_are_canonical_and_source_independent() {
         .expect("the fixture has readable roster rows");
     let site = Site::for_jurisdiction(UsJurisdiction::Wisconsin);
     let (school, athletes, teams_out) = roster_entities(
-        &roster,
+        roster,
         SchoolYear::new(2026).expect("2026 is a season"),
         "2026-09-20",
         &site,

@@ -201,7 +201,10 @@ fn the_summary_fills_what_a_levels_less_directory_row_lacked() {
         OBSERVED_ON,
     );
     assert_eq!(school.classification.as_deref(), Some("6A"));
-    assert_eq!(school.aliases, vec!["A.C. Reynolds High School".to_string()]);
+    assert_eq!(
+        school.aliases,
+        vec!["A.C. Reynolds High School".to_string()]
+    );
     assert_eq!(school.evidence.len(), 2);
 }
 
@@ -429,11 +432,23 @@ async fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache()
         .await
         .expect("collect returns a report");
 
-    assert_eq!(report.rows, 1, "one school processed, the page's rest left to the next run");
+    assert_eq!(
+        report.rows, 1,
+        "one school processed, the page's rest left to the next run"
+    );
     assert_eq!(report.errors, 0);
-    assert_eq!(report.requests, 0, "both responses came from the seeded cache");
-    assert_eq!(report.from_cache, 2, "the directory page and the one school summary");
-    assert_eq!(report.with_email, 13, "every mapped row carries the staff address");
+    assert_eq!(
+        report.requests, 0,
+        "both responses came from the seeded cache"
+    );
+    assert_eq!(
+        report.from_cache, 2,
+        "the directory page and the one school summary"
+    );
+    assert_eq!(
+        report.with_email, 13,
+        "every mapped row carries the staff address"
+    );
     assert!(
         report
             .notes
@@ -455,7 +470,11 @@ async fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache()
     let coaches = store
         .scan::<census_domain::model::CanonicalCoach>(census_store::Table::Coaches)
         .expect("coach rows");
-    assert_eq!(coaches.len(), 13, "the oracle's (person, sport family, gender) row set");
+    assert_eq!(
+        coaches.len(),
+        13,
+        "the oracle's (person, sport family, gender) row set"
+    );
     assert!(
         store
             .journal_keys("coach_directories_schools")

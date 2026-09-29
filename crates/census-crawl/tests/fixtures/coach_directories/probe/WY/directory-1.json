@@ -1,0 +1,2985 @@
+{
+    "currentPage": 1,
+    "totalPages": 1,
+    "results": [
+        {
+            "orgId": "5e2e552b08483b851128dfb4",
+            "shortCode": "SS28UB",
+            "name": "Arapaho Charter High School",
+            "city": "Arapahoe",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2024-11-07T16:20:49.480Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "a74e9203-18f1-4463-fab4-bf69a53e9dfe",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/a74e9203-18f1-4463-fab4-bf69a53e9dfe?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=xVh1JSNVeyG8haYL0RfV0x4ECIc%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaCounty": "Fremont"
+            },
+            "heraldry": {
+                "mascot": "Arapaho Nation",
+                "colors": [
+                    {
+                        "name": "Turquoise",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "Silver",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "445 Little Wind River Bottom R"
+        },
+        {
+            "orgId": "5ef12776197ffc61ee000005",
+            "shortCode": "2R9BWL",
+            "name": "Arvada-Clearmont High School",
+            "city": "Clearmont",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:25:43.267Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "567ec34e-4402-4ce3-d143-1c14c71fb391",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/567ec34e-4402-4ce3-d143-1c14c71fb391?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=TihsDj%2Fjm0H%2Fk6k%2BceNVJPRj%2FMo%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaMusicDistrict": "Northeast"
+            },
+            "heraldry": {
+                "mascot": "Panthers",
+                "colors": [
+                    {
+                        "name": "Columbia Blue",
+                        "code": "#bbd5f7",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#f0ea3d",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#090707",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "PO Box 125"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dfc2",
+            "shortCode": "9A78G7",
+            "name": "Big Horn High School",
+            "city": "Big Horn",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:24:59.002Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "001179d7-9d5d-40cb-efeb-c37bde139bd1",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/001179d7-9d5d-40cb-efeb-c37bde139bd1?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=aauV1kHh65EjpGFT0djY%2B9Hejnw%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaRegion": "East"
+            },
+            "heraldry": {
+                "mascot": "Big Horn Ram",
+                "colors": [
+                    {
+                        "name": "Maroon",
+                        "code": "#6d1a0b",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#f9e430",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "PO Box 490"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dfc5",
+            "shortCode": "UJSZKZ",
+            "name": "Big Piney High School",
+            "city": "Big Piney",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:25:28.720Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "fccbd53e-61f6-4ccd-aa1e-38a367aadf20",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/fccbd53e-61f6-4ccd-aa1e-38a367aadf20?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=clvt4a4WuWo5SMX6LNUaWoqsZ2M%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaMusicDistrict": "Southwest",
+                "whsaaRegion": "West",
+                "whsaaSubRegion": "Southwest",
+                "whsaaCounty": "Sublette"
+            },
+            "heraldry": {
+                "mascot": "Punchers",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 769"
+        },
+        {
+            "orgId": "6a7a46bd7c2e4a0526000008",
+            "shortCode": "QLECZL",
+            "name": "Buffalo Christian Academy",
+            "city": "Buffalo",
+            "stateCode": "WY",
+            "media": [],
+            "address": "P.O. Box 978"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dfca",
+            "shortCode": "R2BKQN",
+            "name": "Buffalo High School",
+            "city": "Buffalo",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:03:10.545Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "dfdf0dfc-3736-4e81-fc1b-a2c4ae570908",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/dfdf0dfc-3736-4e81-fc1b-a2c4ae570908?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=GRCzC7AKb5%2BO1ntsAOF454Q%2BSI8%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A"
+            },
+            "heraldry": {
+                "mascot": "Bison",
+                "colors": [
+                    {
+                        "name": "",
+                        "code": "#000000",
+                        "primary": false
+                    },
+                    {
+                        "name": "",
+                        "code": "#dedf7c",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "29891 Old Hwy 87"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dfce",
+            "shortCode": "TS9FSC",
+            "name": "Burlington High School",
+            "city": "Burlington",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2025-11-03T15:19:30.044Z",
+                    "contentType": "image/png",
+                    "mediaId": "73a96707-c1a1-4e87-983f-45a769d4eda5",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/73a96707-c1a1-4e87-983f-45a769d4eda5?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=psusbgfcmTTMCRPlM7Y%2FMHq%2F9xo%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Huskies",
+                "colors": [
+                    {
+                        "name": "Orange",
+                        "code": "#ff7b00",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 9"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dfd1",
+            "shortCode": "S46AUR",
+            "name": "Burns Jr & Sr High School",
+            "city": "Burns",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T16:45:31.942Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "993d73b8-5bc0-48d6-d65e-249c8a980e89",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/993d73b8-5bc0-48d6-d65e-249c8a980e89?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=V7qcK61zST%2B7Dl8DcVgYGQUo6KU%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaCounty": "Laramie",
+                "whsaaMusicDistrict": "Southeast",
+                "whsaaDistrict": "SE District",
+                "whsaaRegion": "East",
+                "whsaaSubRegion": "Southeast"
+            },
+            "heraldry": {
+                "mascot": "Broncs",
+                "colors": [
+                    {
+                        "name": "Orange",
+                        "code": "#ff7b00",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "524 East 4th Street"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dfd4",
+            "shortCode": "DZWGTM",
+            "name": "Campbell County High School",
+            "city": "Gillette",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:22:07.699Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "2c58a83f-c037-4f96-d920-1b5e99a57de1",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/2c58a83f-c037-4f96-d920-1b5e99a57de1?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=brSsZSFfHa5oyIoIgdab%2BPB%2F%2Fv4%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A"
+            },
+            "heraldry": {
+                "mascot": "Camels",
+                "colors": [
+                    {
+                        "name": "Purple",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#999999",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 3033"
+        },
+        {
+            "orgId": "62ec19f0b6faaa1eae000006",
+            "shortCode": "QX6R7J",
+            "name": "Casper Christian School",
+            "city": "Casper",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2024-06-25T15:44:53.559Z",
+                    "contentType": "image/png",
+                    "mediaId": "2452ed52-4ff8-45ea-d01b-055e1d06fe0b",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/2452ed52-4ff8-45ea-d01b-055e1d06fe0b?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=bo%2BJTcySShIFGHftdup%2BEP%2BPB0g%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Mountaineers",
+                "colors": [
+                    {
+                        "name": "Navy Blue",
+                        "code": "#2b2763",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#ccce55",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "411 S Walsh Drive"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dfd9",
+            "shortCode": "ANX7LY",
+            "name": "Cathedral Home for Children",
+            "city": "Laramie",
+            "stateCode": "WY",
+            "media": [],
+            "address": "4989 North 3rd Street"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dfdc",
+            "shortCode": "G5CWZJ",
+            "name": "Central High School",
+            "city": "Cheyenne",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:13:45.649Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "d143a55f-09e6-41bc-8892-c7d3b407296d",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/d143a55f-09e6-41bc-8892-c7d3b407296d?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=V8lpLQPzGcN5%2FH6O5n4ScCtPP6s%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A",
+                "whsaaMusicDistrict": "Southeast",
+                "whsaaSubRegion": "Southeast",
+                "whsaaRegion": "undefined",
+                "whsaaCounty": "Laramie",
+                "whsaaDistrict": "1"
+            },
+            "heraldry": {
+                "mascot": "Indians",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#ff0000",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "5500 Education Drive"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dfe6",
+            "shortCode": "9N4LUY",
+            "name": "Cody High School",
+            "city": "Cody",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:08:45.545Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "b627a276-8727-485d-a2bd-ec12cdc0fdfd",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/b627a276-8727-485d-a2bd-ec12cdc0fdfd?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=RanSiGQX1YLXSPpRbqo%2BuCyvbTA%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A",
+                "whsaaCounty": "Park",
+                "whsaaSubRegion": "Northwest",
+                "whsaaMusicDistrict": "North Big Horn Basin",
+                "whsaaDistrict": "NW"
+            },
+            "heraldry": {
+                "mascot": "Broncs / Fillies",
+                "colors": [
+                    {
+                        "name": "Navy",
+                        "code": "#002a5c",
+                        "primary": false
+                    },
+                    {
+                        "name": "Vegas Gold",
+                        "code": "#cbb778",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "919 Cody Avenue"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dfe9",
+            "shortCode": "3SW5YW",
+            "name": "Cokeville High School",
+            "city": "Cokeville",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:09:12.602Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "d3a35734-9f83-478f-e64c-658b941f9755",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/d3a35734-9f83-478f-e64c-658b941f9755?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=%2Bhmr%2FCVpbhpSjcYUQ0ILnUgoin4%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaRegion": "West",
+                "whsaaCounty": "Lincoln",
+                "whsaaDistrict": "undefined",
+                "whsaaSubRegion": "Southwest"
+            },
+            "heraldry": {
+                "mascot": "Panthers",
+                "colors": [
+                    {
+                        "name": "Orange",
+                        "code": "#fd7b23",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 220"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dffa",
+            "shortCode": "FLSXXC",
+            "name": "Douglas High School",
+            "city": "Douglas",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:01:28.582Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "7a97aea1-5f6a-48c5-ba43-c690c25a522b",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/7a97aea1-5f6a-48c5-ba43-c690c25a522b?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=%2F01e40OJG%2B2%2F046yRM4sdsVV69Y%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaCounty": "Converse",
+                "whsaaSubRegion": "Southeast"
+            },
+            "heraldry": {
+                "mascot": "Bearcats",
+                "colors": [
+                    {
+                        "name": "Royal Blue",
+                        "code": "#1042a2",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "615 Hamilton Street"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e001",
+            "shortCode": "XRCWNG",
+            "name": "Dubois High School",
+            "city": "Dubois",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:15:19.191Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "a4b2b105-e1e3-4739-b178-5e1c6ddc65a2",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/a4b2b105-e1e3-4739-b178-5e1c6ddc65a2?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=I99gh9bdP1kyYLIe9Yh7Dfs%2BPDo%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaDistrict": "NW",
+                "whsaaCounty": "Fremont",
+                "whsaaRegion": "West",
+                "whsaaSubRegion": "Northwest",
+                "whsaaMusicDistrict": "North Big Horn Basin"
+            },
+            "heraldry": {
+                "mascot": "Rams",
+                "colors": [
+                    {
+                        "name": "Blue",
+                        "code": "#0e0af0",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#f9d006",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 188"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e003",
+            "shortCode": "Z9R7B6",
+            "name": "East High School",
+            "city": "Cheyenne",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2024-09-03T21:27:27.424Z",
+                    "contentType": "image/png",
+                    "mediaId": "78fb6090-d543-438f-c435-a8f203a08e1c",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/78fb6090-d543-438f-c435-a8f203a08e1c?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=9kZW%2BxWDncaZMm23WiuHlYIMTgI%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A"
+            },
+            "heraldry": {
+                "mascot": "Thunderbirds",
+                "colors": [
+                    {
+                        "name": "Columbia Blue",
+                        "code": "#659aff",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "2800 East Pershing Boulevard"
+        },
+        {
+            "orgId": "66327e986d288501ce000006",
+            "shortCode": "VZSDPM",
+            "name": "Elite Solutions Academy ",
+            "city": "Casper ",
+            "stateCode": "WY",
+            "media": [],
+            "address": ""
+        },
+        {
+            "orgId": "5e2e552b08483b851128e008",
+            "shortCode": "CJYY2S",
+            "name": "Encampment K-12 School",
+            "city": "Encampment",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:52:20.610Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "e02bb76f-0790-4758-8dad-96928669e2b0",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/e02bb76f-0790-4758-8dad-96928669e2b0?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=AnmYIuMczgIGwaiI7mW3EQ0btaM%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaCounty": "Carbon",
+                "whsaaSubRegion": "Southwest"
+            },
+            "heraldry": {
+                "mascot": "Tigers",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#ff0000",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 277"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e00a",
+            "shortCode": "9X654M",
+            "name": "Evanston High School",
+            "city": "Evanston",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T16:38:34.193Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "4e0ed810-b8e2-47d1-eb4f-0ac3bf99e403",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/4e0ed810-b8e2-47d1-eb4f-0ac3bf99e403?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=9brcLF29gIMxtZFJJN6khBs51I4%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A",
+                "whsaaDistrict": "SW District",
+                "whsaaCounty": "Uinta",
+                "whsaaRegion": "West",
+                "whsaaSubRegion": "Southwest",
+                "whsaaMusicDistrict": "Southwest"
+            },
+            "heraldry": {
+                "mascot": "Red Devils",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#eb2e2d",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    },
+                    {
+                        "name": "Blue",
+                        "code": "#1a76bd",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 6002"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e010",
+            "shortCode": "R3KVZJ",
+            "name": "Farson-Eden High School",
+            "city": "Farson",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:36:48.853Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "ca952c63-e081-47e0-9c67-2b8aa07bdc94",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/ca952c63-e081-47e0-9c67-2b8aa07bdc94?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=AYXDFKxAevsziF%2FyMd6HJKsEGyU%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Pronghorns",
+                "colors": [
+                    {
+                        "name": "Green",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#999999",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 400"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e017",
+            "shortCode": "BV8LHG",
+            "name": "Ft. Washakie High School",
+            "city": "Ft. Washakie",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2023-08-29T17:40:07.911Z",
+                    "contentType": "image/png",
+                    "mediaId": "e43b9a26-4508-42cb-aad4-1f2da9e6b030",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/e43b9a26-4508-42cb-aad4-1f2da9e6b030?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=3h5SEMq7luBZ%2B91XQgPw8sZ%2FTDY%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Eagles",
+                "colors": [
+                    {
+                        "name": "Maroon",
+                        "code": "#800000",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "90 Ethete Rd."
+        },
+        {
+            "orgId": "5e2e552b08483b851128e01c",
+            "shortCode": "L4P6LL",
+            "name": "Glendo High School",
+            "city": "Glendo",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:06:04.178Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "1daee3f5-6f81-4a7b-f3b3-699dee8dc825",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/1daee3f5-6f81-4a7b-f3b3-699dee8dc825?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=tEDxKb7vZDT71gj2jFTYXGsXsQs%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Eagles",
+                "colors": [
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    },
+                    {
+                        "name": "Burgundy",
+                        "code": "#930000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "1350 Oak Street"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e01f",
+            "shortCode": "H55YXP",
+            "name": "Glenrock High School",
+            "city": "Glenrock",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:11:12.705Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "b60b92f9-5ddc-46f2-a57b-5c233cff7a6b",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/b60b92f9-5ddc-46f2-a57b-5c233cff7a6b?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=0SOuYzYJ%2BjOnWohKW4%2FTJ07y600%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaRegion": "East",
+                "whsaaCounty": "Converse",
+                "whsaaDistrict": "2",
+                "whsaaSubRegion": "Southeast"
+            },
+            "heraldry": {
+                "mascot": "Herders",
+                "colors": [
+                    {
+                        "name": "Purple",
+                        "code": "#4c357d",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 1300"
+        },
+        {
+            "orgId": "5f0cd3f548e25b78a7000005",
+            "shortCode": "FH6SF8",
+            "name": "Green River High School",
+            "city": "Green River",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:06:37.530Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "665ab1f5-e996-4b3b-af4c-2faad07ecde2",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/665ab1f5-e996-4b3b-af4c-2faad07ecde2?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=3Oah7hP012F4wo42kCzBhwwjYKI%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A",
+                "whsaaCounty": "Sweetwater",
+                "whsaaSubRegion": "Southwest",
+                "whsaaMusicDistrict": "Southwest",
+                "whsaaDistrict": "SW District",
+                "whsaaRegion": "West"
+            },
+            "heraldry": {
+                "mascot": "Wolves",
+                "colors": [
+                    {
+                        "name": "Green",
+                        "code": "#295028",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "1615 Hitching Post Drive"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e026",
+            "shortCode": "VAZEHB",
+            "name": "Greybull High School",
+            "city": "Greybull",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:48:05.445Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "147aff9d-fb88-4689-985e-fbcea913a53f",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/147aff9d-fb88-4689-985e-fbcea913a53f?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=P4G%2BH95APZ6zGtosnH24LzgwViI%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A"
+            },
+            "heraldry": {
+                "mascot": "Buffalo",
+                "colors": [
+                    {
+                        "name": "Navy Blue",
+                        "code": "#0c0b5a",
+                        "primary": false
+                    },
+                    {
+                        "name": "Yellow",
+                        "code": "#e2bd37",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "640 8th Avenue North"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e029",
+            "shortCode": "U4LDGH",
+            "name": "Guernsey-Sunrise High School",
+            "city": "Guernsey",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2023-07-02T19:55:34.500Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "4349c30b-b74e-4836-d9a8-7e867859e2f1",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/4349c30b-b74e-4836-d9a8-7e867859e2f1?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=RlHCKPk%2B2HYldOMbi2rYZUOGbps%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Vikings",
+                "colors": [
+                    {
+                        "name": "",
+                        "code": "#f2d307",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#181616",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ede3e3",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 189"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e030",
+            "shortCode": "QV8XMR",
+            "name": "HEM Junior/Senior High School",
+            "city": "Hanna",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:16:24.181Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "19699226-3bb6-42bb-a53e-574ad6c83d91",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/19699226-3bb6-42bb-a53e-574ad6c83d91?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=cUT%2BiAG%2F9ZsYwh1p94yG4prJJKE%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaCounty": "Carbon",
+                "whsaaSubRegion": "Southeast",
+                "whsaaMusicDistrict": "Southeast",
+                "whsaaDistrict": "SE District",
+                "whsaaRegion": "East"
+            },
+            "heraldry": {
+                "mascot": "Miners",
+                "colors": [
+                    {
+                        "name": "Orange",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "Royal Blue",
+                        "code": "#999999",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 810"
+        },
+        {
+            "orgId": "6a76093f7c2e4a675a000006",
+            "shortCode": "R5BRFL",
+            "name": "Heritage Christian School",
+            "city": "Gillette",
+            "stateCode": "WY",
+            "media": [],
+            "address": "510 Wall St Ct"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e037",
+            "shortCode": "3N47KU",
+            "name": "Hot Springs County High School",
+            "city": "Thermopolis",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:01:50.425Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "d7655728-2ff9-4fef-cbe0-beb4e78ce208",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/d7655728-2ff9-4fef-cbe0-beb4e78ce208?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=ZdTNBbcHS4kaSntv6rOsdW%2F4wCM%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A"
+            },
+            "heraldry": {
+                "mascot": "Bobcats",
+                "colors": [
+                    {
+                        "name": "Purple",
+                        "code": "#a629db",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#dff637",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "415 Springview"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e038",
+            "shortCode": "7JJKEU",
+            "name": "Hulett High School",
+            "city": "Hulett",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:19:38.178Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "0a661a9a-05d9-4ef0-a9bd-a4be98ebdd4d",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/0a661a9a-05d9-4ef0-a9bd-a4be98ebdd4d?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=A7rIO0Dz2cAdW%2Fvxmz8cg94%2FR18%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaDistrict": "NE District",
+                "whsaaCounty": "Crook",
+                "whsaaRegion": "East",
+                "whsaaSubRegion": "Northeast"
+            },
+            "heraldry": {
+                "mascot": "Red Devils",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#fe0000",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 127"
+        },
+        {
+            "orgId": "60060a312fb64505da000005",
+            "shortCode": "XRDMKF",
+            "name": "Jackson Hole Classical Academy",
+            "city": "Jackson",
+            "stateCode": "WY",
+            "media": [],
+            "address": "P.O. Box 7466"
+        },
+        {
+            "orgId": "60060a6a2fb64505da000006",
+            "shortCode": "YG79EE",
+            "name": "Jackson Hole Community School",
+            "city": "Jackson",
+            "stateCode": "WY",
+            "media": [],
+            "address": "PO Box 6787"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e03d",
+            "shortCode": "JWYMHK",
+            "name": "Jackson Hole High School",
+            "city": "Jackson",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:53:11.628Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "3285f3f3-705a-457e-ff4a-a5a876d81321",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/3285f3f3-705a-457e-ff4a-a5a876d81321?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=bzgbY0CML5MINmaznAdEUnORb1c%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A"
+            },
+            "heraldry": {
+                "mascot": "Broncs",
+                "colors": [
+                    {
+                        "name": "Orange",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 568"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e044",
+            "shortCode": "G83D6D",
+            "name": "Kaycee High School",
+            "city": "Kaycee",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:51:02.845Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "0229ee6e-0bcb-4001-cc65-5b5a0a37e924",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/0229ee6e-0bcb-4001-cc65-5b5a0a37e924?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=eoXSc2U9ujGU3dCe1MgVIx%2BZ5Yg%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaCounty": "Johnson",
+                "whsaaSubRegion": "Northeast",
+                "whsaaRegion": "East"
+            },
+            "heraldry": {
+                "mascot": "Buckaroos / Lady Bucs",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#ff0000",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    },
+                    {
+                        "name": "Blue",
+                        "code": "#3001da",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "235 Holt Ave"
+        },
+        {
+            "orgId": "5c40ba4dd59b8a038f000001",
+            "shortCode": "NNHJNT",
+            "name": "Kelly Walsh High School",
+            "city": "Casper",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2019-01-19T02:10:39.531Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "9e03591c-5ba3-4f14-dabc-267a701b10d6",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/9e03591c-5ba3-4f14-dabc-267a701b10d6?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=91oaP%2FWcPjYJRB%2FOzVS2GqRgcBE%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A",
+                "whsaaCounty": "Natrona"
+            },
+            "heraldry": {
+                "mascot": "Trojans",
+                "colors": [
+                    {
+                        "name": "Green",
+                        "code": "#004f00",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "3500 E 12th St"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e047",
+            "shortCode": "SURTHZ",
+            "name": "Kemmerer Junior Senior High School",
+            "city": "Diamondville",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:58:59.043Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "dd655797-e9ff-4e2a-8294-1ddcfdc32bab",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/dd655797-e9ff-4e2a-8294-1ddcfdc32bab?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=sBl5LbvrrQY2u%2FdKWPFexBIVHaQ%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaCounty": "Lincoln",
+                "whsaaSubRegion": "Southwest",
+                "whsaaMusicDistrict": "Southwest",
+                "whsaaDistrict": "SW",
+                "whsaaRegion": "West"
+            },
+            "heraldry": {
+                "mascot": "Rangers",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#ce0e41",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 335"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e04c",
+            "shortCode": "KNQTCB",
+            "name": "Lander Middle School",
+            "city": "Lander",
+            "stateCode": "WY",
+            "media": [],
+            "heraldry": {
+                "mascot": "Cubs",
+                "colors": [
+                    {
+                        "name": "",
+                        "code": "#2bd714",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "755 Jefferson Street"
+        },
+        {
+            "orgId": "59a710c14929c90364000011",
+            "shortCode": "97WHTR",
+            "name": "Lander Valley High School",
+            "city": "Lander",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2017-10-05T14:53:39.122Z",
+                    "contentType": "image/png",
+                    "mediaId": "5f9182e9-15f7-439c-aa46-23dbb21b356a",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/5f9182e9-15f7-439c-aa46-23dbb21b356a?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=qZUHYqYnfPjoIujH8OIwPLiYwpc%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaCounty": "Fremont",
+                "whsaaSubRegion": "undefined",
+                "whsaaDistrict": "NW District"
+            },
+            "heraldry": {
+                "mascot": "Tiger",
+                "colors": [
+                    {
+                        "name": "Kelly Green",
+                        "code": "#146d08",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "350 Baldwin Creek Road"
+        },
+        {
+            "orgId": "6a7a01ce7c2e4a0526000006",
+            "shortCode": "JERZ3V",
+            "name": "Laramie Christian Academy",
+            "city": "Laramie",
+            "stateCode": "WY",
+            "media": [],
+            "address": "PO Box 1504"
+        },
+        {
+            "orgId": "5d3a38b28bc717252c000081",
+            "shortCode": "8RART7",
+            "name": "Laramie High School",
+            "city": "Laramie",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2019-07-25T23:28:40.493Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "6f51ada2-0572-4c3b-f638-4a8095c507a6",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/6f51ada2-0572-4c3b-f638-4a8095c507a6?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=DE7rdfIElK%2B0JpCwG0tyOJFi76M%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A"
+            },
+            "heraldry": {
+                "mascot": "Plainsmen ",
+                "colors": [
+                    {
+                        "name": "Maroon",
+                        "code": "#940101",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold ",
+                        "code": "#e6b717",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "1710 Boulder"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e055",
+            "shortCode": "5U37ZT",
+            "name": "Lingle-Ft. Laramie High School",
+            "city": "Lingle",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:03:29.934Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "d92324d9-7b71-442e-887c-c1fd93b8c5d8",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/d92324d9-7b71-442e-887c-c1fd93b8c5d8?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=D29fd0nrGxcEoO1RhNiGblSuYhI%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaCounty": "Goshen",
+                "whsaaSubRegion": "Southeast",
+                "whsaaMusicDistrict": "North Platte",
+                "whsaaDistrict": "SE District",
+                "whsaaRegion": "East"
+            },
+            "heraldry": {
+                "mascot": "Doggers",
+                "colors": [
+                    {
+                        "name": "Navy",
+                        "code": "#18398a",
+                        "primary": false
+                    },
+                    {
+                        "name": "Red",
+                        "code": "#cd292a",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 379"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e058",
+            "shortCode": "CJVFBC",
+            "name": "Little Snake River Valley High School",
+            "city": "Baggs",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:46:59.969Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "4a7169e6-964b-4fd2-cc11-7a66a4e745e6",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/4a7169e6-964b-4fd2-cc11-7a66a4e745e6?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=80X0RCm6G9FHz7iYlVQjL%2BVOoOA%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaSubRegion": "Southwest",
+                "whsaaRegion": "West",
+                "whsaaCounty": "Carbon",
+                "whsaaDistrict": "SW"
+            },
+            "heraldry": {
+                "mascot": "Rattlers",
+                "colors": [
+                    {
+                        "name": "Purple",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#999999",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 9"
+        },
+        {
+            "orgId": "5a4eb131c6d2510201000012",
+            "shortCode": "UUGSUU",
+            "name": "Lovell High School",
+            "city": "Lovell",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T18:51:28.290Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "dc76fa58-e63d-433f-a3c7-958caa471ac4",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/dc76fa58-e63d-433f-a3c7-958caa471ac4?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=GhZTW6qnD%2Btq2I7Iql3qknMbBl4%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A"
+            },
+            "heraldry": {
+                "mascot": "Bulldogs",
+                "colors": [
+                    {
+                        "name": "Blue",
+                        "code": "#2215d5",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "502 Hampshire Avenue"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e05d",
+            "shortCode": "YZQ9H7",
+            "name": "Lyman High School",
+            "city": "Lyman",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T18:55:33.000Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "6ae08c50-1b01-42e7-8094-0bee73b12e23",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/6ae08c50-1b01-42e7-8094-0bee73b12e23?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=VAZ7tn7ZBC1xoIZ7i0X%2F3%2BAp%2FHA%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaCounty": "Uinta",
+                "whsaaDistrict": "SW District",
+                "whsaaRegion": "West"
+            },
+            "heraldry": {
+                "mascot": "Eagles",
+                "colors": [
+                    {
+                        "name": "Blue",
+                        "code": "#1103b8",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 1090"
+        },
+        {
+            "orgId": "5e2e552b08483b851128e068",
+            "shortCode": "FYDFCQ",
+            "name": "Meeteetse High School",
+            "city": "Meeteetse",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T18:54:57.240Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "1df788e8-c181-488d-e4ab-4c4fbdf4e311",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/1df788e8-c181-488d-e4ab-4c4fbdf4e311?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=8sbJcls8dZvHxoYGaW6nvGDFYcI%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Longhorns",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#990002",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 218"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e069",
+            "shortCode": "Z5ZEGX",
+            "name": "Midwest High School",
+            "city": "Midwest",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T16:41:19.534Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "bf429b69-7268-4bc0-d544-a3c8f9971644",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/bf429b69-7268-4bc0-d544-a3c8f9971644?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=4kSGPN2J80Akl9nRD64mAaEgYks%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaCounty": "Natrona",
+                "whsaaSubRegion": "Northeast"
+            },
+            "heraldry": {
+                "mascot": "Oiler",
+                "colors": [
+                    {
+                        "name": "Maroon",
+                        "code": "#970000",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 368"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e06c",
+            "shortCode": "4EJMKY",
+            "name": "Moorcroft High School",
+            "city": "Moorcroft",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:19:54.994Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "fb38e05f-7476-44d2-a7fc-442c6ab3473d",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/fb38e05f-7476-44d2-a7fc-442c6ab3473d?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=FwPti094tqg1Af8CFZnNRMslwA0%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaRegion": "East",
+                "whsaaCounty": "Crook",
+                "whsaaDistrict": "NE",
+                "whsaaSubRegion": "Northeast"
+            },
+            "heraldry": {
+                "mascot": "Wolves",
+                "colors": [
+                    {
+                        "name": "Kelly Green",
+                        "code": "#097c1a",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 129"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e071",
+            "shortCode": "8W5E88",
+            "name": "Mountain View High School",
+            "city": "Mountain View",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T20:55:32.394Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "d7b5e679-695d-4282-ff0e-ec900ece094f",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/d7b5e679-695d-4282-ff0e-ec900ece094f?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=2oGHOst6F5JhFuFIsBzovrNTjvM%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaRegion": "West"
+            },
+            "heraldry": {
+                "mascot": "Buffalo",
+                "colors": [
+                    {
+                        "name": "Purple",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "330 7th Street"
+        },
+        {
+            "orgId": "5c42220ec527134b00000001",
+            "shortCode": "TDWLPB",
+            "name": "Natrona County High School",
+            "city": "CASPER",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2024-03-06T18:36:15.043Z",
+                    "contentType": "image/png",
+                    "mediaId": "677ee3e1-51fe-4c2f-89f2-16a6c7970833",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/677ee3e1-51fe-4c2f-89f2-16a6c7970833?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=fw7ZRVxFTOBGcCYkQsuwEdff5%2BM%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A",
+                "whsaaRegion": "West"
+            },
+            "heraldry": {
+                "mascot": "Mustangs/Fillies",
+                "colors": [
+                    {
+                        "name": "Orange",
+                        "code": "#e08113",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#010101",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "930 S Elm St."
+        },
+        {
+            "orgId": "5e2e552c08483b851128e076",
+            "shortCode": "63FL2A",
+            "name": "Newcastle High School",
+            "city": "Newcastle",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:02:10.998Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "f272d8f6-221f-47d4-ae6c-061a086697a5",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/f272d8f6-221f-47d4-ae6c-061a086697a5?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=X7VfgZJKmgBnYMJw6gQ%2Ffrhs1xY%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaCounty": "Weston",
+                "whsaaRegion": "East"
+            },
+            "heraldry": {
+                "mascot": "Dogie",
+                "colors": [
+                    {
+                        "name": "Orange",
+                        "code": "#ff8000",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "116 Casper Avenue"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e078",
+            "shortCode": "DPVTP6",
+            "name": "Niobrara County High School",
+            "city": "Lusk",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:02:53.329Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "3e832dad-668a-4efa-f312-4c726aa543d5",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/3e832dad-668a-4efa-f312-4c726aa543d5?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=aiDsIzWrvOFcaQh08XSRpbwd1HE%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Tigers",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#ff1722",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 1050"
+        },
+        {
+            "orgId": "68b0876b4d29330584000006",
+            "shortCode": "UKP8MK",
+            "name": "Other",
+            "city": "WY",
+            "stateCode": "WY",
+            "media": [],
+            "address": ""
+        },
+        {
+            "orgId": "60060e5c2fb64505da00000a",
+            "shortCode": "64SRUN",
+            "name": "Park Christian School",
+            "city": "Cody",
+            "stateCode": "WY",
+            "media": [],
+            "address": "801 Gerrans Ave."
+        },
+        {
+            "orgId": "5e2e552c08483b851128e089",
+            "shortCode": "GCZCJX",
+            "name": "Pine Bluffs Jr & Sr High School",
+            "city": "Pine Bluffs",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T16:46:06.851Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "d133273b-6ea1-4392-887f-fc147609fae2",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/d133273b-6ea1-4392-887f-fc147609fae2?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=h8N6IxdF%2F%2Bxnlkv5P48%2FvGcVtuQ%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaRegion": "East"
+            },
+            "heraldry": {
+                "mascot": "Hornets",
+                "colors": [
+                    {
+                        "name": "Purple",
+                        "code": "#642482",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#e6b91f",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "512 Maple St"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e08b",
+            "shortCode": "PVBG29",
+            "name": "Pinedale High School",
+            "city": "Pinedale",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-10T18:49:56.329Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "808ee0f2-369c-471e-dac9-16eea78b6c07",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/808ee0f2-369c-471e-dac9-16eea78b6c07?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=8aF0z60pD3zHraQsG3bj112ZSAE%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaSubRegion": "Southwest",
+                "whsaaRegion": "West",
+                "whsaaCounty": "Sublette"
+            },
+            "heraldry": {
+                "mascot": "Wrangler",
+                "colors": [
+                    {
+                        "name": "Green",
+                        "code": "#067715",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 549"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e08f",
+            "shortCode": "HEKBAN",
+            "name": "PODER Academy",
+            "city": "Cheyenne",
+            "stateCode": "WY",
+            "media": [],
+            "address": "1100 Richarson Ct."
+        },
+        {
+            "orgId": "5d8d476cb0f01f3076000002",
+            "shortCode": "GPFS4E",
+            "name": "Powell High School",
+            "city": "POWELL",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:41:25.435Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "457293bd-dfe2-4c2b-b3ae-1f4c2ee754a8",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/457293bd-dfe2-4c2b-b3ae-1f4c2ee754a8?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=XSllxEI6uH9Ks1cLn4%2BGskW%2BlVA%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaRegion": "West"
+            },
+            "heraldry": {
+                "mascot": "Panthers",
+                "colors": [
+                    {
+                        "name": "Orange",
+                        "code": "#f36012",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#020312",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "1151 East 7th Street"
+        },
+        {
+            "orgId": "5e2e552b08483b851128dfde",
+            "shortCode": "2E9HLP",
+            "name": "Prairie View Community School",
+            "city": "Chugwater",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:51:46.412Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "d1b78e2a-1b37-4efa-aa0e-63c60ae02963",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/d1b78e2a-1b37-4efa-aa0e-63c60ae02963?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=rpa23%2FjT7QveWuLrQFQwFTf5FTM%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Buffalo",
+                "colors": [
+                    {
+                        "name": "Royal Blue",
+                        "code": "#2929fd",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "406 5th Street"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e09b",
+            "shortCode": "RBL23Z",
+            "name": "Rawlins High School",
+            "city": "Rawlins",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:02:34.292Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "f78601f3-d979-4005-ce71-cfd6adf87d4b",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/f78601f3-d979-4005-ce71-cfd6adf87d4b?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=HZPF6FqNUvN%2B8c2Ev2JEek%2FCFKY%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaCounty": "Carbon",
+                "whsaaDistrict": "District 1",
+                "whsaaMusicDistrict": "South Big Horn Basin",
+                "whsaaSubRegion": "Southeast",
+                "whsaaRegion": "East"
+            },
+            "heraldry": {
+                "mascot": "Outlaws",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#fe0000",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "1401 Colorado St"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0a1",
+            "shortCode": "6B9TGM",
+            "name": "Riverside Middle/High School",
+            "city": "Basin",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T18:53:30.226Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "8b47d60f-85d4-4645-d3a2-c364bca436fd",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/8b47d60f-85d4-4645-d3a2-c364bca436fd?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=WqXrWU7Yba9eqD3oOEvfS7y9YBk%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Rebels",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#fe0000",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 151"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0a2",
+            "shortCode": "V2UPJG",
+            "name": "Riverton High School",
+            "city": "Riverton",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2022-07-28T18:46:52.435Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "9d396b93-b92a-4492-b12f-4cbff6e5b4f3",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/9d396b93-b92a-4492-b12f-4cbff6e5b4f3?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=rqWszH2pbl3ij3%2Fd7ik3IVwOVEw%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A",
+                "whsaaCounty": "Fremont",
+                "whsaaSubRegion": "Northwest",
+                "whsaaMusicDistrict": "North Big Horn Basin",
+                "whsaaDistrict": "NW District",
+                "whsaaRegion": "West"
+            },
+            "heraldry": {
+                "mascot": "Wolverines",
+                "colors": [
+                    {
+                        "name": "Cardinal Red",
+                        "code": "#e13d3d",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "121 North 5th Street West"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0a3",
+            "shortCode": "Z9BAP7",
+            "name": "Riverton Middle School",
+            "city": "Riverton",
+            "stateCode": "WY",
+            "media": [],
+            "competitionLevels": {
+                "whsaaClassification": "4A"
+            },
+            "heraldry": {
+                "mascot": "Spartan",
+                "colors": [
+                    {
+                        "name": "Cardinal",
+                        "code": "#990101",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#1e0101",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "840 Major Avenue"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0a5",
+            "shortCode": "CPJLDV",
+            "name": "Rock River High School",
+            "city": "Rock River",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2023-08-29T17:35:52.193Z",
+                    "contentType": "image/gif",
+                    "mediaId": "b14d5705-9318-4257-a70f-50bef5e4c552",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/b14d5705-9318-4257-a70f-50bef5e4c552?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=GK1EeshleVtC1e3V%2B2znFoQ7gg0%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaRegion": "East",
+                "whsaaDistrict": "SE",
+                "whsaaCounty": "Albany",
+                "whsaaSubRegion": "Southeast"
+            },
+            "heraldry": {
+                "mascot": "Longhorns",
+                "colors": [
+                    {
+                        "name": "Royal Blue",
+                        "code": "#0000a0",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 128"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0a7",
+            "shortCode": "Q6ZLH2",
+            "name": "Rock Springs High School",
+            "city": "Rock Springs",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-06-15T14:20:46.991Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "e2dcf370-b181-411b-8827-7f8dbdd1cf10",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/e2dcf370-b181-411b-8827-7f8dbdd1cf10?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=Kj7vg5fR5nXIp28t1ifP8nKdxsc%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A",
+                "whsaaCounty": "Sweetwater",
+                "whsaaMusicDistrict": "Southwest",
+                "whsaaDistrict": "SW District",
+                "whsaaRegion": "West",
+                "whsaaSubRegion": "Southwest"
+            },
+            "heraldry": {
+                "mascot": "Tigers",
+                "colors": [
+                    {
+                        "name": "Black",
+                        "code": "#0a0a0a",
+                        "primary": false
+                    },
+                    {
+                        "name": "Orange",
+                        "code": "#ec7709",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 1089"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0aa",
+            "shortCode": "JNXGSZ",
+            "name": "Rocky Mountain High School",
+            "city": "Cowley",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:36:07.635Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "fdc27062-def6-44b9-9d02-94933bfa3eac",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/fdc27062-def6-44b9-9d02-94933bfa3eac?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=QunmdX3yVQvpmnP9uRrP%2FR5J2LA%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaRegion": "West",
+                "whsaaDistrict": "NW District",
+                "whsaaCounty": "Big Horn"
+            },
+            "heraldry": {
+                "mascot": "Grizzley",
+                "colors": [
+                    {
+                        "name": "Brown",
+                        "code": "#3c1f01",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#ffcc02",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 280"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0b7",
+            "shortCode": "KMM96V",
+            "name": "Saratoga Middle/High School",
+            "city": "Saratoga",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T18:58:05.297Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "0f35a009-539b-47d7-c7df-52ca9ac9ca7d",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/0f35a009-539b-47d7-c7df-52ca9ac9ca7d?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=EnrxbkBP41bMS%2F4u1hCVFmP6wTg%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaCounty": "Carbon",
+                "whsaaMusicDistrict": "Southeast",
+                "whsaaDistrict": "SW",
+                "whsaaRegion": "West",
+                "whsaaSubRegion": "Southwest"
+            },
+            "heraldry": {
+                "mascot": "Panthers",
+                "colors": [
+                    {
+                        "name": "Purple",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#999999",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "801 West Elm Street"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0b9",
+            "shortCode": "2AXMFV",
+            "name": "Sheridan County School District  No. 2",
+            "city": "Sheridan",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-05-19T15:14:09.022Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "5027cb68-5ade-4dc8-ed4c-5b556e87ed4a",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/5027cb68-5ade-4dc8-ed4c-5b556e87ed4a?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=tarJWTaBUSL4vXInBS4rI8Q6Djw%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A",
+                "whsaaRegion": "East"
+            },
+            "heraldry": {
+                "mascot": "Broncs",
+                "colors": [
+                    {
+                        "name": "Royal Blue",
+                        "code": "#060069",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#fbf021",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "1056 Long Drive"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0bd",
+            "shortCode": "A8372Y",
+            "name": "Shoshoni High School",
+            "city": "Shoshoni",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-07-15T19:34:12.817Z",
+                    "contentType": "image/png",
+                    "mediaId": "2fed6186-4c96-4132-cde9-20db413b9eb0",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/2fed6186-4c96-4132-cde9-20db413b9eb0?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=CvAzGN3%2BncVW%2FnYi9ccaD5nmgKU%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaCounty": "Fremont",
+                "whsaaRegion": "West",
+                "whsaaSubRegion": "Northwest"
+            },
+            "heraldry": {
+                "mascot": "Wranglers",
+                "colors": [
+                    {
+                        "name": "Royal Blue",
+                        "code": "#0e0af5",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#eff312",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "404 Wrangler Way"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0c3",
+            "shortCode": "XY7P3J",
+            "name": "South High School",
+            "city": "Cheyenne",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2024-12-16T22:02:08.344Z",
+                    "contentType": "image/png",
+                    "mediaId": "6da2c5f7-fa1d-4e38-9ca0-429814fa9b92",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/6da2c5f7-fa1d-4e38-9ca0-429814fa9b92?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=3zGGbTOmMFBYG%2FKi7vj4g%2BuRs9s%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A"
+            },
+            "heraldry": {
+                "mascot": "Bison",
+                "colors": [
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#cdc57a",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "1213 West Allison Road"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0c6",
+            "shortCode": "D8J4M4",
+            "name": "Southeast High School",
+            "city": "Yoder",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-26T15:50:09.825Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "230bec0a-1200-486e-aeae-1e835c98eaec",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/230bec0a-1200-486e-aeae-1e835c98eaec?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=h2gK5TR01BxMKu46sY985NLM%2BoA%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaCounty": "Goshen",
+                "whsaaSubRegion": "Southeast",
+                "whsaaMusicDistrict": "Southeast",
+                "whsaaDistrict": "SE District",
+                "whsaaRegion": "East"
+            },
+            "heraldry": {
+                "mascot": "Cyclones",
+                "colors": [
+                    {
+                        "name": "Royal",
+                        "code": "#0400ff",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 160"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0b5",
+            "shortCode": "Q5W2W6",
+            "name": "St. Stephen's Indian School",
+            "city": "St. Stephens",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:20:13.353Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "5bf88657-b721-4a4e-9fbc-dede3d3a2c87",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/5bf88657-b721-4a4e-9fbc-dede3d3a2c87?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=mmch8Pr46SKMPW0VO14uYvRWSRg%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Eagles",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#9b0021",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "128 Mission Rd"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0cc",
+            "shortCode": "96B9QY",
+            "name": "Star Valley High School",
+            "city": "Afton",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:11:16.985Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "02a2d3bd-7ad1-41c0-fb46-05bac192a60c",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/02a2d3bd-7ad1-41c0-fb46-05bac192a60c?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=JXqClTMEGOq9RP9GJdZXVg5ynU0%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A",
+                "whsaaCounty": "Lincoln",
+                "whsaaMusicDistrict": "Southwest",
+                "whsaaDistrict": "SW District",
+                "whsaaRegion": "undefined"
+            },
+            "heraldry": {
+                "mascot": "Braves",
+                "colors": [
+                    {
+                        "name": "Crimson",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#999999",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "445 W.Swift Creek Lane"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0d3",
+            "shortCode": "EJJGL6",
+            "name": "Sundance High School",
+            "city": "Sundance",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:20:18.313Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "e5d70682-dbe1-4bce-a2c8-0c28686c3e8f",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/e5d70682-dbe1-4bce-a2c8-0c28686c3e8f?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=h0SIM3AGoRabargfVg2NnH2%2BJr0%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaRegion": "undefined"
+            },
+            "heraldry": {
+                "mascot": "Bulldogs",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#999999",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 850"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0d7",
+            "shortCode": "KJGXEP",
+            "name": "Ten Sleep K-12",
+            "city": "Ten Sleep",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2023-10-16T17:31:51.934Z",
+                    "contentType": "image/png",
+                    "mediaId": "9df2cc63-f9e2-4807-de10-28eb04814ade",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/9df2cc63-f9e2-4807-de10-28eb04814ade?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=MFrRmFzotlakJTtco7vTqD9y75A%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A"
+            },
+            "heraldry": {
+                "mascot": "Pioneers",
+                "colors": [
+                    {
+                        "name": "Scarlet",
+                        "code": "#bb0215",
+                        "primary": false
+                    },
+                    {
+                        "name": "Royal Blue",
+                        "code": "#0b0596",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 105"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0dd",
+            "shortCode": "MSL5QS",
+            "name": "Thunder Basin High School",
+            "city": "Gillette",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:15:10.663Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "c3c87e5a-4509-493b-81de-e0ea6f5e833f",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/c3c87e5a-4509-493b-81de-e0ea6f5e833f?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=1CF7nEjmhuXdp%2FNZNoHf%2Bu8D56A%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "4A",
+                "whsaaCounty": "Campbell",
+                "whsaaSubRegion": "Northeast",
+                "whsaaMusicDistrict": "Northeast",
+                "whsaaDistrict": "NE District",
+                "whsaaRegion": "undefined"
+            },
+            "heraldry": {
+                "mascot": "Bolts",
+                "colors": [
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    },
+                    {
+                        "name": "Blue",
+                        "code": "#2160af",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "4001 Saunders Blvd"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0df",
+            "shortCode": "TPT6PV",
+            "name": "Tongue River High School",
+            "city": "Dayton",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T19:50:00.208Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "ee9c5f9c-1492-4f6a-a840-472e5b98b122",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/ee9c5f9c-1492-4f6a-a840-472e5b98b122?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=W35fimVyrnLrxv5q%2BmeO5%2BpdwX8%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaRegion": "undefined"
+            },
+            "heraldry": {
+                "mascot": "Eagles",
+                "colors": [
+                    {
+                        "name": "Green",
+                        "code": "#006534",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 408"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0e1",
+            "shortCode": "HUEWRN",
+            "name": "Torrington High School",
+            "city": "Torrington",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T16:34:40.549Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "06fca5ed-523d-4712-83ff-a10712e96462",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/06fca5ed-523d-4712-83ff-a10712e96462?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=Sonpapya71cJsLUN3IbNXFGW9x8%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaCounty": "Goshen",
+                "whsaaSubRegion": "Southeast",
+                "whsaaDistrict": "SE District",
+                "whsaaRegion": "undefined"
+            },
+            "heraldry": {
+                "mascot": "Trailblazers",
+                "colors": [
+                    {
+                        "name": "Maroon",
+                        "code": "#74101f",
+                        "primary": false
+                    },
+                    {
+                        "name": "Silver",
+                        "code": "#999999",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "2400 West C Street"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0e4",
+            "shortCode": "U6LAAJ",
+            "name": "Triumph High School",
+            "city": "Cheyenne",
+            "stateCode": "WY",
+            "media": [],
+            "address": "1250 West College Drive"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0ea",
+            "shortCode": "AJJXZM",
+            "name": "Upton High School",
+            "city": "Upton",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2021-09-10T15:30:25.744Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "982dadcc-c574-4635-8a8c-6ea7e4cea3a5",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/982dadcc-c574-4635-8a8c-6ea7e4cea3a5?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=tpehjwMgyONexNQJUthY45ifr6A%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "1A",
+                "whsaaCounty": "Weston",
+                "whsaaRegion": "undefined",
+                "whsaaSubRegion": "Northeast",
+                "whsaaDistrict": "NE"
+            },
+            "heraldry": {
+                "mascot": "Bobcats",
+                "colors": [
+                    {
+                        "name": "Blue",
+                        "code": "#1221f3",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#fdfcfc",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "PO Box 470"
+        },
+        {
+            "orgId": "6a7a02967c2e4a0526000007",
+            "shortCode": "SL96H8",
+            "name": "Valley Christian School",
+            "city": "Torrington",
+            "stateCode": "WY",
+            "media": [],
+            "address": "2441 East E Street"
+        },
+        {
+            "orgId": "6a7a47a87c2e4a0526000009",
+            "shortCode": "SBXQHA",
+            "name": "Valor Academy",
+            "city": "Sheridan",
+            "stateCode": "WY",
+            "media": [],
+            "address": "P.O. Box 1022"
+        },
+        {
+            "orgId": "5fd65ded4d877441aa000005",
+            "shortCode": "44TRSX",
+            "name": "Western Heritage Lutheran Academy",
+            "city": "Riverton",
+            "stateCode": "WY",
+            "media": [],
+            "heraldry": {
+                "mascot": "Badger",
+                "colors": [
+                    {
+                        "name": "",
+                        "code": "#0d157d",
+                        "primary": false
+                    },
+                    {
+                        "name": "",
+                        "code": "#fcfcfc",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "611 E. Main St."
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0fc",
+            "shortCode": "CKCEA2",
+            "name": "Wheatland High School",
+            "city": "Wheatland",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:03:51.958Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "9e25f539-09a0-47ec-9260-2045a92fe49b",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/9e25f539-09a0-47ec-9260-2045a92fe49b?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=KiG9%2FG2JsFa54vu1M0%2BaCGyhDTE%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A",
+                "whsaaCounty": "Platte",
+                "whsaaSubRegion": "Southeast",
+                "whsaaMusicDistrict": "North Platte",
+                "whsaaDistrict": "SE District",
+                "whsaaRegion": "undefined"
+            },
+            "heraldry": {
+                "mascot": "Bulldogs",
+                "colors": [
+                    {
+                        "name": "Blue",
+                        "code": "#160bad",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#f2ce1c",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "1350 Oak Street"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e0ff",
+            "shortCode": "XDK5DV",
+            "name": "Whiting High School",
+            "city": "Laramie",
+            "stateCode": "WY",
+            "media": [],
+            "address": "801 South 24th Street"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e105",
+            "shortCode": "4694LA",
+            "name": "Wind River High School",
+            "city": "Pavillion",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2023-11-16T18:54:37.943Z",
+                    "contentType": "image/png",
+                    "mediaId": "dc740cd5-07c1-4013-d932-2f6b5b84fcd0",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/dc740cd5-07c1-4013-d932-2f6b5b84fcd0?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=YkJpXATS8TJPAHAz90ZnA43e1Mc%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaCounty": "Fremont",
+                "whsaaRegion": "undefined",
+                "whsaaDistrict": "NW District",
+                "whsaaSubRegion": "Northwest"
+            },
+            "heraldry": {
+                "mascot": "Cougars",
+                "colors": [
+                    {
+                        "name": "Purple",
+                        "code": "#482472",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#000000",
+                        "primary": false
+                    },
+                    {
+                        "name": "Silver",
+                        "code": "#999999",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "223 N. Cherry St"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e10a",
+            "shortCode": "Z49HKM",
+            "name": "Worland High School",
+            "city": "Worland",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:41:11.045Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "03c5e63c-6980-452c-8db8-a45da1f47ea9",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/03c5e63c-6980-452c-8db8-a45da1f47ea9?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=5%2BSjNnp3KZ0mez0dY5AIT4HOX2Y%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "3A"
+            },
+            "heraldry": {
+                "mascot": "Warriors",
+                "colors": [
+                    {
+                        "name": "Orange",
+                        "code": "#e6970f",
+                        "primary": false
+                    },
+                    {
+                        "name": "Black",
+                        "code": "#121212",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "801 South 17th Street"
+        },
+        {
+            "orgId": "5e2e552c08483b851128e10c",
+            "shortCode": "MPVUX7",
+            "name": "Wright Jr. & Sr. High School",
+            "city": "Wright",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-07-31T17:17:01.512Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "0da00394-553c-40fa-b0bc-4aff7076e41b",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/0da00394-553c-40fa-b0bc-4aff7076e41b?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=PH5AwcFxf20z9PaWPL%2BIuBCVucE%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A",
+                "whsaaMusicDistrict": "undefined",
+                "whsaaRegion": "East"
+            },
+            "heraldry": {
+                "mascot": "Panthers",
+                "colors": [
+                    {
+                        "name": "Black",
+                        "code": "#080808",
+                        "primary": false
+                    },
+                    {
+                        "name": "Gold",
+                        "code": "#ffec1a",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "P.O. Box 490"
+        },
+        {
+            "orgId": "5a32c7eec36787432f000002",
+            "shortCode": "U9SSQW",
+            "name": "WY Test School 1",
+            "city": "Cheyenne",
+            "stateCode": "WY",
+            "media": []
+        },
+        {
+            "orgId": "5e975f357e77a21487000001",
+            "shortCode": "2C55ZU",
+            "name": "WY Test School 2",
+            "city": "Cheyenne",
+            "stateCode": "WY",
+            "media": [],
+            "address": ""
+        },
+        {
+            "orgId": "6a7a480b7c2e4a052600000a",
+            "shortCode": "FV3W72",
+            "name": "Wyld Flower Learning Community",
+            "city": "Sheridan",
+            "stateCode": "WY",
+            "media": [],
+            "address": "151 1/2 W. Brundage Street"
+        },
+        {
+            "orgId": "6a70dbc2f224102f46000006",
+            "shortCode": "RR38X9",
+            "name": "Wyoming Classical Academy",
+            "city": "Casper",
+            "stateCode": "WY",
+            "media": [],
+            "address": ""
+        },
+        {
+            "orgId": "5e2e552c08483b851128e111",
+            "shortCode": "V334ED",
+            "name": "Wyoming Indian High School",
+            "city": "Ethete",
+            "stateCode": "WY",
+            "media": [
+                {
+                    "purpose": "logo600",
+                    "createdDate": "2020-08-04T17:38:19.999Z",
+                    "contentType": "image/jpeg",
+                    "mediaId": "ff74240d-91cc-4b97-83d4-561df29c43fb",
+                    "$url": "https://cdn2buckets-live-s3dfaaws-1mlao80q0xoqe.s3.amazonaws.com/ff74240d-91cc-4b97-83d4-561df29c43fb?AWSAccessKeyId=AKIAIUQNYZUJLIOKKJ3A&Expires=1822186649&Signature=wamUWOtolInL2m3Ia7Y7eRDXYdw%3D"
+                }
+            ],
+            "competitionLevels": {
+                "whsaaClassification": "2A"
+            },
+            "heraldry": {
+                "mascot": "Chiefs",
+                "colors": [
+                    {
+                        "name": "Red",
+                        "code": "#fe0003",
+                        "primary": false
+                    },
+                    {
+                        "name": "White",
+                        "code": "#ffffff",
+                        "primary": false
+                    },
+                    {
+                        "name": "Blue",
+                        "code": "#999999",
+                        "primary": false
+                    }
+                ]
+            },
+            "address": "638 Blue Sky Highway"
+        }
+    ],
+    "totalResults": 93
+}

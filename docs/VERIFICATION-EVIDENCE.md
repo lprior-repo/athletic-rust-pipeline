@@ -2498,6 +2498,129 @@ evidence, not a compiled one.
 `crates/census-service/tests/golden/`, while `golden_dir()` resolves to `crates/census-crawl/tests/golden/`;
 replaying `wiaa_results` should therefore fail to find its records. Read from the code, not observed.
 
+## DragonFly association survey ported to Rust (2026-09-29)
+
+Worktree `arh-coach-acquisition`, branch `coach-acquisition-rust`. The prototype's qualification probe
+(`census-prototype/dragonfly_probe.py` -> `out/dragonfly_probe.json`, 51 associations) now exists in Rust as
+`census_crawl::coach_directories::survey` (`ASSOCIATIONS`, `VERIFIED`, `probe_one`, `survey`, `report_json`)
+with fixtures captured from the live API for four associations (AK/AL/WY/GA), their sampled summaries, and the
+prototype's own record for each.
+
+- `cargo test -p census-crawl --lib coach_directories` -> **30 passed, 0 failed** (26 pre-existing plus four
+  oracle-parity tests and four sampling/report tests). Each oracle test drives `probe_one` through an offline
+  fetcher over a seeded HTTP cache and asserts the record the prototype wrote for that association: AK
+  `schools=355, with_address=355, pages=1, sampled=4, staff=0, coaches=0, sports={}, 0.0/0.0`; AL
+  `793, 730, 1, 4, 77, 20, {Track:6, CrossCountry:7, AthleticDirector:7}, 19.2/5.0`; WY
+  `93, 88, 1, 4, 44, 13, {Track:8, CrossCountry:2, AthleticDirector:3}, 11.0/3.2`; GA
+  `1000, 950, 3, 2825, 4, 187, 30, {Track:11, CrossCountry:16, AthleticDirector:3}, 46.8/7.5`.
+- Live re-run of the same four associations through `probe_one` against
+  `maxinfosite-api-live.dragonflyathletics.com` (1 request/s, one in flight, robots respected; throwaway
+  `crates/census-crawl/tests/live_probe_smoke.rs`, deleted after the run) -> 1 test passed in 19.37 s, and the
+  printed AL, WY and GA records are field-for-field identical to the same frozen records above (the AK record
+  printed but its text was cut from the captured output; the fixture test covers it offline).
+- Two divergences from the prototype were found by this port and fixed: `with_address` counted every row whose
+  `address` key exists, including the empty string, where the prototype counts truthy strings (770 vs 730 in AL,
+  990 vs 950 in GA, 92 vs 88 in WY - every association would have been overstated); and `probe_one` reads only
+  the first directory page, which is what the prototype reads (`pages` and `directory_total` are reported, not
+  walked).
+- **Limit.** Only these four associations have prototype parity; the other 47 run the same code path but their
+  numbers were not re-verified in Rust, and no live run covers them. Rows without a `shortCode` are skipped in
+  the summary pass where the prototype would fail on them.
+
+## CHSAA member-directory adapter ported to Rust (2026-09-29)
+
+Worktree `arh-coach-acquisition`, branch `coach-acquisition-rust`. `census_crawl::chsaa` implements the CO
+source from the prototype's `parsers/co_chsaanow.py` and `parsers/co_school.py`: the member directory
+(`https://chsaanow.com/schools/`, one embedded JSON array of 378 schools) and each school's page
+(`https://chsaanow.com/schools/<slug>/`, activities with their coach positions). Registered slug `chsaa` with
+`SCHOOL_COACH_NAMES` capabilities (CHSAA publishes no coach addresses), 1 request/s, one in flight, robots
+respected (`User-agent: *` allows `/` and disallows only `/history/champions/individual/totals/repeat/`,
+`/history/champions/individual/totals/repeat/*` and `/preview/`; the one `Crawl-delay: 10` names PetalBot).
+
+- Fixtures, copied byte-identically from `census-prototype/raw/` and verified with `cmp` plus `sha256sum`:
+  directory `chsaanow.com__40e1a856a5c5e92c9d387b56` (344 492 B,
+  `5b6fcae4a8ac9844ba4da74cf23512b00beb1ec30a6dd5078a7c263f229778f9`) -> `directory.html`; school page
+  `chsaanow.com__77e77972161ec3e260659b8d` (351 964 B,
+  `784e16bbabec8e7dfc373b9f8dbb601eb4d281bd3f60310f5362312c59db90da`) -> `school_cherry_creek.html`; robots
+  `chsaanow.com__7a2cddcff53e3f24106efd5f` (1 130 B) -> `robots.txt`. `PROVENANCE.json` carries url,
+  prototype_file, sha256 and bytes for each; for the two bodies with no per-URL `.meta.json` the byte counts
+  rest on `notes/co-chsaa.md` (directory 344 492 B, `/schools/cherry-creek/` 351 964 B), the extracted
+  directory holding 378 `schoolCode` values and the school body 231 `Coach` occurrences.
+- Goldens regenerated at port time from those fixtures with the prototype extractor
+  (`python3 -c "import sys; sys.path.insert(0,'.'); from parsers import co_chsaanow; ..."` ->
+  `golden_directory_rows.json`, 378 rows; `co_school.parse` -> `golden_school_coach_rows.json`, 50 rows).
+- `cargo test -p census-crawl` -> **450 passed, 0 failed** (16 of them `chsaa::tests`), 0 doc-tests.
+  `cargo fmt -p census-crawl -- --check` is clean and `cargo clippy -p census-crawl --all-targets -- -D
+  warnings` exits clean; the stricter local lint set (`unwrap_used`, `expect_used`, `panic`,
+  `indexing_slicing`, `as_conversions`, `arithmetic_side_effects`, `pedantic`) reports nothing in `chsaa/**`
+  or `coach_directories/**`.
+- Parity: `directory_rows_match_the_prototype_golden_field_for_field` compares all 378 rows on
+  name/official_name/city/street/zip/phone/district/member_type/school_type/setting, on the prototype's string
+  `association_id` against the Rust `school_code`, and on the prototype's `detail_url` against the URL the Rust
+  slug builds; `school_page_rows_match_the_prototype_golden_after_mapping` compares the Rust mapper's
+  `(person, sport, role, gender)` multiset with the prototype's 50 rows (the prototype's `sport: Track` is the
+  Rust `Sport::OutdoorTrack`; its `level` column is uniformly `Varsity` on this page and the census model stores
+  no coach level), and asserts the parse itself sees the page's other activities (>50 rows) because the mapper
+  is what narrows to track and cross country.
+- End-to-end, in-suite: `collect_stores_the_requested_school_and_its_coach_rows_from_the_cache` drives the real
+  `collect` against a seeded HTTP cache (directory plus `/schools/cherry-creek/`) and observes 1 school
+  processed, 0 errors, 50 coach rows, 0 with an address, 0 requests and 2 cache hits, with the store holding one
+  `CHSAA` school in Greenwood Village, Colorado plus its 50 coach rows, and the run journalled as
+  `CO:cherry-creek`. `a_journalled_school_is_skipped_on_the_next_run` proves the journal key suppresses the
+  second run without a fetch.
+- Defects this slice carried in from its first delivery and fixed here: the module had never compiled (it set
+  `CanonicalSchool::address` and `CanonicalSchool::zip`, fields the domain does not have, and wrote
+  `AdapterReport::coach_rows`, which does not exist); its fixtures were a 120-byte stub; its goldens were only
+  declared, never used, so no parity test existed; the directory anchor searched for unescaped JSON where the
+  page embeds escaped JSON, so the real capture failed to parse; `report.requests` counted cache hits as
+  requests; and `parse_school_page` accepted a body with no school title as a rowless success. The directory's
+  street address, ZIP, phone, district, member type, school type and setting reach the parser and the goldens
+  but have no field in `CanonicalSchool` or `SourceSchoolObservation`, so they are not stored; that gap is a
+  model decision, not a parser loss.
+- **Limit.** The live source was not re-fetched in this pass: no `collect` run touched chsaanow.com, so the
+  adapter's behaviour against the live site (status codes, shape drift) is unverified and the fixtures plus
+  goldens are the compiled evidence. `cargo xtask scan` cannot run at this base (`census-report` does not
+  compile against the committed `census-domain` API), so its source counters were not re-measured; the tree's
+  pre-existing `milesplit` test lint and the unrelated `census-report` build breakage are outside this slice.
+
+## Prototype capture census and zero-Python audit (2026-09-29)
+
+Worktree `arh-coach-acquisition`, branch `coach-acquisition-rust` (base `feec27eb3` + tracked wire
+fixtures).
+
+**The run path does not invoke Python.** Every Rust source in the tree was searched for a spawned
+interpreter (`grep -rn 'Command::new("python\|Command::new("python3\|process::Command' --include=*.rs
+crates/ xtask/`): no Python spawn exists. Three Python references remain in Rust text, all read:
+
+- `xtask/src/contract/tree.rs` — contract tests that *reject* Python artifacts (`python_artifact`
+  cases). Policy, not a dependency.
+- `crates/census-crawl/src/applicability/table.rs` — evidence strings recording how the September
+  counts were measured (`tools/dir_coach_counts.py`). Historical provenance of a recorded number.
+- `crates/census-service/src/cli/census_doc/format_sections.rs::reproduce` — the reproduce block
+  printed into the generated census document still names `python3 tools/make_census_doc.py` and
+  `tools/run_pipeline.sh`. **Open**: neither tool exists in this tree, so the block must name the
+  Rust verbs when `census-service` next compiles. Read, not exercised — `census-service` is red at
+  this base.
+
+**Capture census over `sources.py`.** Worker-collected (`CaptureCensus`), artifact
+`target/capture-census.json`: every URL the prototype registers was matched against the `url` field
+of `census-prototype/raw/*.meta.json` — 270 rows, 264 captured, 6 missing, and the missing six are
+exactly the hosts the research had already rejected: `ahsaa.com` (`Disallow: /`), `diaa.org`
+(Cloudflare 403), the `lhsaa.org` coaches PDF (OCR lane, never captured), `mshsaa.org`
+(robots-disallowed live), `vhsl.org`, `ak.milesplit.com`. No portable source is missing its capture.
+
+**DragonFly probe captures.** Worker-collected (`ProbeFixtures`), artifact
+`target/probe-captures.json`: 11,455 maxinfosite metas scanned, 51/51 association directory page-1
+bodies present, 198 sampled summaries required and 198 present (0 missing). Twenty bodies for
+AL/AK/WY/GA were copied byte-identical (`cmp` plus sha256, re-verified by an independent second
+pass) to `crates/census-crawl/tests/fixtures/coach_directories/probe/`, with per-state
+`PROVENANCE.json` carrying `url`, `prototype_file`, `sha256` and `bytes`. This is the raw material
+for the probe's offline replay test.
+
+**Limitations.** Both artifacts live under `target/` and are not committed; the method above is the
+reproduction path, not a committed script. The census covers the URLs `sources.py` names, not
+endpoints nobody has found. Nothing here fetched from the network.
+
 ## Consolidated historical evidence — imported 2026-09-27
 
 The following facts came from retired handoffs, implementation plans and duplicate operating

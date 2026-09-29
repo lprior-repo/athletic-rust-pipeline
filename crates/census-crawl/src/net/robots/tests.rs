@@ -13,9 +13,8 @@ mod tests_inner {
     fn a_named_agent_group_does_not_pace_us() {
         let policy = parse_robots("User-agent: GPTBot\nCrawl-delay: 30\n");
         assert_eq!(policy.crawl_delay, None);
-        let with_star = parse_robots(
-            "User-agent: GPTBot\nCrawl-delay: 30\n\nUser-agent: *\nCrawl-delay: 2\n",
-        );
+        let with_star =
+            parse_robots("User-agent: GPTBot\nCrawl-delay: 30\n\nUser-agent: *\nCrawl-delay: 2\n");
         assert_eq!(with_star.crawl_delay, Some(Duration::from_secs(2)));
     }
 

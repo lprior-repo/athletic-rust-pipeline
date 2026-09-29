@@ -179,7 +179,13 @@ fn build_coach(
         row.gender,
         row.role,
     );
-    if let Some(address) = row.member.emails.first().map(String::as_str).and_then(nonempty) {
+    if let Some(address) = row
+        .member
+        .emails
+        .first()
+        .map(String::as_str)
+        .and_then(nonempty)
+    {
         coach.set_published_email(&address);
     }
     if let Some(number) = row

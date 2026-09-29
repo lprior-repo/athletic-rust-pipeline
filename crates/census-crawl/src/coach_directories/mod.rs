@@ -1,6 +1,9 @@
 mod collect;
 mod map;
 mod parse;
+mod survey;
+#[cfg(test)]
+mod survey_tests;
 
 pub use collect::collect;
 pub use map::{absorb_summary, coach_entities, directory_school};
@@ -8,6 +11,7 @@ pub use parse::{
     parse_directory, parse_summary, DirectoryPage, DirectorySchool, SchoolSummary, StaffMember,
     SummaryAddress, SummaryTel, TeamEntry,
 };
+pub use survey::{probe_one, report_json, survey, ProbeRecord, ASSOCIATIONS, VERIFIED};
 
 use census_domain::UsJurisdiction;
 use std::collections::BTreeMap;

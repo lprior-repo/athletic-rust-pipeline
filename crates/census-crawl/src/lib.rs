@@ -51,6 +51,7 @@ pub mod athlete_observations;
 pub mod athleticlive;
 pub mod athleticlive_athletes;
 pub mod athleticnet;
+pub mod chsaa;
 pub mod ciac;
 pub mod coach_contacts;
 pub mod coach_directories;
