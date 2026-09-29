@@ -181,7 +181,6 @@ fn uncertain_or_failed_evidence_never_ships() {
     [
         Verdict::OkRoleContext,
         Verdict::RoleContradicted,
-        Verdict::RobotsBlocked,
         Verdict::FetchFailed,
         Verdict::Empty,
         Verdict::Mismatch,

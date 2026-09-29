@@ -589,14 +589,6 @@ fn fetch_error_retryable_variants_become_transient() {
 fn fetch_error_nonretryable_variants_become_terminal() {
     use census_crawl::net::FetchError;
 
-    let robots = collect_error(CrawlError::Fetch(FetchError::Robots(
-        "https://example.com".to_string(),
-    )));
-    assert!(
-        matches!(robots, JobError::Terminal { .. }),
-        "Robots must be terminal (the defect was it became Transient)"
-    );
-
     let too_large = collect_error(CrawlError::Fetch(FetchError::TooLarge {
         url: "https://example.com".to_string(),
     }));
@@ -877,14 +869,6 @@ fn classification_survives_through_job_error() {
 #[test]
 fn crawl_error_survives_through_collect_error_and_job_error() {
     use super::job_error;
-
-    let robots_h = job_error(collect_error(CrawlError::Fetch(FetchError::Robots(
-        "https://example.com/robots.txt".to_string(),
-    ))));
-    assert!(
-        format!("{robots_h:?}").contains("Terminal"),
-        "Robots must become Terminal HandlerError, got {robots_h:?}"
-    );
 
     let browser_not_retryable_h =
         job_error(collect_error(CrawlError::Fetch(FetchError::BrowserLane {

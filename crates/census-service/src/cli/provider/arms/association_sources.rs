@@ -217,3 +217,21 @@ pub(crate) async fn riil_report(
     )
     .await?)
 }
+
+pub(crate) async fn coach_directories_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::coach_directories::collect(
+        context,
+        &providers::coach_directories::Options {
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+            states: args.jurisdictions()?,
+            school_names: args.school_names.clone(),
+        },
+    )
+    .await?)
+}

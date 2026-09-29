@@ -130,11 +130,9 @@ fn compute_shipped(outcomes: &[FragmentOutcome]) -> usize {
 
 fn print_fetch_stats(stats: &FetchStats) {
     println!(
-        "fetch stats: requests={} cache_hits={} robots_blocked={} robots_authorized={} errors={} bytes={}",
+        "fetch stats: requests={} cache_hits={} errors={} bytes={}",
         stats.requests,
         stats.cache_hits,
-        stats.robots_blocked,
-        stats.robots_authorized,
         stats.errors,
         stats.bytes_downloaded
     );
@@ -176,7 +174,7 @@ fn write_report(path: &Path, outcomes: &[FragmentOutcome]) -> Result<()> {
          cell appeared in the page *and* the role label was corroborated within its window;\n\
          `role conveyed by page context` means the value appeared without that window; `render-required`\n\
          means the page is a JavaScript shell, so no value is reachable without executing script.\n\
-         `robots-blocked` and `fetch failed` count pages the polite fetcher could not read at all —\n\
+         `fetch failed` counts pages the fetcher could not read at all —\n\
          those rows ship nowhere and the tallies say how many they are.\n\n",
     );
     body.push_str(&coachverify::audit_table(outcomes));

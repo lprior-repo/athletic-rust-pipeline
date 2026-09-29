@@ -53,6 +53,7 @@ pub mod athleticlive_athletes;
 pub mod athleticnet;
 pub mod ciac;
 pub mod coach_contacts;
+pub mod coach_directories;
 pub mod compiled;
 mod context;
 pub mod hytek;

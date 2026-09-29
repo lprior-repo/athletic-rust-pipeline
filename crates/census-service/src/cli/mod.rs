@@ -51,7 +51,7 @@ pub(super) struct Cli {
     #[arg(long, global = true)]
     user_agent: Option<String>,
     #[arg(
-        help = "Operator-authorized host (repeatable). Its robots.txt rules are recorded on the run and the stats as `robots_authorized` instead of blocking requests, under the 2 rps per-host ceiling. A bare domain authorizes its subdomains. Default: every host's robots rules are enforced"
+        help = "Operator-authorized host (repeatable). A redirect that lands on it is admitted, and it is paced no faster than the 2 rps per-host ceiling. A bare domain authorizes its subdomains. Default: a redirect to a host outside the registry is refused"
     )]
     #[arg(long = "authorized-host", global = true, value_name = "HOST")]
     authorized_hosts: Vec<String>,

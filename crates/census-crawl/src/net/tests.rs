@@ -49,60 +49,6 @@ fn authorization_never_relaxes_the_two_rps_ceiling() {
 }
 
 #[test]
-fn robots_rules_honour_longest_match_and_allow_ties() {
-    let rules = parse_robots(
-        "User-agent: *\nDisallow: /rankings\nDisallow: /api/\nAllow: /api/public/\nCrawl-delay: 2\n",
-    );
-    assert!(!rules.allows("/rankings/leaders"));
-    assert!(!rules.allows("/api/v1/meets"));
-    assert!(rules.allows("/api/public/x"));
-    assert!(rules.allows("/teams/1234/roster"));
-    assert_eq!(rules.crawl_delay, Some(Duration::from_secs(2)));
-}
-
-#[test]
-fn robots_absent_or_empty_allows_everything() {
-    let empty = parse_robots("");
-    assert!(empty.allows("/anything"));
-    let no_group = parse_robots("Disallow: /x\n");
-    assert!(no_group.allows("/x"), "rules outside a group do not apply");
-}
-
-#[test]
-fn a_hostile_crawl_delay_cannot_panic_or_park_the_walk() {
-    for hostile in ["inf", "-inf", "nan", "1e30", "1e300", "-5"] {
-        let body = format!("User-agent: *\nDisallow: /private\nCrawl-delay: {hostile}\n");
-        let rules = parse_robots(&body);
-        assert!(!rules.allows("/private/x"), "{hostile} must still disallow");
-        assert!(
-            rules
-                .crawl_delay
-                .is_none_or(|delay| delay <= std::time::Duration::from_secs(3600)),
-            "{hostile} must be refused or clamped, got {:?}",
-            rules.crawl_delay
-        );
-    }
-    let clamped = parse_robots("User-agent: *\nCrawl-delay: 1e9\n");
-    assert_eq!(
-        clamped.crawl_delay,
-        Some(std::time::Duration::from_secs(3600))
-    );
-    let honoured = parse_robots("User-agent: *\nCrawl-delay: 2\n");
-    assert_eq!(
-        honoured.crawl_delay,
-        Some(std::time::Duration::from_secs(2))
-    );
-}
-
-#[test]
-fn robots_named_agent_groups_are_ignored() {
-    let rules =
-        parse_robots("User-agent: GPTBot\nDisallow: /\n\nUser-agent: *\nDisallow: /private\n");
-    assert!(rules.allows("/teams"));
-    assert!(!rules.allows("/private/x"));
-}
-
-#[test]
 fn cache_key_pins_the_on_disk_cache_layout() {
     assert_eq!(
         Fetcher::key_for("GET", "https://example.com/teams", ""),
@@ -157,22 +103,6 @@ async fn a_corrupted_cache_body_is_rejected_not_served() {
 
     let result = super::cache::read_cache(&body_path, &meta_path).expect("read");
     assert!(result.is_none(), "corrupted body must be a cache miss");
-}
-
-#[test]
-fn an_empty_robots_body_is_fetched_but_has_no_rules() {
-    let rules = parse_robots("");
-    assert!(
-        rules.was_fetched(),
-        "empty body is a fetched file, not an absent one"
-    );
-    assert!(rules.allows("/"));
-}
-
-#[test]
-fn a_comment_only_robots_body_is_fetched_but_has_no_rules() {
-    let rules = parse_robots("# just a comment\n  \n# nothing useful\n");
-    assert!(rules.was_fetched(), "a comment-only body is still fetched");
 }
 
 #[test]

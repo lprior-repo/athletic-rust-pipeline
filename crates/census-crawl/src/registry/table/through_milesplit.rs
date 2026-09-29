@@ -4,7 +4,7 @@ use super::super::policy::{
 use super::super::SourceCapabilities as Caps;
 use super::super::{SourceDescriptor, TransportKind};
 
-pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 8] = [
+pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 9] = [
     SourceDescriptor {
         slug: "athleticlive",
         provider: "AthleticLIVE meet harvest and result-plane captures (research artifacts)",
@@ -84,5 +84,17 @@ pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 8] = [
             ..Caps::NONE
         },
         admission: fetched("milesplit.com", FETCHER_RPS),
+    },
+    SourceDescriptor {
+        slug: "coach_directories",
+        provider: "DragonFly Athletics association member directories",
+        transport: TransportKind::StructuredApi,
+        capabilities: Caps {
+            school_evidence: true,
+            coach_directory: true,
+            public_professional_contact: true,
+            ..Caps::NONE
+        },
+        admission: fetched("maxinfosite-api-live.dragonflyathletics.com", FETCHER_RPS),
     },
 ];

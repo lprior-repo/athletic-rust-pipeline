@@ -2443,6 +2443,61 @@ and was not independently resolved by the note; do not treat 108 as a valid juri
 The observed offline seal refused with `the coverage report does not reconcile`. The online
 attempt had no registered `Census/seal` endpoint. Neither result is a successful seal.
 
+## DragonFly coach directories: the NC/GA/IN slice against its fixtures (2026-09-29)
+
+Worktree `arh-coach-directories`, branch `dragonfly-coach-directories` (base `7cdd594d8`).
+
+- `cargo test -p census-crawl --all-features` → **418 passed, 0 failed** (14 of them
+  `coach_directories::tests`), 0 doc-tests.
+- The fixtures were driven through the module's public API by a throwaway example
+  (`crates/census-crawl/examples/coach_replay_probe.rs`, deleted after the run) that also reads the same
+  records the replay harness's `Capture::recorded` resolves, named
+  `<source>__<fixture file name>.json` (a `.json` fixture therefore yields `…json.json`):
+
+| Fixture | Observed |
+|---|---|
+| `nchsaa_directory_p1.json` | `page=(1, 1, 452, 452)`, equal to the record |
+| `ghsa_directory_p2.json` | `page=(2, 3, 2825, 1000)`, equal to the record |
+| `nc_staff_summary_zcum49.json` | `A.C. Reynolds High School`, 46 staff, 38 teams, **13 mapped rows** — the oracle's `(person, sport family, gender)` row set |
+| `in_staff_summary_qwugx2.json` | `Muncie Central High School`, 0 staff, 130 teams, 0 mapped rows |
+| `summary_orgid_200_accessdenied.xml` | refused: `parse_summary` errors on the S3 AccessDenied body |
+
+The raw fixture JSON independently counts 46 staff / 38 teams for `ZCUM49` and 0 staff / 130 teams for
+`QWUGX2`, so the module's numbers are the fixture's. Two records that had been written with guessed values
+(`staff: 108`, `teams: 34`, another school name) were caught by this run and rewritten to the measured
+values; the record for the AccessDenied body was dropped because no arm consumes its field.
+
+**End-to-end smoke in the suite (2026-09-29).**
+`coach_directories::tests::collect_stores_the_requested_school_and_its_coach_rows_from_the_cache` runs the
+real `collect` against a seeded HTTP cache: the NC directory page and the `ZCUM49` summary yield 1 school
+and 13 coach rows in the store, the school keeps `NCHSAA`, Asheville and North Carolina, the run is
+journalled as `NC:ZCUM49`, and the report reads 0 network requests, 2 cache hits, 13 rows carrying a
+published address. Writing it exposed a defect: `report.requests` counted cache hits as network requests
+(the run reported 2 requests where it made none), so the counters now come from the fetcher's stats delta,
+as in `mshsl::collect`.
+
+**Limitation.** `cargo xtask replay coach_directories` was not run. At this base `cargo check -p xtask`
+fails: `census-report` compiles only against the uncommitted `census-domain` API
+(`crates/census-report/src/export/dataset.rs:26` calls `census_domain::model::now_utc`, which exists only in
+the uncommitted `crates/census-domain/src/model/dates.rs`), reporting 53 errors, including `E0425 now_utc`,
+`E0609 CanonicalEvent::name`, `E0560 PerformanceRow::performance_id`, `E0599 CanonicalAthlete::display_name`
+and an unresolved `chrono`. The replay arm in `xtask/src/replay/cases.rs` is committed un-run; its logic was
+validated by proxy, since the probe performs the identical `parse_directory` / `parse_summary` /
+`coach_entities` calls and comparisons against the same records.
+
+**Caller migration found by sweep (2026-09-29).** Since `census-service` cannot compile at this base, the
+`FetchError::Robots` removal was swept by grep rather than by the compiler:
+`crates/census-service/src/census/sweep/access.rs` still built that variant in
+`no_other_failure_is_a_refusal`; it now builds `FetchError::Policy` there (a policy stop is likewise not a
+source refusal). No reference to `FetchError::Robots` remains anywhere in the tree, and every
+`census_crawl::` item the service names — including `coach_directories::{Options, collect}` and the
+`Options` field set both construction sites use — is declared in the crawl crate. That sweep is textual
+evidence, not a compiled one.
+
+**Adjacent observation, not exercised here.** The tracked `wiaa_results__*.json` records live in
+`crates/census-service/tests/golden/`, while `golden_dir()` resolves to `crates/census-crawl/tests/golden/`;
+replaying `wiaa_results` should therefore fail to find its records. Read from the code, not observed.
+
 ## Consolidated historical evidence — imported 2026-09-27
 
 The following facts came from retired handoffs, implementation plans and duplicate operating

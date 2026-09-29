@@ -27,7 +27,6 @@ enum Fetched {
         sha256: String,
         fetched_at: String,
     },
-    Robots,
     Failed,
 }
 
@@ -51,7 +50,6 @@ async fn fetch_text(fetcher: &Fetcher, url: &str, xhr: bool, options: &GateOptio
             sha256: outcome.content_digest,
             fetched_at: outcome.fetched_at,
         },
-        Err(FetchError::Robots(_)) => Fetched::Robots,
         Err(_) => Fetched::Failed,
     }
 }
@@ -80,7 +78,6 @@ async fn fetch_nsaa_post(
             sha256: outcome.content_digest,
             fetched_at: outcome.fetched_at,
         },
-        Err(FetchError::Robots(_)) => Fetched::Robots,
         Err(_) => Fetched::Failed,
     }
 }
@@ -138,7 +135,6 @@ async fn run_passes(
                 sha256,
                 fetched_at,
             } => evidence.absorb(&text, row, url, &fetched_at, &sha256)?,
-            Fetched::Robots => evidence.robots = true,
             Fetched::Failed => evidence.failed = true,
         }
     }
@@ -150,7 +146,6 @@ async fn run_passes(
                     sha256,
                     fetched_at,
                 } => evidence.absorb(&text, row, url, &fetched_at, &sha256)?,
-                Fetched::Robots => evidence.robots = true,
                 Fetched::Failed => evidence.failed = true,
             }
         }
@@ -167,7 +162,6 @@ async fn run_passes(
                     sha256,
                     fetched_at,
                 } => evidence.absorb(&text, row, url, &fetched_at, &sha256)?,
-                Fetched::Robots => evidence.robots = true,
                 Fetched::Failed => evidence.failed = true,
             }
         }

@@ -7,8 +7,6 @@ use super::MAX_BODY_BYTES;
 
 #[derive(Debug, Error)]
 pub enum FetchError {
-    #[error("robots.txt disallows {0}")]
-    Robots(String),
     #[error("http status {status} for {url}")]
     Http { status: u16, url: String },
     #[error("http 429 for {url} (retry-after: {retry_after_secs:?}s)")]
@@ -73,8 +71,7 @@ impl FetchError {
             Self::Transport { .. } | Self::Timeout { .. } | Self::RateLimited { .. } => true,
             Self::BrowserLane { retryable, .. } => *retryable,
             Self::Http { status, .. } => *status >= 500 || *status == 429,
-            Self::Robots(_)
-            | Self::TooLarge { .. }
+            Self::TooLarge { .. }
             | Self::Cache { .. }
             | Self::InvalidUrl { .. }
             | Self::Decode { .. }
@@ -127,8 +124,6 @@ pub struct FetchStats {
     pub requests: u64,
     pub cache_hits: u64,
     pub conditional_304: u64,
-    pub robots_blocked: u64,
-    pub robots_authorized: u64,
     pub bytes_downloaded: u64,
     pub errors: u64,
     pub rate_limited: u64,

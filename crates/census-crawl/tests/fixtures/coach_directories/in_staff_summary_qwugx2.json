@@ -1,0 +1,5348 @@
+{
+    "id": "5e2e520beb8fa480a8b483b7",
+    "name": "Muncie Central High School",
+    "shortCode": "QWUGX2",
+    "stateCode": "IN",
+    "currentAcademicYear": 2026,
+    "tel": [
+        {
+            "name": "Office",
+            "num": "(765) 747-5260"
+        }
+    ],
+    "address": {
+        "address1": "801 N Walnut St",
+        "city": "Muncie",
+        "state": "IN",
+        "zip": "47305"
+    },
+    "facilities": [],
+    "media": [],
+    "links": [],
+    "heraldry": {},
+    "staff": [],
+    "teams": [
+        {
+            "code": "MBA:69cad941938cccd731d81095",
+            "name": "Baseball",
+            "level": "Varsity",
+            "ncaaSportCode": "MBA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MBA:69cad942938cccd731d810d3",
+            "name": "Baseball",
+            "level": "JV",
+            "ncaaSportCode": "MBA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MBA:69cad942938cccd731d810d9",
+            "name": "Baseball",
+            "level": "Freshman",
+            "ncaaSportCode": "MBA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MBA:69cad944938cccd731d81147",
+            "name": "Baseball",
+            "level": "8th Grade",
+            "ncaaSportCode": "MBA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MBA:69cad945938cccd731d81155",
+            "name": "Baseball",
+            "level": "7th Grade",
+            "ncaaSportCode": "MBA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MBB:69cad941938cccd731d810a7",
+            "name": "Boys' Basketball",
+            "level": "Varsity",
+            "ncaaSportCode": "MBB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MBB:69cad942938cccd731d810bd",
+            "name": "Boys' Basketball",
+            "level": "JV",
+            "ncaaSportCode": "MBB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MBB:69cad942938cccd731d810cf",
+            "name": "Boys' Basketball",
+            "level": "Freshman",
+            "ncaaSportCode": "MBB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MBB:69cad944938cccd731d8112d",
+            "name": "Boys' Basketball",
+            "level": "8th Grade",
+            "ncaaSportCode": "MBB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MBB:69cad945938cccd731d8115b",
+            "name": "Boys' Basketball",
+            "level": "7th Grade",
+            "ncaaSportCode": "MBB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MCC:69cad942938cccd731d810b5",
+            "name": "Boys' Cross Country",
+            "level": "Varsity",
+            "ncaaSportCode": "MCC",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MCC:69cad943938cccd731d810ed",
+            "name": "Boys' Cross Country",
+            "level": "JV",
+            "ncaaSportCode": "MCC",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MCC:69cad943938cccd731d81107",
+            "name": "Boys' Cross Country",
+            "level": "Freshman",
+            "ncaaSportCode": "MCC",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MCC:69cad944938cccd731d8114f",
+            "name": "Boys' Cross Country",
+            "level": "8th Grade",
+            "ncaaSportCode": "MCC",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MCC:69cad945938cccd731d81167",
+            "name": "Boys' Cross Country",
+            "level": "7th Grade",
+            "ncaaSportCode": "MCC",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MGO:69cad941938cccd731d8109f",
+            "name": "Boys' Golf",
+            "level": "Varsity",
+            "ncaaSportCode": "MGO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MGO:69cad943938cccd731d810f9",
+            "name": "Boys' Golf",
+            "level": "JV",
+            "ncaaSportCode": "MGO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MGO:69cad943938cccd731d8111d",
+            "name": "Boys' Golf",
+            "level": "8th Grade",
+            "ncaaSportCode": "MGO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MGO:69cad943938cccd731d81121",
+            "name": "Boys' Golf",
+            "level": "Freshman",
+            "ncaaSportCode": "MGO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MGO:69cad945938cccd731d81171",
+            "name": "Boys' Golf",
+            "level": "7th Grade",
+            "ncaaSportCode": "MGO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MLA:69cad941938cccd731d810a3",
+            "name": "Boys' Lacrosse",
+            "level": "Varsity",
+            "ncaaSportCode": "MLA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MLA:69cad942938cccd731d810e7",
+            "name": "Boys' Lacrosse",
+            "level": "JV",
+            "ncaaSportCode": "MLA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MLA:69cad943938cccd731d81115",
+            "name": "Boys' Lacrosse",
+            "level": "Freshman",
+            "ncaaSportCode": "MLA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MLA:69cad944938cccd731d8114b",
+            "name": "Boys' Lacrosse",
+            "level": "8th Grade",
+            "ncaaSportCode": "MLA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MLA:69cad945938cccd731d8117b",
+            "name": "Boys' Lacrosse",
+            "level": "7th Grade",
+            "ncaaSportCode": "MLA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MSO:69cad942938cccd731d810bf",
+            "name": "Boys' Soccer",
+            "level": "JV",
+            "ncaaSportCode": "MSO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MSO:69cad942938cccd731d810c5",
+            "name": "Boys' Soccer",
+            "level": "Varsity",
+            "ncaaSportCode": "MSO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MSO:69cad944938cccd731d8112b",
+            "name": "Boys' Soccer",
+            "level": "Freshman",
+            "ncaaSportCode": "MSO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MSO:69cad944938cccd731d81135",
+            "name": "Boys' Soccer",
+            "level": "8th Grade",
+            "ncaaSportCode": "MSO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MSO:69cad946938cccd731d81193",
+            "name": "Boys' Soccer",
+            "level": "7th Grade",
+            "ncaaSportCode": "MSO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MSW:69cad941938cccd731d8109b",
+            "name": "Boys' Swimming",
+            "level": "Varsity",
+            "ncaaSportCode": "MSW",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MSW:69cad942938cccd731d810dd",
+            "name": "Boys' Swimming",
+            "level": "JV",
+            "ncaaSportCode": "MSW",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MSW:69cad943938cccd731d8111f",
+            "name": "Boys' Swimming",
+            "level": "Freshman",
+            "ncaaSportCode": "MSW",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MSW:69cad944938cccd731d81145",
+            "name": "Boys' Swimming",
+            "level": "8th Grade",
+            "ncaaSportCode": "MSW",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MSW:69cad946938cccd731d81183",
+            "name": "Boys' Swimming",
+            "level": "7th Grade",
+            "ncaaSportCode": "MSW",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTE:69cad941938cccd731d810af",
+            "name": "Boys' Tennis",
+            "level": "Varsity",
+            "ncaaSportCode": "MTE",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTE:69cad942938cccd731d810e3",
+            "name": "Boys' Tennis",
+            "level": "JV",
+            "ncaaSportCode": "MTE",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTE:69cad944938cccd731d81125",
+            "name": "Boys' Tennis",
+            "level": "8th Grade",
+            "ncaaSportCode": "MTE",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTE:69cad944938cccd731d8113b",
+            "name": "Boys' Tennis",
+            "level": "Freshman",
+            "ncaaSportCode": "MTE",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTE:69cad946938cccd731d81191",
+            "name": "Boys' Tennis",
+            "level": "7th Grade",
+            "ncaaSportCode": "MTE",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTI:69cad941938cccd731d810a1",
+            "name": "Boys' Track, Indoor",
+            "level": "Varsity",
+            "ncaaSportCode": "MTI",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTI:69cad943938cccd731d81103",
+            "name": "Boys' Track, Indoor",
+            "level": "JV",
+            "ncaaSportCode": "MTI",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTI:69cad943938cccd731d8111b",
+            "name": "Boys' Track, Indoor",
+            "level": "Freshman",
+            "ncaaSportCode": "MTI",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTI:69cad944938cccd731d81123",
+            "name": "Boys' Track, Indoor",
+            "level": "8th Grade",
+            "ncaaSportCode": "MTI",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTI:69cad945938cccd731d81177",
+            "name": "Boys' Track, Indoor",
+            "level": "7th Grade",
+            "ncaaSportCode": "MTI",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTO:69cad941938cccd731d81097",
+            "name": "Boys' Track, Outdoor",
+            "level": "Varsity",
+            "ncaaSportCode": "MTO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTO:69cad942938cccd731d810d7",
+            "name": "Boys' Track, Outdoor",
+            "level": "JV",
+            "ncaaSportCode": "MTO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTO:69cad943938cccd731d8110b",
+            "name": "Boys' Track, Outdoor",
+            "level": "Freshman",
+            "ncaaSportCode": "MTO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTO:69cad943938cccd731d81117",
+            "name": "Boys' Track, Outdoor",
+            "level": "8th Grade",
+            "ncaaSportCode": "MTO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MTO:69cad945938cccd731d8117d",
+            "name": "Boys' Track, Outdoor",
+            "level": "7th Grade",
+            "ncaaSportCode": "MTO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MWR:69cad942938cccd731d810c7",
+            "name": "Boys' Wrestling",
+            "level": "Varsity",
+            "ncaaSportCode": "MWR",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MWR:69cad943938cccd731d810f1",
+            "name": "Boys' Wrestling",
+            "level": "JV",
+            "ncaaSportCode": "MWR",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MWR:69cad943938cccd731d81119",
+            "name": "Boys' Wrestling",
+            "level": "Freshman",
+            "ncaaSportCode": "MWR",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MWR:69cad945938cccd731d81161",
+            "name": "Boys' Wrestling",
+            "level": "8th Grade",
+            "ncaaSportCode": "MWR",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MWR:69cad946938cccd731d81185",
+            "name": "Boys' Wrestling",
+            "level": "7th Grade",
+            "ncaaSportCode": "MWR",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MFB:69cad941938cccd731d81091",
+            "name": "Football",
+            "level": "Varsity",
+            "ncaaSportCode": "MFB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MFB:69cad943938cccd731d810ef",
+            "name": "Football",
+            "level": "JV",
+            "ncaaSportCode": "MFB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MFB:69cad943938cccd731d8110f",
+            "name": "Football",
+            "level": "8th Grade",
+            "ncaaSportCode": "MFB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MFB:69cad944938cccd731d81127",
+            "name": "Football",
+            "level": "Freshman",
+            "ncaaSportCode": "MFB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "MFB:69cad945938cccd731d8117f",
+            "name": "Football",
+            "level": "7th Grade",
+            "ncaaSportCode": "MFB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WBB:69cad941938cccd731d81099",
+            "name": "Girls' Basketball",
+            "level": "Varsity",
+            "ncaaSportCode": "WBB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WBB:69cad942938cccd731d810cd",
+            "name": "Girls' Basketball",
+            "level": "Freshman",
+            "ncaaSportCode": "WBB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WBB:69cad942938cccd731d810e1",
+            "name": "Girls' Basketball",
+            "level": "JV",
+            "ncaaSportCode": "WBB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WBB:69cad944938cccd731d8113f",
+            "name": "Girls' Basketball",
+            "level": "8th Grade",
+            "ncaaSportCode": "WBB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WBB:69cad945938cccd731d8115d",
+            "name": "Girls' Basketball",
+            "level": "7th Grade",
+            "ncaaSportCode": "WBB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WCH:69cad941938cccd731d810a5",
+            "name": "Girls' Cheerleading",
+            "level": "Varsity",
+            "ncaaSportCode": "WCH",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WCH:69cad942938cccd731d810b7",
+            "name": "Girls' Cheerleading",
+            "level": "JV",
+            "ncaaSportCode": "WCH",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WCH:69cad943938cccd731d81111",
+            "name": "Girls' Cheerleading",
+            "level": "8th Grade",
+            "ncaaSportCode": "WCH",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WCH:69cad944938cccd731d81139",
+            "name": "Girls' Cheerleading",
+            "level": "Freshman",
+            "ncaaSportCode": "WCH",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WCH:69cad945938cccd731d81159",
+            "name": "Girls' Cheerleading",
+            "level": "7th Grade",
+            "ncaaSportCode": "WCH",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WCC:69cad941938cccd731d810ab",
+            "name": "Girls' Cross Country",
+            "level": "Varsity",
+            "ncaaSportCode": "WCC",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WCC:69cad942938cccd731d810e9",
+            "name": "Girls' Cross Country",
+            "level": "JV",
+            "ncaaSportCode": "WCC",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WCC:69cad943938cccd731d810fd",
+            "name": "Girls' Cross Country",
+            "level": "8th Grade",
+            "ncaaSportCode": "WCC",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WCC:69cad943938cccd731d81109",
+            "name": "Girls' Cross Country",
+            "level": "Freshman",
+            "ncaaSportCode": "WCC",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WCC:69cad945938cccd731d81179",
+            "name": "Girls' Cross Country",
+            "level": "7th Grade",
+            "ncaaSportCode": "WCC",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WGO:69cad941938cccd731d810a9",
+            "name": "Girls' Golf",
+            "level": "Varsity",
+            "ncaaSportCode": "WGO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WGO:69cad943938cccd731d81101",
+            "name": "Girls' Golf",
+            "level": "JV",
+            "ncaaSportCode": "WGO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WGO:69cad944938cccd731d8113d",
+            "name": "Girls' Golf",
+            "level": "8th Grade",
+            "ncaaSportCode": "WGO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WGO:69cad944938cccd731d81143",
+            "name": "Girls' Golf",
+            "level": "Freshman",
+            "ncaaSportCode": "WGO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WGO:69cad945938cccd731d81173",
+            "name": "Girls' Golf",
+            "level": "7th Grade",
+            "ncaaSportCode": "WGO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WLA:69cad942938cccd731d810cb",
+            "name": "Girls' Lacrosse",
+            "level": "Varsity",
+            "ncaaSportCode": "WLA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WLA:69cad942938cccd731d810e5",
+            "name": "Girls' Lacrosse",
+            "level": "JV",
+            "ncaaSportCode": "WLA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WLA:69cad944938cccd731d81133",
+            "name": "Girls' Lacrosse",
+            "level": "8th Grade",
+            "ncaaSportCode": "WLA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WLA:69cad944938cccd731d81137",
+            "name": "Girls' Lacrosse",
+            "level": "Freshman",
+            "ncaaSportCode": "WLA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WLA:69cad946938cccd731d81181",
+            "name": "Girls' Lacrosse",
+            "level": "7th Grade",
+            "ncaaSportCode": "WLA",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSO:69cad942938cccd731d810b3",
+            "name": "Girls' Soccer",
+            "level": "Varsity",
+            "ncaaSportCode": "WSO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSO:69cad943938cccd731d81105",
+            "name": "Girls' Soccer",
+            "level": "JV",
+            "ncaaSportCode": "WSO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSO:69cad944938cccd731d8114d",
+            "name": "Girls' Soccer",
+            "level": "Freshman",
+            "ncaaSportCode": "WSO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSO:69cad945938cccd731d81157",
+            "name": "Girls' Soccer",
+            "level": "8th Grade",
+            "ncaaSportCode": "WSO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSO:69cad946938cccd731d8118d",
+            "name": "Girls' Soccer",
+            "level": "7th Grade",
+            "ncaaSportCode": "WSO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSW:69cad941938cccd731d8109d",
+            "name": "Girls' Swimming",
+            "level": "Varsity",
+            "ncaaSportCode": "WSW",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSW:69cad942938cccd731d810bb",
+            "name": "Girls' Swimming",
+            "level": "JV",
+            "ncaaSportCode": "WSW",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSW:69cad943938cccd731d810ff",
+            "name": "Girls' Swimming",
+            "level": "8th Grade",
+            "ncaaSportCode": "WSW",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSW:69cad943938cccd731d81113",
+            "name": "Girls' Swimming",
+            "level": "Freshman",
+            "ncaaSportCode": "WSW",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSW:69cad946938cccd731d8118b",
+            "name": "Girls' Swimming",
+            "level": "7th Grade",
+            "ncaaSportCode": "WSW",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTE:69cad942938cccd731d810c9",
+            "name": "Girls' Tennis",
+            "level": "Varsity",
+            "ncaaSportCode": "WTE",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTE:69cad942938cccd731d810d1",
+            "name": "Girls' Tennis",
+            "level": "JV",
+            "ncaaSportCode": "WTE",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTE:69cad944938cccd731d81141",
+            "name": "Girls' Tennis",
+            "level": "8th Grade",
+            "ncaaSportCode": "WTE",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTE:69cad945938cccd731d81153",
+            "name": "Girls' Tennis",
+            "level": "Freshman",
+            "ncaaSportCode": "WTE",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTE:69cad946938cccd731d8118f",
+            "name": "Girls' Tennis",
+            "level": "7th Grade",
+            "ncaaSportCode": "WTE",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTI:69cad941938cccd731d81093",
+            "name": "Girls' Track, Indoor",
+            "level": "Varsity",
+            "ncaaSportCode": "WTI",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTI:69cad942938cccd731d810df",
+            "name": "Girls' Track, Indoor",
+            "level": "JV",
+            "ncaaSportCode": "WTI",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTI:69cad943938cccd731d8110d",
+            "name": "Girls' Track, Indoor",
+            "level": "8th Grade",
+            "ncaaSportCode": "WTI",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTI:69cad945938cccd731d81163",
+            "name": "Girls' Track, Indoor",
+            "level": "Freshman",
+            "ncaaSportCode": "WTI",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTI:69cad945938cccd731d8116f",
+            "name": "Girls' Track, Indoor",
+            "level": "7th Grade",
+            "ncaaSportCode": "WTI",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTO:69cad942938cccd731d810c3",
+            "name": "Girls' Track, Outdoor",
+            "level": "Varsity",
+            "ncaaSportCode": "WTO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTO:69cad943938cccd731d810f3",
+            "name": "Girls' Track, Outdoor",
+            "level": "JV",
+            "ncaaSportCode": "WTO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTO:69cad944938cccd731d81131",
+            "name": "Girls' Track, Outdoor",
+            "level": "Freshman",
+            "ncaaSportCode": "WTO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTO:69cad945938cccd731d8116b",
+            "name": "Girls' Track, Outdoor",
+            "level": "8th Grade",
+            "ncaaSportCode": "WTO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WTO:69cad945938cccd731d81175",
+            "name": "Girls' Track, Outdoor",
+            "level": "7th Grade",
+            "ncaaSportCode": "WTO",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WVB:69cad941938cccd731d810ad",
+            "name": "Girls' Volleyball",
+            "level": "Varsity",
+            "ncaaSportCode": "WVB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WVB:69cad942938cccd731d810c1",
+            "name": "Girls' Volleyball",
+            "level": "JV",
+            "ncaaSportCode": "WVB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WVB:69cad943938cccd731d810f5",
+            "name": "Girls' Volleyball",
+            "level": "Freshman",
+            "ncaaSportCode": "WVB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WVB:69cad945938cccd731d81169",
+            "name": "Girls' Volleyball",
+            "level": "8th Grade",
+            "ncaaSportCode": "WVB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WVB:69cad946938cccd731d81187",
+            "name": "Girls' Volleyball",
+            "level": "7th Grade",
+            "ncaaSportCode": "WVB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WWR:69cad942938cccd731d810db",
+            "name": "Girls' Wrestling",
+            "level": "JV",
+            "ncaaSportCode": "WWR",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WWR:69cad943938cccd731d810fb",
+            "name": "Girls' Wrestling",
+            "level": "Varsity",
+            "ncaaSportCode": "WWR",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WWR:69cad944938cccd731d81129",
+            "name": "Girls' Wrestling",
+            "level": "Freshman",
+            "ncaaSportCode": "WWR",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WWR:69cad945938cccd731d8115f",
+            "name": "Girls' Wrestling",
+            "level": "8th Grade",
+            "ncaaSportCode": "WWR",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WWR:69cad945938cccd731d8116d",
+            "name": "Girls' Wrestling",
+            "level": "7th Grade",
+            "ncaaSportCode": "WWR",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "XCH:69cad942938cccd731d810b9",
+            "name": "Mixed Cheerleading",
+            "level": "Varsity",
+            "ncaaSportCode": "XCH",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "XCH:69cad943938cccd731d810eb",
+            "name": "Mixed Cheerleading",
+            "level": "JV",
+            "ncaaSportCode": "XCH",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "XCH:69cad943938cccd731d810f7",
+            "name": "Mixed Cheerleading",
+            "level": "Freshman",
+            "ncaaSportCode": "XCH",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "XCH:69cad944938cccd731d81149",
+            "name": "Mixed Cheerleading",
+            "level": "8th Grade",
+            "ncaaSportCode": "XCH",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "XCH:69cad945938cccd731d81165",
+            "name": "Mixed Cheerleading",
+            "level": "7th Grade",
+            "ncaaSportCode": "XCH",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSB:69cad942938cccd731d810b1",
+            "name": "Softball",
+            "level": "Varsity",
+            "ncaaSportCode": "WSB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSB:69cad942938cccd731d810d5",
+            "name": "Softball",
+            "level": "JV",
+            "ncaaSportCode": "WSB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSB:69cad944938cccd731d8112f",
+            "name": "Softball",
+            "level": "8th Grade",
+            "ncaaSportCode": "WSB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSB:69cad945938cccd731d81151",
+            "name": "Softball",
+            "level": "Freshman",
+            "ncaaSportCode": "WSB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        },
+        {
+            "code": "WSB:69cad946938cccd731d81189",
+            "name": "Softball",
+            "level": "7th Grade",
+            "ncaaSportCode": "WSB",
+            "roster": [],
+            "totalAthleteCount": 0,
+            "totalCoachCount": 0,
+            "athleteProfileIds": [],
+            "coachProfileIds": [],
+            "standings": [
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Overall",
+                            "fieldName": null,
+                            "value": null
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Classification",
+                            "fieldName": "inhsaaClassification"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Sectional",
+                            "fieldName": "inhsaaSectional"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                },
+                {
+                    "competitionLevels": [
+                        {
+                            "name": "Conference",
+                            "fieldName": "inhsaaConference"
+                        }
+                    ],
+                    "wins": 0,
+                    "losses": 0,
+                    "ties": 0,
+                    "homeWins": 0,
+                    "homeLosses": 0,
+                    "homeTies": 0,
+                    "awayWins": 0,
+                    "awayLosses": 0,
+                    "awayTies": 0
+                }
+            ],
+            "competitionLevels": {},
+            "schedule": []
+        }
+    ],
+    "associations": [],
+    "timestamp": "2026-07-06T17:31:26.195Z"
+}

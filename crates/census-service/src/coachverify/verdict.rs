@@ -33,7 +33,6 @@ pub enum Verdict {
     RenderRequired,
     Mismatch,
     Empty,
-    RobotsBlocked,
     FetchFailed,
 }
 
@@ -46,7 +45,6 @@ impl Verdict {
             Self::RenderRequired => "render_required",
             Self::Mismatch => "mismatch",
             Self::Empty => "empty",
-            Self::RobotsBlocked => "robots_blocked",
             Self::FetchFailed => "fetch_failed",
         }
     }
@@ -62,7 +60,6 @@ impl Verdict {
         Self::RenderRequired,
         Self::Mismatch,
         Self::Empty,
-        Self::RobotsBlocked,
         Self::FetchFailed,
     ];
 }

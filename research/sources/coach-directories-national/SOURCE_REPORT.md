@@ -1376,6 +1376,101 @@ at least one coach row, 26 carry none. The zero ones are this report's client-re
 refused and login-gated states, and they are absences in the published workbook rather than gaps
 filled by inference.
 
+## DragonFly Athletics association platform (measured 2026-09-29)
+
+One platform host answers for every continental association's school list, and for 15 of them their
+staff. Two public endpoints carry it, both JSON:
+
+| Endpoint | Carries | Cost |
+|---|---|---|
+| `https://maxinfosite-api-live.dragonflyathletics.com/states/<ruleset>/directory/<page>` | the association's schools — `orgId`, `shortCode`, name, city, street address, `competitionLevels` — 1 000 rows per page | 1 request per page |
+| `https://maxinfosite-api-live.dragonflyathletics.com/schools/<shortCode>/summary` | one school — postal address, phone, `teams[]`, and `staff[]` (first/last name, the school's own `title`, `emails[]`, `tel[]`, `teamName`, `teamLevel`, `amrId`) | 1 request per school |
+
+**Access.** `<host>/robots.txt` answers HTTP **403** `{"message":"Missing Authentication Token"}` —
+API Gateway's no-route body, byte-identical for a browser UA, Googlebot and no UA at all, while both
+data paths answer 200 to all three. The host publishes no robots policy (RFC 9309: an unreachable
+robots file is not a refusal). Pacing is ours: 1 request/s, one request in flight.
+
+**Registered scope — 15 associations.** The other 34 continental associations answered **no staff at
+all** in four sampled summaries each, and their directories are district-wide universes rather than
+varsity frames: 1–73 % (median 43 %) of their page-one rows are elementary or middle schools by name
+(WV 73 %, VA 70 %, SD 69 %, NV 67 %, OR 66 %, IN 64 %, OH 58 %, CA 49 %, TX 15 %, OK 1 %). Their
+school identity is `ccd_frame.py`'s job, so only the 15 staff-publishing associations are registered:
+
+| State | Ruleset | Directory rows | Pages | Summaries | With staff | Coach rows | Rows/school |
+|---|---|---|---|---|---|---|---|
+| NC | NCHSAA | 452 | 1 | 452 | 451 | 5 181 | 11.5 |
+| AL | AHSAA | 793 | 1 | 793 | 705 | 5 895 | 7.4 |
+| AR | ArkAA | 521 | 1 | 521 | 493 | 3 585 | 6.9 |
+| GA | GHSA | 2 825 | 3 | 2 701 | 542 | 4 239 | 1.6 |
+| MT | MHSA | 358 | 1 | 309 | 187 | 1 091 | 3.5 |
+| MS | MHSAA | 1 151 | 2 | 1 135 | 439 | 2 337 | 2.1 |
+| SC | SCHSL | 1 278 | 2 | 1 248 | 257 | 853 | 0.7 |
+| ID | IdHSAA | 461 | 1 | 458 | 145 | 779 | 1.7 |
+| NM | NMAA | 751 | 1 | 724 | 170 | 662 | 0.9 |
+| MD | MPSSAA | 215 | 1 | 211 | 91 | 374 | 1.8 |
+| DC | DCSAA | 112 | 1 | 112 | 34 | 124 | 1.1 |
+| DE | DIAA | 320 | 1 | 320 | 82 | 701 | 2.2 |
+| TN | TSSAA | 1 675 | 2 | 1 594 | 57 | 245 | 0.2 |
+| WY | WHSAA | 93 | 1 | 93 | 77 | 413 | 4.4 |
+| ND | NDHSAA | 548 | 1 | 523 | 48 | 87 | 0.2 |
+| **ALL** | — | **11 553** | — | **11 194** | **3 778** | **26 566** | **2.4** |
+
+All 51 rulesets were probed (`AK ASAA, HI HHSAA` included but outside census scope); the map of
+jurisdiction to ruleset for every one of them is `census-prototype/out/dragonfly_probe.json`.
+
+**Row contract.** A team's `coachProfileIds` names its coaches — the staff entry supplies the person,
+the team name supplies sport and gender (`Cross Country` → CrossCountry; `Track`, `Track, Indoor`,
+`Track, Outdoor` → Track; `Boys'`/`Girls'` and `Boy's`/`Girl's` prefixes both spell the possessive, and
+`Mixed`/`Unified` teams carry no gender). Staff a school attached to no roster are placed from their own
+`teamName`/`teamLevel`; `title` gives the role (`Head Coach` → HeadCoach, `Assistant Coach` →
+AssistantCoach, any other coaching wording → Coach) and any `Athletic Director` title also emits the
+school's director row, so a person who is both keeps both rows. `emails[0]`, `tel[0].num` and `amrId`
+become email, phone and code; `level` comes from the team so the census's own varsity filter drops
+JV/freshman/middle-school rows. 98 % of captured rows carry an email; every row carries a level except
+the director rows the mapper constructs.
+
+**Defects found and fixed in this lane's own parser (2026-09-29).** Matching only the `Boys'`/`Girls'`
+spelling cost **3 139 staff entries across the eight then-crawled states**; the survey's captures hold
+17 distinct track/XC labels (`Boys'`/`Girls'` 68 612 teams, `Boy's`/`Girl's` 19 357, `Mixed`/`Unified`
+1 893). The corrected mapper also raised MT 9.0 → 11.2 and NC 19.2 → 20.5 sampled census rows per
+school (`notes/verification.md`, "Defects found").
+
+**A 200 can still be an error body.** A summary keyed by `orgId` instead of `shortCode` answers HTTP
+200 with a 490-byte S3 `AccessDenied` XML body. Any implementation must treat a non-JSON 200 as a
+failed fetch, never as an empty school. Fixture:
+`crates/census-crawl/tests/fixtures/coach_directories/summary_orgid_200_accessdenied.xml`.
+
+**Rust adapter (2026-09-29, branch `dragonfly-coach-directories`).** `crates/census-crawl/src/coach_directories/`,
+registered as slug `coach_directories`; fixtures under `crates/census-crawl/tests/fixtures/coach_directories/`
+(NCHSAA directory page 1, GHSA page 2, the `ZCUM49` and `QWUGX2` summaries, the AccessDenied body) with
+their records under `crates/census-crawl/tests/golden/`, named `<source>__<fixture file name>.json` the way
+the replay harness's `recorded()` resolves them. `cargo test -p census-crawl --all-features` passes 418
+tests, 14 of them in `coach_directories::tests`, including one that runs `collect` end to end against a
+seeded cache (directory page, summary, store, journal, report). Measured against the fixtures: NCHSAA
+page 1 reads
+`page 1/1, 452 results, 452 school rows`; GHSA page 2 reads `2/3, 2 825 results, 1 000 rows on the page`;
+`A.C. Reynolds` (`ZCUM49`) parses 46 staff and 38 teams and maps to the 13 `(person, sport family, gender)`
+rows the oracle holds; `Muncie Central` (`QWUGX2`) parses 0 staff and 130 teams and maps to 0 rows; the
+AccessDenied body is refused as non-JSON rather than read as an empty school.
+
+**Replay limitation (2026-09-29).** `cargo xtask replay coach_directories` does not run in this worktree:
+`xtask` depends on `census-report`, which no longer compiles against the committed `census-domain` API -
+`crates/census-report/src/export/dataset.rs:26` calls `census_domain::model::now_utc`, present only in the
+uncommitted `crates/census-domain/src/model/dates.rs`, and `cargo check -p census-report` reports 53 errors
+(`E0425 now_utc`, `E0609 CanonicalEvent::name`, `E0609 CanonicalEvent::sport`, `E0560
+PerformanceRow::performance_id`, `E0599 CanonicalAthlete::display_name`, unresolved `chrono`). The replay
+arm and the fixture records were therefore validated by a throwaway `census-crawl` example driving the same
+public `coach_directories` API and the same record lookups, which reproduced every number above; it was
+deleted after the run (see `docs/VERIFICATION-EVIDENCE.md`, 2026-09-29).
+
+**Provenance.** Survey `census-prototype/dragonfly_probe.py` → `out/dragonfly_probe.json` (51
+associations, 183 s, 2026-09-29) and its offline re-measurement; stage-two crawls
+`census-prototype/deepen.py` → `out/extra/<ST>-dragonfly.jsonl` for the 15 states, one request per
+school at 1 request/s (NC 444 s / 452 schools, GA 849 s / 2 701); parser oracle over the Rust fixtures:
+`/home/lewis/src/ad-law-scrape/coach-directories-oracle.json`. The survey and the stage-two crawls are
+the only network traffic behind these numbers.
+
 ## Unverified summary
 
 26 jurisdictions are recorded as unverified because their tier-1 directory is client-rendered: the served HTML contains no directory rows, so the absence of coach contacts cannot be asserted from a compliant fetch, and this lane did not run a browser to render them. Each such state names the exact URL tried and what the response contained. 3 jurisdictions (AL, MO, VA) are refused by robots.txt, plus the ArbiterLive platform used by KY/OK/MA/MT and the Bound directory path used by IA/SD - all of which publish `Disallow: /` or `Disallow: /*directory`.

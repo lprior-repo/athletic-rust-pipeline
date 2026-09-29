@@ -207,11 +207,9 @@ fn reconcile_published(outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
 async fn print_summary(fetcher: &Fetcher, outcomes: &[FragmentOutcome], out_dir: &Path) {
     let stats = fetcher.stats().await;
     println!(
-        "fetch stats: requests={} cache_hits={} robots_blocked={} robots_authorized={} errors={} bytes={}",
+        "fetch stats: requests={} cache_hits={} errors={} bytes={}",
         stats.requests,
         stats.cache_hits,
-        stats.robots_blocked,
-        stats.robots_authorized,
         stats.errors,
         stats.bytes_downloaded
     );
