@@ -2864,15 +2864,18 @@ documented as a mapping, not parity.
 
 **Landed.** `main` fast-forwards to this work; the landed tree was then built and tested *in the main
 worktree*: `cargo test -p census-crawl` → **473 passed, 0 failed** (10 s, incremental). That worktree
-carried a divergent, two-day-old (2026-09-27) line of the same lane — an `Ingress` abstraction, a
-`Pace` struct returned by `Fetcher::pace`, and a rename of the MileSplit DC fixture to an NC one —
-whose `BrowserLane`/`browser.rs`/`results/tests.rs` call APIs this work replaced, so it could not
-compile against the landed tree. The superseded files were restored to the landed revision (their
-staged copies — `src/ingress.rs`, `raw_rows/tests.rs`, `tests/fixtures/coach-directories/*`,
-`tests/golden/*`, `chsaa-test/` — were left in place as untracked captures rather than deleted) and a
-full snapshot of the worktree as it stood before the landing is in the main worktree's `stash@{0}`
-("omp: snapshot of main's pre-land WIP"). Nothing from that line was reconciled by hand: it is
-recorded here as the reason for the pre-land snapshot, not as work this delivery claims.
+also held uncommitted work no commit in this repository contains, and it cannot compile against the
+landed revision: an older browser-lane shape — an `Ingress` type at `crates/census-crawl/src/ingress.rs`
+(absent from every commit, including the base `feec27eb3`), a `Pace` struct returned by
+`Fetcher::pace`, `BrowserLane::over(Ingress)`, and the MileSplit DC inline capture renamed to the NC raw
+capture — plus copies of intermediate revisions of this lane dated 2026-09-29, the newest
+(`docs/VERIFICATION-EVIDENCE.md`) at 16:09. Those were the only files blocking the fast-forward; they
+were restored to the landed revision so the crate builds. The superseded copies are preserved: a full
+snapshot of the pre-land worktree is the main worktree's `stash@{0}` ("omp: snapshot of main's pre-land
+WIP", `bba998e2`), and the staged captures (`src/ingress.rs`, `src/milesplit/raw_rows/tests.rs`,
+`tests/fixtures/coach-directories/*`, `tests/golden/*`, `tests/fixtures/chsaa-test/`) were left staged
+on disk rather than deleted. None of that line was reconciled by hand and this delivery claims none of
+it.
 
 ## Consolidated historical evidence — imported 2026-09-27
 
