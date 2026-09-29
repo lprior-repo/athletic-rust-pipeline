@@ -1479,7 +1479,10 @@ Four associations are covered by captured fixtures and the prototype's own recor
 `coach_directories::survey_tests` against an offline fetcher), and those same four were re-run live through
 `probe_one` on 2026-09-29, reproducing the frozen records for AL, WY and GA. The probe is a qualification
 tool: it writes no store rows and reads one directory page plus four summaries per association (see
-`docs/VERIFICATION-EVIDENCE.md`, 2026-09-29).
+`docs/VERIFICATION-EVIDENCE.md`, 2026-09-29). Its CLI home is the frozen `census-service` verb
+`survey --states <list> --offline --out <path>` (ADR-015), which is not wired while `census-service`
+does not compile; `coach_directories::table_line` already renders the prototype's captured 51-line
+table, so no formatting work blocks it.
 
 **Provenance.** Survey `census-prototype/dragonfly_probe.py` → `out/dragonfly_probe.json` (51
 associations, 183 s, 2026-09-29) and its offline re-measurement; stage-two crawls

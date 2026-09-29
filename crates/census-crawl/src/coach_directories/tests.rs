@@ -272,6 +272,41 @@ fn the_possessive_and_genderless_labels_all_map() {
 }
 
 #[test]
+fn every_label_in_the_prototypes_measured_table_maps() {
+    let measured = [
+        ("Girls' Track, Outdoor", Sport::OutdoorTrack, Gender::Girls),
+        ("Boys' Track, Outdoor", Sport::OutdoorTrack, Gender::Boys),
+        ("Girls' Cross Country", Sport::CrossCountry, Gender::Girls),
+        ("Boys' Cross Country", Sport::CrossCountry, Gender::Boys),
+        ("Girls' Track, Indoor", Sport::IndoorTrack, Gender::Girls),
+        ("Boys' Track, Indoor", Sport::IndoorTrack, Gender::Boys),
+        ("Girl's Track, Outdoor", Sport::OutdoorTrack, Gender::Girls),
+        ("Boy's Track, Outdoor", Sport::OutdoorTrack, Gender::Boys),
+        ("Girl's Cross Country", Sport::CrossCountry, Gender::Girls),
+        ("Boy's Cross Country", Sport::CrossCountry, Gender::Boys),
+        ("Girl's Track, Indoor", Sport::IndoorTrack, Gender::Girls),
+        ("Boy's Track, Indoor", Sport::IndoorTrack, Gender::Boys),
+        ("Mixed Track, Outdoor", Sport::OutdoorTrack, Gender::Mixed),
+        ("Mixed Cross Country", Sport::CrossCountry, Gender::Mixed),
+        ("Mixed Track, Indoor", Sport::IndoorTrack, Gender::Mixed),
+        ("Unified Track, Outdoor", Sport::OutdoorTrack, Gender::Mixed),
+        ("Unified Track, Indoor", Sport::IndoorTrack, Gender::Mixed),
+    ];
+    for (label, sport, gender) in measured {
+        assert_eq!(team_sport(label), Some((sport, gender)), "{label}");
+    }
+    for label in [
+        "Football",
+        "Mixed Cheerleading",
+        "Boys' Basketball",
+        "",
+        "Crossfit",
+    ] {
+        assert_eq!(team_sport(label), None, "{label}");
+    }
+}
+
+#[test]
 fn a_coach_missing_from_the_team_index_is_placed_from_their_own_team() {
     let body = r#"{"name":"Example High School","teams":[{"name":"Boys' Track, Outdoor","level":"Varsity","coachProfileIds":["a"]}],"staff":[
         {"id":"a","amrId":"1","firstName":"Ada","lastName":"Lovelace","title":"Head Coach","teamName":"Girls' Cross Country","teamLevel":"Varsity"},
