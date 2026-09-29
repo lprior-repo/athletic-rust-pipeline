@@ -1,0 +1,8 @@
+{
+  "url": "https://www.athletic.net/api/v1/AthleteBio/GetAthleteBioData?athleteId=24785888&sport=tf&level=4",
+  "semantic_url": "https://www.athletic.net/api/v1/AthleteBio/GetAthleteBioData?athleteId=24785888&sport=tf&level=4",
+  "action": {
+    "action": "fetch",
+    "body": null
+  }
+}
