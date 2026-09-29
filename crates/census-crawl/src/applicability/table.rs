@@ -1,7 +1,7 @@
 use super::Applicability;
 use census_domain::UsJurisdiction;
 
-pub(super) const TABLE: [Applicability; 17] = [
+pub(super) const TABLE: [Applicability; 18] = [
     Applicability {
         slug: "athleticlive",
         jurisdictions: &[
@@ -75,6 +75,36 @@ pub(super) const TABLE: [Applicability; 17] = [
                    column. Cost: 1 request.",
         refusal: "One league's directory: no other jurisdiction in the corpus publishes on this host, and the lane's \
                   rows for the rest name a different provider or none.",
+    },
+    Applicability {
+        slug: "coach_directories",
+        jurisdictions: &[
+            UsJurisdiction::NorthCarolina,
+            UsJurisdiction::Alabama,
+            UsJurisdiction::Arkansas,
+            UsJurisdiction::Georgia,
+            UsJurisdiction::Montana,
+            UsJurisdiction::Mississippi,
+            UsJurisdiction::SouthCarolina,
+            UsJurisdiction::Idaho,
+            UsJurisdiction::NewMexico,
+            UsJurisdiction::Maryland,
+            UsJurisdiction::DistrictOfColumbia,
+            UsJurisdiction::Delaware,
+            UsJurisdiction::Tennessee,
+            UsJurisdiction::Wyoming,
+            UsJurisdiction::NorthDakota,
+        ],
+        evidence: "`research/sources/coach-directories-national/SOURCE_REPORT.md` DragonFly section, \
+                   2026-09-29: 15 associations measured to publish staff via \
+                   `maxinfosite-api-live.dragonflyathletics.com/states/<ruleset>/directory/` and \
+                   `/schools/<shortCode>/summary`; 11,194 directory rows over 15 pages, 26,566 coach \
+                   rows across the 15 jurisdictions. NC NCHSAA: 452 schools, 5,181 coaches; AL AHSAA: \
+                   793 schools, 5,895 coaches; AR ArkAA: 521 schools, 3,585 coaches.",
+        refusal: "The 34 other continental associations publish no staff on this platform; their \
+                  directories are district-wide universes (1–73% of rows are elementary/middle schools) \
+                  whose school identity `ccd_frame` already carries. They are not registered for this \
+                  source on any page.",
     },
     Applicability {
         slug: "coach_contacts",

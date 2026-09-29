@@ -114,10 +114,12 @@ workflows and tabs, including related Athletic.net surfaces. Concurrency does no
 budget. Bound payloads, redirects, pages, tasks and queued work; revalidate redirect destinations
 and protect local/private network boundaries.
 
-Honor robots and source-access policy. No CAPTCHA, authentication or paywall circumvention,
-browser-identity spoofing, proxy evasion, cookie extraction/replay, or direct-HTTP fallback intended
-to bypass a challenge. Athletic.net uses the headed persistent-profile lane; the operator resolves
-challenges in that profile. [CHROMIUM_DESIGN.md](CHROMIUM_DESIGN.md) owns the browser implementation contract.
+Robots.txt is read for pacing only: a `Crawl-delay` published for `User-agent: *` paces that host,
+while an absent, unreadable or non-200 robots.txt publishes no policy and never blocks a request. No
+CAPTCHA, authentication or paywall circumvention, browser-identity spoofing, proxy evasion, cookie
+extraction/replay, or direct-HTTP fallback intended to bypass a challenge. Athletic.net uses the
+headed persistent-profile lane; the operator resolves challenges in that profile.
+[CHROMIUM_DESIGN.md](CHROMIUM_DESIGN.md) owns the browser implementation contract.
 
 ```text
 Ready --429--> Cooldown --admitted retry--> Ready

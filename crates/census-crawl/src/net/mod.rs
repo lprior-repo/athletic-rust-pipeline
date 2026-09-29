@@ -22,10 +22,7 @@ pub use types::{FetchError, FetchOptions, FetchOutcome, FetchStats, HostTraffic}
 pub(crate) use types::host_of;
 
 use client::HostState;
-use robots::RobotsRules;
-
-#[cfg(test)]
-use robots::parse_robots;
+use robots::RobotsPolicy;
 
 pub const DEFAULT_USER_AGENT: &str =
     "census-service/0.1 (independent HS track & field research collector; polite; contact: repo owner)";
@@ -48,7 +45,7 @@ pub struct Fetcher {
     families: Mutex<HashMap<String, HostState>>,
     authorized_hosts: Vec<String>,
     hosts: Mutex<HashMap<String, HostState>>,
-    robots: Mutex<HashMap<String, RobotsRules>>,
+    robots: Mutex<HashMap<String, RobotsPolicy>>,
     stats: Mutex<FetchStats>,
     source: String,
     blocks: Mutex<HashMap<String, SourceAccessCondition>>,

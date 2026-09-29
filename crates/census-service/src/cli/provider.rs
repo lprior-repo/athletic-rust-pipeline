@@ -11,7 +11,7 @@ mod arms;
 #[derive(Args, Debug)]
 pub(super) struct ProviderArgs {
     #[arg(
-        help = "Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_athletes, athleticlive_results, athleticnet, milesplit, milesplit_results, coach_contacts"
+        help = "Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_athletes, athleticlive_results, athleticnet, milesplit, milesplit_results, coach_contacts, coach_directories"
     )]
     name: String,
     #[arg(help = "Cap the number of schools processed (smoke runs)")]
@@ -105,8 +105,11 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         "milesplit" => arms::milesplit_report(&context, args, observed_on).await,
         "milesplit_results" => arms::milesplit_results_report(&context, args).await,
         "coach_contacts" => arms::coach_contacts_report(store, args, observed_on),
+        "coach_directories" => {
+            arms::coach_directories_report(&context, args, observed_on).await
+        }
         other => bail!(
-            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, coach_contacts"
+            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, coach_contacts, coach_directories"
         ),
     };
     super::source::print_blocked_hosts(&fetcher).await;

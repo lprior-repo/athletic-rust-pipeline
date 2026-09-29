@@ -1,66 +1,63 @@
 #[cfg(test)]
 mod tests_inner {
-    use super::super::*;
+    use super::super::parse_robots;
+    use std::time::Duration;
 
     #[test]
-    fn a_mid_path_wildcard_disallow_refuses_the_match() {
-        let rules = parse_robots("User-agent: *\nDisallow: /*directory\n");
-        assert!(!rules.allows("/ia/schools/albia/directory/new"));
-        assert!(!rules.allows("/directory"));
-        assert!(rules.allows("/ia/schools/albia/roster"));
+    fn a_star_group_crawl_delay_becomes_pacing() {
+        let policy = parse_robots("User-agent: *\nCrawl-delay: 2\n");
+        assert_eq!(policy.crawl_delay, Some(Duration::from_secs(2)));
     }
 
     #[test]
-    fn a_trailing_anchor_limits_a_rule_to_one_path() {
-        let rules = parse_robots("User-agent: *\nDisallow: /staff$\n");
-        assert!(!rules.allows("/staff"));
-        assert!(rules.allows("/staff/dana-reid"));
-    }
-
-    #[test]
-    fn a_wildcard_allow_outranks_an_equally_long_deny() {
-        let rules = parse_robots("User-agent: *\nDisallow: /api/*\nAllow: /api/public/\n");
-        assert!(!rules.allows("/api/private"));
-        assert!(rules.allows("/api/public/teams"));
-    }
-
-    #[test]
-    fn the_longest_pattern_decides() {
-        let rules = parse_robots(
-            "User-agent: *\nDisallow: /*calendar*\nAllow: /meets/calendar/2026\nDisallow: /meets/*\n",
+    fn a_named_agent_group_does_not_pace_us() {
+        let policy = parse_robots("User-agent: GPTBot\nCrawl-delay: 30\n");
+        assert_eq!(policy.crawl_delay, None);
+        let with_star = parse_robots(
+            "User-agent: GPTBot\nCrawl-delay: 30\n\nUser-agent: *\nCrawl-delay: 2\n",
         );
-        assert!(rules.allows("/meets/calendar/2026"));
-        assert!(!rules.allows("/meets/regionals"));
+        assert_eq!(with_star.crawl_delay, Some(Duration::from_secs(2)));
     }
 
     #[test]
-    fn a_host_that_refuses_its_robots_file_is_closed_to_us() {
-        let rules = parse_robots(REFUSAL_RULES);
-        assert!(
-            rules.fetched,
-            "a refusal is a fetched rule set, not an absent one"
-        );
-        assert!(!rules.allows("/"));
-        assert!(!rules.allows("/ia/schools/adm/directory/new"));
+    fn disallow_lines_publish_no_refusal_and_no_pacing_of_their_own() {
+        let bare = parse_robots("User-agent: *\nDisallow: /\n");
+        assert_eq!(bare.crawl_delay, None);
+        let mixed =
+            parse_robots("User-agent: *\nDisallow: /api/\nDisallow: /*directory\nCrawl-delay: 3\n");
+        assert_eq!(mixed.crawl_delay, Some(Duration::from_secs(3)));
     }
 
     #[test]
-    fn every_pattern_bound_publishes_is_parsed() {
-        let rules = parse_robots(
-            "User-agent: *\nCrawl-Delay: 10\nDisallow: /api/\nDisallow: /*directory\n\
-             Disallow: /profile/*\nDisallow: */athletes/*\nDisallow: /*/leaderlist*\n\
-             Disallow: /*/calendar*\n",
-        );
-        for path in [
-            "/api/teams",
-            "/ia/schools/albia/directory/new",
-            "/profile/123",
-            "/ia/athletes/456",
-            "/ia/leaderlist/100m",
-            "/ia/meets/calendar",
-        ] {
-            assert!(!rules.allows(path), "{path} should be disallowed");
+    fn rules_outside_a_group_publish_nothing() {
+        let policy = parse_robots("Disallow: /x\nCrawl-delay: 5\n");
+        assert_eq!(policy.crawl_delay, None);
+    }
+
+    #[test]
+    fn a_hostile_crawl_delay_is_refused_or_clamped() {
+        for hostile in ["inf", "-inf", "nan", "1e30", "1e300", "-5"] {
+            let body = format!("User-agent: *\nCrawl-delay: {hostile}\n");
+            let policy = parse_robots(&body);
+            assert!(
+                policy
+                    .crawl_delay
+                    .is_none_or(|delay| delay <= Duration::from_secs(3600)),
+                "{hostile} must be refused or clamped, got {:?}",
+                policy.crawl_delay
+            );
         }
-        assert!(rules.allows("/ia/schools/albia"));
+        let clamped = parse_robots("User-agent: *\nCrawl-delay: 1e9\n");
+        assert_eq!(clamped.crawl_delay, Some(Duration::from_secs(3600)));
+    }
+
+    #[test]
+    fn comments_and_unknown_fields_publish_only_the_delay() {
+        let policy = parse_robots(
+            "# rules\nUser-agent: *\nSitemap: https://x/sitemap.xml\nCrawl-delay: 4 # seconds\n",
+        );
+        assert_eq!(policy.crawl_delay, Some(Duration::from_secs(4)));
+        let comment_only = parse_robots("# just a comment\n  \n");
+        assert_eq!(comment_only.crawl_delay, None);
     }
 }

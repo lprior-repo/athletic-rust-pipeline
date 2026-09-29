@@ -80,7 +80,7 @@ pub(super) struct VerifyCoachesArgs {
 
     #[arg(
         help = "Treat every host the fragments cite as authorized for this collection",
-        long_help = "Treat every host the fragments cite as authorized for this collection.\n\nrobots.txt is still read and cached, but a disallowed path on a cited host is counted as `robots_authorized` instead of blocking the request, which is the operator's statement that these pages were commissioned. Without it the gate refuses those pages and the rows citing them cannot ship."
+        long_help = "Treat every host the fragments cite as authorized for this collection.\n\nA redirect that lands on a cited host is admitted instead of being refused as a host outside the registry, and the host is paced no faster than the 2 rps per-host ceiling. This is the operator's statement that these pages were commissioned."
     )]
     #[arg(long)]
     pub(super) authorize_cited_hosts: bool,
@@ -91,7 +91,7 @@ pub(super) struct VerifyCoachesArgs {
     #[arg(long, value_name = "BIN")]
     pub(super) pdftotext: Option<String>,
 
-    #[arg(help = "Ignore cached bodies and hit the network (robots still enforced)")]
+    #[arg(help = "Ignore cached bodies and hit the network (paced at the registry rate)")]
     #[arg(long)]
     pub(super) refresh: bool,
 }

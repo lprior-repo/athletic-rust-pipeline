@@ -21,7 +21,7 @@ use std::path::PathBuf;
 
 #[derive(Subcommand, Debug)]
 pub(super) enum Command {
-    #[command(about = "Fetch a single URL through the polite fetcher (robots-enforced, cached)")]
+    #[command(about = "Fetch a single URL through the polite fetcher (paced at the registry rate, cached)")]
     Fetch {
         url: String,
         #[arg(help = "Ignore the cache and hit the network")]

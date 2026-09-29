@@ -29,7 +29,7 @@ pub(super) struct TeamsArgs {
     )]
     #[arg(long, default_value_t = 2026)]
     season: i16,
-    #[arg(help = "Ignore caches and re-read every page (robots still enforced)")]
+    #[arg(help = "Ignore caches and re-read every page (paced at the registry rate)")]
     #[arg(long)]
     refresh: bool,
     #[command(flatten)]
@@ -53,7 +53,7 @@ pub(super) struct MeetsArgs {
     )]
     #[arg(long, default_value_t = 2026)]
     year: u16,
-    #[arg(help = "Ignore caches and re-read every page (robots still enforced)")]
+    #[arg(help = "Ignore caches and re-read every page (paced at the registry rate)")]
     #[arg(long)]
     refresh: bool,
     #[command(flatten)]
@@ -206,7 +206,7 @@ pub(super) struct CollectArgs {
     #[arg(help = "How many state hosts to walk simultaneously")]
     #[arg(long, default_value_t = 4)]
     state_concurrency: usize,
-    #[arg(help = "Ignore caches and re-fetch (robots still enforced)")]
+    #[arg(help = "Ignore caches and re-fetch (paced at the registry rate)")]
     #[arg(long)]
     refresh: bool,
     #[arg(

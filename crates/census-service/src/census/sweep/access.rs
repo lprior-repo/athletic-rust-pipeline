@@ -131,9 +131,9 @@ mod tests {
             http(404),
             http(500),
             http(200),
-            CrawlError::Fetch(FetchError::Robots(
-                "https://al.milesplit.com/teams".to_string(),
-            )),
+            CrawlError::Fetch(FetchError::Policy {
+                detail: "the request exceeds what the registry admits for this host".to_string(),
+            }),
             CrawlError::Fetch(FetchError::TooLarge {
                 url: "https://al.milesplit.com/teams".to_string(),
             }),

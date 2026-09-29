@@ -2,12 +2,11 @@ use super::cache::{read_cache, CacheMeta};
 use super::client::HostState;
 use super::request::RequestBody;
 use super::{FetchError, FetchOptions, FetchOutcome, Fetcher, MIN_AUTHORIZED_DELAY};
-use census_domain::model::AccessBlockKind;
 use census_store::clock::{Clock, SystemClock};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
-use tracing::{debug, warn};
+use tracing::warn;
 
 mod attempt;
 mod attempt_helper;
@@ -142,10 +141,8 @@ impl Fetcher {
             }
         }
 
-        let (host, origin, path_and_query) = request_target(url)?;
-        let crawl_delay = self
-            .robots_gate(url, &host, &path_and_query, &origin)
-            .await?;
+        let (host, origin) = request_target(url)?;
+        let crawl_delay = self.robots_for(&origin).await.crawl_delay;
         let gate = self.host_gate(&host, crawl_delay).await;
         let plan = FetchPlan {
             method,
@@ -201,46 +198,9 @@ impl Fetcher {
         }))
     }
 
-    async fn robots_gate(
-        &self,
-        url: &str,
-        host: &str,
-        path_and_query: &str,
-        origin: &str,
-    ) -> Result<Option<Duration>, FetchError> {
-        let rules = self.robots_for(origin).await;
-        if rules.allows(path_and_query) {
-            return Ok(rules.crawl_delay);
-        }
-        if self.is_authorized_host(host) {
-            {
-                let mut stats = self.stats.lock().await;
-                stats.robots_authorized = stats.robots_authorized.saturating_add(1);
-            }
-            debug!(
-                host = %host,
-                path = %path_and_query,
-                "robots rule overridden by host authorization"
-            );
-            return Ok(rules.crawl_delay);
-        }
-        {
-            let mut stats = self.stats.lock().await;
-            stats.robots_blocked = stats.robots_blocked.saturating_add(1);
-        }
-        self.record_access_condition(
-            host,
-            AccessBlockKind::RobotsDisallowed,
-            0,
-            None,
-            path_and_query.to_string(),
-        )
-        .await;
-        Err(FetchError::Robots(url.to_string()))
-    }
 }
 
-fn request_target(url: &str) -> Result<(String, String, String), FetchError> {
+fn request_target(url: &str) -> Result<(String, String), FetchError> {
     let parsed = url::Url::parse(url).map_err(|source| FetchError::InvalidUrl {
         url: url.to_string(),
         source,
@@ -254,11 +214,7 @@ fn request_target(url: &str) -> Result<(String, String, String), FetchError> {
             .map(|p| format!("{host}:{p}"))
             .unwrap_or_else(|| host.clone())
     );
-    let path_and_query = match parsed.query() {
-        Some(query) => format!("{}?{}", parsed.path(), query),
-        None => parsed.path().to_string(),
-    };
-    Ok((host, origin, path_and_query))
+    Ok((host, origin))
 }
 
 #[cfg(test)]

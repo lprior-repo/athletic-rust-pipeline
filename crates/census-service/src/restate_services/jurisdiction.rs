@@ -87,6 +87,7 @@ pub(super) const DISPATCHED: &[&str] = &[
     "wayzata",
     "milesplit",
     "athleticnet",
+    "coach_directories",
 ];
 
 fn report(

@@ -19,6 +19,7 @@ pub(super) const TEAMS_ARMS: &[(&str, TeamsArm)] = &[
     ("plain_names", TeamsArm::PlainNamesDirectories),
     ("ihsa", TeamsArm::IhsaSchools),
     ("ks", TeamsArm::KsDirectory),
+    ("coach_directories", TeamsArm::CoachDirectories),
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,6 +30,7 @@ pub(super) enum TeamsArm {
     PlainNamesDirectories,
     IhsaSchools,
     KsDirectory,
+    CoachDirectories,
 }
 
 pub(super) fn arm_for(slug: &str) -> Option<TeamsArm> {
@@ -76,6 +78,9 @@ async fn sweep_team_source(
         )),
         TeamsArm::KsDirectory => Ok(Some(
             walk_ks(store, fetcher, jurisdiction, season, refresh, at).await?,
+        )),
+        TeamsArm::CoachDirectories => Ok(Some(
+            walk_coach_directories(store, fetcher, jurisdiction, season, refresh, at).await?,
         )),
     }
 }
@@ -185,6 +190,28 @@ async fn walk_ks(
     };
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::ks::collect(&context, &options)
+        .await
+        .map_err(|error| job_error(collect_error(error)))?;
+    Ok(report)
+}
+
+async fn walk_coach_directories(
+    store: &Arc<Store>,
+    fetcher: &Arc<Fetcher>,
+    jurisdiction: UsJurisdiction,
+    season: SchoolYear,
+    refresh: bool,
+    at: &str,
+) -> Result<AdapterReport, HandlerError> {
+    let options = census_crawl::coach_directories::Options {
+        limit: None,
+        refresh,
+        observed_on: at.to_string(),
+        states: vec![jurisdiction],
+        school_names: Vec::new(),
+    };
+    let context = adapter_context(store, fetcher, season, refresh, at, None);
+    let report = census_crawl::coach_directories::collect(&context, &options)
         .await
         .map_err(|error| job_error(collect_error(error)))?;
     Ok(report)

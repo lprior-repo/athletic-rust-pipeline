@@ -1,5 +1,6 @@
 use super::*;
 use crate::net::Fetcher;
+use census_domain::model::AccessBlockKind;
 use std::collections::HashMap;
 use std::time::Duration;
 

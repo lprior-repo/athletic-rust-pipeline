@@ -7,7 +7,6 @@ pub(super) struct RowEvidence {
     pub role_near: bool,
     pub contradicted: bool,
     pub body: bool,
-    pub robots: bool,
     pub failed: bool,
     pub script: bool,
     pub claims: Vec<ContactClaimEvidence>,
@@ -71,10 +70,10 @@ impl RowEvidence {
             return Verdict::OkRoleContext;
         }
         if !self.body {
-            return match (self.robots, self.failed) {
-                (true, _) => Verdict::RobotsBlocked,
-                (_, true) => Verdict::FetchFailed,
-                _ => Verdict::Empty,
+            return if self.failed {
+                Verdict::FetchFailed
+            } else {
+                Verdict::Empty
             };
         }
         if self.script {
