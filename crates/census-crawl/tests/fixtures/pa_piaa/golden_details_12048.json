@@ -1,0 +1,17 @@
+{
+  "schools": [
+    {
+      "name": "A J McMullen School",
+      "state": "PA"
+    }
+  ],
+  "coaches": [
+    {
+      "school": "A J McMullen School",
+      "person": "Harry Kaufman",
+      "sport": "AthleticDirector",
+      "role": "AthleticDirector",
+      "email": "harry.kaufman@uasdraiders.org"
+    }
+  ]
+}

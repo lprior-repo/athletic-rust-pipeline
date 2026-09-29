@@ -1,6 +1,6 @@
 use super::{bulk_first, descriptor, descriptors, transport_for_host, AccessClass, TransportKind};
 
-const PLAN_SLUGS: [&str; 18] = [
+const PLAN_SLUGS: [&str; 19] = [
     "athleticlive",
     "athleticlive_athletes",
     "athleticnet",
@@ -13,6 +13,7 @@ const PLAN_SLUGS: [&str; 18] = [
     "mpa",
     "mshsl",
     "ohsaa",
+    "pa_piaa",
     "plain_names",
     "riil",
     "tfrrs",

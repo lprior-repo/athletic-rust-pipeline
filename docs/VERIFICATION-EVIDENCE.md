@@ -6,6 +6,63 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## PIAA member directory ported to Rust — 2026-09-29
+
+Worktree `arh-piaa`, branch `port-piaa`. `census_crawl::pa_piaa` implements the prototype's
+`parsers/pa_piaa.py` (the 24 linked letter pages) and `parsers/pa_piaa_details.py` (the school
+contact pages), registered as slug `pa_piaa` on host `www.piaa.org` at 1 request/s, one in flight,
+robots respected.
+
+- Fixtures, copied byte-identical from `census-prototype/raw/` and verified with `cmp` plus
+  `sha256sum`: `directory_alpha_a.html` (80 080 B,
+  `75cdf9cb2d0c0317aa2c61e96e0f19e59500a8bb9df87455aa9c95c966766635`), `directory_alpha_b.html`
+  (96 263 B, `1fb99b5ce0cae096d9a466a9cb6f8fa90916b6ae03c6dd123efaf77a0583135d`),
+  `directory_alpha_z.html` (78 632 B,
+  `85da56147ebdc31bd2234a774515f0cd15c4be4e7e5b5d065904cb3378389b63`), `details_12048.html`
+  (62 521 B, `5192627687cbd1b255e703dfe4354d2ae032acac31804232e5fe63423ac6723e`), each at the URL and
+  capture name `notes/pa-piaa.md` records, plus `robots.txt` fetched on 2026-09-29 (442 B) because
+  the survey kept its verdict (593 B sample) but not the body. `PROVENANCE.json` carries url,
+  prototype_file, prototype_capture, sha256 and bytes per fixture.
+- Goldens regenerated from those fixtures with the prototype parsers themselves
+  (`python3 -c "import sys; sys.path.insert(0,'.'); from parsers import pa_piaa, pa_piaa_details; …"`):
+  `golden_directory_alpha_a.json` (53 schools), `golden_directory_alpha_b.json` (101),
+  `golden_directory_alpha_z.json` (53) and `golden_details_12048.json` (one athletic-director row,
+  `Harry Kaufman`, with a published address).
+- `cargo test -p census-crawl` -> **429 passed, 0 failed** (11 of them `pa_piaa::tests`), 0
+  doc-tests. `cargo fmt -p census-crawl -- --check` is clean and `cargo clippy -p census-crawl
+  --all-targets -- -D warnings` exits clean, which also required the tree's pre-existing
+  `milesplit` test borrow to be dropped; the stricter local lint set (`unwrap_used`, `expect_used`,
+  `panic`, `indexing_slicing`, `as_conversions`, `arithmetic_side_effects`, `pedantic`) reports
+  nothing in `pa_piaa/**`.
+- Parity: `directory_letter_pages_match_the_prototype_golden_field_for_field` compares every row of
+  A and B on name, street, city, state, ZIP, the prototype's string `association_id` against the
+  Rust school id, and its `detail_url` against the URL the Rust id builds;
+  `details_pages_keep_the_athletic_director_and_no_other_post` compares the contact rows with the
+  prototype's and first asserts the capture *does* publish Superintendent and Principal posts, so
+  the drop is exercised rather than assumed; `the_z_letter_page_echoes_the_a_group` pins the site
+  quirk that keeps `Z` out of the crawl.
+- End-to-end, in-suite: `collect_stores_the_letter_schools_and_the_requested_details_page_from_the_cache`
+  drives the real `collect` against a seeded cache (letters A and B plus the ID=12048 details page)
+  and observes 154 schools (53 + 101), 0 errors, 0 requests, 3 cache reads, one athletic-director
+  row carrying the school's id, `CoachRole::AthleticDirector`, `Gender::Mixed`, no sport and a
+  published address, 154 school journal keys plus both letter keys, and one school in the store's
+  log for `A J McMullen School` with city `MARKLEYSBURG`, state Pennsylvania and association
+  `PIAA`. `a_journalled_letter_and_school_are_skipped_on_the_next_run` proves the second run
+  writes nothing and fetches nothing.
+- Defects this slice carried in from its first delivery and fixed here: its fixtures were 0.8–1.8 KB
+  stubs where the captures are 62–96 KB, and its `PROVENANCE.json` named captures that had never
+  been copied, so the bytes and hashes it recorded could not match any file; the module named
+  `scraper`, `crate::canonical` and `crate::http::HttpClient`, none of which this crate provides,
+  and had never been compiled or run; the registry and applicability entries added a row without
+  bumping their array lengths; and its contact pattern used a lookahead, which Rust's regex crate
+  does not support, so the details parse could never have matched a single card.
+- **Limits.** No live fetch of `www.piaa.org` happened in this pass, so the captures and goldens are
+  the compiled evidence; the source report's row 15 claims the directory needs a browser, which the
+  captures and their notes contradict for the rows this adapter reads, and that divergence is
+  unverified against a live response. No service verb calls this adapter yet (`census-service` does
+  not compile at this base), and `cargo xtask scan` cannot run for the same reason, so its source
+  counters were not re-measured.
+
 ## Identity advice boundary and integration regression — 2026-09-27
 
 The advice parser no longer accepts alternate case, separator or concatenated spellings.

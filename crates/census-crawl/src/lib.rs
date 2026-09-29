@@ -64,6 +64,7 @@ pub mod mpa;
 pub mod mshsl;
 pub mod net;
 pub mod ohsaa;
+pub mod pa_piaa;
 pub mod plain_names;
 pub mod raceday;
 pub mod recording;

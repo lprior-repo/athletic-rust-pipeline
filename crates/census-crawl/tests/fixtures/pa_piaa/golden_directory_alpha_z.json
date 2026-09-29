@@ -1,0 +1,482 @@
+{
+  "schools": [
+    {
+      "name": "A J McMullen School",
+      "state": "PA",
+      "association_id": "12048",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12048",
+      "address": "4773 NATIONAL PIKE",
+      "city": "MARKLEYSBURG",
+      "zip": "15459"
+    },
+    {
+      "name": "A. Philip Randolph Career Academy",
+      "state": "PA",
+      "association_id": "12430",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12430",
+      "address": "3101 HENRY AVE",
+      "city": "PHILADELPHIA",
+      "zip": "19129"
+    },
+    {
+      "name": "Abington Heights High School",
+      "state": "PA",
+      "association_id": "11046",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11046",
+      "address": "222 NOBLE RD",
+      "city": "CLARKS SUMMIT",
+      "zip": "18411"
+    },
+    {
+      "name": "Abington Heights Middle School",
+      "state": "PA",
+      "association_id": "11669",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11669",
+      "address": "1555 NEWTON RANSON BLVD",
+      "city": "CLARKS SUMMIT",
+      "zip": "18411"
+    },
+    {
+      "name": "Abington Middle School",
+      "state": "PA",
+      "association_id": "11578",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11578",
+      "address": "2056 SUSQUEHANNA RD",
+      "city": "ABINGTON",
+      "zip": "19001"
+    },
+    {
+      "name": "Abington Senior High School",
+      "state": "PA",
+      "association_id": "10979",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=10979",
+      "address": "900 HIGHLAND AVE",
+      "city": "ABINGTON",
+      "zip": "19001"
+    },
+    {
+      "name": "Abraham Lincoln High School",
+      "state": "PA",
+      "association_id": "11548",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11548",
+      "address": "3201 RYAN AVENUE",
+      "city": "PHILADELPHIA",
+      "zip": "19136"
+    },
+    {
+      "name": "Abraham Lincoln Middle School",
+      "state": "PA",
+      "association_id": "11763",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11763",
+      "address": "1001 LEHIGH AVE",
+      "city": "LANCASTER",
+      "zip": "17602"
+    },
+    {
+      "name": "Abraxas I / Arlene Lissner High School",
+      "state": "PA",
+      "association_id": "12517",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12517",
+      "address": "165 Abraxas Road, Post Office Box 59",
+      "city": "Marienville",
+      "zip": "16239"
+    },
+    {
+      "name": "Academy at Palumbo High School",
+      "state": "PA",
+      "association_id": "12518",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12518",
+      "address": "1100 CATHERINE ST",
+      "city": "PHILADELPHIA",
+      "zip": "19147"
+    },
+    {
+      "name": "Academy Park High School",
+      "state": "PA",
+      "association_id": "11029",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11029",
+      "address": "300 CALCON HOOK RD",
+      "city": "SHARON HILL",
+      "zip": "19079"
+    },
+    {
+      "name": "Academy Park Middle School",
+      "state": "PA",
+      "association_id": "11648",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11648",
+      "address": "801 ASHLAND AVE",
+      "city": "GLENOLDEN",
+      "zip": "19036"
+    },
+    {
+      "name": "Albert Gallatin High School",
+      "state": "PA",
+      "association_id": "11283",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11283",
+      "address": "1119 TOWNSHIP DRIVE",
+      "city": "UNIONTOWN",
+      "zip": "15401"
+    },
+    {
+      "name": "Albert Gallatin North Middle School",
+      "state": "PA",
+      "association_id": "11932",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11932",
+      "address": "113 College Avenue",
+      "city": "McClellandtown",
+      "zip": "15458"
+    },
+    {
+      "name": "Albert Gallatin South Middle School",
+      "state": "PA",
+      "association_id": "11933",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11933",
+      "address": "224 New Geneva Road",
+      "city": "Point Marion",
+      "zip": "15474"
+    },
+    {
+      "name": "Aliquippa Junior High School",
+      "state": "PA",
+      "association_id": "11934",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11934",
+      "address": "100 HARDING AVE",
+      "city": "ALIQUIPPA",
+      "zip": "15001"
+    },
+    {
+      "name": "Aliquippa Senior High School",
+      "state": "PA",
+      "association_id": "11284",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11284",
+      "address": "100 HARDING AVE",
+      "city": "ALIQUIPPA",
+      "zip": "15001"
+    },
+    {
+      "name": "Allegheny Clarion Valley High School",
+      "state": "PA",
+      "association_id": "11411",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11411",
+      "address": "762 Route 58",
+      "city": "FOXBURG",
+      "zip": "16036"
+    },
+    {
+      "name": "Allegheny Clarion Valley Junior High School",
+      "state": "PA",
+      "association_id": "12080",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12080",
+      "address": "BOX 345, 762 ROUTE 58 EAST",
+      "city": "FOXBURG",
+      "zip": "16036"
+    },
+    {
+      "name": "Allen Middle School",
+      "state": "PA",
+      "association_id": "11809",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11809",
+      "address": "4225 GETTYSBURG RD",
+      "city": "CAMP HILL",
+      "zip": "17011"
+    },
+    {
+      "name": "Allentown Central Catholic High School",
+      "state": "PA",
+      "association_id": "12319",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12319",
+      "address": "301 N 4TH ST",
+      "city": "ALLENTOWN",
+      "zip": "18102"
+    },
+    {
+      "name": "Allentown Central Catholic Junior High School",
+      "state": "PA",
+      "association_id": "12401",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12401",
+      "address": "301 N 4TH ST",
+      "city": "ALLENTOWN",
+      "zip": "18102"
+    },
+    {
+      "name": "Alliance Christian High School",
+      "state": "PA",
+      "association_id": "12251",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12251",
+      "address": "873 S. Hanover St.",
+      "city": "Pottstown",
+      "zip": "19465"
+    },
+    {
+      "name": "Altoona Area Junior High School",
+      "state": "PA",
+      "association_id": "12514",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12514",
+      "address": "1400 Seventh Avenue",
+      "city": "Altoona",
+      "zip": "16602"
+    },
+    {
+      "name": "Altoona Area High School",
+      "state": "PA",
+      "association_id": "11238",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11238",
+      "address": "1404 6TH AVENUE",
+      "city": "ALTOONA",
+      "zip": "16602"
+    },
+    {
+      "name": "Ambridge Area High School",
+      "state": "PA",
+      "association_id": "11286",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11286",
+      "address": "909 DUSS AVE",
+      "city": "AMBRIDGE",
+      "zip": "15003"
+    },
+    {
+      "name": "Ambridge Area Middle School",
+      "state": "PA",
+      "association_id": "11936",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11936",
+      "address": "401 FIRST STREET",
+      "city": "FREEDOM",
+      "zip": "15042"
+    },
+    {
+      "name": "Anchor Christian Academy",
+      "state": "PA",
+      "association_id": "13624",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13624",
+      "address": "530 MILTON RD",
+      "city": "LANCASTER",
+      "zip": "17602"
+    },
+    {
+      "name": "Andrew W Mellon Middle School",
+      "state": "PA",
+      "association_id": "12010",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12010",
+      "address": "11 CASTLE SHANNON BLVD",
+      "city": "PITTSBURGH",
+      "zip": "15228"
+    },
+    {
+      "name": "Annville-Cleona High School",
+      "state": "PA",
+      "association_id": "11084",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11084",
+      "address": "500 S WHITE OAK ST",
+      "city": "ANNVILLE",
+      "zip": "17003"
+    },
+    {
+      "name": "Annville-Cleona Middle School",
+      "state": "PA",
+      "association_id": "11715",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11715",
+      "address": "500 S WHITE OAK ST",
+      "city": "ANNVILLE",
+      "zip": "17003"
+    },
+    {
+      "name": "Antietam High School",
+      "state": "PA",
+      "association_id": "11085",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11085",
+      "address": "201 North 25th Street",
+      "city": "READING",
+      "zip": "19606"
+    },
+    {
+      "name": "Antietam Middle School",
+      "state": "PA",
+      "association_id": "11716",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11716",
+      "address": "100 ANTIETAM RD",
+      "city": "READING",
+      "zip": "19606"
+    },
+    {
+      "name": "Apollo Ridge High School",
+      "state": "PA",
+      "association_id": "11287",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11287",
+      "address": "1825 STATE ROUTE 56",
+      "city": "SPRING CHURCH",
+      "zip": "15686"
+    },
+    {
+      "name": "Apollo Ridge Middle School",
+      "state": "PA",
+      "association_id": "11937",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11937",
+      "address": "1829 STATE RT 56",
+      "city": "SPRING CHURCH",
+      "zip": "15686"
+    },
+    {
+      "name": "Aquinas Academy of Pittsburgh",
+      "state": "PA",
+      "association_id": "12286",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12286",
+      "address": "2308 West Hardies Rd",
+      "city": "Gibsonia",
+      "zip": "15044"
+    },
+    {
+      "name": "Archbishop Carroll High School",
+      "state": "PA",
+      "association_id": "12475",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12475",
+      "address": "211 Matson Ford Rd",
+      "city": "Radnor",
+      "zip": "19087"
+    },
+    {
+      "name": "Archbishop Ryan High School",
+      "state": "PA",
+      "association_id": "12463",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12463",
+      "address": "11201 ACADEMY ROAD",
+      "city": "PHILADELPHIA",
+      "zip": "19154"
+    },
+    {
+      "name": "Archbishop Wood High School",
+      "state": "PA",
+      "association_id": "12476",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12476",
+      "address": "655 YORK ROAD",
+      "city": "WARMINSTER",
+      "zip": "18974"
+    },
+    {
+      "name": "Arcola Intermediate School",
+      "state": "PA",
+      "association_id": "11614",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11614",
+      "address": "4001-A EAGLEVILLE RD",
+      "city": "EAGLEVILLE",
+      "zip": "19403"
+    },
+    {
+      "name": "Armstrong Junior High School",
+      "state": "PA",
+      "association_id": "13560",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13560",
+      "address": "300 BUFFINGTON DRIVE",
+      "city": "KITTANNING",
+      "zip": "16201"
+    },
+    {
+      "name": "Armstrong Senior High School",
+      "state": "PA",
+      "association_id": "13559",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13559",
+      "address": "300 BUFFINGTON DRIVE",
+      "city": "KITTANNING",
+      "zip": "16201"
+    },
+    {
+      "name": "Arrows Christian Academy Middle School",
+      "state": "PA",
+      "association_id": "13686",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13686",
+      "address": "1220 12th Ave.",
+      "city": "Altoona",
+      "zip": "16601"
+    },
+    {
+      "name": "Arts Academy at Benjamin Rush",
+      "state": "PA",
+      "association_id": "13464",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13464",
+      "address": "11081 KNIGHTS ROAD",
+      "city": "PHILADELPHIA",
+      "zip": "19154"
+    },
+    {
+      "name": "Athens Area High School",
+      "state": "PA",
+      "association_id": "11176",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11176",
+      "address": "401 WEST FREDERICK ST",
+      "city": "ATHENS",
+      "zip": "18810"
+    },
+    {
+      "name": "Austin Area High School",
+      "state": "PA",
+      "association_id": "11412",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11412",
+      "address": "138 COSTELLO AVE",
+      "city": "AUSTIN",
+      "zip": "16720"
+    },
+    {
+      "name": "Austin Area Junior High School",
+      "state": "PA",
+      "association_id": "12081",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12081",
+      "address": "138 COSTELLO AVE",
+      "city": "AUSTIN",
+      "zip": "16720"
+    },
+    {
+      "name": "Avella Area High School",
+      "state": "PA",
+      "association_id": "11292",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11292",
+      "address": "1000 AVELLA RD",
+      "city": "AVELLA",
+      "zip": "15312"
+    },
+    {
+      "name": "Avella Junior High School",
+      "state": "PA",
+      "association_id": "11942",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11942",
+      "address": "1000 AVELLA ROAD",
+      "city": "AVELLA",
+      "zip": "15312"
+    },
+    {
+      "name": "Avon Grove High School",
+      "state": "PA",
+      "association_id": "10981",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=10981",
+      "address": "10 WALTMAN WAY",
+      "city": "West Grove",
+      "zip": "19390"
+    },
+    {
+      "name": "Avon Grove Middle School",
+      "state": "PA",
+      "association_id": "11579",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11579",
+      "address": "257 State Road",
+      "city": "WEST GROVE",
+      "zip": "19390"
+    },
+    {
+      "name": "Avonworth High School",
+      "state": "PA",
+      "association_id": "11293",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11293",
+      "address": "304 JOSEPHS LN",
+      "city": "PITTSBURGH",
+      "zip": "15237"
+    },
+    {
+      "name": "Avonworth Middle School",
+      "state": "PA",
+      "association_id": "11943",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11943",
+      "address": "256 JOSEPHS LN",
+      "city": "PITTSBURGH",
+      "zip": "15237"
+    }
+  ],
+  "coaches": []
+}

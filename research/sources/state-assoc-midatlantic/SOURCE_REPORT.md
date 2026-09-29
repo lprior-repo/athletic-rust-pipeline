@@ -217,6 +217,20 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 20 | **Estimated marginal coverage** | Moderate: championship calendar and district/classification scaffolding; results themselves arrive through pa.milesplit.com. |
 | 21 | **Implementation recommendation** | **VALIDATION_SOURCE** (PIAA's own pointer to `pa.milesplit.com` is the actionable part). |
 
+- **Rust port (2026-09-29, branch `port-piaa`).** `crates/census-crawl/src/pa_piaa/` implements
+  both parsers over the captures above: the 24 linked letter pages (A..W+Y; `alpha=Z` echoes the A
+  group and is never requested, `X` prints no link) and the details pages, of which only the
+  athletic-director posts become coach rows (`CoachRole::AthleticDirector`, no sport,
+  `Gender::Mixed`) — PIAA publishes no coaches and `/officials/directory/` stays unread. Parity is
+  pinned against the prototype's own output: `alpha=A` 53/53 and `alpha=B` 101/101 schools
+  field-for-field, and the ID=12048 contact row. The adapter stores the schools with their city and
+  reads one details page per school at 1 request/s under robots (`/schools/…` allowed,
+  `/officials/directory/` disallowed). Evidence: `docs/VERIFICATION-EVIDENCE.md`, "PIAA member
+  directory ported to Rust".
+- **Note.** Row 15's browser requirement is contradicted by the captures: the letter pages are
+  server-rendered and their rows parse without a browser (`notes/pa-piaa.md`), which is what the
+  adapter relies on; the divergence has not been re-tested against a live response.
+
 ---
 
 ## CT — Connecticut Interscholastic Athletic Conference (CIAC)
