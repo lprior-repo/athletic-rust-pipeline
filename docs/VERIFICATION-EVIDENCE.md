@@ -2811,6 +2811,57 @@ store write or metrics projection was exercised. The golden samples 18 captured 
 the national lane covers 15 associations, so this is a sample, not a census-scale equivalence proof. Row
 order is not compared (S20); the comparison is on row sets.
 
+## Review round: registry-enforced pacing, cooldowns and revisit semantics (2026-09-29)
+
+Three read-only reviewers ran over the DragonFly lane and the `net` core: black-hat parity
+(`agent://BlackHatParityAudit`), holzman-rust (`agent://HolzmanAudit`) and async-rust-reviewer
+(`agent://AsyncAudit-2`). All three were tool-limited to reading — each reported that it executed no
+cargo command — so their findings are source evidence and every run below is the author's. The
+black-hat's seven findings were closed in place (lane README; `dragonfly-summary-parity.md`
+"Divergences recorded" 8–12); the async review's material finding was that the registry's declared
+request rate was never enforced, so a caller's shorter delay could exceed the published pace:
+
+- `registry::{descriptor_for_host, declared_delay_for_host}` expose a host's declared rate (1/rps, e.g.
+  `www.wayzataresults.com` → 10 s), returning `None` for an unregistered host and for the local-artifact
+  origin. `net::host_gate` takes the slowest of the caller's delay, the host's robots crawl-delay, the
+  500 ms authorized floor and this declared rate, so the registry row now binds the runtime.
+- `Fetcher::fetch` refuses a request while the host sits inside a recorded access cooldown
+  (`host_blocked` against `now_iso8601`) with `FetchError::Policy`, instead of continuing to knock while
+  the condition it minted for a 403/429 is unexpired.
+- `robots_for` now runs under the host gate, spends a paced turn, and is single-flighted per origin, so
+  the policy probe is no longer unpaced and concurrent first callers issue one request.
+- `PacingState` is a shareable struct: `Fetcher::with_shared_pacing` lets instances that talk to one
+  host spend one budget, which the service's per-jurisdiction fetchers must use when they are wired
+  (recorded in the lane README as an obligation for that slice).
+- `collect` counts a directory row that carries no short code (`dropped_school_rows`) instead of
+  dropping it silently, and journals a school only when its summary was actually read, so a transient
+  fetch failure is retried on the next run rather than being fixed as "done without coaches".
+
+Tests added with the fixes: `registry::tests::the_declared_rate_for_a_host_is_read_from_the_table`,
+`net::execute::tests::a_registered_host_is_never_paced_faster_than_its_declared_rate`,
+`a_host_with_a_recorded_cooldown_is_refused_before_dispatch` and
+`two_fetchers_sharing_one_pacing_state_share_the_host_budget` (all virtual-time, no network).
+
+Measured after the change: `cargo test -p census-crawl` → **473 passed, 0 failed** (0 doc-tests);
+`cargo test -p census-store` → **105 + 1 passed, 0 failed**; `cargo fmt -p census-crawl -- --check`
+clean; `cargo clippy -p census-crawl --all-targets -- -D warnings` clean. `cargo test -p census-domain`
+→ **153 passed, 1 failed** (`model::tests::general_model::meet_identity_is_date_and_name_scoped`, an
+id-string expectation): not from this work — the only local change in that crate is attribute
+indentation in `event_performance.rs`, which cannot change an identity hash, so the test fails at this
+base and belongs to the uncommitted domain work in the main worktree.
+
+**Recorded, not changed.** (1) Cache bodies are written and read with `std::fs` on the runtime
+(`net::execute`), so a lane whose bodies are 100 KB–1.6 MB pays a page-cache syscall per request:
+measured here, a 671 KB write takes 0.16 ms and a read 0.21 ms, a 1.6 MB write 0.31 ms, and even the
+32 MiB body cap 5.79 ms — all far inside the one-second pacing interval, so the fix (`tokio::fs` or
+`spawn_blocking`) is a latency nicety for concurrent jurisdictions, not a correctness gap for this
+lane. (2) `PacingState` sharing is opt-in rather than process-global; a forgotten `with_shared_pacing`
+returns a process to per-instance pacing. (3) The probe reads the cache first and has no `from_cache`
+field, so a re-run over a warm cache replays retained bodies as measured numbers; the README records
+that a fresh qualification number needs a cleared cache. (4) An offline probe that never downloaded a
+body records `offline`, which cannot be told apart from a live 404 recorded as `http`; the taxonomy is
+documented as a mapping, not parity.
+
 ## Consolidated historical evidence — imported 2026-09-27
 
 The following facts came from retired handoffs, implementation plans and duplicate operating

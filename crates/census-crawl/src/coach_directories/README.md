@@ -132,4 +132,28 @@ NC/NCHSAA, AL/AHSAA, AR/ArkAA, GA/GHSA, MT/MHSA, MS/MHSAA, SC/SCHSL, ID/IdHSAA,
 NM/NMAA, MD/MPSSAA, DC/DCSAA, DE/DIAA, TN/TSSAA, WY/WHSAA, ND/NDHSAA.
 
 Robots policy is not published (403 with API Gateway body). Pacing follows the
-registry's 1 request/s with one in-flight request.
+registry's 1 request/s with one in-flight request, and the fetcher enforces it
+rather than trusting its caller:
+
+* `net::host_gate` floors a host's pace at the rate its registry row declares
+  (`registry::declared_delay_for_host`), so a shorter `--delay-ms` or a test
+  default cannot exceed the published rate; the host's robots crawl-delay and the
+  500 ms authorized floor still apply, whichever is slowest.
+* A host inside a recorded access cooldown (a 403/429 that minted a
+  `SourceAccessCondition`) refuses the request with `FetchError::Policy` instead
+  of continuing to knock, so a rate-limited host is left alone for the recorded
+  `Retry-After`/six-hour window.
+* `robots.txt` is read once per origin under the same host gate and paced like
+  any other request, so the first page request does not land in the same second
+  as the policy probe.
+* Pacing state (turn slots and the one-in-flight gates) belongs to the `Fetcher`;
+  instances that share a host must share it with `Fetcher::with_shared_pacing`,
+  which the service's per-jurisdiction fetchers must do when they are wired.
+* Only a school whose summary was actually read is journalled, so a transient
+  failure is retried on the next run instead of being fixed as "done without
+  coaches"; a directory row carrying no short code is counted as a dropped row
+  rather than disappearing from the report.
+* The probe reads the cache first, as the prototype does, and its record has no
+  `from_cache` field: re-running the survey over a warm cache replays retained
+  bodies as if they were measured, so a fresh qualification number needs
+  `--offline`-free replay over a cleared cache directory.

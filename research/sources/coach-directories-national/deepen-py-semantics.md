@@ -45,7 +45,8 @@ Merge-side rules that consume those records live in `run.py:154-197` (`load_extr
 | varsity-only filter at merge | the same rule, at emission (`row_hygiene::is_varsity_level`, `EmissionScope::Census`) |
 | `out/extra/<label>.jsonl` | store tables (`Schools`, `Coaches`, `SourceObservations`) plus a per-school journal entry (`JOURNAL`, key `state:short_code`) |
 | `--xhr` | not needed by this lane (the API answers without it); `FetchOptions` carries headers for adapters that do need it |
-| `--limit` / `--only-urls` / `--urls-file` | **no counterpart**: `Options` selects by state and by school name only |
+| `--limit` | `Options::limit` truncates the walk before the summary fetch |
+| `--only-urls` / `--urls-file` | no counterpart: `Options` selects by state and by school name only |
 | 8 worker threads | the Rust run path is strictly sequential (`collect.rs:99-107`, `152`, `187` await each fetch in turn) |
 
 ## Findings
@@ -62,11 +63,11 @@ Merge-side rules that consume those records live in `run.py:154-197` (`load_extr
    prototype's pool both issue ~1 request/s per host. Parallelism only becomes a difference if the
    registry rate or host count rises, and `registry.rs` records each host's rate and in-flight bound
    for that case.
-4. **Gap: no per-run URL or count override.** `--limit` and `--only-urls`/`--urls-file` have no Rust
-   equivalent, which the integration-smoke work will need (a bounded subset run against the live
-   host). The natural home is an `Options::max_schools` (or explicit school-code list) applied inside
-   `process_school`, checked before the summary fetch so a limit costs no requests. Not implemented
-   here; recorded as a gap for the run-path slice.
+4. **Gap: no explicit URL list.** `--only-urls`/`--urls-file` have no Rust equivalent; the count
+   override does exist — `Options::limit` truncates the walk before the summary fetch
+   (`collect.rs:104-110`), which is the `--limit` behaviour without paying for a request. A correction
+   to an earlier draft of this note, which claimed the limit was missing too. `--xhr` has a home in
+   `FetchOptions::headers` if a future adapter needs it.
 5. **Gap: failure records are notes, not rows.** Python's per-URL failure record is structured
    evidence (`status`, `error`, `bytes`); the Rust equivalent is a formatted note string on
    `AdapterReport`. For the probe lane the same information is a structured record
