@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, OwnedSemaphorePermit, Semaphore};
 
 pub(super) struct HostState {
     pub(super) gate: Arc<Mutex<()>>,
@@ -14,6 +14,7 @@ pub(super) struct HostState {
 pub struct PacingState {
     pub(super) families: Mutex<HashMap<String, HostState>>,
     pub(super) hosts: Mutex<HashMap<String, HostState>>,
+    pub(super) family_permits: Mutex<HashMap<String, Arc<Semaphore>>>,
 }
 
 impl PacingState {
@@ -21,6 +22,7 @@ impl PacingState {
         Self {
             families: Mutex::new(HashMap::new()),
             hosts: Mutex::new(HashMap::new()),
+            family_permits: Mutex::new(HashMap::new()),
         }
     }
 }
@@ -58,6 +60,7 @@ impl Fetcher {
             default_delay,
             host_delays,
             family_delays: HashMap::new(),
+            family_parallelism: super::DEFAULT_FAMILY_PARALLELISM,
             pacing: Arc::new(PacingState::new()),
             authorized_hosts: authorized_hosts
                 .into_iter()
@@ -72,5 +75,31 @@ impl Fetcher {
             lane: None,
             offline: false,
         })
+    }
+
+    pub(super) async fn family_permit(
+        &self,
+        host: &str,
+    ) -> Result<Option<OwnedSemaphorePermit>, FetchError> {
+        if self.family_parallelism <= 1 {
+            return Ok(None);
+        }
+        let Some(family) = self.family_of(host) else {
+            return Ok(None);
+        };
+        let permits = {
+            let mut family_permits = self.pacing.family_permits.lock().await;
+            Arc::clone(
+                family_permits
+                    .entry(family)
+                    .or_insert_with(|| Arc::new(Semaphore::new(self.family_parallelism))),
+            )
+        };
+        let Ok(permit) = permits.acquire_owned().await else {
+            return Err(FetchError::Invariant {
+                detail: "the source family admission gate is closed".to_string(),
+            });
+        };
+        Ok(Some(permit))
     }
 }

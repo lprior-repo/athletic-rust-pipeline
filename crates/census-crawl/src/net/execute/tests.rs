@@ -310,3 +310,110 @@ async fn the_longest_family_key_wins() {
     assert_eq!(fetcher.family_of("notmilesplit.com"), None);
     assert_eq!(fetcher.family_of("example.test"), None);
 }
+
+#[tokio::test(start_paused = true)]
+async fn a_family_above_one_parallelism_gives_each_host_its_own_turn() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fetcher = fetcher_with_families(
+        dir.path(),
+        Duration::from_millis(1),
+        &[("milesplit.com", Duration::from_secs(2))],
+    )
+    .with_family_parallelism(2);
+    fetcher.host_gate("tx.milesplit.com", None).await;
+    fetcher.host_gate("wi.milesplit.com", None).await;
+
+    let start = tokio::time::Instant::now();
+    fetcher.wait_turn("tx.milesplit.com").await;
+    fetcher.wait_turn("wi.milesplit.com").await;
+    assert_eq!(
+        tokio::time::Instant::now().duration_since(start),
+        Duration::ZERO,
+        "above one, each host of the family holds its own turn"
+    );
+
+    let start = tokio::time::Instant::now();
+    fetcher.wait_turn("tx.milesplit.com").await;
+    assert_eq!(
+        tokio::time::Instant::now().duration_since(start),
+        Duration::from_secs(2),
+        "and each host still spends the family's spacing between its own turns"
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_family_admits_exactly_its_parallelism_in_flight() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fetcher = fetcher_with_families(
+        dir.path(),
+        Duration::from_millis(1),
+        &[("milesplit.com", Duration::from_secs(2))],
+    )
+    .with_family_parallelism(2);
+
+    let first = fetcher
+        .family_permit("tx.milesplit.com")
+        .await
+        .expect("the family gate is open")
+        .expect("a family host is admitted above one parallelism");
+    let second = fetcher
+        .family_permit("wi.milesplit.com")
+        .await
+        .expect("the family gate is open")
+        .expect("a family host is admitted above one parallelism");
+
+    let mut third = Box::pin(fetcher.family_permit("ca.milesplit.com"));
+    assert!(
+        tokio::time::timeout(Duration::ZERO, &mut third)
+            .await
+            .is_err(),
+        "a third request entered a family whose parallelism is two"
+    );
+
+    drop(first);
+    let third = third
+        .await
+        .expect("the family gate is open")
+        .expect("the freed slot admits the waiting request");
+    drop(second);
+    drop(third);
+}
+
+#[tokio::test(start_paused = true)]
+async fn a_host_outside_every_family_takes_no_family_slot() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fetcher = fetcher_with_families(
+        dir.path(),
+        Duration::from_millis(1),
+        &[("milesplit.com", Duration::from_secs(2))],
+    )
+    .with_family_parallelism(2);
+
+    assert!(
+        fetcher
+            .family_permit("opentrack.test")
+            .await
+            .expect("the family gate is open")
+            .is_none(),
+        "a host outside every family keeps its own single slot"
+    );
+}
+
+#[tokio::test(start_paused = true)]
+async fn the_default_parallelism_keeps_the_single_family_slot() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fetcher = fetcher_with_families(
+        dir.path(),
+        Duration::from_millis(1),
+        &[("milesplit.com", Duration::from_secs(2))],
+    );
+
+    assert!(
+        fetcher
+            .family_permit("tx.milesplit.com")
+            .await
+            .expect("the family gate is open")
+            .is_none(),
+        "at the default the family's single turn is the whole admission gate"
+    );
+}

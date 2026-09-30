@@ -117,6 +117,7 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
                         None,
                         4,
                         cli.authorized_hosts.clone(),
+                        cli.source_parallelism,
                     )
                 })
                 .collect();
@@ -174,6 +175,7 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
                         None,
                         4,
                         cli.authorized_hosts.clone(),
+                        cli.source_parallelism,
                     )
                 })
                 .collect();
@@ -265,6 +267,7 @@ pub(super) async fn run_collect(cli: &Cli, args: &CollectArgs) -> Result<()> {
                         options.limit_per_state,
                         options.concurrency,
                         cli.authorized_hosts.clone(),
+                        cli.source_parallelism,
                     )
                 })
                 .collect();

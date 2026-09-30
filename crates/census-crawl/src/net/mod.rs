@@ -35,6 +35,8 @@ const MIN_AUTHORIZED_DELAY: Duration = Duration::from_millis(500);
 
 pub const BLOCK_COOLDOWN_SECONDS: u64 = 6 * 60 * 60;
 
+pub const DEFAULT_FAMILY_PARALLELISM: usize = 1;
+
 const DEFAULT_SOURCE: &str = "unknown";
 
 pub struct Fetcher {
@@ -43,6 +45,7 @@ pub struct Fetcher {
     default_delay: Duration,
     host_delays: HashMap<String, Duration>,
     family_delays: HashMap<String, Duration>,
+    family_parallelism: usize,
     pacing: Arc<PacingState>,
     authorized_hosts: Vec<String>,
     robots: Mutex<HashMap<String, RobotsPolicy>>,
@@ -68,6 +71,11 @@ impl Fetcher {
             .map(|(family, delay)| (family.trim().to_ascii_lowercase(), delay))
             .filter(|(family, _)| !family.is_empty())
             .collect();
+        self
+    }
+
+    pub fn with_family_parallelism(mut self, parallelism: usize) -> Self {
+        self.family_parallelism = parallelism.max(DEFAULT_FAMILY_PARALLELISM);
         self
     }
 

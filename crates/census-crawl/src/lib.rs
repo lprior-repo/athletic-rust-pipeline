@@ -59,6 +59,7 @@ pub mod compiled;
 mod context;
 pub mod hytek;
 pub mod ihsa;
+pub mod ingress;
 pub mod ks;
 pub mod milesplit;
 pub mod mpa;

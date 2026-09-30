@@ -16,7 +16,7 @@ mod pipeline;
 mod stage_runs;
 mod stages;
 
-type CachedFetcher = Option<(Vec<String>, Arc<Fetcher>)>;
+type CachedFetcher = Option<(Vec<String>, usize, Arc<Fetcher>)>;
 
 #[derive(Clone)]
 pub struct JurisdictionCensus {
@@ -83,11 +83,11 @@ pub(super) const DISPATCHED: &[&str] = &[
     "plain_names",
     "ihsa",
     "ks",
+    "coach_directories",
     "wiaa_results",
     "wayzata",
     "milesplit",
     "athleticnet",
-    "coach_directories",
 ];
 
 fn report(

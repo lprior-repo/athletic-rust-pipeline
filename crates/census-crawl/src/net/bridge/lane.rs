@@ -1,6 +1,7 @@
 use super::wire::{BrowserOutcome, RequestSpec};
+use crate::ingress::Ingress;
 use crate::net::FetchError;
-use restate_sdk::ingress::{ClientError, RequestTarget, ReqwestClient};
+use restate_sdk::ingress::{ClientError, RequestTarget};
 use restate_sdk::prelude::Json;
 use url::Url;
 
@@ -8,11 +9,11 @@ const FETCH_HANDLER: &str = "fetch";
 
 #[derive(Clone)]
 pub struct BrowserLane {
-    client: ReqwestClient,
+    client: Ingress,
 }
 
 impl BrowserLane {
-    pub fn over(client: ReqwestClient) -> Self {
+    pub fn over(client: Ingress) -> Self {
         Self { client }
     }
 

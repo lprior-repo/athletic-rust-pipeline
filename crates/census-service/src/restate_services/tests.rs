@@ -228,6 +228,7 @@ fn national_request(jurisdictions: Vec<UsJurisdiction>) -> NationalRequest {
         concurrency: 4,
         observed_on: None,
         authorized_hosts: Vec::new(),
+        source_parallelism: census_crawl::net::DEFAULT_FAMILY_PARALLELISM,
     }
 }
 

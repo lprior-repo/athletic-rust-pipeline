@@ -45,20 +45,23 @@ impl PaceScope {
 
 impl Fetcher {
     fn pace_scope(&self, host: &str) -> PaceScope {
-        match self.family_of(host) {
-            Some(family) => PaceScope::Family(family),
-            None => PaceScope::Host(host.trim().to_ascii_lowercase()),
+        let host = host.trim().to_ascii_lowercase();
+        match self.family_of(&host) {
+            Some(family) if self.family_parallelism <= 1 => PaceScope::Family(family),
+            _ => PaceScope::Host(host),
         }
     }
 
     fn configured_delay(&self, scope: &PaceScope) -> Duration {
         match scope {
             PaceScope::Family(family) => self.family_delay(family).unwrap_or(self.default_delay),
-            PaceScope::Host(host) => self
-                .host_delays
-                .get(host)
-                .copied()
-                .unwrap_or(self.default_delay),
+            PaceScope::Host(host) => {
+                let family_delay = self
+                    .family_of(host)
+                    .and_then(|family| self.family_delay(&family));
+                let host_delay = self.host_delays.get(host).copied();
+                family_delay.max(host_delay).unwrap_or(self.default_delay)
+            }
         }
     }
 
@@ -172,6 +175,7 @@ impl Fetcher {
             options,
             timeout_secs,
         };
+        let _family_permit = self.family_permit(&host).await?;
         let started = Instant::now();
         let outcome = match crate::registry::transport_for_host(&host) {
             Some(crate::registry::TransportKind::Browser) => self.fetch_browser(gate, &plan).await,

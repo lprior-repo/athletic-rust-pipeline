@@ -55,6 +55,11 @@ pub(super) struct Cli {
     )]
     #[arg(long = "authorized-host", global = true, value_name = "HOST")]
     authorized_hosts: Vec<String>,
+    #[arg(
+        help = "Requests one source family admits at once: at 1 the family keeps one turn across all its hosts, and above it every host of the family holds its own turn while the family still bounds in-flight work"
+    )]
+    #[arg(long, global = true, value_name = "N", default_value_t = census_crawl::net::DEFAULT_FAMILY_PARALLELISM)]
+    source_parallelism: usize,
     #[command(subcommand)]
     command: Command,
 }
