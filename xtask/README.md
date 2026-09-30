@@ -71,6 +71,13 @@ bytes and associated format/year metadata. A successful replay establishes those
 Use the owning crate's focused tests where necessary and retain this routing gap as implementation
 work, not a reason to claim the wrapper runs more than it does.
 
+`source-test`/`source-check` select test **function names**, not modules or files: the slug is passed
+to nextest's `test(<slug>)` predicate, which matches any test whose name contains it. Name the
+functions after the source, hyphens as underscores — `nces_*`, `state_ed_*`, `tssaa_*`,
+`private_assoc_*` — and call the lane with the underscore spelling (`cargo xtask source-test
+state_ed`). A source whose tests are named otherwise reports an empty lane while the reader still has
+tests; fix the names rather than widening the filter.
+
 ## Source scaffolding
 
 Hyphens normalize to underscores; invalid identifiers, keywords and existing module/fixture paths

@@ -119,6 +119,10 @@ pub(super) enum Command {
     )]
     OpenWork(OpenWorkArgs),
     #[command(
+        about = "Read the school-directory artifacts into one collapsed corpus, diff it against a baseline, and export it. Opens no store"
+    )]
+    SchoolAddress(census_service::school_address::SchoolAddressArgs),
+    #[command(
         about = "Drive the headed browser lane the `census-serve` endpoint owns: `start` launches the one persistent profile, `status` reads it, `stop` drains it, and `fetch` posts one request through it. Requires an endpoint started with `--browser-profile`; opens no store"
     )]
     BrowserSession(BrowserSessionArgs),

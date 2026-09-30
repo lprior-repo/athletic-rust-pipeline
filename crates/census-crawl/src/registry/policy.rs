@@ -21,6 +21,11 @@ pub(super) const SCHOOL_COACH_NAMES: Caps = Caps {
     ..Caps::NONE
 };
 
+pub(super) const SCHOOL_ADDRESS: Caps = Caps {
+    school_evidence: true,
+    ..Caps::NONE
+};
+
 pub(super) const fn fetched(origin: &'static str, rps: f64) -> SourceAdmission {
     SourceAdmission {
         origin,

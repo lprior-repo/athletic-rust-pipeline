@@ -90,9 +90,7 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
     };
     let workbook = inspect_workbook(&path, &dataset, request.grad_year, request.scope)
         .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
-    let evidence = assemble(
-        &coverage, &census, &stats, cases, access, request, workbook,
-    );
+    let evidence = assemble(&coverage, &census, &stats, cases, access, request, workbook);
 
     let mut state = reached_phase(&stats, &path)
         .map_err(|error| SealWorkflowError::PhaseDetection(error.to_string()))?;

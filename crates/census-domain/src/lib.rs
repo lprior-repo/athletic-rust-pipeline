@@ -4,6 +4,7 @@ pub mod core_scope;
 pub mod error;
 pub mod jurisdiction;
 pub mod model;
+pub mod school_directory;
 pub mod school_index;
 
 pub use core_scope::{is_core_source, NON_CORE_SOURCE_IDS};

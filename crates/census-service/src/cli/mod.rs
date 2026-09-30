@@ -148,6 +148,7 @@ pub(super) async fn run() -> Result<()> {
         Command::CensusDoc(args) => census_doc::run_census_doc(args),
         Command::StoreBackup(args) => store::run_backup(&cli.store_root(), args),
         Command::Serve => serve::run_serve(&cli),
+        Command::SchoolAddress(args) => census_service::school_address::run(args),
         _ => {
             let store = Store::open(cli.store_root())?;
             dispatch::dispatch(&cli, &store).await

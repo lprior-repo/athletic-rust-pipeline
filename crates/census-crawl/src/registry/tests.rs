@@ -4,7 +4,7 @@ use super::{
 };
 use std::time::Duration;
 
-const PLAN_SLUGS: [&str; 19] = [
+const PLAN_SLUGS: [&str; 22] = [
     "athleticlive",
     "athleticlive_athletes",
     "athleticnet",
@@ -17,10 +17,13 @@ const PLAN_SLUGS: [&str; 19] = [
     "milesplit",
     "mpa",
     "mshsl",
+    "nces",
     "ohsaa",
     "plain_names",
     "riil",
+    "state_ed",
     "tfrrs",
+    "tssaa",
     "wiaa",
     "wiaa_results",
     "wayzata",
@@ -148,35 +151,30 @@ fn artifact_adapters_declare_no_fetchable_host() {
 
 #[test]
 fn access_class_separates_artifact_reads_from_host_fetches() {
-    for slug in ["athleticlive", "coach_contacts"] {
+    let mut classes: Vec<AccessClass> = Vec::new();
+    for entry in descriptors() {
+        let expected = if entry.admission.origin == "local-artifact" {
+            AccessClass::Artifact
+        } else {
+            match entry.transport {
+                TransportKind::Browser => AccessClass::BrowserSession,
+                _ => AccessClass::Open,
+            }
+        };
+        assert_eq!(
+            entry.access_class(),
+            expected,
+            "{} is classed by its own admission: an artifact read costs no request",
+            entry.slug
+        );
+        classes.push(expected);
+    }
+    for slug in ["athleticlive", "coach_contacts", "nces", "state_ed"] {
         assert_eq!(
             descriptor(slug).map(|entry| entry.access_class()),
             Some(AccessClass::Artifact),
             "{slug} reads an artifact and costs no request"
         );
-    }
-    let fetched: Vec<&str> = descriptors()
-        .filter(|entry| entry.access_class() != AccessClass::Artifact)
-        .map(|entry| entry.slug)
-        .collect();
-    assert_eq!(
-        fetched.len(),
-        descriptors().count() - 2,
-        "only the two artifact adapters may skip the fetch route: {fetched:?}"
-    );
-    let mut classes: Vec<AccessClass> = Vec::new();
-    for slug in fetched {
-        let entry = descriptor(slug).expect("a fetched slug names a descriptor");
-        let expected = match entry.transport {
-            TransportKind::Browser => AccessClass::BrowserSession,
-            _ => AccessClass::Open,
-        };
-        assert_eq!(
-            entry.access_class(),
-            expected,
-            "{slug} is classed by its own transport"
-        );
-        classes.push(expected);
     }
     assert!(
         classes.contains(&AccessClass::BrowserSession),
@@ -279,7 +277,7 @@ fn one_origin_has_one_declared_policy() {
 #[test]
 fn one_origin_has_one_transport() {
     let mut seen: Vec<(&str, TransportKind)> = Vec::new();
-    for entry in descriptors() {
+    for entry in descriptors().filter(|entry| entry.admission.origin != "local-artifact") {
         let origin = entry.admission.origin;
         match seen.iter().find(|(seen_origin, _)| *seen_origin == origin) {
             Some((_, seen_transport)) => assert_eq!(

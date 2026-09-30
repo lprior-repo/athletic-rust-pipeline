@@ -3447,3 +3447,474 @@ uncommitted slices, so the ratchet's remaining growth is not attributable from t
 live deployment served this workbook, and the sheet set is asserted through the exporter tests and
 the offline writer, not from a sealed production bundle.
 
+
+## School-directory corpus verb: the NCES fixture lane (2026-09-30)
+
+`census-service school-address` (ADR-020) reads operator-supplied directory artifacts into one
+collapsed corpus, diffs it against a baseline, exports it and updates the source update ledger,
+without opening the store. Exercised on the two committed NCES fixture windows with the debug binary:
+
+```sh
+target/debug/census-service school-address \
+  --ccd crates/census-crawl/tests/fixtures/nces/ccd_sch_029_2526_head.csv \
+  --pss crates/census-crawl/tests/fixtures/nces/pss2324_pu_head.csv --out /tmp/sa/run1
+```
+
+Exit 0, three artifacts written. `pipeline_report.json` reports corpus `rows 1931, entries 1931,
+skipped 67, notes 0, merges 0`; lane `nces-ccd` 1 557 entries with 42 skipped rows (artifact
+sha256 `e01af083baa5…`), lane `nces-pss` 374 entries with 25 skipped rows (`2df29d5c9f66…`); every
+skipped row is printed with its source line. `school_directory.csv` is the 15-column header plus
+1 932 lines; `school_directory.json` parses back to 1 931 `SchoolDirectoryEntry` values
+(`nces:010000500870` `Albertville Middle School` and `pss:A2380006` among them).
+
+Re-running into the same directory reproduces all three artifacts byte-for-byte
+(`pipeline_report.json` sha256 `10b8afdd…`, `school_directory.csv` `25d42b90…`,
+`school_directory.json` `ca8dd914…`); only `--out` changes the report, through the `outputs` list.
+
+The baseline and ledger path, run over the same inputs:
+
+```sh
+target/debug/census-service school-address --ccd … --pss … --out /tmp/sa/state \
+  --baseline /tmp/sa/base.json --ledger /tmp/sa/ledger.json --now 2026-09
+```
+
+Run 1 reports `changes: null` and writes no `changes.json` (there was no baseline to diff against),
+decides both sources `due`, and records `{"last":{"Ccd":"2026-09","Pss":"2026-09"}}` in the ledger.
+Run 2 with `--now 2026-10` reports `0 added, 0 removed, 0 modified`, writes `changes.json`, and
+decides both sources `not-due` with next due 2027-09 (CCD, yearly September) and 2028-01 (PSS,
+biennial even January).
+
+Refusals observed, each exit 1 with no artifact written: `--geocode` and `--validate-postal`
+(`census-crawl::geocode` does not exist yet), `--baseline` without `--now`, and no input artifact
+named. A PSS file passed as `--ccd` is refused as a directory artifact naming the missing `NCESSCH`
+column and the file path.
+
+The verb's regression lane is `cargo test -p census-service --test school_address_corpus`: 6 passed
+(`school_address_reads_the_nces_fixtures_into_one_corpus`,
+`school_address_writes_the_same_bytes_for_the_same_input`,
+`school_address_diffs_against_its_baseline_and_records_the_month`,
+`school_address_refuses_the_unbuilt_geocode_phases`,
+`school_address_refuses_a_diff_without_a_run_month`,
+`school_address_refuses_an_artifact_of_the_wrong_shape`).
+
+Not established here: the `--state-ed-*` and `--associations` lanes are carried by the same path but
+were not driven from a verb run in this entry — their readers' fixture lanes own those shapes; the
+geocoding and postal-validation phases are unbuilt by decision; nothing in this corpus is census
+acceptance evidence until a run cites it.
+
+## Strict-source burndown and the CHSAA activity boundary (2026-09-30)
+
+The port's working tree opened this session with `tools/gate.sh` failing `tests ratchet vet geiger`,
+against a debt baseline that records zero strict-clippy diagnostics for every crate. Every repair
+below is inside the port's own diff; no lint was suppressed and no baseline number was raised.
+
+**Activities are consumed to their own boundary (`athletic-rust-pipeline-5du`).**
+`census-crawl::chsaa::parse::objects_at_anchor` advanced each found `{"activityName":` marker by
+`marker.len() + 100` instead of by the bytes of the object it had just read, so a second marker
+within that window was never parsed: a page whose first activity carries the marker, a short body
+and a second activity lost the second one. The rewrite parses each marker's value with
+`serde_json::Deserializer::from_str(...).into_iter::<Value>()` and advances by the stream's
+`byte_offset()`; the char-vector scanner and `extract_one_object` are gone, so the reader no longer
+allocates four bytes per character of a school page.
+
+Failing before, passing after — the regression is
+`chsaa::tests::adjacent_short_activity_objects_are_both_retained` (two adjacent activities, Ada and
+Grace), run against both spellings of the advance:
+
+```sh
+cargo test -p census-crawl --lib chsaa::tests::adjacent_short_activity_objects_are_both_retained
+# with the consumed-length advance: 1 passed
+# with `cursor = start.saturating_add(anchor.len()).saturating_add(100)` restored:
+#   left: [("Ada", "XC")]
+#   right: [("Ada", "XC"), ("Grace", "TF")]
+#   test result: FAILED. 0 passed; 1 failed
+```
+
+`cargo test -p census-crawl --lib chsaa` → **17 passed**, including
+`directory_parses_the_378_member_schools`, `directory_rows_match_the_prototype_golden_field_for_field`
+and `school_page_rows_match_the_prototype_golden_after_mapping`, so the captured page's row set is
+unchanged by the rewrite, and `collect_stores_the_requested_school_and_its_coach_rows_from_the_cache`
+drives the adapter over that captured page natively.
+
+**Strict clippy, 32 sites across three crates, no suppression.** The gate's lane
+(`cargo clippy --workspace --lib --bins --examples --all-features` with the repository's `-D` set)
+aborts a crate's compilation on the first `-D` diagnostic, so the tally became complete only as each
+round cleared:
+
+- census-crawl 16: `chsaa::parse` (unchecked arithmetic, indexing and string slicing around the
+  directory payload and object scan), `coach_directories::survey::tally` (three unchecked counter
+  adds → `saturating_add`), `directory::artifact::cell` (elidable output lifetime),
+  `state_ed::tabular` (`let Some(name) = … else { return None }` → `?`),
+  `milesplit::raw_rows::columns` (separator offset → `saturating_sub`).
+- census-report 13: twelve `needless_borrow` on `&rows.<field>` where `StoreRows` already holds
+  slices (`workbook::meta`, `meta::metrics::reconcile`, `meta::queues`, `meta::queues::conflicts`,
+  `meta::sheets`), and `meta::sheets`' `Vec::with_capacity(7)` plus seven pushes → one `vec!`
+  literal.
+- census-service 3: `census::seal`'s two needless borrows of `dataset.review_cases` and
+  `dataset.source_access`, and `cli::live::jurisdiction_request`'s eight parameters → five, with the
+  per-run knobs (flags, refresh, authorized hosts, source parallelism) in a `LiveRun` that the three
+  `cli::gather` call sites build once.
+
+Measured after the last edit: strict clippy on source targets **total diagnostics: 0**; `cargo xtask
+scan` → `files_over_300_lines: []`, `functions_over_60_lines: 0`; `cargo xtask ratchet
+tools/quality-baseline.json <tally> <scan>` → **no metric grew** (the only upward entry is
+`functions_over_25_logical_lines` 614 → 750, which the ratchet reports as `target, not a budget`,
+plus file/line context counts).
+
+**The geiger lane failed on a stale target unit, not on unsafe code.** `(cd crates/census-service &&
+cargo geiger --all-features --output-format Json)` exited 1 with
+
+```text
+error: Io(Os { code: 2, kind: NotFound, message: "No such file or directory" },
+       ".../crates/census-crawl/tests/zz_scratch_diag.rs")
+```
+
+a test target deleted before this session whose artifacts remained in this worktree's `target/`:
+`target/debug/deps/zz_scratch_diag-8f1b9c99c93b3133` (172 MB), its `.d` dep-info and
+`target/debug/incremental/zz_scratch_diag-1toct93aa5erh`. Removing those units (the remedy
+`tools/gate.sh` documents for a tree that deleted a target) took the lane to **exit 0**, 312 packages
+scanned; a sweep of every `target/**/deps/*.d` for source paths that no longer exist found no other
+stale unit. `cargo clean -p` of four packages whose artifacts had drifted from the current graph
+removed 1.5 GiB and the tree rebuilt before this measurement.
+
+**The final gate run.** `tools/gate.sh` → `gate: FAIL -> vet`, every other lane PASS: fmt, zero code
+comments, check, doc, **tests (1678 run, 1678 passed, 3 skipped)**, domain type integrity, domain
+purity, module seams, **ratchet**, deny, audit, machete, **geiger**, feature powerset and bench
+presence. An earlier run of the same suite failed `census-service::recovery
+ks_directory_walk_claims_units_the_kill_can_lose` ("a real mid-batch kill must have happened (0 <
+journal < total)") while builds were running beside it; the test passes alone in 1.19 s
+(`cargo nextest run -p census-service -E 'test(ks_directory_walk)'`), its ladder re-measures a clean
+runtime each round, and `crates/census-service/tests/recovery.rs` is untouched by this port, so that
+failure is load-dependent, not a regression.
+
+Not established here: the `vet` lane cannot pass in this checkout — `cargo vet --locked` stops at
+`You must run 'cargo vet init' (store not found at …/supply-chain)`, because the store was deleted on
+2026-09-27 (commit `1db9157`) and [tools/README.md](../../tools/README.md) records restoring it as an
+owner decision outside the port; geiger's exit 0 is a dependency-graph scan, not a proof about any
+unit's code; and the CHSAA reader was exercised against the committed captures, not the live site.
+
+## Sol closing review, Round 1 — bounded type boundary and field provenance (2026-09-30)
+
+Executor: **openai-codex/gpt-6.1-sol**. Assigned worktree only:
+`/home/lewis/src/ad-law-scrape/arh-python-port`; caller brief
+`var/sol-review/brief.md`; append-only findings/commands in `var/sol-review/state.md`.
+No commit, push, rebase, reset, clean, other-worktree changes, fixture edits, golden edits,
+historical evidence rewrites, lint suppressions or quality-baseline relaxation.
+The required old-CHSAA mutation and throwaway probes ran in `/tmp/sol-round1-TvhC3r`.
+Scratch-only compiler warnings are not source-target results for the port.
+
+### Failing-before / passing-after observations
+
+|Defect|Executed before|Executed after|
+|---|---|---|
+|Empty `SchoolName` bypasses parser through Deserialize|Scratch `cargo test -p census-service --test sol_round1_probe -- --nocapture`: exit 101, `empty school name decoded as Ok(SchoolName(""))`, rejecting-name assertion fails (artifact://635)|Final scratch same command plus `--test-threads=1`: `empty school name decoded as Err(Error("school name is empty", line: 0, column: 0))`; 6 probes pass (artifact://687:38–39)|
+|Public/serialized grade 13 bypasses checked grade parse|Scratch `cargo test -p census-service --test sol_round1_probe deserialization_rejects_grade_13 -- --nocapture`: exit 101, `grade 13 decoded as Ok(Numbered(13))` (artifact://644:15–19)|Final scratch probe: `grade 13 decoded as Err(Error("\"13\" is not a supported grade", line: 0, column: 0))` (artifact://687:36–37)|
+|CCD without phone → AA `9999999999` → SEA `1111111111` retains weaker phone|Initial scratch probe: exit 101, `merged phone=Some("9999999999")`, expected state phone (artifact://635)|Final scratch probe: `merged phone=Some("1111111111")`; original tin-bead CCD-gap → state phone → CCD `0000000000` also keeps the CCD value (artifact://687:43–47)|
+|Equal-rank identical values serialize arrival-dependent provenance|Scratch `cargo test -p census-service --test sol_round1_probe equal_rank_identical_values_keep_order_independent_provenance -- --exact --nocapture`: exit 101, forward winning label NAIS / reverse CAPE, unequal JSON (artifact://680)|Final scratch probe: both canonical JSON payloads retain CAPE; permanent regression also passes (artifact://687:40–42; artifact://682)|
+|Former CHSAA `+100` boundary skips adjacent short JSON objects|Scratch `cargo test -p census-crawl --lib chsaa::tests::adjacent_short_activity_objects_are_both_retained -- --exact` with old cursor advance restored: exit 101, left `[("Ada", "XC")]`, right `[("Ada", "XC"), ("Grace", "TF")]` (artifact://641)|Port exact same test: exit 0, 1 passed / 502 filtered. Port `cargo test -p census-crawl --lib chsaa`: 17 passed / 486 filtered (artifact://623)|
+
+Production repairs retain the public Grade enum/Numbered variant with validated NumberedGrade,
+checked SchoolName string deserialization, and valid name/grade JSON bytes. Every direct grade
+caller migrated. Field provenance is a required private map with the existing SourceLabel values;
+the policy is `SourceLabel::rank`, not the record's strongest source or a second serialized rank.
+For identical values at equal rank the existing source enum ordering selects a canonical source.
+Address remains the existing aggregate field. Old provenance-free baselines explicitly fail and
+must be regenerated; there is no default, alias or fallback. These artifacts are not Fjall records,
+so no Fjall schema revision is applicable.
+
+### Executable contract coverage and native smoke
+
+All following commands use the assigned worktree cwd unless labeled scratch.
+
+- `cargo test -p census-domain school_directory -- --nocapture` → exit 0, 41 passed at the initial
+  repair stage (artifact://647). On final source,
+  `cargo test -p census-domain --lib school_directory::tests::review_regressions -- --nocapture --test-threads=1`
+  → exit 0, **5 passed** (artifact://682). The regression checks all six phone arrival permutations,
+  persistence mid-merge, valid numbered grades 1–12 with byte-identical enum encoding, rejection
+  of 0/13/255, empty/noncanonical serialized names, provenance-free entries, missing source for a
+  present field, source for an absent field, unrecorded source and attempted numeric rank override.
+  Checked provenance failures map typed DirectoryError variants to explicit Serde data errors.
+- `cargo test -p census-service --test nces_directory_properties --test private_assoc_directory_properties --test state_ed_directory_properties --test tssaa_directory_properties --test school_address_corpus -- --nocapture`
+  → exit 0, **35 passed**: NCES 8, private-assoc synthetic 4, school-address 7, state-ED 12,
+  TSSAA 4 (artifact://651). The final gate reruns these on final source.
+- Final scratch `cargo test -p census-service --test sol_round1_probe -- --nocapture --test-threads=1`
+  → exit 0, **6 passed**, **2610 entries** serialize/decode/re-serialize with identical canonical
+  bytes (artifact://687). It reads the CCD/PSS, NYSED index/profile and TSSAA committed captures;
+  its NAIS listing is explicitly synthetic, not a fabricated capture. Observed populations:
+  CCD 1557/42 skipped/0 notes, PSS 374/25/0, NY index 220/0/0, Kingston profile 1/0/0,
+  TSSAA list 456/0/0, Alcoa detail 1/0/0 with 20 coaches and first email
+  `phaggard@alcoaschools.net`. Kingston profile has `29 Leroy St`, Potsdam NY 13676, enrollment
+  393, phone 3152652000 and website `https://www.potsdamcsd.org`.
+- Actual native program launch:
+  `cargo run -p census-service --bin census-service -- school-address --ccd crates/census-crawl/tests/fixtures/nces/ccd_sch_029_2526_head.csv --pss crates/census-crawl/tests/fixtures/nces/pss2324_pu_head.csv --out /tmp/sol-round1-native-cJh5Zm --baseline /tmp/sol-round1-native-cJh5Zm/baseline.json --ledger /tmp/sol-round1-native-cJh5Zm/update_ledger.json --now 2026-09`
+  → exit 0, **1931 rows → 1931 entries, 67 skipped, 0 noted**, prints every skip and publishes
+  JSON/CSV/report/baseline/ledger (artifact://660).
+- The same explicit Cargo invocation with `--now 2026-10` actually consumes the persisted new
+  baseline and ledger → exit 0, **0 added / 0 removed / 0 modified**, CCD not-due until 2027-09,
+  PSS not-due until 2028-01 (artifact://675). Initial `cargo run` without `--bin` failed with binary
+  ambiguity; a subsequent direct target-path invocation returned 127 because the binary path
+  was absent. Both invocation/setup failures were corrected through explicit Cargo and are not
+  represented as successful acceptance commands.
+- A pre-repair scratch binary exported the same capture corpus to
+  `/tmp/sol-round1-native-cJh5Zm/pre-fix`.
+  `sha256sum /tmp/sol-round1-native-cJh5Zm/pre-fix/school_directory.csv /tmp/sol-round1-native-cJh5Zm/school_directory.csv && cmp /tmp/sol-round1-native-cJh5Zm/pre-fix/school_directory.csv /tmp/sol-round1-native-cJh5Zm/school_directory.csv`
+  → exit 0; **both hashes**
+  `25d42b90ced9d85e38e19ec6724146db079730b9e7e1c2057c73e3ebe0902bca`.
+  CSV columns and bytes are unchanged by the provenance cutover.
+- `jq '[.[] | .grades? | select(. != null) | (.low, .high)] | group_by(.) | map({grade: .[0], count: length})' /tmp/sol-round1-native-cJh5Zm/school_directory.json`
+  → exit 0, numbered endpoints include every value **1–12**, plus PreK and Kindergarten.
+  The admitted range comes from the existing Grade::parse policy and domain published-form
+  tests, now explicit in ADR-020, with corpus corroboration; it is not inferred as a universal
+  grade system from the fixture.
+
+### Evidence corrections and remaining obligations
+
+- Owning ADR corrected its stale PSS consequence. Native
+  `jq '.[] | select(.key.Pss == "A2380006") | {key, name, phone}' /tmp/sol-round1-native-cJh5Zm/school_directory.json`
+  → exit 0, `MT. PILGRIM CHRISTIAN ACADEMY`, phone `2057805096`: PSS public-use PINST is a name,
+  not an invented address-derived name.
+- Scratch `cargo test -p census-service --test sol_round1_probe captures -- --exact --nocapture`
+  → exit 0, **2528 numeric instid occurrences, 220 distinct ids, 220 profile hrefs**,
+  nonprofile ids `[]`, parser missing ids `[]` (artifact://672:16–18; repeated in artifact://687).
+  The owning ADR's prior 221-school count was corrected. The fixture manifest's corresponding
+  stale prose is outside this review's fixture patch scope and is tracked as
+  **athletic-rust-pipeline-8an OPEN**; fixture bytes and manifest untouched.
+- **37k remains OPEN.** Only the Main-approved SchoolName/NumberedGrade slice is fixed.
+  ADR-020 and the Sol ledger enumerate all remaining primitive/composite wire shapes/invariants.
+  Scratch `cargo test -p census-service --test sol_round1_probe observing_remaining_composite_deserialization_gap -- --exact --nocapture`
+  → exit 0 with the observed discrepancy
+  `persisted inverted grade span decoded=12-1 checked constructor=Err(GradeSpanInverted { low: "12", high: "1" })`.
+  That observational probe demonstrates the remaining gap; it does not certify inverted spans.
+  Main explicitly deferred approval of the remaining slices.
+- **dtl remains OPEN.** Native
+  `mkdir -p /tmp/sol-round1-native-cJh5Zm/partial/school_directory.csv` followed by
+  `./target/debug/census-service school-address --ccd crates/census-crawl/tests/fixtures/nces/ccd_sch_029_2526_head.csv --out /tmp/sol-round1-native-cJh5Zm/partial`
+  → exit 1, `Error: i/o failed for /tmp/sol-round1-native-cJh5Zm/partial/school_directory.csv: Is a directory (os error 21)`.
+  `stat --format='%n: %s bytes, %F' /tmp/sol-round1-native-cJh5Zm/partial/school_directory.json /tmp/sol-round1-native-cJh5Zm/partial/school_directory.csv`
+  → new JSON already published, **1003942 bytes / regular file**; CSV remains a directory, no
+  report. Sequential writes are `school_address/mod.rs:200–211`. Main approved complete staging,
+  canonical generation manifest, report manifest digest, mandatory consumer verification and
+  generic pre-commit destination refusal, but explicitly deferred implementation to next round.
+  Repro/approval appended to the bead; no symptom-only directory special case applied.
+- **Private-assoc capture lane BLOCKED.** `cargo xtask replay private_assoc` → exit 1,
+  `xtask: no captures under crates/census-crawl/tests/fixtures/private_assoc: the directory holds no body to replay`.
+  Owner must supply a real byte-exact capture with URL/robots/provenance. Synthetic tests above
+  do not establish source qualification; no body was invented.
+
+### Final-tree gate and acceptance accounting
+
+Two complete `bash tools/gate.sh` executions used an explicit **3600-second timeout** and both
+finished (no lane silenced or deadline truncation). The first pre-canonical-tie state had 1682
+passing tests (artifact://661). The **last/final Rust state** gate (artifact://683) exits **1**:
+
+```text
+Summary [ 127.119s] 1683 tests run: 1683 passed (1 slow), 3 skipped
+total diagnostics: 0
+structure: files>300=0 fns>60=0 fns>25logical=753
+ratchet: no metric grew
+gate: FAIL -> vet
+```
+
+PASS: fmt, zero code comments (1001 Rust files), check, doc, tests, strict source clippy,
+production forbidden-construct/size scan, domain type integrity, domain purity, module seams,
+ratchet, deny, audit, machete, geiger, feature powerset, bench presence. Geiger emitted graph
+matching warnings but completed successfully; it is a dependency scan, not a proof of all
+dependency code.
+
+**BLOCKED, not passed:** vet prints
+`You must run 'cargo vet init' (store not found at /home/lewis/src/ad-law-scrape/arh-python-port/supply-chain)`
+(artifact://683:4055–4059). The brief identifies this as pre-existing and owner-restored;
+no exemptions, fabricated vet store, suppression or gate alteration added.
+
+**Acceptance run:** full gate; CHSAA positive and old-+100 negative regression; NCES/state-ED/
+TSSAA capture probes; explicit private-assoc capture refusal and synthetic-only parser probes;
+school-address native capture/export/readback and corpus tests; bounded name/grade rejection,
+per-field phone/provenance/determinism regressions; unchanged CSV; capture round-trips.
+**Acceptance not runnable/satisfied:** private-assoc real-capture behavior, because no captured
+body/robots evidence exists. **No gate lane skipped.** Three pre-existing ignored runtime tests
+did not run: browser `results_capture_costs_one_physical_post` and
+`challenge_response_revokes_the_gate_and_ends_pagination` need fixture origin + CDP browser;
+`walk_derived_tables` needs operator `WALK_ROOT`. No live-site, full historical corpus,
+Verus/Kani/Flux/Loom proof execution, mutation sweep, coverage or crash-atomic artifact-manifest
+acceptance is claimed for this round.
+
+Tracker: **tin CLOSED** with executed evidence (also the phone-precedence defect);
+**37k OPEN** with bounded fix and remaining per-type scope;
+**dtl OPEN** with executed publication repro and approved next-round contract;
+**8an OPEN** for out-of-scope fixture-manifest correction.
+Residual review findings: **2 OPEN**, **3 BLOCKED** (vet store, real private-assoc capture,
+out-of-scope fixture-manifest prose). This round does not certify the whole port.
+
+## Sol closing review, Round 2 — generations, checked inventory and fixture prose (2026-09-30)
+
+Reviewer: **openai-codex/gpt-6.1-sol**. Native worktree:
+`/home/lewis/src/ad-law-scrape/arh-python-port`. Scope is the three Main-approved amendments
+in `var/sol-review/brief.md`: dtl publication, the remaining sixteen 37k types and 8an's single
+fixture SOURCE.md prose. Round-1 evidence above is unchanged. The detailed before/after ledger,
+including every per-type counterexample, is appended in `var/sol-review/state.md`.
+
+### Contract-to-evidence map
+
+|Requirement|Executed evidence|Observed result|
+|---|---|---|
+|dtl refuses a blocked destination before publishing|Before `cargo test -p census-service --test school_address_publication -- --nocapture`; after `cargo test -p census-service --test school_address_corpus --test school_address_publication`|Before exit 101, `no early JSON publication` (artifact://702); after exit 0, 8 passed at that execution (artifact://706); final tree has all 3 publication tests PASS (artifact://730:2295,2297,2355)|
+|dtl interruption cannot expose a mixed generation|`cargo test -p census-service --lib school_address::generation -- --nocapture`|3 passed; real child exits 77 before directory rename, between directory/pointer renames, after pointer rename. Respectively old verified/no complete orphan, old verified/complete orphan, new verified/complete orphan. Every new data artifact differs; selected generation bytes are checked individually (artifact://706)|
+|dtl manifest/consumer binding|Same exact generation command|ADR-017 encoder digest parity; typed hash/length, manifest-digest, report-digest and outside-pointer refusals all PASS. Final unmanifested external baseline and missing-artifact/current-preservation scenarios also PASS (artifact://730)|
+|37k every remaining type rejects invalid persisted values, preserves valid bytes|Before/after `cargo test -p census-domain --lib school_directory::tests::boundary_regressions -- --nocapture --test-threads=1`|Before exit 101, 0 passed / 16 failed (artifact://711); after exit 0, 18 passed (artifact://719). Includes inverted/unrankable GradeSpan, IDs, contacts, scalar/composite geography, ZIP/address, canonical strings and WeakKey|
+|37k existing reader/corpus behavior remains valid|`cargo test -p census-service --test nces_directory_properties --test private_assoc_directory_properties --test state_ed_directory_properties --test tssaa_directory_properties --test school_address_corpus --test school_address_publication`|36 passed at that execution (artifact://719); final gate executes all of these plus the two later publication-consumer tests|
+|Captured corpus value/byte roundtrip after checked cutover|`cargo test -p census-service --test sol_round2_smoke -- --nocapture`|1 passed, 2609 exact entry roundtrips: CCD 1557, PSS 374, NYSED index 220, profile 1, TSSAA list 456, detail 1 (artifact://724). Throwaway probe and only its own build scaffolds removed afterward|
+|CSV compatibility|`sha256sum /tmp/sol-round2-before/school_directory.csv /tmp/sol-round2-after/current/school_directory.csv && cmp /tmp/sol-round2-before/school_directory.csv /tmp/sol-round2-after/current/school_directory.csv`|Exit 0 after dtl and again after 37k; both SHA-256 `25d42b90ced9d85e38e19ec6724146db079730b9e7e1c2057c73e3ebe0902bca` (artifact://708,724)|
+|8an measured counts, no capture edits|Rust measurement command and before/after `sha256sum crates/census-crawl/tests/fixtures/state_ed/*.html`, reproduced below|2530 literal/2528 numeric markers; 220 distinct numeric IDs, all 12 digits; 220 distinct profile links; both capture hashes unchanged (artifact://722,727)|
+|Full final-tree acceptance|`bash tools/gate.sh`, explicit 3600-second timeout|Exit 1, **gate: FAIL -> vet** only; 1707 passed, 3 skipped; 15 passing lanes, 0 strict diagnostics, no forbidden production constructs, files>300=0, fns>60=0, ratchet no metric grew (artifact://730)|
+
+GradeSpan endpoints now go through `GradeSpan::new`; no Ungraded or AdultEducation endpoints
+are accepted. String/scalar checks use the existing `serde(try_from)` convention. Cross-field
+checks use private self-remote Serde on the same domain types, not mirrored public DTOs. Decode
+never trims, clamps or substitutes defaults. ADR-020's range/source table names every original
+domain policy and its NCES/NYSED corroboration; no small-fixture-derived range was invented.
+
+Two additional reproduced constructor/decode conflicts were fixed, rather than special-casing
+probe input: `MatchForm::of("İ")` formerly emitted `i\u{307}`, which its checked decoder rejected
+(artifact://715); presentation-casing `"ß"` formerly emitted `"SS"`, which checked street/city
+decode rejected (artifact://717). Canonical producer outputs now roundtrip as `"i"` and `"Ss"`.
+Both failing-before/passing-after behaviors remain in the eighteen boundary regressions.
+Two intermediate probe rows incorrectly used invented state enum spellings `NewJersey` and
+`NewYork`; inspecting the actual jurisdiction wire encoder corrected the probes to `NJ` and
+`NY`, without weakening a production policy (artifact://713 versus artifact://719).
+
+### Native publication smoke and legacy-layout refusal
+
+Before cutover:
+
+```text
+cargo run -p census-service --bin census-service -- school-address --ccd crates/census-crawl/tests/fixtures/nces/ccd_sch_029_2526_head.csv --pss crates/census-crawl/tests/fixtures/nces/pss2324_pu_head.csv --out /tmp/sol-round2-before
+exit 0; 1931 rows -> 1931 entries; skipped 67; notes 0
+```
+
+After dtl:
+
+```text
+cargo run -p census-service --bin census-service -- school-address --ccd crates/census-crawl/tests/fixtures/nces/ccd_sch_029_2526_head.csv --pss crates/census-crawl/tests/fixtures/nces/pss2324_pu_head.csv --out /tmp/sol-round2-after --baseline /tmp/sol-round2-after/current/baseline.json --ledger /tmp/sol-round2-after/current/update_ledger.json --now 2026-09
+exit 0; same population; first baseline, no changes.json
+```
+
+After all 37k repairs, execute the same post-cutover command with `--now 2026-10`:
+exit 0; **0 added / 0 removed / 0 modified**; CCD next due 2027-09, PSS next due 2028-01;
+verified baseline and ledger consumed and `changes.json` published. The report lists all seven
+in-generation paths. This is a real CLI/readback run, not just source or test assertions.
+
+Directory-destination reproduction:
+
+```text
+mkdir -p /tmp/sol-round2-blocked/school_directory.csv && cargo run -p census-service --bin census-service -- school-address --ccd crates/census-crawl/tests/fixtures/nces/ccd_sch_029_2526_head.csv --out /tmp/sol-round2-blocked
+exit 1
+Error: legacy or blocking destination /tmp/sol-round2-blocked/school_directory.csv: legacy flat layout is rejected; choose a fresh output directory
+```
+
+Subsequent directory read: only the original `school_directory.csv/` blocker exists. No artifact,
+generation root or staging sibling was created. All legacy flat layouts are refused by this
+preflight, not silently migrated. Baseline/ledger output authority is inside the new generation;
+supplied paths are verified-generation read inputs only, never separate mirror publications.
+
+`./target/debug/census-service school-address --help && readlink /tmp/sol-round2-after/current && jq '{schema_revision, generation_digest, run_id: .run.run_id, created_at: .run.created_at, baseline_input: .run.inputs.baseline, artifacts: [.artifacts[].name]}' /tmp/sol-round2-after/current/manifest.json`
+exited 0. CLI help documents the cutover; current points at `generations/f20741d22971459b`;
+manifest schema 1, digest `f20741d22971459b5129f70399cdd44e0617f67dd25d34ec506f498814b39716`,
+run month `2026-10`, and the exact sorted data artifacts baseline, changes, CSV, directory JSON,
+update ledger. The complete schema/digest/fsync/pointer contract is in ADR-020. No wall clock,
+self-hash, live network call or store schema migration is involved.
+
+### 8an measurement replay
+
+The exact executed scratch source `/tmp/sol-round2-measure.rs` is preserved here so its command
+remains reproducible after removing that owned throwaway source/binary:
+
+```rust
+use std::collections::{BTreeMap, BTreeSet};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let path = std::env::args().nth(1).ok_or("missing capture path")?;
+    let text = std::fs::read_to_string(path)?;
+    let suffixes: Vec<_> = text.split("instid=").skip(1).collect();
+    let ids: Vec<String> = suffixes.iter().map(|suffix| suffix.chars().take_while(char::is_ascii_digit).collect()).filter(|id: &String| !id.is_empty()).collect();
+    let unique: BTreeSet<_> = ids.iter().collect();
+    let mut lengths = BTreeMap::new();
+    for id in &unique { let count = lengths.entry(id.len()).or_insert(0usize); *count = count.saturating_add(1); }
+    let links: Vec<String> = text.split("profile.php?instid=").skip(1).map(|suffix| suffix.chars().take_while(char::is_ascii_digit).collect()).filter(|id: &String| !id.is_empty()).collect();
+    let distinct_links: BTreeSet<_> = links.iter().collect();
+    let nonnumeric: Vec<String> = suffixes.iter().filter(|suffix| !suffix.starts_with(|ch: char| ch.is_ascii_digit())).map(|suffix| suffix.chars().take(48).collect()).collect();
+    println!("instid= occurrences (all): {}", suffixes.len());
+    println!("instid= occurrences (numeric): {}", ids.len());
+    println!("distinct numeric ids: {}", unique.len());
+    println!("distinct id digit-length distribution: {lengths:?}");
+    println!("profile.php?instid= links: {}; distinct: {}", links.len(), distinct_links.len());
+    println!("nonnumeric instid= suffixes: {nonnumeric:?}");
+    println!("800000054526 already in twelve-digit set: {}", unique.iter().any(|id| id.as_str() == "800000054526"));
+    Ok(())
+}
+```
+
+```text
+rustc --edition 2021 /tmp/sol-round2-measure.rs -o /tmp/sol-round2-measure && /tmp/sol-round2-measure crates/census-crawl/tests/fixtures/state_ed/index_letter_a.html
+exit 0
+instid= occurrences (all): 2530
+instid= occurrences (numeric): 2528
+distinct numeric ids: 220
+distinct id digit-length distribution: {12: 220}
+profile.php?instid= links: 220; distinct: 220
+nonnumeric instid= suffixes: ["some_value\"\r\n            let inst_id = params.in", "\" + instid;\r\n        }\r\n    }\r\n</script>\r\n\r\n\r\n\r\n"]
+800000054526 already in twelve-digit set: true
+```
+
+Only `crates/census-crawl/tests/fixtures/state_ed/SOURCE.md` prose changed. The prior count added
+`800000054526` to a twelve-digit set that already contained it; the prior link count inherited that
+double-count. The literal count also includes two nonnumeric JavaScript markers, not schools.
+
+Before and after `sha256sum crates/census-crawl/tests/fixtures/state_ed/*.html`:
+
+```text
+adf44bb69c0c8751459c698162fe7526950a6e4feb1778a07d4f3c6c9aa37f27  crates/census-crawl/tests/fixtures/state_ed/index_letter_a.html
+6d720faec71b6dbf30eddb8045262e78daf62931d805a2a501f9eefa12442830  crates/census-crawl/tests/fixtures/state_ed/profile_kingston.html
+```
+
+### Final-tree gate, blockers and limits
+
+`bash tools/gate.sh` ran in the native worktree with **explicit 3600-second timeout**; it
+completed in 534.37 seconds, exit 1. Raw result is artifact://730, not a shortened or silenced lane.
+All 16 lanes were attempted. **15 PASS; vet alone FAIL**:
+
+```text
+Summary [ 127.321s] 1707 tests run: 1707 passed (1 slow), 3 skipped
+total diagnostics: 0
+structure: files>300=0 fns>60=0 fns>25logical=760
+ratchet: no metric grew
+ERROR × You must run 'cargo vet init' (store not found at /home/lewis/src/ad-law-scrape/arh-python-port/supply-chain)
+gate: FAIL -> vet
+```
+
+Zero-comments scan checked 1010 Rust files; production forbidden-construct counts are all zero.
+Check, doc, tests, strict Clippy/source scan, domain type integrity, domain purity, module seams,
+ratchet, deny, audit, machete, geiger, feature powerset and benchmark presence passed as reported
+by the gate. Geiger also emitted existing registry/package-matching and third-party parse warnings;
+its PASS is the actual lane status, not a claim of complete third-party unsafe analysis.
+
+After its one new ledger-reader `needless_question_mark` diagnostic was repaired,
+`cargo clippy -p census-domain -p census-service --lib --bins --examples --all-features -- -D warnings -D unsafe_code -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic -D clippy::panic_in_result_fn -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::indexing_slicing -D clippy::string_slice -D clippy::get_unwrap -D clippy::arithmetic_side_effects -D clippy::as_conversions -D clippy::let_underscore_must_use -D clippy::await_holding_lock`
+exited 0 without warnings. No lint suppression or quality-baseline changes.
+
+**BLOCKED, not passed:** owner-restored cargo-vet store remains absent; no fake init/exemptions.
+**BLOCKED, not claimed:** real private-association capture behavior still lacks a captured
+body/robots pair, as established in round 1; this round's four private-assoc property cases are
+synthetic. The gate's three pre-existing ignored runtime tests remain unexecuted, with their
+round-1 browser/CDP and WALK_ROOT prerequisites unchanged. No lane was skipped. No live-site,
+full historical corpus, Verus/Kani/Flux/Loom execution, mutation sweep or coverage is claimed.
+The new proof is bounded to the executed generation interruption and domain/captured-input
+scenarios above, not power-cut filesystem recovery or hostile concurrent mutation.
+
+Tracker updates executed after final acceptance: **athletic-rust-pipeline-dtl,
+athletic-rust-pipeline-37k and athletic-rust-pipeline-8an CLOSED** with the executed evidence
+above. New owner-prerequisite beads **athletic-rust-pipeline-3sb** (vet store) and
+**athletic-rust-pipeline-9rj** (real private-assoc capture) are **BLOCKED**, not code acceptance
+passes. Final ledger: **0 OPEN, 2 BLOCKED**. All three approved workstreams are complete; the
+whole port remains uncertified. No commit/push or unrelated-state cleanup was performed.
+
+VERDICT: BLOCKED 2

@@ -18,8 +18,8 @@ TSSAA provides a searchable school directory listing ~456 member schools. Each s
 
 ## Parser Behavior
 
-- `parsers/tn_tssaa.py` (kind: custom:tn_tssaa) parses the directory listing, extracting school ID and name from the embedded JSON typeahead data. Each school record includes a `detail_url` field for the per-school detail page (required for coach data).
-- `parsers/tn_tssaa_school.py` (kind: custom:tn_tssaa_school) parses individual school detail pages. It uses BeautifulSoup to find all staff rows (`tr.staffPerson`), walks up to the containing `div.card`, and reads the card header to determine the sport. Staff rows from cards other than Track, CrossCountry, or AthleticDirector are dropped (this census only requires Track/CrossCountry coaches). Email addresses are decoded from the `mail_hide()` obfuscation by reversing the domain argument.
+- The prototype tree's `parsers/tn_tssaa.py` (kind: custom:tn_tssaa) parses the directory listing, extracting school ID and name from the embedded JSON typeahead data. Each school record includes a `detail_url` field for the per-school detail page (required for coach data).
+- The prototype tree's `parsers/tn_tssaa_school.py` (kind: custom:tn_tssaa_school; deleted from this tree by ADR-020 §6 and ported as `census-crawl::tssaa`) parses individual school detail pages. It uses BeautifulSoup to find all staff rows (`tr.staffPerson`), walks up to the containing `div.card`, and reads the card header to determine the sport. Staff rows from cards other than Track, CrossCountry, or AthleticDirector are dropped (this census only requires Track/CrossCountry coaches). Email addresses are decoded from the `mail_hide()` obfuscation by reversing the domain argument.
 
 ## Sports Filtered
 

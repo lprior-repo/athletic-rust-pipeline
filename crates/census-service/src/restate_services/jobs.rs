@@ -202,6 +202,7 @@ pub fn collect_error(error: CrawlError) -> JobError {
         | CrawlError::Domain(..)
         | CrawlError::Arithmetic { .. }
         | CrawlError::Io { .. }
+        | CrawlError::DirectoryArtifact { .. }
         | CrawlError::RegexInit { .. } => JobError::Terminal {
             message: error.to_string(),
         },

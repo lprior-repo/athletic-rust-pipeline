@@ -1,0 +1,297 @@
+use super::super::Applicability;
+use census_domain::UsJurisdiction;
+
+pub(crate) const TABLE: [Applicability; 22] = [
+    Applicability {
+        slug: "athleticlive",
+        jurisdictions: &[
+            UsJurisdiction::Alabama,
+            UsJurisdiction::Iowa,
+            UsJurisdiction::Illinois,
+            UsJurisdiction::Indiana,
+            UsJurisdiction::Kansas,
+            UsJurisdiction::Michigan,
+            UsJurisdiction::Minnesota,
+            UsJurisdiction::Missouri,
+            UsJurisdiction::NorthDakota,
+            UsJurisdiction::Nebraska,
+            UsJurisdiction::Ohio,
+            UsJurisdiction::Wisconsin,
+        ],
+        evidence: super::prose::ATHLETICLIVE_EVIDENCE,
+        refusal: super::prose::ATHLETICLIVE_REFUSAL,
+    },
+    Applicability {
+        slug: "athleticlive_athletes",
+        jurisdictions: &[
+            UsJurisdiction::Alabama,
+            UsJurisdiction::Iowa,
+            UsJurisdiction::Illinois,
+            UsJurisdiction::Indiana,
+            UsJurisdiction::Kansas,
+            UsJurisdiction::Michigan,
+            UsJurisdiction::Minnesota,
+            UsJurisdiction::Missouri,
+            UsJurisdiction::NorthDakota,
+            UsJurisdiction::Nebraska,
+            UsJurisdiction::Ohio,
+            UsJurisdiction::Wisconsin,
+        ],
+        evidence: "The adapter's own doc: `search.athletic.live/athlete_list/_search` indexes one document per \
+                   athlete-entry at a meet and carries `y` (grade), `ani` (Athletic.net athlete id) and `t.ani` (team id), \
+                   which makes it the second independent athlete source in the census. It is planned exactly where the \
+                   platform's meet plane is evidenced — the `athleticlive` row — because a query is keyed on that \
+                   platform's meet ids: MN 242 rows with `ani` at 2025 state XC [10], ND live-standings rows per athlete \
+                   [25].",
+        refusal: "Planned only where the platform's meet plane is evidenced (see the `athleticlive` row). With no meet of \
+                  that state indexed by AthleticLIVE there is no id to query, and the census does not query by name.",
+    },
+    Applicability {
+        slug: "athleticnet",
+        jurisdictions: &UsJurisdiction::CENSUS_SCOPE,
+        evidence: "`athletic_net_team_universe` [01], `_profile` [02], `_meet` [03], `_id_graph` [05] and `_rankings` \
+                   [04], all `verified`, plus national lane §0a: `GetNavInfo` returns all 51 jurisdictions in one \
+                   session-bound call (53 state nodes, 51 mapped) and `GetRankings` takes a server-side `grades:[11]` \
+                   filter.",
+        refusal: "No in-scope jurisdiction is excluded: the API answers a node per state, which is why this row is the \
+                  whole census scope. Per-state *depth* is that state's own column in §1a/§1b — a state whose surface \
+                  publishes no Athletic.net id still plans this source, at the depth its row states.",
+    },
+    Applicability {
+        slug: "ciac",
+        jurisdictions: &[UsJurisdiction::Connecticut],
+        evidence: "`coach-directories-national` CT: the FusionPoint directory's 190 school tables carry 182 schools with \
+                   at least one XC/indoor+outdoor-track Head Coach row (1,043 such rows) and 189 Athletic Director \
+                   rows, counted over `samples/dir/CT__directory.html` by `tools/dir_coach_counts.py`. The lane \
+                   records `PRIMARY - tier 1 names TF/XC head coaches per side` and notes the directory has no email \
+                   column. Cost: 1 request.",
+        refusal: "One league's directory: no other jurisdiction in the corpus publishes on this host, and the lane's \
+                  rows for the rest name a different provider or none.",
+    },
+    Applicability {
+        slug: "chsaa",
+        jurisdictions: &[UsJurisdiction::Colorado],
+        evidence: "378 member schools with embedded JSON at chsaanow.com/schools/ (schoolCode, name, officialName, city, streetAddress, zipCode); per-school coach JSON at chsaanow.com/schools/<slug>/ with activityName and positions[].title (Head Coach/Assistant Coach). 378/378 have streetAddress, 376/378 have zipCode. robots.txt allows / with only /history/champions/individual/totals/repeat/ and /preview/ disallowed.",
+        refusal: "One association's directory: no other jurisdiction in the corpus publishes on this host.",
+    },
+    Applicability {
+        slug: "coach_directories",
+        jurisdictions: &[
+            UsJurisdiction::NorthCarolina,
+            UsJurisdiction::Alabama,
+            UsJurisdiction::Arkansas,
+            UsJurisdiction::Georgia,
+            UsJurisdiction::Montana,
+            UsJurisdiction::Mississippi,
+            UsJurisdiction::SouthCarolina,
+            UsJurisdiction::Idaho,
+            UsJurisdiction::NewMexico,
+            UsJurisdiction::Maryland,
+            UsJurisdiction::DistrictOfColumbia,
+            UsJurisdiction::Delaware,
+            UsJurisdiction::Tennessee,
+            UsJurisdiction::Wyoming,
+            UsJurisdiction::NorthDakota,
+        ],
+        evidence: "`research/sources/coach-directories-national/SOURCE_REPORT.md` DragonFly section, \
+                   2026-09-29: 15 associations measured to publish staff via \
+                   `maxinfosite-api-live.dragonflyathletics.com/states/<ruleset>/directory/` and \
+                   `/schools/<shortCode>/summary`; 11,194 directory rows over 15 pages, 26,566 coach \
+                   rows across the 15 jurisdictions. NC NCHSAA: 452 schools, 5,181 coaches; AL AHSAA: \
+                   793 schools, 5,895 coaches; AR ArkAA: 521 schools, 3,585 coaches.",
+        refusal: "The 34 other continental associations publish no staff on this platform; their \
+                  directories are district-wide universes (1–73% of rows are elementary/middle schools) \
+                  whose school identity `ccd_frame` already carries. They are not registered for this \
+                  source on any page.",
+    },
+    Applicability {
+        slug: "coach_contacts",
+        jurisdictions: &[
+            UsJurisdiction::Arizona,
+            UsJurisdiction::California,
+            UsJurisdiction::Colorado,
+            UsJurisdiction::DistrictOfColumbia,
+            UsJurisdiction::Florida,
+            UsJurisdiction::Georgia,
+            UsJurisdiction::Iowa,
+            UsJurisdiction::Illinois,
+            UsJurisdiction::Indiana,
+            UsJurisdiction::Kansas,
+            UsJurisdiction::Michigan,
+            UsJurisdiction::Minnesota,
+            UsJurisdiction::Missouri,
+            UsJurisdiction::NorthDakota,
+            UsJurisdiction::Nebraska,
+            UsJurisdiction::NewJersey,
+            UsJurisdiction::Ohio,
+            UsJurisdiction::Oregon,
+            UsJurisdiction::Tennessee,
+            UsJurisdiction::Texas,
+            UsJurisdiction::Utah,
+            UsJurisdiction::Wisconsin,
+        ],
+        evidence: "`coach_contact_graph` [29], `verified (sampled; yields recorded per state)`: \
+                   `data/coach-contacts.csv` holds 6,215 rows for exactly the jurisdictions listed (WI 3,166, KS 556, MN \
+                   389, WI/IL 183 each, ...), each with the role, the published professional address where the provider \
+                   publishes one, and the page it was observed on.",
+        refusal: "`[coach-directories-national]` collected 22 tier-1 directories of 51: the rest are login-gated (MI \
+                  `my.mhsaa.com`, MS 403 WAF), client-rendered (PA, NH, TX `/files/` robots-disallowed), or publish names \
+                  with no address anywhere (ND 0 emails, SD 4 coach emails from a prior study), and a directory the \
+                  adapter cannot read is not a planned source.",
+    },
+    Applicability {
+        slug: "ihsa",
+        jurisdictions: &[UsJurisdiction::Illinois],
+        evidence: "[13] IHSA API: 828 member schools (801 full + 26 approved + 1 associate), `/staff2` + \
+                   `/staff/<pid>/email` per-row email reveal (49/49 sampled rows HasEmail), census 125/125 Co2027 with \
+                   coach email. Re-derivable from `evidence/gaps/38/il-schools.json`.",
+        refusal: "Illinois only — the API is the association's own. T&F state finals only via \
+                  `/v1/track-field/events/<id>/summary`; the XC qualifier list is 1,214 boys, 358 of grade 11.",
+    },
+    Applicability {
+        slug: "ks",
+        jurisdictions: &[UsJurisdiction::Kansas],
+        evidence: "[23] KSHSAA directory API: 348 schools in `PublicClassifications` 2026, 526 directory records with AD \
+                   name + email validated at 100% agreement, and `RetrieveResultsByActivity` (TF 2000-2026 = 20,887 rows, \
+                   grade oracle at state).",
+        refusal: "Kansas only. `/Shared/GetSchools` (940 rows) is a different id space and is never summed with \
+                  `PublicClassifications`; the API serves KSHSAA members alone.",
+    },
+    Applicability {
+        slug: "milesplit",
+        jurisdictions: &UsJurisdiction::CENSUS_SCOPE,
+        evidence: "`milesplit (<st>.milesplit.com)` rows for the twelve target states [07][27] — roster enumeration free, \
+                   Co2027 enumerable, grad-year semantics verified — plus national lane §0a: 51/51 \
+                   `<code>.milesplit.com/teams` hosts answered `200`, 26,562 HS teams, 7,500-URL rolling sitemap.",
+        refusal: "No in-scope jurisdiction is excluded: every state host answered, including the states whose association \
+                  publishes no result surface of its own (DE 82 team links, ME/RI partner links). The paywall boundary \
+                  states per state in §1a/§1b what is free and what is not.",
+    },
+    Applicability {
+        slug: "mpa",
+        jurisdictions: &[UsJurisdiction::Maine],
+        evidence: "`coach-directories-national` ME: the same FusionPoint directory shape, 147 school tables carrying 81 \
+                   schools with an XC/indoor+outdoor-track Head Coach row (310 such rows) and 149 Athletic Director \
+                   rows, counted by `tools/dir_coach_counts.py`. The lane records `PRIMARY` and notes the directory \
+                   has no email column. Cost: 1 request.",
+        refusal: "One association's directory: the rest of the census scope is served by other providers, by ones the \
+                  lane found unworkable, or by none.",
+    },
+    Applicability {
+        slug: "mshsl",
+        jurisdictions: &[UsJurisdiction::Minnesota],
+        evidence: "[09] MSHSL: 664 unique `/schools/<slug>` in sitemap page 1 -> 1,328 roster targets (664 x XC+TF); \
+                   `/jsonapi/views/teams/list_school` and `/api/coaches/<nid>` carry head/assistant names and \
+                   published emails, including consumer mailboxes; `/api/team-data/schedule/<school>/<level>/<activity>` \
+                   carries the Athletic.net MeetID.",
+        refusal: "Minnesota only. Regular season is not published by MSHSL (it lives with the timers), so this source \
+                  enumerates schools, teams and coaches — the meet plane is the `athleticlive` row's business.",
+    },
+    Applicability {
+        slug: "ohsaa",
+        jurisdictions: &[UsJurisdiction::Ohio],
+        evidence: "[19] myOHSAA: 815 schools with distinct `OhsaaSchoolId` (100-1000027) re-derivable from \
+                   `evidence/gaps/45/ohsaa-enrollment.html`; 3 requests/school (`SearchSchool` -> `SportsInformation` -> \
+                   `AthleticDirector`), 56 sampled cells / 33 named with 100% of named cells carrying an email; census \
+                   456/456 Co2027 with coach email.",
+        refusal: "Ohio only. The portal is myOHSAA's own; `officials.myohsaa.org` is the third-party host it is read \
+                  through, under the admission the descriptor declares.",
+    },
+    Applicability {
+        slug: "plain_names",
+        jurisdictions: &[UsJurisdiction::NorthDakota, UsJurisdiction::Nebraska],
+        evidence: "[25] NDHSAA 169 schools (22-school coach sample; names only — no email field exists) and [24] NSAA 312 \
+                   schools in one POST (1,528 staff rows / 1,217 names, validated at 100% wholesale, zero email fields \
+                   anywhere); the adapter doc states the two name-only associations and that every entity it mints has \
+                   `professional_email == None`.",
+        refusal: "North Dakota and Nebraska only: the two member directories the adapter parses. Neither publishes an \
+                  address, which is why the row carries the names shape and makes no contact claim.",
+    },
+    Applicability {
+        slug: "riil",
+        jurisdictions: &[UsJurisdiction::RhodeIsland],
+        evidence: "`coach-directories-national` RI: 55 school tables carrying 49 schools with an XC/indoor+outdoor-track \
+                   Head Coach row (259 such rows), 57 Athletic Director rows and 0 `mailto`, counted by \
+                   `tools/dir_coach_counts.py`. The lane records `PRIMARY` and a 1-2 request cost.",
+        refusal: "One league's directory: no other jurisdiction's lane row names this host, so a plan outside Rhode \
+                  Island has nothing here to read.",
+    },
+    Applicability {
+        slug: "tfrrs",
+        jurisdictions: &[
+            UsJurisdiction::Florida,
+            UsJurisdiction::Indiana,
+            UsJurisdiction::NewHampshire,
+        ],
+        evidence: "[28][18] `AUTHENTICATED-NOT (HS depth), PRIMARY only in IN`: Indiana HSR lists yield 1,861 Co2027 in \
+                   2 requests (`&year=JR`; the `&year=SR` trap is the at-meet grade, Class of 2026), plus meet results \
+                   with grade; §1b FL: TFRRS lists carry `Year` = FR/SO/JR/SR (4A Region 1: 1,469 rows); the adapter doc \
+                   records the instances it reads (`indiana.tfrrs.org`, `nh.tfrrs.org`, `florida.tfrrs.org`).",
+        refusal: "Every other jurisdiction: high-school depth is not anonymously reachable there ([28] WI `REJECT as \
+                  result source`; index pages 0 HS-marked across MN/IA/MI/OH/MO/KS/NE/ND/SD) and the adapter refuses a \
+                  host that names no state, so a national or sport instance is not a planned path either.",
+    },
+    Applicability {
+        slug: "wayzata",
+        jurisdictions: &[
+            UsJurisdiction::Iowa,
+            UsJurisdiction::Minnesota,
+            UsJurisdiction::Wisconsin,
+        ],
+        evidence: "The adapter doc names the provider a Minnesota / Iowa / Wisconsin timer publishing one \
+                   server-rendered schedule table per sport and season; `[synthesis/10-measured-census.md]` ranks \
+                   `wayzata` third among meet providers with 519 meet rows, and the meets it lists are core evidence (no \
+                   Athletic.net surface is requested).",
+        refusal: "The provider publishes schedules for its own three states. A meet outside them reaches the graph \
+                  through the timer that published it, not through this adapter.",
+    },
+    Applicability {
+        slug: "wiaa",
+        jurisdictions: &[UsJurisdiction::Wisconsin],
+        evidence: "[06] WIAA directory: 516 published schools; team-seasons with TeamIDs = 1,796 returned in 4 \
+                   requests/season (462 boys TF / 462 girls TF / 437 boys XC / 435 girls XC); `GetDirectorySchool?orgID=` \
+                   carries Superintendent, Principal, AD and per-sport head coaches with published emails (9-school \
+                   sample: any TF/XC email 9/9).",
+        refusal: "Wisconsin only. The universe is not re-derivable from retained bytes (1 of 26 directory letters was \
+                  captured), so this row plans a live directory read, not a replay.",
+    },
+    Applicability {
+        slug: "wiaa_results",
+        jurisdictions: &[UsJurisdiction::Wisconsin],
+        evidence: "[06][08] WIAA tournament file set: 104 result-file links/season across AN export, Hy-Tek, HTML and \
+                   legacy formats; the adapter dispatches each body to the `compiled` / `hytek` / `raceday` / `xc` parsers \
+                   and journals what it read.",
+        refusal: "Wisconsin only — the archive is the association's own publication. A file dated outside the years a \
+                  season may open in is refused rather than filed, so a mis-dated artifact cannot enter the graph.",
+    },
+    Applicability {
+        slug: "nces",
+        jurisdictions: &UsJurisdiction::CENSUS_SCOPE,
+        evidence: super::prose::NCES_EVIDENCE,
+        refusal: super::prose::NCES_REFUSAL,
+    },
+    Applicability {
+        slug: "state_ed",
+        jurisdictions: &[UsJurisdiction::NewYork],
+        evidence: "New York's state-agency directory is the one captured: `data.nysed.gov/lists.php?type=school` \
+                   (786,227 bytes, sha256 `adf44bb6…`) is an A-Z anchor index with 2,528 `profile.php?instid=` links, and \
+                   `profile.php?instid=800000038718` (60,020 bytes) is the profile page carrying the address the index \
+                   lacks. The reader is an artifact reader (`admission.origin` = `local-artifact`).",
+        refusal: "Only New York has a state-agency capture; the prototype's CA/TX/NY/FL/PA URL guesses returned nothing \
+                  and no other state artifact exists in the corpus, so no other jurisdiction is planned. The tabular \
+                  index page is parsed with the same reader as the association directories; only the per-profile pages \
+                  are state-agency specific. New Jersey, the prototype's sole live URL, returned nothing, so NJ is not \
+                  planned; the reader accepts any operator-supplied file.",
+    },
+    Applicability {
+        slug: "tssaa",
+        jurisdictions: &[UsJurisdiction::Tennessee],
+        evidence: "`portal.tssaa.org/common/directory/?type=high` (41,350 bytes) lists the member schools and \
+                   `?id=<n>` carries the per-school staff cards, captured for 456 schools (e.g. `id=3`, 79,409 bytes, \
+                   sha256 `c69f3c2d…`); the prototype's Tennessee run counts 2,769 coach rows and 384 schools with a \
+                   Track/CrossCountry row. `portal.tssaa.org/robots.txt` allows `/common` and disallows the rest, so \
+                   this row plans the one path the host permits.",
+        refusal: "One association's directory: no other jurisdiction publishes on this host, and every path outside \
+                  `/common` is robots-disallowed.",
+    },
+];

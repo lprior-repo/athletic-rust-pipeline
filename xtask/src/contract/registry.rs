@@ -114,13 +114,21 @@ pub(super) fn admissions() -> Result<Check> {
     Ok(Check::violated(5, NAME, detail, failures))
 }
 
-const NON_ADAPTERS: [(&str, &str); 14] = [
+const NON_ADAPTERS: [(&str, &str); 16] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
     ),
     ("compiled", "parses the `Compiled` timer export family"),
+    (
+        "directory",
+        "the shared school-directory reader contract (`ReadOutcome`, its skip ledger and the field mappers every directory reader builds rows with): it admits no origin of its own",
+    ),
     ("hytek", "parses Hy-Tek Meet Manager result files"),
+    (
+        "private_assoc",
+        "reads association membership listings the operator supplies: no capture and no robots verdict exist for the association hosts, so it has no descriptor and is reachable only through the corpus verb",
+    ),
     ("raceday", "parses RaceDay Scoring result exports"),
     (
         "row_hygiene",

@@ -48,6 +48,11 @@ pub enum CrawlError {
     },
     #[error("{detail}")]
     Invariant { detail: String },
+    #[error("{path} is not a usable directory artifact: {detail}")]
+    DirectoryArtifact {
+        path: std::path::PathBuf,
+        detail: String,
+    },
 }
 
 pub type CrawlResult<T> = std::result::Result<T, CrawlError>;
@@ -63,6 +68,7 @@ pub mod coach_contacts;
 pub mod coach_directories;
 pub mod compiled;
 mod context;
+pub mod directory;
 pub mod hytek;
 pub mod ihsa;
 pub mod ingress;
@@ -70,16 +76,20 @@ pub mod ks;
 pub mod milesplit;
 pub mod mpa;
 pub mod mshsl;
+pub mod nces;
 pub mod net;
 pub mod ohsaa;
 pub mod plain_names;
+pub mod private_assoc;
 pub mod raceday;
 pub mod recording;
 pub mod registry;
 pub mod result_file;
 pub mod riil;
 pub mod row_hygiene;
+pub mod state_ed;
 pub mod tfrrs;
+pub mod tssaa;
 pub mod wayzata;
 pub mod wiaa;
 pub mod wiaa_results;
