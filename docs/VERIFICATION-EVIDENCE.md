@@ -3918,3 +3918,53 @@ passes. Final ledger: **0 OPEN, 2 BLOCKED**. All three approved workstreams are 
 whole port remains uncertified. No commit/push or unrelated-state cleanup was performed.
 
 VERDICT: BLOCKED 2
+
+## Landing on `main` — the port's delta integrated (2026-09-30, `887f844`)
+
+**Landing.** `887f844` changes 121 files against the previous `main` (`5d11c48`): 85 added, 13
+deleted, 23 modified (+27 930 / −2 560). `git ls-files '*.py'` at the commit → 0. The deleted set is
+`hs-address-pipeline/{address_normalizer,config,geocoder,nccs_crawler,pipeline,private_associations_crawler,pss_crawler,state_ed_crawler,update_strategy}.py`,
+`hs-address-pipeline/requirements.txt`, `parsers/tn_tssaa_school.py`,
+`tools/{chsaa_golden,chsaa_make_fixtures,port_chsaa}.py` and
+`tools/{chsaa_port,port_chsaa_fixtures}.sh`. Three uncommitted working-tree states were integrated
+rather than overwritten: the CHSAA `decode` refactor's `chsaa/{mod,decode}.rs` (kept; the port's
+`parse/schema.rs` split re-exports `MemberSchool`, so that tree still type-checks), the merged
+`xtask`/`registry` plan-slug lists, and the `CrawlError::DirectoryArtifact` arm the port adds in
+`restate_services/jobs.rs`. One candidate was deliberately *not* carried: a table row for
+`arbiter_orgs` (a row without its registry descriptor fails
+`applicability::tests::the_table_names_every_registered_source_once`; the descriptor is that
+cluster's uncommitted `registry/table/from_mshsl.rs` addition, so the row must return with it).
+
+**Commands and observed results** — clean worktree at `887f844`, `tools/gate.sh`, warm shared target:
+
+- `cargo test -q -p census-crawl --lib` → `499 passed; 0 failed`.
+- `tools/gate.sh` → 13 of 17 lanes PASS; FAIL: `fmt`, `architecture contract`, `ratchet`, `vet`.
+  Each reproduces on `5d11c48` and belongs to another cluster's uncommitted slice:
+  - `fmt` — only `crates/census-crawl/src/coach_directories/map.rs`, 347 lines and unformatted in
+    both commits; that cluster's working copy is the 226-line formatted split.
+  - `architecture contract` check 8 — `arbiter` is a crawl-crate module with no descriptor in any
+    registry state (pre-landing, commit, port worktree all grep clean).
+  - `ratchet` — 4 `clippy::arithmetic_side_effects` (`coach_directories/survey.rs`,
+    `milesplit/raw_rows/columns.rs`) and 4 files over 300 lines (`map.rs` 347, `survey.rs` 483,
+    `restate_services/ingest.rs` 326, `xtask/src/replay/cases.rs` 349), identical at `5d11c48`;
+    the cluster working copies measure 226/180/210/264. Landing effect: census-crawl strict clippy
+    diagnostics fall from 17 (`5d11c48`, measured with the gate's lint set) to those 4.
+  - `vet` — supply-chain store absent (bead `athletic-rust-pipeline-3sb`), unchanged by the landing.
+
+**CLI smoke** — `cargo run -q -p census-service --bin census-service -- school-address --ccd
+crates/census-crawl/tests/fixtures/nces/ccd_sch_029_2526_head.csv --pss
+crates/census-crawl/tests/fixtures/nces/pss2324_pu_head.csv --out /tmp/sa-smoke`:
+
+- First run published `current` → `generations/58266c9a3ada0eb9` (digest
+  `58266c9a3ada0eb990b8fee88e659b7b06a0df5075d5ea862401c0b305fb517f`, schema_revision 1) holding
+  `school_directory.csv` (sha256 `25d42b90ced9d85e38e19ec6724146db079730b9e7e1c2057c73e3ebe0902bca`),
+  `school_directory.json`, `baseline.json`, `update_ledger.json`, `pipeline_report.json` and
+  `manifest.json`; lane counts `nces-ccd` 1557 entries/42 skipped, `nces-pss` 374/25.
+- A second identical run reused the same generation (one directory under `generations/`, same
+  pointer), and `--geocode` exited 1 with the typed refusal, creating no output directory.
+
+**Not claimed.** No live-source, national, full-corpus, Verus/Kani/Flux/Loom or mutation evidence
+accompanies this landing; it integrates a port of tooling into `main`. The one Python behavior not
+ported is the Google/USPS geocoding and postal-validation phase, which the verb refuses by design
+(bead `athletic-rust-pipeline-9p7`), and rows whose state is outside the 49 census jurisdictions are
+counted as skips, not published.
