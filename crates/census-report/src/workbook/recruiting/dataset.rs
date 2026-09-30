@@ -4,7 +4,7 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalPerformance, CanonicalSchool,
 };
 use census_store::{Store, Table};
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::contact::{contacts, SchoolContacts};
 use super::facts::{kind_index, pr_index, school_index, tally, AthleteTally};
@@ -35,56 +35,6 @@ pub(super) struct Dataset {
 }
 
 impl Dataset {
-    pub(super) fn from_shared(
-        scope: Scope,
-        grad_year: Option<i16>,
-        school_year: census_domain::model::SchoolYear,
-        athletes: &[CanonicalAthlete],
-        schools: &BTreeMap<String, CanonicalSchool>,
-        coaches: &[CanonicalCoach],
-        events: &[CanonicalEvent],
-        performances: &[CanonicalPerformance],
-        prs: Vec<SharedSelection>,
-    ) -> ReportResult<Self> {
-        let store_athletes = athletes.len();
-        let mut index = census_domain::model::AthleteIdentityIndex::default();
-        for athlete in athletes {
-            index
-                .observe(athlete)
-                .map_err(census_store::StoreError::from)?;
-        }
-        let identities = census_domain::model::AthleteIdentityProjection::default();
-        let schools_vec: Vec<CanonicalSchool> = schools.values().cloned().collect();
-        let schools = school_index(&schools_vec);
-        let contacts = contacts(coaches, school_year);
-        let contact_conflicts: usize = contacts.values().map(|facts| facts.heads.conflicts()).sum();
-        let kinds = kind_index(events);
-        let tallies = tally(athletes, performances, &kinds);
-        let pr_index = pr_index(&prs);
-        let audit = Reconciliation {
-            store_athletes,
-            scoped_athletes: athletes.len(),
-            cohort_athletes: athletes.len(),
-            pr_rows: prs.len(),
-            coach_rows: coaches.len(),
-            contact_conflicts,
-        };
-        Ok(Dataset {
-            scope,
-            grad_year,
-            school_year,
-            athletes: athletes.to_vec(),
-            identities,
-            schools,
-            coaches: coaches.to_vec(),
-            contacts,
-            tallies,
-            prs,
-            pr_index,
-            audit,
-        })
-    }
-
     pub(super) fn load(
         store: &Store,
         scope: Scope,
@@ -99,32 +49,30 @@ impl Dataset {
         self.audit
     }
 
-    pub(super) fn school_name(&self, school: &str) -> String {
-        self.schools
-            .get(school)
-            .map(|s| s.name.clone())
-            .unwrap_or_else(|| school.to_string())
+    pub(super) fn school_name<'b>(&'b self, school: &'b str) -> &'b str {
+        self.schools.get(school).map_or(school, |s| s.name.as_str())
     }
 
-    pub(super) fn school_state(&self, school: &str) -> String {
+    pub(super) fn school_state<'b>(&'b self, school: &'b str) -> &'b str {
         self.schools
             .get(school)
-            .map(|s| s.state.clone())
-            .unwrap_or_default()
+            .and_then(|s| s.state.as_ref())
+            .map_or("", |state| state.code())
     }
 
-    pub(super) fn school_city(&self, school: &str) -> String {
+    pub(super) fn school_city<'b>(&'b self, school: &'b str) -> &'b str {
         self.schools
             .get(school)
-            .map(|s| s.city.clone())
+            .and_then(|s| s.city.as_deref())
             .unwrap_or_default()
     }
 
     pub(super) fn prs_of(&self, athlete: &str) -> impl Iterator<Item = &SharedSelection> {
         self.pr_index
             .get(athlete)
-            .map(|idxs| idxs.iter().map(|&i| &self.prs[i]))
-            .unwrap_or_else(|| std::iter::empty())
+            .into_iter()
+            .flat_map(|idxs| idxs.iter())
+            .filter_map(|position| self.prs.get(*position))
     }
 }
 

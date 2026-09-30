@@ -10,6 +10,14 @@ use census_store::{Store, Table};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::time::Duration;
 
+type SchoolFields = (
+    Option<String>,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+);
+type SchoolMap = BTreeMap<String, SchoolFields>;
+
 use crate::net::Fetcher;
 
 const NH_CHILDREN: &str = include_str!("../../tests/fixtures/arbiter/nh_children_p1.body");
@@ -103,15 +111,7 @@ fn every_school_row_matches_the_prototype_golden_field_for_field() {
     let golden = golden_rows(GOLDEN_SCHOOLS);
     assert_eq!(page.rows.len(), golden.len());
 
-    let mut rust: BTreeMap<
-        String,
-        (
-            Option<String>,
-            Option<String>,
-            Option<String>,
-            Option<String>,
-        ),
-    > = BTreeMap::new();
+    let mut rust: SchoolMap = SchoolMap::new();
     for row in &page.rows {
         let (school, _) = map_org_school(
             row,
@@ -134,15 +134,7 @@ fn every_school_row_matches_the_prototype_golden_field_for_field() {
             ),
         );
     }
-    let mut expected: BTreeMap<
-        String,
-        (
-            Option<String>,
-            Option<String>,
-            Option<String>,
-            Option<String>,
-        ),
-    > = BTreeMap::new();
+    let mut expected: SchoolMap = SchoolMap::new();
     for row in &golden {
         expected.insert(
             field(row, "name").expect("golden rows carry a name"),

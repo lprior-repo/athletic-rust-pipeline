@@ -1,5 +1,6 @@
 use std::future::Future;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 
@@ -44,6 +45,7 @@ enum Completion<T, E> {
 struct Region {
     tasks: JoinSet<()>,
     ledger: Ledger,
+    blocking: Arc<AtomicUsize>,
 }
 
 impl Region {
@@ -89,6 +91,7 @@ impl Spawner {
             region: Mutex::new(Region {
                 tasks,
                 ledger: Ledger::holding(held),
+                blocking: Arc::new(AtomicUsize::new(0)),
             }),
         })
     }
@@ -153,15 +156,13 @@ impl Spawner {
                             tracing::warn!(remaining, "drain deadline reached; aborting");
                             region.ledger.note_deadline(remaining);
                             region.tasks.abort_all();
-                            const REAP_TURNS: usize = 8;
-                            for _ in 0..REAP_TURNS {
-                                while let Some(joined) = region.tasks.try_join_next() {
-                                    region.ledger.classify_reaped(DrainState::from_join(joined));
+                            while region.tasks.len() > region.blocking.load(Ordering::Acquire) {
+                                match region.tasks.join_next().await {
+                                    Some(joined) => {
+                                        region.ledger.classify_reaped(DrainState::from_join(joined))
+                                    }
+                                    None => break,
                                 }
-                                if region.tasks.is_empty() {
-                                    break;
-                                }
-                                tokio::task::yield_now().await;
                             }
                             region.ledger.set_remaining(narrow(region.tasks.len())?);
                             break;
@@ -201,8 +202,11 @@ impl Spawner {
     {
         let mut region = self.lock();
         region.reap_finished();
+        let blocking = Arc::clone(&region.blocking);
+        blocking.fetch_add(1, Ordering::AcqRel);
         region.tasks.spawn_blocking(move || {
             let _slot = slot;
+            let _owing = BlockingGuard(blocking);
             job();
         });
         region.ledger.accept();
@@ -213,6 +217,7 @@ impl Spawner {
         Region {
             tasks: std::mem::take(&mut region.tasks),
             ledger: std::mem::take(&mut region.ledger),
+            blocking: Arc::clone(&region.blocking),
         }
     }
 
@@ -221,6 +226,14 @@ impl Spawner {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         }
+    }
+}
+
+struct BlockingGuard(Arc<AtomicUsize>);
+
+impl Drop for BlockingGuard {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
     }
 }
 

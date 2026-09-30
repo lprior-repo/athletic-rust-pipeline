@@ -43,30 +43,19 @@ fn meet_identity_is_date_and_name_scoped() {
         Some(UsJurisdiction::Wisconsin),
         "2026-05-29",
         "D3 Sectional #3",
-        None,
     );
     let b = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
         "2026-05-29",
         "D3 sectional #3",
-        None,
     );
     let c = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
         "2026-05-30",
         "D3 Sectional #3",
-        None,
     );
     assert_eq!(a, b);
     assert_ne!(a, c);
-    let venue = "La Crosse, WI";
-    let d = CanonicalMeet::mint(
-        Some(UsJurisdiction::Wisconsin),
-        "2026-05-29",
-        "D3 Sectional #3",
-        Some(venue),
-    );
-    assert_eq!(a, d, "venue spelling must not fork meet identity");
     let level = CompetitionLevel::Sectional;
     let built = CanonicalMeet::new(
         Some(UsJurisdiction::Wisconsin),
@@ -76,16 +65,18 @@ fn meet_identity_is_date_and_name_scoped() {
     );
     assert_eq!(built.id, a, "constructor and mint must agree");
     assert_eq!(built.state, Some(UsJurisdiction::Wisconsin));
+    let mut d = built.clone();
+    d.location = Some("La Crosse, WI".to_string());
+    assert_eq!(built.id, d.id, "venue spelling must not fork meet identity");
 }
 
 #[test]
 fn an_unplaced_meet_remains_distinct_from_a_placed_meet() {
-    let unplaced = CanonicalMeet::mint(None, "2026-05-29", "D3 Sectional #3", None);
+    let unplaced = CanonicalMeet::mint(None, "2026-05-29", "D3 Sectional #3");
     let placed = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
         "2026-05-29",
         "D3 Sectional #3",
-        None,
     );
     assert_ne!(
         unplaced, placed,
@@ -133,4 +124,54 @@ fn school_jurisdiction_separates_identity() {
         "abbotsford",
     );
     assert_ne!(a, other, "state participates in the natural key");
+}
+
+#[test]
+fn a_meet_keeps_a_year_only_source_date() {
+    let meet = CanonicalMeet::new_checked(
+        Some(UsJurisdiction::Wisconsin),
+        "Racine Sectional",
+        "2023",
+        CompetitionLevel::Sectional,
+    )
+    .expect("a source date published only as a year is year precision");
+    assert_eq!(meet.date, "2023");
+}
+
+#[test]
+fn a_meet_refuses_a_date_that_is_neither_an_iso_day_nor_a_year() {
+    for date in ["2023-13", "2023-02-30", "23", "spring 2023", ""] {
+        assert!(
+            CanonicalMeet::new_checked(
+                Some(UsJurisdiction::Wisconsin),
+                "Racine Sectional",
+                date,
+                CompetitionLevel::Sectional,
+            )
+            .is_err(),
+            "{date:?} is neither an ISO day nor a four-digit year"
+        );
+    }
+}
+
+#[test]
+fn a_performance_keeps_a_year_only_source_date() {
+    let athlete = AthleteId::mint("ath", &["year-only"]);
+    let team = TeamId::mint("team", &["year-only"]);
+    let meet = MeetId::mint("meet", &["year-only"]);
+    let event = EventId::mint("event", &["year-only"]);
+    let performance = CanonicalPerformance::new_checked(
+        &athlete,
+        &EventKind::CrossCountry,
+        &team,
+        &event,
+        &meet,
+        "2023",
+        Mark::Raw("16:00".to_string()),
+        "year-only-key",
+        None,
+        None,
+    )
+    .expect("a source date published only as a year is year precision");
+    assert_eq!(performance.date, "2023");
 }

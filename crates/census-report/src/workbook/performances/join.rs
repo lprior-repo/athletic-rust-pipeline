@@ -3,7 +3,6 @@ use crate::bests::{mark_text, sport_of, Measure};
 use crate::report::{ReportResult, Scope};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    Evidence, Mark, MEET_STATE_UNRESOLVED,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -15,20 +14,6 @@ pub(super) struct Parents {
 }
 
 impl Parents {
-    pub(super) fn from_shared(
-        athletes: &[CanonicalAthlete],
-        schools: &[CanonicalSchool],
-        meets: &[CanonicalMeet],
-        events: &[CanonicalEvent],
-    ) -> Self {
-        Self {
-            athletes: athletes.to_vec(),
-            schools: schools.to_vec(),
-            meets: meets.to_vec(),
-            events: events.to_vec(),
-        }
-    }
-
     pub(super) fn read(
         store: &census_store::Store,
         scope: Scope,
@@ -116,15 +101,15 @@ impl<'a> Lookups<'a> {
 
     pub(super) fn athlete_name(&self, id: &str) -> String {
         self.athlete(id)
-            .map(|a| a.display_name().clone())
-            .unwrap_or_else(|| id.to_string())
+            .map(|a| a.canonical_name.clone())
+            .unwrap_or_default()
     }
 
     pub(super) fn athlete_school(&self, id: &str) -> String {
         let Some(athlete) = self.athlete(id) else {
             return String::new();
         };
-        self.school_name(&athlete.school)
+        self.school_name(athlete.school.as_str())
     }
 
     pub(super) fn athlete_grad_year(&self, id: &str) -> Option<i16> {
@@ -137,86 +122,98 @@ impl<'a> Lookups<'a> {
             .unwrap_or_else(|| id.to_string())
     }
 
-    pub(super) fn school_state(&self, id: &str) -> String {
-        self.school(id).map(|s| s.state.clone()).unwrap_or_default()
+    pub(super) fn school_state(&self, id: &str) -> Option<String> {
+        self.school(id)
+            .and_then(|s| s.state.as_ref())
+            .map(|j| j.code().to_string())
     }
 
-    pub(super) fn school_city(&self, id: &str) -> String {
-        self.school(id).map(|s| s.city.clone()).unwrap_or_default()
+    pub(super) fn athlete_school_state(&self, id: &str) -> Option<String> {
+        self.athlete(id)
+            .map(|athlete| athlete.school.as_str())
+            .and_then(|school| self.school_state(school))
+    }
+
+    pub(super) fn school_names(&self) -> Vec<&'a str> {
+        self.schools
+            .values()
+            .copied()
+            .map(|s| s.name.as_str())
+            .collect()
     }
 
     pub(super) fn meet_name(&self, id: &str) -> String {
-        self.meet(id)
-            .map(|m| m.name.clone())
-            .unwrap_or_else(|| id.to_string())
-    }
-
-    pub(super) fn meet_location(&self, id: &str) -> String {
-        self.meet(id)
-            .map(|m| m.location.clone())
-            .unwrap_or_default()
+        self.meet(id).map(|m| m.name.clone()).unwrap_or_default()
     }
 
     pub(super) fn event_name(&self, id: &str) -> String {
         self.event(id)
-            .map(|e| e.name.clone())
-            .unwrap_or_else(|| id.to_string())
+            .map(|e| e.kind.stable_key().to_string())
+            .unwrap_or_default()
     }
 
     pub(super) fn event_sport(&self, id: &str) -> String {
-        self.event(id).map(|e| e.sport.clone()).unwrap_or_default()
+        self.event(id)
+            .map(|e| sport_of(&e.kind).to_string())
+            .unwrap_or_default()
     }
-}
 
-fn row(performance: &CanonicalPerformance, lookups: &Lookups<'_>) -> PerformanceRow {
-    let athlete_name = lookups.athlete_name(&performance.athlete);
-    let athlete_school = lookups.athlete_school(&performance.athlete);
-    let athlete_grad = lookups.athlete_grad_year(&performance.athlete);
-    let meet_name = lookups.meet_name(&performance.meet);
-    let meet_location = lookups.meet_location(&performance.meet);
-    let event_name = lookups.event_name(&performance.event);
-    let event_sport = lookups.event_sport(&performance.event);
-    let observed = observed(performance);
-    let normalized = observed
-        .and_then(|e| e.mark.as_ref())
-        .and_then(|mark| normalized_mark(mark));
-    PerformanceRow {
-        performance_id: performance.id.as_str().to_string(),
-        athlete_name,
-        athlete_school,
-        athlete_grad,
-        meet_name,
-        meet_location,
-        meet_date: performance.meet_date.clone(),
-        event_name,
-        event_sport,
-        event_distance: performance.event_distance.clone(),
-        mark_text: observed
-            .and_then(|e| e.mark.as_ref())
-            .map(|mark| mark_text(mark))
-            .unwrap_or_default(),
-        normalized,
-        wind: performance.wind.clone(),
-        timing: performance.timing.clone(),
-        place: performance.place.clone(),
-        heat: performance.heat.clone(),
-        round: performance.round.clone(),
-        attempt: performance.attempt.clone(),
-        source: performance.source_id.clone(),
-        evidence_id: performance.evidence_id.clone(),
-        relay_team: performance.relay_team.clone(),
-        individual_split: performance.individual_split,
+    pub(super) fn event_round(&self, id: &str) -> Option<String> {
+        self.event(id).and_then(|e| e.round.clone())
+    }
+
+    pub(super) fn row(&self, performance: &CanonicalPerformance) -> PerformanceRow {
+        let athlete_name = self.athlete_name(performance.athlete.as_str());
+        let athlete_school = self.athlete_school(performance.athlete.as_str());
+        let athlete_grad = self.athlete_grad_year(performance.athlete.as_str());
+        let meet_name = self.meet_name(performance.meet.as_str());
+        let event_name = self.event_name(performance.event.as_str());
+        let event_sport = self.event_sport(performance.event.as_str());
+        let event_round = self.event_round(performance.event.as_str());
+        let school_state = self.athlete_school_state(performance.athlete.as_str());
+
+        let source = performance
+            .evidence
+            .first()
+            .map(|e| e.source.id.clone())
+            .unwrap_or_default();
+        let source_url = performance
+            .evidence
+            .first()
+            .and_then(|e| e.source.url.clone())
+            .unwrap_or_default();
+
+        let normalized = Measure::of(&performance.mark)
+            .and_then(|measure| measure.normalized_mark(&performance.mark));
+
+        PerformanceRow {
+            id: performance.id.as_str().to_string(),
+            athlete_id: performance.athlete.as_str().to_string(),
+            athlete: athlete_name,
+            school: athlete_school,
+            grad_year: athlete_grad,
+            meet_id: performance.meet.as_str().to_string(),
+            meet: meet_name,
+            date: performance.date.clone(),
+            state: school_state,
+            sport: event_sport,
+            event: event_name,
+            mark: mark_text(&performance.mark),
+            normalized,
+            timing: performance
+                .timing
+                .as_ref()
+                .map(|t| t.stable_key().to_string()),
+            wind_mps: performance.wind_mps,
+            round: event_round,
+            place: performance.place,
+            source,
+            source_result: performance.source_key.clone(),
+            source_url,
+        }
     }
 }
 
 fn index<'a, T>(rows: &'a [T], id: impl Fn(&'a T) -> &'a str) -> HashMap<&'a str, &'a T> {
     rows.iter().map(|row| (id(row), row)).collect()
-}
-
-fn observed(performance: &CanonicalPerformance) -> Option<&Evidence> {
-    performance.evidence.iter().find(|e| e.kind == "observed")
-}
-
-fn normalized_mark(mark: &Mark) -> Option<f64> {
-    Measure::of(mark)?.normalized_mark(mark)
 }

@@ -2,7 +2,8 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam,
 };
-use census_store::{Store, StoreResult, Table};
+use census_store::clock::{Clock, SystemClock};
+use census_store::{Store, Table};
 use std::collections::BTreeMap;
 
 use crate::report::Scope;
@@ -19,13 +20,13 @@ pub struct ExportDataset {
     pub performances: Vec<CanonicalPerformance>,
     pub meets: Vec<CanonicalMeet>,
     pub teams: BTreeMap<String, CanonicalTeam>,
-    pub generated_on: chrono::NaiveDate,
+    pub generated_on: String,
 }
 
 impl ExportDataset {
     pub fn load(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
         let snapshot = store.snapshot();
-        let generated_on = census_domain::model::now_utc().date();
+        let generated_on = SystemClock.today();
 
         let mut athletes: Vec<CanonicalAthlete> = snapshot.scan(Table::Athletes)?;
         let mut meets: Vec<CanonicalMeet> = snapshot.scan(Table::Meets)?;
@@ -50,12 +51,15 @@ impl ExportDataset {
             athletes.retain(|a| a.grad_year.get() == year);
         }
 
-        let schools = schools.into_iter().map(|s| (s.id.clone(), s)).collect();
+        let schools = schools
+            .into_iter()
+            .map(|s| (s.id.as_str().to_string(), s))
+            .collect();
 
         let teams: BTreeMap<String, CanonicalTeam> = snapshot
             .scan(Table::Teams)?
             .into_iter()
-            .map(|t| (t.id.clone(), t))
+            .map(|t: CanonicalTeam| (t.id.as_str().to_string(), t))
             .collect();
 
         let coaches = snapshot.scan(Table::Coaches)?;
@@ -72,7 +76,7 @@ impl ExportDataset {
         })
     }
 
-    pub fn scope(&self, scope: Scope) -> ScopedDataset {
+    pub fn scope(&self) -> ScopedDataset<'_> {
         ScopedDataset {
             athletes: &self.athletes,
             schools: &self.schools,
@@ -81,7 +85,7 @@ impl ExportDataset {
             performances: &self.performances,
             meets: &self.meets,
             teams: &self.teams,
-            generated_on: self.generated_on,
+            generated_on: self.generated_on.as_str(),
         }
     }
 }
@@ -95,5 +99,5 @@ pub struct ScopedDataset<'a> {
     pub performances: &'a [CanonicalPerformance],
     pub meets: &'a [CanonicalMeet],
     pub teams: &'a BTreeMap<String, CanonicalTeam>,
-    pub generated_on: chrono::NaiveDate,
+    pub generated_on: &'a str,
 }

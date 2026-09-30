@@ -45,11 +45,13 @@ pub(super) async fn supervise(
 
     let reason = Arc::new(AtomicU8::new(StopReason::ServerExit.to_raw()));
     let over_budget = Arc::new(tokio::sync::Notify::new());
+    let stopping = Arc::new(tokio::sync::Notify::new());
     let (cancel, endpoint_done) = spawn_endpoint(&region, &store, &options, listener, lane)?;
     region
         .spawn(super::guard::watch_memory(
             super::DEFAULT_MEMORY_BUDGET_BYTES,
             Arc::clone(&over_budget),
+            Arc::clone(&stopping),
         ))
         .map_err(count_error)?;
     tracing::info!(
@@ -66,6 +68,7 @@ pub(super) async fn supervise(
         endpoint_done,
     )
     .await;
+    stopping.notify_one();
     cancel.send(()).ok();
     let counted = region
         .drain(options.drain_timeout)

@@ -1,4 +1,4 @@
-use census_crawl::net::{FetchError, FetchOptions, Fetcher};
+use census_crawl::net::{FetchOptions, Fetcher};
 use census_domain::model::RawContactRow;
 use std::sync::atomic::{AtomicU64, Ordering};
 

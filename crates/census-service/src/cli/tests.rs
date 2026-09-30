@@ -461,7 +461,7 @@ fn acceptance_school_id_where_the_store_has_a_name() {
 fn acceptance_school_id_with_no_store_row() {
     let dir = tempfile::tempdir().unwrap();
     let (school_rec, _) = school("Jefferson High", census_domain::UsJurisdiction::Wisconsin);
-    let ghost_id: census_domain::model::SchoolId = Id::mint("school", &["Ghost High"]);
+    let ghost_id = census_domain::model::SchoolId::mint("sch", &["Ghost High"]);
     let a1 = CanonicalAthlete::new(
         &ghost_id,
         "Ghost Runner",

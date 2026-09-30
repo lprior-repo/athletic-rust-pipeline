@@ -79,10 +79,13 @@ captured bodies:
 ## Survey (qualification probe)
 
 `survey.rs` carries the association-availability probe that produced the source
-report's 51-ruleset table. `ASSOCIATIONS` is the jurisdiction-to-ruleset map for
-all 51 continental jurisdictions, `VERIFIED` the 15 associations whose summaries
-publish staff, and `survey` walks the list while `probe_one` reads exactly one
-association: directory page 1, then the four sampled schools' summaries.
+report's 51-ruleset table; `survey/associations.rs` holds `ASSOCIATIONS`, the
+jurisdiction-to-ruleset map for all 51 continental jurisdictions, and `VERIFIED`,
+the 15 associations whose summaries publish staff, `survey/records.rs` holds
+`ProbeRecord` and its rendering, `survey/sampling.rs` the four-school sampler, and
+`survey/stats.rs` the half-even rounding the per-school ratios use. `survey` walks
+the list while `probe_one` reads exactly one association: directory page 1, then
+the four sampled schools' summaries.
 Sampling follows the prototype: rows with `competitionLevels` are preferred and
 stepped by `max(1, len / 4)`, taking at most four, and every fetch beyond the
 directory is a summary keyed by `shortCode` (a row without one is skipped).

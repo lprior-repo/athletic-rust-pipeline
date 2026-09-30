@@ -28,8 +28,8 @@ pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
             (
                 athlete,
                 (
-                    dataset.school_state(school),
-                    dataset.school_name(school),
+                    dataset.school_state(school).to_string(),
+                    dataset.school_name(school).to_string(),
                     athlete.canonical_name.clone(),
                 ),
             )

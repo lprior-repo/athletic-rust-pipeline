@@ -2,11 +2,13 @@ use super::map::{
     absorb_summary, coach_entities, directory_school, CoachCounters, CoachEmission,
     DirectoryAdmission, EmissionScope,
 };
-use super::parse::{parse_directory, parse_summary, DirectorySchool};
-use super::{directory_page_url, summary_url, Options, MAX_DIRECTORY_PAGES, REGISTERED, SOURCE_ID};
+use super::parse::{parse_directory, DirectorySchool};
+use super::{directory_page_url, Options, MAX_DIRECTORY_PAGES, REGISTERED, SOURCE_ID};
 use crate::net::{FetchOptions, FetchOutcome, FetchStats};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
-use census_domain::model::{normalize_name, CanonicalCoach, CanonicalSchool, SourceNamespace};
+use census_domain::model::{
+    normalize_name, CanonicalCoach, CanonicalSchool, SchoolId, SourceNamespace,
+};
 use census_domain::UsJurisdiction;
 use census_store::Table;
 use serde_json::json;
@@ -126,51 +128,27 @@ impl<'a> Run<'a> {
             self.skipped = self.skipped.saturating_add(1);
             return Ok(());
         }
-        let (mut school, school_id) = match directory_school(
-            state,
-            association,
-            row,
-            directory_url,
-            self.options.observed_on.as_str(),
-        )? {
-            DirectoryAdmission::School(school, id) => (school, id),
-            DirectoryAdmission::MissingShortCode => {
-                self.report.note(format!(
-                    "directory row {directory_url}: no short code to fetch a summary with"
-                ));
-                return Ok(());
-            }
-            DirectoryAdmission::DroppedName => {
-                self.dropped_school_rows = self.dropped_school_rows.saturating_add(1);
-                return Ok(());
-            }
+        let Some((mut school, school_id)) =
+            self.admit_school(state, association, directory_url, row)?
+        else {
+            return Ok(());
         };
         if !self.wanted.is_empty() && !self.wanted.contains(&school.normalized_name) {
             return Ok(());
         }
-        let url = summary_url(short_code.as_str());
-        let summary = match self.get(&url).await {
-            Some(outcome) => match parse_summary(&outcome.body) {
-                Ok(summary) => Some(summary),
-                Err(error) => {
-                    self.fail(format!("summary {url}: {error}"));
-                    None
-                }
-            },
-            None => None,
-        };
-        let emission = match summary.as_ref() {
+        let summary = self.fetch_summary(short_code.as_str()).await;
+        let emission = match summary.as_ref().and_then(Option::as_ref) {
             Some(summary) => {
                 absorb_summary(
                     &mut school,
                     summary,
-                    &url,
+                    directory_url,
                     self.options.observed_on.as_str(),
                 );
                 coach_entities(
                     summary,
                     &school_id,
-                    &url,
+                    directory_url,
                     self.options.observed_on.as_str(),
                     EmissionScope::Census,
                 )?
@@ -183,6 +161,50 @@ impl<'a> Run<'a> {
         Ok(())
     }
 
+    fn admit_school(
+        &mut self,
+        state: UsJurisdiction,
+        association: &str,
+        directory_url: &str,
+        row: &DirectorySchool,
+    ) -> CrawlResult<Option<(Box<CanonicalSchool>, SchoolId)>> {
+        match directory_school(
+            state,
+            association,
+            row,
+            directory_url,
+            self.options.observed_on.as_str(),
+        )? {
+            DirectoryAdmission::School(school, id) => Ok(Some((school, id))),
+            DirectoryAdmission::MissingShortCode => {
+                self.report.note(format!(
+                    "directory row {directory_url}: no short code to fetch a summary with"
+                ));
+                Ok(None)
+            }
+            DirectoryAdmission::DroppedName => {
+                self.dropped_school_rows = self.dropped_school_rows.saturating_add(1);
+                Ok(None)
+            }
+        }
+    }
+
+    async fn fetch_summary(
+        &mut self,
+        short_code: &str,
+    ) -> Option<Option<super::parse::SchoolSummary>> {
+        let url = super::summary_url(short_code);
+        match self.get(&url).await {
+            Some(outcome) => match super::parse::parse_summary(&outcome.body) {
+                Ok(summary) => Some(Some(summary)),
+                Err(error) => {
+                    self.fail(format!("summary {url}: {error}"));
+                    Some(None)
+                }
+            },
+            None => None,
+        }
+    }
     async fn get(&mut self, url: &str) -> Option<FetchOutcome> {
         match self.ctx.fetcher.get(url, &self.fetch).await {
             Ok(outcome) => Some(outcome),

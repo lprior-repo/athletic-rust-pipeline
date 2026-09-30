@@ -101,6 +101,44 @@ async fn a_running_blocking_job_is_waited_for_and_counted_as_completed() {
 }
 
 #[tokio::test]
+async fn the_deadline_reaps_every_abortable_task_and_leaves_the_blocking_job() {
+    let spawner = Spawner::new();
+    for _ in 0..8 {
+        spawner
+            .spawn(pending())
+            .expect("an empty region admits a task");
+    }
+    let (started, started_rx) = tokio::sync::oneshot::channel::<()>();
+    let caller = spawner.blocking(move || {
+        let _ = started.send(());
+        std::thread::sleep(Duration::from_millis(300));
+        Ok::<u8, &'static str>(1)
+    });
+    let draining = async {
+        started_rx
+            .await
+            .expect("the job announces itself before it finishes");
+        spawner
+            .drain(Duration::from_millis(1))
+            .await
+            .expect("a small set fits the report")
+    };
+    let (outcome, counted) = tokio::join!(caller, draining);
+    assert_eq!(counted.accepted, 9);
+    assert_eq!(counted.timed_out, 9);
+    assert_eq!(
+        counted.aborted, 8,
+        "the abort reclaimed every cancellable task"
+    );
+    assert_eq!(
+        counted.remaining, 1,
+        "the blocking job the abort cannot reclaim stays counted"
+    );
+    assert_eq!(counted.completed, 0);
+    assert_eq!(outcome, Outcome::Ok(1));
+}
+
+#[tokio::test]
 async fn drain_returns_promptly_when_task_overruns_deadline() {
     let spawner = Spawner::new();
     spawner

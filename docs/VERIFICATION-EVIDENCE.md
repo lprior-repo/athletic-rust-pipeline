@@ -6,6 +6,118 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## The test lane's latent failures, the source-date rule and the watcher's stop — 2026-09-29
+
+The gate's tests lane runs `cargo test --workspace --all-features` under libtest fail-fast, so its
+first failure had been hiding every later one. Clearing the drain accounting exposed three of them in
+sequence; all three were fixtures that fed values the domain rejects.
+
+- `merge_properties::laws_unions::event_merge_is_idempotent` generated a meet date with `word(8)`
+  (for example `"qnqtrf"`), which `CanonicalMeet::new` asserts against ISO dates. The strategy now
+  draws from `date()` (`1970..=2100`, month `1..=12`, day `1..=28`, zero-padded).
+  `cargo test -p census-service --test merge_properties` → 29 passed.
+- `cli::tests::acceptance_school_id_with_no_store_row` minted its ghost school id with the prefix
+  `school` while `SchoolId` validates `sch`; it now mints `SchoolId::mint("sch", …)`.
+  `cargo test -p census-service --bin census-service cli::tests` → 12 passed.
+- `parity_pipeline::pipeline_publishes_the_same_bytes_from_a_rebuilt_store` fed a year-only date into
+  the meet and performance constructors. Year precision is the RaceDay parser's deliberate contract
+  (`raceday/tests.rs`: "RaceDay publishes no date; year precision is explicit"; `raceday/parse.rs`
+  formats `{year:04}`), and no consumer parses these fields - the report layer copies and compares the
+  string. The domain now states the two admitted source precisions once, in
+  `model::source_date::valid_source_date` (calendar day or four-digit year), used by both entity
+  constructors, and `DOMAIN.md` records the rule. Regression tests cover the acceptance and refuse
+  `2023-13`, `2023-02-30`, `23`, `spring 2023` and the empty string.
+  `cargo test -p census-domain` → 157 passed; `cargo test -p census-service --test parity_pipeline`
+  → 1 passed.
+
+Drain accounting made the memory guard unaffordable: once the reap loop waits for supervised tasks,
+`watch_memory`'s budget loop never finishes on its own, so every stop spent the whole deadline
+(`timed_out: 1, aborted: 1`, three of three runs). `watch_memory` now takes a `stopping` notify that
+`supervise` fires after `await_stop` and before `drain`.
+`cargo test -p census-service --test fjall_restate_e2e restate_endpoint` → 3 passed (0.82 s); the same
+lane previously failed in 1.07 s.
+
+Supply chain: `cargo vet regenerate imports` pulled the published google/mozilla audits, which cover 4
+of the 31 uncovered crates (`cssparser`, `cssparser-macros`, `precomputed-hash`, `unicode-width`). 27
+remain unvetted; no audit or exemption was fabricated, and cargo-vet stays a release blocker.
+
+Worktree rules: this branch's `.gitignore` predates main's artifact ignores, so `target/` (16 GB) was
+untracked and a plain `git add -A` would have written it into the object store. The file now mirrors
+`main`.
+
+Commands: `cargo fmt --check` clean; `cargo test --workspace --all-features --quiet --no-fail-fast`
+→ every target ok (195 s); `tools/gate.sh` → `gate: FAIL -> domain purity vet` (490 s). The lane
+verdict for this tree is therefore every lane except domain purity and cargo-vet. Limits: no live host
+lane ran for this entry, and the two red lanes are unrelated to these changes.
+
+## File-budget splits across the acquisition, service and xtask slices — 2026-09-29
+
+Seven production modules that exceeded the repository's 300-line budget were split along their
+existing seams. Every public path kept its name (`mod x; pub use x::{...};`) and every moved function
+kept its body, so the fixture-parity, replay and adapter tests are the behavioural arbiter.
+
+| Original (lines) | Now | Sizes (lines) |
+|---|---|---|
+| `census-crawl/src/coach_directories/map.rs` | `map.rs` + `map/{persons,rows,schools,teams}.rs` | 216 + 343 |
+| `census-crawl/src/coach_directories/survey.rs` | `survey.rs` + `survey/{associations,records,sampling,stats}.rs` | 160 + 379 |
+| `census-crawl/src/arbiter/collect.rs` | `collect.rs` + `collect/{run,targets,token}.rs` | 72 + 325 |
+| `census-crawl/src/chsaa/parse.rs` (309) | `parse.rs` + `parse/{directory,school_page,types}.rs` | 7 + 334 |
+| `athleticnet-browser/src/management.rs` | `management.rs` + `management_{commands,pages}.rs` | 171 + 152 |
+| `census-service/src/restate_services/ingest.rs` | `ingest.rs` + `ingest_{post,validation}.rs` | 210 + 165 |
+| `xtask/src/replay/cases.rs` | `cases.rs` + `cases/*.rs` (nine modules) | 35 + 374 |
+
+The CHSAA split also cleared the fourteen strict-clippy diagnostics the debt ratchet counted in
+`chsaa/parse.rs` (six `arithmetic_side_effects`, five `indexing_slicing`, three `string_slice`) and the
+one production-scan indexing site (`anchor_chars[j]`), using `get`/`checked_add`/`saturating_add` with
+typed `CrawlError` outcomes. Parsed values, error variants, error messages and row order are unchanged.
+The `coach_directories` research mapping (`run-py-merge-semantics.md`) had its citations re-pointed to
+the new modules; the `coach_directories/README.md` survey section describes the `survey/` layout.
+
+**Evidence.** `cargo test -p census-crawl --lib` → `499 passed; 0 failed` (`chsaa::` alone: `16 passed`);
+`cargo clippy -p census-crawl --lib --all-features --no-deps` under the gate's strict lint set → no
+diagnostics; `cargo run -q -p xtask -- scan` → `census-crawl` `indexing = 0`,
+`expect/unwrap/panic/unsafe/as_cast = 0`, `structure.files_over_300_lines = []`,
+`functions_over_60_lines = 0`; `cargo fmt -p census-crawl` → clean. The separately recorded drain
+repair in this file covers `census-service/src/spawn.rs`.
+
+**Limits.** Sizes are line counts at this revision. The splits are a layout change, not a
+re-measurement of adapter output: no live host lane was re-run for this entry, and the fixture lanes
+listed above are the behavioural evidence. Behaviour parity of *test* files was not re-audited — only
+production modules moved.
+
+## The drain's abort accounting at region scale — 2026-09-29
+
+**Finding.** `crates/census-service/src/spawn.rs`'s deadline path reaped aborted tasks across a
+fixed budget of eight scheduler turns (`try_join_next`, then `yield_now`, `REAP_TURNS = 8`). At the
+default capacity the budget is short: over a full 500-slot region the current-thread test runtime
+reclaimed 427 tasks and published the other 73 as `remaining`, so
+`spawn::tests::the_default_region_admits_its_capacity_and_refuses_the_next_task` failed on
+`assert_eq!(counted.remaining, 0)` — deterministically, 3 of 3 isolated runs
+(`cargo test -p census-service --all-features --lib spawn::tests::the_default_region_admits_its_capacity_and_refuses_the_next_task -- --exact --test-threads=1`
+→ `left: 73, right: 0` at `crates/census-service/src/spawn/tests.rs:264`). `spawn.rs` was unmodified
+against HEAD; the 2026-09-25 entry below records the turn-budget fix this supersedes and the small
+regions it was measured on.
+
+**Fix.** The region now counts the blocking-pool jobs it owns (`Region::blocking`, an
+`Arc<AtomicUsize>` incremented in `push_blocking` before `spawn_blocking` and decremented by
+`BlockingGuard` on drop, cloned through `take`), and the deadline path awaits `join_next` while
+`tasks.len() > blocking`. Every task the abort can reclaim is therefore counted `aborted` and leaves
+`remaining`; a blocking job the abort cannot reclaim keeps `remaining = 1`. The budget is the job
+kind — not scheduler turns, and not wall time — so the drain stays prompt without a magic turn count.
+
+**Regression.** `spawn::tests::the_deadline_reaps_every_abortable_task_and_leaves_the_blocking_job`
+(eight pending tasks plus one announced, running blocking job): `aborted == 8`, `remaining == 1`,
+`completed == 0`, and the caller still receives `Outcome::Ok(1)`.
+
+**Evidence.** `cargo test -p census-service --all-features --lib` → `187 passed; 0 failed`;
+`cargo test -p census-service --all-features --lib spawn::` → `17 passed; 0 failed` (the 500-slot test
+included); `cargo clippy -p census-service --all-features --lib --no-deps` under the gate's strict
+lint set → no diagnostics; `cargo fmt -p census-service` → clean.
+
+**Limits.** Measured on the current-thread test runtime at capacity 500. The multi-threaded runtime,
+capacities above 500 and a real deployment stop were not exercised; `remaining = 1` for a blocked
+blocking job is asserted, not measured under a live stop.
+
 ## DragonFly directory parse parity — 2026-09-29
 
 The prototype's directory parser and the Rust lane were executed over the same six captured

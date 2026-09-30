@@ -31,6 +31,7 @@ mod records;
 mod review;
 mod school;
 mod serialization_digest;
+mod source_date;
 
 pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
 pub use classification::{CanonicalTeam, CompetitionLevel, Gender, Sport};

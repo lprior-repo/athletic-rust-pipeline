@@ -78,10 +78,9 @@ impl<'de> Deserialize<'de> for Grade {
     {
         let grade = u8::deserialize(deserializer)?;
         Grade::new(grade).ok_or_else(|| {
-            let expected = "grade in [9, 12]";
             serde::de::Error::invalid_value(
                 serde::de::Unexpected::Other("u8 value"),
-                &(expected as &'static str),
+                &"grade in [9, 12]",
             )
         })
     }

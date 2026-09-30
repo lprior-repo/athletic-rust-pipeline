@@ -46,8 +46,16 @@ pub(super) async fn watch_memory_with(
     budget_gib = budget_bytes / (1024 * 1024 * 1024),
     interval = ?super::guard::SAMPLE_INTERVAL
 ))]
-pub(super) async fn watch_memory(budget_bytes: u64, over_budget: Arc<Notify>) {
-    watch_memory_with(resident_bytes, budget_bytes, SAMPLE_INTERVAL, over_budget).await
+pub(super) async fn watch_memory(
+    budget_bytes: u64,
+    over_budget: Arc<Notify>,
+    stopping: Arc<Notify>,
+) {
+    let watching = watch_memory_with(resident_bytes, budget_bytes, SAMPLE_INTERVAL, over_budget);
+    tokio::select! {
+        () = watching => {}
+        () = stopping.notified() => {}
+    }
 }
 
 #[cfg(test)]

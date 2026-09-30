@@ -458,7 +458,6 @@ fn a_performance_the_store_cannot_join_is_still_written() {
         Some(UsJurisdiction::Wisconsin),
         "2026-04-30",
         "Unreported Invitational",
-        None,
     );
     let performance = CanonicalPerformance {
         id: CanonicalPerformance::mint(

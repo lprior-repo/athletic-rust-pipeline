@@ -24,7 +24,6 @@ fn performance(source_key: &str, identity: SourceIdentity) -> CanonicalPerforman
         Some(UsJurisdiction::Wisconsin),
         "2026-05-01",
         "Abbotsford Invite",
-        None,
     );
     let team = CanonicalTeam::mint(
         &school,

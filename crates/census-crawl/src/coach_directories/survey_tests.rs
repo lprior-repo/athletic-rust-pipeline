@@ -494,7 +494,13 @@ async fn a_summary_failure_records_only_the_failure_like_the_prototype() {
     assert_eq!(record.status, "offline", "the first summary is not cached");
     assert!(record.error.is_some());
     assert_eq!(
-        (record.schools, record.with_address, record.pages, record.directory_total, record.sampled),
+        (
+            record.schools,
+            record.with_address,
+            record.pages,
+            record.directory_total,
+            record.sampled
+        ),
         (None, None, None, None, None),
         "a failed association carries only state, ruleset, status and error, as the prototype's except branch writes"
     );
