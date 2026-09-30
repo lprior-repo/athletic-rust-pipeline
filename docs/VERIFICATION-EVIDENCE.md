@@ -41,6 +41,14 @@ Supply chain: `cargo vet regenerate imports` pulled the published google/mozilla
 of the 31 uncovered crates (`cssparser`, `cssparser-macros`, `precomputed-hash`, `unicode-width`). 27
 remain unvetted; no audit or exemption was fabricated, and cargo-vet stays a release blocker.
 
+That review gap carries no known vulnerability. `cargo audit --json` reports 0 vulnerabilities and 0
+warnings over 419 dependencies against the RustSec database fetched 2026-09-29, and `cargo deny check
+advisories` passes with `yanked`, `unmaintained` and `unsound` all set to deny. Of the 27 unvetted
+crates, 23 reach the shipped `census-service` binary at runtime (the `scraper`/`html5ever` parsing
+stack, `parking_lot`, `derive_more` and their kin), `phf_codegen` and `string_cache_codegen` run only
+inside build scripts, and `ra-ap-rustc_lexer` and `unicode-properties` are reachable from `xtask`
+alone.
+
 Worktree rules: this branch's `.gitignore` predates main's artifact ignores, so `target/` (16 GB) was
 untracked and a plain `git add -A` would have written it into the object store. The file now mirrors
 `main`.
