@@ -1,5 +1,7 @@
 use super::*;
 
+mod qualified;
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EventKind {
@@ -131,7 +133,7 @@ impl EventKind {
         if !matches!(direct, EventKind::Unmapped { .. }) {
             return direct;
         }
-        for candidate in Self::qualified_candidates(label) {
+        for candidate in qualified::candidates(label) {
             let kind = Self::direct_label(&candidate);
             if !matches!(kind, EventKind::Unmapped { .. }) {
                 return kind;
@@ -211,74 +213,15 @@ impl EventKind {
             .replace("meter", "m")
     }
 
-    fn qualified_candidates(label: &str) -> Vec<String> {
-        let tokens: Vec<&str> = label.split_whitespace().collect();
-        let cleaned: Vec<String> = tokens
-            .iter()
-            .map(|token| Self::clean_token(token))
-            .collect();
-        let mut keep = vec![true; tokens.len()];
-        for (left, right) in LABEL_PHRASES {
-            for index in 0..tokens.len().saturating_sub(1) {
-                if cleaned[index] == *left && cleaned[index + 1] == *right {
-                    keep[index] = false;
-                    keep[index + 1] = false;
-                }
-            }
-        }
-        for (index, token) in cleaned.iter().enumerate() {
-            if LABEL_QUALIFIERS.contains(&token.as_str()) || Self::division_code(tokens[index]) {
-                keep[index] = false;
-            }
-        }
-        let kept: Vec<&str> = tokens
-            .iter()
-            .zip(&keep)
-            .filter_map(|(token, keep)| keep.then_some(*token))
-            .collect();
-        let mut candidates = Vec::new();
-        if !kept.is_empty() {
-            candidates.push(kept.join(" "));
-        }
-        for width in (1..=kept.len().min(4)).rev() {
-            for start in 0..=kept.len().saturating_sub(width) {
-                if width == kept.len() && start == 0 {
-                    continue;
-                }
-                let window = &kept[start..start + width];
-                let compact_len: usize = window
-                    .iter()
-                    .map(|token| Self::clean_token(token).len())
-                    .sum();
-                if compact_len < 3 {
-                    continue;
-                }
-                let follower_relay = kept
-                    .get(start + width)
-                    .is_some_and(|token| Self::clean_token(token) == "relay");
-                let ends_relay = Self::clean_token(window[width - 1]) == "relay";
-                if follower_relay && !ends_relay {
-                    continue;
-                }
-                candidates.push(window.join(" "));
-            }
-        }
-        candidates
-    }
-
-    fn clean_token(token: &str) -> String {
-        token
-            .chars()
-            .filter(char::is_ascii_alphanumeric)
-            .map(|ch| ch.to_ascii_lowercase())
-            .collect()
-    }
-
     fn division_code(token: &str) -> bool {
         fn code(part: &str) -> bool {
-            let bytes = part.as_bytes();
-            (bytes.len() == 2 && bytes[0].is_ascii_digit() && matches!(bytes[1], b'a'..=b'f'))
-                || (bytes.len() == 2 && bytes[0] == b'd' && bytes[1].is_ascii_digit())
+            match part.as_bytes() {
+                [first, second] => {
+                    (first.is_ascii_digit() && matches!(second, b'a'..=b'f'))
+                        || (*first == b'd' && second.is_ascii_digit())
+                }
+                _ => false,
+            }
         }
         let lower = token.to_ascii_lowercase();
         match lower.split_once('-') {

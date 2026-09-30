@@ -12,6 +12,7 @@ use crate::{Store, StoreError, StoreResult, Table};
 
 impl Store {
     pub fn restore(from: &Path, to: &Path) -> StoreResult<RestoreReport> {
+        validate_source_path(from)?;
         check_restore_destination(from, to)?;
         let manifest = load_manifest(from)?;
         validate_manifest(from, &manifest)?;
@@ -60,8 +61,27 @@ fn check_restore_destination(from: &Path, to: &Path) -> StoreResult<()> {
     }
 }
 
+fn validate_source_path(path: &Path) -> StoreResult<()> {
+    let mut checked = std::path::PathBuf::new();
+    for component in path.components() {
+        checked.push(component.as_os_str());
+        let kind = fs::symlink_metadata(&checked)
+            .map_err(|source| io_err(&checked, source))?
+            .file_type();
+        if kind.is_symlink() {
+            return Err(refused(format!(
+                "backup source {} contains a symbolic link at {}",
+                path.display(),
+                checked.display()
+            )));
+        }
+    }
+    Ok(())
+}
+
 fn load_manifest(from: &Path) -> StoreResult<Manifest> {
     let path = from.join(MANIFEST_PATH);
+    validate_source_path(&path)?;
     let text = fs::read_to_string(&path).map_err(|source| io_err(&path, source))?;
     serde_json::from_str(&text).map_err(|source| StoreError::Json {
         detail: format!("the backup manifest {} is not valid json", path.display()),
@@ -82,6 +102,7 @@ fn validate_manifest(from: &Path, manifest: &Manifest) -> StoreResult<()> {
     for entry in &manifest.files {
         let relative = safe_entry_path(&entry.path)?;
         let source = from.join(relative);
+        validate_source_path(&source)?;
         let kind = fs::symlink_metadata(&source)
             .map_err(|error| match error.kind() {
                 io::ErrorKind::NotFound => {
