@@ -33,6 +33,17 @@ pub(super) fn nonempty(value: &str) -> Option<String> {
     }
 }
 
+pub fn parse_gender(label: &str) -> Option<Gender> {
+    let lowered = label.to_ascii_lowercase();
+    if lowered.contains("girls") || lowered.contains("women") {
+        Some(Gender::Girls)
+    } else if lowered.contains("boys") || lowered.contains("men") {
+        Some(Gender::Boys)
+    } else {
+        None
+    }
+}
+
 pub fn parse_sport(label: &str) -> Option<(Sport, Gender)> {
     let lowered = label.to_ascii_lowercase();
     if lowered.trim().is_empty() {
@@ -47,13 +58,7 @@ pub fn parse_sport(label: &str) -> Option<(Sport, Gender)> {
     } else {
         return None;
     };
-    let gender = if lowered.contains("girls") || lowered.contains("women") {
-        Gender::Girls
-    } else if lowered.contains("boys") || lowered.contains("men") {
-        Gender::Boys
-    } else {
-        Gender::Mixed
-    };
+    let gender = parse_gender(label).unwrap_or(Gender::Mixed);
     Some((sport, gender))
 }
 
