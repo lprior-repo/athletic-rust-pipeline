@@ -47,8 +47,12 @@ untracked and a plain `git add -A` would have written it into the object store. 
 
 Commands: `cargo fmt --check` clean; `cargo test --workspace --all-features --quiet --no-fail-fast`
 → every target ok (195 s); `tools/gate.sh` → `gate: FAIL -> domain purity vet` (490 s). The lane
-verdict for this tree is therefore every lane except domain purity and cargo-vet. Limits: no live host
-lane ran for this entry, and the two red lanes are unrelated to these changes.
+verdict for this tree is therefore every lane except domain purity and cargo-vet. Both reds predate
+these changes: purity fails because `serde_json` is a direct normal dependency of `census-domain` (the
+canonical-JSON digests in `model/serialization_digest.rs` and `model/identity_decision.rs`) while
+`xtask/src/purity.rs` names it among the banned crates, and cargo-vet reports `safe-to-deploy` missing
+for 27 crates, almost all of the `scraper`/`html5ever` parsing stack that `census-crawl` depends on.
+Limits: no live host lane ran for this entry.
 
 ## File-budget splits across the acquisition, service and xtask slices — 2026-09-29
 
