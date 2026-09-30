@@ -3202,6 +3202,21 @@ because its `census-report` dependency carries the P0 recorded above. Owner comm
 `cargo check -p census-service` (expect the P0, and no `arbiter_orgs_report` / `coach_directories_report`
 name errors once it clears) and `cargo test -p census-service the_arms_are_the_dispatched_slugs`.
 
+### Re-review outcome (2026-09-29, against `bcb5e56`)
+
+`BlackHatBranchReview` confirmed all five fold-ins at read level and found no new defect: the re-export
+list resolves both arms' calls (`provider.rs:108-111`), `DISPATCHED` matches
+`TEAMS_ARMS ++ MEETS_ARMS ++ RESULTS_ARMS` on all twelve positions, Appendix C partitions the fifteen
+positive rows into nine reached / five queued / the one accepted gap with every named group checkable,
+the new pin's seeded entry is exactly what `key_for` looks up and fails if the token POST is ever
+helper-routed, and the `tally.coaches` assertion is non-vacuous. Its one recorded note was minor and
+pre-existing: Appendix C quotes `target/port-queue.json`, an untracked worktree artifact, so a fresh
+clone cannot read the cited groups. That is resolved in the Matrix's method paragraph, which now states
+the artifact's generation date and that the groups and verdicts are restated in the Matrix and the
+applicability table. The same pass re-checked the SD paragraph's counts against the prototype captures
+(`SD-bound.jsonl` 560 rows, `SD-school-sites.jsonl` 4) and both match. Both `census-service`
+corrections stay read-level only: the P0 still blocks the compiler.
+
 ## Consolidated historical evidence — imported 2026-09-27
 
 The following facts came from retired handoffs, implementation plans and duplicate operating

@@ -316,6 +316,11 @@ acquisition path. Method: take the 49 jurisdiction rows' *Coach / AD Source?* co
 the positive rows with (a) the slugs registered in `crates/census-crawl/src/registry/table/` and the
 DragonFly tenants at `crates/census-crawl/src/coach_directories/mod.rs` (`REGISTERED`, 15 entries), and
 (b) the PORT-NOW groups in the dispatch queue (`target/port-queue.json`).
+That queue is a worktree artifact generated for the ADR-015 port on 2026-09-29 (`target/port-queue.md`
+and its machine-form sibling `target/port-queue.json`); nothing under `target/` is tracked, so a fresh
+clone cannot read it. The five queued groups are therefore named in full in the table below, and their
+PORT-NOW verdicts are restated in this Matrix's own rows and in
+`crates/census-crawl/src/applicability/table.rs`.
 
 Fifteen rows carry a positive coach/AD route: **IA IL KS KY MI MN ND NE NJ OH OK SD TN UT WI**.
 Nine of those states are reached by a registered Rust slug today, five more are queued as PORT-NOW
