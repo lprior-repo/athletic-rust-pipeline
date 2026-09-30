@@ -145,7 +145,8 @@ impl ScopedTables {
     fn read(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
         let snapshot = store.snapshot();
         let mut schools: Vec<CanonicalSchool> = snapshot.scan(Table::Schools)?;
-        let outside_schools = crate::report::exclude_out_of_scope(&mut schools, |school| school.state.into());
+        let outside_schools =
+            crate::report::exclude_out_of_scope(&mut schools, |school| school.state.into());
         let mut school_state = crate::report::school_state_index(&schools);
         school_state.extend(crate::report::school_state_index(&outside_schools));
         let mut athletes: Vec<CanonicalAthlete> = snapshot.scan(Table::Athletes)?;
@@ -157,7 +158,12 @@ impl ScopedTables {
                 .map_err(census_store::StoreError::from)?;
         }
         let identities = snapshot.project_athlete_identities(index)?;
-        athletes.retain(|a| crate::report::in_run_scope(crate::report::jurisdiction_of(&school_state, a.school.as_str())));
+        athletes.retain(|a| {
+            crate::report::in_run_scope(crate::report::jurisdiction_of(
+                &school_state,
+                a.school.as_str(),
+            ))
+        });
         let mut events: Vec<CanonicalEvent> = snapshot.scan(Table::Events)?;
         let mut performances: Vec<CanonicalPerformance> = snapshot.scan(Table::Performances)?;
         if scope == Scope::Core {

@@ -11,7 +11,7 @@ pub use artifact::{
 };
 pub use entities::row_entities;
 pub use import::import_csv;
-pub use parse::{parse_role, parse_sport};
+pub use parse::{parse_gender, parse_role, parse_sport};
 pub use wire::{CoachContactRow, RowEntities};
 
 #[cfg(test)]

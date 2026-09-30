@@ -2811,6 +2811,82 @@ store write or metrics projection was exercised. The golden samples 18 captured 
 the national lane covers 15 associations, so this is a sample, not a census-scale equivalence proof. Row
 order is not compared (S20); the comparison is on row sets.
 
+## Gate run on the worktree, and exactly which red lanes are not this branch's (2026-09-29)
+
+`tools/gate.sh` in the worktree at the landing tip, exit 1 after 243.9 s. Log kept as
+`/tmp/gate-full.log`; lane verdict lines quoted below are verbatim from it.
+
+```
+--- fmt: PASS
+=== strict clippy (source targets) ===
+  census_domain	clippy::as_conversions	1
+  total diagnostics: 1
+--- deny: PASS
+--- audit: PASS
+--- machete: PASS
+```
+
+Green: `fmt`, `deny`, `audit`, `machete`, and the strict-clippy source-target lane, whose single
+diagnostic is the ratcheted `census_domain` `clippy::as_conversions` — **zero diagnostics in
+`census-crawl`**.
+
+Red, and all eleven from one upstream cause: `zero code comments`, `check`, `doc`, `tests`,
+`production scan`, `domain type integrity`, `domain purity`, `module seams`, `ratchet`,
+`feature powerset`, `bench presence`. Every one of those lanes fails on the same first error, e.g.
+
+```
+error[E0425]: cannot find function `now_utc` in module `census_domain::model`
+  --> crates/census-report/src/export/dataset.rs:28:50
+```
+
+`census-report` was written against the user's uncommitted `census-domain` API (same class as the 54
+errors recorded in the P0 item above: `now_utc`, missing `CanonicalPerformance` fields, no
+`school_names` on `Lookups`). The six `xtask`-driven lanes cannot even build `xtask` while
+`census-report` does not compile, so they inherit that failure rather than detecting anything on this
+branch.
+
+Red, pre-existing and independent of the domain API: `vet` —
+`ERROR × You must run 'cargo vet init' (store not found at .../arh-coach-acquisition/supply-chain)`
+(the worktree has no `supply-chain/` store) — and `geiger` —
+`Failed to match (ignoring source) package: registry+.../#rand@0.10.2` (allowlist drift against the
+vendored tree).
+
+Read this gate as: **no lane reports a defect in `census-crawl`**; the branch's own crate is verified by
+the direct runs recorded in this document (`cargo test -p census-crawl`, `cargo fmt` and
+`cargo clippy -p census-crawl --all-targets`). The gate cannot go green until the P0 domain/report sync lands;
+none of the red lanes above should be read as a regression from slices 1–3.
+
+## Port triage: every prototype acquisition unit has a verdict (2026-09-29)
+
+`census-prototype/parsers/` holds 63 extractor modules (plus the 0-byte `__init__.py`) and the lane has
+14 drivers — 77 units. All 77 carry exactly one verdict in `target/port-queue.json` (digest
+`target/port-queue.md`): **20 PORT-NOW groups covering 34 units**, and **43 excluded** — 29 SUPERSEDED
+by existing Rust slugs (`coach_directories`, `plain_names`, `mshsl`, `ohsaa`, `wiaa`, `ihsa`, `ks`,
+`mpa`, `riil`, `ciac`, …), 5 REFUSED-BY-ROBOTS (AL/MO/VA hosts plus the ArbiterLive platform and the
+Bound directory path), 1 NEEDS-OCR, and 8 OUT-OF-SCOPE drivers. `unresolved` is empty, so no unit was
+dropped by omission; each group carries its measured yield, request cost, capture status and robots
+citation, and the dispatch order is highest measured yield first (rank 1 `arbiter_orgs`, NH/KY/MT/WV,
+2 454 rows). Porting proceeds one group per slice with fixtures and goldens from the prototype's own
+parser, exactly as the CHSAA and DragonFly lanes did.
+
+**Scope boundary, stated so it cannot be mistaken for full coverage:** the queue's 77 units are the 63
+`parsers/` extractors plus 14 named drivers. The prototype root holds roughly forty further non-scratch
+scripts outside those 77 — acquisition drivers (`dc_directory.py`, `de_ad_directory.py`, `sc_knack.py`,
+`tx_uil_chairs.py`, `ok_directory.py`, `school_sites.py`, `site_seeds.py`, `maxpreps_lane.py`,
+`platform_sweep.py`, `milesplit_wide.py`, `mo_schools.py`, `la_lhsaa_ocr.py`, `enrich*.py`, the
+`osm_*`/`pss_*` frames and `ccd_frame.py`) and infrastructure (`run.py`, `coverage.py`, `extract.py`,
+`polite.py`, `sources.py`, `deepen.py`, `lane_cycle.py`, the `scrape_*`/`probe_*` helpers). Giving each
+of those an explicit port-or-supersede verdict is the OTHER-LANE item's deliverable; it is not implied by
+the 77-unit count. Appendix C of `research/sources/applicability-matrix.md` carries the route-level
+cross-check that DC and DE remain covered through the DragonFly tenants regardless.
+
+Related preservation: the main worktree's uncommitted capture set (its 1 896 staged research files plus
+the dirty paths) was snapshotted before the landing and is now also reachable as the local branch
+`research/captures-20260929` — commit `bba998e26c72201cf1653b5aeaa44ef307ee2606`, 3 610 files — in that
+repository, so `git stash clear` cannot lose it. The branch is a plain local ref (no index change, no
+push): the captures stay out of the landed branch and remain retrievable by
+`git checkout research/captures-20260929`.
+
 ## Zero-Python run path: the audit, what remains, and where it lives (2026-09-29)
 
 Claim checked: no census *run path* invokes Python. Search: `python3?|\.py\b` over `xtask/`, `crates/`
@@ -2897,6 +2973,123 @@ WIP", `bba998e2`), and the staged captures (`src/ingress.rs`, `src/milesplit/raw
 `tests/fixtures/coach-directories/*`, `tests/golden/*`, `tests/fixtures/chsaa-test/`) were left staged
 on disk rather than deleted. None of that line was reconciled by hand and this delivery claims none of
 it.
+
+## Arbiter organisation lane: ported, wired and live-smoke verified (2026-09-29)
+
+Slice: the port queue's rank-1 measured cohort, `arbiter_orgs` (NH/KY/MT/WV — 2,932 coach rows across
+the four prototype run records `out/extra/{NH,KY,MT,WV}-arbiter.jsonl`). Code:
+`crates/census-crawl/src/arbiter/` (parse, map, collect, 18 tests, README), the registry descriptor
+`arbiter_orgs` (`StructuredApi`, school-evidence + coach-directory capabilities, 1 rps, origin
+`services.arbitersports.com`), the applicability row for the four states, and the service routing
+(`DISPATCHED`, `TeamsArm::ArbiterOrgs`, `cli provider arbiter_orgs`). Fixtures, prototype goldens and
+their capture hashes: `crates/census-crawl/tests/fixtures/arbiter/PROVENANCE.json`.
+
+| Command | Result |
+|---|---|
+| `cargo test -p census-crawl --lib` | `492 passed; 0 failed` — 18 are `arbiter::tests::*` |
+| gate `LINT_SET`, `clippy -p census-crawl --lib --bins --examples --no-deps` | 0 diagnostics under `crates/census-crawl/src/arbiter/**`; the crate's only diagnostics are the 11 pre-existing `chsaa/parse.rs` ones |
+| throwaway example `arbiter_live_smoke -- /tmp/arbiter-smoke 2 NH`, deleted after the run | `AdapterReport { adapter: "arbiter_orgs", rows: 2, requests: 5, from_cache: 0, errors: 0, unit: "org_schools", notes: ["2 school(s) and 7 coach row(s) over 1 Arbiter organisation(s)"] }`; readback `2 schools, 7 coaches, 2 observations` |
+| throwaway probe of the queue's Oklahoma candidate on the prototype fetcher | org `106940` answers `total=0 rows=0` (sha256 `319c5c9a…`, byte-identical to the captured Canaan empty page), so the queue's `ok_ossaa` note that OK coaches are covered by this lane is refuted; the lane stays at the four registered orgs |
+| `GET /robots.txt` on the lane's three hosts | `token.arbitersports.com` 404, `services.arbitersports.com` 404 (allow-all), `live.arbiter.io` answers its SPA shell with no directives |
+
+**URL and response parity with the captures, proven from that run's own HTTP cache**
+(`/tmp/arbiter-smoke/http/*.meta.json` hold the request URL of each stored body): the Rust layer issued
+`.../organization/public/2132/children?&pageSize=200&pageNumber=1` and
+`.../legacy/public/2132/coaches?filter.EntityId=450&&pageSize=200&pageNumber=1` — byte-identical to the
+prototype's captured URLs, doubled `&&` included — plus `live.arbiter.io/directory/assets/index-Ps5cCaeG.js`
+and `token.arbitersports.com/connect/token`. The bodies are byte-identical to the fixtures as well: the
+fetched children page is 24,511 B / sha256 `6874cd4c…` and the Alvirne coach page 5,145 B / sha256
+`8dffefbf…`, exactly the sha256 values `PROVENANCE.json` records for `nh_children_p1.body` and
+`alvirne_coaches_p1.body`, three days after their capture.
+
+The live run minted the token from the published bundle credentials, read the NHIAA member page and one
+coach page for each of two schools, and wrote canonical schools, source observations, coaches and a
+per-school journal entry: `Bedford High School -NH` (1,367) and `Alvirne High School` (955), with
+Phillip Demers `CrossCountry/Boys/HeadCoach`, Kaitlyn Wilson `CrossCountry/Girls/HeadCoach` and the two
+athletic directors at `sport=None, gender=Mixed`. Requests: one bundle, one token POST, one members
+page, two coach pages.
+
+Fixture parity and the one pinned divergence: the prototype's `parse_schools`/`parse_coaches` output for
+NHIAA is byte-equal to `golden_nh_schools.json` (89) and `golden_nh_contacts.json` (89) after JSON
+decode, and the Alvirne golden (2 rows) matches the Rust rows on person, sport and role. Over the
+org-wide capture the prototype's exact-key sport table returns **0** rows while the Rust lane keeps
+**121** of 137 eligible track rows — 78 indoor, 43 outdoor, 69/29/23 Boys/Girls/Mixed — because the
+shared measured label table maps `Track & Field - Indoor/Outdoor` and reads the side from `levelName`
+when `sportName` has none.
+
+Verification limits, stated so they are not read as exercised: `census-service` does not compile in this
+worktree (`census-report`'s unported domain API, the P0 recorded above), so the CLI arm and the Restate
+teams arm added here are **not compiler-verified** — they mirror `walk_coach_directories` and `ks_report`
+and construct the same `arbiter::Options` literal the live smoke exercised. For the same reason the
+`xtask replay` case for this lane is deferred, and the strict-clippy measurement above was scoped with
+`--no-deps` because the workspace-wide lane aborts on `census-domain`. Two observations for the P0's
+owner: `tools/quality-baseline.json` records `clippy: {}`, so the 11 `chsaa/parse.rs` diagnostics will
+surface as new debt once the workspace compiles again, and `census-report` carries unused-import
+warnings the gate's `-D warnings` will fail on.
+
+### Independent review round, and the six defects it found (2026-09-29)
+
+`ArbiterPortReview2` (read-only; it has no execution surface of its own, so it supplied the scripts and
+this session ran them and pasted the raw stdout back) returned verdicts that support the golden parity
+and provenance claims — all twelve fixture/golden sha256 and byte sizes match `PROVENANCE.json`, the
+prototype's parsers reproduce all four goldens exactly, and no secret or bearer token is present in any
+fixture — and six defects. All six are fixed:
+
+| Defect | Fix |
+|---|---|
+| **major**: the journal was written but never read, so a re-run did not resume | `collect` reads `store.journal_keys(JOURNAL)` once, `process_school` skips a school the journal names before fetching or writing, and the report notes the skip count |
+| minor: the README implied a contact is required before a school is written | README corrected — every named member row is written; the contact only decides whether the director row joins it |
+| minor: the `Associate Head Coach` → `HeadCoach` class (Amy King, one NHIAA row) was documented nowhere | README rule text and a `roles` entry in the `PROVENANCE.json` divergences |
+| minor: the contact-role divergence text was imprecise | it now states the prototype's exact-key drop and its `sport: AthleticDirector` stamp against the Rust `sport: None` |
+| minor: pagination compared the page counter against `total`, which truncates on a short page and on a missing `total` | both walks end on the first page shorter than `pageSize`; a member walk stopped by the 256-page bound records a failure note instead of returning quietly |
+| minor: a members-page failure aborted every remaining organisation with no tally | the members page uses the tolerant fetch/parse path, so the failure is recorded and the remaining states still run; only bundle and token failures stay fatal |
+
+Evidence for the fixes: `cargo test -p census-crawl --lib` → `493 passed; 0 failed`, the new test being
+`a_journaled_school_is_skipped_and_an_unwritten_one_is_written` (it seeds a journal entry for Bedford,
+asserts the skip fetches nothing and writes nothing, then asserts Alvirne is still written from a seeded
+cache with its three coach rows). Strict clippy still reports zero diagnostics under `arbiter/**`. And a
+live re-run of the smoke against the store the first run wrote answered
+`rows: 2, requests: 3, from_cache: 2, errors: 0` with notes
+`["2 school(s) already journaled, skipped", "2 school(s) and 6 coach row(s) over 1 Arbiter organisation(s)"]`
+— the two journaled schools were skipped and the walk continued to the next two, taking the store from 2
+schools / 7 coach rows to 4 / 13.
+
+A second addendum found the short-page trigger itself still too weak: the note fired on
+`page * PAGE_SIZE < total` (the page window) while the contradiction is that the rows actually read,
+`(page - 1) * PAGE_SIZE + rows_on_page`, fall short of the reported total — so a 100-row page with
+`total: 150` ended the walk silently. Both walks now use one rule, `a_page_read_short(page,
+rows_on_page, total)`, and the case is pinned by a new test,
+`a_short_member_page_below_the_reported_total_is_a_recorded_failure`, which seeds a 100-row page
+reporting 150 and asserts one recorded failure, the "stopped short" note, and that the 100 rows read
+are still written. `cargo test -p census-crawl --lib` → `494 passed; 0 failed`; strict clippy still 0
+diagnostics under `arbiter/**`; `fmt --check` clean. On every fixture shape the rule stays
+false-positive-free (89/89, 28, 0/0 and a KY-shaped 489-on-page-3 walk all satisfy
+`(pages-1) * PAGE_SIZE + rows >= total`).
+
+Its earlier addendum had confirmed fixes 1–6 in the worktree and filed two errata against the new text,
+both now closed: the pagination paragraph advertised a 256-page bound where `MAX_PAGES` is 64, and the
+`PROVENANCE.json` `pagination` divergence claimed a short page with a larger total cannot truncate,
+which the code did not yet deliver. The code now records a failure note for a short page whose response
+still reports a larger total, for the member walk and the per-school coach walk alike, so that case is
+visible rather than passing as the end of the list; the two documents state the 64-page bound and the
+note. Re-verified after the change: `cargo test -p census-crawl --lib` → `493 passed; 0 failed`, `fmt
+--check` clean, strict clippy 0 diagnostics under `arbiter/**`.
+
+The reviewer's remaining unverified items were closed live where they were cheap to close. Kentucky is
+the multi-page member walk (three pages), and a throwaway smoke over it — `arbiter_live_smoke
+/tmp/arbiter-ky 1 KY`, deleted after the run — reported `rows: 1, requests: 6, from_cache: 0, errors: 0`
+with the note `1 school(s) and 21 coach row(s) over 1 Arbiter organisation(s)` and read back Adair County
+High School with its observation. The run's cache shows why: member pages 1, 2 and 3 returned 200, 200 and
+89 rows against a reported total of 489, so the complete multi-page walk ended on a short page with
+`(3 - 1) * 200 + 89 = 489` and recorded **no** failure — the false-positive-free property the reviewer
+computed, now exercised end to end. Its one coach page returned 111 of 111 rows, exercising the coach
+walk's short-page completion the same way; the contradicting short-page branch is pinned by the unit test
+above. What stays unverified by execution is only the multi-organisation sweep (the four `--states` in one
+run), the KY/MT/WV coach pages beyond the first school, and the CLI/Restate arms the `census-report` P0
+keeps uncompiled.
+
+Review limits, restated: the reviewer could not execute anything itself (all commands above were run
+here), and its prototype reference is the working-tree `parsers/arbiter.py`, not a VCS-pinned revision.
 
 ## Consolidated historical evidence — imported 2026-09-27
 

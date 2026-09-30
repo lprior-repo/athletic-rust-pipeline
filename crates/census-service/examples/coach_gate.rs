@@ -208,10 +208,7 @@ async fn print_summary(fetcher: &Fetcher, outcomes: &[FragmentOutcome], out_dir:
     let stats = fetcher.stats().await;
     println!(
         "fetch stats: requests={} cache_hits={} errors={} bytes={}",
-        stats.requests,
-        stats.cache_hits,
-        stats.errors,
-        stats.bytes_downloaded
+        stats.requests, stats.cache_hits, stats.errors, stats.bytes_downloaded
     );
     println!(
         "verified fragments: {} files, {} rows, {} shipped -> {}",

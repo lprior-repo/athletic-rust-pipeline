@@ -151,7 +151,7 @@ fn valid_date(date: &str) -> bool {
 }
 
 impl CanonicalPerformance {
-#[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         athlete: &AthleteId,
         team: &TeamId,
@@ -191,7 +191,7 @@ impl CanonicalPerformance {
         }
     }
 
-#[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_checked(
         athlete: &AthleteId,
         event_kind: &EventKind,

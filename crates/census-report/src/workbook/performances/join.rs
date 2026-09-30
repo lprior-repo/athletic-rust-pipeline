@@ -29,7 +29,11 @@ impl Parents {
         }
     }
 
-    pub(super) fn read(store: &census_store::Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
+    pub(super) fn read(
+        store: &census_store::Store,
+        scope: Scope,
+        grad_year: Option<i16>,
+    ) -> ReportResult<Self> {
         let mut athletes: Vec<CanonicalAthlete> = store.scan(census_store::Table::Athletes)?;
         let mut meets: Vec<CanonicalMeet> = store.scan(census_store::Table::Meets)?;
         let mut events: Vec<CanonicalEvent> = store.scan(census_store::Table::Events)?;
@@ -39,11 +43,19 @@ impl Parents {
             crate::report::retain_core(&mut events);
         }
         let mut schools: Vec<CanonicalSchool> = store.scan(census_store::Table::Schools)?;
-        let outside_schools = crate::report::exclude_out_of_scope(&mut schools, |school| school.state.into());
+        let outside_schools =
+            crate::report::exclude_out_of_scope(&mut schools, |school| school.state.into());
         let mut school_state = crate::report::school_state_index(&schools);
         school_state.extend(crate::report::school_state_index(&outside_schools));
-        athletes.retain(|a| crate::report::in_run_scope(crate::report::jurisdiction_of(&school_state, a.school.as_str())));
-        meets.retain(|m| crate::report::in_run_scope(census_domain::JurisdictionBucket::from(m.state)));
+        athletes.retain(|a| {
+            crate::report::in_run_scope(crate::report::jurisdiction_of(
+                &school_state,
+                a.school.as_str(),
+            ))
+        });
+        meets.retain(|m| {
+            crate::report::in_run_scope(census_domain::JurisdictionBucket::from(m.state))
+        });
         if let Some(year) = grad_year {
             athletes.retain(|a| a.grad_year.get() == year);
         }
@@ -126,15 +138,11 @@ impl<'a> Lookups<'a> {
     }
 
     pub(super) fn school_state(&self, id: &str) -> String {
-        self.school(id)
-            .map(|s| s.state.clone())
-            .unwrap_or_default()
+        self.school(id).map(|s| s.state.clone()).unwrap_or_default()
     }
 
     pub(super) fn school_city(&self, id: &str) -> String {
-        self.school(id)
-            .map(|s| s.city.clone())
-            .unwrap_or_default()
+        self.school(id).map(|s| s.city.clone()).unwrap_or_default()
     }
 
     pub(super) fn meet_name(&self, id: &str) -> String {
@@ -156,9 +164,7 @@ impl<'a> Lookups<'a> {
     }
 
     pub(super) fn event_sport(&self, id: &str) -> String {
-        self.event(id)
-            .map(|e| e.sport.clone())
-            .unwrap_or_default()
+        self.event(id).map(|e| e.sport.clone()).unwrap_or_default()
     }
 }
 
@@ -208,10 +214,7 @@ fn index<'a, T>(rows: &'a [T], id: impl Fn(&'a T) -> &'a str) -> HashMap<&'a str
 }
 
 fn observed(performance: &CanonicalPerformance) -> Option<&Evidence> {
-    performance
-        .evidence
-        .iter()
-        .find(|e| e.kind == "observed")
+    performance.evidence.iter().find(|e| e.kind == "observed")
 }
 
 fn normalized_mark(mark: &Mark) -> Option<f64> {

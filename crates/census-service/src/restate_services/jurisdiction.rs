@@ -88,6 +88,7 @@ pub(super) const DISPATCHED: &[&str] = &[
     "milesplit",
     "athleticnet",
     "coach_directories",
+    "arbiter_orgs",
 ];
 
 fn report(

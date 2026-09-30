@@ -398,7 +398,7 @@ pub async fn probe_one(
             Err(error) => return failed(state, ruleset, "json", &error.to_string()),
         };
 
-        staff_count += summary.staff.len();
+        staff_count = staff_count.saturating_add(summary.staff.len());
 
         let emission = match map::coach_entities(
             &summary,
@@ -412,10 +412,10 @@ pub async fn probe_one(
         };
 
         for entity in emission.coaches {
-            coach_count += 1;
+            coach_count = coach_count.saturating_add(1);
             let sport_key = artifact_sport_key(entity.sport);
             let counter = sports.entry(sport_key).or_insert(0);
-            *counter += 1;
+            *counter = counter.saturating_add(1);
         }
     }
 

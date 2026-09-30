@@ -131,10 +131,7 @@ fn compute_shipped(outcomes: &[FragmentOutcome]) -> usize {
 fn print_fetch_stats(stats: &FetchStats) {
     println!(
         "fetch stats: requests={} cache_hits={} errors={} bytes={}",
-        stats.requests,
-        stats.cache_hits,
-        stats.errors,
-        stats.bytes_downloaded
+        stats.requests, stats.cache_hits, stats.errors, stats.bytes_downloaded
     );
 }
 

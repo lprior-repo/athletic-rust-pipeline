@@ -2,7 +2,9 @@ mod results;
 
 use crate::replay::{ensure_rows, unmapped, Capture};
 use anyhow::{bail, Result};
-use census_crawl::{coach_directories, ihsa, ihsa::tournament, ks, mshsl, ohsaa, plain_names, wayzata, wiaa};
+use census_crawl::{
+    coach_directories, ihsa, ihsa::tournament, ks, mshsl, ohsaa, plain_names, wayzata, wiaa,
+};
 use census_domain::model::{normalize_name, CanonicalSchool};
 use census_domain::UsJurisdiction;
 use std::collections::BTreeSet;
@@ -276,7 +278,9 @@ fn coach_directories(capture: &Capture<'_>) -> Result<String> {
             page.results.len(),
         );
         if recorded != parsed {
-            bail!("{file}: the parsed page {parsed:?} disagrees with the fixture record {recorded:?}");
+            bail!(
+                "{file}: the parsed page {parsed:?} disagrees with the fixture record {recorded:?}"
+            );
         }
         return Ok(format!(
             "directory page={} total_pages={} total_results={} schools={}",
@@ -306,7 +310,8 @@ fn coach_directories(capture: &Capture<'_>) -> Result<String> {
                 summary.state_code
             )
         })?;
-        let (_, school_id) = CanonicalSchool::new(state, &summary.name, normalize_name(&summary.name));
+        let (_, school_id) =
+            CanonicalSchool::new(state, &summary.name, normalize_name(&summary.name));
         let mapped = coach_directories::coach_entities(
             &summary,
             &school_id,

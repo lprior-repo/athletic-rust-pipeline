@@ -157,3 +157,30 @@ rather than trusting its caller:
   `from_cache` field: re-running the survey over a warm cache replays retained
   bodies as if they were measured, so a fresh qualification number needs
   `--offline`-free replay over a cleared cache directory.
+
+## Resource discipline (holzman-rust pass, 2026-09-29)
+
+Audited over the lane's non-test source; the invariants hold today and any change that breaks one is
+a defect, not a style preference.
+
+* **No panic paths.** No `unwrap`, `expect`, `panic!`, `unreachable!`, `todo!` or `unimplemented!`
+  outside tests. Fallible outcomes are returned as `CrawlError`/`ProbeRecord::status`; the probe's
+  three counters (`staff_count`, `coach_count`, and each sport counter) accumulate with
+  `saturating_add`, as the crate's other lanes do.
+* **Checked arithmetic.** `round_half_even` returns `0.0` for a zero denominator, multiplies the
+  numerator by the scale with `saturating_mul`, divides and takes the remainder with
+  `checked_div`/`checked_rem`, converts to `f64` through `i32::try_from(..).map_or(f64::MAX, ..)`, and
+  is only ever called with the literal scale `10`; there are no `as` casts and no slice indexing in
+  the lane's production paths.
+* **Static bounds.** The probe samples `step_by(len / 4).take(4)` — at most four schools per
+  association — and `survey` walks the association table once (≤ 51 entries) with one sequential
+  fetch at a time. Directory paging is bounded by both the payload's `totalPages` and
+  `MAX_DIRECTORY_PAGES` (64), so a hostile or mistaken total cannot lengthen the walk.
+* **Allocation budget.** Per association the probe holds exactly one `ProbeRecord`: a state/ruleset/
+  status triple, optional scalars, and one sports `IndexMap` whose key set is bounded by the sport
+  taxonomy (`CrossCountry`, `Track`, `AthleticDirector`). Each sampled school's parsed directory row,
+  summary and coach emission are dropped before the next school is fetched, so peak live memory
+  during a probe is one school payload plus the record vector; the report serialises that vector once
+  into one `Vec<u8>`. Nothing on this path grows with the size of a state: the probe deliberately
+  reads four schools, not four hundred, and `collect` — which does grow with the association — is the
+  lane that journals per school.

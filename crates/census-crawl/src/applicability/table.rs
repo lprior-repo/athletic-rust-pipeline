@@ -1,7 +1,26 @@
 use super::Applicability;
 use census_domain::UsJurisdiction;
 
-pub(super) const TABLE: [Applicability; 19] = [
+pub(super) const TABLE: [Applicability; 20] = [
+    Applicability {
+        slug: "arbiter_orgs",
+        jurisdictions: &[
+            UsJurisdiction::Kentucky,
+            UsJurisdiction::Montana,
+            UsJurisdiction::NewHampshire,
+            UsJurisdiction::WestVirginia,
+        ],
+        evidence: "Associations that delegate their member directory to Arbiter embed `live.arbiter.io/org/<id>`; the \
+                   gateway answers `401` without a Bearer token that the public bundle's own client credentials mint \
+                   (`client_credentials`, scope `Registration`). Crawled with the token: NHIAA org 2132 89 schools + \
+                   273 coach rows (`out/extra/NH-arbiter.jsonl`), KY org 2507 489 + 1,603 (KY-arbiter.jsonl), MT org \
+                   4497 215 + 662 (MT-arbiter.jsonl), WV org 4223 269 + 394 (WV-arbiter.jsonl) - 2,932 coach rows in \
+                   the four records, and the endpoint table is `notes/arbiter.md`.",
+        refusal: "The four organisations are the association-delegated directories this lane registers; the queue's \
+                  other candidate, OK org 106940, answers an empty `children` page (re-checked 2026-09-29), so OK is \
+                  not planned. Association-hosted Arbiter sites such as `ossaa.arbitersports.com` refuse every user \
+                  agent and stay unused; the API hosts themselves answer `404` for `robots.txt`, i.e. allow-all.",
+    },
     Applicability {
         slug: "athleticlive",
         jurisdictions: &[

@@ -47,6 +47,7 @@ pub enum CrawlError {
 pub type CrawlResult<T> = std::result::Result<T, CrawlError>;
 
 pub mod applicability;
+pub mod arbiter;
 pub mod athlete_observations;
 pub mod athleticlive;
 pub mod athleticlive_athletes;

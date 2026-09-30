@@ -1,0 +1,152 @@
+{
+  "source": "arbiter_orgs",
+  "queue_entry": "target/port-queue.json slug arbiter_orgs: PORT-NOW for NH, KY, MT, WV; hosts live.arbiter.io + services.arbitersports.com + token.arbitersports.com; python_files parsers/arbiter.py + arbiter_crawl.py",
+  "endpoint_table": "census-prototype/notes/arbiter.md (authoritative for orgs, endpoints and captures)",
+  "captured": "2026-09-27 census-prototype raw cache, NHIAA org 2132 (children page and per-school coach pages); org-wide coach pages 2-13 captured 2026-09-29 through the prototype's polite.Fetcher with a freshly minted client_credentials token",
+  "credential_posture": "the client_id/client_secret live in Arbiter's public SPA bundle and the minted bearer token is never written to a fixture; both are redacted in the derived fixtures and remain only in the prototype raw cache",
+  "fixtures": [
+    {
+      "fixture": "nh_children_p1.body",
+      "kind": "capture",
+      "source_capture": "services.arbitersports.com__dab5e82068ea00344dafa510",
+      "url": "https://services.arbitersports.com/api/v2/organization/public/2132/children?&pageSize=200&pageNumber=1",
+      "sha256": "6874cd4c4cce8dae8def553bd5b5d4f41144e20cd7a6e02d2d2ce70a1c290079",
+      "bytes": 24511,
+      "note": "NHIAA (org 2132) first schools page; 89 rows; prototype run record out/extra/NH-arbiter.jsonl"
+    },
+    {
+      "fixture": "alvirne_coaches_p1.body",
+      "kind": "capture",
+      "source_capture": "services.arbitersports.com__3195a42d5eb33e555f9bbd33",
+      "url": "https://services.arbitersports.com/api/v2/legacy/public/2132/coaches?filter.EntityId=450&pageSize=200&pageNumber=1",
+      "sha256": "8dffefbfabe6be9880a877c9921ae63056a9092c8e2cd29012214f23898b277e",
+      "bytes": 5145,
+      "note": "Alvirne High School (publicId 450) coach page: 28 raw rows, 2 surviving the XC/TF filters"
+    },
+    {
+      "fixture": "coaches_empty.body",
+      "kind": "capture",
+      "source_capture": "services.arbitersports.com__dce336991e7e18241132ae21",
+      "url": "https://services.arbitersports.com/api/v2/legacy/public/2132/coaches?filter.EntityId=3116&pageSize=200&pageNumber=1",
+      "sha256": "319c5c9a2fdc9509426db217b738abca9b0968c3543dfcb5782c6ad9f3107aa7",
+      "bytes": 132,
+      "note": "Canaan High School (publicId 3116): an empty coach page exactly as served (total 0)"
+    },
+    {
+      "fixture": "nh_all_coaches_p11.body",
+      "kind": "capture",
+      "source_capture": "services.arbitersports.com__19d59db6c561a72f2002d17c",
+      "url": "https://services.arbitersports.com/api/v2/legacy/public/2132/coaches?pageSize=200&pageNumber=11",
+      "sha256": "0be5e5979a207240526934c70e241ec0ead151461f77af2d58ca69747ef5e089",
+      "bytes": 38874,
+      "note": "org-wide NHIAA coach page (no school filter): 200 rows, 78 'Track & Field - Indoor' + 59 'Track & Field - Outdoor' + 63 Tennis; captured 2026-09-29 because the 2026-09-27 fall snapshot's per-school pages carried no track rows yet"
+    },
+    {
+      "fixture": "bundle_credentials.derived.js",
+      "kind": "derived-redacted",
+      "source_capture": "live.arbiter.io__28ba87955c2f14dce27dfc39",
+      "url": "https://live.arbiter.io/directory/assets/index-Ps5cCaeG.js",
+      "sha256": "d98a320451bf33a9c631be047a67eafae40e9267ac7652bba8a24584f7e34f1d",
+      "bytes": 199,
+      "note": "public SPA bundle slice around the credential literal; client_id/client_secret values redacted (originals remain in the prototype raw cache; the values are published in the live asset)"
+    },
+    {
+      "fixture": "token_response.derived.json",
+      "kind": "derived-redacted",
+      "source_capture": "token.arbitersports.com__1dab8c1547cec68628c8aeea",
+      "url": "https://token.arbitersports.com/connect/token",
+      "sha256": "1034a017456a1c4c237dd3639457dfa12c675641eef6942bc40e32151f67e8e7",
+      "bytes": 111,
+      "note": "client_credentials response shape; the bearer token value is redacted"
+    },
+    {
+      "fixture": "not_json.body",
+      "kind": "synthetic",
+      "source_capture": "",
+      "url": "",
+      "sha256": "296a54a23d7720600e804fb2bf316fdf9c8034b2e8caff30eb7f107b90ea3832",
+      "bytes": 55,
+      "note": "no non-JSON body was captured from this host; pins the typed-error path"
+    }
+  ],
+  "goldens": [
+    {
+      "file": "golden_nh_schools.json",
+      "rows": 89,
+      "sha256": "13f20ebec852db429675a59469d111c6f4acc4395d353fd509359a977ba343bb",
+      "bytes": 16084,
+      "note": "parse_schools(fixture,'NH')['schools']"
+    },
+    {
+      "file": "golden_nh_contacts.json",
+      "rows": 89,
+      "sha256": "4848915d40d8d8218f6af2db2036d161a14ce14a9298021033a89f6807c44787",
+      "bytes": 14567,
+      "note": "parse_schools(fixture,'NH')['coaches'] (primary contacts)"
+    },
+    {
+      "file": "golden_alvirne_coaches.json",
+      "rows": 2,
+      "sha256": "86416419d4b582a99218ac3cddca535e9f0ceb976715a2ca4127b57a56655a1f",
+      "bytes": 418,
+      "note": "parse_coaches(fixture,'NH',school='Alvirne High School')['coaches']"
+    },
+    {
+      "file": "golden_nh_all_coaches_p11.json",
+      "rows": 0,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3,
+      "note": "parse_coaches(fixture,'NH')['coaches'] over the org-wide page 11"
+    },
+    {
+      "file": "golden_coaches_empty.json",
+      "rows": 0,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "bytes": 3,
+      "note": "parse_coaches(fixture,'NH',school='Canaan High School')['coaches']"
+    }
+  ],
+  "prototype_run_records": [
+    {
+      "record": "census-prototype/out/extra/NH-arbiter.jsonl",
+      "checked": "golden_nh_schools.json == record['schools'] (89) and golden_nh_contacts.json == record['coaches'] (89)",
+      "result": "byte-equal after JSON decode"
+    },
+    {
+      "record": "census-prototype/out/extra/NH-arbiter.jsonl (Alvirne High School join)",
+      "checked": "golden_alvirne_coaches.json == record['coaches'] (2 rows: Phillip Demers, Kaitlyn Wilson)",
+      "result": "byte-equal after JSON decode"
+    }
+  ],
+  "golden_commands": [
+    "cd census-prototype && python3 -c \"import sys; sys.path.insert(0,'.'); from parsers import arbiter; import json; b=open('../arh-coach-acquisition/crates/census-crawl/tests/fixtures/arbiter/nh_children_p1.body','rb').read(); print(json.dumps(arbiter.parse_schools(b,'NH'),indent=2))\"",
+    "see docs/VERIFICATION-EVIDENCE.md for the dated run"
+  ],
+  "divergences": [
+    {
+      "area": "track variants",
+      "prototype": "SPORTS is an exact-key table, so Arbiter's real strings 'Track & Field - Indoor' and 'Track & Field - Outdoor' map to nothing and the rows are dropped (golden_nh_all_coaches_p11.json is empty over 137 track rows)",
+      "rust": "substring rules map indoor to Sport::IndoorTrack and outdoor to Sport::OutdoorTrack (121 rows kept of 137 eligible)"
+    },
+    {
+      "area": "gender",
+      "prototype": "reads the side only from a ', Boys/Girls/Coed' suffix on sportName; NHIAA rows carry it in levelName, so the golden gender is empty",
+      "rust": "falls back to the levelName side label (Boys/Girls/Coed), else Gender::Mixed"
+    },
+    {
+      "area": "roles",
+      "prototype": "ROLES is an exact-key map, so `Associate Head Coach` (Amy King, Track & Field - Indoor / Coed Varsity) is dropped",
+      "rust": "the shared role table matches substrings, so the row is kept as HeadCoach and counts among the 78 indoor rows"
+    },
+    {
+      "area": "pagination",
+      "prototype": "stops when the page counter times PAGE_SIZE reaches the reported total (`len(pages) * PAGE_SIZE >= total`)",
+      "rust": "stops on the first page shorter than PAGE_SIZE, so a full page with a missing total keeps the walk going; a short page whose received rows still fall short of the reported total, or a member walk stopped by the 64-page bound, is recorded as a failure note instead of passing as the end of the list; the same rule applies to the per-school coach walk"
+    },
+    {
+      "area": "primary contact",
+      "prototype": "emits a contact row only when its roleName hits the exact ROLES key, and stamps `sport: AthleticDirector` on it",
+      "rust": "maps the contact's roleName through the shared table and mints sport None, gender Mixed (all 89 NHIAA contacts are `Athletic Director`, so the fixtures agree on the rows that exist); a non-coach roleName is dropped by both sides"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "school": "Alvirne High School",
+    "person": "Phillip Demers",
+    "sport": "CrossCountry",
+    "role": "HeadCoach",
+    "gender": "",
+    "level": "Varsity",
+    "level_name": "Boys Varsity"
+  },
+  {
+    "school": "Alvirne High School",
+    "person": "Kaitlyn Wilson",
+    "sport": "CrossCountry",
+    "role": "HeadCoach",
+    "gender": "",
+    "level": "Varsity",
+    "level_name": "Girls Varsity"
+  }
+]

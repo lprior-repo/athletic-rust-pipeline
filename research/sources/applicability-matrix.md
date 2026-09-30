@@ -308,3 +308,56 @@ Observed as link targets or named in research but never independently verified, 
 | Brewer Timing | | | | | X | | X | | | | | | | | | | 2 |
 | IHSA | | | | | | | | | | X | | | | | | | 1 |
 | SDHSAA | | | | | | | | | | | X | | | | | | 1 |
+
+## Appendix C — Rust-coverage cross-check (2026-09-29)
+
+Purpose: confirm the Matrix above does not name a jurisdiction whose coach/AD route has no Rust
+acquisition path. Method: take the 49 jurisdiction rows' *Coach / AD Source?* column, then intersect
+the positive rows with (a) the slugs registered in `crates/census-crawl/src/registry/table/` and the
+DragonFly tenants at `crates/census-crawl/src/coach_directories/mod.rs` (`REGISTERED`, 15 entries), and
+(b) the PORT-NOW groups in the dispatch queue (`target/port-queue.json`).
+
+Fifteen rows carry a positive coach/AD route: **IA IL KS KY MI MN ND NE NJ OH OK SD TN UT WI**.
+Fourteen of them are reached:
+
+| Route state | Rust path |
+|---|---|
+| IL | slug `ihsa` (API per-school coach/AD + email) |
+| KS | slug `ks` (KSHSAA AD name + email) |
+| MN | slug `mshsl` (6,596 coach rows in the prototype lane) |
+| OH | slug `ohsaa` (myOHSAA) |
+| WI | slug `wiaa` (`GetDirectorySchool`) |
+| ND, NE | slug `plain_names` (NDHSAA / NSAA member directories) |
+| TN | slug `coach_directories`, TSSAA tenant |
+| IA, KY, MI, NJ, OK, UT | PORT-NOW groups `ia_iahsaa`, `ky_khsaa` + `arbiter_orgs`, `mi_mhsaa` + `mi_mitca`, `nj_njsiaa`, `ok_ossaa`, `ut_uhsaa` |
+| NH, MT, WV (route marked N here, Arbiter org exists) | PORT-NOW `arbiter_orgs` |
+
+**The one uncovered row is SD, and it is an accepted gap for this wave.** The chain is now closed
+with on-disk evidence: SDHSAA publishes no directory of its own — `https://sdhsaa.com/schools` answers
+404, and the association homepage links its Member Directory to
+`https://www.gobound.com/sd/associations/sdhsaa/schools`, i.e. to the same Bound instance
+(`notes/sd-sdhsaa.md`, "Entry dropped (Main, 2026-09-27)") — and `gobound.com` refuses the directory
+path, its cached robots body being a 118-byte 403 page
+(`coach-directories-national/SOURCE_REPORT.md`). That is why the queue carries `bound_staff.py`,
+`bound_crawl.py` and `bound_match.py` as REFUSED-BY-ROBOTS, and nothing is scheduled that would
+reopen it. The two remaining candidate routes were measured and rejected: the per-school-website lane
+produced **4** SD rows (`census-prototype/out/extra/SD-school-sites.jsonl`) and is OUT-OF-SCOPE in the
+queue besides, and the Bound lane's 560 SD rows (`out/extra/SD-bound.jsonl`) are preserved historical
+captures — per ARCHITECTURE they are evidence of what was once reachable, not a fresh-run acceptance
+path. SD's school universe, grade evidence and results stay covered by the Athletic.net / MileSplit /
+SDHSAA-PDF lanes this Matrix marks Y, so the gap is coach-and-AD contacts only, not enumerability, and
+closing it needs either a robots-permitted SD school list to appear or a licensed/partner route.
+
+Delaware and DC are **not** gaps despite their association-site parsers being refused or absent:
+`parsers/de_diaa.py` is REFUSED-BY-ROBOTS on `diaa.org`, and no `parsers/dc_*.py` exists at all — the
+DCSAA route is the prototype root driver `dc_directory.py`, which is outside the queue's 77 units. Both
+jurisdictions are registered DragonFly tenants (`coach_directories/mod.rs` `REGISTERED`: Delaware,
+DistrictOfColumbia), so their member directories and staff are reachable through
+`maxinfosite-api-live.dragonflyathletics.com` in the already-implemented Rust lane. The cross-check is
+therefore on the route, not on any single Python unit.
+
+Standing caveat for the whole table: the queue's first unresolved question is unproven — that the
+DragonFly `/schools/{short}/summary` route publishes the same TF/XC staff the superseded association
+parsers yielded (e.g. `ga_ghsa` 3,381 coach rows). Until a fixture proves it per state, "covered" here
+means *an owned acquisition path exists*, not *staff parity is verified*.
+

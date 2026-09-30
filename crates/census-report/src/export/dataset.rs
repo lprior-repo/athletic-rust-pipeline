@@ -5,8 +5,10 @@ use census_domain::model::{
 use census_store::{Store, StoreResult, Table};
 use std::collections::BTreeMap;
 
-use crate::report::{exclude_out_of_scope, in_run_scope, jurisdiction_of, retain_core, ReportResult};
 use crate::report::Scope;
+use crate::report::{
+    exclude_out_of_scope, in_run_scope, jurisdiction_of, retain_core, ReportResult,
+};
 
 #[derive(Debug)]
 pub struct ExportDataset {
@@ -48,12 +50,11 @@ impl ExportDataset {
             athletes.retain(|a| a.grad_year.get() == year);
         }
 
-        let schools = schools
-            .into_iter()
-            .map(|s| (s.id.clone(), s))
-            .collect();
+        let schools = schools.into_iter().map(|s| (s.id.clone(), s)).collect();
 
-        let teams: BTreeMap<String, CanonicalTeam> = snapshot.scan(Table::Teams)?.into_iter()
+        let teams: BTreeMap<String, CanonicalTeam> = snapshot
+            .scan(Table::Teams)?
+            .into_iter()
             .map(|t| (t.id.clone(), t))
             .collect();
 
