@@ -136,7 +136,7 @@ fn oversized_evidence_envelopes_are_refused_on_write_and_read() {
             claim
         })
         .collect();
-    let proof = census_domain::model::compute_contact_proof(&row, &oversized).unwrap();
+    let proof = census_store::compute_contact_proof(&row, &oversized).unwrap();
     let path = dir.path().join("oversized");
     assert!(matches!(
         stage_verified_contacts(&path, [(&row, oversized.as_slice())]),

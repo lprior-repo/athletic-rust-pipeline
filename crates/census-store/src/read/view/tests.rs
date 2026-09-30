@@ -53,7 +53,7 @@ fn identity_projection_uses_the_captured_subject_generation() -> TestResult {
     assert_eq!(old.status(first.id.as_str())?, IdentityStatus::Unverified);
     assert!(matches!(
         old.status(second.id.as_str()),
-        Err(census_domain::model::IdentityError::UnknownSubject(id)) if id == second.id.as_str()
+        Err(crate::IdentityError::UnknownSubject(id)) if id == second.id.as_str()
     ));
     let current = store.athlete_identity_projection()?;
     assert_eq!(

@@ -85,11 +85,11 @@ fn cases() -> Vec<(&'static str, Vec<CanonicalAthlete>)> {
 }
 
 fn family_of(rows: &[CanonicalAthlete]) -> Family {
-    let mut index = census_domain::model::AthleteIdentityIndex::default();
+    let mut index = census_store::AthleteIdentityIndex::default();
     for row in rows {
         index.observe(row).unwrap();
     }
-    let identities = census_domain::model::IdentityProjectionBuilder::new(index, &[], &[])
+    let identities = census_store::IdentityProjectionBuilder::new(index, &[], &[])
         .unwrap()
         .finish()
         .unwrap();

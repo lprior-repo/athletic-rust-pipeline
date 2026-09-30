@@ -1,4 +1,5 @@
-use super::{AthleteCandidateId, IdentityError};
+use crate::identity::IdentityError;
+use census_domain::model::AthleteCandidateId;
 use std::collections::BTreeMap;
 
 #[derive(Default)]

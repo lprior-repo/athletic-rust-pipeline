@@ -5,7 +5,8 @@ use super::{
     MANIFEST_FORMAT_VERSION, MAX_CSV_BYTES, MAX_JSONL_BYTES, MAX_MANIFEST_BYTES, MAX_ROWS,
     VERIFIED_CONTACT_HEADER_COUNT,
 };
-use census_domain::model::{compute_contact_proof, ContactClaimEvidence, RawContactRow};
+use census_domain::model::{ContactClaimEvidence, RawContactRow};
+use census_store::compute_contact_proof;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};

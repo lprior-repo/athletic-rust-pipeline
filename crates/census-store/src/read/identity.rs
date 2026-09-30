@@ -1,7 +1,9 @@
-use crate::{Store, StoreError, StoreResult, StoreSnapshot, Table};
+use crate::{
+    AthleteIdentityIndex, AthleteIdentityProjection, IdentityProjectionBuilder, Store, StoreError,
+    StoreResult, StoreSnapshot, Table,
+};
 use census_domain::model::{
-    AppliedAthleteIdentity as AppliedIdentity, AthleteIdentityIndex, AthleteIdentityProjection,
-    CanonicalAthlete, IdentityProjectionBuilder, ReviewCase, ReviewVerdictRecord,
+    AppliedAthleteIdentity as AppliedIdentity, CanonicalAthlete, ReviewCase, ReviewVerdictRecord,
 };
 
 impl Store {

@@ -1,4 +1,5 @@
-use super::{ContactClaimEvidence, ContactProofError, ContactProofField, RawContactRow};
+use super::ContactProofError;
+use census_domain::model::{ContactClaimEvidence, ContactProofField, RawContactRow};
 use chrono::{DateTime, NaiveDate, Utc};
 
 pub(super) fn validate_claimed_digest(digest: &str) -> Result<(), ContactProofError> {

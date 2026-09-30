@@ -3,6 +3,7 @@ mod evidence;
 mod fetch;
 mod output;
 mod report;
+mod spans;
 mod verdict;
 
 pub use fetch::{body_text, GateOptions};

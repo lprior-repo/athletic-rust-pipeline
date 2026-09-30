@@ -1,4 +1,17 @@
-use census_domain::model::{AcceptedAthleteIdentity, AppliedAthleteIdentity};
+mod aliases;
+mod application;
+mod digests;
+mod index;
+mod projection;
+mod validation;
+
+pub use application::{AcceptedAthleteIdentity, IdentityApplication};
+pub use index::{AthleteIdentityIndex, IdentityError};
+pub use projection::{AthleteIdentityProjection, IdentityProjectionBuilder};
+
+pub(crate) use digests::{athlete_identity_digest, identity_verdict_digest};
+
+use census_domain::model::AppliedAthleteIdentity;
 use fjall::PersistMode;
 use std::collections::HashSet;
 

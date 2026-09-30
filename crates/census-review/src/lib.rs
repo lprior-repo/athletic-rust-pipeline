@@ -106,7 +106,7 @@ pub(crate) fn compute_digest(
     verdicts: &[census_domain::model::ReviewVerdictRecord],
     cases: &[census_domain::model::ReviewCase],
 ) -> StoreResult<String> {
-    census_domain::model::serialized_digest(&(verdicts, cases)).map_err(|source| {
+    census_store::serialized_digest(&(verdicts, cases)).map_err(|source| {
         census_store::StoreError::Json {
             detail: "cannot hash review checkpoint".to_owned(),
             source,

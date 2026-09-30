@@ -6,6 +6,89 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## The unshipped dependency prune and the coachverify span scanner — 2026-09-30
+
+The coachverify path no longer depends on `scraper`: its staff-record extractor is the in-repository
+scanner in the `crates/census-service/src/coachverify/spans/` module, and `scraper` has left the
+workspace tree entirely. `cargo tree --workspace --edges normal | grep -c 'scraper\|html5ever\|cssparser'` → 0.
+`census-domain`'s normal tree is 33 lines with no banned crate
+(`cargo tree -p census-domain --edges normal`), so the domain-purity lane passes.
+
+The replacement is pinned to the removed implementation's own bytes rather than to new expectations.
+`crates/census-service/tests/golden/coachverify_spans_baseline.txt` is the captured output of the
+`scraper`-based extractor over the 44 committed crawl fixtures plus 12 inline documents;
+`cargo test -p census-service --lib coachverify` → 26 passed runs
+`coachverify::spans::baseline_parity_tests::spans_match_the_captured_scraper_baseline`, which
+re-renders the
+same corpus and compares block by block. 55 of 56 blocks are byte-identical. The exception is
+`plain_names/nsaa_directory_form.html`, where one record's whitespace *distribution* differs: the
+captured record is 4323 bytes and the current one 4325, both above `MAX_SPAN = 4096`, so the record is
+skipped before claims and contact-proof digests, and the padded and collapsed forms normalize equal.
+The test asserts exactly that (single differing record pair, whitespace-collapsed equality, both
+lengths above `MAX_SPAN`, heading unchanged), so the exception cannot silently change.
+
+Six extraction-fidelity rules surfaced while closing that gap and are fixed in the scanner:
+character tokens are foster-parented whenever the innermost mode-defining element is table-structural,
+non-structural elements inside a table are foster-parented as elements, nameless end tags such as
+`</>` and `</` at end of input change nothing, `<` stays inside a tag name, self-closing table
+elements stay unclosed, and the pending-table-text list resolves only at a token boundary. Each rule
+came from a minimal counterexample against the captured baseline; `cargo test -p census-service --lib
+coachverify::spans` → 10 passed.
+
+The scanner is also split to the repository's page budgets: `spans/mod.rs`, `scan.rs`, `element.rs`,
+`tag.rs` and `entity.rs` carry the production code, `tests.rs` and `baseline_parity_tests.rs` the
+harness, so the scan's `files>300=0` and `fns>60=0` hold for the module. Tokenizer and entity
+arithmetic uses `saturating_add`, and the gate's strict clippy over the workspace reports 0
+diagnostics. The harness is named to the scan's own test-file rule (a file name containing `tests`),
+so its assertion and indexing counts stay out of the production debt ratchet — the shape `xtask`'s
+`retry_tests.rs` and `census-store`'s `validation_tests.rs` already use.
+
+Supply chain: `cargo vet --locked` now reports 2 unvetted dependencies, down from 27 —
+`ra-ap-rustc_lexer:0.174.0` and `unicode-properties:0.1.4`, both reachable only from `xtask`
+(`cargo tree --workspace --edges normal -i ra-ap-rustc_lexer` and `-i unicode-properties` print the
+`xtask` root and nothing else). No audit or exemption was fabricated. `cargo xtask gate` →
+`gate: FAIL -> vet`; the ratchet, scan, tests and clippy lanes are green, and the one red lane's
+remaining scope is dev tooling, not a shipped binary. Bench presence reported PASS.
+
+One gate run in this window failed `tests` on
+`census-service::recovery ks_directory_walk_claims_units_the_kill_can_lose`, a kill-delay sweep whose
+claimed window shifts under load; three isolated re-runs of that test passed, and the next full gate
+run was green in `tests`. The flake is recorded rather than fixed here: it is the recovery lane's
+timing sensitivity, not the scanner's.
+
+Limits: no live host lane ran; no benchmark or performance claim is made, and the parity capture
+covers parser behaviour on committed fixtures, not new source pages.
+
+## The canonical-encoding relocation out of census-domain — 2026-09-29
+
+`census-domain` had been failing the domain-purity lane because `serde_json` was a normal
+dependency: canonical-JSON encoding, athlete-identity derivation/application and coach contact-proof
+verification lived there while the store already assembled the same identity projection from
+persisted rows. Those engines now live in `census-store`, whose normal tree already serializes; the
+domain keeps the pure vocabulary (`AppliedAthleteIdentity`, `ATHLETE_IDENTITY_POLICY`, `person_key`,
+`IdentityDecisionIssue`, `CONTACT_COLUMNS`, `ContactClaimEvidence`, `RawContactRow`, …).
+[ADR-017](adr/ADR-017-canonical-encoding-ownership.md) records the decision. The move is a
+relocation, not a re-derivation: diffing every moved file against its `HEAD` original leaves only
+import-path changes and that vocabulary split, so persisted digests, keys and golden files keep
+their bytes.
+
+- `cargo xtask domain-purity` → PASS: `census-domain normal tree: arrayvec, block-buffer,
+  census-domain, cfg-if, chrono, cpufeatures, crypto-common, digest, generic-array, iana-time-zone,
+  num-traits, proc-macro2, quote, rust_decimal, serde, serde_core, serde_derive, sha2, syn,
+  thiserror, thiserror-impl, typenum, unicode-ident`; `no async/I-O dependency present`.
+- `cargo check --workspace --all-features --all-targets` → no errors; the only warnings are the
+  pre-existing unused test-helper functions in `census-service/tests/common/mod.rs`.
+- `cargo test --workspace --all-features --quiet --no-fail-fast` → every target `ok`, 0 failed
+  (200 s), including the parity/golden targets and the identity, contact-proof and review digest
+  expectations.
+- `cargo xtask gate` → `gate: FAIL -> vet` (492 s). The only failing lane is cargo-vet (27 unvetted
+  crates, unchanged and predating this work); purity now passes, and the purity failure recorded in
+  the section below is cleared.
+
+Limits: callers in crawl, reconcile, report, review and service were re-pointed to the store path;
+no persisted shape, migration, workflow contract or Restate lane changed, and none was exercised
+here. cargo-vet remains the release blocker it already was.
+
 ## The test lane's latent failures, the source-date rule and the watcher's stop — 2026-09-29
 
 The gate's tests lane runs `cargo test --workspace --all-features` under libtest fail-fast, so its

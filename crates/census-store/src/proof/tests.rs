@@ -1,8 +1,6 @@
 use super::validation::validate_claimed_digest;
-use super::{
-    compute_contact_proof, verify_contact_proof, ContactClaimEvidence, ContactProofError,
-    ContactProofField, RawContactRow,
-};
+use super::{compute_contact_proof, verify_contact_proof, ContactProofError};
+use census_domain::model::{ContactClaimEvidence, ContactProofField, RawContactRow};
 
 pub(crate) fn make_valid_coach_row() -> RawContactRow {
     RawContactRow {

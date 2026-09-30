@@ -1,12 +1,10 @@
-use super::identity_decision::person_key;
-use super::{
-    athlete_identity_digest, AthleteCandidateId, AthleteIndexId, CanonicalAthlete, CaseEvidence,
-    EvidenceMethod, Gender, GradYear, IdentityMember, IdentityStatus, ATHLETE_IDENTITY_POLICY,
+use crate::identity::athlete_identity_digest;
+use census_domain::model::{
+    person_key, AthleteCandidateId, AthleteIndexId, CanonicalAthlete, CaseEvidence, EvidenceMethod,
+    Gender, GradYear, IdentityMember, IdentityStatus, PersonKey, ATHLETE_IDENTITY_POLICY,
     MEMBER_SET_LABEL,
 };
 use std::collections::{BTreeMap, BTreeSet};
-
-type PersonKey = (&'static str, u64);
 
 #[derive(Debug, thiserror::Error)]
 pub enum IdentityError {
@@ -234,3 +232,7 @@ fn extend_context<'a>(
         }
     }
 }
+
+#[cfg(test)]
+#[path = "source_ownership_tests.rs"]
+mod source_ownership_tests;

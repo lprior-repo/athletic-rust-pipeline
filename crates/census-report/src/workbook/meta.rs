@@ -97,7 +97,7 @@ struct StoreRows {
     schools: Vec<CanonicalSchool>,
     meets: Vec<CanonicalMeet>,
     athletes: Vec<CanonicalAthlete>,
-    identities: census_domain::model::AthleteIdentityProjection,
+    identities: census_store::AthleteIdentityProjection,
     school_year: census_domain::model::SchoolYear,
     coaches: Vec<CanonicalCoach>,
     verdicts: Vec<ReviewVerdictRecord>,
@@ -114,7 +114,7 @@ impl StoreRows {
         let mut meets: Vec<CanonicalMeet> = snapshot.scan(Table::Meets)?;
         meets.retain(|m| in_run_scope(JurisdictionBucket::from(m.state)));
         let mut athletes: Vec<CanonicalAthlete> = snapshot.scan(Table::Athletes)?;
-        let mut index = census_domain::model::AthleteIdentityIndex::default();
+        let mut index = census_store::AthleteIdentityIndex::default();
         for athlete in &athletes {
             index
                 .observe(athlete)

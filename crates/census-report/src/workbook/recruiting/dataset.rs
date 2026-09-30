@@ -24,7 +24,7 @@ pub(super) struct Dataset {
     pub(super) grad_year: Option<i16>,
     pub(super) school_year: census_domain::model::SchoolYear,
     pub(super) athletes: Vec<CanonicalAthlete>,
-    pub(super) identities: census_domain::model::AthleteIdentityProjection,
+    pub(super) identities: census_store::AthleteIdentityProjection,
     pub(super) schools: BTreeMap<String, CanonicalSchool>,
     pub(super) coaches: Vec<CanonicalCoach>,
     pub(super) contacts: BTreeMap<String, SchoolContacts>,
@@ -81,7 +81,7 @@ struct ScopedTables {
     grad_year: Option<i16>,
     schools: Vec<CanonicalSchool>,
     athletes: Vec<CanonicalAthlete>,
-    identities: census_domain::model::AthleteIdentityProjection,
+    identities: census_store::AthleteIdentityProjection,
     coaches: Vec<CanonicalCoach>,
     events: Vec<CanonicalEvent>,
     performances: Vec<CanonicalPerformance>,
@@ -99,7 +99,7 @@ impl ScopedTables {
         school_state.extend(crate::report::school_state_index(&outside_schools));
         let mut athletes: Vec<CanonicalAthlete> = snapshot.scan(Table::Athletes)?;
         let store_athletes = athletes.len();
-        let mut index = census_domain::model::AthleteIdentityIndex::default();
+        let mut index = census_store::AthleteIdentityIndex::default();
         for athlete in &athletes {
             index
                 .observe(athlete)

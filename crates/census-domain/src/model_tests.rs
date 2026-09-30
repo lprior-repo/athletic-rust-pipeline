@@ -6,7 +6,5 @@ mod event_tests;
 mod general_model;
 #[path = "model_tests/name_tests.rs"]
 mod name_tests;
-#[path = "model_tests/source_ownership.rs"]
-mod source_ownership;
 
 use super::*;

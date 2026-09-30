@@ -1,46 +1,14 @@
+use crate::identity::identity_verdict_digest;
+use crate::identity::{AthleteIdentityIndex, IdentityError};
 #[cfg(test)]
-use super::CaseEvidence;
-use super::{
-    identity_verdict_digest, AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId,
-    AthleteIdentityIndex, IdentityError, ReviewCase, ReviewState, ReviewVerdictRecord,
-    ATHLETE_IDENTITY_FAMILY, ATHLETE_IDENTITY_POLICY,
+use census_domain::model::CaseEvidence;
+use census_domain::model::{
+    AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId, IdentityDecisionIssue,
+    ReviewCase, ReviewState, ReviewVerdictRecord, VerdictKind, ATHLETE_IDENTITY_FAMILY,
+    ATHLETE_IDENTITY_POLICY,
 };
-use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum IdentityDecisionIssue {
-    WrongPolicy,
-    InvalidMembership,
-    StaleMemberEvidence,
-    RetainedConflict,
-    InvalidCanonicalTarget,
-    CompetingSourceClaims,
-    MissingResolvedCase,
-    StaleCaseEvidence,
-    MissingAcceptedVerdict,
-    MissingPositiveIdentityEvidence,
-    UnresolvedReview,
-    ConflictingApplications,
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum VerdictKind {
-    SamePerson,
-    DifferentPerson,
-    Insufficient,
-}
-
-impl VerdictKind {
-    pub const fn slug(self) -> &'static str {
-        match self {
-            Self::SamePerson => "same_person",
-            Self::DifferentPerson => "different_person",
-            Self::Insufficient => "insufficient_evidence",
-        }
-    }
-}
 pub(super) struct ReviewBindings<'a> {
     pub(super) cases: BTreeMap<&'a str, &'a ReviewCase>,
     pub(super) verdicts: BTreeMap<&'a str, &'a ReviewVerdictRecord>,
@@ -251,10 +219,10 @@ fn positive_identity(
                 if fact.grad_year != first.grad_year {
                     all_same_grad_year = false;
                 }
-                if fact.gender == super::Gender::Boys {
+                if fact.gender == census_domain::model::Gender::Boys {
                     has_boys = true;
                 }
-                if fact.gender == super::Gender::Girls {
+                if fact.gender == census_domain::model::Gender::Girls {
                     has_girls = true;
                 }
             }
@@ -292,5 +260,5 @@ impl AthleteIdentityIndex {
 }
 
 #[cfg(test)]
-#[path = "identity_validation_tests.rs"]
+#[path = "validation_tests.rs"]
 mod tests;

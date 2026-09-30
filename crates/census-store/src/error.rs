@@ -42,7 +42,7 @@ pub enum StoreError {
     #[error("{detail}")]
     Invariant { detail: String },
     #[error("identity projection failed: {0}")]
-    Identity(#[from] census_domain::model::IdentityError),
+    Identity(#[from] crate::identity::IdentityError),
     #[error("table {table} would exceed {max} rows in one scan")]
     TooManyRows { table: String, max: usize },
     #[error("journal {what} for {phase}/{key} holds {bytes} bytes, past the {max} ceiling")]

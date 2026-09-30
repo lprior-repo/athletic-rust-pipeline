@@ -1,10 +1,42 @@
-use super::serialization_digest::serialized_digest;
-use super::{
-    AthleteCandidateId, AthleteId, CanonicalAthlete, ReviewVerdictRecord, SourceNamespace,
-};
+use super::{AthleteCandidateId, AthleteId, SourceNamespace};
 use serde::{Deserialize, Serialize};
 
 pub const ATHLETE_IDENTITY_POLICY: u32 = 1;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IdentityDecisionIssue {
+    WrongPolicy,
+    InvalidMembership,
+    StaleMemberEvidence,
+    RetainedConflict,
+    InvalidCanonicalTarget,
+    CompetingSourceClaims,
+    MissingResolvedCase,
+    StaleCaseEvidence,
+    MissingAcceptedVerdict,
+    MissingPositiveIdentityEvidence,
+    UnresolvedReview,
+    ConflictingApplications,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum VerdictKind {
+    SamePerson,
+    DifferentPerson,
+    Insufficient,
+}
+
+impl VerdictKind {
+    pub const fn slug(self) -> &'static str {
+        match self {
+            Self::SamePerson => "same_person",
+            Self::DifferentPerson => "different_person",
+            Self::Insufficient => "insufficient_evidence",
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -32,7 +64,7 @@ pub struct AppliedAthleteIdentity {
     pub observed_at: String,
 }
 
-type PersonKey = (&'static str, u64);
+pub type PersonKey = (&'static str, u64);
 
 fn validate_identity_membership(
     kind: AppliedIdentityKind,
@@ -125,12 +157,4 @@ pub fn person_key(source: &super::SourceIdentity) -> Option<PersonKey> {
     let id = source.id.parse::<u64>().ok()?;
     (id > 0 && source.id.bytes().all(|b| b.is_ascii_digit()) && !source.id.starts_with('0'))
         .then_some((provider, id))
-}
-
-pub fn athlete_identity_digest(athlete: &CanonicalAthlete) -> Result<String, serde_json::Error> {
-    serialized_digest(athlete)
-}
-
-pub fn identity_verdict_digest(verdict: &ReviewVerdictRecord) -> Result<String, serde_json::Error> {
-    serialized_digest(verdict)
 }

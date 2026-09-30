@@ -29,7 +29,7 @@ pub use census_domain::model::{CONTACT_COLUMNS, CONTACT_PROOF_COLUMN};
 pub struct ValidatedRow {
     row: RawContactRow,
     claims: Vec<census_domain::model::ContactClaimEvidence>,
-    proof: census_domain::model::ValidatedContactProof,
+    proof: census_store::ValidatedContactProof,
 }
 
 impl ValidatedRow {
@@ -168,7 +168,7 @@ pub enum ContactArtifactError {
     #[error("serialization error: {detail}")]
     Serialization { detail: String },
     #[error("domain error: {0}")]
-    Domain(#[from] census_domain::model::ContactProofError),
+    Domain(#[from] census_store::ContactProofError),
 }
 
 impl ContactArtifactError {

@@ -165,14 +165,13 @@ fn proof_digest_matches_evidence() {
     let body = staff("<tr><td>Dana Reid Head XC Coach dana@example.org</td></tr>");
     let row = fragment();
     let evidence = evaluate(&row, &body);
-    let digest =
-        census_domain::model::compute_contact_proof(&row, &evidence.claims).expect("valid proof");
+    let digest = census_store::compute_contact_proof(&row, &evidence.claims).expect("valid proof");
     assert!(!digest.is_empty());
     let mut mutated_claims = evidence.claims.clone();
     if let Some(claim) = mutated_claims.first_mut() {
         claim.value = "mutated@example.org".to_string();
     }
-    let result = census_domain::model::compute_contact_proof(&row, &mutated_claims);
+    let result = census_store::compute_contact_proof(&row, &mutated_claims);
     assert!(result.is_err());
 }
 

@@ -1,7 +1,8 @@
-use super::{
-    identity_verdict_digest, AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId,
-    IdentityDecisionIssue, IdentityError, IdentityProjectionBuilder, ReviewCase, ReviewState,
-    VerdictKind, ATHLETE_IDENTITY_FAMILY, ATHLETE_IDENTITY_POLICY,
+use crate::identity::identity_verdict_digest;
+use crate::identity::{IdentityError, IdentityProjectionBuilder};
+use census_domain::model::{
+    AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId, IdentityDecisionIssue,
+    ReviewCase, ReviewState, VerdictKind, ATHLETE_IDENTITY_FAMILY, ATHLETE_IDENTITY_POLICY,
 };
 
 #[derive(Debug)]

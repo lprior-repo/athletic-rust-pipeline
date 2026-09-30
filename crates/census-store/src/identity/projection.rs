@@ -1,9 +1,10 @@
-use super::{
-    identity_aliases::IdentityAliases,
-    identity_validation::{validate, ReviewBindings},
-    AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId, AthleteIdentityIndex,
-    IdentityDecisionIssue, IdentityError, IdentityStatus, ReviewCase, ReviewState,
-    ReviewVerdictRecord, VerdictKind, ATHLETE_IDENTITY_FAMILY, CANONICAL_ID_COLLISION_FAMILY,
+use crate::identity::aliases::IdentityAliases;
+use crate::identity::validation::{validate, ReviewBindings};
+use crate::identity::{AthleteIdentityIndex, IdentityError};
+use census_domain::model::{
+    AppliedAthleteIdentity, AppliedIdentityKind, AthleteCandidateId, IdentityDecisionIssue,
+    IdentityStatus, ReviewCase, ReviewState, ReviewVerdictRecord, VerdictKind,
+    ATHLETE_IDENTITY_FAMILY, CANONICAL_ID_COLLISION_FAMILY,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -182,10 +183,10 @@ impl<'a> IdentityProjectionBuilder<'a> {
         Ok(conflicts)
     }
 }
-fn gender_bit(gender: super::Gender) -> u8 {
+fn gender_bit(gender: census_domain::model::Gender) -> u8 {
     match gender {
-        super::Gender::Boys => 1,
-        super::Gender::Girls => 2,
+        census_domain::model::Gender::Boys => 1,
+        census_domain::model::Gender::Girls => 2,
         _ => 0,
     }
 }

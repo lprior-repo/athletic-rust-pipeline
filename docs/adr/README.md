@@ -23,6 +23,7 @@ Accepted policy is not proof of implementation or successful execution.
 | [014](ADR-014-athlete-owner-identity-optional.md) | Preserve historical absent source ownership | Accepted persisted-shape contract |
 | [015](ADR-015-port-prototype-acquisition-to-rust.md) | Port prototype acquisition to Rust; captured parity fixtures are the evidence | Accepted |
 | [016](ADR-016-merge-and-identity-semantics.md) | Row hygiene ports to a shared helper; identity stays lossless, census scope filters are explicit | Accepted |
+| [017](ADR-017-canonical-encoding-ownership.md) | Canonical digests and identity derivation live in census-store, not census-domain | Accepted |
 
 Changes record explicit supersession rather than silently rewriting prior decisions. Source-specific
 research and dated command results belong in their evidence references, not additional ADR copies.

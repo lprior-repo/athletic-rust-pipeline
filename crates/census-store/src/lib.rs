@@ -16,10 +16,12 @@ const RECEIPTS: &str = "receipts";
 mod backup;
 mod batch;
 pub mod clock;
+mod digest;
 mod entities;
 mod error;
 mod identity;
 mod keys;
+mod proof;
 pub mod read;
 mod receipt;
 mod rows;
@@ -29,8 +31,15 @@ mod write;
 mod write_batch;
 
 pub use backup::{BackupReport, IntegrityReport, IntegrityTable, RestoreReport};
+pub use digest::serialized_digest;
 pub use error::{StoreError, StoreResult};
-pub use identity::MAX_IDENTITY_APPLICATION_BATCH;
+pub use identity::{
+    AcceptedAthleteIdentity, AthleteIdentityIndex, AthleteIdentityProjection, IdentityApplication,
+    IdentityError, IdentityProjectionBuilder, MAX_IDENTITY_APPLICATION_BATCH,
+};
+pub use proof::{
+    compute_contact_proof, verify_contact_proof, ContactProofError, ValidatedContactProof,
+};
 pub use read::StoreSnapshot;
 pub use receipt::{Application, Pruned, Receipt, MAX_DIGEST_BYTES, MAX_OPERATION_BYTES};
 pub use rows::TableWalk;

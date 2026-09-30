@@ -1,4 +1,5 @@
-use super::*;
+use crate::identity::AthleteIdentityIndex;
+use census_domain::model::*;
 
 #[test]
 fn distinct_sources_yield_distinct_subjects() {

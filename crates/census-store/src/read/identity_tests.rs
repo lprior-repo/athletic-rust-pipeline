@@ -1,9 +1,10 @@
+use crate::identity::athlete_identity_digest;
 use crate::{Store, Table};
 use census_domain::model::{
-    athlete_identity_digest, AppliedAthleteIdentity, AppliedIdentityKind, CanonicalAthlete, Gender,
-    GradYear, Grade, IdentityDecisionIssue, IdentityMember, IdentityStatus, ObservedGrade,
-    ReviewCase, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
-    ATHLETE_IDENTITY_FAMILY, ATHLETE_IDENTITY_POLICY,
+    AppliedAthleteIdentity, AppliedIdentityKind, CanonicalAthlete, Gender, GradYear, Grade,
+    IdentityDecisionIssue, IdentityMember, IdentityStatus, ObservedGrade, ReviewCase, SchoolId,
+    SchoolYear, SourceIdentity, SourceNamespace, SourceRef, ATHLETE_IDENTITY_FAMILY,
+    ATHLETE_IDENTITY_POLICY,
 };
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
