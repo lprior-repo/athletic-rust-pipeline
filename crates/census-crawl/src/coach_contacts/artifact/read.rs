@@ -7,7 +7,8 @@ use super::{
     MANIFEST_FORMAT_VERSION, MAX_MANIFEST_BYTES, MAX_ROWS, RAW_CONTACT_HEADER_COUNT,
     VERIFIED_CONTACT_HEADER_COUNT,
 };
-use census_domain::model::{verify_contact_proof, RawContactRow};
+use census_domain::model::RawContactRow;
+use census_store::verify_contact_proof;
 use std::fs::File;
 use std::io::{self, Read};
 use std::path::Path;

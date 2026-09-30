@@ -4,10 +4,10 @@ use census_crawl::milesplit::{
 use census_crawl::net::{FetchOptions, FetchOutcome, Fetcher};
 use census_crawl::{CrawlError, CrawlResult};
 use census_domain::model::{
-    serialized_digest, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Gender, SchoolYear,
-    SourceAthleteObservation, SourceNamespace, SourceObservation, SourceSchoolObservation,
+    CanonicalAthlete, CanonicalSchool, CanonicalTeam, Gender, SchoolYear, SourceAthleteObservation,
+    SourceNamespace, SourceObservation, SourceSchoolObservation,
 };
-use census_store::{Application, Store, StoreBatch, Table};
+use census_store::{serialized_digest, Application, Store, StoreBatch, Table};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 

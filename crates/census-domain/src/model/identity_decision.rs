@@ -45,7 +45,7 @@ pub struct AppliedAthleteIdentity {
     pub observed_at: String,
 }
 
-type PersonKey = (&'static str, u64);
+pub type PersonKey = (&'static str, u64);
 
 fn validate_identity_membership(
     kind: AppliedIdentityKind,

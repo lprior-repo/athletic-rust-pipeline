@@ -1,8 +1,8 @@
-use census_domain::model::{
-    AcceptedAthleteIdentity, IdentityApplication, IdentityError, IdentityProjectionBuilder,
-    ReviewCase, ReviewState, ReviewVerdictRecord,
+use census_domain::model::{ReviewCase, ReviewState, ReviewVerdictRecord};
+use census_store::{
+    AcceptedAthleteIdentity, IdentityApplication, IdentityError, IdentityProjectionBuilder, Store,
+    StoreError, StoreResult, Table, MAX_IDENTITY_APPLICATION_BATCH,
 };
-use census_store::{Store, StoreError, StoreResult, Table, MAX_IDENTITY_APPLICATION_BATCH};
 
 pub(super) fn apply_decisions(store: &Store, observed_at: &str) -> StoreResult<usize> {
     let snapshot = store.snapshot();

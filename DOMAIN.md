@@ -40,7 +40,10 @@ relationships cannot conceal an A–C contradiction merely because A–B and B�
 [ADR-005](docs/adr/ADR-005-ai-cannot-override-contradictions.md) defines model authority. Acceptance
 requires admissible corroboration; name-only, cohort-only, a score or model agreement is insufficient.
 Bind evidence identity to structured, attributed facts. Reordering a genuinely unordered set may
-leave its identity unchanged; swapping which subject owns a fact must change it.
+leave its identity unchanged; swapping which subject owns a fact must change it. Canonical encoding
+for those digests, and the identity and contact-proof rules that hash it, are implemented in
+`census-store` ([ADR-017](docs/adr/ADR-017-canonical-encoding-ownership.md)); `census-domain`
+carries no serialization dependency.
 
 ## Cohort and time
 

@@ -70,8 +70,8 @@ once per capture/parse revision and reused across subjects; see [ADR-004](docs/a
 
 | Crate | Owns | Boundary |
 |---|---|---|
-| `census-domain` | Pure constrained types, cohort/event/comparison rules | No async runtime, database, HTTP, browser, Restate, workbook or model clients |
-| `census-store` | Fjall schema, transactions, receipts, snapshots, migration and backup | No source parsing or HTTP |
+| `census-domain` | Pure constrained types, cohort/event/comparison rules | No serialization, async runtime, database, HTTP, browser, Restate, workbook or model clients |
+| `census-store` | Fjall schema, transactions, receipts, snapshots, migration and backup, canonical digest/identity/contact-proof derivation | No source parsing or HTTP |
 | `census-crawl` | Adapters, discovery, fetchers, admission and browser bridge | Produces observations; does not accept canonical identities |
 | `athleticnet-browser` | Headed profile, CDP capture, tab pool, challenge/429 classification | One attempt; no challenge solving, spoofing, login handling or proxy rotation |
 | `census-reconcile` | Deterministic normalization, identity scoring and contradiction checks | Does not call models |
@@ -82,7 +82,10 @@ once per capture/parse revision and reused across subjects; see [ADR-004](docs/a
 
 Parse external representations once into validated domain values. Pure rules receive explicit
 inputs; clocks, network, storage and spawning remain effect boundaries. Existing exceptions are
-implementation work, not permission to create duplicate rules or mirrored public types.
+implementation work, not permission to create duplicate rules or mirrored public types. Canonical
+encoding and the identity/contact rules that hash it live in `census-store`
+([ADR-017](docs/adr/ADR-017-canonical-encoding-ownership.md)), because the domain's purity gate
+refuses a serialization dependency.
 [ADR-007](docs/adr/ADR-007-crate-boundaries.md) and [ADR-012](docs/adr/ADR-012-single-acquisition-plane.md)
 record the completed crate cut. `fuzz/` is a separate cargo-fuzz workspace; `fixtures/` is shared data.
 

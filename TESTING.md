@@ -27,10 +27,14 @@ there is no root application package or root-package test suite.
 
 `tools/gate.sh` is the executable lane list: formatting, compilation, rustdoc, tests, strict
 production Clippy, lexical comments, source/size scans, domain purity, module seams, integrity,
-debt ratchet and installed dependency/assurance tools. Inspect its actual summary; an optional-tool
-`SKIP` in developer mode does not establish coverage. `--release` enables the heavy lanes and
-rejects missing tools. Nextest does not execute doc tests; ignored tests require explicit invocation.
-The four build gates alone do not prove the separate proof, source, fault and artifact obligations.
+debt ratchet and installed dependency/assurance tools. Domain purity checks that
+`cargo tree -p census-domain --edges normal` carries no banned serialization, I/O or async crate;
+canonical digests and the identity and contact-proof rules that hash them therefore live in
+`census-store` ([ADR-017](docs/adr/ADR-017-canonical-encoding-ownership.md)). Inspect its actual
+summary; an optional-tool `SKIP` in developer mode does not establish coverage. `--release` enables
+the heavy lanes and rejects missing tools. Nextest does not execute doc tests; ignored tests require
+explicit invocation. The four build gates alone do not prove the separate proof, source, fault and
+artifact obligations.
 
 `--update-baseline` measures and rewrites the debt baseline, then returns before later lanes;
 it is not a release pass. `--allow-increase` is an explicit debt waiver, not a repair. Use

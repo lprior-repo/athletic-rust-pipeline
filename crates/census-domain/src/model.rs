@@ -23,9 +23,6 @@ mod identity_aliases;
 mod identity_application;
 mod identity_corroboration;
 mod identity_decision;
-mod identity_index;
-mod identity_projection;
-mod identity_validation;
 mod meet;
 mod natural_key;
 mod normalization;
@@ -44,8 +41,7 @@ pub use cohort::{GradYear, Grade, ObservedGrade, PublishedGraduation, SchoolYear
 pub use collision::{id_collision, CANONICAL_ID_COLLISION_FAMILY};
 pub use contact::{is_consumer_domain, published_email, MailboxKind};
 pub use contact_proof::{
-    compute_contact_proof, verify_contact_proof, ContactClaimEvidence, ContactProofError,
-    ContactProofField, RawContactRow, ValidatedContactProof, CONTACT_COLUMNS, CONTACT_PROOF_COLUMN,
+    ContactClaimEvidence, ContactProofField, RawContactRow, CONTACT_COLUMNS, CONTACT_PROOF_COLUMN,
 };
 pub use contact_tenure::{
     assess_coach_tenure, validate_tenure_evidence, CoachContactClaim, CoachContactProgram,
@@ -59,15 +55,11 @@ pub use identifiers::{
     tag, AthleteCandidateId, AthleteId, AthleteIndexId, CoachId, EventId, Id, IdTag, MeetId,
     PerformanceId, SchoolId, TeamId,
 };
-pub use identity_application::{AcceptedAthleteIdentity, IdentityApplication};
 pub use identity_decision::{
     athlete_identity_digest, identity_verdict_digest, person_key, person_provider,
     AppliedAthleteIdentity, AppliedIdentityKind, IdentityDecisionError, IdentityMember,
     ATHLETE_IDENTITY_POLICY,
 };
-pub use identity_index::{AthleteIdentityIndex, IdentityError};
-pub use identity_projection::{AthleteIdentityProjection, IdentityProjectionBuilder};
-pub use identity_validation::{IdentityDecisionIssue, VerdictKind};
 pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
 pub use natural_key::NaturalKey;
 pub use normalization::{flip_last_first, normalize_name};

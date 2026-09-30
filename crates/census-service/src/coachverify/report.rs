@@ -180,11 +180,12 @@ fn write_state_file_body(
         )
         .map_err(|error| census_store::read::csv_failure(published, error))?;
     for row in rows {
-        let proof = census_domain::model::compute_contact_proof(&row.row, &row.evidence).map_err(
-            |source| census_store::StoreError::Invariant {
-                detail: format!("contact proof failed before publication: {source}"),
-            },
-        )?;
+        let proof =
+            census_store::compute_contact_proof(&row.row, &row.evidence).map_err(|source| {
+                census_store::StoreError::Invariant {
+                    detail: format!("contact proof failed before publication: {source}"),
+                }
+            })?;
         writer
             .write_record([
                 row.row.school.as_str(),

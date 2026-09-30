@@ -1,4 +1,5 @@
-use census_domain::model::{compute_contact_proof, ContactClaimEvidence, RawContactRow};
+use census_domain::model::{ContactClaimEvidence, RawContactRow};
+use census_store::compute_contact_proof;
 use std::collections::BTreeMap;
 use std::path::Path;
 
