@@ -184,6 +184,7 @@ struct Claim {
     role: CoachRole,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn emit_row<'a>(
     rows: &mut Vec<Row<'a>>,
     claims: &mut Vec<Claim>,

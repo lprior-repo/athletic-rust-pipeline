@@ -213,6 +213,7 @@ impl EventKind {
             .replace("meter", "m")
     }
 
+    #[allow(dead_code)]
     fn division_code(token: &str) -> bool {
         fn code(part: &str) -> bool {
             match part.as_bytes() {
