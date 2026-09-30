@@ -3242,3 +3242,46 @@ framework semantics, not this implementation's correctness.
 | E06 | [TigerBeetle testing practices](https://docs.tigerbeetle.com/coding/testing/) |
 | E07 | [TigerBeetle safety practices](https://docs.tigerbeetle.com/coding/safety/) |
 
+## Source-family admission above one request (2026-09-29)
+
+`--source-parallelism <N>` (`census_crawl::net::DEFAULT_FAMILY_PARALLELISM` = 1) is implemented as
+[OPERATIONS.md](OPERATIONS.md) already documents it: at the default a source family keeps one pacing
+turn across its hosts, above it every host of the family carries its own turn while a per-family
+semaphore admits N requests in flight, and a host outside every family takes no family slot. The
+service clamps the wire value to at least one, rebuilds its cached fetcher when the knob changes, and
+the browser lane takes the route-rewriting ingress client instead of the SDK's bare one.
+
+Commands run on this tree, in this worktree:
+
+- `cargo test -p census-crawl` → **482 passed, 0 failed**.
+- `cargo test -p census-service --lib` → **186 passed, 0 failed**; the bin target → **57 passed**.
+- Four new virtual-time tests pass: `a_family_above_one_parallelism_gives_each_host_its_own_turn`,
+  `a_family_admits_exactly_its_parallelism_in_flight`, `a_host_outside_every_family_takes_no_family_slot`
+  and `the_default_parallelism_keeps_the_single_family_slot`.
+- `cargo run -q -p census-service --bin census-service -- --help` prints
+  `--source-parallelism <N> ... [default: 1]`.
+- `cargo check --workspace --all-targets` exits 0.
+
+Not established here: no live host was fetched under a raised value, so this records no throughput
+number; the pacing and admission assertions are virtual-time and method-boundary only.
+
+Red in this tree for reasons outside this change, from the preceding commit's unfinished refactors:
+`workbook_shape`, `exporter_kill_restart`, the e2e `report_chain` (that commit deleted the workbook
+writer's `PRs`, `Performances_*` and `Sources` sheets), `milesplit_parser_properties::accounting` and
+`offline_cycle`. `census-service verify` again samples the `Performances_*` sheets, so the two
+kill/restart tests fail on the missing sheet until the writer returns.
+
+## Repository bulk removal (2026-09-29)
+
+The commit before this change carried the scraped Restate dump and the fuzz corpora into the object
+store: 31,881 paths (24,861 under `local/`, 4,978 under `fuzz/`), a 12.09 GiB pack, with
+`local/restate-docs/INDEX.json` alone at 940,281,740 bytes. That commit was unpublished, so it was
+rewritten without `local/` and `fuzz/corpus` (2,042 files and 1,884,926 insertions kept),
+`.gitignore` now ignores `/local/`, `/fuzz/corpus/` and `/fuzz/artifacts/`, and reflogs were expired
+before `git gc --prune=now`.
+
+- `git count-objects -vH` → `in-pack: 15661`, `packs: 1`, `size-pack: 52.26 MiB`, `garbage: 0`.
+- `du -sh .git` → 55 MB, was 13 GB; `git fsck --connectivity-only` exits 0 and all eight worktrees
+  still resolve `HEAD`.
+- `local/` (1.1 GB) and `fuzz/corpus/` (20 MB) stay on disk, untracked.
+
