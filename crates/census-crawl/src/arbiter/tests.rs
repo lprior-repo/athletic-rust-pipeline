@@ -558,7 +558,8 @@ async fn a_short_member_page_below_the_reported_total_is_a_recorded_failure() {
         HashMap::new(),
         Vec::new(),
     )
-    .expect("fetcher");
+    .expect("fetcher")
+    .with_offline(true);
     let observed_on = OBSERVED_ON.to_string();
     let context = crate::AdapterContext {
         fetcher: &fetcher,
@@ -574,27 +575,21 @@ async fn a_short_member_page_below_the_reported_total_is_a_recorded_failure() {
         limit: None,
         refresh: false,
     };
-    let done = std::collections::HashSet::new();
-    let mut tally = super::collect::Tally::default();
-    {
-        let fetch = crate::net::FetchOptions {
+    let mut run = super::collect::Run {
+        ctx: &context,
+        options: &options,
+        fetch: crate::net::FetchOptions {
             refresh: false,
             allow_not_found: false,
             headers: Vec::new(),
-        };
-        let mut run = super::collect::Run::open(
-            &context,
-            &options,
-            UsJurisdiction::NewHampshire,
-            "2132",
-            fetch,
-            &done,
-            &mut tally,
-        );
-        run.walk()
-            .await
-            .expect("a short page is not an error result");
-    }
+        },
+        done: std::collections::HashSet::new(),
+        tally: super::collect::Tally::default(),
+    };
+    run.walk(UsJurisdiction::NewHampshire, "2132")
+        .await
+        .expect("a short page is not an error result");
+    let tally = run.tally;
     assert_eq!(
         tally.errors, 1,
         "100 rows read against a total of 150 is a contradiction, and the walk reports it"
@@ -626,8 +621,8 @@ async fn a_journaled_school_is_skipped_and_an_unwritten_one_is_written() {
         HashMap::new(),
         Vec::new(),
     )
-    .expect("fetcher");
-
+    .expect("fetcher")
+    .with_offline(true);
     let page = parse_org_schools(NH_CHILDREN, CHILDREN_URL).expect("children parse");
     let bedford = page
         .rows
@@ -676,36 +671,41 @@ async fn a_journaled_school_is_skipped_and_an_unwritten_one_is_written() {
     assert!(done.contains(bedford_id.as_str()));
 
     let requests_before = fetcher.stats().await.requests;
-    let mut tally = super::collect::Tally::default();
-    {
-        let fetch = crate::net::FetchOptions {
+    let mut run = super::collect::Run {
+        ctx: &context,
+        options: &options,
+        fetch: crate::net::FetchOptions {
             refresh: false,
             allow_not_found: false,
             headers: Vec::new(),
-        };
-        let mut run = super::collect::Run::open(
-            &context,
-            &options,
-            UsJurisdiction::NewHampshire,
-            "2132",
-            fetch,
-            &done,
-            &mut tally,
-        );
-        run.process_school(bedford, ORGANISATION_URL)
-            .await
-            .expect("the journaled school is skipped without error");
-        assert_eq!(
-            fetcher.stats().await.requests,
-            requests_before,
-            "a skipped school fetches nothing"
-        );
-        let skipped_only: Vec<CanonicalSchool> = store.scan(Table::Schools).expect("scan schools");
-        assert!(skipped_only.is_empty(), "a skipped school is not rewritten");
-        run.process_school(alvirne, ORGANISATION_URL)
-            .await
-            .expect("the unwritten school is processed from the cached coach page");
-    }
+        },
+        done,
+        tally: super::collect::Tally::default(),
+    };
+    run.process_school(
+        UsJurisdiction::NewHampshire,
+        "2132",
+        bedford,
+        ORGANISATION_URL,
+    )
+    .await
+    .expect("the journaled school is skipped without error");
+    assert_eq!(
+        fetcher.stats().await.requests,
+        requests_before,
+        "a skipped school fetches nothing"
+    );
+    let skipped_only: Vec<CanonicalSchool> = store.scan(Table::Schools).expect("scan schools");
+    assert!(skipped_only.is_empty(), "a skipped school is not rewritten");
+    run.process_school(
+        UsJurisdiction::NewHampshire,
+        "2132",
+        alvirne,
+        ORGANISATION_URL,
+    )
+    .await
+    .expect("the unwritten school is processed from the cached coach page");
+    let tally = run.tally;
 
     assert_eq!(
         tally.skipped, 1,
@@ -726,4 +726,191 @@ async fn a_journaled_school_is_skipped_and_an_unwritten_one_is_written() {
         .journal_keys(super::collect::JOURNAL)
         .expect("journal keys");
     assert!(journaled.contains(alvirne_id().as_str()));
+}
+
+#[tokio::test]
+async fn a_full_member_page_is_written_before_the_next_page_is_fetched() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let cache = dir.path().join("http");
+    let rows: Vec<serde_json::Value> = (0..200)
+        .map(|index| serde_json::json!({"name": format!("Streamed School {index}")}))
+        .collect();
+    let body = serde_json::json!({"data": {"total": 250, "rows": rows}}).to_string();
+    seed_cache(&cache, CHILDREN_URL, &body);
+    let store = Store::open(dir.path().join("store")).expect("store");
+    let fetcher = Fetcher::new(
+        &cache,
+        None,
+        Duration::from_millis(1),
+        HashMap::new(),
+        Vec::new(),
+    )
+    .expect("fetcher")
+    .with_offline(true);
+    let observed_on = OBSERVED_ON.to_string();
+    let context = crate::AdapterContext {
+        fetcher: &fetcher,
+        store: &store,
+        refresh: false,
+        school_year: SchoolYear::new(2026).expect("2026 is a season"),
+        observed_on: observed_on.clone(),
+        recording: None,
+    };
+    let options = Options {
+        states: vec![UsJurisdiction::NewHampshire],
+        observed_on,
+        limit: None,
+        refresh: false,
+    };
+    let mut run = super::collect::Run {
+        ctx: &context,
+        options: &options,
+        fetch: crate::net::FetchOptions {
+            refresh: false,
+            allow_not_found: false,
+            headers: Vec::new(),
+        },
+        done: std::collections::HashSet::new(),
+        tally: super::collect::Tally::default(),
+    };
+    run.walk(UsJurisdiction::NewHampshire, "2132")
+        .await
+        .expect("a missing page is recorded as a failure, not returned");
+    let tally = run.tally;
+    assert_eq!(
+        tally.schools, 200,
+        "the full first page is written before the walk asks for page 2"
+    );
+    assert_eq!(
+        tally.errors, 1,
+        "the uncached second page is the one recorded failure"
+    );
+    let schools: Vec<CanonicalSchool> = store.scan(Table::Schools).expect("scan schools");
+    assert_eq!(schools.len(), 200);
+}
+
+#[tokio::test]
+async fn a_coach_walk_stopped_by_the_page_bound_records_a_failure() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let cache = dir.path().join("http");
+    let rows: Vec<serde_json::Value> = (0..200).map(|_| serde_json::json!({})).collect();
+    let body = serde_json::json!({"data": {"total": 12_800, "rows": rows}}).to_string();
+    for page in 1..=64u64 {
+        let url = format!(
+            "https://services.arbitersports.com/api/v2/legacy/public/2132/coaches?filter.EntityId=450&&pageSize=200&pageNumber={page}"
+        );
+        seed_cache(&cache, &url, &body);
+    }
+    let store = Store::open(dir.path().join("store")).expect("store");
+    let fetcher = Fetcher::new(
+        &cache,
+        None,
+        Duration::from_millis(1),
+        HashMap::new(),
+        Vec::new(),
+    )
+    .expect("fetcher")
+    .with_offline(true);
+    let observed_on = OBSERVED_ON.to_string();
+    let context = crate::AdapterContext {
+        fetcher: &fetcher,
+        store: &store,
+        refresh: false,
+        school_year: SchoolYear::new(2026).expect("2026 is a season"),
+        observed_on: observed_on.clone(),
+        recording: None,
+    };
+    let options = Options {
+        states: vec![UsJurisdiction::NewHampshire],
+        observed_on,
+        limit: None,
+        refresh: false,
+    };
+    let page = parse_org_schools(NH_CHILDREN, CHILDREN_URL).expect("children parse");
+    let alvirne = page
+        .rows
+        .iter()
+        .find(|row| row.public_id == Some(450))
+        .expect("Alvirne is in the member page");
+    let mut run = super::collect::Run {
+        ctx: &context,
+        options: &options,
+        fetch: crate::net::FetchOptions {
+            refresh: false,
+            allow_not_found: false,
+            headers: Vec::new(),
+        },
+        done: std::collections::HashSet::new(),
+        tally: super::collect::Tally::default(),
+    };
+    run.process_school(
+        UsJurisdiction::NewHampshire,
+        "2132",
+        alvirne,
+        ORGANISATION_URL,
+    )
+    .await
+    .expect("a page-bound coach walk is recorded as a failure, not returned");
+    let tally = run.tally;
+    assert_eq!(
+        tally.schools, 1,
+        "the school is written without its coaches"
+    );
+    assert_eq!(tally.errors, 1);
+    assert!(
+        tally
+            .notes
+            .iter()
+            .any(|note| note.contains("more pages than the 64-page walk")),
+        "the coach truncation is named rather than silent: {:?}",
+        tally.notes
+    );
+}
+
+#[test]
+fn a_state_named_twice_is_walked_once() {
+    let options = Options {
+        states: vec![
+            UsJurisdiction::NewHampshire,
+            UsJurisdiction::NewHampshire,
+            UsJurisdiction::Kentucky,
+        ],
+        observed_on: OBSERVED_ON.to_string(),
+        limit: None,
+        refresh: false,
+    };
+    let targets = super::collect::targets(&options).expect("both states are registered");
+    assert_eq!(targets.len(), 2, "the repeated state is walked once");
+    assert_eq!(targets[0], (UsJurisdiction::NewHampshire, "2132"));
+    assert_eq!(targets[1], (UsJurisdiction::Kentucky, "2507"));
+}
+
+#[test]
+fn a_refreshing_context_refreshes_even_when_the_options_do_not() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let cache = dir.path().join("http");
+    let store = Store::open(dir.path().join("store")).expect("store");
+    let fetcher = Fetcher::new(
+        &cache,
+        None,
+        Duration::from_millis(1),
+        HashMap::new(),
+        Vec::new(),
+    )
+    .expect("fetcher");
+    let context = crate::AdapterContext {
+        fetcher: &fetcher,
+        store: &store,
+        refresh: true,
+        school_year: SchoolYear::new(2026).expect("2026 is a season"),
+        observed_on: OBSERVED_ON.to_string(),
+        recording: None,
+    };
+    let fetch = super::collect::fetch_options(&context, &Options::default(), Vec::new());
+    assert!(
+        fetch.refresh,
+        "a refreshing context is not served from the cache"
+    );
+    assert!(!fetch.allow_not_found);
+    assert!(fetch.headers.is_empty());
 }

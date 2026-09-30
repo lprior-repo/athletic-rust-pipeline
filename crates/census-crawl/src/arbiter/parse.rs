@@ -57,36 +57,32 @@ pub fn parse_token(body: &str, url: &str) -> CrawlResult<String> {
 }
 
 pub fn parse_org_schools(body: &str, url: &str) -> CrawlResult<Page<OrgSchool>> {
-    let json = decode(body, url)?;
-    let (total, rows) = page_rows(&json, url, "schools")?;
-    let mut schools = Vec::with_capacity(rows.len());
-    for row in rows {
-        let object = row.as_object().ok_or_else(|| CrawlError::Schema {
-            url: url.to_string(),
-            detail: "expected an object per school row".to_string(),
-        })?;
-        schools.push(decode_org_school(object));
-    }
-    Ok(Page {
-        total,
-        rows: schools,
-    })
+    decode_page(body, url, "schools", decode_org_school)
 }
 
 pub fn parse_coach_rows(body: &str, url: &str) -> CrawlResult<Page<CoachRow>> {
+    decode_page(body, url, "coaches", decode_coach_row)
+}
+
+fn decode_page<T>(
+    body: &str,
+    url: &str,
+    subject: &str,
+    map_row: impl Fn(&serde_json::Map<String, serde_json::Value>) -> T,
+) -> CrawlResult<Page<T>> {
     let json = decode(body, url)?;
-    let (total, rows) = page_rows(&json, url, "coaches")?;
-    let mut coaches = Vec::with_capacity(rows.len());
+    let (total, rows) = page_rows(&json, url, subject)?;
+    let mut decoded = Vec::with_capacity(rows.len());
     for row in rows {
         let object = row.as_object().ok_or_else(|| CrawlError::Schema {
             url: url.to_string(),
-            detail: "expected an object per coach row".to_string(),
+            detail: format!("expected an object in the {subject} rows"),
         })?;
-        coaches.push(decode_coach_row(object));
+        decoded.push(map_row(object));
     }
     Ok(Page {
         total,
-        rows: coaches,
+        rows: decoded,
     })
 }
 

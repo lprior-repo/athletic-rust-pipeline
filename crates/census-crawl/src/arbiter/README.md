@@ -36,8 +36,10 @@ than `pageSize` (an empty page included), not on the offset against `total`. A p
 answers without a usable `total` therefore keeps the walk going instead of stopping early, and a
 short page whose response still reports more rows than have been read — the server contradicting
 itself, which the walk detects on the rows actually received rather than on the page window — is
-recorded as a failure note rather than passing as the end of the list. A member walk
-stopped by the 64-page bound records a failure note too, so no truncation is silent.
+recorded as a failure note rather than passing as the end of the list. Each member page is mapped
+and journaled as it is read, so the walk's working set is one page rather than the whole member
+list. A member walk, or a per-school coach walk, stopped by the 64-page bound records a failure
+note too, so no truncation is silent. A state named twice in the `--states` list is walked once.
 
 ## Organisations
 
@@ -81,7 +83,9 @@ Every member row with a name is written as a canonical school plus a source obse
 the source namespace; the contact only decides whether an athletic-director coach row is written
 alongside it. The journal key is the school id, and a run reads the journal before it walks: a
 school the journal already names is skipped without fetching its coach page, so a re-run continues
-with the schools it has not written and reports how many it skipped.
+with the schools it has not written and reports how many it skipped. The journal detail carries the
+organisation, the state's two-letter code, the association id, the organisation's own school id and
+the coach-row count.
 
 A member page that fails or does not parse, and a coach page that fails, are recorded as failures
 and end only that walk — the remaining organisations in `--states` still run — while a failure to

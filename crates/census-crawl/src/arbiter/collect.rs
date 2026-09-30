@@ -1,5 +1,7 @@
 use super::map::{map_coach_row, map_org_school, map_primary_contact};
-use super::parse::{credentials_in_bundle, parse_coach_rows, parse_org_schools, parse_token};
+use super::parse::{
+    credentials_in_bundle, parse_coach_rows, parse_org_schools, parse_token, OrgSchool,
+};
 use super::{org_for, BUNDLE_URL, HOST, MAX_PAGES, PAGE_SIZE, SOURCE_ID, TOKEN_SCOPE, TOKEN_URL};
 use std::collections::HashSet;
 
@@ -40,54 +42,45 @@ impl Tally {
 }
 
 pub(super) struct Run<'a> {
-    ctx: &'a AdapterContext<'a>,
-    options: &'a Options,
-    state: UsJurisdiction,
-    org: &'static str,
-    fetch: FetchOptions,
-    done: &'a HashSet<String>,
-    tally: &'a mut Tally,
+    pub(super) ctx: &'a AdapterContext<'a>,
+    pub(super) options: &'a Options,
+    pub(super) fetch: FetchOptions,
+    pub(super) done: HashSet<String>,
+    pub(super) tally: Tally,
 }
 
-impl<'a> Run<'a> {
-    pub(super) fn open(
-        ctx: &'a AdapterContext<'a>,
-        options: &'a Options,
-        state: UsJurisdiction,
-        org: &'static str,
-        fetch: FetchOptions,
-        done: &'a HashSet<String>,
-        tally: &'a mut Tally,
-    ) -> Self {
-        Self {
-            ctx,
-            options,
-            state,
-            org,
-            fetch,
-            done,
-            tally,
-        }
-    }
+pub(super) fn fetch_options(
+    ctx: &AdapterContext<'_>,
+    options: &Options,
+    headers: Vec<(String, String)>,
+) -> FetchOptions {
+    let mut fetch = ctx.fetch_options();
+    fetch.refresh = options.refresh || ctx.refresh;
+    fetch.headers = headers;
+    fetch
 }
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let targets = targets(options)?;
-    let target_count = targets.len();
+    let org_count = targets.len();
     let stats_before = ctx.fetcher.stats().await;
     let token = mint_token(ctx, options).await?;
-    let fetch = FetchOptions {
-        refresh: options.refresh,
-        allow_not_found: false,
-        headers: vec![("Authorization".to_string(), format!("Bearer {token}"))],
+    let mut run = Run {
+        ctx,
+        options,
+        fetch: fetch_options(
+            ctx,
+            options,
+            vec![("Authorization".to_string(), format!("Bearer {token}"))],
+        ),
+        done: ctx.store.journal_keys(JOURNAL)?,
+        tally: Tally::default(),
     };
-    let mut tally = Tally::default();
-    let done = ctx.store.journal_keys(JOURNAL)?;
     for (state, org) in targets {
-        let mut run = Run::open(ctx, options, state, org, fetch.clone(), &done, &mut tally);
-        run.walk().await?;
+        run.walk(state, org).await?;
     }
     let stats_after = ctx.fetcher.stats().await;
+    let mut tally = run.tally;
     let mut report = AdapterReport::new(SOURCE_ID, "org_schools");
     report.rows = u64::try_from(tally.schools).unwrap_or(u64::MAX);
     report.requests = stats_after.requests.saturating_sub(stats_before.requests);
@@ -95,29 +88,28 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         .cache_hits
         .saturating_sub(stats_before.cache_hits);
     report.errors = u64::try_from(tally.errors).unwrap_or(u64::MAX);
-    let summary = format!(
-        "{} school(s) and {} coach row(s) over {} Arbiter organisation(s)",
-        tally.schools, tally.coaches, target_count
-    );
-    report.notes = tally.notes;
+    report.notes = std::mem::take(&mut tally.notes);
     if tally.skipped > 0 {
         report.note(format!(
             "{} school(s) already journaled, skipped",
             tally.skipped
         ));
     }
-    report.note(summary);
+    report.note(format!(
+        "{} school(s) and {} coach row(s) over {org_count} Arbiter organisation(s)",
+        tally.schools, tally.coaches
+    ));
     Ok(report)
 }
 
-fn a_page_read_short(page: u64, rows_on_page: u64, total: u64) -> bool {
+fn page_read_short(page: u64, rows_on_page: u64, total: u64) -> bool {
     page.saturating_sub(1)
         .saturating_mul(PAGE_SIZE)
         .saturating_add(rows_on_page)
         < total
 }
 
-fn targets(options: &Options) -> CrawlResult<Vec<(UsJurisdiction, &'static str)>> {
+pub(super) fn targets(options: &Options) -> CrawlResult<Vec<(UsJurisdiction, &'static str)>> {
     let requested: Vec<UsJurisdiction> = if options.states.is_empty() {
         super::covered_states().collect()
     } else {
@@ -126,22 +118,20 @@ fn targets(options: &Options) -> CrawlResult<Vec<(UsJurisdiction, &'static str)>
     let mut targets = Vec::with_capacity(requested.len());
     for state in requested {
         let org = org_for(state).ok_or_else(|| CrawlError::Invariant {
-            detail: format!("no Arbiter organisation is registered for {state:?}"),
+            detail: format!("no Arbiter organisation is registered for {}", state.code()),
         })?;
+        if targets.iter().any(|(seen, _)| *seen == state) {
+            continue;
+        }
         targets.push((state, org));
     }
     Ok(targets)
 }
 
 async fn mint_token(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<String> {
-    let bundle_fetch = FetchOptions {
-        refresh: options.refresh,
-        allow_not_found: false,
-        headers: Vec::new(),
-    };
     let bundle = ctx
         .fetcher
-        .get(BUNDLE_URL, &bundle_fetch)
+        .get(BUNDLE_URL, &fetch_options(ctx, options, Vec::new()))
         .await
         .map_err(|error| CrawlError::Invariant {
             detail: format!(
@@ -161,11 +151,8 @@ async fn mint_token(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<
         ("grant_type".to_string(), "client_credentials".to_string()),
         ("scope".to_string(), TOKEN_SCOPE.to_string()),
     ];
-    let token_fetch = FetchOptions {
-        refresh: true,
-        allow_not_found: false,
-        headers: Vec::new(),
-    };
+    let mut token_fetch = ctx.fetch_options();
+    token_fetch.refresh = true;
     let body = ctx
         .fetcher
         .post_form(TOKEN_URL, &form, &token_fetch)
@@ -174,17 +161,16 @@ async fn mint_token(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<
 }
 
 impl Run<'_> {
-    pub(super) async fn walk(&mut self) -> CrawlResult<()> {
-        let base_url = format!("{HOST}/api/v2/organization/public/{}/children", self.org);
+    pub(super) async fn walk(&mut self, state: UsJurisdiction, org: &str) -> CrawlResult<()> {
+        let base_url = format!("{HOST}/api/v2/organization/public/{org}/children");
         let mut page = 1u64;
-        let mut schools = Vec::new();
         let mut ended = false;
         while page <= MAX_PAGES {
             if self.at_limit() {
                 break;
             }
             let url = format!("{base_url}?&pageSize={PAGE_SIZE}&pageNumber={page}");
-            let Some(outcome) = self.fetch(&url).await else {
+            let Some(outcome) = self.fetch_page(&url).await else {
                 ended = true;
                 break;
             };
@@ -192,21 +178,28 @@ impl Run<'_> {
                 Ok(parsed) => parsed,
                 Err(error) => {
                     self.tally
-                        .fail(format!("schools page {page} for {:?}: {error}", self.state));
+                        .fail(format!("schools page {page} for {}: {error}", state.code()));
                     ended = true;
                     break;
                 }
             };
             let rows_on_page = u64::try_from(parsed.rows.len()).unwrap_or(u64::MAX);
-            schools.extend(parsed.rows);
-            if rows_on_page < PAGE_SIZE {
-                if a_page_read_short(page, rows_on_page, parsed.total) {
-                    self.tally.fail(format!(
-                        "schools page {page} for {:?} returned {rows_on_page} of {PAGE_SIZE} rows \
-                         while the response totals {}: the member walk stopped short",
-                        self.state, parsed.total
-                    ));
+            let last_page = rows_on_page < PAGE_SIZE;
+            if last_page && page_read_short(page, rows_on_page, parsed.total) {
+                self.tally.fail(format!(
+                    "schools page {page} for {} returned {rows_on_page} of {PAGE_SIZE} rows while \
+                     the response totals {}: the member walk stopped short",
+                    state.code(),
+                    parsed.total
+                ));
+            }
+            for row in &parsed.rows {
+                if self.at_limit() {
+                    break;
                 }
+                self.process_school(state, org, row, &base_url).await?;
+            }
+            if last_page {
                 ended = true;
                 break;
             }
@@ -214,15 +207,9 @@ impl Run<'_> {
         }
         if !ended && !self.at_limit() {
             self.tally.fail(format!(
-                "{:?} has more member pages than the {MAX_PAGES}-page walk reads",
-                self.state
+                "{} has more member pages than the {MAX_PAGES}-page walk reads",
+                state.code()
             ));
-        }
-        for school_row in &schools {
-            if self.at_limit() {
-                break;
-            }
-            self.process_school(school_row, &base_url).await?;
         }
         Ok(())
     }
@@ -236,14 +223,20 @@ impl Run<'_> {
 
     pub(super) async fn process_school(
         &mut self,
-        row: &super::parse::OrgSchool,
+        state: UsJurisdiction,
+        org: &str,
+        row: &OrgSchool,
         base_url: &str,
     ) -> CrawlResult<()> {
         let Some((school, school_id)) =
-            map_org_school(row, self.state, base_url, &self.options.observed_on)
+            map_org_school(row, state, base_url, &self.options.observed_on)
         else {
-            let name = row.name.clone();
-            self.tally.fail(format!("row {name:?} has no school name"));
+            self.tally.fail(format!(
+                "a member row of Arbiter organisation {org} for {} carries no school name \
+                 (association id {:?})",
+                state.code(),
+                row.public_id
+            ));
             return Ok(());
         };
         if self.done.contains(school_id.as_str()) {
@@ -259,62 +252,72 @@ impl Run<'_> {
             }
         }
         if let Some(public_id) = row.public_id {
-            self.collect_coaches(public_id, &school.name, &school_id, &mut coaches)
-                .await;
+            coaches.extend(
+                self.collect_coaches(org, public_id, &school.name, &school_id)
+                    .await,
+            );
         }
-        self.write(row, &school, &coaches)?;
+        self.write(org, row, &school, &coaches)?;
         self.tally.schools = self.tally.schools.saturating_add(1);
         Ok(())
     }
 
     async fn collect_coaches(
         &mut self,
+        org: &str,
         public_id: u64,
         school_name: &str,
         school_id: &SchoolId,
-        coaches: &mut Vec<CanonicalCoach>,
-    ) {
+    ) -> Vec<CanonicalCoach> {
+        let mut coaches: Vec<CanonicalCoach> = Vec::new();
         let mut page = 1u64;
+        let mut ended = false;
         while page <= MAX_PAGES {
             let url = format!(
-                "{HOST}/api/v2/legacy/public/{}/coaches?filter.EntityId={public_id}&&pageSize={PAGE_SIZE}&pageNumber={page}",
-                self.org
+                "{HOST}/api/v2/legacy/public/{org}/coaches?filter.EntityId={public_id}&&pageSize={PAGE_SIZE}&pageNumber={page}"
             );
-            let Some(outcome) = self.fetch(&url).await else {
-                return;
+            let Some(outcome) = self.fetch_page(&url).await else {
+                ended = true;
+                break;
             };
-            match parse_coach_rows(&outcome.text(), &url) {
-                Ok(parsed) => {
-                    let rows_on_page = u64::try_from(parsed.rows.len()).unwrap_or(u64::MAX);
-                    for row in &parsed.rows {
-                        if let Some(coach) =
-                            map_coach_row(row, school_id, &url, &self.options.observed_on)
-                        {
-                            coaches.push(coach);
-                        }
-                    }
-                    if rows_on_page < PAGE_SIZE {
-                        if a_page_read_short(page, rows_on_page, parsed.total) {
-                            self.tally.fail(format!(
-                                "coaches for {school_name}: page {page} returned {rows_on_page} of \
-                                 {PAGE_SIZE} rows while the response totals {}",
-                                parsed.total
-                            ));
-                        }
-                        return;
-                    }
-                }
+            let parsed = match parse_coach_rows(&outcome.text(), &url) {
+                Ok(parsed) => parsed,
                 Err(error) => {
                     self.tally
                         .fail(format!("coaches for {school_name}: {error}"));
-                    return;
+                    ended = true;
+                    break;
                 }
+            };
+            let rows_on_page = u64::try_from(parsed.rows.len()).unwrap_or(u64::MAX);
+            for row in &parsed.rows {
+                if let Some(coach) = map_coach_row(row, school_id, &url, &self.options.observed_on)
+                {
+                    coaches.push(coach);
+                }
+            }
+            if rows_on_page < PAGE_SIZE {
+                if page_read_short(page, rows_on_page, parsed.total) {
+                    self.tally.fail(format!(
+                        "coaches for {school_name}: page {page} returned {rows_on_page} of \
+                         {PAGE_SIZE} rows while the response totals {}",
+                        parsed.total
+                    ));
+                }
+                ended = true;
+                break;
             }
             page = page.saturating_add(1);
         }
+        if !ended {
+            self.tally.fail(format!(
+                "coaches for {school_name} have more pages than the {MAX_PAGES}-page walk reads"
+            ));
+        }
+        coaches
     }
 
-    async fn fetch(&mut self, url: &str) -> Option<FetchOutcome> {
+    async fn fetch_page(&mut self, url: &str) -> Option<FetchOutcome> {
         match self.ctx.fetcher.get(url, &self.fetch).await {
             Ok(outcome) => Some(outcome),
             Err(error) => {
@@ -326,7 +329,8 @@ impl Run<'_> {
 
     fn write(
         &mut self,
-        row: &super::parse::OrgSchool,
+        org: &str,
+        row: &OrgSchool,
         school: &CanonicalSchool,
         coaches: &[CanonicalCoach],
     ) -> CrawlResult<()> {
@@ -342,8 +346,8 @@ impl Run<'_> {
             JOURNAL,
             school.id.as_str(),
             &json!({
-                "org": self.org,
-                "state": format!("{:?}", self.state),
+                "org": org,
+                "state": school.state.map(UsJurisdiction::code),
                 "school": school.name,
                 "association_id": row.public_id,
                 "arbiter_org_id": row.org_id,
