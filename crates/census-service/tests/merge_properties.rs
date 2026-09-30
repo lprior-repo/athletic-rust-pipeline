@@ -34,6 +34,11 @@ fn word(max: usize) -> impl Strategy<Value = String> {
         .prop_map(|bytes| bytes.into_iter().map(char::from).collect())
 }
 
+fn date() -> impl Strategy<Value = String> {
+    (1970u16..=2100, 1u8..=12, 1u8..=28)
+        .prop_map(|(year, month, day)| format!("{year:04}-{month:02}-{day:02}"))
+}
+
 fn state() -> impl Strategy<Value = UsJurisdiction> {
     prop_oneof![
         Just(UsJurisdiction::Wisconsin),

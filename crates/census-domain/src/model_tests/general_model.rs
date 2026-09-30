@@ -90,19 +90,16 @@ fn meet_identity_is_date_and_name_scoped() -> Result<(), Box<dyn std::error::Err
         Some(UsJurisdiction::Wisconsin),
         "2026-05-29",
         "D3 Sectional #3",
-        None,
     );
     let b = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
         "2026-05-29",
         "D3 sectional #3",
-        None,
     );
     let c = CanonicalMeet::mint(
         Some(UsJurisdiction::Wisconsin),
         "2026-05-30",
         "D3 Sectional #3",
-        None,
     );
     check!(eq; a, b);
     check!(ne; a, c);
@@ -134,7 +131,6 @@ fn an_unplaced_meet_remains_distinct_from_a_placed_meet() -> Result<(), Box<dyn 
         Some(UsJurisdiction::Wisconsin),
         "2026-05-29",
         "D3 Sectional #3",
-        None,
     );
     check!(ne; unplaced, placed,
 "placing the venue is what separates a coverage gap from a known jurisdiction");
@@ -202,3 +198,52 @@ fn school_jurisdiction_separates_identity() -> Result<(), Box<dyn std::error::Er
 
 #[path = "general_model/published_identity.rs"]
 mod published_identity;
+#[test]
+fn a_meet_keeps_a_year_only_source_date() {
+    let meet = CanonicalMeet::new_checked(
+        Some(UsJurisdiction::Wisconsin),
+        "Racine Sectional",
+        "2023",
+        CompetitionLevel::Sectional,
+    )
+    .expect("a source date published only as a year is year precision");
+    assert_eq!(meet.date, "2023");
+}
+
+#[test]
+fn a_meet_refuses_a_date_that_is_neither_an_iso_day_nor_a_year() {
+    for date in ["2023-13", "2023-02-30", "23", "spring 2023", ""] {
+        assert!(
+            CanonicalMeet::new_checked(
+                Some(UsJurisdiction::Wisconsin),
+                "Racine Sectional",
+                date,
+                CompetitionLevel::Sectional,
+            )
+            .is_err(),
+            "{date:?} is neither an ISO day nor a four-digit year"
+        );
+    }
+}
+
+#[test]
+fn a_performance_keeps_a_year_only_source_date() {
+    let athlete = AthleteId::mint("ath", &["year-only"]);
+    let team = TeamId::mint("team", &["year-only"]);
+    let meet = MeetId::mint("meet", &["year-only"]);
+    let event = EventId::mint("event", &["year-only"]);
+    let performance = CanonicalPerformance::new_checked(
+        &athlete,
+        &EventKind::CrossCountry,
+        &team,
+        &event,
+        &meet,
+        "2023",
+        Mark::Raw("16:00".to_string()),
+        "year-only-key",
+        None,
+        None,
+    )
+    .expect("a source date published only as a year is year precision");
+    assert_eq!(performance.date, "2023");
+}

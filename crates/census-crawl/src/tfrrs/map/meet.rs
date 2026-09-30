@@ -13,7 +13,7 @@ impl<'a> Absorb<'a> {
         published: &ParsedMeet,
         date: &PublishedDate,
     ) -> MeetId {
-        let id = CanonicalMeet::mint(Some(page.jurisdiction), &date.iso, &published.name, None);
+        let id = CanonicalMeet::mint(Some(page.jurisdiction), &date.iso, &published.name);
         let meet = self
             .accumulator
             .meets

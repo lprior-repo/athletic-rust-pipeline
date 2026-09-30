@@ -179,8 +179,7 @@ fn mark_kind_compatible(kind: &EventKind, mark: &Mark) -> bool {
     }
 }
 
-use super::dates::valid_date;
-
+use super::source_date;
 impl CanonicalPerformance {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -197,7 +196,7 @@ impl CanonicalPerformance {
     ) -> Self {
         debug_assert!(!date.is_empty(), "performance date must not be empty");
         debug_assert!(
-            valid_date(date),
+            source_date::valid_source_date(date),
             "performance date {date:?} is not a valid ISO date or year"
         );
         let id = CanonicalPerformance::mint(athlete, meet, event_kind, date, source_key);
@@ -238,7 +237,7 @@ impl CanonicalPerformance {
         if date.is_empty() {
             return Err("performance date must not be empty".to_string());
         }
-        if !valid_date(date) {
+        if !source_date::valid_source_date(date) {
             return Err(format!(
                 "performance date {date:?} is not a valid ISO date or year"
             ));

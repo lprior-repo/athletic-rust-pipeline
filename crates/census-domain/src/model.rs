@@ -34,6 +34,7 @@ mod records;
 mod review;
 mod school;
 mod school_address;
+mod source_date;
 
 pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
 pub use canonical_json::{serialized_digest, CanonicalJsonError};

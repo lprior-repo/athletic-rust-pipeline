@@ -8,12 +8,7 @@ use census_domain::model::{
 pub fn build_meets(rows: &[MeetRow], observed_on: &str, source_label: &str) -> Vec<CanonicalMeet> {
     let mut meets: BTreeMap<MeetId, CanonicalMeet> = BTreeMap::new();
     for row in rows {
-        let id = CanonicalMeet::mint(
-            Some(row.state_code),
-            &row.start,
-            &row.name,
-            row.city_state.as_deref(),
-        );
+        let id = CanonicalMeet::mint(Some(row.state_code), &row.start, &row.name);
         let entry = meets
             .entry(id.clone())
             .or_insert_with(|| meet_from_row(row, observed_on, source_label));

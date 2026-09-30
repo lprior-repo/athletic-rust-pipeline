@@ -50,8 +50,8 @@ type SortKey = (String, String, String, String, String);
 
 fn sort_key(dataset: &Dataset, coach: &CanonicalCoach) -> SortKey {
     (
-        dataset.school_state(coach.school.as_str()),
-        dataset.school_name(coach.school.as_str()),
+        dataset.school_state(coach.school.as_str()).to_string(),
+        dataset.school_name(coach.school.as_str()).to_string(),
         sport_label(coach),
         role_label(coach),
         coach.name.clone(),

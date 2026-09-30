@@ -53,8 +53,7 @@ where
         }),
     }
 }
-use super::dates::valid_date;
-
+use super::source_date;
 impl CanonicalMeet {
     pub fn new(
         state: Option<UsJurisdiction>,
@@ -66,11 +65,11 @@ impl CanonicalMeet {
         let date: String = date.into();
         debug_assert!(!name.is_empty(), "meet name must not be empty");
         debug_assert!(
-            valid_date(&date),
+            source_date::valid_source_date(&date),
             "meet date {date:?} is not a valid ISO date or year"
         );
         let normalized_name = normalize_name(&name);
-        let id = CanonicalMeet::mint(state, &date, &name, None);
+        let id = CanonicalMeet::mint(state, &date, &name);
         Self {
             id,
             name,
@@ -116,13 +115,13 @@ impl CanonicalMeet {
         if name.is_empty() {
             return Err("meet name must not be empty".to_string());
         }
-        if !valid_date(&date) {
+        if !source_date::valid_source_date(&date) {
             return Err(format!(
                 "meet date {date:?} is not a valid ISO date or year"
             ));
         }
         let normalized_name = normalize_name(&name);
-        let id = CanonicalMeet::mint(state, &date, &name, None);
+        let id = CanonicalMeet::mint(state, &date, &name);
         Ok(Self {
             id,
             name,
