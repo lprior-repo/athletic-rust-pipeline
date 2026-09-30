@@ -4,8 +4,15 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+#[path = "comments/lexer.rs"]
+mod lexer;
 #[path = "comments/lexical.rs"]
 mod lexical;
+#[path = "comments/literals.rs"]
+mod literals;
+#[cfg(test)]
+#[path = "comments/parity_tests.rs"]
+mod parity_tests;
 #[cfg(test)]
 #[path = "comments/tests.rs"]
 mod tests;

@@ -1,0 +1,109 @@
+0	clean
+1	code comments are forbidden@0
+2	code comments are forbidden@0
+3	code comments are forbidden@0
+4	code comments are forbidden@0
+5	code comments are forbidden@0
+6	code comments are forbidden@0
+7	code comments are forbidden@0
+8	code comments are forbidden@0
+9	code comments are forbidden@0
+10	code comments are forbidden@0
+11	code comments are forbidden@0
+12	code comments are forbidden@0
+13	clean
+14	clean
+15	clean
+16	clean
+17	code comments are forbidden@33
+18	clean
+19	error: unterminated Rust literal at byte 19
+20	clean
+21	clean
+22	error: unterminated Rust literal at byte 19
+23	error: unterminated Rust literal at byte 19
+24	clean
+25	error: unterminated Rust literal at byte 19
+26	error: unterminated Rust literal at byte 18
+27	clean
+28	clean
+29	error: unterminated Rust literal at byte 21
+30	clean
+31	clean
+32	error: unterminated Rust literal at byte 30
+33	error: unterminated Rust literal at byte 8
+34	error: unterminated Rust literal at byte 8
+35	error: unterminated Rust literal at byte 8
+36	error: unterminated Rust literal at byte 8
+37	clean
+38	clean
+39	error: unterminated Rust literal at byte 8
+40	clean
+41	clean
+42	clean
+43	clean
+44	clean
+45	clean
+46	clean
+47	clean
+48	clean
+49	clean
+50	clean
+51	error: unterminated Rust literal at byte 19
+52	error: unterminated Rust literal at byte 11
+53	code comments are forbidden@19
+54	error: unterminated Rust literal at byte 14
+55	clean
+56	clean
+57	clean
+58	clean
+59	clean
+60	clean
+61	clean
+62	error: unterminated Rust literal at byte 8
+63	error: unterminated Rust literal at byte 8
+64	clean
+65	documentation attributes are forbidden@2
+66	documentation attributes are forbidden@3
+67	documentation attributes are forbidden@4
+68	documentation attributes are forbidden@2
+69	documentation attributes are forbidden@2
+70	clean
+71	clean
+72	clean
+73	documentation attributes are forbidden@2
+74	clean
+75	documentation attributes are forbidden@17
+76	documentation attributes are forbidden@32
+77	documentation attributes are forbidden@26
+78	code comments are forbidden@6
+79	documentation attributes are forbidden@2
+80	documentation attributes are forbidden@2
+81	clean
+82	clean
+83	code comments are forbidden@30
+84	documentation attributes are forbidden@5
+85	clean
+86	code comments are forbidden@27
+87	code comments are forbidden@15
+88	code comments are forbidden@22
+89	code comments are forbidden@29
+90	code comments are forbidden@11
+91	code comments are forbidden@11
+92	code comments are forbidden@10
+93	clean
+94	clean
+95	code comments are forbidden@14
+96	clean
+97	clean
+98	code comments are forbidden@9
+99	code comments are forbidden@56
+100	code comments are forbidden@11
+101	code comments are forbidden@11
+102	code comments are forbidden@28
+103	code comments are forbidden@22
+104	code comments are forbidden@2
+105	code comments are forbidden@3
+106	clean
+107	code comments are forbidden@0
+108	clean

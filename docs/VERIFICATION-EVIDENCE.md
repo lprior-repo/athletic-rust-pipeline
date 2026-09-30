@@ -6,6 +6,40 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## The in-repository Rust lexer and the vet lane's green — 2026-09-30
+
+`ra-ap-rustc_lexer 0.174.0` and its `unicode-properties 0.1.4` were the last two unvetted
+dependencies the gate's `vet` lane reported, and both were reachable only from `xtask`
+(`cargo tree --workspace --edges normal -i ra-ap-rustc_lexer` prints the `xtask` root and nothing
+else). Exactly one file used them: the zero-comments lane's tokenizer. Rather than record an
+exemption for dev tooling, the lane now carries its own scanner — `xtask/src/comments/lexer.rs`
+(token kinds and the byte cursor), `comments/literals.rs` (strings, raw strings, character and
+lifetime literals) and the violation state machine in `comments/lexical.rs` — and the dependency is
+gone from the workspace.
+
+The replacement is pinned to the removed lexer's own verdicts.
+`xtask/tests/golden/comments_lexer_corpus.txt` holds 109 crafted blocks (comment forms, literal and
+raw-literal spellings, byte and C strings, character/lifetime ambiguity, `#[doc = …]` nesting,
+Pattern_White_Space and BOM cases, unterminated literals) and `comments_lexer_baseline.txt` was
+captured from the removed implementation through the same state machine; `cargo test -p xtask
+comments::` → 9 passed re-renders the corpus and compares verdict by verdict. While the crate was
+still present the two tokenizers were also compared over the whole workspace: 965 Rust files,
+verdict-identical. The capture fixed the semantics that matter: a line comment stops before `\n` but
+keeps a lone `\r`, NBSP is not whitespace (so `#\u{a0}[doc = …]` is not a documentation attribute),
+an unterminated string consumes to end of input while an unterminated character literal stops at
+`/`, `''`, `'a'` and `'1'` are terminated literals, and `r##x` is an unterminated raw string rather
+than a raw identifier. Identifier classification uses std's `char::is_alphanumeric` in place of
+XID_Continue, which only splits exotic identifiers the verdict does not see (`a·b // c` is in the
+corpus).
+
+`cargo vet --locked` → `Vetting Succeeded (37 fully audited, 1 partially audited, 341 exempted)`: the
+exemption list is unchanged at 341 and no audit was fabricated. Limits: the parity claim is verdict
+equality over the committed corpus and this workspace's sources, not token-for-token identity, and
+no live host lane ran.
+
+The full gate is green: `cargo xtask gate` → `gate: PASS (debt ratchet holds; counts above)` — all
+sixteen lanes, `vet` included, with strict clippy at 0 diagnostics and `files>300=0 fns>60=0`.
+
 ## The unshipped dependency prune and the coachverify span scanner — 2026-09-30
 
 The coachverify path no longer depends on `scraper`: its staff-record extractor is the in-repository

@@ -1,0 +1,234 @@
+fn f() {}
+-----snip-----
+// ordinary
+fn f() {}
+-----snip-----
+/// documentation
+fn f() {}
+-----snip-----
+//! module documentation
+fn f() {}
+-----snip-----
+/* ordinary */ fn f() {}
+-----snip-----
+/** documentation */ fn f() {}
+-----snip-----
+/*! module documentation */ fn f() {}
+-----snip-----
+/* outer /* nested */ outer */ fn f() {}
+-----snip-----
+/* unterminated
+-----snip-----
+/*/
+-----snip-----
+/**/
+-----snip-----
+/***/
+-----snip-----
+/* " /* " */ */
+-----snip-----
+const URL: &str = "https://example.org/a/*/b";
+-----snip-----
+const TEXT: &str = "//";
+-----snip-----
+const TEXT: &str = "escaped \" // still a string";
+-----snip-----
+const TEXT: &str = "first
+// second
+third";
+-----snip-----
+const TEXT: &str = "trailing\\"; // actual comment
+-----snip-----
+const TEXT: &str = "\\\" // in string";
+-----snip-----
+const TEXT: &str = "\"unterminated // inside a string
+-----snip-----
+const TEXT: &str = r"raw // not a comment";
+-----snip-----
+const TEXT: &str = r#"raw " // "#;
+-----snip-----
+const TEXT: &str = r###"### // "#;
+-----snip-----
+const TEXT: &str = r##"abc"#; // mismatched close
+-----snip-----
+const TEXT: &str = r#"abc"##;
+-----snip-----
+const TEXT: &str = r#"unterminated
+-----snip-----
+const URL: &str = r"unterminated // c
+-----snip-----
+const BYTES: &[u8] = b"bytes // here";
+-----snip-----
+const BYTES: &[u8] = br##"bytes /* */"##;
+-----snip-----
+const BYTES: &[u8] = br#"x // c
+-----snip-----
+const TEXT: &std::ffi::CStr = c"// text";
+-----snip-----
+const TEXT: &std::ffi::CStr = cr##"c /* */"##;
+-----snip-----
+const TEXT: &std::ffi::CStr = c"unterminated
+-----snip-----
+let s = "unterminated
+-----snip-----
+let s = r##"unterminated
+-----snip-----
+let s = br##"unterminated
+-----snip-----
+let s = cr##"unterminated
+-----snip-----
+let x = db"prefix";
+-----snip-----
+let x = c'x';
+-----snip-----
+let x = b'//';
+-----snip-----
+const QUOTE: char = '\''; const SLASH: char = '/';
+-----snip-----
+const BYTE: u8 = b'/';
+-----snip-----
+const BYTE: u8 = b'\'';
+-----snip-----
+const CHAR: char = '\u{1F600}';
+-----snip-----
+const EMOJI: char = '😀';
+-----snip-----
+const ESCAPE: char = '\q';
+-----snip-----
+const BACKSLASH: char = '\\';
+-----snip-----
+const NEWLINE: char = '\n';
+-----snip-----
+let empty = '';
+-----snip-----
+let odd = 'ab';
+-----snip-----
+let odd = '1';
+-----snip-----
+let unterminated = '
+-----snip-----
+let wide = ' x // c
+-----snip-----
+let numberish = '1 // c
+-----snip-----
+let escaped = '\ // c
+-----snip-----
+fn borrow<'a>(value: &'a str) -> &'a str { value }
+-----snip-----
+fn two<'a, 'b>(a: &'a str, b: &'b str) {}
+-----snip-----
+'outer: loop { break 'outer; }
+-----snip-----
+let x: &'static str = "s";
+-----snip-----
+let x = 'ab;
+-----snip-----
+let x = 'r#lifetime;
+-----snip-----
+let x = r#ident;
+-----snip-----
+let x = r##x
+-----snip-----
+let x = r#'x'
+-----snip-----
+let x = r#doc;
+-----snip-----
+#[doc = "text"] fn f() {}
+-----snip-----
+#![doc = include_str!("rationale.md")]
+-----snip-----
+# [ r#doc = "text" ] fn f() {}
+-----snip-----
+#[doc="text"] fn f() {}
+-----snip-----
+#[doc
+= "text"] fn f() {}
+-----snip-----
+#[doc(hidden)] fn private() {}
+-----snip-----
+#[doc] fn f() {}
+-----snip-----
+#[doc
+-----snip-----
+#[doc =
+-----snip-----
+#[docr = "text"] fn f() {}
+-----snip-----
+#[cfg_attr(test, doc = "text")] fn f() {}
+-----snip-----
+#[cfg_attr(test, cfg_attr(unix, doc = "text"))] fn f() {}
+-----snip-----
+#[cfg_attr(
+    test,
+    doc = "text"
+)]
+fn f() {}
+-----snip-----
+#[doc /* c */ = "text"] fn f() {}
+-----snip-----
+#[doc = r#"raw"#] fn f() {}
+-----snip-----
+#[doc = concat!("a", "b")] fn f() {}
+-----snip-----
+#[path = "//not-a-comment.rs"] mod fixture;
+-----snip-----
+#[derive(Debug)] struct S;
+-----snip-----
+#[allow(dead_code)] fn f() {} // trailing
+-----snip-----
+#! [ doc = "text" ]
+-----snip-----
+#!/usr/bin/env rustx
+-----snip-----
+---
+title: frontmatter
+---
+// comment
+-----snip-----
+let café = 0; // actual
+-----snip-----
+let s = "emoji 😀"; // actual
+-----snip-----
+let s = " line separator"; // actual
+-----snip-----
+let x = 1;	// tab separated
+-----snip-----
+let x = 1;
+// crlf follows
+-----snip-----
+let x = 1;// no space
+-----snip-----
+let x = 1_000u64; let y = 0x1F; let z = 1e-5;
+-----snip-----
+let x = 0b1'0';
+-----snip-----
+let a·b = 1; // middle dot ident
+-----snip-----
+let s = "//"; let t = "/*";
+-----snip-----
+println!("{}", "//");
+-----snip-----
+fn f() { /* c */ }
+-----snip-----
+const X: &str = "line\ncontinues\n// here";
+let x = 1;
+// crlf comment
+-----snip-----
+let x = 1;// lone cr comment
+-----snip-----
+let x = 1;	// literal tab
+-----snip-----
+let s = "line separator"; // after ls
+-----snip-----
+let s = "nbsp here"; // after nbsp
+-----snip-----
+ // nbsp before comment
+-----snip-----
+﻿// bom before comment
+-----snip-----
+# [doc = "text"] fn f() {}
+-----snip-----
+//
+// second
+-----snip-----
+let x = '😀';
