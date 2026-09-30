@@ -5609,8 +5609,8 @@ schools / 7 coach rows to 4 / 13.
 
 A second addendum found the short-page trigger itself still too weak: the note fired on
 `page * PAGE_SIZE < total` (the page window) while the contradiction is that the rows actually read,
-`(page - 1) * PAGE_SIZE + rows_on_page`, fall short of the reported total — so a 100-row page with
-`total: 150` ended the walk silently. Both walks now use one rule, `a_page_read_short(page,
+(`page - 1) * PAGE_SIZE + rows_on_page`, fall short of the reported total — so a 100-row page with
+`total: 150` ended the walk silently. Both walks now use one rule, `page_read_short(page,
 rows_on_page, total)`, and the case is pinned by a new test,
 `a_short_member_page_below_the_reported_total_is_a_recorded_failure`, which seeds a 100-row page
 reporting 150 and asserts one recorded failure, the "stopped short" note, and that the 100 rows read
@@ -5643,6 +5643,76 @@ keeps uncompiled.
 
 Review limits, restated: the reviewer could not execute anything itself (all commands above were run
 here), and its prototype reference is the working-tree `parsers/arbiter.py`, not a VCS-pinned revision.
+
+### Arbiter lane: Holzman Rust pass on structure and resource bounds (2026-09-29)
+
+Trigger: a request to re-read the lane from a Power-of-Ten-plus-performance vantage point. Scope was
+`crates/census-crawl/src/arbiter/` only — no shared interface, registry row, service arm or other
+lane changed. Reference files read before advising: `nasa-jpl-standards`, `zero-cost-abstractions`
+and `runtime-performance-architecture` from the `holzman-rust` skill. Eight findings were accepted
+and fixed:
+
+| Finding | Rule / convention | Fix |
+|---|---|---|
+| the member walk buffered every page (`schools.extend`) and wrote only after paging ended, so a 64-page organisation held up to 12,800 rows before its first write | Rule 2/3: fixed loop bounds and a bounded working set | `walk` maps and journals each page's rows as it is read; the accumulator is gone, so the working set is one page and the journal advances during the walk instead of after it |
+| `Run::open(ctx, options, state, org, fetch, done, tally)` — a seven-parameter constructor | Rule 4/6 (one-page reviewability, smallest scope) and the sibling convention | `Run` is now the five-field session struct built with a struct literal, as in `coach_directories::collect`; the target travels as `walk(state, org)` / `process_school(state, org, row, url)` arguments |
+| the fetches took `refresh` from `Options` alone, so a refreshing `AdapterContext` was served from the cache | the sibling lanes build `options.refresh \|\| ctx.refresh` (chsaa, ciac, coach_directories, mshsl) | one `fetch_options(ctx, options, headers)` helper (`ctx.fetch_options()` plus the OR) used by the bundle read, the token POST and every API page |
+| the per-school coach walk recorded nothing when the 64-page bound ended it, while the member walk did | the lane's own "no truncation is silent" claim | `collect_coaches` records the bound the way the member walk does |
+| a state repeated in `--states` was walked once per repetition | Rule 2: the target list's size follows the requested set, not its spelling | `targets` skips a state it has already resolved, and the walk order stays the caller's |
+| the journal detail wrote the state through `format!("{:?}")`, making a persisted payload depend on a derived `Debug` | stable persisted shape; the sibling lane stores `state.code()` | the detail carries the two-letter code (`"NH"`), the organisation, the association id, the organisation's school id and the coach-row count |
+| `parse_org_schools` and `parse_coach_rows` each repeated the decode/collect/schema-error loop | Rule 4 and ruthless simplicity | one private `decode_page(body, url, subject, map_row)`; the per-row schema error is now `expected an object in the {subject} rows` |
+| a member row without a name produced `row "" has no school name` — it cloned the name that was empty by construction | Rule 7: diagnostics that identify the failure | the note names the organisation, the state code and the row's association id, and no longer clones |
+| `page_read_short` was introduced as `a_page_read_short` | naming (a predicate should read as one) | renamed `page_read_short`; the earlier paragraph in this section was updated to the current name |
+
+Commands and raw results, all run in the worktree at this date:
+
+| Command | Observed result |
+|---|---|
+| `cargo test -p census-crawl --lib arbiter` | `24 passed; 0 failed` (20 before this pass; the four added tests are listed below) |
+| `cargo test -p census-crawl --lib` | `498 passed; 0 failed; 0 ignored; finished in 1.87s` |
+| `cargo fmt --all -- --check` | no output (clean) |
+| `cargo clippy -p census-crawl --lib --bins --examples --all-features --no-deps -- <the gate's LINT_SET>` after touching the lane files | 14 diagnostics, every one in the pre-existing `src/chsaa/parse.rs`; **0** under `crates/census-crawl/src/arbiter/**` |
+| `cargo check -p census-report` | 54 errors — the pre-existing worktree blocker, so `tools/gate.sh`'s workspace-wide check/clippy lanes still cannot run here; the census-crawl lanes above are the strongest available |
+
+The four added tests and the behaviour each pins:
+
+- `a_full_member_page_is_written_before_the_next_page_is_fetched` — one full 200-row page reporting
+  `total: 250`, no second page in the cache and an offline fetcher; asserts the 200 rows are written
+  and that the missing page is the single recorded failure. The buffering walk wrote nothing here.
+- `a_coach_walk_stopped_by_the_page_bound_records_a_failure` — 64 full coach pages of 200 rows each;
+  asserts the bound is named in a note instead of ending the walk quietly.
+- `a_state_named_twice_is_walked_once` — `NH, NH, KY` resolves to two targets, in the caller's order.
+- `a_refreshing_context_refreshes_even_when_the_options_do_not` — the helper's refresh flag follows
+  `ctx.refresh` when the options say otherwise.
+
+For the changed entry point (`collect`, not only the walk) the lane was re-exercised live, the same way
+the review round was: a throwaway `census-crawl` example (`examples/arbiter_live_smoke.rs`, deleted after
+the run) built the fetcher as `census-service`'s `build_fetcher` does — `Store::http_cache_dir`, 1 s
+delay, `default_host_delays()`, `default_family_delays()` and the three Arbiter hosts authorized — and
+called `arbiter::collect` over a fresh store:
+
+| Command | Observed result |
+|---|---|
+| `cargo run -q -p census-crawl --example arbiter_live_smoke -- /tmp/arbiter-holzman-smoke 1 NH` | `rows: 1, requests: 4, from_cache: 0, errors: 0`, note `1 school(s) and 3 coach row(s) over 1 Arbiter organisation(s)`; readback `1 school(s), 3 coach(es), 1 observation(s)` — `Alvirne High School` and coaches Phillip Demers, Justin Hufft, Kaitlyn Wilson |
+
+Those four requests are the bundle, the token, the filtered member page and the coach page, so the run
+covers the refactored session struct, `fetch_options`, both walks and the journal write in one pass; no
+failure note was recorded although the member page was a natural short page (the false-positive-free
+property once more). The run's journal payload on disk reads
+`{"arbiter_org_id":29072,"association_id":450,"coach_rows":3,"observed_on":"2026-09-30","org":"2132","school":"Alvirne High School","state":"NH"}`
+— the `state` key carries the two-letter code, and `observed_on` is the run's `today_iso()` value. One
+dated-capture note: the live Alvirne coach page carries three rows where the fixture's golden pins the
+prototype's two, so the live roster moved since the 2026-09-2x capture; the fixture and golden are dated
+captures, not a live contract, and were left as they are.
+
+Examined and deliberately left alone: per-row allocations (the shared label parsers' lowercasing,
+the `json!` journal detail, `FetchOutcome::text()`'s single copy per page) and a `#[cold]` marker on
+the failure path. The lane is request-bound — the registry row paces it at 1 rps with
+`maximum_in_flight = 1` — so these are not the bottleneck and the pass makes no measured performance
+claim; `Tally` keeps its 32-note cap and the per-org page bound stays `MAX_PAGES = 64`. What remains
+unverified by execution after this pass: the multi-organisation sweep (the four `--states` in one run),
+the KY/MT/WV coach pages beyond their first school, and the CLI/Restate arms the `census-report` P0
+keeps uncompiled.
 
 ## Consolidated historical evidence — imported 2026-09-27
 
