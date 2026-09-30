@@ -2856,6 +2856,14 @@ the direct runs recorded in this document (`cargo test -p census-crawl`, `cargo 
 `cargo clippy -p census-crawl --all-targets`). The gate cannot go green until the P0 domain/report sync lands;
 none of the red lanes above should be read as a regression from slices 1–3.
 
+**Re-run at the pushed tip `494a592f8` (branch `coach-acquisition-rust`).** `tools/gate.sh` again, 222.9 s,
+exit 1, and the same lanes: `fmt: PASS`, then `zero code comments`, `check`, `doc`, `tests`,
+`production scan`, `domain integrity`, `domain purity`, `module seams`, `ratchet`, `vet`, `geiger`,
+`feature powerset` and `bench presence` failing with `census-report` at 54 previous errors — the same
+class the P0 item above records, this run compiling the lib **and** its test target. Nothing else moved:
+at this commit `cargo test -p census-crawl --lib` is `494 passed; 0 failed`, `cargo fmt --all -- --check`
+is clean, and strict clippy reports 0 diagnostics under `arbiter/**`.
+
 ## Port triage: every prototype acquisition unit has a verdict (2026-09-29)
 
 `census-prototype/parsers/` holds 63 extractor modules (plus the 0-byte `__init__.py`) and the lane has
