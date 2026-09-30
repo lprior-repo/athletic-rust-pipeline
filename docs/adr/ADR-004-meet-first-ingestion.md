@@ -24,5 +24,5 @@ single platform. Syndicated copies are not independent corroboration.
 Adapters parse whole relevant documents and retain partial failures, rounds/heats/attempts and
 coverage limits. Profile-declared PRs remain separate from calculated best observed marks.
 Measure useful verified records per physical request; do not assert a numerical speedup from this
-strategy alone. [SOURCE_ADAPTER_GUIDE.md](../../SOURCE_ADAPTER_GUIDE.md) owns adapter integration;
-[source research](../../research/README.md) owns dated capability evidence.
+strategy alone. [xtask/README.md](../../xtask/README.md#source-scaffolding) owns adapter integration;
+[source reports](../../research/sources/) own dated capability evidence.

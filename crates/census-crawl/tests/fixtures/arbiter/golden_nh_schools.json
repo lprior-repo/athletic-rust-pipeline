@@ -1,0 +1,714 @@
+[
+  {
+    "name": "Alvirne High School",
+    "state": "NH",
+    "association_id": "450",
+    "arbiter_org_id": "29072",
+    "phone": "6038861260",
+    "enrollment": "955"
+  },
+  {
+    "name": "Bedford High School -NH",
+    "state": "NH",
+    "association_id": "1400",
+    "arbiter_org_id": "29970",
+    "phone": "6033109010",
+    "enrollment": "1367"
+  },
+  {
+    "name": "Belmont High School - NH",
+    "state": "NH",
+    "association_id": "1523",
+    "arbiter_org_id": "30085",
+    "phone": "6032676525",
+    "enrollment": "347"
+  },
+  {
+    "name": "Berlin Senior High School",
+    "state": "NH",
+    "association_id": "1673",
+    "arbiter_org_id": "30219",
+    "phone": "6037524122",
+    "enrollment": "324"
+  },
+  {
+    "name": "Bishop Brady High School",
+    "state": "NH",
+    "association_id": "1855",
+    "arbiter_org_id": "30383",
+    "phone": "6032247418",
+    "enrollment": "277"
+  },
+  {
+    "name": "Bishop Guertin High School",
+    "state": "NH",
+    "association_id": "1881",
+    "arbiter_org_id": "30409",
+    "phone": "6038894107",
+    "enrollment": "767"
+  },
+  {
+    "name": "Bow High School",
+    "state": "NH",
+    "association_id": "2242",
+    "arbiter_org_id": "30741",
+    "phone": "6032282210",
+    "enrollment": "639"
+  },
+  {
+    "name": "Campbell High School",
+    "state": "NH",
+    "association_id": "3101",
+    "arbiter_org_id": "31542",
+    "phone": "6035460300",
+    "enrollment": "337"
+  },
+  {
+    "name": "Canaan High School",
+    "state": "NH",
+    "association_id": "3116",
+    "arbiter_org_id": "31556",
+    "phone": "8022668610",
+    "enrollment": "46"
+  },
+  {
+    "name": "Coe-Brown Northwood Academy",
+    "state": "NH",
+    "association_id": "4639",
+    "arbiter_org_id": "32978",
+    "phone": "6039425531",
+    "enrollment": "650"
+  },
+  {
+    "name": "Colebrook Academy",
+    "state": "NH",
+    "association_id": "4675",
+    "arbiter_org_id": "33011",
+    "phone": "6032374801",
+    "enrollment": "89"
+  },
+  {
+    "name": "Conant Middle High School",
+    "state": "NH",
+    "association_id": "4901",
+    "arbiter_org_id": "33217",
+    "phone": "6035328122",
+    "enrollment": "307"
+  },
+  {
+    "name": "Concord Christian Academy",
+    "state": "NH",
+    "association_id": "34734",
+    "arbiter_org_id": "60625",
+    "phone": "6037594323",
+    "enrollment": "120"
+  },
+  {
+    "name": "Concord High School",
+    "state": "NH",
+    "association_id": "4912",
+    "arbiter_org_id": "33228",
+    "phone": "6032250800",
+    "enrollment": "1329"
+  },
+  {
+    "name": "Contoocook Valley Regional High School",
+    "state": "NH",
+    "association_id": "4898",
+    "arbiter_org_id": "140876",
+    "phone": "6039243869",
+    "enrollment": "603"
+  },
+  {
+    "name": "Dover High School",
+    "state": "NH",
+    "association_id": "6087",
+    "arbiter_org_id": "34324",
+    "phone": "6035166900",
+    "enrollment": "1423"
+  },
+  {
+    "name": "Epping Middle and High Schools",
+    "state": "NH",
+    "association_id": "7031",
+    "arbiter_org_id": "140956",
+    "phone": "6036795472",
+    "enrollment": "225"
+  },
+  {
+    "name": "Exeter High School",
+    "state": "NH",
+    "association_id": "7200",
+    "arbiter_org_id": "35343",
+    "phone": "6037758406",
+    "enrollment": "1329"
+  },
+  {
+    "name": "Fall Mountain Reg High School",
+    "state": "NH",
+    "association_id": "7361",
+    "arbiter_org_id": "141014",
+    "phone": "6038356318",
+    "enrollment": "430"
+  },
+  {
+    "name": "Farmington High School-NH",
+    "state": "NH",
+    "association_id": "7405",
+    "arbiter_org_id": "35529",
+    "phone": "6037552811",
+    "enrollment": "209"
+  },
+  {
+    "name": "Franklin High School",
+    "state": "NH",
+    "association_id": "7924",
+    "arbiter_org_id": "36006",
+    "phone": "6039345441",
+    "enrollment": "265"
+  },
+  {
+    "name": "Gilford High School",
+    "state": "NH",
+    "association_id": "8503",
+    "arbiter_org_id": "36552",
+    "phone": "6035247135",
+    "enrollment": "442"
+  },
+  {
+    "name": "Goffstown High School",
+    "state": "NH",
+    "association_id": "8651",
+    "arbiter_org_id": "36683",
+    "phone": "6034974841",
+    "enrollment": "1032"
+  },
+  {
+    "name": "Gorham High School",
+    "state": "NH",
+    "association_id": "8717",
+    "arbiter_org_id": "36747",
+    "phone": "6034662776",
+    "enrollment": "142"
+  },
+  {
+    "name": "Groveton High School",
+    "state": "NH",
+    "association_id": "9182",
+    "arbiter_org_id": "37168",
+    "phone": "6036361619",
+    "enrollment": "111"
+  },
+  {
+    "name": "Hanover High School -NH",
+    "state": "NH",
+    "association_id": "9426",
+    "arbiter_org_id": "37396",
+    "phone": "6036433431",
+    "enrollment": "693"
+  },
+  {
+    "name": "Hillsboro-Deering High School",
+    "state": "NH",
+    "association_id": "10125",
+    "arbiter_org_id": "38043",
+    "phone": "6034641130",
+    "enrollment": "340"
+  },
+  {
+    "name": "Hinsdale High School",
+    "state": "NH",
+    "association_id": "10166",
+    "arbiter_org_id": "38082",
+    "phone": "6033365984",
+    "enrollment": "162"
+  },
+  {
+    "name": "Hollis Brookline High School",
+    "state": "NH",
+    "association_id": "10240",
+    "arbiter_org_id": "38154",
+    "phone": "6038214477",
+    "enrollment": "713"
+  },
+  {
+    "name": "Holy Family Academy",
+    "state": "NH",
+    "association_id": "51278",
+    "arbiter_org_id": "75608",
+    "phone": "6036447247",
+    "enrollment": "75"
+  },
+  {
+    "name": "Hopkinton High School",
+    "state": "NH",
+    "association_id": "10460",
+    "arbiter_org_id": "38358",
+    "phone": "6037464167",
+    "enrollment": "309"
+  },
+  {
+    "name": "Inter-lakes Middle High School",
+    "state": "NH",
+    "association_id": "10899",
+    "arbiter_org_id": "38765",
+    "phone": "6032796162",
+    "enrollment": "279"
+  },
+  {
+    "name": "John Stark Regional High School",
+    "state": "NH",
+    "association_id": "120499",
+    "arbiter_org_id": "172889",
+    "phone": "6035297675",
+    "enrollment": "657"
+  },
+  {
+    "name": "Kearsarge Regional High School",
+    "state": "NH",
+    "association_id": "11603",
+    "arbiter_org_id": "39428",
+    "phone": "6039274261",
+    "enrollment": "485"
+  },
+  {
+    "name": "Keene High School",
+    "state": "NH",
+    "association_id": "11610",
+    "arbiter_org_id": "39434",
+    "phone": "6033520640",
+    "enrollment": "1263"
+  },
+  {
+    "name": "Kennett High School",
+    "state": "NH",
+    "association_id": "55775",
+    "arbiter_org_id": "79222",
+    "phone": "6033564343",
+    "enrollment": "612"
+  },
+  {
+    "name": "Kingswood Regional HS/MS",
+    "state": "NH",
+    "association_id": "11864",
+    "arbiter_org_id": "39664",
+    "phone": "6035698100",
+    "enrollment": "727"
+  },
+  {
+    "name": "Laconia High School",
+    "state": "NH",
+    "association_id": "12075",
+    "arbiter_org_id": "39858",
+    "phone": "6035243350",
+    "enrollment": "543"
+  },
+  {
+    "name": "Lebanon High School",
+    "state": "NH",
+    "association_id": "12566",
+    "arbiter_org_id": "40310",
+    "phone": "6034482055",
+    "enrollment": "642"
+  },
+  {
+    "name": "Lin-Wood High School",
+    "state": "NH",
+    "association_id": "13006",
+    "arbiter_org_id": "40712",
+    "phone": "6037452214",
+    "enrollment": "67"
+  },
+  {
+    "name": "Lisbon Regional School",
+    "state": "NH",
+    "association_id": "13019",
+    "arbiter_org_id": "40725",
+    "phone": "6038386672",
+    "enrollment": "83"
+  },
+  {
+    "name": "Littleton High School",
+    "state": "NH",
+    "association_id": "13064",
+    "arbiter_org_id": "40768",
+    "phone": "6034445601",
+    "enrollment": "161"
+  },
+  {
+    "name": "Londonderry High School",
+    "state": "NH",
+    "association_id": "13155",
+    "arbiter_org_id": "40852",
+    "phone": "6034326941",
+    "enrollment": "1219"
+  },
+  {
+    "name": "Manchester High School Central",
+    "state": "NH",
+    "association_id": "13645",
+    "arbiter_org_id": "41316",
+    "phone": "6036246363",
+    "enrollment": "1106"
+  },
+  {
+    "name": "Manchester High School West",
+    "state": "NH",
+    "association_id": "25245",
+    "arbiter_org_id": "52117",
+    "phone": "6036246384",
+    "enrollment": "756"
+  },
+  {
+    "name": "Manchester Memorial High School",
+    "state": "NH",
+    "association_id": "14397",
+    "arbiter_org_id": "42019",
+    "phone": "6036246378",
+    "enrollment": "1345"
+  },
+  {
+    "name": "Mascenic Regional High School",
+    "state": "NH",
+    "association_id": "14051",
+    "arbiter_org_id": "41690",
+    "phone": "6037326365",
+    "enrollment": "263"
+  },
+  {
+    "name": "Mascoma Valley Regional High School",
+    "state": "NH",
+    "association_id": "14052",
+    "arbiter_org_id": "41691",
+    "phone": "6036324308",
+    "enrollment": "317"
+  },
+  {
+    "name": "Merrimack High School",
+    "state": "NH",
+    "association_id": "14506",
+    "arbiter_org_id": "42120",
+    "phone": "6034246251",
+    "enrollment": "1013"
+  },
+  {
+    "name": "Merrimack Valley High School",
+    "state": "NH",
+    "association_id": "14509",
+    "arbiter_org_id": "42123",
+    "phone": "6034062292",
+    "enrollment": "715"
+  },
+  {
+    "name": "Milford High School",
+    "state": "NH",
+    "association_id": "14719",
+    "arbiter_org_id": "42316",
+    "phone": "6036734201",
+    "enrollment": "613"
+  },
+  {
+    "name": "Monadnock Regional Middle High School",
+    "state": "NH",
+    "association_id": "14955",
+    "arbiter_org_id": "42536",
+    "phone": "6039036781",
+    "enrollment": "475"
+  },
+  {
+    "name": "Moultonborough Academy",
+    "state": "NH",
+    "association_id": "115592",
+    "arbiter_org_id": "138658",
+    "phone": "6034765517",
+    "enrollment": "155"
+  },
+  {
+    "name": "Mount Royal Academy",
+    "state": "NH",
+    "association_id": "15331",
+    "arbiter_org_id": "42892",
+    "phone": "6037639010",
+    "enrollment": "48"
+  },
+  {
+    "name": "Nashua High School North",
+    "state": "NH",
+    "association_id": "15604",
+    "arbiter_org_id": "43149",
+    "phone": "6039662950",
+    "enrollment": "1545"
+  },
+  {
+    "name": "Nashua High School South",
+    "state": "NH",
+    "association_id": "15605",
+    "arbiter_org_id": "43150",
+    "phone": "6039661490",
+    "enrollment": "1697"
+  },
+  {
+    "name": "Newfound Regional High School",
+    "state": "NH",
+    "association_id": "15943",
+    "arbiter_org_id": "43471",
+    "phone": "6037446006",
+    "enrollment": "368"
+  },
+  {
+    "name": "Newmarket Middle-High School",
+    "state": "NH",
+    "association_id": "15956",
+    "arbiter_org_id": "43483",
+    "phone": "6032927962",
+    "enrollment": "266"
+  },
+  {
+    "name": "Newport Middle/High School",
+    "state": "NH",
+    "association_id": "15968",
+    "arbiter_org_id": "43495",
+    "phone": "6038659658",
+    "enrollment": "263"
+  },
+  {
+    "name": "Nute Middle/High School",
+    "state": "NH",
+    "association_id": "16748",
+    "arbiter_org_id": "44229",
+    "phone": "6036524591",
+    "enrollment": "157"
+  },
+  {
+    "name": "Oyster River High School",
+    "state": "NH",
+    "association_id": "17366",
+    "arbiter_org_id": "44800",
+    "phone": "6038682375",
+    "enrollment": "796"
+  },
+  {
+    "name": "Pelham High School",
+    "state": "NH",
+    "association_id": "17768",
+    "arbiter_org_id": "45177",
+    "phone": "6036352115",
+    "enrollment": "466"
+  },
+  {
+    "name": "Pembroke Academy",
+    "state": "NH",
+    "association_id": "17781",
+    "arbiter_org_id": "45190",
+    "phone": "6034857881",
+    "enrollment": "718"
+  },
+  {
+    "name": "Pinkerton Academy",
+    "state": "NH",
+    "association_id": "18140",
+    "arbiter_org_id": "45524",
+    "phone": "6034375200",
+    "enrollment": "2979"
+  },
+  {
+    "name": "Pittsburg High School",
+    "state": "NH",
+    "association_id": "18179",
+    "arbiter_org_id": "45560",
+    "phone": "6035386536",
+    "enrollment": "27"
+  },
+  {
+    "name": "Pittsfield Middle High School",
+    "state": "NH",
+    "association_id": "18186",
+    "arbiter_org_id": "45566",
+    "phone": "6034356701",
+    "enrollment": "135"
+  },
+  {
+    "name": "Plymouth Regional High School",
+    "state": "NH",
+    "association_id": "18298",
+    "arbiter_org_id": "45672",
+    "phone": "6035361444",
+    "enrollment": "643"
+  },
+  {
+    "name": "Portsmouth Christian Academy",
+    "state": "NH",
+    "association_id": "18453",
+    "arbiter_org_id": "45816",
+    "phone": "6037423617",
+    "enrollment": "166"
+  },
+  {
+    "name": "Portsmouth High School",
+    "state": "NH",
+    "association_id": "18455",
+    "arbiter_org_id": "45818",
+    "phone": "6034367100",
+    "enrollment": "983"
+  },
+  {
+    "name": "Profile School",
+    "state": "NH",
+    "association_id": "18629",
+    "arbiter_org_id": "45979",
+    "phone": "6038237411",
+    "enrollment": "136"
+  },
+  {
+    "name": "Prospect Mountain High School",
+    "state": "NH",
+    "association_id": "18639",
+    "arbiter_org_id": "45988",
+    "phone": "6038753800",
+    "enrollment": "408"
+  },
+  {
+    "name": "Raymond High School",
+    "state": "NH",
+    "association_id": "18906",
+    "arbiter_org_id": "46235",
+    "phone": "6038956616",
+    "enrollment": "326"
+  },
+  {
+    "name": "Salem High School",
+    "state": "NH",
+    "association_id": "20196",
+    "arbiter_org_id": "47441",
+    "phone": "6037423206",
+    "enrollment": "1069"
+  },
+  {
+    "name": "Sanborn Regional High School",
+    "state": "NH",
+    "association_id": "115607",
+    "arbiter_org_id": "138673",
+    "phone": "6036423341",
+    "enrollment": "433"
+  },
+  {
+    "name": "Somersworth High School",
+    "state": "NH",
+    "association_id": "21218",
+    "arbiter_org_id": "48400",
+    "phone": "6036422341",
+    "enrollment": "411"
+  },
+  {
+    "name": "Souhegan High School",
+    "state": "NH",
+    "association_id": "21243",
+    "arbiter_org_id": "48423",
+    "phone": "6036739940",
+    "enrollment": "709"
+  },
+  {
+    "name": "Spaulding High School",
+    "state": "NH",
+    "association_id": "21696",
+    "arbiter_org_id": "48841",
+    "phone": "6033320757",
+    "enrollment": "1346"
+  },
+  {
+    "name": "St. Thomas Aquinas High School",
+    "state": "NH",
+    "association_id": "20156",
+    "arbiter_org_id": "47403",
+    "phone": "6033320757",
+    "enrollment": "341"
+  },
+  {
+    "name": "Stevens High School",
+    "state": "NH",
+    "association_id": "22542",
+    "arbiter_org_id": "49609",
+    "phone": "6035434220",
+    "enrollment": "432"
+  },
+  {
+    "name": "Sunapee Middle High School",
+    "state": "NH",
+    "association_id": "22757",
+    "arbiter_org_id": "49812",
+    "phone": "6035335046",
+    "enrollment": "150"
+  },
+  {
+    "name": "The Derryfield School",
+    "state": "NH",
+    "association_id": "23185",
+    "arbiter_org_id": "50198",
+    "phone": "6036694524",
+    "enrollment": "270"
+  },
+  {
+    "name": "Timberlane Regional Middle/High School",
+    "state": "NH",
+    "association_id": "23448",
+    "arbiter_org_id": "50429",
+    "phone": "6033826541",
+    "enrollment": "934"
+  },
+  {
+    "name": "Trinity High School",
+    "state": "NH",
+    "association_id": "23714",
+    "arbiter_org_id": "50679",
+    "phone": "6036682910",
+    "enrollment": "345"
+  },
+  {
+    "name": "White Mountains Regional High School",
+    "state": "NH",
+    "association_id": "25682",
+    "arbiter_org_id": "52521",
+    "phone": "6038372528",
+    "enrollment": "327"
+  },
+  {
+    "name": "Wilton-Lyndeborough Coop High",
+    "state": "NH",
+    "association_id": "26010",
+    "arbiter_org_id": "52827",
+    "phone": "6037329230",
+    "enrollment": "153"
+  },
+  {
+    "name": "Windham High School",
+    "state": "NH",
+    "association_id": "38740",
+    "arbiter_org_id": "64380",
+    "phone": "6038451558",
+    "enrollment": "844"
+  },
+  {
+    "name": "Winnacunnet High School",
+    "state": "NH",
+    "association_id": "26068",
+    "arbiter_org_id": "52882",
+    "phone": "6039269604",
+    "enrollment": "988"
+  },
+  {
+    "name": "Winnisquam Regional High School",
+    "state": "NH",
+    "association_id": "26080",
+    "arbiter_org_id": "52894",
+    "phone": "6032864351",
+    "enrollment": "372"
+  },
+  {
+    "name": "Woodsville High School",
+    "state": "NH",
+    "association_id": "26260",
+    "arbiter_org_id": "53062",
+    "phone": "6037472781",
+    "enrollment": "221"
+  }
+]

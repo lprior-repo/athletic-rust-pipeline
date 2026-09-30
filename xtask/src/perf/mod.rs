@@ -8,20 +8,38 @@ pub use bench::run_benchmarks;
 
 use crate::cmd::Cmd;
 use crate::paths;
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;
 
-#[allow(dead_code)]
-pub(crate) const DEFAULT_TOLERANCE: f64 = 0.05;
-
 const BASELINE_FILE: &str = "perf-baseline.json";
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+pub(crate) enum Throughput<T> {
+    Elements(T),
+    Bytes(T),
+}
+
+impl<T> Throughput<T> {
+    fn value(self) -> T {
+        match self {
+            Self::Elements(value) | Self::Bytes(value) => value,
+        }
+    }
+
+    fn map<U>(self, map: impl FnOnce(T) -> U) -> Throughput<U> {
+        match self {
+            Self::Elements(value) => Throughput::Elements(map(value)),
+            Self::Bytes(value) => Throughput::Bytes(map(value)),
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct GroupMeasurement {
     #[serde(skip_serializing_if = "Option::is_none")]
-    throughput: Option<f64>,
+    throughput: Option<Throughput<f64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     peak_rss_kib: Option<u64>,
     wall_time_seconds: f64,
@@ -61,10 +79,11 @@ pub fn run_record() -> Result<()> {
 }
 
 pub fn run_check(tolerance: f64, reason: Option<String>) -> Result<()> {
+    compare::validate_tolerance(tolerance)?;
     let baseline = load_baseline()?;
     let current_data = run_benchmarks()?;
 
-    compare::check_environment(&baseline, &current_data)?;
+    compare::check_environment(&baseline)?;
     if let Some(reason) = &reason {
         println!("check reason: {reason}");
     }
@@ -75,31 +94,58 @@ pub fn run_check(tolerance: f64, reason: Option<String>) -> Result<()> {
 pub fn run_profile(group: &str) -> Result<()> {
     if !env::perf_available() {
         println!("perf is not installed on this system");
-        println!("would run: perf record --call-graph=dwarf cargo bench -p census-service --bench core -- --bench-ids {}", group);
-        println!("and:       perf record --call-graph=dwarf cargo bench -p census-service --bench pipeline -- --bench-ids {}", group);
+        println!("would run: perf record --call-graph=dwarf cargo bench -p census-service --bench core -- {} --noplot", group);
+        println!("and:       perf record --call-graph=dwarf cargo bench -p census-service --bench pipeline -- {} --noplot", group);
         println!("install perf with: apt install linux-tools-generic  (Debian/Ubuntu)");
         println!("or:              dnf install perf  (Fedora/RHEL)");
         println!("then re-run:   cargo xtask perf profile {}", group);
         return Ok(());
     }
 
-    let bench_cmd = |bench_name: &str| {
-        format!(
-            "perf record --call-graph=dwarf cargo bench -p census-service --bench {bench_name} -- --bench-ids {group}"
-        )
-    };
+    if group.is_empty() {
+        bail!("profile: benchmark group argument is empty");
+    }
 
-    for name in &["core", "pipeline"] {
-        let cmd = bench_cmd(name);
-        println!("+ {cmd}");
-        Cmd::new("bash")
-            .arg("-c")
-            .arg(&cmd)
-            .run()
-            .with_context(|| format!("running perf profile for {group}"))?;
+    let mut failures = Vec::new();
+    for bench_name in &["core", "pipeline"] {
+        match profile_benchmark(bench_name, group) {
+            Ok(()) => {}
+            Err(e) => failures.push(format!("{bench_name}: {e}")),
+        }
+    }
+
+    if !failures.is_empty() {
+        for f in &failures {
+            println!("{f}");
+        }
+        bail!("profile: some benchmark groups failed to profile");
     }
 
     Ok(())
+}
+
+fn profile_benchmark(bench_name: &str, group: &str) -> Result<()> {
+    println!("profiling {bench_name}: {group}");
+
+    let exit = Cmd::new("perf")
+        .args(["record", "--call-graph=dwarf"])
+        .args([
+            "cargo",
+            "bench",
+            "-p",
+            "census-service",
+            "--bench",
+            bench_name,
+            "--",
+            group,
+            "--noplot",
+        ])
+        .run();
+
+    match exit {
+        Ok(()) => Ok(()),
+        Err(e) => Err(e),
+    }
 }
 
 #[cfg(test)]

@@ -22,7 +22,7 @@ observed results from unverified requirements.
 | Find public source observations and captures | [Source research](research/sources) |
 | Understand headed browser acquisition | [Browser lane](ARCHITECTURE.md#6-admission-and-browser-state-10-26-28) |
 | Understand persistence and snapshots | [Backup/restore](docs/FJALL_BACKUP.md) |
-| Inspect durable handlers and replay boundaries | [Durable execution](docs/restate/durable-execution.md) |
+| Inspect durable handlers and replay boundaries | [Operations](docs/OPERATIONS.md); [vendor durable-execution background](docs/restate/durable-execution.md) |
 | Run or inspect the census | [Operations](docs/OPERATIONS.md) |
 | Deploy, stop or recover services | [Lifecycle](docs/deployment-lifecycle.md) |
 | Back up or restore evidence | [Backup/restore](docs/FJALL_BACKUP.md) |

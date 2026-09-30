@@ -29,5 +29,5 @@ invalidate affected advice and decisions. Retain responses and reversible decisi
 Models never calculate marks, establish graduation facts or fabricate affiliations/contact details.
 Candidate generation and score thresholds do not themselves constitute acceptance.
 
-[DOMAIN.md](../../DOMAIN.md) owns the semantic contracts;
+[Architecture §§8–9](../../ARCHITECTURE.md#8-identity-review-32-34) owns the semantic contracts;
 [the delivery plan](../NATIONAL-CENSUS-PLAN.md) owns dual-lane integration and adversarial acceptance.

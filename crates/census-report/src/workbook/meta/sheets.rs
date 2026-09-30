@@ -15,6 +15,7 @@ fn built<T>(sheet: &'static str, build: impl FnOnce() -> T) -> T {
     value
 }
 
+#[allow(clippy::vec_init_then_push)]
 pub(super) fn meta_sheets(
     facts: &RunFacts<'_>,
     rows: &StoreRows<'_>,
@@ -26,13 +27,13 @@ pub(super) fn meta_sheets(
     let mut sheets: Vec<Sheet> = Vec::with_capacity(7);
     sheets.push((
         "Schools",
-        built("Schools", || schools_sheet(&rows.schools))?,
+        built("Schools", || schools_sheet(rows.schools))?,
         &SCHOOL_WIDTHS,
         true,
     ));
     sheets.push((
         "Meets",
-        built("Meets", || meets_sheet(&rows.meets)),
+        built("Meets", || meets_sheet(rows.meets)),
         &MEET_WIDTHS,
         true,
     ));

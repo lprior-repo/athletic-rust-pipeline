@@ -41,11 +41,11 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum PerfCommand {
     #[command(
-        about = "Run the `census-service` criterion bench targets and write a baseline recording wall time, throughput and peak RSS per group, stamped with hardware and toolchain metadata"
+        about = "Run both census-service Criterion targets and record per-benchmark timing and declared throughput; peak RSS is recorded when GNU time is available"
     )]
     Record,
     #[command(
-        about = "Re-run the bench targets, compare throughput against the recorded baseline, and fail when any group regresses past the tolerance (default 5%, overridable with `--tolerance`)"
+        about = "Re-run both benchmark targets, reject ID or measurement mismatches, and fail regressions beyond the tolerance (default 5%)"
     )]
     Check {
         #[arg(
@@ -126,7 +126,7 @@ enum Command {
     #[command(about = "Prove the `census-domain` dependency tree carries no async or I/O package")]
     DomainPurity,
     #[command(
-        about = "Run the census-service tests that cover one source (`cargo nextest -E 'test(<source>)'`)"
+        about = "Run matching source tests across the workspace with all features; fail when no test matches"
     )]
     #[command(visible_alias = "source-check")]
     SourceTest {

@@ -234,8 +234,10 @@ counts-only fixture substitutes for these consumer-visible boundaries.
 [The fault catalog](NATIONAL-CENSUS-FAULTS.md) owns all 17 named native scenarios and their required
 phase-boundary subcases. Use owned isolated native non-Docker infrastructure, actual production
 paths and reached injections. A skipped, unselected, simulated substitute or unmeasured lane is not
-PASS. [tools/gate.sh](../tools/gate.sh) and [xtask](../xtask/README.md) own the 12 mandatory proof
-kernels, proof verdict taxonomy, property/fuzz/mutation/security/async gates and command procedures;
+PASS. The release requirement retains 12 mandatory proof kernels; the current
+[xtask](../xtask/README.md) wrapper enumerates eight names, so that narrower invocation does not
+establish the twelve-kernel requirement. [tools/gate.sh](../tools/gate.sh) and xtask own proof verdict
+taxonomy, property/fuzz/mutation/security/async gates and command procedures;
 `xtask`'s perf commands own measured benchmark baselines. License enforcement is excluded by owner
 direction, not advisory, security, provenance or cargo-vet checks.
 

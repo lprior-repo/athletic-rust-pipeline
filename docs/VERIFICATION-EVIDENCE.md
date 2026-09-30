@@ -3223,7 +3223,8 @@ from the then-inspected source: Athletic.net bio flush `6 + k` (70 for 64 units)
 review two, WIAA/ND/NSAA school+coach journals two, OHSAA `1 + coach_count`. These were source-path
 counts, **not measured fdatasync calls or throughput**. Its proposal to commit from Drop and its
 claim that Fjall batches cannot span keyspaces were incorrect and are not retained as design.
-The current atomic write/receipt contract is [FJALL_SCHEMA.md](../FJALL_SCHEMA.md).
+The current atomic write/receipt contract is [FJALL_BACKUP.md](FJALL_BACKUP.md) and
+[the storage ADR](adr/ADR-001-fjall-primary-store.md).
 
 ### Backup, deployment and source-owner cutover evidence
 

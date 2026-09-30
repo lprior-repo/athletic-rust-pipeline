@@ -26,9 +26,14 @@ failure. Measurement commands emit their own reports. Run `cargo xtask --help` f
 | `export` | Serving `Workbook/run`, or offline `workbook`; accepts `--out`, `--grad-year`, `--core`, `--limit` |
 | `bench [-- <args>]` | Forwards to `cargo bench -p census-service`; does not select every workspace benchmark |
 | `perf record`, `perf check`, `perf profile <group>` | Record/compare/profile configured benchmarks; each lane's own reports own interpretation and limits |
-| `kani [-- <harnesses>]` | Runs the tool's declared harness selection; [tools/gate.sh](../tools/gate.sh) distinguishes this inventory from all required proof kernels |
+| `kani [-- <harnesses>]` | No selection means all eight mandatory contract kernels and fails if any is absent; an explicit selection is a focused proof run, not the release gate |
 | `dump-sheet <workbook> <sheets>...` | Prints nonempty worksheet rows as `column=value` fields |
 | `new-source <name>` | Writes a source scaffold and module declaration; not a qualified or fully registered adapter |
+
+`tools/gate.sh --full` and `--release` invoke the unfiltered mandatory proof lane.
+A passing explicitly selected harness is not coverage of missing kernels. Release also fails when
+Cargo metadata contains no benchmark target; compiling a benchmark is not a measured performance
+result. See the dated evidence for actually executed lanes and remaining blockers.
 
 ## Serving versus offline routing
 

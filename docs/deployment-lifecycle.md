@@ -1,8 +1,8 @@
 # Native deployment lifecycle
 
-This document owns binary installation, registration and store handoff. Runtime commands are in
-[OPERATIONS.md](OPERATIONS.md), handler policies in [durable execution](restate/durable-execution.md),
-and required V1→V2 fault evidence in [scenario 4](NATIONAL-CENSUS-FAULTS.md#required-scenarios).
+This document owns binary installation, registration and store handoff. Runtime commands and project
+handler policies are in [OPERATIONS.md](OPERATIONS.md); [durable execution](restate/durable-execution.md)
+is vendor background. Required V1→V2 fault evidence is [scenario 4](NATIONAL-CENSUS-FAULTS.md#required-scenarios).
 An ordinary restart is not proof of an in-flight upgrade.
 
 ## Invariants

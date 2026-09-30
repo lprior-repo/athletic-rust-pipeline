@@ -35,7 +35,7 @@ only product implementation; do not recreate the root pipeline or a parallel acq
   `UsJurisdiction::CENSUS_SCOPE` defines the run denominator. Alaska and Hawaii parse but are
   excluded; territories are not modeled. Qualification subsets are not a national delivery.
 - **Cohort (§3):** graduation year 2027, not a timeless “junior” label. Grade and academic year are
-  evidence; [DOMAIN.md](DOMAIN.md) owns their interpretation.
+  evidence; [§9](#9-target-data-and-publication-contracts) owns their required interpretation.
 - **Population (§4):** source-verifiable boys' and girls' high-school XC, indoor and outdoor TF,
   including legitimate events and evidenced relay membership. Discovery includes programs that
   have not yet yielded an accepted athlete.
@@ -88,8 +88,9 @@ record the completed crate cut. `fuzz/` is a separate cargo-fuzz workspace; `fix
 
 ## 5. Workflow backbone (§7-§9)
 
-The implemented handler/API catalog, logical keys, wire shapes and retry dispositions live only in
-[RESTATE_WORKFLOWS.md](RESTATE_WORKFLOWS.md). Native, non-Docker Restate and its Rust SDK remain the
+The implemented handler/API catalog, logical keys and retry dispositions live in
+[OPERATIONS.md](docs/OPERATIONS.md); [durable execution](docs/restate/durable-execution.md) is vendor
+background, not the project's handler contract. Native, non-Docker Restate and its Rust SDK remain the
 orchestrator. There is one application path; CLI and service surfaces must not implement competing
 business workflows. Batch-only reconciliation, review and gap handling must join that path.
 
@@ -119,7 +120,7 @@ while an absent, unreadable or non-200 robots.txt publishes no policy and never 
 CAPTCHA, authentication or paywall circumvention, browser-identity spoofing, proxy evasion, cookie
 extraction/replay, or direct-HTTP fallback intended to bypass a challenge. Athletic.net uses the
 headed persistent-profile lane; the operator resolves challenges in that profile.
-[CHROMIUM_DESIGN.md](CHROMIUM_DESIGN.md) owns the browser implementation contract.
+[OPERATIONS.md](docs/OPERATIONS.md#browser-lane) owns the runnable browser-lane procedures.
 
 ```text
 Ready --429--> Cooldown --admitted retry--> Ready
@@ -132,8 +133,8 @@ other sources continue. Athlete personal contact data and inferred GPA are outsi
 ## 7. Store (§29-§31)
 
 Fjall is the sole evidence store under [ADR-001](docs/adr/ADR-001-fjall-primary-store.md).
-[FJALL_SCHEMA.md](FJALL_SCHEMA.md) owns physical keyspaces, logical tables, keys, read/write APIs,
-durability and migration. [Backup procedures](docs/FJALL_BACKUP.md) own safe copying and recovery.
+[The store table registry](crates/census-store/src/table.rs) owns implemented logical tables;
+[backup procedures](docs/FJALL_BACKUP.md) own physical storage and safe copying/recovery.
 Do not infer a physical keyspace from a domain collection or an Excel column.
 
 Preserve immutable observations and provenance needed to reverse any identity decision. Commit
@@ -148,8 +149,9 @@ invalidate its own input identity. Keep retention and garbage collection safe fo
 
 ## 8. Identity review (§32-§34)
 
-[DOMAIN.md](DOMAIN.md) owns identity, cohort, affiliation, source independence and comparison
-contracts; [ADR-005](docs/adr/ADR-005-ai-cannot-override-contradictions.md) owns model authority.
+This section and [§9](#9-target-data-and-publication-contracts) own identity, cohort, affiliation,
+source independence and comparison contracts;
+[ADR-005](docs/adr/ADR-005-ai-cannot-override-contradictions.md) owns model authority.
 Candidate retrieval is not acceptance. Name, school text, cohort, a score or model agreement alone
 cannot establish identity. Provider ownership and hard contradictions survive every projection.
 
@@ -164,8 +166,9 @@ override a hard contradiction. Models do not invent marks, cohort evidence, affi
 
 ## 9. Target data and publication contracts
 
-[DOMAIN.md](DOMAIN.md) defines the data semantics; [SOURCE_ADAPTER_GUIDE.md](SOURCE_ADAPTER_GUIDE.md)
-defines acquisition/parser obligations. Every material claim must resolve to durable captured bytes
+This section defines required data semantics; [xtask/README.md](xtask/README.md#source-scaffolding)
+defines adapter integration and [source reports](research/sources/) retain qualification evidence.
+Every material claim must resolve to durable captured bytes
 and a source locator. A URL, digest or parse count alone is not an archive. Partial parses retain
 valid rows, rejected locators and the unfinished obligation.
 
@@ -219,8 +222,8 @@ is not multi-artifact atomic publication. XLSX byte equality alone is not semant
 
 ## 11. Quality gates (§55-§58)
 
-[TESTING.md](TESTING.md) owns commands, gate semantics, fixture rules and coverage limits.
-[PERFORMANCE.md](PERFORMANCE.md) owns benchmark procedures and measured baselines.
+[tools/gate.sh](tools/gate.sh) and [xtask/README.md](xtask/README.md) own commands, gate semantics,
+fixture rules and measurement procedures.
 [VERIFICATION-EVIDENCE.md](docs/VERIFICATION-EVIDENCE.md) owns dated command results; a document,
 passing build, skipped lane or old run is not acceptance evidence for a new delivery.
 
@@ -249,9 +252,9 @@ fresh run.
 
 ## 13. Current state and delivery order
 
-The nine-crate split exists. [RESTATE_WORKFLOWS.md](RESTATE_WORKFLOWS.md) inventories bound handlers;
-[FJALL_SCHEMA.md](FJALL_SCHEMA.md) inventories storage; [DOMAIN.md](DOMAIN.md) separates implemented
-representations from required semantics. These references must not label targets implemented.
+The nine-crate split exists. [OPERATIONS.md](docs/OPERATIONS.md) inventories bound handlers;
+[the table registry](crates/census-store/src/table.rs) defines implemented storage.
+Sections 8–9 above state required semantics, not a certificate of their implementation.
 
 [The national delivery plan](docs/NATIONAL-CENSUS-PLAN.md) is the only active repair/order/acceptance
 list. Prove one working source-discovery-to-evidence-to-output path before scaling breadth; then

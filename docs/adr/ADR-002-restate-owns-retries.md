@@ -25,6 +25,6 @@ Retry classification and Retry-After handling remain explicit transport outcomes
 Restate's responsibility. A completed `ctx.run` result is replayable, but an unfinished blocking job
 has no automatic internal checkpoint.
 
-[RESTATE_WORKFLOWS.md](../../RESTATE_WORKFLOWS.md) owns implemented handler policies, including pause
+[OPERATIONS.md](../OPERATIONS.md) owns implemented handler policies, including pause
 versus terminal-failure dispositions. [The fault catalog](../NATIONAL-CENSUS-FAULTS.md) owns required
 restart, exhaustion and physical-request evidence; this ADR is not an execution certificate.

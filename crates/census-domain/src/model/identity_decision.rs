@@ -6,6 +6,18 @@ use serde::{Deserialize, Serialize};
 
 pub const ATHLETE_IDENTITY_POLICY: u32 = 1;
 
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum IdentityDecisionError {
+    #[error("identity requires at least one member")]
+    EmptyMembers,
+    #[error("same-person identity requires a canonical_id")]
+    MissingCanonicalId,
+    #[error("different-person identity requires a case_id")]
+    MissingCaseId,
+    #[error("different-person identity requires a verdict_digest")]
+    MissingVerdictDigest,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AppliedIdentityKind {
@@ -93,9 +105,18 @@ impl AppliedAthleteIdentity {
         case_id: Option<String>,
         verdict_digest: Option<String>,
         observed_at: &str,
-    ) -> Result<Self, String> {
-        if let Some(error) = validate_identity_membership(kind, &members, canonical_id.as_ref()) {
-            return Err(error);
+    ) -> Result<Self, IdentityDecisionError> {
+        if members.is_empty() {
+            return Err(IdentityDecisionError::EmptyMembers);
+        }
+        if kind == AppliedIdentityKind::SamePerson && canonical_id.is_none() {
+            return Err(IdentityDecisionError::MissingCanonicalId);
+        }
+        if kind == AppliedIdentityKind::DifferentPerson && case_id.is_none() {
+            return Err(IdentityDecisionError::MissingCaseId);
+        }
+        if kind == AppliedIdentityKind::DifferentPerson && verdict_digest.is_none() {
+            return Err(IdentityDecisionError::MissingVerdictDigest);
         }
         Ok(Self {
             id: id.to_string(),

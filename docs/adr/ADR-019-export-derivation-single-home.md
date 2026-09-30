@@ -1,8 +1,11 @@
-# ADR-015 — Export consumers derive from one dataset and one derivation
+# ADR-019 — Export consumers derive from one dataset and one derivation
 
 Status: accepted. Supersedes the "no filter-at-load / each consumer applies its own scope and cohort
 filtering" principle of the export-architecture proposal. Unfinished conversion work belongs to the
 [delivery plan](../NATIONAL-CENSUS-PLAN.md), not to this record.
+
+Number amended on 2026-09-30 to remove the duplicate ADR-015 identity; the accepted export decision
+is unchanged. ADR-015 remains the prototype acquisition port.
 
 ## Context
 
@@ -70,6 +73,6 @@ sheets is not mistaken for a regression:
 
 Scope, cohort and evidence semantics are the derivation's, not each sheet's; a sheet that wants a
 different cohort asks for a second, explicit derivation. Cost becomes one decode per run plus one
-filter pass per derivation, measured per [PERFORMANCE.md](../../PERFORMANCE.md); the extra filter
+filter pass per derivation, measured per [xtask procedures](../../xtask/README.md#measurement-and-fixture-boundaries); the extra filter
 pass is O(rows) over borrowed rows and does not re-decode. Fixtures and tests build derivations from
 a dataset instead of asserting on store states that bypass the derivation.

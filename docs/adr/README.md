@@ -25,6 +25,7 @@ Accepted policy is not proof of implementation or successful execution.
 | [016](ADR-016-merge-and-identity-semantics.md) | Row hygiene ports to a shared helper; identity stays lossless, census scope filters are explicit | Accepted |
 | [017](ADR-017-domain-canonical-json.md) | The domain owns its canonical JSON encoder; digests stay byte-equal with serde_json | Accepted |
 | [018](ADR-018-identity-and-evidence-framing-escapes.md) | Identity and evidence framing escapes its delimiter bytes | Accepted |
+| [019](ADR-019-export-derivation-single-home.md) | Export consumers share one dataset and derivation | Accepted; renumbered from duplicate 015 |
 
 Changes record explicit supersession rather than silently rewriting prior decisions. Source-specific
 research and dated command results belong in their evidence references, not additional ADR copies.

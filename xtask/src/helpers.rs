@@ -1,10 +1,34 @@
 use crate::cmd::Cmd;
-use anyhow::Result;
+use anyhow::{bail, Result};
+
+fn normalize_source_slug(source: &str) -> Result<String> {
+    let Some(first) = source.as_bytes().first() else {
+        bail!("source name is empty");
+    };
+    if !(first.is_ascii_alphabetic() || *first == b'_')
+        || !source
+            .bytes()
+            .all(|value| value.is_ascii_alphanumeric() || matches!(value, b'_' | b'-'))
+    {
+        bail!("source name must be a literal identifier: {source}");
+    }
+    Ok(source.replace('-', "_"))
+}
 
 pub(crate) fn source_test(source: &str) -> Result<()> {
+    let slug = normalize_source_slug(source)?;
+    let filter = format!("test({slug})");
     Cmd::new("cargo")
-        .args(["nextest", "run", "-p", "census-service", "-E"])
-        .arg(format!("test({source})"))
+        .args([
+            "nextest",
+            "run",
+            "--workspace",
+            "--all-features",
+            "--no-tests",
+            "fail",
+            "-E",
+        ])
+        .arg(filter)
         .run()
 }
 

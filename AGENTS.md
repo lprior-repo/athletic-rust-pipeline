@@ -25,7 +25,7 @@ skill rather than silently proceeding:
 | Domain representations, semantic gaps and publication contracts | `ARCHITECTURE.md` sections 8–9 |
 | Adapter integration and source qualification | `xtask/README.md`, `research/sources/<name>/SOURCE_REPORT.md` |
 | Physical storage, keyspaces and snapshots | `docs/FJALL_BACKUP.md`, `crates/census-store/src/table.rs` |
-| Implemented durable handlers and replay boundaries | `docs/OPERATIONS.md`, `docs/restate/durable-execution.md` |
+| Implemented durable handlers and replay boundaries | `docs/OPERATIONS.md`, `crates/census-service/src/restate_services/` |
 | Operating the census, run identity, reattach/dedup and admin-API inspection | `docs/OPERATIONS.md` |
 | External Restate vendor documentation | `docs/restate/README.md` |
 | Backup/restore and deployment | `docs/FJALL_BACKUP.md`, `docs/deployment-lifecycle.md` |

@@ -21,8 +21,6 @@ const TIMEOUT_TAIL: &str = "Timed out after 300 seconds";
 
 const MISSING_TAIL: &str = "Error: no harness found";
 
-const LEGACY_SUCCESS: &str = "All checks were verified";
-
 #[test]
 fn classifier_accepts_success_t1() {
     assert_eq!(classify_kani_output("", SUCCESS_TAIL_1), Outcome::Pass);
@@ -74,11 +72,6 @@ fn classifier_rejects_missing_harness() {
 }
 
 #[test]
-fn classifier_accepts_legacy_success() {
-    assert_eq!(classify_kani_output(LEGACY_SUCCESS, ""), Outcome::Pass);
-}
-
-#[test]
 fn classifier_rejects_zero_verified() {
     let tail = "SUMMARY:\n ** 0 of 122 failed\nVERIFICATION:- SUCCESSFUL\nVerification Time: 0.05850434s\nComplete - 0 successfully verified harnesses, 0 failures, 1 total.";
     assert_eq!(classify_kani_output("", tail), Outcome::BuildFail);
@@ -109,32 +102,82 @@ fn classifier_rejects_cbmc_failed_without_verdict() {
 }
 
 #[test]
-fn mandatory_names_not_in_known_harness() {
-    use crate::kani::KNOWN_HARNESS;
+fn classifier_rejects_mixed_success_and_failure() {
+    let tail = "SUMMARY:\n ** 1 of 2 failed\nVERIFICATION:- SUCCESSFUL\nVerification Time: 0.5s\nComplete - 1 successfully verified harnesses, 1 failures, 2 total.";
+    assert_eq!(classify_kani_output("", tail), Outcome::Fail);
+}
 
-    let mandatory = &[
-        "check_fixed_point_bounds",
-        "check_pr_comparison_laws",
-        "check_identity_contradiction",
-        "check_redirect_cycle",
-        "check_retry_limit",
-        "check_terminal_state_no_retry",
-        "check_store_batch_arithmetic",
-        "check_census_scope",
-    ];
+#[test]
+fn classifier_rejects_verified_less_than_total() {
+    let tail = "SUMMARY:\n ** 1 of 3 failed\nVERIFICATION:- SUCCESSFUL\nVerification Time: 0.5s\nComplete - 2 successfully verified harnesses, 1 failures, 3 total.";
+    assert_eq!(classify_kani_output("", tail), Outcome::Fail);
+}
 
-    let by_name: std::collections::HashMap<&str, &crate::kani::HarnessInfo> =
-        KNOWN_HARNESS.iter().map(|h| (h.name, h)).collect();
-
-    let mut missing = Vec::new();
-    for &name in mandatory {
-        if !by_name.contains_key(name) {
-            missing.push(name);
-        }
-    }
+#[test]
+fn classifier_rejects_uncounted_success() {
     assert_eq!(
-        missing.len(),
-        8,
-        "all 8 contract names must be absent (pre-execution failure expected)"
+        classify_kani_output("All checks were verified", ""),
+        Outcome::BuildFail
     );
+}
+
+#[test]
+fn classifier_rejects_success_with_build_error_stderr() {
+    let stdout = "SUMMARY:\n ** 0 of 1 failed\nVERIFICATION:- SUCCESSFUL\nVerification Time: 0.5s\nComplete - 1 successfully verified harnesses, 0 failures, 1 total.";
+    let stderr = "error: failed to build\n";
+    assert_eq!(classify_kani_output(stdout, stderr), Outcome::BuildFail);
+}
+
+#[test]
+fn classifier_rejects_wrong_total_count() {
+    let tail = "SUMMARY:\n ** 0 of 1 failed\nVERIFICATION:- SUCCESSFUL\nVerification Time: 0.5s\nComplete - 1 successfully verified harnesses, 0 failures, 2 total.";
+    assert_eq!(classify_kani_output("", tail), Outcome::Fail);
+}
+
+#[test]
+fn classifier_rejects_non_digit_suffix() {
+    let tail = "Complete - one successfully verified harnesses, zero failures, one total.";
+    assert_eq!(classify_kani_output("", tail), Outcome::BuildFail);
+}
+
+#[test]
+fn classifier_rejects_utf8_count() {
+    let tail = "Complete - ① successfully verified harnesses, 0 failures, 1 total.";
+    assert_eq!(classify_kani_output("", tail), Outcome::BuildFail);
+}
+
+#[test]
+fn classifier_rejects_failure_before_a_successful_summary() {
+    assert_eq!(
+        classify_kani_output("VERIFICATION:- FAILED", SUCCESS_TAIL_1),
+        Outcome::Fail
+    );
+}
+
+#[test]
+fn classifier_rejects_multiple_or_uncounted_complete_summaries() {
+    for output in [
+        "Complete - 1 successfully verified harnesses, 0 failures, 1 total.".to_string(),
+        format!("{SUCCESS_TAIL_1}\n{SUCCESS_TAIL_2}"),
+        "VERIFICATION:- SUCCESSFUL\nComplete - 1 successfully verified harnesses, 0 failures, 1 unrelated.".to_string(),
+    ] {
+        assert_eq!(classify_kani_output(&output, ""), Outcome::BuildFail);
+    }
+}
+
+#[test]
+fn classifier_rejects_success_for_more_than_the_single_selected_harness() {
+    let output = "VERIFICATION:- SUCCESSFUL\nComplete - 2 successfully verified harnesses, 0 failures, 2 total.";
+    assert_eq!(classify_kani_output("", output), Outcome::BuildFail);
+}
+
+#[test]
+#[cfg(unix)]
+fn a_nonzero_verifier_exit_cannot_certify_a_successful_summary() -> anyhow::Result<()> {
+    let status = std::process::Command::new("/bin/false").status()?;
+    assert_eq!(
+        super::classify_kani_process(status, "", SUCCESS_TAIL_1),
+        Outcome::BuildFail
+    );
+    Ok(())
 }

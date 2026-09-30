@@ -1,0 +1,71 @@
+{
+  "metadata": {
+    "cpu": "AMD Ryzen 9 9950X3D 16-Core Processor",
+    "cores": 32,
+    "rustc": "rustc 1.97.0-nightly (ca9a134e0 2026-04-26)",
+    "sha": "0be3cfa7878ccfb21a28cb3d65a5546932e6ef83",
+    "corpus_lines": 38530
+  },
+  "groups": {
+    "census/merge/coaches_scan": {
+      "throughput": 1699671.5738781726,
+      "wall_time_seconds": 0.000451852
+    },
+    "census/merge/schools_scan": {
+      "throughput": 1340856.4458661946,
+      "wall_time_seconds": 0.000763691
+    },
+    "census/parse/archive_classification": {
+      "throughput": 4045853.0006743087,
+      "wall_time_seconds": 1.483e-6
+    },
+    "census/parse/hytek_html": {
+      "throughput": 88553.04327292048,
+      "wall_time_seconds": 0.000237146
+    },
+    "census/parse/hytek_text": {
+      "throughput": 788876.8366038852,
+      "wall_time_seconds": 0.000040564
+    },
+    "census/parse/milesplit_roster": {
+      "throughput": 43303.69051372034,
+      "wall_time_seconds": 0.000577318
+    },
+    "census/parse/nsaa_directory": {
+      "throughput": 22859.951365453468,
+      "wall_time_seconds": 0.000349957
+    },
+    "census/parse/raceday_html": {
+      "throughput": 126789.15736235259,
+      "wall_time_seconds": 0.000646743
+    },
+    "census/school_index/build_index": {
+      "throughput": 7916872.835230085,
+      "wall_time_seconds": 2.021e-6
+    },
+    "census/school_index/normalize_label": {
+      "throughput": 6082548.877624909,
+      "wall_time_seconds": 0.00001381
+    },
+    "census/school_index/resolve_label": {
+      "throughput": 3512733.6595157445,
+      "wall_time_seconds": 0.000023913
+    },
+    "pipeline/merge/consolidate": {
+      "throughput": 922933.6127853255,
+      "wall_time_seconds": 0.021670031
+    },
+    "pipeline/merge/scan": {
+      "throughput": 941214.340624058,
+      "wall_time_seconds": 0.021249145
+    },
+    "pipeline/result_file/parse": {
+      "throughput": 127134.9736393578,
+      "wall_time_seconds": 0.000251701
+    },
+    "pipeline/school_labels/resolve": {
+      "throughput": 4061875.189586575,
+      "wall_time_seconds": 0.002726327
+    }
+  }
+}

@@ -6,6 +6,7 @@ use std::time::Instant;
 use anyhow::{bail, Result};
 
 use crate::cmd::Cmd;
+use std::process::ExitStatus;
 
 pub use harness_list::{HarnessInfo, KNOWN_HARNESS};
 
@@ -137,51 +138,86 @@ pub enum Outcome {
 }
 
 pub fn classify_kani_output(stdout: &str, stderr: &str) -> Outcome {
-    let combined = format!("{stdout}{stderr}");
-
+    let combined = format!("{stdout}\n{stderr}");
     if combined.contains("Timed out") {
         return Outcome::Timeout;
     }
-
-    if combined.contains("VERIFICATION:- SUCCESSFUL")
-        && combined.contains("successfully verified harnesses")
-    {
-        if let Some((_, tail)) = combined.split_once("Complete - ") {
-            let mut words = tail.split_whitespace();
-            if let Some(count_str) = words.next() {
-                if let Ok(count) = count_str.parse::<u32>() {
-                    if count > 0 {
-                        return Outcome::Pass;
-                    }
-                }
-            }
-        }
-    }
-
-    if combined.contains("VERIFICATION:- FAILED") {
-        return Outcome::Fail;
-    }
-
-    if combined.contains("All checks were verified") {
-        return Outcome::Pass;
-    }
-
     if combined.contains("Error: no harness found")
         || combined.contains("could not find harness")
         || combined.contains("no harness")
     {
         return Outcome::Missing;
     }
-
-    if combined.contains("CBMC failed") || combined.contains("Error: ") {
+    if combined.contains("VERIFICATION:- FAILED") {
+        return Outcome::Fail;
+    }
+    if combined.contains("CBMC failed")
+        || combined.lines().any(|line| {
+            let line = line.trim_start();
+            line.starts_with("Error:") || line.starts_with("error:")
+        })
+    {
         return Outcome::BuildFail;
     }
+    let Some(summary) = parse_complete_line(&combined) else {
+        return Outcome::BuildFail;
+    };
+    if summary.failures > 0 {
+        return Outcome::Fail;
+    }
+    if summary.verified == 0 || !combined.contains("VERIFICATION:- SUCCESSFUL") {
+        return Outcome::BuildFail;
+    }
+    if summary.verified != summary.total {
+        return Outcome::Fail;
+    }
+    if summary.total != 1 {
+        return Outcome::BuildFail;
+    }
+    Outcome::Pass
+}
 
-    Outcome::BuildFail
+fn classify_kani_process(status: ExitStatus, stdout: &str, stderr: &str) -> Outcome {
+    match classify_kani_output(stdout, stderr) {
+        Outcome::Pass if !status.success() => Outcome::BuildFail,
+        outcome => outcome,
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct CompleteSummary {
+    verified: u32,
+    failures: u32,
+    total: u32,
+}
+
+fn parse_complete_line(output: &str) -> Option<CompleteSummary> {
+    let mut summaries = output
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("Complete - "));
+    let mut parts = summaries.next()?.split(", ");
+    if summaries.next().is_some() {
+        return None;
+    }
+    let verified = parts
+        .next()?
+        .strip_suffix(" successfully verified harnesses")?
+        .parse()
+        .ok()?;
+    let failures = parts.next()?.strip_suffix(" failures")?.parse().ok()?;
+    let total = parts.next()?.strip_suffix(" total.")?.parse().ok()?;
+    if parts.next().is_some() {
+        return None;
+    }
+    Some(CompleteSummary {
+        verified,
+        failures,
+        total,
+    })
 }
 
 fn run_harness(harness: &HarnessInfo) -> std::result::Result<(), KaniError> {
-    let (stdout, stderr) = Cmd::new("cargo")
+    let (status, stdout, stderr) = Cmd::new("cargo")
         .arg("kani")
         .arg("--manifest-path")
         .arg(harness.manifest_path)
@@ -191,8 +227,10 @@ fn run_harness(harness: &HarnessInfo) -> std::result::Result<(), KaniError> {
         .arg("1")
         .capture()
         .map_err(|_| KaniError::BuildFail)?;
-
-    match classify_kani_output(&stdout, &stderr) {
+    let outcome = classify_kani_process(status, &stdout, &stderr);
+    print!("{stdout}");
+    eprint!("{stderr}");
+    match outcome {
         Outcome::Pass => Ok(()),
         Outcome::Timeout => Err(KaniError::Timeout),
         Outcome::Fail => Err(KaniError::Fail),

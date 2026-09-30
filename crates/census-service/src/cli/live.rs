@@ -154,6 +154,7 @@ pub(super) async fn workbook(
     Ok(reply)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn jurisdiction_request(
     jurisdiction: UsJurisdiction,
     season: SchoolYear,

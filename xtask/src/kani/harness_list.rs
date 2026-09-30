@@ -7,6 +7,11 @@ pub struct HarnessInfo {
 
 pub const KNOWN_HARNESS: &[HarnessInfo] = &[
     HarnessInfo {
+        name: "check_confidence_bounds",
+        package: "census-domain",
+        manifest_path: "crates/census-domain/Cargo.toml",
+    },
+    HarnessInfo {
         name: "check_gradyear_of_formula",
         package: "census-domain",
         manifest_path: "crates/census-domain/Cargo.toml",

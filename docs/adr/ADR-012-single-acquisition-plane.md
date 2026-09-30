@@ -16,5 +16,6 @@ observations. A future extraction requires demonstrated independent consumers an
 ## Consequences
 
 Migrate all callers during cutover and remove obsolete paths rather than adding shims. Enforce
-purity and crate seams using the commands in [TESTING.md](../../TESTING.md). The current crate map
+purity and crate seams using [xtask](../../xtask/README.md) and [the gate](../../tools/gate.sh).
+The current crate map
 is [Architecture §4](../../ARCHITECTURE.md#4-crate-layout-17), not a historical module inventory.

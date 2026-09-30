@@ -2,8 +2,8 @@
 
 `restate-server` owns invocation journals/ingress/admin; `census-serve` owns the Fjall store and
 endpoint; `census-service` is the CLI. [Lifecycle](deployment-lifecycle.md) owns deployment and
-handoff, [durable execution](restate/durable-execution.md) owns handler/retry contracts, and
-[CLI reference](../crates/census-service/README.md) owns command groups.
+handoff. This runbook owns project handler/retry procedures; [durable execution](restate/durable-execution.md)
+is external vendor background. [CLI reference](../crates/census-service/README.md) owns command groups.
 
 ## Run selection and inspection
 
@@ -122,31 +122,41 @@ switch transport to clear it. Other permitted sources may continue.
 Lane presence is part of the current plan fingerprint. Adding/removing it under a previously
 recorded plan can be refused; preserve the existing run's obligations and make any capability/run
 transition explicit. Do not silently resubmit every failed operation under new keys.
-[CHROMIUM_DESIGN.md](../CHROMIUM_DESIGN.md) owns pool/admission and response-classification details.
+[Architecture §6](../ARCHITECTURE.md#6-admission-and-browser-state-10-26-28) owns admission requirements.
 
 ## Shutdown and diagnostics
 
-SIGTERM requests stop-intake, drain/finalize and storage flush. Keep systemd `TimeoutStopSec` above
-`--drain-timeout` (the shipped defaults are 60 and 30 seconds). Retain the certificate:
+SIGTERM first stops the endpoint listener and waits for SDK connection shutdown, then closes region
+admission, drains owned work and flushes storage. `--drain-timeout` is the async-task grace period,
+not a wall-clock bound on shutdown. The shipped unit uses `TimeoutStopSec=infinity` and
+`SendSIGKILL=no`: already-started blocking effects must finish before the store can be finalized.
+Retain the certificate:
 
 ```text
 drained: accepted=<n> completed=<n> cancelled=<n> timed_out=<n> aborted=<n> panicked=<n>
 ```
 
-A stop request is broadcast to cooperative region tasks before the drain begins, so a healthy stop
-reports `timed_out=0`; a non-zero `timed_out` names work the deadline had to abort. The endpoint's
-own shutdown is the SDK's, not `--drain-timeout`'s: `restate-sdk` waits up to ten seconds for open
-connections to close. Reconcile outcomes and persisted unfinished work. An abort/panic is not
-normal success to hide with retries; started blocking effects may outlive a cancelled async waiter. Confirm process exit/store
-lock release before a new owner starts. `RUST_LOG` controls structured runtime diagnostics.
+A stop request is broadcast to cooperative region tasks before the drain begins. A non-zero
+`timed_out` counts tasks still owned at the grace deadline; it overlaps terminal outcomes and is not
+an additional completion bucket. Async survivors are aborted and reaped; started blocking effects
+are awaited even beyond the deadline. Successful drain reports satisfy
+`accepted = completed + cancelled + aborted + panicked`, with no remaining owned tasks.
+Cancelled drain callers retain the region for a subsequent drain; admission never reopens.
+
+The endpoint's own shutdown is the SDK's: `restate-sdk` waits up to ten seconds for open connections
+to close before region admission closes. This ordering prevents shutdown refusal from becoming a
+terminal result of an invocation's unstarted effect. Reconcile persisted unfinished work; a
+deadline, abort or panic is not normal success to hide. A blocking effect that never returns prevents
+clean shutdown; diagnose it rather than killing it and claiming a drain certificate. Confirm process
+exit/store lock release before another owner starts. `RUST_LOG` controls structured diagnostics.
 
 Use Restate admin queries for invocation state without opening Fjall:
 
 ```sh
 curl -sS -X POST http://127.0.0.1:19095/query -H 'content-type: application/json' \
-  -d '{"query":"SELECT id, status, target FROM sys_invocation"}'
+  -H 'accept: application/json' -d '{"query":"SELECT id, status, target FROM sys_invocation"}'
 curl -sS -X POST http://127.0.0.1:19095/query -H 'content-type: application/json' \
-  -d '{"query":"SELECT service_key FROM state WHERE service_name = '\''Ingest'\'' ORDER BY service_key"}'
+  -H 'accept: application/json' -d '{"query":"SELECT service_key FROM state WHERE service_name = '\''Ingest'\'' ORDER BY service_key"}'
 ```
 
 Paused invocations can retain object ownership and block later submissions. Identify the actual
@@ -160,6 +170,10 @@ stopped through independent readback/seal. Quiescence is an operational precauti
 publication. Rebuild derived state before materializing its snapshots: `index` precedes `consolidate`,
 then report/bests/workbook. Review decisions, if required, must be applied before the final generation.
 Use actual CLI help for the chosen serving/offline route; do not mix stores or run revisions.
+An explicit `index` invocation always re-derives mutable projections. Old input receipts do not
+certify that those outputs still exist or reflect current rules; historical receipts are retained
+but no longer skip this pass. This repair does not make the separately replaced tables one atomic
+publication generation.
 
 ```sh
 cargo xtask export --ingress --out out/census.xlsx --grad-year 2027
@@ -189,6 +203,6 @@ Use [cold backup/restore](FJALL_BACKUP.md); preserve referenced raw captures and
 Restate durable directory. No live directory copy, cache-only backup or removed `import-legacy`
 command can substitute. Deployment unit/config ownership is in [lifecycle](deployment-lifecycle.md).
 
-[TESTING.md](../TESTING.md) owns gates; [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md) owns dated
+[tools/gate.sh](../tools/gate.sh) owns gates; [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md) owns dated
 incidents and executed results. Report only the declared run/scope and observed verification, with
 terminal access gaps, unresolved review and unfinished discovery visible.

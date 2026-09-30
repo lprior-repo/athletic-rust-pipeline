@@ -2,6 +2,8 @@ mod common;
 
 use anyhow::{bail, ensure, Context, Result};
 use census_crawl::athleticlive_athletes::{self, AthleteHit, MeetTarget};
+use census_crawl::coach_contacts::entities::row_entities;
+use census_crawl::coach_contacts::wire::CoachContactRow;
 use census_crawl::net::{FetchOptions, Fetcher};
 use census_crawl::{athleticlive, athleticnet, coach_contacts, milesplit, AdapterContext};
 use census_domain::model::{
@@ -540,7 +542,7 @@ async fn coach_contacts_csv_parity() -> Result<()> {
         let body = common::fixture("", &file)?;
 
         let mut reader = csv::Reader::from_reader(body.as_bytes());
-        let parsed: Vec<coach_contacts::CoachContactRow> = reader
+        let parsed: Vec<CoachContactRow> = reader
             .deserialize()
             .collect::<std::result::Result<Vec<_>, _>>()
             .with_context(|| format!("decoding {SOURCE}/{file}"))?;
@@ -558,7 +560,7 @@ async fn coach_contacts_csv_parity() -> Result<()> {
                     row.state
                 )
             })?;
-            let entities = coach_contacts::row_entities(row, state, OBSERVED_ON)
+            let entities = row_entities(row, state, OBSERVED_ON)
                 .with_context(|| format!("{SOURCE}/{file} row {}", index.saturating_add(2)))?;
             expected_schools.insert(entities.school.id.as_str().to_string());
             for coach in &entities.coaches {

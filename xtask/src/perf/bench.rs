@@ -1,207 +1,114 @@
-use super::{Cmd, GroupMeasurement};
+mod metadata;
+pub(super) mod runtime;
+
+use super::{GroupMeasurement, Throughput};
 use anyhow::{bail, Context, Result};
-use serde::Deserialize;
-use std::collections::BTreeMap;
-use std::path::Path;
-
-#[derive(Debug, Deserialize)]
-struct DeclaredThroughput {
-    #[serde(rename = "Elements")]
-    elements: u64,
-}
-
-#[derive(Debug, Deserialize)]
-struct BenchmarkFile {
-    group_id: String,
-    throughput: Option<DeclaredThroughput>,
-}
+use std::borrow::Cow;
+use std::collections::{btree_map::Entry, BTreeMap};
 
 pub fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
     let mut groups = BTreeMap::new();
-
-    for bench_name in &["core", "pipeline"] {
-        let output = Cmd::new("bash")
-            .arg("-c")
-            .arg(wrapper_script(bench_name))
-            .output()
-            .with_context(|| format!("running benchmark wrapper for {bench_name}"))?;
-
-        let peak_rss = read_peak_rss(&output);
-
-        let bencher_lines: Vec<&str> = output
-            .lines()
-            .filter(|l| l.starts_with("test ") && l.contains("bench:"))
-            .collect();
-
-        let mut group_times: BTreeMap<String, Vec<f64>> = BTreeMap::new();
-        for line in &bencher_lines {
-            let (group, wall_ns) = parse_bencher_line(line)?;
-            group_times.entry(group).or_default().push(wall_ns);
+    for name in ["core", "pipeline"] {
+        let executable = runtime::compile(name)?;
+        let directory = tempfile::tempdir().context("creating benchmark measurement directory")?;
+        let (output, rss) = runtime::measure(&executable, directory.path())?;
+        let declarations = metadata::read(&directory.path().join("criterion"))?;
+        for (id, measurement) in parse_measurement(&output, &declarations, rss)? {
+            match groups.entry(id) {
+                Entry::Vacant(entry) => {
+                    entry.insert(measurement);
+                }
+                Entry::Occupied(entry) => {
+                    bail!("duplicate benchmark ID across targets: {}", entry.key())
+                }
+            }
         }
-
-        let criterion_dir = format!("target/criterion/{bench_name}");
-        let throughput_map = read_throughputs(Path::new(&criterion_dir))?;
-
-        group_measurements(group_times, &throughput_map, peak_rss, &mut groups)?;
     }
-
-    if groups.is_empty() {
-        bail!("benchmark output carried no groups; the perf gate would compare nothing");
-    }
-
     Ok(groups)
 }
 
-fn group_measurements(
-    group_times: BTreeMap<String, Vec<f64>>,
-    throughput_map: &BTreeMap<String, u64>,
-    peak_rss: Option<u64>,
-    groups: &mut BTreeMap<String, GroupMeasurement>,
-) -> Result<()> {
-    for (group, times) in group_times {
-        let samples = u32::try_from(times.len())
-            .map_err(|_| anyhow::anyhow!("benchmark samples do not fit u32"))?;
-        let avg_ns: f64 = times.iter().sum::<f64>() / f64::from(samples);
-        let wall_s = avg_ns / 1e9;
-
-        let throughput = match throughput_map.get(&group) {
-            Some(elements) => {
-                let elements = u32::try_from(*elements)
-                    .map_err(|_| anyhow::anyhow!("benchmark elements do not fit u32"))?;
-                Some(f64::from(elements) / wall_s)
-            }
-            None => None,
-        };
-
-        groups.insert(
-            group,
-            GroupMeasurement {
-                throughput,
-                peak_rss_kib: peak_rss,
-                wall_time_seconds: wall_s,
-            },
-        );
-    }
-    Ok(())
-}
-
-fn read_peak_rss(output: &str) -> Option<u64> {
-    output
-        .lines()
-        .find_map(|l| l.strip_prefix("peak_rss_kib="))
-        .and_then(|v| v.parse::<u64>().ok())
-}
-
-fn wrapper_script(bench_name: &str) -> String {
-    format!(
-        r#"set -e
-# Unique temp file per invocation to avoid stomping parallel runs.
-CRITERION_OUTPUT=$(mktemp)
-trap 'rm -f "$CRITERION_OUTPUT"' EXIT
-
-# Run cargo bench with bencher output (the only machine-parseable format Criterion
-# supports).  /usr/bin/time -v captures peak RSS of the Criterion process tree.
-if /usr/bin/time -v cargo bench -p census-service --bench {bench_name} -- --output-format bencher --noplot > "$CRITERION_OUTPUT" 2>/tmp/time-output.txt; then
-    RSS=$(grep "Maximum resident set size" /tmp/time-output.txt | sed 's/.*: *//')
-    if [ -n "$RSS" ]; then
-        echo "peak_rss_kib=$RSS"
-    else
-        echo "peak_rss_kib="
-    fi
-else
-    RSS=$(grep "Maximum resident set size" /tmp/time-output.txt 2>/dev/null | sed 's/.*: *//' || true)
-    if [ -n "$RSS" ]; then
-        echo "peak_rss_kib=$RSS"
-    fi
-    cat "$CRITERION_OUTPUT"
-    exit 1
-fi
-cat "$CRITERION_OUTPUT"
-rm -f /tmp/time-output.txt
-"#,
-    )
-}
-
 pub(crate) fn parse_bencher_line(line: &str) -> Result<(String, f64)> {
-    let name = line
+    let (head, tail) = line
         .split_once(" ... bench:")
-        .and_then(|(pre, _)| pre.strip_prefix("test "))
-        .ok_or_else(|| anyhow::anyhow!("bencher line missing name: {line}"))?;
-
-    let bench_part = line
-        .split_once("bench:")
-        .and_then(|(_, post)| post.split_once("/iter").map(|(t, _)| t))
-        .ok_or_else(|| anyhow::anyhow!("bencher line missing bench time: {line}"))?;
-
-    let bench_part = bench_part.trim();
-
-    let parts: Vec<String> = bench_part.split_whitespace().map(String::from).collect();
-    if parts.len() < 2 {
-        return Err(anyhow::anyhow!("bencher line malformed: {line}"));
-    }
-    let (Some(num_str), Some(unit)) = (parts.first(), parts.last()) else {
-        return Err(anyhow::anyhow!("bencher line malformed: {line}"));
+        .ok_or_else(|| anyhow::anyhow!("invalid bencher output: {line}"))?;
+    let id = head
+        .strip_prefix("test ")
+        .filter(|id| !id.is_empty())
+        .ok_or_else(|| anyhow::anyhow!("missing benchmark ID: {line}"))?;
+    let (timing, _) = tail
+        .split_once("/iter")
+        .ok_or_else(|| anyhow::anyhow!("missing iteration unit: {line}"))?;
+    let mut fields = timing.split_whitespace();
+    let number = fields.next().context("missing benchmark timing")?;
+    let multiplier = match fields.next() {
+        Some("ns") => 1.0,
+        Some("µs" | "μs") => 1_000.0,
+        Some("ms") => 1_000_000.0,
+        Some("s") => 1_000_000_000.0,
+        _ => bail!("unsupported benchmark time unit: {line}"),
     };
-
-    let ns = parse_bencher_unit(unit)?;
-
-    let ns_per_iter: f64 = num_str
-        .replace(',', "")
-        .parse()
-        .with_context(|| format!("parsing bench value: {num_str}"))?;
-
-    Ok((name.to_string(), ns_per_iter * ns))
-}
-
-fn parse_bencher_unit(unit: &str) -> Result<f64> {
-    match unit {
-        "ns" => Ok(1.0),
-        "µs" | "μs" => Ok(1_000.0),
-        "ms" => Ok(1_000_000.0),
-        "s" => Ok(1_000_000_000.0),
-        _ => bail!("unknown bencher time unit: {unit}"),
+    if fields.next().is_some() {
+        bail!("unexpected benchmark timing fields: {line}");
     }
+    let number = if number.contains(',') {
+        Cow::Owned(number.replace(',', ""))
+    } else {
+        Cow::Borrowed(number)
+    };
+    let nanos = number.parse::<f64>().context("invalid benchmark timing")? * multiplier;
+    if !nanos.is_finite() || nanos <= 0.0 {
+        bail!("benchmark timing must be finite and positive: {line}");
+    }
+    Ok((id.to_owned(), nanos))
 }
 
-fn read_throughputs(dir: &Path) -> Result<BTreeMap<String, u64>> {
+fn parse_measurement(
+    output: &str,
+    declarations: &BTreeMap<String, Option<Throughput<u64>>>,
+    rss: Option<u64>,
+) -> Result<BTreeMap<String, GroupMeasurement>> {
     let mut result = BTreeMap::new();
-
-    let read_dir = match std::fs::read_dir(dir) {
-        Ok(rd) => rd,
-        Err(_) => return Ok(result),
-    };
-
-    for entry_result in read_dir {
-        let entry = match entry_result {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-        let is_dir = match entry.file_type() {
-            Ok(t) => t.is_dir(),
-            Err(_) => continue,
-        };
-        if !is_dir {
-            continue;
+    for line in output
+        .lines()
+        .filter(|line| line.starts_with("test ") && line.contains("bench:"))
+    {
+        let (id, nanos) = parse_bencher_line(line)?;
+        let amount = declarations
+            .get(&id)
+            .with_context(|| format!("missing Criterion metadata for {id}"))?;
+        let seconds = nanos / 1e9;
+        if seconds <= 0.0 {
+            bail!("benchmark timing underflow for {id}");
         }
-
-        let new_dir = entry.path().join("new");
-        let bench_file = new_dir.join("benchmark.json");
-        if !bench_file.is_file() {
-            continue;
+        let throughput = amount
+            .map(|value| -> Result<_> {
+                let numeric = serde_json::Number::from(value.value())
+                    .as_f64()
+                    .context("Criterion throughput amount cannot be converted")?;
+                Ok(value.map(|_| numeric / seconds))
+            })
+            .transpose()?;
+        if throughput.is_some_and(|value| !value.value().is_finite() || value.value() <= 0.0) {
+            bail!("invalid benchmark throughput for {id}");
         }
-
-        let content = match std::fs::read_to_string(&bench_file) {
-            Ok(c) => c,
-            Err(_) => continue,
+        let measurement = GroupMeasurement {
+            throughput,
+            peak_rss_kib: rss,
+            wall_time_seconds: seconds,
         };
-        let Ok(data) = serde_json::from_str::<BenchmarkFile>(&content) else {
-            continue;
-        };
-
-        if let Some(throughput) = data.throughput {
-            result.entry(data.group_id).or_insert(throughput.elements);
+        match result.entry(id) {
+            Entry::Vacant(entry) => {
+                entry.insert(measurement);
+            }
+            Entry::Occupied(entry) => bail!("duplicate benchmark result for {}", entry.key()),
         }
     }
-
+    if result.is_empty() || !result.keys().eq(declarations.keys()) {
+        bail!("Criterion results and metadata must contain the same nonempty benchmark IDs");
+    }
     Ok(result)
 }
+
+#[cfg(test)]
+#[path = "bench/tests.rs"]
+mod tests;
