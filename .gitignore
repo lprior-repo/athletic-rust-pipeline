@@ -4,3 +4,15 @@
 *.db
 .beads-credential-key
 .beads/proxieddb/
+
+# Build and run artifacts: the Rust target trees and the census store/export roots
+/target/
+/fuzz/target/
+/var/
+
+# Huge regenerable trees that must not enter the object store: the scraped external reference dump
+# and its search index (local/restate-docs alone is a gigabyte), plus fuzz corpora and artifacts.
+# docs/VERIFICATION-EVIDENCE.md already documents the corpus as gitignored.
+/local/
+/fuzz/corpus/
+/fuzz/artifacts/

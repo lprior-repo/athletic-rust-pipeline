@@ -1,0 +1,40 @@
+HTTP/2 301 
+age: 0
+alt-svc: h3=":443"; ma=2592000
+cache-control: max-age=3600
+content-type: text/html; charset=UTF-8
+date: Tue, 22 Sep 2026 03:58:37 GMT
+expires: Tue, 22 Sep 2026 04:58:37 GMT
+location: https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/
+ratelimit-policy: 500; w=1
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+v-cache: MISS
+x-cacheable: NO:UNCACHEABLE
+x-content-options: nosniff
+x-content-type-options: nosniff
+x-redirect-by: redirection
+content-length: 0
+
+HTTP/2 200 
+date: Tue, 22 Sep 2026 03:58:38 GMT
+content-type: text/html; charset=UTF-8
+server: cloudflare
+vary: Accept-Encoding
+vary: Accept-Encoding
+cache-control: no-cache, max-age=0, s-maxage=2592000
+cf-edge-cache: cache,platform=wordpress
+link: <https://wvmetronews.com/wp-json/>; rel="https://api.w.org/", <https://wvmetronews.com/wp-json/wp/v2/posts/671539>; rel="alternate"; title="JSON"; type="application/json", <https://wvmetronews.com/?p=671539>; rel=shortlink
+expires: Sat, 19 Sep 2026 02:15:40 GMT
+x-cache: MISS
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+cf-apo-via: tcache
+age: 265376
+last-modified: Sat, 19 Sep 2026 04:57:54 GMT
+cf-cache-status: HIT
+speculation-rules: "/cdn-cgi/speculation"
+server-timing: cfCacheStatus;desc="HIT"
+server-timing: cfEdge;dur=15,cfOrigin;dur=0
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=0UN1rJIEkc%2BEpIKQQBvCicdXS0v7ORDeA7sVnZC%2Fw7TCKoOku%2B4zE5Z%2FcHUgNbuiSeZ8XJMMvZ7QsUSVul2FBkUudBpzzgwChcBMDoW3NEQEvFV6VN9vi0n1ZcEL5705FA%3D%3D"}]}
+cf-ray: a3ee64708b70620b-ORD
+alt-svc: h3=":443"; ma=86400
+

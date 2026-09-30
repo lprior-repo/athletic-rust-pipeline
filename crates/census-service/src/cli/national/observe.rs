@@ -1,19 +1,20 @@
 use anyhow::{bail, Result};
+use census_crawl::ingress::{CurrentRoute, Ingress};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::{Revision, WorkflowIdentity};
 use census_service::restate_services::{
     JurisdictionCensusIngressClient, JurisdictionReport, JurisdictionRequest, NationalReport,
 };
-use restate_sdk::ingress::{InvocationHandle, Output, ReqwestClient, SendStatus};
+use restate_sdk::ingress::{InvocationHandle, Output, SendStatus};
 use restate_sdk::prelude::*;
 
 use super::{POLL, PROGRESS_EVERY};
 use census_service::ingress;
 
 pub(crate) struct Watch<'a> {
-    pub(crate) handle: &'a InvocationHandle<reqwest::Client, Json<NationalReport>>,
-    pub(crate) ingestion: &'a ReqwestClient,
+    pub(crate) handle: &'a InvocationHandle<CurrentRoute, Json<NationalReport>>,
+    pub(crate) ingestion: &'a Ingress,
     pub(crate) jurisdictions: &'a [UsJurisdiction],
     pub(crate) season: SchoolYear,
     pub(crate) revision: Revision,
@@ -53,7 +54,7 @@ pub(crate) async fn observe(watch: Watch<'_>) -> Result<NationalReport> {
 }
 
 pub(crate) async fn drive_jurisdiction(
-    ingestion: &ReqwestClient,
+    ingestion: &Ingress,
     request: JurisdictionRequest,
     rounds: u64,
 ) -> Result<JurisdictionReport> {
@@ -81,7 +82,7 @@ pub(crate) async fn drive_jurisdiction(
 }
 
 pub(crate) async fn observe_jurisdiction(
-    handle: &InvocationHandle<reqwest::Client, Json<JurisdictionReport>>,
+    handle: &InvocationHandle<CurrentRoute, Json<JurisdictionReport>>,
     rounds: u64,
 ) -> Result<JurisdictionReport> {
     let mut round: u64 = 0;
@@ -101,7 +102,7 @@ pub(crate) async fn observe_jurisdiction(
 }
 
 pub(crate) async fn print_progress(
-    ingestion: &ReqwestClient,
+    ingestion: &Ingress,
     jurisdictions: &[UsJurisdiction],
     season: SchoolYear,
     revision: Revision,

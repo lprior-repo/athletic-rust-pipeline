@@ -85,7 +85,8 @@ fn the_jurisdiction_row_carries_its_measured_denominators() {
         .expect("athlete");
 
     let identities = canonical_pass(&store).expect("identities").identities;
-    let rows = coverage_rows(&store, &identities).expect("coverage");
+    let dataset = census_report::export::ExportDataset::load(&store).expect("dataset");
+    let rows = coverage_rows(&dataset, &identities).expect("coverage");
     let wisconsin = rows
         .iter()
         .find(|row| row.id == "jurisdiction:WI")
@@ -183,9 +184,12 @@ fn a_repeated_pass_reuses_every_id_and_keeps_one_snapshot_a_day() {
     let school = school();
     store.append(Table::Schools, &school).expect("school");
 
-    let first = derive(&store, "index", "2026-09-22").expect("first pass");
+    derive(&store, "index", "2026-09-22").expect("first pass");
     let second = derive(&store, "index", "2026-09-22").expect("second pass");
-    assert_eq!(first.total(), second.total());
+    assert_eq!(
+        second.source_identities, 0,
+        "a repeated pass over the same store skips the stage: {second:?}"
+    );
 
     let identities: Vec<SourceObjectIdentity> =
         store.scan(Table::SourceIdentities).expect("identities");

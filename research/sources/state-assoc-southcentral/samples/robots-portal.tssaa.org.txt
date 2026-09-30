@@ -1,0 +1,5 @@
+User-Agent: *
+Allow: /common
+Allow: /access/attendance
+Disallow: /
+

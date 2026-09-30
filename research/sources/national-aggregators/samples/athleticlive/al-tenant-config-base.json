@@ -1,0 +1,20 @@
+{
+  "ngConfig": {
+    "facebookImage": "/images/social/facebook-card-square.jpg",
+    "facebookLink": "https://www.facebook.com/Athletic.net",
+    "loadingImageUrl": "/images/sitelogo.svg",
+    "headerImageUrl": "/images/sitelogo.svg",
+    "footerImageUrl": "/images/sitelogo.svg",
+    "homepageImageUrl": "/images/sitelogo.svg",
+    "sendGridApiEndpoint": "https://api.sendgrid.com/v3",
+    "sendGridApiRecipients": "/contactdb/recipients",
+    "sideMenuImageUrl": "/images/sitelogo.svg",
+    "primaryBaseUrl": "https://live.athletic.net",
+    "primaryElasticSearchIndex": "live_results",
+    "primaryMachineName": "athleticlive",
+    "twitterImage": "/images/social/twitter-card-square.jpg",
+    "twitterLink": "https://twitter.com/AthleticDotNet",
+    "useCustomFooterColumnHtml": false,
+    "useLocale": false
+  }
+}

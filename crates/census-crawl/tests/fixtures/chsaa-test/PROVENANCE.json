@@ -1,0 +1,22 @@
+{
+  "fixtures": [
+    {
+      "fixture": "directory.html",
+      "url": "https://chsaanow.com/schools/",
+      "prototype_file": "chsaanow.com__0018db17820a243d447b3cc0",
+      "note": "Synthetic fixture: 10 embedded school records in JS-escaped JSON array. Structure matches actual CHSAA directory page."
+    },
+    {
+      "fixture": "school_cherry_creek.html",
+      "url": "https://chsaanow.com/schools/cherry-creek/",
+      "prototype_file": "chsaanow.com__40e1a856a5c5e92c9d387b56",
+      "note": "Synthetic fixture: Cherry Creek school page with embedded coach JSON for XC and Track."
+    },
+    {
+      "fixture": "robots.txt",
+      "url": "https://chsaanow.com/robots.txt",
+      "note": "Documented from prototype research (notes/co-chsaa.md); no raw capture exists"
+    }
+  ],
+  "captured_source_note": "Fixtures are synthetic pages replicating the CHSAA embedded JSON structure. The actual CHSAA directory page contains 378 school records; this fixture contains 10 for unit tests. Golden rows match the expected Rust parser output for the embedded data."
+}

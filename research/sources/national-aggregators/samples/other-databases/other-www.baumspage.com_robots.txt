@@ -1,0 +1,54 @@
+<head>
+<meta http-equiv="refresh" content="4; URL=http://www.baumspage.com/index.php"> 
+<style type="text/css">
+body
+{
+background-color:#6666ff;
+}
+</style>
+
+</head>
+
+<body align="center" text="#000000">
+
+<table align="center" border="0">
+<tr>
+<td align="center" valign="middle">
+<a href="http://www.baumspage.com">
+<img border="0" src="http://www.baumspage.com/baumspagelogofinal_80x86.jpg" alt="HTML tutorial" width="80" height="86" />
+</a>
+</td>
+<td width="20">
+     
+</td>
+<td>
+<h3 align="left"><font size="6" color="#000000">baumspage.com</font></h3>
+<p align="left"><font color="#000000">Providing quick and accurate access to data for coaches, athletes, parents and fans!</font></p>
+</td>
+<tr>
+<td>
+
+<td>
+
+</td>
+<td>
+<br><br><br>
+<font size="5">
+PAGE LINK NOT FOUND!
+<br><br>
+Auto-rediect to Baumspage main in 5 seconds or <br>
+<a href="http://www.baumspage.com">Click here to return to Baumspage now!</a>
+<br>
+<br>
+</font>
+<font size="2">
+Server Page 404 Error
+</font>
+</td>
+</td>
+</tr>
+
+<!-- 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+--> 
+

@@ -12,7 +12,8 @@ use census_domain::model::{
     GradYear, SourceRef,
 };
 use census_domain::UsJurisdiction;
-use census_report::report;
+use census_report::export::ExportDataset;
+use census_report::report::{self, Derivation};
 use census_service::census;
 use census_service::census::CollectOptions;
 use census_store::{Store, Table};
@@ -867,7 +868,9 @@ fn export(store: &Store) -> Export {
             Some((table.file().to_string(), digest))
         })
         .collect();
-    let census = report::build_census(store, report::Scope::AllSources).expect("census");
+    let dataset = ExportDataset::load(store).expect("export dataset for census");
+    let derivation = Derivation::of(&dataset, report::Scope::AllSources, None);
+    let census = report::build_census(&derivation, &store.out_dir());
     let mut projected = serde_json::to_value(&census).expect("census json");
     if let Some(object) = projected.as_object_mut() {
         object.remove("generated_on");

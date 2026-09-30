@@ -1,6 +1,7 @@
 # Fjall cold backup and restore
 
-Canonical operator procedure. [FJALL_SCHEMA.md](../FJALL_SCHEMA.md) owns schema/read APIs;
+Canonical operator procedure. The store's own table and key definitions
+(`crates/census-store/src/table.rs`, `crates/census-store/src/keys.rs`) own schema/read APIs;
 [verification evidence](VERIFICATION-EVIDENCE.md) retains the historical small-store and
 2026-09-24 campaign drill measurements. Those transcripts are not rerun or fresh-run certification.
 

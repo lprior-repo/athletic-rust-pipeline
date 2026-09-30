@@ -6,6 +6,7 @@ use census_domain::model::{
     CompetitionLevel, Gender, GradYear, SourceAccessCondition, SourceIdentity, SourceNamespace,
 };
 use census_domain::UsJurisdiction;
+use census_report::export::ExportDataset;
 use census_report::report::Scope;
 use census_store::{Store, StoreStats, Table};
 use rust_xlsxwriter::Workbook as Xlsx;
@@ -74,6 +75,10 @@ fn all_jurisdictions() -> [UsJurisdiction; 51] {
         UsJurisdiction::Wyoming,
         UsJurisdiction::DistrictOfColumbia,
     ]
+}
+
+fn dataset(store: &Store) -> ExportDataset {
+    ExportDataset::load(store).expect("an export dataset")
 }
 
 fn write_coverage_sheets(
@@ -264,7 +269,8 @@ fn a_zero_athlete_workbook_is_refused() {
     let dir = tempfile::tempdir().expect("a temp dir");
     let (store, path) = seed_and_workbook(dir.path(), 0, Some(0)).expect("seeds");
 
-    let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");
+    let check =
+        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
 
     assert!(!check.export_verified, "zero athletes must be refused");
     assert!(
@@ -280,7 +286,8 @@ fn a_workbook_that_agrees_with_the_store_verifies() {
     let athlete_count: u32 = 5;
     let (store, path) = seed_and_workbook(dir.path(), athlete_count, Some(5)).expect("seeds");
 
-    let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");
+    let check =
+        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
 
     assert_eq!(check.mapped_athletes, 5);
     assert!(
@@ -306,7 +313,8 @@ fn a_workbook_that_disagrees_refuses_and_names_the_number() {
     let dir = tempfile::tempdir().expect("a temp dir");
     let (store, path) = seed_and_workbook(dir.path(), 5, Some(4)).expect("seeds");
 
-    let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");
+    let check =
+        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
 
     assert!(!check.counts_reconciled);
     assert!(!check.export_verified);
@@ -319,7 +327,8 @@ fn a_workbook_that_omits_the_cohort_row_refuses() {
     let dir = tempfile::tempdir().expect("a temp dir");
     let (store, path) = seed_and_workbook(dir.path(), 5, None).expect("seeds");
 
-    let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");
+    let check =
+        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
 
     assert_eq!(check.mapped_athletes, 0);
     assert!(!check.counts_reconciled);
@@ -337,7 +346,8 @@ fn a_coverage_sheet_short_of_jurisdictions_refuses() {
 
     let path = simple_workbook(dir.path(), Some(5), 3).expect("writes override");
 
-    let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");
+    let check =
+        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
 
     assert!(!check.coverage_reconciled);
     assert!(!check.export_verified);
@@ -356,7 +366,8 @@ fn a_workbook_missing_a_required_sheet_refuses() {
         .expect("a header");
     book.save(&path).expect("the workbook writes");
 
-    let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");
+    let check =
+        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
 
     assert_eq!(check.sheets, 1);
     assert!(!check.export_verified);
@@ -389,7 +400,8 @@ fn a_duplicated_coverage_jurisdiction_is_refused() {
 
     let path = workbook_with_dupes(dir.path(), Some(1), 1, 3).expect("writes workbook");
 
-    let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");
+    let check =
+        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
 
     assert!(!check.coverage_reconciled);
     assert!(!check.export_verified);
@@ -405,7 +417,8 @@ fn a_correct_workbook_still_verifies_with_unique_coverage() {
     let dir = tempfile::tempdir().expect("a temp dir");
     let (store, path) = seed_and_workbook(dir.path(), 3, Some(3)).expect("seeds");
 
-    let check = inspect_workbook(&path, &store, 2027, Scope::AllSources).expect("reads back");
+    let check =
+        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
 
     assert!(check.export_verified, "correct workbook should verify");
     assert!(check.coverage_reconciled);

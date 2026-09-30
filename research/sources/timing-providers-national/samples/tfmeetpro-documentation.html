@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html>
+<head><!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1S7NTN7QJC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-1S7NTN7QJC');
+</script>
+    <meta charset="utf-8">
+    <title>Documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+	<!--[if lt IE 9]>
+	<script>
+	document.createElement('header');
+	document.createElement('nav');
+	document.createElement('section');
+	document.createElement('article');
+	document.createElement('aside');
+	document.createElement('footer');
+	document.createElement('hgroup');
+	</script>
+	<![endif]-->
+    <style>
+
+  /* GLOBAL STYLES
+    -------------------------------------------------- */
+    /* Padding below the footer and lighter body text */
+
+
+
+#sidebar_toc {
+	background:#d3d3d3;
+	border-radius:6px;
+}
+
+#sidebar_toc > ul {
+	margin:10px 5px 5px 20px;
+}
+
+#sidebar_toc li {
+	padding:2px;
+}
+
+.arrow-right {
+	float:right;
+	font-size:18px;
+	margin-right:10px;
+	display:inline;
+	font-family:arial;
+}
+
+#content section{
+	display:none;
+}
+
+td {
+	padding:5px;
+}
+
+.note {
+	float:right;
+	width:300px;
+	background:#d3d3d3;
+	padding:10px;
+	margin-left:15px;
+}
+	
+	
+	@media (min-width:768px) {
+		.span3 {
+		width:270px;
+		}
+	}
+
+	@media (max-width: 979px) and (min-width:768px) {
+		.span8 {
+			width:434px;
+		}
+	}
+
+
+</style>
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="../assets/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+  	<link rel="shortcut icon" href="https://d25ff44qw0vvh6.cloudfront.net/icon-16x16.png">
+    <style id="holderjs-style" type="text/css">.holderjs-fluid {font-size:16px;font-weight:bold;text-align:center;font-family:sans-serif;margin:0}</style>
+	
+</head>
+<body>
+<!--script src="js/jquery-2.0.2.min.js"></script-->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js" type="text/javascript"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/respond.min.js"></script>
+<div id="navHeader">
+    <div class="navbar-inner nav_thing">
+    	<div class="container-fluid" style="padding-right:10px;">
+            <a id="logo_link" href="index.html"><img width="160" id="logo" src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/meetProLogo.png"></a>
+          <button type="button" class="btn btn-navbar collapsed" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+         
+          <div class="nav-collapse collapse" style="height: 0px;">
+           <ul class="nav">
+				<li id="nav_home" style="width:10%"><a class="nav_link" href="index.html">Home</a></li>
+				<li style="width:10%"><a class="nav_link" href="features.html">Features</a></li>
+                <li style="width:16%"><a class="nav_link" href="guide/reports_guide.html" target="_blank">Custom HTML</a></li>
+				<li id="nav_get" style="width:16%"><a class="nav_link" href="get.html">Get MeetPro</a></li>
+				<li style="width:8%"><a class="nav_link" href="http://blog.tfmeetpro.com">Blog</a></li>
+				<li style="width:16%"><a class="nav_link" href="documentation.html">Documentation</a></li>
+				<li style="width:8%"><a class="nav_link" href="FAQ.html">FAQ</a></li>
+			</ul> 
+          </div><!--/.nav-collapse -->
+        </div>
+    </div>
+</div>
+
+<header style="margin-top:55px;">
+	<div class="container">
+	<h1>Documentation</h1>
+	</div>
+</header>
+
+<div class="container">
+	<div class="row">
+		<div class="span3" id="sidebar_toc">
+			<ul class="nav" style="list-style:none;">
+				<li><a href="#install">Installation</a></li>
+				<li><a href="#license">Licensing</a></li>
+				<li class="more"><a href="#basics">Meet Database Basics
+				<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>Creating Your First Meet</li>
+					<li>Tabs and Keyboard Shortcuts</li>
+					<li>Adding Events</li>
+					<li>Adding Teams</li>
+					<li>Adding Athletes</li>
+				</ul></li>
+				<li class="more"><a href="#evts_teams_aths">Events, Teams, and Athletes
+				<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>Events</li>
+					<li>Teams</li>
+					<li>Athletes</li>
+				</ul></li>
+				<li><a href="#relay">Relay Entries</a></li>
+				<li class="more"><a href="#seed">Seeding<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>Manual Seeding</li>
+					<li>Team Lanes</li>
+				</ul></li>
+				<li><a href="#entrypad">The Entry Pad</a></li>
+				<li class="more"><a href="#enter_results">Entering Track & Field Results
+				<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>Finish Lynx</li>
+					<li>Flash Timing</li>
+					<li>Tie Breaking</li>
+					<li>Scoring</li>
+				</ul></li>
+				<li class="more"><a href="#reports">Reports<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>PDF, HTML, and Text Reports</li>
+					<li>Split Labels</li>
+				</ul></li>
+				<li class="more"><a href="#DA_int">DirectAthletics Integration<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>Create a Meet From DirectAthletics</li>
+					<li>Import Entries From DirectAthletics</li>
+					<li>Exporting Results to DirectAthletics</li>
+				</ul></li>
+				<li class="more"><a href="#xc">Cross Country<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>Creating a Cross Country Meet</li>
+					<li>Creating Cross Country Events</li>
+					<li>Entering Cross Country Results Manually</li>
+					<li>FinishLynx</li>
+					<li>Ipico Chip Timing</li>
+					<li>Time Machine</li>
+					<li>NK Interval 2000xc</li>
+					<li>Barcode Scanners</li>
+				</ul></li>
+				<li class="more"><a href="#tfrrs">TFRRS<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>Import Rosters From TFRRS</li>
+					<li>Upload Results to TFRRS</li>
+				</ul></li>
+				<li class="more"><a href="#import">Importing Data<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none;display:none;">
+					<li>From DirectAthletics</li>
+					<li>From TFRRS</li>
+					<li>From a Semi-Colon Delimited File</li>
+					<li>From Another MeetPro Database</li>
+					<!--<li>Hy-Tek TCL Files</li>-->
+				</ul></li>
+				<li><a href="#hy-tek">Creating Meets From Hy-Tek Events Files</a></li>
+				<li><a href="#templates">Templates</a></li>
+				<li><a href="#webupload">Upload To Web</a></li>
+				<li class="more"><a href="#amazon_s3">Upload To Amazon S3<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>S3 Account Creation</li>
+					<li>S3 Buckets</li>
+					<li>Uploading Results to Web</li>
+					<li>Updating Results</li>
+					<li>DNS and CNAMEs</li>
+					<li>Customizing Results</li>
+				</ul></li>
+				<li><a href="#ftp">FTP Upload</a></li>
+				<li><a href="#disk">Publish To Disk</a></li>
+				<li class="more"><a href="#scoreboard">Daktronics Scoreboard Interface
+				<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>Board Setup</li>
+					<li>Template File</li>
+					<li>Data Setup</li>
+					<li>Starting and Stopping the Feed</li>
+				</ul></li>
+				<li class="more"><a href="#live">Live Update
+				<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>Triggering Live Update</li>
+					<li>Enter Results</li>
+				</ul></li>
+				<li><a href="#network">Networking</a></li>
+				<li class="more"><a href="#records">Records<div class="arrow-right">&rsaquo;</div></a>
+				<ul style="list-style:none; display:none;">
+					<li>Updating TFRRS Records</li>
+					<li>Custom Records and Record Sets</li>
+					<li>Customizing the Default Records Database</li>
+				</ul></li>
+<!--				<li><a href="#webapp">Field Event WebApp Server</a></li>-->
+				<li><a href="#troubleshoot">Troubleshooting</a></li>
+			</ul>	
+					
+		</div>
+		<div class="span8" id="content">
+		<section id="default" style="display:block;">
+			<div class="page-header">
+			</div>
+			<p style="font-size:30px; line-height:35px;"><a href="https://www.tfmeetpro.com/MeetPro_Manual.pdf">Download</a> the User Manual as a PDF file or use the table of contents on the left.</p>
+		</section>
+		<section id="install">
+			<div class="page-header">
+				<h1>Installation</h1>
+			</div>
+			<p>MeetPro installers are available online at the following locations:</p>
+			<table style="margin:10px 20px;">
+				<tbody>
+					<tr>
+					<td>Windows:</td><td><a href="https://www.directathletics.com/meetpro/MeetProSetup.exe">https://www.directathletics.com/meetpro/MeetProSetup.exe</a></td></tr>
+					<tr><td>Mac:</td><td><a href="https://www.directathletics.com/meetpro/MeetPro.dmg">https://www.directathletics.com/meetpro/MeetPro.dmg</a></td>
+					</tr>
+				</tbody>
+			</table>
+			<p> Download the installer for your operating system and open the installer.</p> 
+		
+			<p>You will be prompted to install MeetPro. On Windows you may be prompted to allow  Adobe Air to modify your configuration. Click “Yes”.</br>&nbsp;</br> MeetPro will launch after installation.</p>
+		</section>
+		<section id="license">
+			<div class="page-header">
+				<h1>Licensing</h1>
+			</div>
+			<div class="note">
+				<p>Note: Each license key may be used on a limited number of computers. If you reach the limit, you will have to de-activate your license on one of your computers to install MeetPro on a new computer. To de-activate a license on a computer, open MeetPro, go to the “MeetPro” menu and click “De-activate”.</p>
+			</div>
+			<p>MeetPro will prompt you to enter your license key if you have not done so. Enter the license key provided to you by DirectAthletics. </p>
+		</section>
+		<section id="basics">
+			<div class="page-header">
+				<h1>Meet Database Basics</h1>
+			</div>
+			<p>If you have never created a meet in MeetPro, MeetPro will open to a sample meet. 
+			While this meet database is fully functional, you should create a new database for your first meet.</p>
+			<div class="note">
+				<p>Note: A MeetPro meet database is a file ending in “.dab”. This is the only file format MeetPro uses to store meet data; there is no “backup” or “compressed” file format. To backup a MeetPro database, simply copy it (or use the “Save As” feature).</p>
+			</div>
+			<h3>Creating Your First Meet</h3>
+			<p>To create a meet, go to the File menu and click “New.” There you will see the four methods of file creation. Click “New Meet” to create an empty meet. After you click “New Meet” you will be prompted to enter the file name and location for this meet. 
+			The default location is a “MeetPro” directory located in your Documents folder. Enter the file name of your meet with no spaces or “.dab”. Next you will be prompted to enter the basic configuration of this meet. Give your meet a name and date and configure your track type and size. You can change any of these values later. 
+			Once you click “create”, your meet database is created with the filename you chose. You can double-click this file to open MeetPro to this meet.</p>
+			<h3>Tabs and Keyboard Shortcuts</h3>
+			<p>The basic functionality of MeetPro is arranged into tabs. The tabs are Events, Teams, Athletes, Relays, Seeding, and Enter Results. You can change tabs by clicking the tab name. You can also move from one tab to another by pressing CTRL-TAB to advance to the next tab and CTRL-SHIFT-TAB to go back to the previous tab. Additionally, there is a keyboard shortcut for each tab:</p>
+			<table style="margin:10px 20px;">
+				<tbody>
+					<tr><td>Events</td><td>CTRL-E/&#8984;-E</td></tr>
+					<tr><td>Teams</td><td>CTRL-T/&#8984;-T</td></tr>
+					<tr><td>Athletes</td><td>CTRL-A/&#8984;-A</td></tr>
+					<tr><td>Relays</td><td>CTRL-R/&#8984;-R</td></tr>
+					<tr><td>Seeding</td><td>CTRL-S/&#8984;-S</td></tr>
+					<tr><td>Enter Results</td><td>CTRL-D/&#8984;-D</td></tr>
+				</tbody>
+			</table>
+			<h3>Adding Events</h3>
+			<p>Your new meet has no events. To add events, click the “Add New Event” button or type CTRL-C (⌘-C for Mac) while on the Events tab. The “New Event” window will appear. 
+			There are 4 types of events: Run, Field, Relay, and Multi. Select your type of event. 
+			Enter your other configuration data and click “Add”. Your event will be created, but the “Add New Event” window will remain open. 
+			Notice that the gender has automatically changed and the event number has increased. You are ready to add your next event. 
+			When you have added all your events, click “Cancel”.</p>
+			<div class="note">
+				<p>Note: CTRL-C (⌘-C for Mac) opens the “New” window for whatever tab is open. If the Events tab is open CTRL-C opens the New Event window, but if the Athletes tab is open, CTRL-C will open the New Athlete window, etc.</p>
+			</div>
+			<h3>Adding Teams</h3>
+			<p>Your new meet has no teams. To add teams, first switch to the Teams tab by clicking “Teams” or using a keyboard shortcut. Now click “Add New Team” or type CTRL-C (⌘-C for Mac). 
+			The New Team window appears, prompting you to enter a team name, short name and code. All three are required and must be unique in this meet database. 
+			Importing entries uses the team code to match athletes to teams. </br>&nbsp;</br>
+			<strong>Score: </strong>By default the “score” checkbox is checked. If this team should not be scored, uncheck this box. </p>
+			<h3>Adding Athletes</h3>
+			<p>Your new meet has no athletes. Open the Athletes tab and click “Add New Athlete” or type CTRL-C (⌘-C for Mac). The New Athlete window appears. 
+			Enter the athlete’s name and school year, if any. Select the athlete’s team. If the athlete has no team, leave the team selector to “Unattached”. 
+			The competitor number is automatically set to the next available number. Enter any IDs for the athlete (DA, TFRRS, USATF, AAU). 
+			You may also submit entries for this athlete. Check the boxes in the events in which this athlete is entered.
+ 			Enter seed marks into the “Marks” column and the name and date of the meet at which these marks were achieved into the “Note” and “Date” column. You will be able to add more entries later. 
+			</br>&nbsp;</br>Click “Add” to add this athlete.</p> 
+		</section>
+		<section id="evts_teams_aths">
+			<div class="page-header">
+				<h1>Working with Events, Teams, and Athletes</h1>
+			</div>
+			<h3>Events</h3>
+			<p>When the Events tab is open, you can modify an event by double-clicking it. Use the gender and event type filters above the events grid to narrow the list of events. To delete an event, click the red circle with the white “x” next to that event. </p>
+			<p><strong>Sessions:</strong> A session is a group of event rounds in chronological order. Click “Edit Sessions” to open the Sessions screen. Click “Add New Session” to create a session. Select a session from the session list at the top of the screen and 
+			add event rounds to that session by dragging them from the Events grid to the Schedule grid (double-clicking an event in the Events grid will also add it to the bottom of the schedule). Once you assign a round to a session you can add a time to it.
+			 To remove an event from a session, double click the event in the Schedule grid. Close the Sessions screen by clicking “Hide Sessions”.</p>
+			<h3>Teams</h3>
+			<p>When the Teams tab is open, you can modify a team by double-clicking it. To delete a team, click the red circle next to the team.</p>
+			<h3>Athletes</h3>
+			<p>When the Athletes tab is open, you can modify an athlete by double-clicking the athlete. To delete an athlete, click the red circle next to the athlete name. One athlete is always selected. Click an athlete to select that athlete. 
+			</br>&nbsp;</br>
+			The eligible events for that athlete, with any entries for that athlete, appear below the athletes grid. Here you can add, delete, and modify entries. The eligible events grid has a filter, “All” or “Only Entered”. 
+			If Only Entered is selected you will see only events in which that athlete is entered and will not be able to make new entries unless you switch back to “All”.
+			</br>&nbsp;</br>
+			<strong>Filters: </strong>Use the gender and team filter to narrow the list of athletes. Additionally, you can search for an athlete by name or competitor number using the “athlete” filter. 
+			</p>
+		</section>
+		<section id="relay">
+			<div class="page-header">
+				<h1>Relay Entries</h1>
+			</div>
+			<p>Open the Relays tab to manage relay entries. Relay events are listed on the top left grid, one relay event is always selected. Click a relay event to change the selection.
+			</br>&nbsp;</br>
+			The top middle grid shows relay entries for the selected event. One entry is always selected. Click an entry to change the selection. You can modify the selected entry by typing in the Mark, Note or Date fields (the Converted field updates automatically). 
+			To delete an entry, double-click it. 
+			</br>&nbsp;</br>
+			To add a new entry to the selected event, double click a team from the list of teams at the top right. The entry is created using the next available relay squad letter for that team and no mark. Click the NT on the new entry to enter a mark. 
+			To add athletes to your new entry, select the entry and double-click the athletes on the bottom left in the appropriate order. You can re-order the relay athletes by dragging and dropping. Double-click an athlete to remove the athlete from the relay.
+			</p>
+		</section>
+		<section id="seed">
+			<div class="page-header">
+				<h1>Seeding</h1>
+			</div>
+			<p>The Seeding tab lists every event round, except advancement rounds with no advancers. Multiple event rounds may be selected; click an event round to toggle its selection status. When you have selected the events you wish to seed, click “Seed Selected”.  
+			</br>&nbsp;</br>
+			You will be prompted through the seeding process for each event in the order they appear on the Seeding tab. The first prompt asks if you wish to pick break points. The default is “no” for running events and “yes” for field events, hit <strong>ENTER</strong> to accept the default.  
+			</p>
+			<table style="margin:10px 20px;">
+				<tbody>
+					<tr><td>&#9654;</td><td><p>If you opted to pick break points, you will be prompted to select the breakpoints by clicking the checkbox next to the athletes who should be first in a new heat. Click “Apply” when finished.</p></td></tr>
+					<tr><td>&#9654;</td><td><p>If you opted not to pick break points, you will be prompted to specify the number of heats (the minimum is suggested) and the lane randomization selection. Note that Heat Assignment, Heat Order, Lane Assignment, Number of Lanes and Rounds are all set in the Events tab.</p></td></tr>
+					<tr><td>&#9654;</td><td><p><strong>Auto Team-Split: </strong>When seeding an event using serpentine heat assignment, the auto team-split checkbox is available. When checked, athletes from the same team who would be assigned to the same heat are split up in accordance with <em>NFHS Rule 5-6 Art.4</em>. This is default for high school meets.</p></td></tr>
+				</tbody>
+			</table>
+			<p>When an event is seeded you will be prompted to review the results of the seeding process. On this screen you can drag and drop athletes (or relays) from one lane/position to another. You can delete a seed by double-clicking the athlete/relay. 
+			You can create new entries by dragging an athlete from the list of eligible athletes to an empty lane or position. Use the “Add New Heat” and “Clear Empty Heats” buttons to add and delete heats. 
+			</br>&nbsp;</br>
+			Click “Done” when you are finished reviewing the seeding for an event. If there is another event selected, the seeding process will begin for that event.
+			</br>&nbsp;</br>
+			Double-clicking a seeded event will bring up the seeding review screen.
+			</p>
+			<h3>Manual Seeding</h3>
+			<p>To assign athletes to heats and lanes/positions without going through the seeding process, double-click an unseeded event round on the Seeding tab. The seeding review screen will appear. Before seeding you must add a heat to this round. Click “Add Heat.” 
+			Add as many heats as desired. When seeding athletes this way the list of eligible athletes shows only athletes entered in this event, by default. Drag an athlete from the list of eligible/entered athletes to a desired lane/position. Repeat until the event is seeded as desired.
+			</br>&nbsp;</br>
+			<strong>Shortcuts: </strong>
+			</p>
+			<table style="margin:10px 20px;">
+				<tbody>
+					<tr><td>&#9654;</td><td><p>Typing a competitor number in the “Comp #” column of an empty lane/position will seed that athlete in that lane/position.</p></td></tr>
+					<tr><td>&#9654;</td><td><p>Use the “Add Athletes” button at the bottom of the seeding review screen to quickly add new athletes to the database.</p></td></tr>
+				</tbody>
+			</table>
+			<h3>Team Lanes</h3>
+			<p>“Team Lanes” refers to the assignment of teams to specific lanes for the fastest specified heats. Team Lanes are used in some high school jurisdictions.
+			</br>&nbsp;</br>
+			Team Lanes functionality is available if a meet is of type High School and the “Enable Team Lanes” checkbox is checked when creating the meet (or in the Meet &#9656; Setup screen). 
+			</br>&nbsp;</br>
+			To assign teams to lanes, go to Meet &#9656; Lanes Setup and click the “Team Lanes Setup” button (this button will only appear if “Enable Team Lanes” is checked). 
+			In Team Lanes Setup, assign a team to each lane in the two different team lane assignment schemes, “A” and “B”.<em> It is recommended you import entries before assigning teams to lanes.</em>
+			</br>&nbsp;</br>
+			When creating or editing a running event, a “Team Lanes” checkbox will appear next to the “Run in Lanes” checkbox when the “Run in Lanes” box is checked (and team lanes is enabled). 
+			Check the Team Lanes box to enable Team Lanes for this event. You will then be able to designate which lane assignment scheme (“A” or “B”) to use and how many heats to seed using team lanes.
+			</br>&nbsp;</br>
+			When an event is configured to use Team Lanes, the designated number of heats will be seeded using the designated Team Lane assignment scheme, and remaining heats will be seeded using the regular seed configuration of that event.
+			</p>
+		</section>
+		<section id="entrypad">
+			<div class="page-header">
+				<h1>The Entry Pad</h1>
+			</div>
+			<p>On both the Events and Seeding tabs, there is an “Entries” column displaying the number of entries in an event or round. 
+			Clicking this number brings up the <strong>Entry Pad</strong>. The Entry Pad lists all entries in an event (or round), allows the user to scratch or modify existing entries as well as create new entries. 
+			Note that this feature duplicates functionality existing in the Athletes, Relays and Seeding tabs.
+			</p>
+		</section>
+		<section id="enter_results">
+			<div class="page-header">
+				<h1>Entering Track & Field Results</h1>
+			</div>
+			<p>The top grid of the “Enter Results” tab shows event rounds with entries/advancers. One event round is always selected. Click an event round to change the selection.
+			</br>&nbsp;</br>
+			The bottom grid shows the entries/advancers in a particular heat/flight of the selected event round. Use the ↑ and ↓ buttons to change the heat/flight selection. 
+			You may enter results by typing them directly in the “Time” field of a particular entry. You may also import results from <strong>FinishLynx</strong>.
+			</p>
+			<h3>FinishLynx</h3>
+			<div class="note">
+				<p>Note: Configure <strong>FieldLynx</strong> support the same way you configured FinishLynx. For field events, Get Results will import data from <strong>FieldLynx</strong>.</p>
+			</div>
+			<p>The FinishLynx interface is configured using the Interfaces menu. Go to Interfaces &#9656; FinishLynx &#9656; Setup to configure your FinishLynx data directories. 
+			Go to Interfaces &#9656; FinishLynx &#9656; Update Start Lists to write start list data to that directory.
+			</br>&nbsp;</br>
+			To import results from FinishLynx, click the <strong>Get Event Results</strong> button(above the entries grid in Enter Results). If FinishLynx results files matching the event and round are found, the results data will be imported. 
+			MeetPro will import splits from FinishLynx when available. To import just the currently selected heat or flight, toggle the <strong>Get Event Results</strong> button to <strong>Get Heat Results</strong>.
+			</br>&nbsp;</br>
+			<strong>Auto-Pull Results:</strong> Once the FinishLynx interface has been	setup, the “Start Auto-Pull” option in the FinishLynx menu becomes available. 
+			Start auto-pull to automatically import results from FinishLynx as results are added to the FinishLynx Results Directory.
+			</p>
+			<h3>Flash Timing</h3>
+			<p>Flash Timing users should use the Interfaces &#9656; Flash Timing menu, which functions identically to the FinishLynx interface (above).</p>
+			<h3>Tie Breaking</h3>
+			<p>By default MeetPro will automatically break ties when possible using tie breaking rules. To turn off this behavior go to Meet &#9656; Scoring Setup and uncheck the box next to “Break ties automatically”. 
+			To manually initiate automatic tie-breaking for an event, click “JD Places” on the Enter Results screen and click “Auto-break Ties”.</p>
+			</p>
+			<h3>Scoring</h3>
+			If the selected event is setup as “scored,” a “Score” button will appear in Enter Results (if the event is already scored, the button will appear as “Re-Score”). Click this button to score the event. Click Re-Score to re-calculate the score. There is also a “Score” column in the list of event rounds available in Enter Results. 
+			Checking/unchecking this box will toggle the scored status of an event.
+			</br>&nbsp;</br>
+			<h4>Complete</h4>
+			In addition to the “Scored” checkbox in the event rounds list, there is also a “Complete” checkbox. Checking/unchecking this box will toggle the event round’s “complete” status. <em>The “complete” status of an event round is an optional filter criteria.</em> The only use of the “complete” checkbox is to later filter event rounds by “complete” status. This allows the printing of only results marked as “complete.” <em><strong>The “Complete” checkbox can be completely ignored if desired.</strong></em>
+			</br>&nbsp;</br>
+			<strong>Other Enter Results buttons:</strong>
+			</p>
+			<table style="margin:10px 20px;">
+				<tbody>
+					<tr><td>List:</td><td>Click “List” to display the results for this event, if any.</td></tr>
+					<tr><td>Seeding:</td><td>You can open the seeding review screen for this event round by clicking the Seeding button.</td></tr>
+					<tr><td>Advancement:</td><td>For rounds other than Final, clicking “Advancement” will open the advancement configuration screen.</td></tr>
+					<tr><td>JD Places:</td><td>Click this to open a JD Places screen that will allow you to break ties.</td></tr>
+					<tr><td>Field Series:</td><td>This button opens the field series results screen. </td></tr>
+				</tbody>
+			</table>
+		</section>
+		<section id="reports">
+			<div class="page-header">
+				<h1>Reports</h1>
+			</div>
+			<h3>PDF, HTML, and Text Reports</h3>
+			<p>MeetPro generates reports in PDF, HTML and Text formats. You must have a PDF viewer such as Adobe Reader installed to view PDF reports. 
+			You must have a web browser such as Chrome or FireFox installed to view HTML reports.
+			</br>&nbsp;</br>
+			To generate a report, open the Reports menu and select the desired report. Most reports have filtering options (some, like Statistics, do not). 
+			Reports are generated as temporary files; use the “Save As” command in your PDF viewer or web browser to save them for later use.
+			</p>
+			<h3>Exporting Data</h3>
+			<p>Use the File &#9656; Export menu to export data to an Excel or CSV file. You must have Excel installed to view Excel files.</p>
+			<h3>Split Labels</h3>
+			<p>MeetPro will optionally display splits in results (split times are automatically imported from Fully Automatic Timing systems). 
+			To provide custom column heads for splits, enter a comma separated list of column heads in the “Split Labels” field of Add/Edit Event, for example “400, 800, 1200, 1600, 2000, 2400, 2800”.
+			</p>
+			<h3>Barcodes and Labels</h3>
+			<p>The "Labels" menu contains two special reports, Competitor Labels and Entry Labels. Both of these reports
+			allow selection of a specific label format (such as Avery 5160) and barcode format for competitor number barcodes (typically CODE39).
+			</p>
+			<h3>HTML Reports Templates</h3>
+			<p>HTML reports are easily customized by editing the included css file (style.css) or the html files. Edit the files in your ~/Documents/MeetPro Report Templates 
+			directory to modify HTML results. To return to the default reports, delete the files in this directory.
+			</p>  
+		</section>
+		<section id="DA_int">
+			<div class="page-header">
+				<h1>DirectAthletics Integration</h1>
+			</div>
+			<h3>Create a Meet From DirectAthletics</h3>
+			<p>You can create a MeetPro database from a meet in your DirectAthletics administrator account. It doesn’t matter if the meet is in the past or the future. Go to File &#9656; New &#9656; Create From DA. 
+			You will be prompted to login to your DirectAthletics account. Once you are logged in you will be prompted to select a meet from your account. Only track & field meets with events are listed. 
+			When you select a meet, you will be prompted to enter a name and location for this new database. Next, you will be prompted to enter the basic meet data for this meet. 
+			Note that the Season Type (Outdoors/Indoors/XC) selection is unavailable, as this will be determined by the data from DirectAthletics. 
+			</br>&nbsp;</br>
+			Your new meet will have events and divisions corresponding to the events and divisions in the DirectAthletics meet. 
+			</p>
+			<h3>Import Entries From DirectAthletics</h3>
+			<p>To import entries from DirectAthletics, go to File &#9656; Import &#9656; From DirectAthletics. You will be prompted to login if you are not already logged in. Then you will be prompted to select a meet with entries. 
+			Once you select a meet, your entries will download from DirectAthletics and import into your MeetPro database. Any conflicts or missing events will be displayed in a PDF report.
+			</p> 
+			<h3>Exporting Results to DirectAthletics</h3>
+			Select the DirectAthletics menu. If “Upload Results” is available, click that. If it is not available, you must first click “Login”, then “Upload Results”. 
+			You will be prompted to select a meet to upload to. Select a meet and your results will be uploaded to that meet on DirectAthletics.
+			</p>
+		</section>
+		<section id="xc">
+			<div class="page-header">
+				<h1>Cross Country</h1>
+			</div>
+			<h3>Creating a Cross Country Meet</h3>
+			<p>To create a Cross Country meet, select “XC” instead of Indoor or Outdoor in meet selection.</p>
+			<h3>Creating Cross Country Events</h3>
+			<p>Click “Add Event” to create a cross country event. Enter a distance in meters, yards or miles.</p>
+			<h3>Entering Cross Country Results Manually</h3>
+			<p>To enter cross country results manually, click the “Enter Results” tab. Competitor numbers and times can be added in any order.
+			</br>&nbsp;</br>
+			To enter competitor numbers, click the “Comp #” column of a results row and type in an competitor number. If this number corresponds to an athlete in the database, the athlete name, year and team will appear when you press Enter. 
+			Pressing Enter will take you to the Comp # field of the next row. To create a results row with no athlete, enter “0” (zero) as the competitor number. 
+			</br>&nbsp;</br>
+			To enter times, click the “Time” column of a results row and enter a time. Times can be entered in any row, even if no competitor number has been entered. When a time is entered that result will be immediately sorted according to the finishing time.
+			</br>&nbsp;</br>
+			To delete a result, double click the result. 
+			</br>&nbsp;</br>
+			To insert a result between two existing result rows:
+			</p>
+			<table style="margin:10px 20px;">
+				<tbody>
+					<tr><td>If the results have times, enter the new result at the bottom of the results grid. The times will be sorted automatically.</td></tr>
+					<tr><td>If the results do no have times, highlight the result that should have new results above it. Click the “Insert” button at the bottom right and a new empty result row will be inserted above the highlighted row. </td></tr>
+				</tbody>
+			</table>
+			<h3>FinishLynx</h3>
+			<p>To import results from FinishLynx, first setup the Lynx directories using the same procedure as for track & field. Then, in Enter Results, click “Get Results From Lynx”. 
+			Results files matching the event number of the selected event (and round 1, heat 1) will appear in the Import Results preview screen. Click “Import” to import results.
+			</br>&nbsp;</br>
+			Alternatively, toggle the “Get Results From Lynx” button to “Get Results From Lynx File” and select the .LIF results file you wish to import. This method requires no setup or event number matching.
+			</p>
+			<h3>Ipico Chip Timing</h3>
+			<div class="note">
+				<p>Note: To use chip timing, chip IDs must match the “Chip” field in add/edit athletes. To import a chip/comp # CSV matching file, go to Interfaces &#9656; Ipico &#9656; Match Bibs/Chips.</p>
+			</div>
+			<p>To import results from an Ipico Reader, go to Interfaces &#9656; Ipico &#9656; Setup. Enter the IP and port of the reader and click “Start Reading”. Have the reader transmit times. The raw tags will appear on this setup screen.
+			</br>&nbsp;</br>
+			After successfully receiving tags, go to Enter Results. Toggle the “Get Results from Lynx” button to “Get Results from Ipico” and click the button. The results to be imported will appear on the import results screen. 
+			Athletes with chip IDs that match the received results will appear in the results. Click “Import” to import these results. 
+			</p>
+			<h3>Time Machine</h3>
+			<p>
+			<strong>Setup:</strong> Go to Interfaces Time Machine &#9656; Setup to configure your Time Machine Interface. Select the Com Port (on Windows this likely COM3, on Mac this will be
+			/dev/cu.KeySerial1) and baud. The baud setting should match the setting on your Time Machine.
+			</br>&nbsp;</br>
+			<strong>Importing Times:</strong> Importing Times: Make sure Time Machine is on and the MeetPro computer is connected to the RS232 port. Go to Enter Results and toggle the “Get Results 
+			From Lynx” button to “Get Times from Time Machine.” Select the event to import times into. Click “Get Times from Time Machine.” MeetPro will send a RETRANSMIT request to Time Machine and 
+			retrieve all times. If multiple events are available, you will be prompted to select an event. The times will appear in the Import Times preview window. Click “Import” to import the times into the results.
+			</p>
+			<h3>NK Interval 2000xc</h3>
+			<div class="note">
+				<p>Note: See the <a class="tosection" href="#troubleshoot">Troubleshooting: Serial Devices</a> section for important information on using serial devices (Time Machine, NK2000xc) with computers that do not have a serial port.</p>
+			</div>
+			<p>MeetPro can import times from the NK Interval 2000xc watch via the serial interface accessory available from NK (www.nkhome.com). No proxy program is necessary. Go to Interfaces &#9656; Interval 2000xc &#9656; Setup. 
+			Select a communications port (on Windows this is likely COM3, on Mac this will be /dev/cu.KeySerial1).
+			</br>&nbsp;</br>
+			Go to the Enter Results tab and the event to import times into. Enter competitor numbers or “0” (zero) for each result to import times to. Go to Enter Results and toggle the “Get Results From Lynx” button to “Get Times from Interval 2000xc”, and click the button. 
+			Wait while MeetPro contacts your watch and times are received. The times will appear in the Import Times preview window. Click “Import” to import the times into the results.
+			</p>
+			<h3>Barcode Scanners</h3>
+			<p>Barcode scanners are recognized as keyboard input devices. To enter competitor numbers from barcodes into results, go to the “Enter Results” tab, select an event and click the first box under the “Comp. #” column. 
+			Once the cursor is in the competitor number column, scan the first barcode. The competitor number will be placed in the box and the cursor will move down to the next row. Repeat for all barcodes. 
+			</p>
+		</section>
+		<section id="tfrrs">
+			<div class="page-header">
+				<h1>TFRRS</h1>
+			</div>
+			<div class="note">
+				<p>Note: Go to <a href="https://www.tfrrs.org/director_info.html">https://www.tfrrs.org/director_info.html</a> to create a TFRRS director account.</p>
+			</div>
+			<p>Use the TFRRS menu to import TFRRS rosters to MeetPro and export results to TFRRS. Before using the commands below, you must first login to a TFRRS director account. Login by going to TFRRS &#9656; Login.
+			</p>
+			<p>To import rosters from TFRRS, click TFRRS &#9656; Import Rosters. Then select a meet from the list of your TFRRS meets.</p>
+			<h3>Upload Results to TFRRS</h3>
+			<p>To upload results to TFRRS, click TFRRS &#9656; Upload Results. Then select the meet to upload to. Alternatively, a TFRRS CSV file can be generated by clicking File &#9656; Export &#9656; Results and selecting “TFRRS CSV”.</p>
+		</section>
+		<section id="import">
+			<div class="page-header">
+				<h1>Importing Data</h1>
+			</div>
+			<h3>Import Entries From DirectAthletics</h3>
+			<p>To import entries from DirectAthletics, go to File &#9656; Import &#9656; From DirectAthletics. You will be prompted to login if you are not already logged in. Then you will be prompted to select a meet with entries. 
+			Once you select a meet, your entries will download from DirectAthletics and import into your MeetPro database. Any conflicts or missing events will be displayed in a PDF report.
+			</p> 
+			<h3>Import Rosters From TFRRS</h3>
+			<p>To import rosters from TFRRS, click TFRRS &#9656; Import Rosters. Then select a meet from the list of your TFRRS meets.</p>
+
+			<h3>Semi-Colon Delimited Format</h3>
+			<p>MeetPro can import entries from the common Semi-Colon Delimited import file used by Hy-Tek and all online entry websites. To import a Semi-Colon file, click File &#9656; Import &#9656; Hy-Tek Semi-Colon Delimited File. 
+			Find the file on your computer and click OK.
+			</p>
+
+
+			<h3>From Another MeetPro Database</h3>
+			<p>MeetPro can import data from other MeetPro databases. To import from another database file, click File &#9656; From Another Database. Select a MeetPro database on your computer (not the currently opened database) and click OK. 
+			Select the data to enter (athletes, teams, entries,  events, results) and click Import.
+			</p>
+
+<!--			<h3>Hy-Tek TCL Files</h3>
+			<p>MeetPro can import athletes, entries, events and results from files in the TCL format used by Hy-Tek. To import a TCL file, click File &#9656; Import &#9656; Hy-Tek TCL File. 
+			Find the file on your computer and click OK. If you choose to import entries but not events, any entries for events not already in your database will produce exceptions and will not be imported.
+			</p>
+-->
+		</section>
+		<section id="hy-tek">
+			<div class="page-header">
+				<h1>Creating Meets From Hy-Tek Events Files</h1>
+			</div>
+			<p>To create a meet from a Hy-Tek events file (.ev1), go to File &#9656; New &#9656; Create From EV1 File. Select an ev1 file. Next, enter a file name and location for the new meet database. 
+			Next, enter the basic information of the meet and click “Create”. The new meet will have the events and divisions from the ev1 file.
+			</p>
+		</section>
+		<section id="templates">
+			<div class="page-header">
+				<h1>Templates</h1>
+			</div>
+			<p>A template is a model database used as a basis for new MeetPro databases. MeetPro comes installed with several templates. To create a meet from a template, go to to File &#9656; New &#9656; Create From Template. 
+			Select a file name and location, then enter the name and date of the meet. Your meet database will be created with the events, divisions and other settings from the template. 	 	
+			</br>&nbsp;</br>
+			<strong>Creating Templates: </strong>You can create a template from any meet. Select File &#9656; Create Template to create a template of the currently open meet database.
+			</p>
+		</section>
+		<section id="webupload">
+			<div class="page-header">
+				<h1>Upload To Web</h1>
+			</div>
+			<p>The “Upload To Web” feature provides the ability to instantly upload results to <a href="https://results.tfmeetpro.com">https://results.tfmeetpro.com</a>. To upload results, go to Interfaces &#9656; Upload To Web &#9656; Setup. Enter a folder name for this meet. 
+			The folder name should be unique for the meet. If folder names are re-used, data will be overwritten. Click “OK” and results will be uploaded. 
+			</br>&nbsp;</br>
+			Data is uploaded to a folder corresponding to the license associated with MeetPro, so if MeetPro is licensed to “Acme Timing” and the folder name entered is “SmithInvite”, results will be uploaded into a folder at <u>http://results.tfmeetpro.com/Acme_Timing/SmithInvite</u>. 
+			</br>&nbsp;</br>
+			After the initial upload, go to Interfaces &#9656; Upload To Web &#9656; Publish to re-upload results data to the web.
+			</p>
+		</section>
+		<section id="amazon_s3">
+			<div class="page-header">
+				<h1>Upload To Amazon S3</h1>
+			</div>
+			<p>Amazon Simple Storage Service (Amazon S3) is a simple data storage infrastructure. The <u>S3 Upload</u> feature instantly uploads results to the web via S3. Web pages can be updated at any time.</p>
+			<h3>S3 Account Creation</h3>
+		 	<p>To use S3 Upload, you must have an S3 account. To create an S3 account, go to <a href="http://aws.amazon.com/s3">http://aws.amazon.com/s3</a>.</p>
+		 	<h3>S3 Buckets</h3>
+		 	<div class="note">
+		 		<p>S3 Buckets must have “website” enabled and have an Index Document of “index.html”.</p>
+		 	</div>
+		 	<p>S3 uses the concept of storage buckets. To use S3 Upload, you must first create a bucket for this meet. The meet name is a good name for the bucket. In order for uploaded data to be available as a web site, 
+		 	<em>the bucket must have the “website” feature enabled (checked).</em> Additionally, the “Index Document” must be set to “index.html”.
+		 	</p>
+		 	<h3>Uploading Results to the Web</h3>
+		 	Once your S3 account is setup and you have created a storage bucket for the meet, go to Interfaces &#9656; S3 Upload &#9656; Setup. 
+		 	Enter your Amazon Web Services Access Key and Secret Key where indicated. Once you enter these values, your buckets will appear in the “Buckets” dropdown list. Select the bucket you wish to upload to and click “OK”. A results website will be created in the selected bucket. 
+		 	</p>
+		 	<h3>Updating Results</h3>
+		 	<p>Once you upload results for the first time, the “Update” menu item will become available (Interfaces &#9656; S3 Upload &#9656; Update). Select Update and updated results will be uploaded to the storage bucket. No additional setup is required. 
+		 	</p>
+		 	<h3>DNS and CNAMEs</h3>
+		 	<p>If your bucket is called “MyBucket”, the results website will be available at <u>http://MyBucket.s3-website-us-east-1.amazonaws.com</u>. However, you can customize this using a DNS CNAME record. 
+		 	If you have a domain “<u>mytimingco.com</u>”, you can create a CNAME record pointing <u>MyMeet.mytimingco.com</u> to <u>MyBucket.s3-website-us-east-1.amazonaws.com</u>. Using this method you can create a unique subdomain URL for each meet you use with <strong>S3 Upload</strong>. 
+		 	Contact your DNS provider for information on how to create a CNAME record.
+		 	</p>
+		 	<h3>Customizing Results</h3>
+		 	<p>By default MeetPro uploads a CSS file named “style.css” with HTML data. By editing this file you can customize the style and layout of uploaded results. 
+		 	You can edit the uploaded document in your S3 account or edit the document in the assets/docs folder of the MeetPro application directory.
+		 	</p>
+		 </section>
+		 <section id="ftp">
+		 	<div class="page-header">
+		 		<h1>FTP Upload</h1>
+		 	</div>
+		 	<p>Results can also be uploaded via FTP. Go to Interfaces &#9656; FTP Upload &#9656; Setup and enter your FTP host, username, and password and target directory. 
+		 	HTML results will be uploaded when you first enter your account information. Once logged in, go to Interfaces &#9656; FTP Upload &#9656; Publish to re-upload results.
+		 	</br>&nbsp;</br>
+		 	The HTML results uploaded via FTP are identical to the results uploaded via S3. You can customize the CSS file in the same manner. 
+		 	</p>
+		 </section>
+		 <section id="disk">
+		 	<div class="page-header">
+		 		<h1>Publish To Disk</h1>
+		 	</div>
+		 	<p>Results, Start Lists and Performance Lists can be published to a local directory rather than to a remote location. This is useful for users who prefer to use their own FTP program or other file sharing application (DropBox, etc.). 
+		 	To open the Publish To Disk setup screen Go to Interfaces &#9656; Publish To Disk &#9656; Setup. Once configured, go to to Interfaces &#9656; Publish To Disk &#9656; Publish to re-publish.      	 
+			</p>
+		</section>
+		<section id="scoreboard">
+			<div class="page-header">
+				<h1>Daktronics Scoreboard Interface</h1>
+			</div>
+			<p>Open the Daktronics Scoreboard Interface window by going to Interfaces &#9656; Scoreboards &#9656; Daktronics. 
+			All the options for the Daktronics interface are on this window, and this window must remain open while the data feed to the scoreboard is running.
+			</p>
+			<h3>Board Setup</h3>
+			<p>This interface uses the Daktronics RTD and connects to scoreboards via UDP or TCP/IP (default UDP). Enter the IP address and port of your Daktronics RTD system in the lower left corner of the Daktronics window. 
+			If you wish to preview the data that will be output without sending data to the board, check the “Preview” checkbox. Enter the display height and width, as well as the delay between pages.
+			</p>
+			<h3>Template File</h3>
+			<p>A template file (MeetPro.itf) is provided for use with Daktronics scoreboards. Click the link on the Daktronics Setup window to download the template file.</p>
+			<h3>Data Setup</h3>
+			<p>The top left portion of the window contains the data options. The interface can send three types of data: Team scores, start lists and results. Check the boxes next to one or more data types. 
+			If “Results” is checked, the options below the checkboxes configure which event results will be displayed. The number of pages allows you to limit the number of pages per heat/round. 
+			The filters let you limit the events shown.
+			</br>&nbsp;</br>
+			To the right of the data filters are the result columns. The checked columns will be included in results. Make sure the columns you select will fit within the width of your board.
+			</p>
+			<h3>Starting and Stopping the Feed</h3>
+			<p>When you have finished configuring the interface, click the “Start” button to begin feeding data to the board (or, if Preview is clicked, to begin previewing data). 
+			Data will appear in the “Monitor” window as it is sent to the board.
+			</br>&nbsp;</br>
+			When you wish to stop the data feed, click “Stop”. If you change the configuration, you must stop and re-start the feed for the change to take effect. 
+			</p>
+		</section>
+		<section id="live">
+			<div class="page-header">
+				<h1>Live Update</h1>
+			</div>
+			<p>Live Update provides a fast and easy way to publish results, heat sheets and/or performances from a hot key (CTRL-D for Windows, ⌘-D for Mac) or by clicking the “Live Update” button on the Enter Results screen.
+			</br>&nbsp;</br>
+			Live Update can be configured to trigger publishing via S3, FTP, Daktronics, Upload to Web and Publish to Disk. 
+			</br>&nbsp;</br>
+			To configure Live Update go to Interfaces &#9656; Live Update &#9656; Setup. Select one or more interfaces to be triggered by Live Update. 
+			Each selected interface must be configured prior to triggering Live Update.
+			</p>
+			<h3>Triggering Live Update</h3>
+			<p>If Live Update is configured, use the hot key combo key (CTRL-D for Windows, ⌘-D for Mac) or go to Interfaces &#9656; Live Update &#9656; Update Now to trigger publishing on all selected interfaces.
+			</p>
+			<h3>Enter Results</h3>
+			<p>If Live Update is configured, the “Live Update” button will appear on the Enter Results screen. Clicking this button will update the results <em>for just the selected event</em> across all Live Update interfaces.
+			</p>
+			<h3>Triggering Live Update Automatically - A.K.A. "Live Results"</h3>
+			<p>Live Update can be configured to automatically trigger when results are modified, when events are scored, or when an event is marked as complete. Select one or moe of these options in the "Auto Update" section
+			of the Live Update Setup screen to automatically trigger Live Update.
+			</p>
+		</section>
+		<section id="network">
+			<div class="page-header">
+				<h1>Networking</h1>
+			</div>
+			<p>To allow multiple users to operate on the same MeetPro database at the same time, use <a href="https://tfmeetpro.com/meetpro_server.html">MeetPro Server</a>.
+
+			</p>
+			<h3>Refreshing Data</h3>
+			<p>When a network user makes changes to a MeetPro database, the change may not be immediately visible to other MeetPro users. Go to File &#9656; Refresh to populate MeetPro tabs with the latest data.
+			</p>
+		</section>
+		<section id="records">
+			<div class="page-header">
+				<h1>Records</h1>
+			</div>
+			<p>Records can be displayed in Results, Heat Sheets, Score Sheets and Performance Lists. To configure Records, go to the Records menu and select Setup. 
+			</br>&nbsp;</br>
+			By default every MeetPro database includes several built-in Record Sets. 
+			To display the results of a particular record set in reports, click the “Display” checkbox for that record set, then click what record fields to display (performance is always displayed). 
+			Then when running a report, clicking “Include Records” will cause all of the record sets with “Display” checked to appear in that report (if the Record Set contains records for events in that report).
+			</p>
+			<h3>Updating TFRRS Records</h3>
+			<p>The built-in records included in every MeetPro database are drawn from the TFRRS records database (records.tfrrs.org). Selecting Records &#9656; Update All will update your TFRRS records to reflect any changes at records.tfrrs.org.
+			</p>
+			<h3>Custom Records and Record Sets</h3>
+			<p>To create your own record set, go to Records &#9656; Setup and click Add Record Set. Enter the information for your record set. 
+			The “level” of a Record Set is important for sorting.
+			</br>&nbsp;</br> 
+			Record sets are sorted as follows:
+			<table style="margin:10px 20px;">
+				<tbody>
+					<tr><td>World</td><td>Olympic</td><td>National</td></tr>
+					<tr><td>College</td><td>Junior College</td><td>High School</td></tr>
+					<tr><td>Association</td><td>Conference</td><td>Championship</td></tr>
+					<tr><td>Standard</td><td>Facility</td><td>Team</td></tr>
+				</tbody>
+			</table>
+			<p>To add a record to a record set, select the record set on the Records Setup screen and click Add New Record (not Add New Record Set). 
+			To edit a record, select a record set and then double click on the desired record. 
+			</br>&nbsp;</br>
+			Records can also be imported from another database or a TCL records file. Select Records &#9656; Import to import records from an outside source. 
+			</p>
+			<h3>Customizing the Default Records Database</h3>
+			<p>When	a new MeetPro database is created it copies records from the default records database(“default_records.dab”). To include your own records in the default records database:	
+   			<table style="margin:10px 20px;">
+				<tbody>
+					<tr><td>1) Open the meet containing your custom records.</td></tr>
+					<tr><td>2) From the menu, select Records &#9656; Save As Default Records</td></tr>
+					<tr><td>3) Click "OK" on the confirmation window.</td></tr>
+				</tbody>
+			</table>
+			</br>&nbsp;</br>
+			This will overwrite the default records with your custom records.
+			</p>
+		</section>
+<!--		<section id="webapp">
+			<div class="page-header">
+				<h1>Field Event WebApp Server</h1>
+			</div>
+			<p>The Field Event Web App Server is a server that runs in MeetPro. The server 
+			provides a web app that allows field event results to be entered via iPhone, 
+			Android phone or computer using any HTML5-compliant web browser <em>(Chrome is 
+			recommended).</em>
+			</br>&nbsp;</br>
+			<strong>The server should be started after field events are seeded.</strong> To start the server, first 
+			configure the server by going to Interfaces &#9656; Field Event Web App Server &#9656; Setup. 
+			Select your IP address, port and password. The IP address should be your 
+			computer’s address on your local network. Your computer must be on a network 
+			and the network must allow traffic between peer computers (not all networks 
+			allow this). A standard home router will allow traffic between your computer and 
+			iPhone or other device. Once the server is configured, start the server by going 
+			to to Interfaces &#9656; Field Event Web App Server &#9656; Start.
+			</br>&nbsp;</br>
+			To load the Web App on your device (iPhone, etc.), open the device’s web 
+			browser and enter the configured IP and port as the URL. For example, if the 
+			configured IP and port are <em>192.168.1.100</em> and <em>5252</em>, you should point your 
+			browser to <u>http://192.168.1.100:5252.</u>
+			</br>&nbsp;</br>
+			After the web app is loaded onto your device’s web browser you (or your field 
+			event official) will be prompted to enter the password. After successfully entering 
+			the password the app will show the home screen. Select a seeded field event 
+			from the Events menu. After the event is loaded results can be entered. Click 
+			“Update” to send results from the device to MeetPro. Click “Refresh” to re-
+			download event and seeding information from MeetPro.
+			</br>&nbsp;</br>
+			<strong>Network Outages:</strong> The Web App uses HTML5 technology to store results, teams, 
+			athletes and seeding information on your device’s web browser. If there is an 
+			interruption in the connection between the device and MeetPro, or if the device’s 
+			web browser is closed or the web app is closed on the browser, data is still 
+			retained on the device and will be available when the web app is reopened. If the 
+			connection is severed but the web app is still open, continue updating results on 
+			the web app and click “Update” when the connection is restored to upload results 
+			data to MeetPro.
+			</p>
+		</section>-->
+		<section id="troubleshoot">
+			<div class="page-header">
+				<h1>Troubleshooting</h1>
+			</div>
+			<h3>If MeetPro Runs Slow(Windows)</h3>
+			<p>If MeetPro becomes sluggish it may be necessary to change its priority using the Windows Task Manager. 
+			</br>&nbsp;</br>
+			To open Task Manager, hit CTRL-ALT-DELETE and select “Open Task Manager” when prompted. In Task Manager, click the “Processes” tab. Find the MeetPro process (it may have an “Image Name” of “MeetPro.exe*32”) and right click that process. 
+			In the context menu that pops up, go to the “Set Priority” submenu and select “Realtime” as the priority for MeetPro.
+			</p>
+			<h3>Serial Devices</h3>
+			<p>
+			Many newer computers, especially laptops, do not come with the necessary 
+			drivers to connect to serial devices. For computers with no serial ports, a USB to 
+			Serial adapter is required.
+			</br>&nbsp;</br>
+			<strong>Mac</strong>
+			</br>&nbsp;</br>
+			The recommended USB to Serial Adapter is the Keyspan USA-19HS from Tripp 
+			Lite. You must install the Keyspan drivers using the included software. The 
+			Gigaware USB-A to Serial cable will not work with Mac OS X.
+			</br>&nbsp;</br>
+			<strong>Windows</strong>
+			</br>&nbsp;</br>
+			Newer Windows machines do not include the necessary driver (phtheadgc2.dll).
+			</br>&nbsp;</br>
+		To install the driver, download it here:<a href='https://code.google.com/p/as3-arduino-connector/downloads/detail?name=pthreadGC2.zip&can=2&q='> https://code.google.com/p/as3-arduino-connector/downloads/detail?name=pthreadGC2.zip&can=2&q=</a>
+			</br>&nbsp;</br>
+			Unzip the download and copy it to the correct location:
+			<ul>
+				<li>Windows XP(32/64), Windows Vista(32), Windows 7(32): C:\Windows\System32\</li>
+				<li>Windows Vista(64), Windows 7(64): C:\Windows\SysWOW64\</li>
+			</ul>
+			</p>
+		</section>    
+	</div>
+
+</div>
+<hr class="featurette-divider">
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-66287-9']);
+  _gaq.push(['_setDomainName', 'tfmeetpro.com']);
+  _gaq.push(['_setAllowLinker', true]);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>	
+	<footer class="footer">
+
+		<p>Useful Links: <a href="index.html">Home</a> · <a href="features.html">Features</a> · <a href="get.html">Get</a> · <a href="http://blog.tfmeetpro.com">Blog</a> · <a href="faq.html">FAQ</a></p>
+		<p>
+			<div class="fb-like" data-href="https://www.facebook.com/meetpro" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>	
+			<div><a href="https://twitter.com/meetpro" class="twitter-follow-button" data-show-count="false" data-lang="en">Follow @MeetPro</a>
+			<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+			<p class="pull-right">© DirectAthletics, Inc.</p>
+		</p>
+
+	</footer>
+</div>
+
+<script type="text/javascript">
+$('.tosection').click(function(e){
+	e.preventDefault();
+	$('#content').children().hide();
+	var $target_link = $('#sidebar_toc').find('a[href*='+$(this).attr('href')+']');
+	
+	console.log($target_link);
+	tocLinkHandler($target_link);
+	
+	if($(window).width() < 767){
+		$(window).scrollTop(section_offset.top);
+	}
+});	
+
+$('#sidebar_toc a').click(function(e){
+	e.preventDefault();
+	$('#content').children().hide();
+	
+	tocLinkHandler(this);
+	
+	if($(window).width() < 767){
+		$(window).scrollTop(section_offset.top);
+	}
+});
+
+function tocLinkHandler(link) {
+	if($(link).parent().siblings().hasClass('expanded')){
+		$(link).parent().siblings().children('ul').hide();
+		$(link).parent().siblings().children('a').children().removeClass('rotate');
+	}
+	
+	$($(link).attr('href')).toggle();
+	var section_offset = $($(link).attr('href')).offset();
+	$(link).children().toggleClass('rotate');
+	if($(link).parent().hasClass('more')){
+		$(link).siblings().toggle();
+		$(link).parent().toggleClass('expanded');
+	}
+}
+
+</script>
+</body>
+</html>

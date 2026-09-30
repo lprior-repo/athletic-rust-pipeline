@@ -1,0 +1,13 @@
+https://education.delaware.gov/robots.txt	captured 2026-09-21	robots.txt verbatim
+URL: https://education.delaware.gov/robots.txt
+Content-Type: text/plain
+Method: text
+
+---
+
+User-agent: *
+Disallow: /wp-admin/
+Allow: /wp-admin/admin-ajax.php
+Crawl-delay: 10
+
+Sitemap: https://education.delaware.gov/wp-sitemap.xml

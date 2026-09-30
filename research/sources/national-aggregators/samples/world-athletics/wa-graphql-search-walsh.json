@@ -1,0 +1,1 @@
+{"data":null,"errors":[{"path":null,"locations":[{"line":1,"column":51,"sourceName":null}],"message":"Validation error of type UnknownType: Unknown type Alpha2CountryCode"},{"path":null,"locations":[{"line":1,"column":161,"sourceName":null}],"message":"Validation error of type VariableTypeMismatch: Variable type 'Int' doesn't match expected type 'Int!' @ 'searchAthletes'"}]}

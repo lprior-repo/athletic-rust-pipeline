@@ -31,7 +31,7 @@ mod write_batch;
 pub use backup::{BackupReport, IntegrityReport, IntegrityTable, RestoreReport};
 pub use error::{StoreError, StoreResult};
 pub use identity::MAX_IDENTITY_APPLICATION_BATCH;
-pub use read::StoreSnapshot;
+pub use read::{build_athlete_identity_projection, StoreSnapshot};
 pub use receipt::{Application, Pruned, Receipt, MAX_DIGEST_BYTES, MAX_OPERATION_BYTES};
 pub use rows::TableWalk;
 pub use table::{

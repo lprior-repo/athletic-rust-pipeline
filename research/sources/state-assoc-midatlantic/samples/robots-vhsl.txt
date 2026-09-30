@@ -1,0 +1,16 @@
+https://www.vhsl.org/robots.txt	captured 2026-09-21	robots.txt verbatim
+URL: https://www.vhsl.org/robots.txt
+Content-Type: text/plain
+Method: text
+
+---
+
+User-agent: *
+Disallow: /
+
+
+User-agent: RavenCrawler
+Allow: /
+
+User-agent: Googlebot
+Allow: /

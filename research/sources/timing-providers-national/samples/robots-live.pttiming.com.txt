@@ -1,0 +1,170 @@
+# Live results. Terms of Use: /terms.html
+#
+# Ordinary search engines are welcome: athletes, parents and coaches find their meet
+# through search, so general crawling and indexing stay allowed below.
+#
+# Automated bulk extraction of results data, and any use of this site's content for
+# training, fine-tuning, grounding or evaluating AI/ML systems, is PROHIBITED by the
+# Terms of Use at /terms.html, whether or not a crawler is named in this file. The
+# named blocks below are an express, machine-readable reservation of text and data
+# mining rights (EU DSM Directive Art. 4(3) and equivalents); see also the
+# tdm-reservation meta tag and HTTP header, and /.well-known/tdmrep.json.
+#
+# Want this data? We license it. legal@karmarush.com
+
+
+# ---------------------------------------------------------------------------
+# AI training, TDM and answer-engine crawlers - not permitted anywhere.
+# ---------------------------------------------------------------------------
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: OAI-SearchBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: Claude-User
+Disallow: /
+
+User-agent: Claude-SearchBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: GoogleOther
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: PerplexityBot
+Disallow: /
+
+User-agent: Perplexity-User
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: ByteDance
+Disallow: /
+
+User-agent: TikTokSpider
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+User-agent: meta-externalfetcher
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: cohere-training-data-crawler
+Disallow: /
+
+User-agent: AI2Bot
+Disallow: /
+
+User-agent: Ai2Bot-Dolma
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: omgili
+Disallow: /
+
+User-agent: omgilibot
+Disallow: /
+
+User-agent: Webzio-Extended
+Disallow: /
+
+User-agent: ImagesiftBot
+Disallow: /
+
+User-agent: YouBot
+Disallow: /
+
+User-agent: DuckAssistBot
+Disallow: /
+
+User-agent: PanguBot
+Disallow: /
+
+User-agent: Timpibot
+Disallow: /
+
+User-agent: Kangaroo Bot
+Disallow: /
+
+User-agent: img2dataset
+Disallow: /
+
+User-agent: Scrapy
+Disallow: /
+
+
+# ---------------------------------------------------------------------------
+# SEO / marketing crawlers - no reason to walk a live results tree.
+# ---------------------------------------------------------------------------
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+
+# ---------------------------------------------------------------------------
+# Everyone else: indexing is fine. Application bundles, operator tools and the
+# raw asset trees are not content and should not be crawled.
+# ---------------------------------------------------------------------------
+
+User-agent: *
+Disallow: /lib/
+Disallow: /Timekeeper.html
+Disallow: /TimekeeperPTT.html
+Disallow: /AnnouncerPTT.html
+Disallow: /scoreboards/
+Disallow: /pwa/
+Allow: /

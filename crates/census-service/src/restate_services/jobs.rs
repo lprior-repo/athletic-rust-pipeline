@@ -9,7 +9,8 @@ use serde_json::Value;
 use crate::census::{self, CollectOptions, StateProgress};
 use census_crawl::net::Fetcher;
 use census_crawl::{AdapterContext, AdapterReport, CrawlError, RecordedJournal, Recording};
-use census_report::report::{self, ReportError, ReportResult, Scope};
+use census_report::export::ExportDataset;
+use census_report::report::{self, Derivation, ReportError, ReportResult, Scope};
 use census_report::{bests, workbook};
 use census_store::{Application, Store, StoreError, StoreResult, Table};
 
@@ -54,7 +55,9 @@ pub(super) fn consolidate_tables(
 }
 
 pub(super) fn build_report(store: &Store, scope: Scope) -> ReportResult<ReportReply> {
-    let census = report::build_census(store, scope)?;
+    let dataset = ExportDataset::load(store)?;
+    let derivation = Derivation::of(&dataset, scope, None);
+    let census = report::build_census(&derivation, &store.out_dir());
     let (json_path, csv_path) = report::write_census(store, &census, scope)?;
     Ok(ReportReply {
         scope: scope.as_str().to_string(),
@@ -68,7 +71,8 @@ pub(super) fn build_report(store: &Store, scope: Scope) -> ReportResult<ReportRe
 }
 
 pub(super) fn build_bests(store: &Store, options: &bests::Options) -> ReportResult<BestsReply> {
-    let rows = bests::build(store, options)?;
+    let dataset = ExportDataset::load(store)?;
+    let rows = bests::build_from_dataset(&dataset, options);
     let cohort = cohort_label(options.grad_year);
     let (jsonl, csv_path) = bests::write(&store.out_dir(), &rows, &cohort)?;
     Ok(BestsReply {

@@ -1,0 +1,18 @@
+HTTP/2 200 
+accept-ranges: bytes
+age: 11946
+alt-svc: h3=":443"; ma=2592000
+content-type: text/html; charset=UTF-8
+date: Tue, 22 Sep 2026 00:42:30 GMT
+link: <https://www.wvssac.org/wp-json/>; rel="https://api.w.org/"
+link: <https://www.wvssac.org/wp-json/wp/v2/pages/8089>; rel="alternate"; title="JSON"; type="application/json"
+link: <https://www.wvssac.org/?p=8089>; rel=shortlink
+ratelimit-policy: 500; w=1
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+v-cache: HIT
+vary: Accept-Encoding
+x-cacheable: YES:Forced
+x-content-options: nosniff
+x-content-type-options: nosniff
+x-ua-compatible: IE=edge
+

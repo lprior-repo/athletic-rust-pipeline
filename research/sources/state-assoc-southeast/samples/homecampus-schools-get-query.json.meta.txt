@@ -1,0 +1,14 @@
+HTTP/2 403 
+content-type: text/html; charset=UTF-8
+server: nginx
+set-cookie: XSRF-TOKEN=eyJpdiI6IlRuckNQc1BiYzRabFIxcVZkeFFraVE9PSIsInZhbHVlIjoiWC9oVldhTjdRcW5LdGlKWDR5Sjlra05ReUxtQUZUVVRzT3JJMVNEalhLNmkvZ3d5RmpydkVybkgxcUhPUlliSXA2RVV5QVQyREFNYWJhb0VpTGwwVnE5NmZoZmlGVEl0VnlHaXlXd2JHNkwxREJvdlYrMGR6SDIzbndMckZtL1oiLCJtYWMiOiI2NzI2MTk3Y2ZkYTI2YjQ3YzNjYjkxYjdkNDI4YTUxMWY2MGEyMjE5ZTNiNGFkNzc5YjhlYWVjYzJiMWMwYWY3IiwidGFnIjoiIn0%3D; expires=Tue, 22-Sep-2026 04:56:02 GMT; Max-Age=3600; path=/; secure; samesite=lax
+set-cookie: fhsaa_session=3db3CccnePzb1BIkJvwxmL0tmvSLWIqeeoEVH1ae; expires=Tue, 22-Sep-2026 04:56:02 GMT; Max-Age=3600; path=/; secure; httponly; samesite=lax
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+cache-control: no-cache, private
+date: Tue, 22 Sep 2026 03:56:02 GMT
+x-cache: Error from cloudfront
+via: 1.1 4ee3d0ed0dfbb47ecb30522d6928448e.cloudfront.net (CloudFront)
+x-amz-cf-pop: ORD56-P7
+x-amz-cf-id: 2j1kkVSM70mBRTNGZ9K5DYvmWmlyQ8N2jZdnDSuYMW3tk686Ps_UzA==
+vary: Origin
+

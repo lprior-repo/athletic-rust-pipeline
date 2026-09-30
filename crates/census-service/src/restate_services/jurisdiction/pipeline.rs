@@ -22,7 +22,9 @@ impl JurisdictionCensus {
             .into());
         };
         let sweepable = plan.sweepable.clone();
-        let fetcher = self.fetcher(&request.authorized_hosts).await?;
+        let fetcher = self
+            .fetcher(&request.authorized_hosts, request.source_parallelism)
+            .await?;
         let outcome = self
             .teams_stage(
                 ctx,
@@ -47,7 +49,9 @@ impl JurisdictionCensus {
         state: &mut JurisdictionState,
         today: &str,
     ) -> Result<(), HandlerError> {
-        let fetcher = self.fetcher(&request.authorized_hosts).await?;
+        let fetcher = self
+            .fetcher(&request.authorized_hosts, request.source_parallelism)
+            .await?;
         let progress = self
             .rosters_stage(ctx, fetcher, options, request.jurisdiction)
             .await?;
@@ -76,7 +80,9 @@ impl JurisdictionCensus {
             .into());
         };
         let sweepable = plan.sweepable.clone();
-        let fetcher = self.fetcher(&request.authorized_hosts).await?;
+        let fetcher = self
+            .fetcher(&request.authorized_hosts, request.source_parallelism)
+            .await?;
         let census = self
             .meets_stage(
                 ctx,
@@ -112,7 +118,9 @@ impl JurisdictionCensus {
             .into());
         };
         let sweepable = plan.sweepable.clone();
-        let fetcher = self.fetcher(&request.authorized_hosts).await?;
+        let fetcher = self
+            .fetcher(&request.authorized_hosts, request.source_parallelism)
+            .await?;
         let outcome = self
             .results_stage(
                 ctx,

@@ -6,6 +6,7 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 use census_report::bests;
+use census_report::export::ExportDataset;
 use census_report::report::Scope;
 use census_report::workbook::build;
 use census_service::consolidate;
@@ -147,15 +148,15 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
         expected
     );
 
-    let bests = bests::build(
-        &store,
+    let dataset = ExportDataset::load(&store).unwrap();
+    let bests = bests::build_from_dataset(
+        &dataset,
         &bests::Options {
             scope: Scope::Core,
             grad_year: Some(2027),
             limit: None,
         },
-    )
-    .unwrap();
+    );
     let sprint = bests
         .iter()
         .find(|row| row.key.event_kind == EventKind::Track400m)

@@ -10,12 +10,6 @@ fn newest_observation(athlete: &CanonicalAthlete) -> Option<&ObservedGrade> {
         .max_by_key(|o| (o.school_year.get(), o.grade.get()))
 }
 
-pub(super) fn observed_grade(athlete: &CanonicalAthlete) -> Cell {
-    newest_observation(athlete)
-        .map(|o| Cell::text(o.grade.to_string()))
-        .unwrap_or(Cell::Empty)
-}
-
 pub(super) fn observed_school_year(athlete: &CanonicalAthlete) -> Cell {
     newest_observation(athlete)
         .map(|o| Cell::text(o.school_year.short()))

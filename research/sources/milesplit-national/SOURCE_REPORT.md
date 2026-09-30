@@ -96,8 +96,40 @@ Absent on meet pages: coach/contact fields, entry lists in HTML (`/entries` is a
 
 ## 10. Result fields
 
-The free result payload is the **`/raw` text file**, one request per result set:
-header `     Athlete                   Yr Team                                          Mark      H#`, rows `    1 Jeydyn Fields              8 Jackson                                    12:40.6` — place, name, `Yr` (grade), team, mark, heat (`samples/raw-oh-770621-rs1321880.txt`: 80 result rows — 40 boys + 40 girls in two `Boys/Girls Middle School 3000 Meter` sections — so identity, school and grade are all present, free, in one request per result set).
+The free result payload is the **`/raw` fixed-width text file**, one request per result set, wrapped
+in a single `<pre>` inside the site chrome and robots-allowed with no JS (`samples/raw-nc-684812-rs1283641.txt`,
+captured 2026-09-27; `samples/raw-oh-770621-rs1321880.txt`, an earlier capture).
+
+Current template (verified byte-identical to the live page on 2026-09-27):
+
+```
+PR Running Camp Boys 3200M
+Finals
+======================================================================
+  Pl Name                 Yr Team                       Time  H# (Pl)
+======================================================================
+   1 FERGUSON, Michael    SR North Buncombe          8:44.73   8  (1)
+     WHARTON, Elijah      JR Davidson Academy            DNF   7
+```
+
+Contract for the reader (`census-crawl::milesplit::raw_rows`):
+
+- **Columns come from the header row**, never from fixed constants: `Pl Name … Yr … Team … Time  H# (Pl)`
+  gives the offsets for place, name, grade and the start of the team field. A header with `< 3`
+  recognised labels is not a header.
+- **Numeric fields are right-aligned inside their field**, so the time is *not* at the `Time` label's
+  offset: the mark is the first mark-shaped token of the team region, and the team is everything
+  before it. Reading the mark from the label offset makes the school cell swallow the time.
+- **Event labels wrap**: the event name line is followed by a round line (`Finals`, `Prelims`, …),
+  which extends the open label instead of opening a second event with no rows.
+- **Rows may carry no place** (`DNF`/`NT`/`DNS` rows start with spaces and are still rows), and
+  mark-less rows are still rows. A row whose name cell is empty is skipped and reported, not guessed.
+- **Grade is the `Yr` column** (`SR`/`JR`/`SO`/`FR` here, numeric in the earlier capture), carried as
+  dated grade evidence: 208 of the 210 placed rows publish one, 2 publish none.
+- **Heat is the `H#` column** after the mark; `(Pl)` is the place within the heat and is not the mark.
+
+The capture holds 214 result rows in one 3200 m event (210 with a place, 4 `DNF`/`NT`).
+
 Missing from `/raw`: `AthleteID`, `TeamID`, wind for XC, structured division identity.
 The structured equivalent (with `athleteId`, `gradYear`, `windReading`, `performanceVideoId`, `statusCode`, …) exists only on the disallowed JSON path — its **field list is quoted from the site's own bundle**: `js-loadresultsnew.js` requests `v1/meets/<meetId>/performances` with `fields: 'id,meetId,meetName,teamId,videoId,teamName,athleteId,firstName,lastName,gender,genderName,levelId,levelName,divisionId,divisionName,meetResultsId,meetResultsDivisionId,resultsDivisionId,ageGroupId,ageGroupName,gradYear,eventName,eventCode,eventDistance,eventGenreOrder,round,roundName,heat,units,mark,place,windReading,profileUrl,teamProfileUrl,performanceVideoId,teamLogo,statusCode'`.
 The formatted view itself contains 0 rows in HTML — it is a JS shell (`samples/meet-oh-770621-results.html`).
@@ -147,7 +179,7 @@ Base is set by `API.endPoint = '/api/'` (on-host, not a separate API host); `api
 
 ## 14. Static file availability
 
-- **Meet result files**: `/meets/<MeetID>/results/<RSID>/raw` is a static fixed-width text payload (wrapped in one `<pre>` inside the site chrome), robots-allowed, no JS needed — `curl` and parse (`samples/raw-oh-770621-rs1321880.txt`).
+- **Meet result files**: `/meets/<MeetID>/results/<RSID>/raw` is a static fixed-width text payload (wrapped in one `<pre>` inside the site chrome), robots-allowed, no JS needed — `curl` and parse (`samples/raw-nc-684812-rs1283641.txt`; current template in §10).
 - **Result-set inventory**: the meet results page embeds `meetResultFiles` JSON in an inline `<script>`, so RSID discovery is one HTML GET per meet (`samples/meet-oh-770621-results.html`).
 - **Bundle sources** are static and cache-keyed by `?build=20260921153357`: the capture set references **35 distinct first-party bundle paths** (18 `<script src>` tags on `samples/rankings-oh-boys-xc.html`, 17 on `samples/rank-event-oh-xc-5000m.html`). **16 of the 35 were fetched** — 4 in wave 1, 12 in wave 2 — all HTTP 200; they were chosen because they carry a request template or the grade/premium logic. The remaining 19 are widgets (modal, carousel, segment, skin, ad slots, handlebar templates) with no data path.
 - **Sitemaps**: `/<host>/sitemap.xml`, 7,500 athlete URLs each `[inherited]` report 33.

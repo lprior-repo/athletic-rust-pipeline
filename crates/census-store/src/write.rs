@@ -1,7 +1,7 @@
 use fjall::PersistMode;
 use serde::Serialize;
 
-use super::batch::{drop_unnamed, refuse_over_bound, refuse_over_journal, stage_derived};
+use super::batch::{refuse_over_bound, refuse_over_journal, stage_derived};
 use super::keys::{observation_id, observation_key};
 use super::{
     StorageMode, Store, StoreError, StoreResult, Table, MAX_JOURNAL_KEY_BYTES,
@@ -23,7 +23,7 @@ impl Store {
                 detail: "serializing an observation".to_string(),
                 source,
             })?;
-            let id = observation_id(&value)?.to_string();
+            let id = observation_id(&value)?;
             encoded.push((id, value));
         }
         self.commit_observations(table, encoded)
@@ -76,10 +76,7 @@ impl Store {
         let mut batch = self.db.batch();
         let staged = stage_derived(&mut batch, &self.entities, table, records)?;
         let rows = match table.storage_mode() {
-            StorageMode::DerivedSnapshot => {
-                drop_unnamed(&self.entities, &mut batch, table, &staged.named)?;
-                staged.named_count()?
-            }
+            StorageMode::DerivedSnapshot => staged.named_count()?,
             StorageMode::DerivedMap | StorageMode::ObservationLog => {
                 held.saturating_add(staged.added)
             }

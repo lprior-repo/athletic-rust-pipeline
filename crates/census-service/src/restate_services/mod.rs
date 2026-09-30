@@ -96,6 +96,9 @@ pub(super) fn options_for_request(
     if request.concurrency == 0 {
         return Err(TerminalError::new("concurrency must be at least 1").into());
     }
+    if request.source_parallelism == 0 {
+        return Err(TerminalError::new("source_parallelism must be at least 1").into());
+    }
     if let Some(limit) = request.limit_per_state {
         if limit > MAX_LIMIT_PER_STATE {
             return Err(TerminalError::new(format!(

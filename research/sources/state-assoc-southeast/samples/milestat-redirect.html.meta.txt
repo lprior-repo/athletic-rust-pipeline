@@ -1,0 +1,26 @@
+HTTP/1.1 301 Moved Permanently
+Server: openresty/1.27.1.2
+Date: Tue, 22 Sep 2026 03:59:38 GMT
+Content-Type: text/html
+Content-Length: 175
+Connection: keep-alive
+Location: http://va.milesplit.com/
+
+HTTP/1.1 301 Moved Permanently
+Date: Tue, 22 Sep 2026 03:59:38 GMT
+Content-Type: text/html; charset=UTF-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+Server: nginx
+X-Frame-Options: sameorigin
+Set-Cookie: unique_id=f5f84f64e923dec4154d457be5a9336f; expires=Fri, 24-Dec-2100 00:38:41 GMT; Max-Age=2343242343; path=/; domain=.milesplit.com
+Location: https://va.milesplit.com/
+
+HTTP/2 200 
+date: Tue, 22 Sep 2026 03:59:38 GMT
+content-type: text/html; charset=UTF-8
+server: nginx
+x-frame-options: sameorigin
+set-cookie: unique_id=1faa07bf45afb4824435300de9aa447b; expires=Fri, 24-Dec-2100 00:38:41 GMT; Max-Age=2343242343; path=/; domain=.milesplit.com
+server-side-cache-ttl: 536
+

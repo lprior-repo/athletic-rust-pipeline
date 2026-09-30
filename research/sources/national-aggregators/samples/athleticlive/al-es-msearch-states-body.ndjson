@@ -1,0 +1,62 @@
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Ohio"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Illinois"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Michigan"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Indiana"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Wisconsin"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Minnesota"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Iowa"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Missouri"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Kansas"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Nebraska"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "North Dakota"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "South Dakota"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "California"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Texas"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Florida"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "New York"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Pennsylvania"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match": {"lsa": "Georgia"}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "Ohio"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "Illinois"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "Michigan"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "Indiana"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "Wisconsin"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "Minnesota"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "Iowa"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "Missouri"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "Kansas"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "Nebraska"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "North Dakota"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"bool": {"must": [{"match": {"lsa": "South Dakota"}}], "filter": [{"range": {"sdy": {"gte": "2025-08-01"}}}]}}}
+{"index": "*_meet_list"}
+{"track_total_hits": true, "size": 0, "query": {"match_all": {}}}

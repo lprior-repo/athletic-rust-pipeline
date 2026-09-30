@@ -1,0 +1,2375 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <title>Kuma Gutema - Runner Details</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+
+
+    <!-- Bootstrap -->
+    <link href="/static/bootstrap/css/bootstrap.min.css?bootstrap=3.3.7.1.dev1" rel="stylesheet"><link rel="stylesheet" href="/static/css/bs-compat.css?v=315532801">
+
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.dataTables.min.css">
+<style>
+/* Hero Section */
+.hero-section {
+    background: var(--brand-navy);
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+}
+
+.season-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    display: inline-block;
+}
+
+/* Content Cards */
+.content-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+.card-title {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #6c757d;
+    padding-bottom: 0.5rem;
+}
+
+/* Modern Tabs */
+.nav-tabs {
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 1.5rem;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px 10px 0 0;
+    margin-right: 0.25rem;
+}
+
+.nav-tabs .nav-link.active {
+    background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+    color: white !important;
+    border: none;
+}
+
+.nav-tabs .nav-link.active:hover,
+.nav-tabs .nav-link.active:focus {
+    color: white !important;
+}
+
+.nav-tabs .nav-link:hover:not(.active) {
+    background: #f8f9fa;
+    border: none;
+}
+
+/* Season Section Styling (Collapsible) */
+.season-section {
+    margin-bottom: 2rem;
+    border: 1px solid #dee2e6;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+}
+
+.season-header {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.season-header:hover {
+    background: linear-gradient(135deg, #5a6268 0%, #3a3e41 100%);
+    transform: translateY(-1px);
+}
+
+.season-header h4 {
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.season-content {
+    padding: 0;
+    background: white;
+}
+
+.season-toggle {
+    transition: transform 0.2s;
+    font-size: 1rem;
+    margin-left: auto;
+}
+
+.season-toggle.collapsed {
+    transform: rotate(-90deg);
+}
+
+/* Race count badge */
+.race-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-left: 1rem;
+}
+
+/* Season info (grade/school) styling */
+.season-header h4 .season-info {
+    font-size: 0.85em;
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+/* DataTable Styling */
+.runner-table {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.runner-table thead th {
+    background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+    color: white;
+    border: none;
+    font-weight: 500;
+    padding: 1rem 0.75rem;
+}
+
+.runner-table tbody td {
+    padding: 0.75rem;
+    border-color: #e9ecef;
+    vertical-align: middle;
+}
+
+.runner-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* DataTable Styling for Season Sections */
+.season-section table,
+.season-section thead,
+.season-section tbody,
+.season-section tr,
+.season-section th,
+.season-section td {
+    font-size: 1.1rem !important;
+    margin: inherit !important;
+}
+
+.season-section .season-datatable thead th {
+    background: linear-gradient(135deg, #495057 0%, #6c757d 100%) !important;
+    color: white !important;
+    border: none !important;
+    font-weight: 500 !important;
+    padding: 1rem 0.75rem !important;
+}
+
+.season-section .dataTables_wrapper {
+    font-size: 1.1rem !important;
+}
+
+.season-section .dataTables_filter input {
+    width: auto !important;
+    margin-bottom: 1rem !important;
+}
+
+.season-section .dataTables_length select {
+    width: auto !important;
+}
+
+.season-section table.dataTable {
+    width: 100% !important;
+    table-layout: auto !important;
+    font-size: 1.1rem !important;
+}
+
+.season-section table.dataTable tbody td,
+.season-section table.dataTable thead th {
+    font-size: 1.1rem !important;
+    padding: 0.75rem !important;
+    white-space: nowrap;
+}
+
+.season-section .dataTables_wrapper,
+.season-section .dataTables_wrapper * {
+    font-size: inherit !important;
+}
+
+/* Plot Section */
+.plot-section {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 0;
+    }
+    
+    .hero-section h1 {
+        font-size: 1.75rem;
+    }
+    
+    .hero-section .lead {
+        font-size: 1rem;
+    }
+    
+    .content-card {
+        padding: 1rem;
+    }
+    
+    .nav-tabs .nav-link {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .runner-table {
+        font-size: 0.8rem;
+    }
+    
+    .runner-table th,
+    .runner-table td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .season-header h4 {
+        font-size: 1rem;
+    }
+    
+    .season-header h4 .season-info {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 0.8em;
+    }
+    
+    .race-count {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .nav-tabs .nav-link {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.75rem;
+    }
+    
+    .runner-table {
+        font-size: 0.7rem;
+    }
+}
+
+/* Upgrade Prompt Styling */
+.upgrade-prompt {
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.08) 0%, rgba(0, 123, 255, 0.03) 100%);
+    border: 2px solid rgba(0, 123, 255, 0.2) !important;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.upgrade-prompt:hover {
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.12) 0%, rgba(0, 123, 255, 0.06) 100%);
+    border-color: rgba(0, 123, 255, 0.3) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+}
+
+.upgrade-prompt .btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+    padding: 0.375rem 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.upgrade-prompt .btn-primary:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateY(-1px);
+}
+
+.upgrade-prompt .btn-outline-primary {
+    border-color: #007bff;
+    color: #007bff;
+    transition: all 0.2s ease;
+}
+
+.upgrade-prompt .btn-outline-primary:hover {
+    background-color: #007bff;
+    border-color: #007bff;
+    transform: translateY(-1px);
+}
+</style>
+
+<meta name="csrf-token" content="ImYxZmU1ODAzNTFiZmMwMzkzZWQzZjNhNDQ5NTFmNzNkMTA0NjM4YzAi.arH92w.6LhNz-b9RjPM7YEo2jxSKt1nmyo">
+
+<!-- Google AdSense - TEMPORARILY DISABLED -->
+<!-- 
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4830901784668100"
+     crossorigin="anonymous"></script>
+-->
+
+<!-- PWA Meta Tags -->
+<meta name="theme-color" content="#0B2E4F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="XC Rankings">
+<meta name="description" content="Scholastic Cross Country Rankings and Results">
+<meta name="keywords" content="cross country, scholastic, rankings, results, XC">
+
+<!-- Google Search Console Verification (replace with your verification code if needed) -->
+<!-- <meta name="google-site-verification" content="YOUR_VERIFICATION_CODE_HERE" /> -->
+
+<!-- Brand Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+
+<!-- Brand Stylesheet -->
+<link rel="stylesheet" href="/static/css/brand.css?v=315532801">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="/static/manifest.json">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="/static/images/xcr-icon-192.png">
+<link rel="shortcut icon" href="/static/images/xcr-icon-192.png">
+
+<!-- PWA Icons - Multiple sizes for better compatibility -->
+<link rel="icon" type="image/png" sizes="192x192" href="/static/images/xcr-icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/static/images/xcr-icon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/images/xcr-icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="/static/images/xcr-icon-192.png">
+<link rel="apple-touch-icon" href="/static/images/xcr-icon-180.png">
+
+<!-- Additional iOS Meta Tags -->
+<meta name="apple-touch-fullscreen" content="yes">
+
+<!-- PWA Page Context for JavaScript -->
+<script type="application/json" id="page-context-data">{"analytics_metadata": {"is_production": true, "query_params_count": 0, "referrer_domain": "direct", "season_year": 2026, "user_agent_mobile": false}, "breadcrumb_data": {"runner_id": 11669, "runner_name": "Kuma Gutema"}, "page_title": "Kuma Gutema", "page_type": "runner"}</script>
+<script>
+    // Parse page context from JSON script tag to avoid linter issues
+    window.pageContext = JSON.parse(document.getElementById('page-context-data').textContent);
+</script>
+
+<!-- FontAwesome Icons.
+     Loaded off the critical path: media="print" means the browser fetches it
+     without blocking first paint, and onload promotes it to all media. Icons
+     appear a beat after text, which is the right trade on a phone connection.
+
+     Not subsetted: 115 distinct icons are used across the solid, regular and
+     brands families, and FontAwesome's core stylesheet (69KB of the 89KB) is
+     required whichever families you pick - splitting them saves about 1KB.
+     A real reduction needs a self-hosted custom build. -->
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      media="print" onload="this.media='all'; this.onload=null;">
+<noscript>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</noscript>
+
+<!-- Microsoft Clarity for user behavior analytics -->
+<script type="text/javascript">
+    // Performance-optimized Clarity initialization
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        
+        // Configure Clarity for better screen recordings
+        c[a]('set', 'privacy', 'strict'); // Enable strict privacy mode
+        c[a]('set', 'maskTextSelector', '.clarity-mask'); // Mask elements with this class
+        
+        // Only send page type for initial context (performance optimized)
+        if (window.pageContext?.page_type) {
+            c[a]('event', 'page_type', window.pageContext.page_type);
+        }
+        
+    })(window, document, "clarity", "script", "saoykpa92i");
+    
+    // Privacy-conscious loading - respect user preferences
+    if (localStorage.getItem('privacy-analytics-disabled') === 'true') {
+        console.log('Clarity disabled by user preference');
+        window.clarity = function() { /* disabled */ };
+    }
+</script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-M9F6G3QSC0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  // Device context, attached to every event on this page.
+  //
+  // Over half of this site's traffic is mobile but nothing was reporting
+  // viewport or install state, so there was no way to tell whether a change
+  // helped phone users. These are set as config params so they ride along
+  // with page_view and every subsequent event.
+  function xcViewportBucket(w) {
+    if (w < 576) { return 'xs'; }
+    if (w < 768) { return 'sm'; }
+    if (w < 992) { return 'md'; }
+    if (w < 1200) { return 'lg'; }
+    return 'xl';
+  }
+
+  var xcStandalone = !!(
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    window.navigator.standalone
+  );
+
+  gtag('config', 'G-M9F6G3QSC0', {
+    send_page_view: true,
+    // Custom dimensions. Register these in the GA4 admin under
+    // Configure -> Custom definitions for them to appear in reports.
+    page_type: (window.pageContext && window.pageContext.page_type) || 'unknown',
+    viewport_bucket: xcViewportBucket(window.innerWidth),
+    viewport_width: window.innerWidth,
+    display_mode: xcStandalone ? 'standalone' : 'browser',
+    touch_capable: (navigator.maxTouchPoints || 0) > 0
+  });
+
+  // Track PWA installation
+  window.addEventListener('appinstalled', () => {
+    gtag('event', 'pwa_install', {
+      event_category: 'PWA',
+      event_label: 'App Installed'
+    });
+  });
+
+  // Page-type view event, fired automatically from the server-provided
+  // context. This replaces a window.xcAnalytics object that defined six
+  // tracking helpers (trackRankingsView, trackRunnerView, ...) which no
+  // template ever called - GA4 was collecting page_view and nothing else.
+  (function () {
+    var ctx = window.pageContext || {};
+    if (!ctx.page_type || ctx.page_type === 'unknown') { return; }
+    gtag('event', 'view_' + ctx.page_type, {
+      event_category: 'Content',
+      event_label: ctx.page_title || ctx.page_type,
+      page_type: ctx.page_type
+    });
+  })();
+</script>
+<!-- Global application styles (extracted from this file into static/css/app.css) -->
+<link rel="stylesheet" href="/static/css/app.css?v=315532801">
+
+<!-- Mobile corrections. Loaded last so it is the final word on small screens. -->
+<link rel="stylesheet" href="/static/css/mobile.css?v=315532801">
+
+
+<!-- Premium Users: Force hide ALL AdSense ads - TEMPORARILY DISABLED -->
+<!-- 
+
+-->
+
+  </head>
+  <body>
+    
+<!-- PWA Back Button -->
+<button id="pwaBackButton" class="pwa-back-button" title="Go Back">
+    <i class="fas fa-arrow-left"></i>
+</button>
+
+<nav class="navbar navbar-inverse navbar-fixed-top" data-clarity-region="main-navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar" data-clarity-click="mobile-menu-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/" data-clarity-click="logo-click">
+                <span class="site-wordmark site-wordmark--on-dark"><span class="wordmark-primary">Cross Country</span><span class="wordmark-accent">Ratings</span></span>
+            </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li><a href="/results" data-clarity-click="nav-results">Results</a></li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-clarity-click="nav-rankings-dropdown">Rankings <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/individuals" data-clarity-click="nav-individuals">Individuals</a></li>
+                        <li><a href="/teams" data-clarity-click="nav-teams">Teams</a></li>
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-clarity-click="nav-analytics-dropdown-login">Analytics <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/auth/login" data-clarity-click="nav-forecast-login" title="Login required for forecast tool">Meet Forecast 🔒</a></li>
+                        <li><a href="/auth/login" data-clarity-click="nav-growth-goals-login" title="Login required for growth goals calculator">Goal Setting 🔒</a></li>
+                    </ul>
+                </li>
+                <li><a href="/auth/login" data-clarity-click="nav-search-login" title="Login required for search tool">Search 🔒</a></li>
+                
+                
+                
+                <li><a href="/help/" data-clarity-click="nav-help">Help</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <!-- Global state filter — persists via session / user preference -->
+                <li class="navbar-state-filter">
+                    <div class="state-filter-wrapper" title="Filter all rankings by state">
+                        <i class="fas fa-map-marker-alt state-filter-icon"></i>
+                        <select id="globalStateSelect" class="state-filter-select">
+                            <option value=""  >All States</option>
+                            <option value="IA" selected>Iowa</option>
+                            <option value="NE" >Nebraska</option>
+                            <option value="MN" >Minnesota</option>
+                            <option value="ND" >North Dakota</option>
+                            <option value="SD" >South Dakota</option>
+                            <option value="IL" >Illinois</option>
+                            <option value="WI" >Wisconsin</option>
+                            <option value="MO" >Missouri</option>
+                            <option value="KS" >Kansas</option>
+                        </select>
+                    </div>
+                </li>
+                
+                    <li><a href="/auth/login" data-clarity-click="nav-login"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
+                
+            </ul>
+        </div><!--/.nav-collapse -->
+    </div>
+</nav>
+
+<!-- PWA Breadcrumb Navigation -->
+<nav class="pwa-breadcrumb" id="pwaBreadcrumb" style="display: none;">
+    <div class="container">
+        <ol id="breadcrumbList">
+            <!-- Breadcrumb items will be populated by JavaScript -->
+        </ol>
+    </div>
+</nav>
+
+<!-- Season State Banner -->
+
+<div class="season-state-banner in-season">
+    <div class="container">
+        <div class="season-banner-content">
+            <span class="season-icon">
+                
+                    <i class="fas fa-running"></i>
+                
+            </span>
+            <span class="season-text">
+                <strong>2026  Live Rankings</strong>
+                
+                    <span class="season-subtitle">Rankings update after each meet</span>
+                
+            </span>
+        </div>
+    </div>
+</div>
+
+
+<!-- PWA Install Banner -->
+<div id="pwaInstallBanner" class="pwa-install-banner">
+    <div class="banner-content">
+        <div class="banner-text">
+            <div class="banner-title">
+                <i class="fas fa-mobile-alt"></i> Install XC Rankings App
+            </div>
+            <div class="banner-subtitle">
+                Get faster access and offline support on your device
+            </div>
+        </div>
+        <div class="banner-buttons">
+            <button id="installBtn" class="btn-install">
+                <i class="fas fa-download"></i> Install
+            </button>
+            <button id="dismissBtn" class="btn-dismiss">
+                Later
+            </button>
+            <button id="closeBtn" class="btn-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- PWA Cache Status Indicator -->
+<div id="pwaCacheStatus" class="pwa-cache-status">
+    <div class="cache-spinner"></div>
+    <span id="cacheStatusText">Optimizing app for faster loading...</span>
+</div>
+
+<!-- Privacy Notice (Simple, Non-blocking) -->
+<div id="privacyNotice" class="privacy-notice">
+    <div class="privacy-content">
+        <span class="privacy-text">
+            <i class="fas fa-info-circle"></i>
+            We use analytics to improve your experience. No personal data is collected.
+        </span>
+        <button id="privacyOk" class="privacy-btn">Got it</button>
+    </div>
+</div>
+
+<!-- Privacy Controls for Clarity (Development/Testing) -->
+<div id="clarityPrivacyControls" class="privacy-controls">
+    <span>Screen Recording: </span>
+    <button id="toggleClarity" onclick="toggleClarityRecording()">Pause</button>
+    <button id="showMaskedElements" onclick="toggleMaskedElementsDisplay()">Show Masked</button>
+</div>
+
+    
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h1><i class="fas fa-running"></i> Kuma Gutema</h1>
+                <div class="mb-2 d-flex gap-2 align-items-center">
+                    
+
+
+                    <button type="button"
+        class="btn btn-outline-secondary btn-sm"
+        data-share-button
+        data-share-title="Kuma Gutema"
+        data-share-url="https://www.crosscountryratings.com/runner/11669"
+        aria-label="Share this page">
+    <i class="fas fa-share-alt" aria-hidden="true"></i> Share
+</button>
+                </div>
+                
+                <p class="lead mb-2">Junior • Sioux City, North</p>
+                <p class="mb-3"><small>Class of 2028</small></p>
+                
+                <div class="season-badge">
+                    <i class="fas fa-chart-line"></i> 
+                    Performance Analytics
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Season Results (Collapsible) -->
+    <div class="content-card">
+        
+        <div class="season-section">
+            <div class="season-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-calendar mr-2"></i>
+                    2026 Season
+                    
+                        <span class="season-info">
+                            • Junior, Sioux City, North
+                        </span>
+                    
+                    <span class="race-count">
+                        
+                            2 races
+                        
+                    </span>
+                    <span class="season-toggle">▼</span>
+                </h4>
+            </div>
+            <div class="season-content" >
+                
+                <div class="table-responsive mx-3 my-3">
+                    <table class="table table-striped runner-table season-datatable" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Event</th>
+                                <th>Race</th>
+                                <th>School</th>
+                                <th>Place</th>
+                                <th>Time</th>
+                                <th>
+                                    
+                                    <i class="fas fa-lock text-warning me-1"></i> Performance Score
+                                    
+                                    <span class="help-tooltip">
+                                        <i class="fas fa-question-circle"></i>
+                                        <div class="help-tooltip-content">
+                                            <div class="help-tooltip-text">
+                                                Individual race rating reflecting competition strength and finishing position.
+                                            </div>
+                                            <a href="/help/ratings#performance-score" class="help-tooltip-link">
+                                                Learn more <i class="fas fa-arrow-right"></i>
+                                            </a>
+                                        </div>
+                                    </span>
+                                </th>
+                                <th>
+                                    
+                                    <i class="fas fa-lock text-warning me-1"></i> Rating
+                                    
+                                    <span class="help-tooltip">
+                                        <i class="fas fa-question-circle"></i>
+                                        <div class="help-tooltip-content">
+                                            <div class="help-tooltip-text">
+                                                Skill estimate based on previous results and latest performance.
+                                            </div>
+                                            <a href="/help/ratings#how-ratings-evolve" class="help-tooltip-link">
+                                                Learn more <i class="fas fa-arrow-right"></i>
+                                            </a>
+                                        </div>
+                                    </span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td>09/12</td>
+                                <td><a href="/event/1053">Tim Thomas XC Classic</a></td>
+                                <td>Boys 5000m Varsity</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>15:39.10</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>09/04</td>
+                                <td><a href="/event/1010">Augustana Twilight XC Meet</a></td>
+                                <td>Boys 5000m Varsity</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>14:53.29</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="season-section">
+            <div class="season-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-calendar mr-2"></i>
+                    2025 Season
+                    
+                        <span class="season-info">
+                            • Sophomore, Sioux City, North
+                        </span>
+                    
+                    <span class="race-count">
+                        
+                            9 races
+                        
+                    </span>
+                    <span class="season-toggle">▼</span>
+                </h4>
+            </div>
+            <div class="season-content" style="display: none;">
+                
+                <div class="table-responsive mx-3 my-3">
+                    <table class="table table-striped runner-table season-datatable" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Event</th>
+                                <th>Race</th>
+                                <th>School</th>
+                                <th>Place</th>
+                                <th>Time</th>
+                                <th>
+                                    
+                                    <i class="fas fa-lock text-warning me-1"></i> Performance Score
+                                    
+                                    <span class="help-tooltip">
+                                        <i class="fas fa-question-circle"></i>
+                                        <div class="help-tooltip-content">
+                                            <div class="help-tooltip-text">
+                                                Individual race rating reflecting competition strength and finishing position.
+                                            </div>
+                                            <a href="/help/ratings#performance-score" class="help-tooltip-link">
+                                                Learn more <i class="fas fa-arrow-right"></i>
+                                            </a>
+                                        </div>
+                                    </span>
+                                </th>
+                                <th>
+                                    
+                                    <i class="fas fa-lock text-warning me-1"></i> Rating
+                                    
+                                    <span class="help-tooltip">
+                                        <i class="fas fa-question-circle"></i>
+                                        <div class="help-tooltip-content">
+                                            <div class="help-tooltip-text">
+                                                Skill estimate based on previous results and latest performance.
+                                            </div>
+                                            <a href="/help/ratings#how-ratings-evolve" class="help-tooltip-link">
+                                                Learn more <i class="fas fa-arrow-right"></i>
+                                            </a>
+                                        </div>
+                                    </span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td>10/31</td>
+                                <td><a href="/event/839">Iowa High School State Championships</a></td>
+                                <td>Class 4A Boys 5000M</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>4</td>
+                                <td>14:59.29</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>10/22</td>
+                                <td><a href="/event/819">4A SQM at CB Lincoln</a></td>
+                                <td>Boys 5k Run</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>15:50.05</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>10/16</td>
+                                <td><a href="/event/800">MRAC Conference XC Meet</a></td>
+                                <td>Boys 5000m Varsity</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>15:53.38</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>10/09</td>
+                                <td><a href="/event/772">Fort Dodge CC Invite</a></td>
+                                <td>Ft Dodge CC Invite Varsity boys</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>15:16.79</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>10/04</td>
+                                <td><a href="/event/744">Dan Huston/Steve Johnson Invitational</a></td>
+                                <td>Boys Varsity 5000M</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>4</td>
+                                <td>15:21</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>09/25</td>
+                                <td><a href="/event/707">Sioux Center XC Invite</a></td>
+                                <td>Boys 5000m Varsity</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>15:21.39</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>09/13</td>
+                                <td><a href="/event/641">Tim Thomas Classic</a></td>
+                                <td>Boys 5000m Varsity</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>15:29.70</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>09/09</td>
+                                <td><a href="/event/616">Le Mars XC Invite</a></td>
+                                <td>Boys 5000m Varsity</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>16:12.5</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>09/05</td>
+                                <td><a href="/event/606">Augustana Twilight XC Meet</a></td>
+                                <td>Boys 5000m</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>3</td>
+                                <td>14:30.84</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+                
+            </div>
+        </div>
+        
+        <div class="season-section">
+            <div class="season-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-calendar mr-2"></i>
+                    2024 Season
+                    
+                        <span class="season-info">
+                            • Freshman, Sioux City, North
+                        </span>
+                    
+                    <span class="race-count">
+                        
+                            8 races
+                        
+                    </span>
+                    <span class="season-toggle">▼</span>
+                </h4>
+            </div>
+            <div class="season-content" style="display: none;">
+                
+                <div class="table-responsive mx-3 my-3">
+                    <table class="table table-striped runner-table season-datatable" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Event</th>
+                                <th>Race</th>
+                                <th>School</th>
+                                <th>Place</th>
+                                <th>Time</th>
+                                <th>
+                                    
+                                    <i class="fas fa-lock text-warning me-1"></i> Performance Score
+                                    
+                                    <span class="help-tooltip">
+                                        <i class="fas fa-question-circle"></i>
+                                        <div class="help-tooltip-content">
+                                            <div class="help-tooltip-text">
+                                                Individual race rating reflecting competition strength and finishing position.
+                                            </div>
+                                            <a href="/help/ratings#performance-score" class="help-tooltip-link">
+                                                Learn more <i class="fas fa-arrow-right"></i>
+                                            </a>
+                                        </div>
+                                    </span>
+                                </th>
+                                <th>
+                                    
+                                    <i class="fas fa-lock text-warning me-1"></i> Rating
+                                    
+                                    <span class="help-tooltip">
+                                        <i class="fas fa-question-circle"></i>
+                                        <div class="help-tooltip-content">
+                                            <div class="help-tooltip-text">
+                                                Skill estimate based on previous results and latest performance.
+                                            </div>
+                                            <a href="/help/ratings#how-ratings-evolve" class="help-tooltip-link">
+                                                Learn more <i class="fas fa-arrow-right"></i>
+                                            </a>
+                                        </div>
+                                    </span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td>11/01</td>
+                                <td><a href="/event/546">Iowa High School Cross Country Championships</a></td>
+                                <td>Class 4A Boys 5000M</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>7</td>
+                                <td>15:33.70</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>10/23</td>
+                                <td><a href="/event/528">4A SQM CB Lincoln</a></td>
+                                <td>Varsity Boys</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>3</td>
+                                <td>16:23.27</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>10/17</td>
+                                <td><a href="/event/518">2024 MRAC Cross Country Meet 2024</a></td>
+                                <td>Boys 5000 Meter Run Finals</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>17:10.69</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>10/10</td>
+                                <td><a href="/event/475">Ft Dodge Cross Country Invite</a></td>
+                                <td>Fort Dodge Cross Country Invite Varsity boys</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>7</td>
+                                <td>15:49.09</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>09/26</td>
+                                <td><a href="/event/403">Sioux Center XC Invite</a></td>
+                                <td>Boys 5000m Varsity</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>16:03.5</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>09/14</td>
+                                <td><a href="/event/329">Tim Thomas Classic</a></td>
+                                <td>Boys 5000m High School Class A</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>16:14.70</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>09/10</td>
+                                <td><a href="/event/303">Lemars XC Invite</a></td>
+                                <td>Boys 5000m Varsity</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>1</td>
+                                <td>16:56.36</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>09/06</td>
+                                <td><a href="/event/294">2024 Augustana Twilight XC Meet Varsity 5k</a></td>
+                                <td>Boys 5000m</td>
+                                <td>
+                                    
+                                    <a href="/school/18">Sioux City, North</a>
+                                    
+                                </td>
+                                <td>14</td>
+                                <td>15:27.15</td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                                <td>
+                                    
+                                    <span class="text-muted">----</span>
+                                    
+                                </td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+                
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Performance Trends Graph -->
+    
+    <div class="plot-section">
+        <h5 class="card-title">
+            <i class="fas fa-chart-area text-primary"></i> 
+            Performance Trends Over Time
+            <i class="fas fa-lock text-warning ms-2" title="Premium Feature"></i>
+        </h5>
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-chart-line" style="font-size: 4rem; color: #e9ecef;"></i>
+            </div>
+            <h6 class="text-muted mb-3">Premium Analytics Feature</h6>
+            <p class="text-muted mb-4">
+                Access detailed performance trend charts showing rating progression, uncertainty ranges, and performance analytics across all seasons.
+            </p>
+            <div class="premium-preview-note">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Visual analytics include box plots for rating uncertainty, trend lines for performance progression, and season markers for comprehensive performance tracking.
+                </small>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+
+<!-- Premium Features CTA -->
+<div class="container mt-4">
+    <div class="upgrade-prompt p-4 bg-light border border-primary rounded">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-2">
+                    <i class="fas fa-chart-line text-primary me-2"></i>
+                    Unlock Detailed Performance Analytics
+                </h5>
+                <p class="mb-0 text-muted">
+                    Access comprehensive performance scores and rating data to track runner development and analyze competitive performance across all seasons.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                
+                    <a href="/auth/register" class="btn btn-primary me-2">
+                        <i class="fas fa-user-plus me-1"></i> Sign Up Free
+                    </a>
+                    <a href="/auth/login" class="btn btn-outline-primary">
+                        <i class="fas fa-sign-in-alt me-1"></i> Login
+                    </a>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+    
+
+
+    <script src="/static/bootstrap/jquery.min.js?bootstrap=3.3.7.1.dev1"></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js?bootstrap=3.3.7.1.dev1"></script>
+<script src="/static/js/pins.js"></script>
+<!-- <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.js"></script>
+<script>
+    $(document).ready( function () {
+        $('datatable-auto').DataTable({
+            "pageLength": 15,
+            "order": [[0, 'asc']],
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "responsive": true
+        });
+    });
+</script> -->
+
+<script>
+// Small in-page toast, reusing the existing cache-status element. Exists so
+// PWA feedback never has to reach for a blocking alert()/confirm().
+function showAppToast(message, ms) {
+    const box = document.getElementById('pwaCacheStatus');
+    const text = document.getElementById('cacheStatusText');
+    if (!box || !text) { return; }
+    const spinner = box.querySelector('.cache-spinner');
+    if (spinner) { spinner.style.display = 'none'; }
+    text.textContent = message;
+    box.classList.add('show');
+    clearTimeout(showAppToast._t);
+    showAppToast._t = setTimeout(function () {
+        box.classList.remove('show');
+    }, ms || 4000);
+}
+</script>
+
+<!-- PWA Service Worker Registration -->
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        // Show cache status indicator
+        const cacheStatus = document.getElementById('pwaCacheStatus');
+        const cacheStatusText = document.getElementById('cacheStatusText');
+        
+        // Show initial caching status
+        if (!localStorage.getItem('pwa-cached')) {
+            cacheStatus.classList.add('show');
+        }
+        
+        // Registered from the app root (see routes/system_routes.py) so the
+        // worker's scope is '/' and it can actually control page navigations.
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(function(registration) {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                
+                // Listen for service worker updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    if (newWorker) {
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    // SW updated
+                                    cacheStatusText.textContent = 'App updated! Refresh to see changes.';
+                                    setTimeout(() => {
+                                        cacheStatus.classList.remove('show');
+                                    }, 3000);
+                                } else {
+                                    // SW installed for first time
+                                    cacheStatusText.textContent = 'App ready for offline use!';
+                                    localStorage.setItem('pwa-cached', 'true');
+                                    setTimeout(() => {
+                                        cacheStatus.classList.remove('show');
+                                    }, 2000);
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                // Hide status after initial load if already cached
+                if (localStorage.getItem('pwa-cached')) {
+                    setTimeout(() => {
+                        cacheStatus.classList.remove('show');
+                    }, 1000);
+                } else {
+                    // First time - show caching progress for longer
+                    setTimeout(() => {
+                        cacheStatusText.textContent = 'Almost done optimizing...';
+                        setTimeout(() => {
+                            cacheStatusText.textContent = 'App ready for faster loading!';
+                            localStorage.setItem('pwa-cached', 'true');
+                            setTimeout(() => {
+                                cacheStatus.classList.remove('show');
+                            }, 2000);
+                        }, 3000);
+                    }, 2000);
+                }
+            })
+            .catch(function(error) {
+                console.log('ServiceWorker registration failed: ', error);
+                cacheStatus.classList.remove('show');
+            });
+    });
+}
+
+// PWA Install Banner Logic
+let deferredPrompt;
+const installBanner = document.getElementById('pwaInstallBanner');
+const installBtn = document.getElementById('installBtn');
+const dismissBtn = document.getElementById('dismissBtn');
+const closeBtn = document.getElementById('closeBtn');
+
+// Check if user has dismissed banner recently
+function shouldShowBanner() {
+    const dismissed = localStorage.getItem('pwa-banner-dismissed');
+    const dismissCount = parseInt(localStorage.getItem('pwa-banner-dismiss-count') || '0');
+    
+    // Don't show if dismissed more than 3 times
+    if (dismissCount >= 3) {
+        return false;
+    }
+    
+    // Don't show if dismissed within last 24 hours
+    if (dismissed) {
+        const dismissedTime = new Date(dismissed);
+        const now = new Date();
+        const hoursSinceDismissed = (now - dismissedTime) / (1000 * 60 * 60);
+        if (hoursSinceDismissed < 24) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Show install banner
+function showInstallBanner() {
+    if (installBanner && shouldShowBanner()) {
+        installBanner.style.display = 'block';
+        
+        // Add bottom padding to body to prevent content overlap
+        document.body.style.paddingBottom = installBanner.offsetHeight + 'px';
+    }
+}
+
+// Hide install banner
+function hideInstallBanner() {
+    if (installBanner) {
+        installBanner.style.display = 'none';
+        document.body.style.paddingBottom = '0';
+    }
+}
+
+// Handle beforeinstallprompt event
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    
+    console.log('PWA install prompt available');
+    
+    // Show our custom install banner
+    showInstallBanner();
+});
+
+// Handle install button click
+if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            // Show the install prompt
+            deferredPrompt.prompt();
+            
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+            } else {
+                console.log('User dismissed the install prompt');
+            }
+            
+            // Clear the deferredPrompt for next time
+            deferredPrompt = null;
+            hideInstallBanner();
+        }
+    });
+}
+
+// Handle dismiss button click (temporary dismissal)
+if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+        localStorage.setItem('pwa-banner-dismissed', new Date().toISOString());
+        hideInstallBanner();
+    });
+}
+
+// Handle close button click (permanent dismissal after 3 times)
+if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+        const currentCount = parseInt(localStorage.getItem('pwa-banner-dismiss-count') || '0');
+        localStorage.setItem('pwa-banner-dismiss-count', (currentCount + 1).toString());
+        localStorage.setItem('pwa-banner-dismissed', new Date().toISOString());
+        hideInstallBanner();
+    });
+}
+
+// Handle successful installation
+window.addEventListener('appinstalled', (evt) => {
+    console.log('PWA was installed successfully');
+    hideInstallBanner();
+    
+    // Confirmation shown in-page. This used to be a blocking confirm()
+    // dialog, which is a poor fit for an informational message on mobile.
+    setTimeout(() => {
+        showAppToast('Installed. Cross Country Ratings is on your home screen.');
+    }, 1000);
+});
+
+// Check if already installed (Android Chrome)
+window.addEventListener('DOMContentLoaded', () => {
+    // Don't show banner if already installed
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('PWA is already installed');
+        return;
+    }
+    
+    // Check for iOS Safari
+    if (window.navigator.standalone === true) {
+        console.log('PWA is already installed on iOS');
+        return;
+    }
+    
+    // For browsers that don't support beforeinstallprompt (like iOS Safari)
+    // Show a different message or instructions
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+    
+    if (isIOS && isSafari && shouldShowBanner()) {
+        // Modify banner text for iOS Safari
+        setTimeout(() => {
+            const bannerTitle = document.querySelector('.banner-title');
+            const bannerSubtitle = document.querySelector('.banner-subtitle');
+            const installBtn = document.getElementById('installBtn');
+            
+            if (bannerTitle && bannerSubtitle && installBtn) {
+                bannerTitle.innerHTML = '<i class="fas fa-share"></i> Add to Home Screen';
+                bannerSubtitle.textContent = 'Tap the share button and select "Add to Home Screen"';
+                installBtn.textContent = 'Show Me How';
+                installBtn.onclick = () => {
+                    // Expand the banner in place rather than firing a native
+                    // alert(), which blocks the page and looks like a browser
+                    // warning rather than a helpful hint.
+                    bannerSubtitle.innerHTML =
+                        '1. Tap <i class="fas fa-share"></i> in the Safari toolbar<br>' +
+                        '2. Scroll down and tap "Add to Home Screen"<br>' +
+                        '3. Tap "Add" to confirm';
+                    installBtn.textContent = 'Got it';
+                    installBtn.onclick = hideInstallBanner;
+                };
+                showInstallBanner();
+            }
+        }, 2000);
+    }
+});
+
+// PRE-EXISTING SYNTAX ERROR, FIXED.
+// Everything from here to the matching `});` below was orphaned at the top
+// level by the `});` above, and then closed by a second `});` that had
+// nothing left to close. That unmatched brace was a hard SyntaxError, so the
+// browser discarded this entire ~26KB <script> block - service worker
+// registration, the install banner, the privacy notice, the back button, the
+// help tooltips and the state filter all silently never ran. Giving this
+// section its own listener makes the trailing `});` balance again.
+document.addEventListener('DOMContentLoaded', () => {
+
+    // Handle privacy notice
+    const privacyNotice = document.getElementById('privacyNotice');
+    const privacyBtn = document.getElementById('privacyOk');
+    
+    // Show privacy notice if not acknowledged
+    if (privacyNotice && !localStorage.getItem('privacy-acknowledged')) {
+        setTimeout(() => {
+            privacyNotice.classList.add('show');
+        }, 3000); // Show after 3 seconds
+    }
+    
+    // Handle privacy notice acknowledgment
+    if (privacyBtn) {
+        privacyBtn.addEventListener('click', () => {
+            localStorage.setItem('privacy-acknowledged', 'true');
+            privacyNotice.classList.remove('show');
+        });
+    }
+    
+    // PWA Back Button Logic
+    const pwaBackButton = document.getElementById('pwaBackButton');
+    if (!pwaBackButton) { return; }
+
+    function updateBackButtonVisibility() {
+        // Show back button if there is a history to go back to
+        if (window.history.length > 1) {
+            pwaBackButton.classList.add('show');
+        } else {
+            pwaBackButton.classList.remove('show');
+        }
+    }
+    
+    // Initial check
+    updateBackButtonVisibility();
+    
+    // Listen for popstate event to update back button visibility
+    window.addEventListener('popstate', () => {
+        updateBackButtonVisibility();
+    });
+    
+    // Handle back button click
+    pwaBackButton.addEventListener('click', () => {
+        window.history.back();
+    });
+});
+
+// PWA Navigation System
+class PWANavigation {
+    constructor() {
+        this.navigationStack = [];
+        // Get page context from Flask if available
+        this.pageContext = window.pageContext || {};
+        this.initializeNavigation();
+        this.setupEventListeners();
+    }
+    
+    initializeNavigation() {
+        // Initialize navigation stack with current page
+        this.navigationStack = [
+            {
+                url: window.location.pathname + window.location.search,
+                title: document.title,
+                timestamp: Date.now()
+            }
+        ];
+        
+        // Update back button visibility
+        this.updateBackButton();
+        this.updateBreadcrumb();
+    }
+    
+    setupEventListeners() {
+        const backButton = document.getElementById('pwaBackButton');
+        
+        // Back button click handler
+        if (backButton) {
+            backButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.goBack();
+            });
+        }
+        
+        // Handle navigation events
+        window.addEventListener('popstate', (e) => {
+            this.handlePopState(e);
+        });
+        
+        // Track page changes for navigation stack
+        let lastUrl = location.href;
+        new MutationObserver(() => {
+            const url = location.href;
+            if (url !== lastUrl) {
+                lastUrl = url;
+                this.addToNavigationStack(url, document.title);
+            }
+        }).observe(document, { subtree: true, childList: true });
+        
+        // Override link clicks to track navigation
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (link && link.href && !link.target && link.hostname === window.location.hostname) {
+                // Don't track external links, anchor links, or links with targets
+                if (!link.href.includes('#') && !link.download) {
+                    this.trackNavigation(link.href, link.textContent.trim());
+                }
+            }
+        });
+    }
+    
+    trackNavigation(url, title) {
+        // Add small delay to allow page navigation to complete
+        setTimeout(() => {
+            this.addToNavigationStack(url, title || document.title);
+        }, 100);
+    }
+    
+    addToNavigationStack(url, title) {
+        const currentPath = url.replace(window.location.origin, '');
+        const lastEntry = this.navigationStack[this.navigationStack.length - 1];
+        
+        // Don't add duplicate entries
+        if (lastEntry && lastEntry.url === currentPath) {
+            return;
+        }
+        
+        // Limit stack size to prevent memory issues
+        if (this.navigationStack.length > 20) {
+            this.navigationStack.shift();
+        }
+        
+        this.navigationStack.push({
+            url: currentPath,
+            title: title || 'Page',
+            timestamp: Date.now()
+        });
+        
+        this.updateBackButton();
+        this.updateBreadcrumb();
+    }
+    
+    goBack() {
+        if (this.canGoBack()) {
+            // Remove current page from stack
+            this.navigationStack.pop();
+            
+            if (this.navigationStack.length > 0) {
+                const previousPage = this.navigationStack[this.navigationStack.length - 1];
+                window.location.href = previousPage.url;
+            } else {
+                // Fallback to home if no navigation history
+                window.location.href = '/';
+            }
+        } else {
+            // Use browser back if available, otherwise go home
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+    }
+    
+    canGoBack() {
+        return this.navigationStack.length > 1;
+    }
+    
+    updateBackButton() {
+        const backButton = document.getElementById('pwaBackButton');
+        if (backButton) {
+            if (this.canGoBack() || window.history.length > 1) {
+                backButton.classList.add('show');
+            } else {
+                backButton.classList.remove('show');
+            }
+        }
+    }
+    
+    updateBreadcrumb() {
+        const breadcrumb = document.getElementById('pwaBreadcrumb');
+        const breadcrumbList = document.getElementById('breadcrumbList');
+        
+        if (!breadcrumb || !breadcrumbList) return;
+        
+        // Only show breadcrumb on deeper pages
+        if (this.navigationStack.length > 1) {
+            breadcrumbList.innerHTML = '';
+            
+            // Show up to last 3 pages in breadcrumb
+            const recentPages = this.navigationStack.slice(-3);
+            
+            recentPages.forEach((page, index) => {
+                const li = document.createElement('li');
+                
+                if (index === recentPages.length - 1) {
+                    // Current page
+                    li.innerHTML = `<span class="current">${this.getPageDisplayName(page)}</span>`;
+                } else {
+                    // Previous pages
+                    li.innerHTML = `<a href="${page.url}">${this.getPageDisplayName(page)}</a>`;
+                }
+                
+                breadcrumbList.appendChild(li);
+            });
+            
+            breadcrumb.style.display = 'block';
+        } else {
+            breadcrumb.style.display = 'none';
+        }
+    }
+    
+    getPageDisplayName(page) {
+        // Extract meaningful page names from URLs and titles
+        const url = page.url;
+        const title = page.title;
+        
+        if (url === '/' || url === '') return 'Home';
+        if (url.includes('/results')) return 'Results';
+        if (url.includes('/individuals')) return 'Individual Rankings';
+        if (url.includes('/teams')) return 'Team Rankings';
+        if (url.includes('/search')) return 'Search';
+        if (url.includes('/forecast')) return 'Forecast';
+        if (url.includes('/contact')) return 'Contact';
+        if (url.includes('/school/')) return title.split(' - ')[0] || 'School';
+        if (url.includes('/runner/')) return title.split(' - ')[0] || 'Runner';
+        if (url.includes('/race/')) return 'Race Results';
+        if (url.includes('/event/')) return 'Event';
+        
+        // Fallback to title or URL
+        return title.split(' - ')[0] || url.replace(/^\//, '').replace(/\//g, ' › ');
+    }
+}
+
+// Initialize PWA Navigation when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Only initialize in standalone PWA mode or when explicitly needed
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+        new PWANavigation();
+    } else {
+        // Also initialize for mobile browsers that might benefit from back button
+        if (window.innerWidth <= 768) {
+            new PWANavigation();
+        }
+    }
+    
+    // Initialize Clarity-specific features
+    initializeClarityFeatures();
+});
+
+// Microsoft Clarity Enhancement Functions (Performance Optimized)
+function initializeClarityFeatures() {
+    // Only proceed if Clarity is available and enabled
+    if (typeof clarity === 'undefined' || window.clarity === null) return;
+    
+    // Throttled event tracking to prevent performance issues
+    let lastEventTime = 0;
+    const EVENT_THROTTLE = 100; // milliseconds
+    
+    function throttledClarityEvent(eventName, data = {}) {
+        const now = Date.now();
+        if (now - lastEventTime > EVENT_THROTTLE) {
+            clarity('event', eventName, data);
+            lastEventTime = now;
+        }
+    }
+    
+    // Track forecast usage (specific form only)
+    const forecastForm = document.querySelector('[data-clarity-region="forecast-form"]');
+    if (forecastForm) {
+        forecastForm.addEventListener('submit', function() {
+            throttledClarityEvent('forecast_created');
+        });
+    }
+    
+    // Track search usage (optimized with longer debounce)
+    const searchInputs = document.querySelectorAll('input[type="search"], input[name*="search"]');
+    if (searchInputs.length > 0) {
+        searchInputs.forEach(input => {
+            input.addEventListener('keyup', debounce(function() {
+                if (this.value.length > 3) { // Increased threshold
+                    throttledClarityEvent('search_performed');
+                }
+            }, 2000)); // Increased debounce
+        });
+    }
+    
+    // Lightweight navigation tracking (use event delegation)
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a[data-clarity-click]');
+        if (link) {
+            const action = link.getAttribute('data-clarity-click');
+            throttledClarityEvent('navigation_click', { action: action });
+        }
+    });
+    
+    // Critical form interactions only (reduced tracking)
+    const criticalForms = document.querySelectorAll('[data-clarity-region="forecast-form"], [data-clarity-region="contact-form"]');
+    criticalForms.forEach(form => {
+        form.addEventListener('focusin', debounce(function(e) {
+            if (e.target.matches('input, select, textarea')) {
+                const region = form.getAttribute('data-clarity-region');
+                throttledClarityEvent('form_focus', { region: region });
+            }
+        }, 1000), true);
+    });
+    
+    // Show privacy controls only in development (performance guard)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const controls = document.getElementById('clarityPrivacyControls');
+        if (controls) {
+            controls.classList.add('show');
+        }
+    }
+}
+
+// Utility function for debouncing
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Clarity privacy control functions
+function toggleClarityRecording() {
+    if (typeof clarity !== 'undefined') {
+        const button = document.getElementById('toggleClarity');
+        const isPaused = button.textContent === 'Resume';
+        
+        if (isPaused) {
+            clarity('resume');
+            button.textContent = 'Pause';
+            console.log('Clarity recording resumed');
+        } else {
+            clarity('pause');
+            button.textContent = 'Resume';
+            console.log('Clarity recording paused');
+        }
+    }
+}
+
+function toggleMaskedElementsDisplay() {
+    const body = document.body;
+    const button = document.getElementById('showMaskedElements');
+    const isShowing = body.classList.contains('debug-clarity');
+    
+    if (isShowing) {
+        body.classList.remove('debug-clarity');
+        button.textContent = 'Show Masked';
+    } else {
+        body.classList.add('debug-clarity');
+        button.textContent = 'Hide Masked';
+    }
+}
+
+// Enhanced Clarity error tracking (optimized)
+window.addEventListener('error', function(e) {
+    if (typeof clarity !== 'undefined' && e.filename && !e.filename.includes('extension')) {
+        // Only track actual application errors, not browser extension errors
+        clarity('event', 'javascript_error', {
+            message: e.message.substring(0, 100), // Limit message length
+            filename: e.filename.split('/').pop(), // Only filename, not full path
+            lineno: e.lineno
+        });
+    }
+});
+
+// Help Tooltip System (Mobile-friendly with fixed positioning)
+document.addEventListener('DOMContentLoaded', function() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    
+    // Function to position tooltip above the icon
+    function positionTooltip(tooltip) {
+        const content = tooltip.querySelector('.help-tooltip-content');
+        if (!content) return;
+        
+        const rect = tooltip.getBoundingClientRect();
+        const contentWidth = content.offsetWidth;
+        const contentHeight = content.offsetHeight;
+        
+        // Position above the icon, centered
+        let left = rect.left + (rect.width / 2) - (contentWidth / 2);
+        let top = rect.top - contentHeight - 8;
+        
+        // Keep tooltip within viewport
+        const padding = 10;
+        if (left < padding) left = padding;
+        if (left + contentWidth > window.innerWidth - padding) {
+            left = window.innerWidth - contentWidth - padding;
+        }
+        if (top < padding) {
+            // If no room above, show below
+            top = rect.bottom + 8;
+        }
+        
+        content.style.left = left + 'px';
+        content.style.top = top + 'px';
+    }
+    
+    document.querySelectorAll('.help-tooltip').forEach(function(tooltip) {
+        if (isMobile) {
+            // On mobile: tap to toggle
+            tooltip.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Close other tooltips
+                document.querySelectorAll('.help-tooltip.active').forEach(function(other) {
+                    if (other !== tooltip) {
+                        other.classList.remove('active');
+                    }
+                });
+                
+                // Toggle this tooltip
+                tooltip.classList.toggle('active');
+                
+                if (tooltip.classList.contains('active')) {
+                    positionTooltip(tooltip);
+                }
+            });
+        } else {
+            // On desktop: show on hover, position dynamically
+            tooltip.addEventListener('mouseenter', function() {
+                positionTooltip(tooltip);
+            });
+            
+            // Click to navigate to help article
+            const link = tooltip.querySelector('.help-tooltip-link');
+            if (link) {
+                tooltip.addEventListener('click', function(e) {
+                    if (e.target.tagName !== 'A') {
+                        window.location.href = link.href;
+                    }
+                });
+            }
+        }
+    });
+    
+    // Close tooltips when clicking outside (mobile)
+    if (isMobile) {
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.help-tooltip')) {
+                document.querySelectorAll('.help-tooltip.active').forEach(function(tooltip) {
+                    tooltip.classList.remove('active');
+                });
+            }
+        });
+    }
+    
+    // Reposition on window resize
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            document.querySelectorAll('.help-tooltip.active, .help-tooltip:hover').forEach(function(tooltip) {
+                positionTooltip(tooltip);
+            });
+        }, 100);
+    });
+});
+
+// Lightweight performance tracking (production-optimized)
+window.addEventListener('load', function() {
+    if (typeof clarity !== 'undefined' && 'performance' in window) {
+        // Delay to avoid impacting initial page load
+        setTimeout(() => {
+            try {
+                const perfData = performance.getEntriesByType('navigation')[0];
+                if (perfData && perfData.loadEventEnd > 0) {
+                    const loadTime = Math.round(perfData.loadEventEnd - perfData.fetchStart);
+                    // Only track if load time is reasonable (not cached/invalid)
+                    if (loadTime > 100 && loadTime < 30000) {
+                        clarity('event', 'page_performance', {
+                            load_time: loadTime,
+                            page_type: window.pageContext?.page_type || 'unknown'
+                        });
+                    }
+                }
+            } catch (e) {
+                // Silently fail if performance API is not available
+            }
+        }, 3000); // Increased delay to reduce impact
+    }
+});
+</script>
+
+<!-- Premium Users: Additional JavaScript-based ad blocking - TEMPORARILY DISABLED -->
+<!-- 
+
+-->
+
+<script>
+// Global state filter — save preference via API, then reload to apply
+(function () {
+    var select = document.getElementById('globalStateSelect');
+    if (!select) return;
+
+    // On phones the state filter lives inside the collapsed navbar menu, so
+    // changing states - the single most-used control on the site - costs two
+    // taps and is invisible until you open the hamburger. Relocate the control
+    // into the always-visible navbar header instead. Moving the existing node
+    // rather than rendering a second copy keeps one #globalStateSelect in the
+    // DOM, so the change handler below needs no special casing.
+    var filterItem = select.closest('.navbar-state-filter');
+    var navHeader = document.querySelector('.navbar-header');
+    var collapseMenu = document.getElementById('navbar');
+    var mobileQuery = window.matchMedia('(max-width: 767px)');
+
+    // On a 375px-wide navbar there is no room for "North Dakota" beside the
+    // wordmark and the hamburger, so the options collapse to their state
+    // codes on phones and are restored on wider screens.
+    var stateOptions = Array.prototype.slice.call(select.options);
+    stateOptions.forEach(function (opt) { opt.dataset.fullLabel = opt.textContent; });
+
+    function setOptionLabels(isMobile) {
+        stateOptions.forEach(function (opt) {
+            opt.textContent = isMobile
+                ? (opt.value || 'All')
+                : opt.dataset.fullLabel;
+        });
+    }
+
+    function placeStateFilter(isMobile) {
+        if (!filterItem || !navHeader || !collapseMenu) { return; }
+        setOptionLabels(isMobile);
+        if (isMobile) {
+            if (filterItem.parentElement !== navHeader) {
+                navHeader.appendChild(filterItem);
+                filterItem.classList.add('state-filter-in-header');
+            }
+        } else if (filterItem.classList.contains('state-filter-in-header')) {
+            // Put it back where the desktop navbar expects it.
+            var rightNav = collapseMenu.querySelector('.navbar-right');
+            if (rightNav) { rightNav.insertBefore(filterItem, rightNav.firstChild); }
+            filterItem.classList.remove('state-filter-in-header');
+        }
+    }
+
+    placeStateFilter(mobileQuery.matches);
+    // addEventListener on the query, with the deprecated addListener as a
+    // fallback for older iOS Safari.
+    if (mobileQuery.addEventListener) {
+        mobileQuery.addEventListener('change', function (e) { placeStateFilter(e.matches); });
+    } else if (mobileQuery.addListener) {
+        mobileQuery.addListener(function (e) { placeStateFilter(e.matches); });
+    }
+    select.addEventListener('change', function () {
+        var state = this.value;
+        fetch('/api/user/state-preference', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json',
+                      'X-CSRFToken': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''},
+            credentials: 'same-origin',
+            body: JSON.stringify({state: state})
+        }).then(function (r) {
+            if (r.ok) { window.location.reload(); }
+        }).catch(function () {
+            // Fallback: reload anyway so session still gets set on next request
+            window.location.reload();
+        });
+    });
+}());
+</script>
+
+<script src="/static/js/share.js?v=315532801"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+<!-- Plotly is loaded on demand by static/js/plotly-lazy.js (pinned, basic
+     bundle, fetched only when the chart scrolls into view). -->
+<script src="/static/js/plotly-lazy.js?v=315532801"></script>
+<script>
+$(document).ready(function () {
+    var tableInstances = {};
+    
+    // Function to initialize DataTable for runner results
+    function initializeDataTable(table) {
+        var $table = $(table);
+        
+        // Check if DataTable is already initialized
+        if ($.fn.DataTable.isDataTable($table)) {
+            console.log('DataTable already initialized for this table');
+            return;
+        }
+        
+        var tableId = $table.attr('id') || 'table_' + Math.random().toString(36).substr(2, 9);
+        $table.attr('id', tableId); // Ensure table has an ID
+        
+        try {
+            // Create DataTable configuration
+            var tableConfig = {
+                "responsive": true,
+                "paging": true,
+                "pageLength": 10,
+                "searching": true,
+                "ordering": true,
+                "info": true,
+                "order": [[0, "desc"]], // Sort by date descending (most recent first)
+                "language": {
+                    "search": "Search races:",
+                    "lengthMenu": "Show _MENU_ races per page",
+                    "info": "Showing _START_ to _END_ of _TOTAL_ races",
+                    "paginate": {
+                        "previous": "Previous",
+                        "next": "Next"
+                    }
+                },
+                "columnDefs": [
+                    {
+                        "targets": [2], // Race Name column
+                        "className": "none", // Hide on smaller screens
+                        "responsivePriority": 10001
+                    }
+                ]
+            };
+            
+            tableInstances[tableId] = $table.DataTable(tableConfig);
+            
+            console.log('DataTable initialized for table:', tableId);
+            return tableInstances[tableId];
+        } catch (error) {
+            console.error('Error initializing DataTable:', error);
+        }
+    }
+    
+    // Handle collapsible section clicks
+    $('.season-header').on('click', function (e) {
+        e.preventDefault();
+        
+        var $content = $(this).next('.season-content');
+        var $toggle = $(this).find('.season-toggle');
+        var $table = $content.find('.season-datatable');
+        
+        // Toggle content visibility
+        $content.slideToggle(300, function() {
+            // Initialize DataTable if content is now visible and table hasn't been initialized
+            if ($content.is(':visible') && $table.length > 0) {
+                // Small delay to ensure DOM is ready
+                setTimeout(function() {
+                    initializeDataTable($table[0]);
+                }, 150);
+            }
+        });
+        
+        // Toggle arrow direction
+        $toggle.toggleClass('collapsed');
+    });
+
+    // Plotly graph: parsed from the JSON script tag and rendered only once
+    // the chart container is about to scroll into view.
+    (function () {
+        var container = document.getElementById('plotly-graph');
+        var payload = document.getElementById('runner-graph-data');
+        if (!container || !payload) { return; }
+
+        var graphs;
+        try {
+            graphs = JSON.parse(payload.textContent);
+        } catch (error) {
+            console.error('Error parsing runner graph data:', error);
+            return;
+        }
+        if (!graphs || !graphs.data) { return; }
+
+        xcPlotly.whenVisible(container, function (Plotly) {
+            graphs.layout = graphs.layout || {};
+            graphs.layout.autosize = true;
+
+            Plotly.newPlot('plotly-graph', graphs.data, graphs.layout, {
+                staticPlot: false,
+                displayModeBar: true,
+                modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d', 'autoScale2d',
+                                         'hoverClosestCartesian', 'hoverCompareCartesian'],
+                responsive: true
+            });
+
+            // addEventListener, not window.onresize - the latter clobbered any
+            // other resize handler on the page.
+            window.addEventListener('resize', function () {
+                Plotly.Plots.resize(container);
+            });
+        });
+    })();
+
+    // Initialize DataTable for the first visible section only
+    setTimeout(function() {
+        var $firstVisibleTable = $('.season-section:first .season-content:visible .season-datatable');
+        if ($firstVisibleTable.length > 0) {
+            initializeDataTable($firstVisibleTable[0]);
+        }
+    }, 100);
+});
+</script>
+
+  <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3ee6a3a6d468cd5',t:'MTc5MDA0OTc1NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

@@ -155,35 +155,3 @@ fn malformed_keys_inside_a_table_refuse_the_scan() -> TestResult {
     ));
     Ok(())
 }
-#[test]
-fn a_selected_scan_merges_only_the_named_subjects() -> TestResult {
-    let dir = tempfile::tempdir()?;
-    let store = Store::open(dir.path())?;
-    let school = SchoolId::mint("sch", &["selected-fixture"]);
-    let alice = subject(&school, "3001", "Alice Example");
-    let beth = subject(&school, "3002", "Beth Example");
-    let mut updated = alice.clone();
-    updated.known_names.push("A. Example".to_string());
-    store.append(Table::Athletes, &alice)?;
-    store.append(Table::Athletes, &updated)?;
-    store.append(Table::Athletes, &beth)?;
-    let snapshot = store.snapshot();
-    let selected: std::collections::HashSet<String> =
-        std::iter::once(alice.id.as_str().to_string()).collect();
-    let mut visited: Vec<CanonicalAthlete> = Vec::new();
-    let published = snapshot.for_each_merged_selected(Table::Athletes, &selected, |row| {
-        visited.push(row);
-        Ok(())
-    })?;
-    let merged = snapshot.scan::<CanonicalAthlete>(Table::Athletes)?;
-    let expected = merged
-        .iter()
-        .find(|row| row.id == alice.id)
-        .cloned()
-        .ok_or("the fixture subject was scanned")?;
-    assert_eq!(published, 1);
-    assert_eq!(visited, vec![expected]);
-    assert!(visited[0].known_names.contains(&"A. Example".to_string()));
-    assert!(!visited.iter().any(|row| row.id == beth.id));
-    Ok(())
-}

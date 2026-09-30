@@ -1,0 +1,12 @@
+[
+  {"name": "School 0", "state": "CO", "association_id": "1", "city": "Denver", "address": "1 Main St", "phone": "303-555-0000", "district": "District 0"},
+  {"name": "School 1", "state": "CO", "association_id": "2", "city": "Denver", "address": "2 Main St", "phone": "303-555-0001", "district": "District 1"},
+  {"name": "School 2", "state": "CO", "association_id": "3", "city": "Denver", "address": "3 Main St", "zip": "80202", "phone": "303-555-0002", "district": "District 2"},
+  {"name": "School 3", "state": "CO", "association_id": "4", "city": "Denver", "address": "4 Main St", "zip": "80202", "phone": "303-555-0003", "district": "District 3"},
+  {"name": "School 4", "state": "CO", "association_id": "5", "city": "Denver", "address": "5 Main St", "zip": "80202", "phone": "303-555-0004", "district": "District 4"},
+  {"name": "School 5", "state": "CO", "association_id": "6", "city": "Denver", "address": "6 Main St", "zip": "80202", "phone": "303-555-0005", "district": "District 5"},
+  {"name": "School 6", "state": "CO", "association_id": "7", "city": "Denver", "address": "7 Main St", "zip": "80202", "phone": "303-555-0006", "district": "District 6"},
+  {"name": "School 7", "state": "CO", "association_id": "8", "city": "Denver", "address": "8 Main St", "zip": "80202", "phone": "303-555-0007", "district": "District 7"},
+  {"name": "School 8", "state": "CO", "association_id": "9", "city": "Denver", "address": "9 Main St", "zip": "80202", "phone": "303-555-0008", "district": "District 8"},
+  {"name": "School 9", "state": "CO", "association_id": "10", "city": "Denver", "address": "10 Main St", "zip": "80202", "phone": "303-555-0009", "district": "District 9"}
+]

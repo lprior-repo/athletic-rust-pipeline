@@ -13,18 +13,6 @@ use normalise::Named;
 pub(super) use normalise::Preferred;
 pub(super) use school::{contacts, SchoolContacts};
 
-pub(in crate::workbook) fn coach_observations(
-    snapshot: &census_store::StoreSnapshot<'_>,
-) -> census_store::StoreResult<Vec<CanonicalCoach>> {
-    let mut rows = Vec::new();
-    snapshot.for_each_observation(census_store::Table::Coaches, |mut coach: CanonicalCoach| {
-        census_store::Entity::publish(&mut coach);
-        rows.push(coach);
-        Ok(())
-    })?;
-    Ok(rows)
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::workbook) enum ContactState {
     ProfessionalCoachEmail,

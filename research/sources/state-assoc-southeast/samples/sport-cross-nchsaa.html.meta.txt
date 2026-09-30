@@ -1,0 +1,11 @@
+HTTP/1.1 200 OK
+Date: Tue, 22 Sep 2026 03:57:33 GMT
+Server: Apache/2.4.62 (Rocky Linux) OpenSSL/3.5.5
+X-Powered-By: PHP/8.3.33
+Last-Modified: Tue, 22 Sep 2026 03:57:33 GMT
+ETag: "1f28989e2599dea4a98bd38eda372271"
+Vary: Accept-Encoding
+Referrer-Policy: no-referrer-when-downgrade
+Transfer-Encoding: chunked
+Content-Type: text/html; charset=UTF-8
+

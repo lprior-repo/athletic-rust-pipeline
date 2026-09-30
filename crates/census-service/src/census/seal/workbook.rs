@@ -4,8 +4,8 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 use calamine::{open_workbook_auto, DataType, Reader};
-use census_report::report::{self, Scope};
-use census_store::Store;
+use census_report::export::ExportDataset;
+use census_report::report::{self, Derivation, Scope};
 use sha2::{Digest, Sha256};
 
 use crate::census::WorkbookCheck;
@@ -24,7 +24,7 @@ pub const COHORT_LABEL: &str = "class of 2027";
 
 pub fn inspect_workbook(
     path: &Path,
-    store: &Store,
+    dataset: &ExportDataset,
     grad_year: i16,
     scope: Scope,
 ) -> Result<WorkbookCheck> {
@@ -38,12 +38,12 @@ pub fn inspect_workbook(
         &names,
         &[ATHLETES_SHEET, COVERAGE_SHEET, RUN_METRICS_SHEET],
     ));
-    let census = report::build_census(store, scope)
-        .with_context(|| "reading the census from the store for workbook reconciliation")?;
+    let derivation = Derivation::of(dataset, scope, Some(grad_year));
+    let out = std::path::Path::new(&dataset.lineage.store_root).join("out");
+    let census = report::build_census(&derivation, &out);
     let expected_athletes = count(census.totals.class_of_2027);
-    let coverage = report::coverage_report(store, Some(grad_year)).with_context(|| {
-        "reading the coverage report from the store for workbook reconciliation"
-    })?;
+    let coverage = report::coverage_report(dataset, Some(grad_year))
+        .with_context(|| "reading the coverage report for workbook reconciliation")?;
     let expected_jurisdictions = count(coverage.jurisdictions.len());
     let cov = reconcile::reconcile_coverage(&mut book, &mut discrepancies, expected_jurisdictions)?;
     let athletes_data_rows =

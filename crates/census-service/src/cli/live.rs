@@ -12,9 +12,10 @@ use census_service::restate_services::{
 use restate_sdk::prelude::*;
 
 use super::national::{drive_jurisdiction, WorkflowFlags};
+use census_crawl::ingress::CurrentRoute;
 use census_service::ingress;
 
-fn consolidate_client(origin: Option<&str>) -> Result<ConsolidateIngressClient<reqwest::Client>> {
+fn consolidate_client(origin: Option<&str>) -> Result<ConsolidateIngressClient<CurrentRoute>> {
     Ok(ConsolidateIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
         run_key("consolidate", &[], DEFAULT_GENERATION),
@@ -24,7 +25,7 @@ fn consolidate_client(origin: Option<&str>) -> Result<ConsolidateIngressClient<r
 fn report_client(
     origin: Option<&str>,
     scope: report::Scope,
-) -> Result<ReportIngressClient<reqwest::Client>> {
+) -> Result<ReportIngressClient<CurrentRoute>> {
     Ok(ReportIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
         run_key("report", &[scope.as_str()], DEFAULT_GENERATION),
@@ -36,7 +37,7 @@ fn bests_client(
     scope: report::Scope,
     grad_year: Option<i16>,
     limit: Option<usize>,
-) -> Result<BestsIngressClient<reqwest::Client>> {
+) -> Result<BestsIngressClient<CurrentRoute>> {
     let year = grad_year.map_or_else(|| "all".to_string(), |year| year.to_string());
     let limit = limit.map_or_else(|| "all".to_string(), |limit| limit.to_string());
     Ok(BestsIngressClient::from_client(
@@ -52,7 +53,7 @@ fn bests_client(
 fn workbook_client(
     origin: Option<&str>,
     request: &WorkbookRequest,
-) -> Result<WorkbookIngressClient<reqwest::Client>> {
+) -> Result<WorkbookIngressClient<CurrentRoute>> {
     let year = request
         .grad_year
         .map_or_else(|| "all".to_string(), |year| year.to_string());
@@ -161,6 +162,7 @@ pub(super) fn jurisdiction_request(
     limit_per_state: Option<usize>,
     concurrency: usize,
     authorized_hosts: Vec<String>,
+    source_parallelism: usize,
 ) -> JurisdictionRequest {
     JurisdictionRequest {
         jurisdiction,
@@ -171,6 +173,7 @@ pub(super) fn jurisdiction_request(
         concurrency,
         observed_on: None,
         authorized_hosts,
+        source_parallelism,
     }
 }
 

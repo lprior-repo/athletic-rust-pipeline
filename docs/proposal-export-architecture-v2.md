@@ -1,79 +1,30 @@
-# Unified Export Dataset Architecture
+# Export architecture — historical proposal record
 
-## Problem
+This file is not an architecture owner. The accepted decision and its binding consequences are
+[ADR-015](adr/ADR-015-export-derivation-single-home.md); current APIs are described by the crate
+reference and [ARCHITECTURE.md](../ARCHITECTURE.md). What remains here is the measurement that
+motivated the change, kept because the delivery loop cites it.
 
-The current workbook export decodes the Fjall store multiple times:
+## Measured problem (before the change)
 
-- `build_census(store, Scope::Core)` — full scan → Census
-- `build_census(store, Scope::AllSources)` — full scan → Census
-- `bests::build(store, ...)` — parents scan (athletes, schools, meets, events, teams)
-- `Dataset::load(store, ...)` — recruits scan (athletes, schools, coaches, events, performances)
-- `Parents::read(store, ...)` — performances scan (athletes, meets, events, schools)
-- Coverage/projection scans — repeated scans of athletes, coaches, schools, meets, events
+The export path decoded the Fjall store once per consumer and re-applied filtering in each:
 
-Result: 3.07M athletes decoded 4+ times, 310K performances decoded 3+ times. In debug builds
-(serde_json ~25-40 MB/s), this dominates export wall time.
+| Consumer | Scans at the time |
+|---|---|
+| `build_census(store, Scope::Core)` / `(store, Scope::AllSources)` | full scan per call |
+| `bests::build(store, …)` | athletes, schools, meets, events, teams |
+| recruiting dataset load | athletes, schools, coaches, events, performances |
+| performance rows | performances, plus lookups |
+| coverage/projection | athletes, coaches, schools, meets, events |
 
-## Solution: Single Decode, Shared Ownership
+The corpus then held ~3.07 M athletes and ~310 K performances; debug-build `serde_json` decode cost
+put repeated decoding of that corpus in the tens of minutes for a full export, and every repeated
+scan was also a second place where scope, cohort and evidence rules could drift.
 
-Decode each Fjall keyspace exactly once into owned Rust vectors. Share references across all
-export consumers via a unified `ExportDataset` struct.
+## What replaced it
 
-```
-Fjall store
-    ↓ (one scan per keyspace)
-ExportDataset { athletes, schools, coaches, events, performances, meets, teams }
-    ↓ (borrowed refs, no re-decode)
-┌─ recruiting::Dataset (athletes, schools, coaches, events)
-├─ bests::Parents (athletes, meets, events, teams)
-├─ performances::Rows (performances + lookup refs)
-├─ coverage::Classification (athletes, coaches, schools, meets, events, performances)
-└─ projection::Report (athletes, coaches, schools)
-```
-
-## API Design
-
-```rust
-pub struct ExportDataset {
-    pub athletes: Vec<CanonicalAthlete>,
-    pub schools: BTreeMap<String, CanonicalSchool>,
-    pub coaches: Vec<CanonicalCoach>,
-    pub events: Vec<CanonicalEvent>,
-    pub performances: Vec<CanonicalPerformance>,
-    pub meets: Vec<CanonicalMeet>,
-    pub teams: BTreeMap<String, CanonicalTeam>,
-    pub generated_on: NaiveDate,
-}
-
-impl ExportDataset {
-    pub fn load(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
-        // One scan per keyspace, apply scope/cohort filters, build in-memory indexes
-    }
-}
-```
-
-Consumers receive slices, not store access:
-
-```rust
-pub fn write_athletes(book: &mut Workbook, athletes: &[CanonicalAthlete], 
-                      schools: &BTreeMap<String, CanonicalSchool>) -> ReportResult<()> { }
-
-pub fn build_bests(performances: &[CanonicalPerformance], parents: &Parents,
-                   options: &Options) -> Vec<SharedSelection> { }
-```
-
-## Benefits
-
-- One decode per keyspace (athletes 1×, performances 1×, etc.)
-- No repeated store.open() calls
-- Consumers work on shared memory — faster, simpler
-- Scope/cohort filtering done once during load, not per-consumer
-- No store lock required during export — all data is in memory
-
-## Migration Path
-
-1. Add `ExportDataset` struct with `load` method
-2. Update consumers to accept slices instead of store
-3. Update `workbook::build` to load dataset once, pass to consumers
-4. Remove store-scanning code from consumers
-5. Keep store path as optional for backwards compatibility during transition
+One `ExportDataset::load(store)` per run, one `Derivation::of(&dataset, scope, grad_year)` per
+(scope, cohort), and consumers that take those by reference. No consumer
+applies scope, cohort, jurisdiction or core-evidence filtering itself, and no consumer scans the
+store for rows. See [ADR-015](adr/ADR-015-export-derivation-single-home.md) for the decision and
+[PERFORMANCE.md](../PERFORMANCE.md) for how the cost of a run is measured and recorded.

@@ -1,8 +1,8 @@
 # Fresh national census — delivery and acceptance plan
 
 Status: binding unfinished delivery contract, **not execution evidence**. This is the only active
-plan. [ARCHITECTURE.md](../ARCHITECTURE.md) owns mission/engineering policy,
-[DOMAIN.md](../DOMAIN.md) owns semantics, and [ADRs](adr/README.md) own decisions.
+plan. [ARCHITECTURE.md](../ARCHITECTURE.md) owns mission, engineering policy and semantics
+(§8–9), and [ADRs](adr/README.md) own decisions.
 [Dated verification](VERIFICATION-EVIDENCE.md) records what actually ran.
 
 ## 1. Run boundary
@@ -77,8 +77,9 @@ stop intake, drain/finalize and persist exact mutually exclusive outcomes on shu
 
 ## 5. Identity, marks, affiliations and contacts
 
-Implement [DOMAIN.md](../DOMAIN.md)'s raw/validated/candidate/accepted separation and constrained
-construction/deserialization. Provider ownership, independent source families, temporal cohort,
+Implement the raw/validated/candidate/accepted separation [ARCHITECTURE.md](../ARCHITECTURE.md)
+§8–9 defines, and constrained construction/deserialization. Provider ownership, independent source
+families, temporal cohort,
 contradictions and reversible decisions survive every consumer. Names/scores/cohort alone never
 accept identity. Review packets preserve structured attribution; token-bag hashing is not equivalent.
 
@@ -233,10 +234,10 @@ counts-only fixture substitutes for these consumer-visible boundaries.
 [The fault catalog](NATIONAL-CENSUS-FAULTS.md) owns all 17 named native scenarios and their required
 phase-boundary subcases. Use owned isolated native non-Docker infrastructure, actual production
 paths and reached injections. A skipped, unselected, simulated substitute or unmeasured lane is not
-PASS. [TESTING.md](../TESTING.md) owns the 12 mandatory proof kernels, proof verdict taxonomy,
-property/fuzz/mutation/security/async gates and command procedures; [PERFORMANCE.md](../PERFORMANCE.md)
-owns measured benchmark baselines. License enforcement is excluded by owner direction, not advisory,
-security, provenance or cargo-vet checks.
+PASS. [tools/gate.sh](../tools/gate.sh) and [xtask](../xtask/README.md) own the 12 mandatory proof
+kernels, proof verdict taxonomy, property/fuzz/mutation/security/async gates and command procedures;
+`xtask`'s perf commands own measured benchmark baselines. License enforcement is excluded by owner
+direction, not advisory, security, provenance or cargo-vet checks.
 
 The current blocking themes are end-to-end durable stage integration, evidence/receipt atomicity,
 identity/cohort/contact correctness, exact mark precision and affiliation, complete source obligations,

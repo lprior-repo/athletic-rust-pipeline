@@ -114,13 +114,6 @@ impl<'a> SheetWriter<'a> {
         Ok(())
     }
 
-    pub(super) fn finish(&mut self, rows: usize, last_column: usize) -> ReportResult<()> {
-        if rows > 0 {
-            self.autofilter(rows, last_column)?;
-        }
-        self.freeze_header()
-    }
-
     fn write_rows(&mut self, rows: &[Vec<Cell>]) -> ReportResult<usize> {
         let last_column = rows
             .iter()

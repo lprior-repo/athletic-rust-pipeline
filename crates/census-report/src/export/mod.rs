@@ -1,3 +1,3 @@
 mod dataset;
 
-pub use dataset::{ExportDataset, ScopedDataset};
+pub use dataset::ExportDataset;

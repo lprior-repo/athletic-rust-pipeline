@@ -1,6 +1,13 @@
 use super::*;
 use census_store::{Store, Table};
 
+fn coaches(store: &Store) -> Vec<CanonicalCoach> {
+    let dataset = crate::export::ExportDataset::load(store).unwrap();
+    let derivation =
+        crate::report::Derivation::of(&dataset, crate::report::Scope::AllSources, None);
+    derivation.coach_observations().to_vec()
+}
+
 #[test]
 fn persisted_currentness_cannot_attach_an_undated_address_in_either_append_order() {
     let current = head("Same owner", Sport::OutdoorTrack, Gender::Boys);
@@ -13,7 +20,7 @@ fn persisted_currentness_cannot_attach_an_undated_address_in_either_append_order
         for record in records {
             store.append(Table::Coaches, record).unwrap();
         }
-        let observations = super::super::coach_observations(&store.snapshot()).unwrap();
+        let observations = coaches(&store);
         let result = selected(&observations, &athlete());
         assert_eq!(result.name, "Same owner");
         assert_eq!(result.email, "");
@@ -43,7 +50,7 @@ fn differing_tenure_interpretations_of_one_capture_survive_the_store_merge() {
         merged[0].tenure_state(year()),
         Err(census_domain::model::TenureAssessmentError::Conflict)
     );
-    let observations = super::super::coach_observations(&store.snapshot()).unwrap();
+    let observations = coaches(&store);
     assert_eq!(
         selected(&observations, &athlete()).state,
         ContactState::ContactTenureConflict
@@ -59,11 +66,8 @@ fn conflicting_persisted_addresses_do_not_collapse_to_the_first_mailbox() {
     let mut second = first.clone();
     second.professional_email = Some("second@example.invalid".into());
     store.append(Table::Coaches, &first).unwrap();
-    let captured = store.snapshot();
     store.append(Table::Coaches, &second).unwrap();
-    let before = super::super::coach_observations(&captured).unwrap();
-    assert_eq!(selected(&before, &athlete()).email, "first@example.invalid");
-    let after = super::super::coach_observations(&store.snapshot()).unwrap();
+    let after = coaches(&store);
     let result = selected(&after, &athlete());
     assert_eq!(result.state, ContactState::ContactConflict);
     assert_eq!(result.email, "");

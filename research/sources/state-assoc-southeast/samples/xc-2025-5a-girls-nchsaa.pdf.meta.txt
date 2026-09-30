@@ -1,0 +1,13 @@
+HTTP/1.1 200 OK
+Date: Tue, 22 Sep 2026 04:00:11 GMT
+Server: Apache/2.4.62 (Rocky Linux) OpenSSL/3.5.5
+Last-Modified: Sat, 01 Nov 2025 16:00:59 GMT
+ETag: "4cc78-6428a969315af"
+Accept-Ranges: bytes
+Content-Length: 314488
+Cache-Control: max-age=31536000
+Expires: Wed, 22 Sep 2027 04:00:11 GMT
+Vary: Accept-Encoding
+Referrer-Policy: no-referrer-when-downgrade
+Content-Type: application/pdf
+

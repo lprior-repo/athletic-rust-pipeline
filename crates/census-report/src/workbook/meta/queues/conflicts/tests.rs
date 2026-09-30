@@ -85,29 +85,20 @@ fn cases() -> Vec<(&'static str, Vec<CanonicalAthlete>)> {
 }
 
 fn family_of(rows: &[CanonicalAthlete]) -> Family {
-    let mut index = census_domain::model::AthleteIdentityIndex::default();
-    for row in rows {
-        index.observe(row).unwrap();
-    }
-    let identities = census_domain::model::IdentityProjectionBuilder::new(index, &[], &[])
-        .unwrap()
-        .finish()
-        .unwrap();
-    let store = StoreRows {
-        schools: Vec::new(),
-        meets: Vec::new(),
-        athletes: rows.to_vec(),
-        identities,
-        school_year: census_domain::model::SchoolYear::new(2026).unwrap(),
-        coaches: Vec::new(),
-        verdicts: Vec::new(),
-    };
-    athlete_identity(&store, &HashMap::new())
+    athlete_identity(&cohort_of_2027(rows), &HashMap::new())
+}
+
+fn cohort_of_2027(rows: &[CanonicalAthlete]) -> Vec<CanonicalAthlete> {
+    rows.iter()
+        .filter(|athlete| athlete.grad_year == GradYear::CO2027)
+        .cloned()
+        .collect()
 }
 
 fn retained_by_key(rows: &[CanonicalAthlete]) -> Vec<String> {
+    let cohort = cohort_of_2027(rows);
     let mut classes: BTreeMap<IdentityKey, Vec<&CanonicalAthlete>> = BTreeMap::new();
-    for athlete in class_of_2027(rows) {
+    for athlete in &cohort {
         classes.entry(key(athlete)).or_default().push(athlete);
     }
     let mut ids: Vec<String> = classes

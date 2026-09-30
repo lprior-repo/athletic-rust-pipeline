@@ -1,0 +1,14 @@
+HTTP/2 404 
+age: 0
+alt-svc: h3=":443"; ma=2592000
+cache-control: no-cache, must-revalidate, max-age=0, no-store, private
+content-type: text/plain; charset=utf-8
+date: Tue, 22 Sep 2026 03:54:17 GMT
+expires: Wed, 11 Jan 1984 05:00:00 GMT
+link: <https://www.wvssac.org/wp-json/>; rel="https://api.w.org/"
+ratelimit-policy: 500; w=1
+v-cache: MISS
+vary: Accept-Encoding
+x-cacheable: NO:UNCACHEABLE
+x-ua-compatible: IE=edge
+

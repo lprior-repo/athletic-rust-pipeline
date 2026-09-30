@@ -1,7 +1,9 @@
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+use census_report::export::ExportDataset;
 use census_report::report;
+use census_report::workbook;
 use census_service::census;
 use census_store::Store;
 use clap::Args;
@@ -12,10 +14,11 @@ use super::live;
 mod publish;
 use super::{build_fetcher, school_year, scope_of, Cli, Route};
 use publish::{
-    publish_bests_and_workbook, publish_bests_and_workbook_live, publish_scope, publish_scope_live,
+    publish_bests_and_workbook_live, publish_bests_and_workbook_with, publish_scope_live,
+    publish_scope_with,
 };
 
-#[derive(Args, Debug)]
+#[derive(Args, Debug, Clone)]
 pub(super) struct RunArgs {
     #[arg(
         help = "Athletic.net athlete registry: one `athlete_id` or `athlete_id,ST` per line. Omitted, the cycle publishes whatever the store already holds"
@@ -70,14 +73,17 @@ pub(super) struct RunArgs {
 pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
-            let store = Store::open(root)?;
-            run_offline(cli, &store, args).await
+            let root = root.to_path_buf();
+            let store = tokio::task::spawn_blocking(move || Store::open(&root))
+                .await
+                .map_err(|error| anyhow::anyhow!("opening the store did not finish: {error}"))??;
+            run_offline(cli, std::sync::Arc::new(store), args).await
         }
         Route::Ingress(origin) => run_live(origin, args).await,
     }
 }
 
-async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
+async fn run_offline(cli: &Cli, store: std::sync::Arc<Store>, args: &RunArgs) -> Result<()> {
     let observed_on = args
         .observed_on
         .clone()
@@ -87,35 +93,88 @@ async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
 
     match (&args.input, args.meets.is_empty()) {
         (Some(_), _) | (None, false) => {
-            gather_athleticnet(cli, store, args, observed_on.clone()).await?
+            gather_athleticnet(cli, &store, args, observed_on.clone()).await?
         }
         (None, true) => {
             println!("gather\tathleticnet\tskipped (no --input): publishing what the store holds")
         }
     }
 
-    let index = census_reconcile::index::derive(store, "run", &observed_on)
+    let stages = std::sync::Arc::clone(&store);
+    let arguments = args.clone();
+    tokio::task::spawn_blocking(move || {
+        offline_stages(&stages, &arguments, &observed_on, grad_year, scope)
+    })
+    .await
+    .map_err(|error| anyhow::anyhow!("the offline stages did not finish: {error}"))?
+}
+
+fn stage_line(name: &str, detail: &str, started: std::time::Instant) {
+    println!("{name}\t{detail}\t{}ms", started.elapsed().as_millis());
+}
+
+fn offline_stages(
+    store: &Store,
+    args: &RunArgs,
+    observed_on: &str,
+    grad_year: i16,
+    scope: report::Scope,
+) -> Result<()> {
+    let total = std::time::Instant::now();
+    derive_index(store, observed_on)?;
+    consolidate_store(store)?;
+    let dataset = load_dataset(store)?;
+
+    let started = std::time::Instant::now();
+    let all_sources = publish_scope_with(&dataset, store, report::Scope::AllSources)?;
+    let core = publish_scope_with(&dataset, store, report::Scope::Core)?;
+    stage_line("reports", "all_sources+core", started);
+    let censuses = workbook::Censuses { core, all_sources };
+
+    let started = std::time::Instant::now();
+    publish_bests_and_workbook_with(&dataset, store, args, scope, grad_year, &censuses)?;
+    stage_line("publish", "bests+workbook", started);
+
+    stage_line("stages", "total", total);
+    Ok(())
+}
+
+fn derive_index(store: &Store, observed_on: &str) -> Result<()> {
+    let started = std::time::Instant::now();
+    let index = census_reconcile::index::derive(store, "run", observed_on)
         .context("deriving the durable indexes")?;
-    println!(
-        "index\tsource_identities={} conflicts={} reviews={} superseded={} coverage={}",
+    let detail = format!(
+        "source_identities={} conflicts={} reviews={} superseded={} coverage={}",
         index.source_identities, index.conflicts, index.reviews, index.superseded, index.coverage
     );
+    stage_line("index", &detail, started);
+    Ok(())
+}
 
+fn consolidate_store(store: &Store) -> Result<()> {
+    let started = std::time::Instant::now();
     let counts = census::consolidate(store).context("consolidating the store")?;
-    println!(
-        "consolidate\t{}",
-        counts
-            .iter()
-            .map(|(table, count)| format!("{table}={count}"))
-            .collect::<Vec<_>>()
-            .join(" ")
+    let detail = counts
+        .iter()
+        .map(|(table, count)| format!("{table}={count}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    stage_line("consolidate", &detail, started);
+    Ok(())
+}
+
+fn load_dataset(store: &Store) -> Result<ExportDataset> {
+    let started = std::time::Instant::now();
+    let dataset = ExportDataset::load(store).context("loading the export dataset")?;
+    let detail = format!(
+        "athletes={} performances={} events={} coaches={}",
+        dataset.athletes.len(),
+        dataset.performances.len(),
+        dataset.events.len(),
+        dataset.coaches.len()
     );
-
-    for scope in [report::Scope::AllSources, report::Scope::Core] {
-        publish_scope(store, scope)?;
-    }
-
-    publish_bests_and_workbook(store, args, scope, grad_year)
+    stage_line("dataset", &detail, started);
+    Ok(dataset)
 }
 
 async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {

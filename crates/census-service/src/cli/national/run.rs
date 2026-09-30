@@ -1,10 +1,11 @@
 use anyhow::{Context, Result};
+use census_crawl::ingress::{CurrentRoute, Ingress};
 use census_reconcile::identity::{admitted_scope, Revision, WorkflowIdentity};
 use census_service::restate_services::{
     JurisdictionCensusIngressClient, JurisdictionRequest, NationalCensusIngressClient,
     NationalReport, NationalRequest,
 };
-use restate_sdk::ingress::{InvocationHandle, ReqwestClient, SendStatus};
+use restate_sdk::ingress::{InvocationHandle, SendStatus};
 use restate_sdk::prelude::*;
 
 use super::observe::{observe, observe_jurisdiction, Watch};
@@ -14,9 +15,9 @@ use crate::cli::Cli;
 use census_service::ingress;
 
 pub(crate) async fn attach_existing(
-    ingestion: &ReqwestClient,
+    ingestion: &Ingress,
     identity: &WorkflowIdentity,
-) -> Result<InvocationHandle<reqwest::Client, Json<NationalReport>>> {
+) -> Result<InvocationHandle<CurrentRoute, Json<NationalReport>>> {
     let handle = ingestion.invocation_handle(identity.as_str().to_string());
     match handle.output().await {
         Ok(_) => Ok(handle),
@@ -26,10 +27,10 @@ pub(crate) async fn attach_existing(
 }
 
 pub(crate) async fn submit_national(
-    ingestion: &ReqwestClient,
+    ingestion: &Ingress,
     identity: &WorkflowIdentity,
     request: NationalRequest,
-) -> Result<InvocationHandle<reqwest::Client, Json<NationalReport>>> {
+) -> Result<InvocationHandle<CurrentRoute, Json<NationalReport>>> {
     let national = NationalCensusIngressClient::from_client(ingestion.clone(), identity.as_str());
     let handle = match national.run(Json(request)).send().await {
         Ok(submitted) => {
@@ -70,6 +71,7 @@ pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
         concurrency: args.concurrency,
         observed_on: None,
         authorized_hosts: cli.authorized_hosts.clone(),
+        source_parallelism: cli.source_parallelism,
     };
     let handle = submit_national(&ingestion, &identity, request).await?;
     println!(
@@ -108,6 +110,7 @@ pub(crate) async fn run_jurisdiction(cli: &Cli, args: &JurisdictionArgs) -> Resu
         concurrency: args.concurrency,
         observed_on: None,
         authorized_hosts: cli.authorized_hosts.clone(),
+        source_parallelism: cli.source_parallelism,
     };
     let object = JurisdictionCensusIngressClient::from_client(ingestion, identity.as_str());
     let submitted = object

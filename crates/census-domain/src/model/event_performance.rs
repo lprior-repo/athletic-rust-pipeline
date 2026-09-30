@@ -146,12 +146,10 @@ fn mark_kind_compatible(kind: &EventKind, mark: &Mark) -> bool {
     }
 }
 
-fn valid_date(date: &str) -> bool {
-    chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").is_ok()
-}
+use super::dates::valid_date;
 
 impl CanonicalPerformance {
-#[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         athlete: &AthleteId,
         team: &TeamId,
@@ -167,7 +165,7 @@ impl CanonicalPerformance {
         debug_assert!(!date.is_empty(), "performance date must not be empty");
         debug_assert!(
             valid_date(date),
-            "performance date {date:?} is not a valid ISO date"
+            "performance date {date:?} is not a valid ISO date or year"
         );
         let id = CanonicalPerformance::mint(athlete, meet, event_kind, date, source_key);
         Self {
@@ -191,7 +189,7 @@ impl CanonicalPerformance {
         }
     }
 
-#[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_checked(
         athlete: &AthleteId,
         event_kind: &EventKind,
@@ -208,7 +206,9 @@ impl CanonicalPerformance {
             return Err("performance date must not be empty".to_string());
         }
         if !valid_date(date) {
-            return Err(format!("performance date {date:?} is not a valid ISO date"));
+            return Err(format!(
+                "performance date {date:?} is not a valid ISO date or year"
+            ));
         }
         let id = CanonicalPerformance::mint(athlete, meet, event_kind, date, source_key);
         Ok(Self {

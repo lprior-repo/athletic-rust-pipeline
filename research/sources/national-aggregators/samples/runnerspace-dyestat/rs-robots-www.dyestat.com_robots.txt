@@ -1,0 +1,14 @@
+User-agent: *
+Disallow: /staging/
+Disallow: /custom/
+Disallow: /forum/
+Disallow: /attach.php
+Disallow: /rss.php
+Disallow: /ajax.php
+
+Crawl-delay: 10
+
+User-agent: Amazonbot
+User-agent: ltx71 - (http://ltx71.com/)
+User-agent: SEOkicks
+Disallow: /

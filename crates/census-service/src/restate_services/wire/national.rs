@@ -3,7 +3,7 @@ use census_domain::UsJurisdiction;
 use census_reconcile::identity::Revision;
 use serde::{Deserialize, Serialize};
 
-use super::default_concurrency;
+use super::{default_concurrency, default_source_parallelism};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NationalRequest {
@@ -21,6 +21,8 @@ pub struct NationalRequest {
     pub observed_on: Option<String>,
     #[serde(default)]
     pub authorized_hosts: Vec<String>,
+    #[serde(default = "default_source_parallelism")]
+    pub source_parallelism: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

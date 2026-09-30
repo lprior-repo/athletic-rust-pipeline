@@ -1,0 +1,66 @@
+enum: crates/census-domain/src/jurisdiction.rs -> 51 code() arms
+navinfo: har1-getnavinfo-wi-2026-hs-boys.json -> 53 divType=='State' nodes (52 under regions[], 1 elsewhere)
+
+nav_path         nav_id  state  enum                      ok  subDivType
+regions[1]       168417  AL     AL                        yes Associations
+regions[2]       168476  AK     AK                        yes Regions
+regions[3]       168493  AZ     AZ                        yes Conferences
+regions[4]       168503  AR     AR                        yes Classes
+regions[5]       168546  CA     CA                        yes Sections
+regions[16]      168811  CO     CO                        yes Classes
+regions[17]      168817  CT     CT                        yes Classes
+regions[18]      168823  DE     DE                        yes Divisions
+regions[19]      168833  DC     DC                        yes Leagues
+regions[20]      168842  FL     FL                        yes Classes
+regions[21]      168928  GA     GA                        yes Associations
+regions[22]      169013  HI     HI                        yes Regions
+regions[23]      169019  ID     ID                        yes Divisions
+regions[24]      169070  IL     IL                        yes Class
+regions[25]      169137  IN     IN                        yes Regions
+regions[26]      169178  IA     IA                        yes Class
+regions[27]      169215  KS     KS                        yes Associations
+regions[28]      169249  KY     KY                        yes Classes
+regions[29]      169275  LA     LA                        yes Classes
+regions[30]      169369  ME     ME                        yes Classes
+regions[31]      169373  MD     MD                        yes Associations
+regions[32]      169400  MA     MA                        yes Districts
+regions[33]      169407  MI     MI                        yes Peninsula
+regions[34]      169465  MN     MN                        yes Classes
+regions[35]      169493  MS     MS                        yes Associations
+regions[36]      169578  MO     MO                        yes Associations
+regions[37]      169651  MT     MT                        yes Classes
+regions[38]      169689  NE     NE                        yes Divisions
+regions[39]      169722  NV     NV                        yes Divisions
+regions[40]      169739  NH     NH                        yes Classes
+regions[41]      169743  NJ     NJ                        yes Classes
+regions[42]      169769  NM     NM                        yes Classes
+regions[43]      169804  NY     NY                        yes Associations
+regions[49]      169903  NC     NC                        yes Schools
+regions[50]      170039  ND     ND                        yes Classes
+regions[51]      170050  OH     OH                        yes Divisions
+regions[52]      170117  OK     OK                        yes Classes
+regions[53]      170124  OR     OR                        yes Divisions
+regions[54]      170162  None   <none>                    OUT Schools
+regions[55]      170180  PA     PA                        yes Schools
+regions[56]      170206  RI     RI                        yes Leagues
+regions[57]      170211  SC     SC                        yes Associations
+regions[58]      170271  SD     SD                        yes Classes
+regions[59]      170275  TN     TN                        yes Classes
+regions[60]      170305  TX     TX                        yes Associations
+regions[69]      170581  UT     UT                        yes Divisions
+regions[70]      170610  VT     VT                        yes Divisions
+regions[71]      170614  VA     VA                        yes 
+regions[72]      170658  WA     WA                        yes Divisions
+regions[73]      170754  WV     WV                        yes Classes
+regions[74]      170770  WI     WI                        yes Divisions
+regions[75]      170838  WY     WY                        yes Classes
+tree[0]          170770  WI     WI                        yes Divisions
+
+regions[] divType=='State': 52 (51 mapped, 1 out of scope)
+divType=='State' outside regions[]: [('tree[0]', 170770, 'Wisconsin')] (selected region echoed in tree[])
+out of scope: Overseas (170162) - state=null, not one of the 51 jurisdictions
+distinct USPS codes in regions[]: 51
+enum codes with no nav entry: []
+regions[] states not in enum: []
+tree[] ids not in regions[]: []
+wrote checks-state-divs.tsv (52 data rows)

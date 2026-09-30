@@ -1,0 +1,10 @@
+HTTP/2 200 
+x-pingback: https://schsl.org/xmlrpc.php
+link: <https://schsl.org/wp-json/>; rel="https://api.w.org/", <https://schsl.org/wp-json/wp/v2/posts/4541>; rel="alternate"; title="JSON"; type="application/json", <https://schsl.org/?p=4541>; rel=shortlink
+cache-control: max-age=3600
+expires: Tue, 22 Sep 2026 05:00:58 GMT
+vary: Accept-Encoding
+content-type: text/html; charset=UTF-8
+date: Tue, 22 Sep 2026 04:00:58 GMT
+server: Apache
+

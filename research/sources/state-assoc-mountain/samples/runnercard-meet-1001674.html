@@ -1,0 +1,517 @@
+<html>
+	<head>
+		<link rel="shortcut icon" href="/favicon.ico"/>
+		<LINK REL="styleSheet" HREF="/runner.css?v=2" TYPE="text/css">
+			<title>RunnerCard.com Web Registration</title>
+		<script src="/jquery.js"></script>
+		<script>
+			function jumpToResults()
+			{
+				window.location.href = "/e/runner.Main?results=" + document.getElementById("result_year").value;
+			}
+			$(function(){
+				$(".more_results_link").click(function(event){
+					event.preventDefault();
+					$(".more_results_link").hide(500);
+					$(".hidden_results").slideDown(500);
+					return false;
+				});
+			});
+		</script>
+	</head>
+	<body bgcolor="#ffffff" marginheight="0" marginwidth="0" leftmargin="0" topmargin="0">
+		<center>
+			<table cellpadding="0" cellspacing="0" border="0" ID="Table1">
+				<tr>
+					<td><A href="/"><img src="/imagesblue/runlogo.gif" WIDTH="289" HEIGHT="59" border="0"></A></td>
+					<td><img src="/imagesblue/topspace.gif" WIDTH="282" HEIGHT="59"></td>
+					<td><img src="/imagesblue/runners.gif" WIDTH="189" HEIGHT="59"></td>
+				</tr>
+			</table>
+			<table cellpadding="0" cellspacing="0" border="0" ID="Table2">
+				<tr>
+					<!--<td><a href="/"><img src="/imagesblue/home.gif" WIDTH="44" HEIGHT="17" border="0"></a></td>
+				<td><a href="http://www.runnercard.com/about_web.htm" target="_blanK"><img src="/imagesblue/about.gif" WIDTH="53" HEIGHT="17" border="0"></a></td>
+				<td><a href="/servlet/runner.Universal?goto=contact" target="_blank"><img src="/imagesblue/contact.gif" WIDTH="61" HEIGHT="17" border="0"></a></td>
+				<td><img src="/imagesblue/bar.gif" WIDTH="602" HEIGHT="17"></td>-->
+					<td><img src="/imagesblue/bar.gif" WIDTH="760" HEIGHT="10"></td>
+				</tr>
+			</table>
+			<table width="760" cellpadding="0" cellspacing="0" border="0" height="100%">
+				<tr>
+					<td width="127" height="100%" align="center" valign="top" bgcolor="#ffffff">
+						<br>
+						<table cellpadding="0" cellspacing="0" border="0" bgcolor="E3E3E3">
+							<tr>
+								<td colspan="4"><img src="/imagesblue/navhead.gif"></td>
+							</tr>
+							<tr>
+								<td background="/imagesblue/dot.gif" WIDTH="1" HEIGHT="1"><img src="/imagesblue/dot.gif"></td>
+								<td width="158" align="left" valign="top">
+									<font size="1">
+										<br>
+									</font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="runner.Main" class="nav"><img src="/images/home.gif" border="0">&nbsp;HOME</a>
+									<br>
+									<font size="1">
+										<br>
+									</font>
+									<table cellpadding="0" cellspacing="0" border="0" bgcolor="cccccc" width="100%">
+										<tr>
+											<td align="left">&nbsp;<font class="navheader">PRODUCTS</font>
+											</td>
+										</tr>
+									</table>
+									&nbsp;&nbsp;&nbsp;<a href="/about_timing.htm" class="nav">Event 
+										Timing</a>
+									<br>
+									&nbsp;&nbsp;&nbsp;<a href="/about_web.htm" class="nav">Web 
+										Registration</a>
+									<br>
+									<font size="1">
+										<br>
+									</font>
+									<table cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="cccccc" ID="Table4">
+										<tr>
+											<td align="left">&nbsp;<font class="navheader">CLASSIFICATIONS</font>
+											</td>
+										</tr>
+									</table>
+									&nbsp;&nbsp;&nbsp;<a href="/e/runner.Main?class=11" class="nav">High School-Jr High</a><br>
+ <font size="1">
+										<br>
+									</font>
+									<table cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="cccccc" ID="Table5">
+										<tr>
+											<td align="left">&nbsp;<font class="navheader">RESULTS</font>
+											</td>
+										</tr>
+									</table>
+									&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2026' class='nav'>2026</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2025' class='nav'>2025</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2024' class='nav'>2024</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2023' class='nav'>2023</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2022' class='nav'>2022</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2021' class='nav'>2021</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2020' class='nav'>2020</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2019' class='nav'>2019</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2018' class='nav'>2018</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2017' class='nav'>2017</a><br />
+<div class='more_results_link'>&nbsp;&nbsp;&nbsp;<a href='#' class='nav'>More Results</a><br></div>
+<div class='hidden_results'>
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2016' class='nav'>2016</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2015' class='nav'>2015</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2014' class='nav'>2014</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2013' class='nav'>2013</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2012' class='nav'>2012</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2011' class='nav'>2011</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2010' class='nav'>2010</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2009' class='nav'>2009</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2008' class='nav'>2008</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2007' class='nav'>2007</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2006' class='nav'>2006</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2005' class='nav'>2005</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2004' class='nav'>2004</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2003' class='nav'>2003</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2002' class='nav'>2002</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2001' class='nav'>2001</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=2000' class='nav'>2000</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=1999' class='nav'>1999</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=1998' class='nav'>1998</a><br />
+&nbsp;&nbsp;&nbsp;<a href='/e/runner.Main?results=1997' class='nav'>1997</a><br />
+</div>
+
+									<br>
+<!--
+									&nbsp;<a href="/e/runner.ContactUs" class="nav" target="_blank">Contact us</a>
+-->
+									&nbsp;<a href="https://runnercard.com/roadrace/public/aboutUs" class="nav" target="_blank">Contact us</a>
+
+
+
+
+									<br>
+									&nbsp;<a href="/Links.htm" class="nav">Links</a>
+									<br>
+									<br>
+								</td>
+								<td background="/imagesblue/dot.gif" width="1"><img src="/imagesblue/dot.gif"></td>
+							</tr>
+							<tr>
+								<td colspan="4"><img src="/imagesblue/navhead2.gif"></td>
+							</tr>
+						</table>
+						<br>
+						<img src="/e/runner.Count?page=MEET:1001674">
+					</td>
+					<td width="13">
+						&nbsp;
+					</td>
+					<td width="463" height="100%" align="left" valign="top">
+						<br>
+						<table border=0 cellpadding=3 cellspacing=1 bgcolor="#CCCCCC" width=100%><tr bgcolor="#8697B7" height=40><td>&nbsp;&nbsp;<font size=3 face="arial,helvetica" color=000000><b>2018 Utah UHSAA State T&F Championships</b></font><br><table><tr><td align=center><a href="http://www.byutrack.com/various/Special/Meet_Info/2017-18/State/State-18.htm" target=_blank class="blacklink">schedule</a>&nbsp;&nbsp;</td><td align=center><a href="http://www.runnercard.com/ViewResults.html?meetid=1001674&class=server" target=_blank class="blacklink">results</a>&nbsp;&nbsp;</td></tr></table></td></tr><tr bgcolor="efefef"><td align=middle><table><tr><td><div style='font-size:14pt; font-family:arial,helvetica; color:#333333; font-style:italic; font-weight:bolder; text-align:center'>Signup is closed</div><br /><font size=2 face="arial,helvetica"><b><li>Location:</b></font>&nbsp;&nbsp;<font size=2 face="arial,helvetica">&nbsp;&nbsp;Clarence Robison Track - BYU, Provo, UT.&nbsp;&nbsp;&nbsp;</font><br><font size=2 face="arial,helvetica"><b><li>Date:&nbsp</b><font size=2 face="arial,helvetica">May 17, 2018 @ see schedule.</font><br><font size=2 face="arial,helvetica"><b><li>Gender:&nbsp</b>Male & Female</font><br><font size=2 face="arial,helvetica"><b><li>Each team is allowed &nbsp</b>unlimited number of<b>&nbsp;entries in the meet</b></font><br><font size=2 face="arial,helvetica"><b><li>Each athlete is allowed to sign up in&nbsp</b>4<b>&nbsp;events</b></font><br><br><font size=2 face="arial,helvetica"><b>Meet Director Contact Information:</b><br>&nbsp;&nbsp;<font size=2 face="arial,helvetica">Name: Jon Oglesby</font><br>&nbsp;&nbsp;<font size=2 face="arial,helvetica">Phone: contact UHSAA</font><br>&nbsp;&nbsp;<font size=2 face="arial,helvetica">Cell Phone: </font><br>&nbsp;&nbsp;<font size=2 face="arial,helvetica">Email: <a href="mailto:contact UHSAA">contact UHSAA</a></font><br><br><font size=2 face="arial,helvetica"><b>Note From Meet Director:</b><br><br><br>
+Registration will open on Monday, May 7th, at 8:00 a.m.  <br>
+Registration will close on Sunday, May 13th, at 8:00 p.m., MDT.
+<br><br>
+Entries will reopen for changes and corrections on Monday, May 14th, at 5:00 p.m. and will remain open until 7:00 p.m.  
+<br><br>
+If an athlete qualified by mark, the qualifying mark, meet and date should be listed.  Only a valid qualifying mark should be submitted.  If an athlete qualified by place at Region, then the mark from the region meet, Region meet name and place at Region should be entered (for example: 4:20.6, Region 8, 3rd). Again, if a contestant qualified by place at the region meet, their mark at the Region meet is the mark that must be entered, even if the mark is wind-aided.
+<br><br>
+If you believe that an athlete that is registered into the meet has an invalid seed mark, please contact the UHSAA with the challenge.
+<br><br>
+</font><br></td></tr></table></td></tr></table><table><tr><td valign=top><table border=0 cellpadding=3 cellspacing=1 bgcolor="#CCCCCC"><tr class=head><td colspan=4>TEAMS</td></tr>
+<tr class=sub><td>team name</td><td>ath</td><td>par</td><td>rel</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=21091&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Altamont HS</a></td><td>2</td><td>2</td><td>5</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=19226&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">American Leadership Academy</a></td><td>3</td><td>3</td><td>0</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=9455&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Brighton HS</a></td><td>1</td><td>2</td><td>2</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=2193&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Clearfield HS</a></td><td>2</td><td>2</td><td>4</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=19895&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Cyprus HS</a></td><td>6</td><td>8</td><td>6</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=20619&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Emery HS</a></td><td>8</td><td>11</td><td>1</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=16799&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">EskDale HS</a></td><td>2</td><td>3</td><td>0</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=14904&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Green River HS</a></td><td>1</td><td>2</td><td>1</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=11584&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Highland HS</a></td><td>11</td><td>20</td><td>4</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=21110&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Jordan HS</a></td><td>1</td><td>1</td><td>3</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=19923&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Mountain Crest HS</a></td><td>1</td><td>2</td><td>1</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=3278&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Parowan HS</a></td><td>3</td><td>4</td><td>3</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=21029&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Provo HS</a></td><td>3</td><td>9</td><td>4</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=15080&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Rockwell HS</a></td><td>1</td><td>2</td><td>5</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=20390&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Skyline HS</a></td><td>2</td><td>4</td><td>0</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=18464&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Syracuse HS</a></td><td>1</td><td>3</td><td>6</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=13844&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Tabiona HS</a></td><td>19</td><td>41</td><td>3</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=21392&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Telos</a></td><td>3</td><td>4</td><td>0</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=18655&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Tintic HS</a></td><td>11</td><td>22</td><td>5</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=21218&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">West  Ridge Academy</a></td><td>2</td><td>3</td><td>0</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=20730&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">West HS</a></td><td>5</td><td>7</td><td>5</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=21079&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">West Ridge Academy</a></td><td>1</td><td>1</td><td>0</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=9811&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Whitehorse HS</a></td><td>10</td><td>13</td><td>1</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&team=indi&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Individual Registrations</a></td><td>0</td><td>0</td><td>0</td></tr>
+<tr class=main1><td><b>Total</b></td><td><b>99</b></td><td><b>169</b></td><td><b>59</b></td></tr>
+<tr class=main2><td colspan=4><b>ath:</b> # of athletes attending meet</td></tr>
+<tr class=main2><td colspan=4><b>par:</b> total # of participations for team</td></tr>
+<tr class=main2><td colspan=4><b>rel:</b> # of relay teams</td></tr>
+</table></td><td>&nbsp;</td><td valign=top><table border=0 cellpadding=3 cellspacing=1 bgcolor="#CCCCCC"><tr class=head><td colspan=2>Events</td></tr>
+<tr class=sub><td>event name</td><td>par</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248006&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 1A (B)</a></td><td>20</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248007&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 1A (G)</a></td><td>23</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248008&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 2A (B)</a></td><td>13</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248009&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 2A (G)</a></td><td>11</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248010&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 3A (B)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248011&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 3A (G)</a></td><td>14</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248012&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 4A (B)</a></td><td>20</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248013&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 4A (G)</a></td><td>18</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248015&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 5A (G)</a></td><td>16</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248014&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 5A (B)</a></td><td>19</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248532&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 6A (G)</a></td><td>26</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248531&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 meter 6A (B)</a></td><td>27</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248036&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 Meter Hurdles 1A (G)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248037&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 Meter Hurdles 2A (G)</a></td><td>11</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248038&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 Meter Hurdles 3A (G)</a></td><td>12</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248039&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 Meter Hurdles 4A (G)</a></td><td>16</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248040&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 Meter Hurdles 5A (G)</a></td><td>16</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248537&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">100 Meter Hurdles 6A (G)</a></td><td>16</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248041&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">110 Meter Hurdles 1A (B)</a></td><td>18</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248042&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">110 Meter Hurdles 2A (B)</a></td><td>12</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248043&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">110 Meter Hurdles 3A (B)</a></td><td>14</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248044&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">110 Meter Hurdles 4A (B)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248045&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">110 Meter Hurdles 5A (B)</a></td><td>18</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248538&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">110 Meter Hurdles 6A (B)</a></td><td>21</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248067&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 1A (G)</a></td><td>18</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248066&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 1A (B)</a></td><td>21</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248069&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 2A (G)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248068&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 2A (B)</a></td><td>14</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248070&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 3A (B)</a></td><td>13</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248071&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 3A (G)</a></td><td>13</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248072&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 4A (B)</a></td><td>22</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248073&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 4A (G)</a></td><td>23</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248074&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 5A (B)</a></td><td>22</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248075&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 5A (G)</a></td><td>22</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248543&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 6A (B)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248544&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">1600 meter 6A (G)</a></td><td>22</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248017&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 1A (G)</a></td><td>20</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248016&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 1A (B)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248019&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 2A (G)</a></td><td>13</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248018&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 2A (B)</a></td><td>13</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248020&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 3A (B)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248021&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 3A (G)</a></td><td>15</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248022&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 4A (B)</a></td><td>21</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248023&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 4A (G)</a></td><td>21</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248024&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 5A (B)</a></td><td>20</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248025&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 5A (G)</a></td><td>17</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248534&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 6A (G)</a></td><td>25</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248533&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">200 meter 6A (B)</a></td><td>27</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248047&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 1A (G)</a></td><td>17</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248046&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 1A (B)</a></td><td>17</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248049&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 2A (G)</a></td><td>14</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248048&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 2A (B)</a></td><td>12</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248051&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 3A (G)</a></td><td>13</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248050&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 3A (B)</a></td><td>12</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248052&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 4A (B)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248053&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 4A (G)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248054&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 5A (B)</a></td><td>18</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248055&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 5A (G)</a></td><td>18</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248540&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 6A (G)</a></td><td>17</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248539&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">300 Meter Hurdles 6A (B)</a></td><td>19</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248077&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 1A (G)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248076&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 1A (B)</a></td><td>19</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248079&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 2A (G)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248078&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 2A (B)</a></td><td>13</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248080&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 3A (B)</a></td><td>14</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248081&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 3A (G)</a></td><td>13</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248082&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 4A (B)</a></td><td>21</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248083&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 4A (G)</a></td><td>22</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248084&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 5A (B)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248085&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 5A (G)</a></td><td>21</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248546&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 6A (G)</a></td><td>24</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248545&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">3200 meter 6A (B)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248027&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 1A (G)</a></td><td>17</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248026&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 1A (B)</a></td><td>19</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248028&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 2A (B)</a></td><td>13</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248029&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 2A (G)</a></td><td>12</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248030&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 3A (B)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248031&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 3A (G)</a></td><td>11</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248032&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 4A (B)</a></td><td>17</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248033&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 4A (G)</a></td><td>18</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248034&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 5A (B)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248035&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 5A (G)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248535&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 6A (B)</a></td><td>17</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248536&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">400 meter 6A (G)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248057&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 1A (G)</a></td><td>20</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248056&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 1A (B)</a></td><td>19</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248058&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 2A (B)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248059&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 2A (G)</a></td><td>17</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248061&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 3A (G)</a></td><td>14</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248060&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 3A (B)</a></td><td>15</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248062&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 4A (B)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248063&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 4A (G)</a></td><td>24</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248064&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 5A (B)</a></td><td>17</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248065&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 5A (G)</a></td><td>25</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248541&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 6A (B)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248542&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">800 meter 6A (G)</a></td><td>23</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248122&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 1A (G)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248121&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 1A (B)</a></td><td>18</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248123&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 2A (B)</a></td><td>13</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248124&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 2A (G)</a></td><td>12</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248126&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 3A (G)</a></td><td>13</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248125&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 3A (B)</a></td><td>12</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248127&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 4A (B)</a></td><td>23</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248128&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 4A (G)</a></td><td>16</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248130&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 5A (G)</a></td><td>18</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248129&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 5A (B)</a></td><td>19</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248557&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 6A (B)</a></td><td>18</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248558&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Discus 6A (G)</a></td><td>18</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248091&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 1A (B)</a></td><td>16</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248092&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 1A (G)</a></td><td>16</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248094&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 2A (G)</a></td><td>11</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248093&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 2A (B)</a></td><td>11</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248095&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 3A (B)</a></td><td>16</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248096&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 3A (G)</a></td><td>16</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248098&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 4A (G)</a></td><td>28</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248097&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 4A (B)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248100&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 5A (G)</a></td><td>21</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248099&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 5A (B)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248559&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 6A (B)</a></td><td>23</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248560&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">High Jump 6A (G)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248132&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 1A (G)</a></td><td>18</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248131&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 1A (B)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248134&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 2A (G)</a></td><td>13</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248133&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 2A (B)</a></td><td>14</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248136&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 3A (G)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248135&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 3A (B)</a></td><td>14</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248137&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 4A (B)</a></td><td>24</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248138&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 4A (G)</a></td><td>16</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248140&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 5A (G)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248139&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 5A (B)</a></td><td>18</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248553&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 6A (B)</a></td><td>18</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248554&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Javelin 6A (G)</a></td><td>16</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248101&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 1A (B)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248102&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 1A (G)</a></td><td>22</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248104&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 2A (G)</a></td><td>13</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248103&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 2A (B)</a></td><td>14</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248105&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 3A (B)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248106&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 3A (G)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248108&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 4A (G)</a></td><td>22</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248107&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 4A (B)</a></td><td>26</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248109&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 5A (B)</a></td><td>22</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248110&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 5A (G)</a></td><td>16</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248563&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 6A (B)</a></td><td>21</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248564&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Long Jump 6A (G)</a></td><td>20</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248141&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 1A (G)</a></td><td>0</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248086&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 1A (B)</a></td><td>0</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248087&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 2A (B)</a></td><td>0</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248142&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 2A (G)</a></td><td>0</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248088&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 3A (B)</a></td><td>0</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248143&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 3A (G)</a></td><td>0</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248144&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 4A (G)</a></td><td>6</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248089&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 4A (B)</a></td><td>5</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248145&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 5A (G)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248090&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 5A (B)</a></td><td>9</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248561&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 6A (B)</a></td><td>17</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248562&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Pole Vault 6A (G)</a></td><td>26</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248111&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 1A (B)</a></td><td>18</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248112&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 1A (G)</a></td><td>18</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248113&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 2A (B)</a></td><td>11</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248114&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 2A (G)</a></td><td>13</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248115&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 3A (B)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248116&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 3A (G)</a></td><td>14</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248118&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 4A (G)</a></td><td>17</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248117&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 4A (B)</a></td><td>25</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248120&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 5A (G)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248119&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 5A (B)</a></td><td>18</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248556&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 6A (G)</a></td><td>19</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&event=248555&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Shot Put 6A (B)</a></td><td>15</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248146&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 1A (B)</a></td><td>7</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248147&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 1A (G)</a></td><td>11</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248148&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 2A (B)</a></td><td>12</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248149&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 2A (G)</a></td><td>10</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248150&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 3A (B)</a></td><td>8</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248151&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 3A (G)</a></td><td>10</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248153&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 4A (G)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248152&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 4A (B)</a></td><td>17</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248154&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 5A (B)</a></td><td>14</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248155&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 5A (G)</a></td><td>13</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248551&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 6A (B)</a></td><td>14</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248552&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x100 6A (G)</a></td><td>14</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248157&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 1A (G)</a></td><td>8</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248156&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 1A (B)</a></td><td>8</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248158&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 2A (B)</a></td><td>11</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248159&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 2A (G)</a></td><td>8</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248160&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 3A (B)</a></td><td>9</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248161&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 3A (G)</a></td><td>9</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248162&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 4A (B)</a></td><td>16</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248163&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 4A (G)</a></td><td>15</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248164&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 5A (B)</a></td><td>13</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248165&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 5A (G)</a></td><td>14</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248548&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 6A (G)</a></td><td>15</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248547&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">4x400 6A (B)</a></td><td>15</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248167&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 1A (G)</a></td><td>7</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248166&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 1A (B)</a></td><td>9</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248168&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 2A (B)</a></td><td>10</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248169&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 2A (G)</a></td><td>14</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248170&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 3A (B)</a></td><td>10</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248171&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 3A (G)</a></td><td>9</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248173&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 4A (G)</a></td><td>18</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248172&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 4A (B)</a></td><td>17</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248175&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 5A (G)</a></td><td>13</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248174&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 5A (B)</a></td><td>14</td></tr>
+<tr class=main1><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248549&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 6A (B)</a></td><td>16</td></tr>
+<tr class=main2><td><a href="javascript:theNewWin = this.open('runner.Reports?goto=meetTeam&d=&revent=248550&meet=1001674', 'theNewWin', 'toolbar=yes,menubar=yes,location=no,scrollbars=yes,resizable=yes,width=660,height=450');theNewWin.focus();" class="greenLinkText">Sprint Medley Relay 2-2-4-8 6A (G)</a></td><td>15</td></tr>
+<tr class=main1><td><b>Total</b></td><td><b>3273</b></td></tr>
+<tr class=main2><td colspan=2><b>par:</b> # of participations for event</td></tr>
+</table></td></tr></table>
+					</td>
+					<td width="10">
+						&nbsp;
+					</td>
+					<td width="147" align="center" valign="top">
+						<br>
+						<table cellpadding="0" cellspacing="0" border="0">
+							<tr>
+								<td>
+									<table cellpadding="0" cellspacing="0" border="0" bgcolor="E3E3E3">
+										<tr>
+											<td colspan="3"><img src="/imagesblue/existing_small.gif"></td>
+										</tr>
+										<tr height="90">
+											<td background="/imagesblue/dot.gif" WIDTH="1" HEIGHT="1"><img src="/imagesblue/dot.gif"></td>
+											<td width="145" align="center" valign="top">
+												<form action="runner.Login" method="post" name="loginForm" ID="Form1">
+													<table cellpadding="0" cellspacing="0" border="0" bgcolor="E3E3E3" ID="Table3">
+														<tr>
+															<td height="10">&nbsp;</td>
+														</tr>
+														<tr>
+															<td align="left">
+																<font size="3" color="000000" face="arial,helvetica">&nbsp;&nbsp;User Name:</font>
+															</td>
+														</tr>
+														<tr>
+															<td>
+																&nbsp;&nbsp;<input type="text" name="user" size="12" ID="Text1">
+															</td>
+														</tr>
+														<tr><td>&nbsp;</td></tr>
+														<tr>
+															<td align="left">
+																<font size="3" color="000000" face="arial,helvetica">&nbsp;&nbsp;Password:</font>
+															</td>
+														</tr>
+														<tr>
+															<td>
+																&nbsp;&nbsp;<input type="password" name="pass" size="12" ID="Password1">&nbsp;&nbsp;
+															</td>
+														</tr>
+														<tr>
+															<td height="10">&nbsp;<input type="hidden" name="remem" value="" ID="Hidden1"></td>
+														</tr>
+														<tr>
+															<td align="center"><input type="submit" value="LOGIN" ID="Submit1" NAME="Submit1"></td>
+														</tr>
+														<tr>
+															<td>&#160;</td>
+														</tr>
+														<tr>
+															<td align="center">
+																<a href="/runner/forgotPass.html" class="nav">Forgot Password?</a><br>
+																<a href="/runner/forgotUser.html" class="nav">Forgot Username?</a>
+														</tr>
+													</table>
+												</form>
+											</td>
+											<td background="/imagesblue/dot.gif" WIDTH="1" HEIGHT="1"><img src="/imagesblue/dot.gif"></td>
+										</tr>
+										<tr>
+											<td background="/imagesblue/dot.gif" HEIGHT="1" colspan="3"><img src="/imagesblue/dot.gif"></td>
+										</tr>
+									</table>
+									<br>
+									<table cellpadding="0" cellspacing="0" border="0" bgcolor="E3E3E3">
+										<tr>
+											<td colspan="3"><img src="/imagesblue/newusers.gif"></td>
+										</tr>
+										<tr height="50">
+											<td background="/imagesblue/dot.gif" WIDTH="1" HEIGHT="1"><img src="/imagesblue/dot.gif"></td>
+											<td width="145" align="center" valign="top">
+												<br>
+												<table cellpadding="0" cellspacing="o" border="0" width="100%">
+													<tr>
+														<td align="center">
+															<table cellpadding="0" cellspacing="o" border="0">
+																<tr bgcolor="#ffff66">
+																	<td>
+																		&nbsp;&nbsp;&nbsp;<a href="runner.Signup"><font size="3" color="000000" face="arial,helvetica">Create 
+																				Account</font></a>&nbsp;&nbsp;&nbsp;
+																	</td>
+																</tr>
+																<tr>
+																	<td>&nbsp;</td>
+																</tr>
+																<tr>
+																	<td>
+																		&nbsp;&nbsp;&nbsp;<a href="javascript:theNewWin=this.open('runner.Universal?goto=help&file=m-help.html','theNewWin','toolbar=no,menubar=no,location=no,scrollbars=yes,resizable=yes,width=450,height=550');theNewWin.focus();"><img src="/images/help2.gif" border="0"></a>&nbsp;&nbsp;&nbsp;
+																	</td>
+																</tr>
+																<tr>
+																	<td>
+																		&nbsp;
+																	</td>
+																</tr>
+															</table>
+														</td>
+													</tr>
+												</table>
+											</td>
+											<td background="/imagesblue/dot.gif" WIDTH="1" HEIGHT="1"><img src="/imagesblue/dot.gif"></td>
+										</tr>
+										<tr>
+											<td background="/imagesblue/dot.gif" HEIGHT="1" colspan="3"><img src="/imagesblue/dot.gif"></td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+			</table>
+
+	</body>
+</html>
+

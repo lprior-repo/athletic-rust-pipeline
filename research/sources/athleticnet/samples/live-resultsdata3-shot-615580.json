@@ -1,0 +1,2881 @@
+{
+"eventId": 12,
+"divId": 1,
+"groupParentId": 0,
+"currentEventValid": true,
+"canValidateResults": false,
+"host": false,
+"resultsTF": [
+[
+{
+"IDDiv": 1,
+"Place": "1",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 3,
+"HeatPlace": "1",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19264500,
+"SortIntTemp": 19264500,
+"Measure": "E",
+"ShortCode": "6viLrq6sVuXomJyuN",
+"disPlace": "1.",
+"disGrade": "12",
+"disAthlete": "Hunter Sprangers",
+"disTeam": "Kimberly",
+"Score": 10.0,
+"IDResult": 264166141,
+"Result": "61' 3.5\"",
+"SortInt": 19264500,
+"Official": 1,
+"AthleteID": 19808115,
+"FirstName": "Hunter",
+"LastName": "Sprangers",
+"PhotoUrl": "//lh3.googleusercontent.com/nLFDD3yx14DzldmhPoPqYHJ6jeidxBNDchhhOik1DGFcyf50L0qOACqpVaXjjp51Xa6-UOzjG2VA5YVyZLdlxQFOWifn0qIPdw",
+"Handle": "HunterSprangers",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3151,
+"SchoolName": "Kimberly",
+"TeamMascot": "//lh3.googleusercontent.com/0ieCfpRp_u7XOi1tsBy-RUobfJIyh32HWNn3FvhxRUlLRnHTW1ZQQSFeORTg4AUMg16VgeAFLPqfcgQCGw2n4w",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": 93518,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "2",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 3,
+"HeatPlace": "2",
+"pr": 14,
+"sr": 7,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19270000,
+"SortIntTemp": 19270000,
+"Measure": "E",
+"ShortCode": "aniDEq5INunlYm1CQ",
+"disPlace": "2.",
+"disGrade": "12",
+"disAthlete": "Connor Fontaine",
+"disTeam": "De Pere",
+"Score": 8.0,
+"IDResult": 264165673,
+"Result": "60' 10\"",
+"SortInt": 19270000,
+"Official": 1,
+"AthleteID": 30211504,
+"FirstName": "Connor",
+"LastName": "Fontaine",
+"Handle": "ConnorFontaine",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3229,
+"SchoolName": "De Pere",
+"TeamMascot": "//lh3.googleusercontent.com/uDmNTOJ2v5S8QQMm0_McFORoQbkc5VW2eCisCRm6UuBgUsCnHH_UIJp5PVCEBpWsYAH4pkfEiVZPH-v8LoQgcA",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": -627672,
+"hasSplitsSeries": true,
+"MediaCount": {
+"photos": 2
+}
+},
+{
+"IDDiv": 1,
+"Place": "3",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 2,
+"HeatPlace": "1",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19309500,
+"SortIntTemp": 19309500,
+"Measure": "E",
+"ShortCode": "L6i4KrxHeu3PWAjCn",
+"disPlace": "3.",
+"disGrade": "12",
+"disAthlete": "Brady Schauer",
+"disTeam": "Sun Prairie East",
+"Score": 6.0,
+"IDResult": 264166969,
+"Result": "57' 6.5\"",
+"SortInt": 19309500,
+"Official": 1,
+"AthleteID": 22172814,
+"FirstName": "Brady",
+"LastName": "Schauer",
+"Handle": "BradySchauer",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3011,
+"SchoolName": "Sun Prairie East",
+"TeamMascot": "//lh3.googleusercontent.com/hSup9OupVraH_KDEa7JmcbqujNT0zt70oo5zANuwzCF1HeH4Pzrcrl_HRHwTVgZ2Fr3lin-HnIPDhKLx-nesQbIOjbtCu8dt6mA",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": 10104,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "4",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 3,
+"HeatPlace": "3",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19323000,
+"SortIntTemp": 19323000,
+"Measure": "E",
+"ShortCode": "E1iPKMoUguKA6axs1",
+"disPlace": "4.",
+"disGrade": "12",
+"disAthlete": "D'Angelo Clapper",
+"disTeam": "Franklin",
+"Score": 5.0,
+"IDResult": 264165866,
+"Result": "56' 5\"",
+"SortInt": 19323000,
+"Official": 1,
+"AthleteID": 20126864,
+"FirstName": "D'Angelo",
+"LastName": "Clapper",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3266,
+"SchoolName": "Franklin",
+"TeamMascot": "//lh3.googleusercontent.com/VYtmX5HH2ZoMoCfNE3Uc-aoButkd3veENvK5kzGniAxV1-chBtB3pdPL-XarksSWPqz51JHTCFtM13KcTk534STK0WM5Yu3NnLt-",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 0,
+"SourceId": -463271,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "5",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 3,
+"HeatPlace": "4",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19332500,
+"SortIntTemp": 19332500,
+"Measure": "E",
+"ShortCode": "6viLrq6sVuX6W5WhN",
+"disPlace": "5.",
+"disGrade": "12",
+"disAthlete": "Ethan Knecht",
+"disTeam": "Marshfield",
+"Score": 4.0,
+"IDResult": 264166344,
+"Result": "55' 7.5\"",
+"SortInt": 19332500,
+"Official": 1,
+"AthleteID": 19890618,
+"FirstName": "Ethan",
+"LastName": "Knecht",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3190,
+"SchoolName": "Marshfield",
+"TeamMascot": "//lh3.googleusercontent.com/Viyb2Lp1O2SLAvLbyKwwix3OqWHR3ws7u2yFeSvqTiA85bWm75V8FF3CsyR635UF8L86N9LWqVPJLUja6kab1g",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 0,
+"SourceId": -460531,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "6",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 3,
+"HeatPlace": "5",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19339500,
+"SortIntTemp": 19339500,
+"Measure": "E",
+"ShortCode": "L6i4KrxHeuL3oJ3Fn",
+"disPlace": "6.",
+"disGrade": "12",
+"disAthlete": "Terron McCall",
+"disTeam": "Homestead",
+"Score": 3.0,
+"IDResult": 264166016,
+"Result": "55' 0.5\"",
+"SortInt": 19339500,
+"Official": 1,
+"AthleteID": 30473569,
+"FirstName": "Terron",
+"LastName": "McCall",
+"PhotoUrl": "//lh3.googleusercontent.com/dPmWuOEHg12_UU56gW218kHN-3Ifia36HzBPY_7gZICgdFjxyOI9DwA-qa1st-fO37vJYUi1HFmrYYauApwg7TfjNoq4MhaHaT0",
+"Handle": "TerronMcCall",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3201,
+"SchoolName": "Homestead",
+"TeamMascot": "//lh3.googleusercontent.com/oOcRW_D-oynW7kixVHYnJsqOSXw8O3qaePLEqtzC06-iQfwwflKh-Pv1lA9URyWBD5EkRqdGnqJZXgbu17j4",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": 717152,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "7",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 3,
+"HeatPlace": "6",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19341500,
+"SortIntTemp": 19341500,
+"Measure": "E",
+"ShortCode": "aniDEq5INumz3OqHQ",
+"disPlace": "7.",
+"disGrade": "12",
+"disAthlete": "Matthew Griffith",
+"disTeam": "Marquette University",
+"Score": 2.0,
+"IDResult": 264166328,
+"Result": "54' 10.5\"",
+"SortInt": 19341500,
+"Official": 1,
+"AthleteID": 19988342,
+"FirstName": "Matthew",
+"LastName": "Griffith",
+"Handle": "MatthewGriffith5",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3034,
+"SchoolName": "Marquette University",
+"TeamMascot": "//lh3.googleusercontent.com/J2Ee3Oe22d51Jf5vz_bLpAoRbbYHyiLTtyRvfX6WIA71xy5algjG67Ssxzb_GjulXYStRG3FN5YpYPK8iVTv",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": -459813,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "8",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 2,
+"HeatPlace": "2",
+"pr": 14,
+"sr": 7,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19349500,
+"SortIntTemp": 19349500,
+"Measure": "E",
+"ShortCode": "8Ri23ARH5u1VDg0fv",
+"disPlace": "8.",
+"disGrade": "12",
+"disAthlete": "Malachi Spencer",
+"disTeam": "Oconomowoc",
+"Score": 1.0,
+"IDResult": 264166590,
+"Result": "54' 2.5\"",
+"SortInt": 19349500,
+"Official": 1,
+"AthleteID": 30234551,
+"FirstName": "Malachi",
+"LastName": "Spencer",
+"PhotoUrl": "//lh3.googleusercontent.com/SMSbxl4pvv8wX7hM2VGp5Z-hEG88eqWhXUyrgtDdwuEaSV6gfQSL90qSonrFhdDYRwb_CF-ZbE2lzmOWhz_Z6zu8twO_Bbf2Yg",
+"Handle": "MalachiSpencer1",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3091,
+"SchoolName": "Oconomowoc",
+"TeamMascot": "//lh3.googleusercontent.com/fu0mnAr3aenA2m6NcyLeTWJS39BlBh7yJtgJ-YQasjXoAV8MLAUBhj1NN9BHE1MooWrNoefAg71xeGV6KNb1Atpks8oj_vrPoDA",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": -630955,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "9",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 2,
+"HeatPlace": "3",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19358750,
+"SortIntTemp": 19358750,
+"Measure": "E",
+"ShortCode": "VPiXdvVszuOBJqpCm",
+"disPlace": "9.",
+"disGrade": "11",
+"disAthlete": "Luka Ivancevic",
+"disTeam": "Homestead",
+"Score": 0.0,
+"IDResult": 264166013,
+"Result": "53' 5.25\"",
+"SortInt": 19358750,
+"Official": 1,
+"AthleteID": 22206894,
+"FirstName": "Luka",
+"LastName": "Ivancevic",
+"Handle": "LukaIvancevic",
+"Grade": "11",
+"AgeGrade": "11",
+"TeamID": 3201,
+"SchoolName": "Homestead",
+"TeamMascot": "//lh3.googleusercontent.com/oOcRW_D-oynW7kixVHYnJsqOSXw8O3qaePLEqtzC06-iQfwwflKh-Pv1lA9URyWBD5EkRqdGnqJZXgbu17j4",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": -498309,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "10",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 2,
+"HeatPlace": "4",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19360250,
+"SortIntTemp": 19360250,
+"Measure": "E",
+"ShortCode": "5OidxawFyu48vwQSl",
+"disPlace": "10.",
+"disGrade": "10",
+"disAthlete": "Benjamin Kosmatka",
+"disTeam": "Muskego",
+"Score": 0.0,
+"IDResult": 264166472,
+"Result": "53' 3.75\"",
+"SortInt": 19360250,
+"Official": 1,
+"AthleteID": 25052862,
+"FirstName": "Benjamin",
+"LastName": "Kosmatka",
+"Grade": "10",
+"AgeGrade": "10",
+"TeamID": 3071,
+"SchoolName": "Muskego",
+"TeamMascot": "//lh3.googleusercontent.com/RbWrsglJyWBnhuymA3DXCNZivOLX7WJn9qL8-klvFO-xaLGj15h1b4vdNWpgIUm_HN3mKx8iG2elaQ3SzbO_-l4",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 0,
+"SourceId": -548555,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "11",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 3,
+"HeatPlace": "7",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19368250,
+"SortIntTemp": 19368250,
+"Measure": "E",
+"ShortCode": "lBiPQD0URuKKgY0Uy",
+"disPlace": "11.",
+"disGrade": "12",
+"disAthlete": "Derek Brooks",
+"disTeam": "Stevens Point",
+"Score": 0.0,
+"IDResult": 264166935,
+"Result": "52' 7.75\"",
+"SortInt": 19368250,
+"Official": 1,
+"AthleteID": 23047693,
+"FirstName": "Derek",
+"LastName": "Brooks",
+"Handle": "DerekBrooks1",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3003,
+"SchoolName": "Stevens Point",
+"TeamMascot": "//lh3.googleusercontent.com/RD7TV2_sPuL3Q6YRbr8BzA1KswdJfrvBjZFZ18pOcnfYtlqdTC-MjbiauAqGsfMx3g8YNAbT8LEgdrDURAIlSQ",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": -511762,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "12",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 2,
+"HeatPlace": "5",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19369500,
+"SortIntTemp": 19369500,
+"Measure": "E",
+"ShortCode": "wOidVaJFEuEZozeIy",
+"disPlace": "12.",
+"disGrade": "12",
+"disAthlete": "Sawyer Hanlon",
+"disTeam": "Kimberly",
+"Score": 0.0,
+"IDResult": 264166136,
+"Result": "52' 6.5\"",
+"SortInt": 19369500,
+"Official": 1,
+"AthleteID": 19808109,
+"FirstName": "Sawyer",
+"LastName": "Hanlon",
+"Handle": "SawyerHanlon",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3151,
+"SchoolName": "Kimberly",
+"TeamMascot": "//lh3.googleusercontent.com/0ieCfpRp_u7XOi1tsBy-RUobfJIyh32HWNn3FvhxRUlLRnHTW1ZQQSFeORTg4AUMg16VgeAFLPqfcgQCGw2n4w",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": 93518,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "13",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "1",
+"pr": 14,
+"sr": 7,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19371500,
+"SortIntTemp": 19371500,
+"Measure": "E",
+"ShortCode": "2KiyQ0rhZuzZg5AUr",
+"disPlace": "13.",
+"disGrade": "12",
+"disAthlete": "Jaedyn Coleman",
+"disTeam": "Beloit Memorial",
+"Score": 0.0,
+"IDResult": 264165449,
+"Result": "52' 4.5\"",
+"SortInt": 19371500,
+"Official": 1,
+"AthleteID": 20096255,
+"FirstName": "Jaedyn",
+"LastName": "Coleman",
+"Handle": "JaedynColeman",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3357,
+"SchoolName": "Beloit Memorial",
+"TeamMascot": "//lh3.googleusercontent.com/UIs4s3Wr2HbMy6DZ7wcmgA_qwgZ3vqEdzyfWE473uvMt1JotBEAq_qFK4tKglIgKn_KAXb2RIZ2-g92VmWhSEDw",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": -450981,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "14",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 3,
+"HeatPlace": "8",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19374750,
+"SortIntTemp": 19374750,
+"Measure": "E",
+"ShortCode": "0Ni06ROsAu8VdZDUm",
+"disPlace": "14.",
+"disGrade": "12",
+"disAthlete": "Atlin Steinhoff",
+"disTeam": "Tomah",
+"Score": 0.0,
+"IDResult": 264166998,
+"Result": "52' 1.25\"",
+"SortInt": 19374750,
+"Official": 1,
+"AthleteID": 19930809,
+"FirstName": "Atlin",
+"LastName": "Steinhoff",
+"PhotoUrl": "//lh3.googleusercontent.com/OG99ZGNSqKI046GbcJVkHDfgYggbHEMC1qwwcb8-JGV8k6m8l0aGspC7Wc_kf_ewSEirQfHi3kHsQ-28ygLUA2yQEie5cZVUw38",
+"Handle": "AtlinSteinhoff",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3018,
+"SchoolName": "Tomah",
+"TeamMascot": "//lh3.googleusercontent.com/8ptH6iRyXq3LFP5uv9H85RTddDgM8xDXJOKG2qI3vOnRXRgB89OsONPxFbCUnPrYaNWIf4HCMgJHp_YhcALFfg",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": -452253,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "15",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 2,
+"HeatPlace": "6",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19375500,
+"SortIntTemp": 19375500,
+"Measure": "E",
+"ShortCode": "XVi8KA2txur6NNzS8",
+"disPlace": "15.",
+"disGrade": "12",
+"disAthlete": "Will McCorison",
+"disTeam": "Wausau West",
+"Score": 0.0,
+"IDResult": 264167122,
+"Result": "52' 0.5\"",
+"SortInt": 19375500,
+"Official": 1,
+"AthleteID": 22262745,
+"FirstName": "Will",
+"LastName": "McCorison",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 2863,
+"SchoolName": "Wausau West",
+"TeamMascot": "//lh3.googleusercontent.com/ZCCH8g-JTH_4p6UwOuulq0HHd2iT_NOlm5gSCV3aL0lMM0nPTEE6XFybpZ3TTYOr4fZro6w-EU0-CiyY7WtQpg",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 0,
+"SourceId": -497757,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "16",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 2,
+"HeatPlace": "7",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19381000,
+"SortIntTemp": 19381000,
+"Measure": "E",
+"ShortCode": "L6i4KrxHeurymBYHn",
+"disPlace": "16.",
+"disGrade": "12",
+"disAthlete": "Robby Kedrowicz",
+"disTeam": "Waterford",
+"Score": 0.0,
+"IDResult": 264167060,
+"Result": "51' 7\"",
+"SortInt": 19381000,
+"Official": 1,
+"AthleteID": 29101050,
+"FirstName": "Robby",
+"LastName": "Kedrowicz",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 2849,
+"SchoolName": "Waterford",
+"TeamMascot": "//lh3.googleusercontent.com/rOgM8zv5L4wKcIsJVDar0Fz-U99HwYARFqqHOZp7LAt4spttKvdFkj9cFUNK-BcEDiiLQqbSKxdYgE-U8ipGVQ",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 0,
+"SourceId": 116944,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "17",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 2,
+"HeatPlace": "8",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19384500,
+"SortIntTemp": 19384500,
+"Measure": "E",
+"ShortCode": "YVix2LnTEuVWL2ETR",
+"disPlace": "17.",
+"disGrade": "12",
+"disAthlete": "Grant Pankow",
+"disTeam": "Brookfield East",
+"Score": 0.0,
+"IDResult": 264165517,
+"Result": "51' 3.5\"",
+"SortInt": 19384500,
+"Official": 1,
+"AthleteID": 22905318,
+"FirstName": "Grant",
+"LastName": "Pankow",
+"Handle": "GrantPankow",
+"Grade": "11",
+"AgeGrade": "12",
+"TeamID": 3374,
+"SchoolName": "Brookfield East",
+"TeamMascot": "//lh3.googleusercontent.com/qxAOZske1BnNcLMRRp8vS6Pom7KyxKiZZ6qqMRKDJb5rckr9xGSt3PkQsmADfGCqoHBstg3Oh2JNKQ7rO7jx9MqA7rcHqxvpoDQ",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": -506994,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "18",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "2",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19388250,
+"SortIntTemp": 19388250,
+"Measure": "E",
+"ShortCode": "q5i5RXdhEukvq45HN",
+"disPlace": "18.",
+"disGrade": "12",
+"disAthlete": "Noah Huebner",
+"disTeam": "Wisconsin Lutheran",
+"Score": 0.0,
+"IDResult": 264164957,
+"Result": "50' 11.75\"",
+"SortInt": 19388250,
+"Official": 1,
+"AthleteID": 24808104,
+"FirstName": "Noah",
+"LastName": "Huebner",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3055,
+"SchoolName": "Wisconsin Lutheran",
+"TeamMascot": "//lh3.googleusercontent.com/_X4hkE9OjWE8PjWsA5wkABed1RRLofN6_UEEGVXxdVOLEFokiRXDq67wb9ZjSAMZRb1eKzBjfp-4vDzN-PWpT0AZGKuiXfFnLp8",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 0,
+"SourceId": -544521,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "19",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "3",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19389750,
+"SortIntTemp": 19389750,
+"Measure": "E",
+"ShortCode": "OoizoeyS8uROLRrhy",
+"disPlace": "19.",
+"disGrade": "12",
+"disAthlete": "Aidan Krahn",
+"disTeam": "Fond Du Lac",
+"Score": 0.0,
+"IDResult": 264165844,
+"Result": "50' 10.25\"",
+"SortInt": 19389750,
+"Official": 1,
+"AthleteID": 20312753,
+"FirstName": "Aidan",
+"LastName": "Krahn",
+"Handle": "aidankrahn",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3261,
+"SchoolName": "Fond Du Lac",
+"TeamMascot": "//lh3.googleusercontent.com/cqtJg9NPANk8r-9m5n8_tPy00xCIedPXT9-wNWjyIGwfmCzM-oAl_mrjQOw9gbleuAG42aPUOpgDFquMKS1Ouvuq-CFU6NINoQ",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": 115056,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "20",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "4",
+"pr": 14,
+"sr": 7,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19394250,
+"SortIntTemp": 19394250,
+"Measure": "E",
+"ShortCode": "pjiOMeaS1upOKlduO",
+"disPlace": "20.",
+"disGrade": "11",
+"disAthlete": "Tristen Brennan",
+"disTeam": "Holmen",
+"Score": 0.0,
+"IDResult": 264165992,
+"Result": "50' 5.75\"",
+"SortInt": 19394250,
+"Official": 1,
+"AthleteID": 22102336,
+"FirstName": "Tristen",
+"LastName": "Brennan",
+"Grade": "11",
+"AgeGrade": "11",
+"TeamID": 3124,
+"SchoolName": "Holmen",
+"TeamMascot": "//lh3.googleusercontent.com/Zq-DS4HM_USHTudgY2hGowQfp5MCX7ZOj9_W9rDaZTVPGWmWsgOQagz3iKVwW3izsKTNy6mS3cW6ukZtJWauyEs7HQpKlK5ux1Y",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 0,
+"SourceId": 76866,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "21",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "5",
+"pr": 0,
+"sr": 7,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19400000,
+"SortIntTemp": 19400000,
+"Measure": "E",
+"ShortCode": "5OidxawFyuDrvXlhl",
+"disPlace": "21.",
+"disGrade": "9",
+"disAthlete": "Deandre Ehlen",
+"disTeam": "Brookfield East",
+"Score": 0.0,
+"IDResult": 264165512,
+"Result": "50' 0\"",
+"SortInt": 19400000,
+"Official": 1,
+"AthleteID": 27863629,
+"FirstName": "Deandre",
+"LastName": "Ehlen",
+"Handle": "deandreehlen",
+"Grade": "9",
+"AgeGrade": "9",
+"TeamID": 3374,
+"SchoolName": "Brookfield East",
+"TeamMascot": "//lh3.googleusercontent.com/qxAOZske1BnNcLMRRp8vS6Pom7KyxKiZZ6qqMRKDJb5rckr9xGSt3PkQsmADfGCqoHBstg3Oh2JNKQ7rO7jx9MqA7rcHqxvpoDQ",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": -594566,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "22",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "6",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19407500,
+"SortIntTemp": 19407500,
+"Measure": "E",
+"ShortCode": "DeiekjVHAuKaxOBTW",
+"disPlace": "22.",
+"disGrade": "12",
+"disAthlete": "Truman Mankowski",
+"disTeam": "Madison La Follette",
+"Score": 0.0,
+"IDResult": 264166277,
+"Result": "49' 4.5\"",
+"SortInt": 19407500,
+"Official": 1,
+"AthleteID": 19877921,
+"FirstName": "Truman",
+"LastName": "Mankowski",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 3177,
+"SchoolName": "Madison La Follette",
+"TeamMascot": "//lh3.googleusercontent.com/B55o6Y5YID17O8PsAAMrFcvAtw_WwwRM-im1ghBCV_xfGc2w1_y3aRb1dF2YPPOCzapEKzDvrGWo_ill1yODsqD5M6P3xSkkfJHt",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 0,
+"SourceId": 10710,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "23",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "7",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19439750,
+"SortIntTemp": 19439750,
+"Measure": "E",
+"ShortCode": "Mmia1YmsEuzBKo4uM",
+"disPlace": "23.",
+"disGrade": "11",
+"disAthlete": "Ian Harris",
+"disTeam": "Nicolet",
+"Score": 0.0,
+"IDResult": 264166532,
+"Result": "46' 8.25\"",
+"SortInt": 19439750,
+"Official": 1,
+"AthleteID": 24852818,
+"FirstName": "Ian",
+"LastName": "Harris",
+"Grade": "11",
+"AgeGrade": "11",
+"TeamID": 3040,
+"SchoolName": "Nicolet",
+"TeamMascot": "//lh3.googleusercontent.com/_3wyRIUKX9cUmAYdqy6EV3WrNw5zE5BmxNrA_chRcyQ11PjSN0buCtBcbl1J4vHz--VV_nTzbMhgR5n2qM4",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 0,
+"SourceId": 2175968,
+"hasSplitsSeries": true,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "24",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "8",
+"pr": 0,
+"sr": 0,
+"EventID": 12,
+"PersonalEvent": true,
+"EventTypeID": 0,
+"SortIntRaw": 19470250,
+"SortIntTemp": 19470250,
+"Measure": "E",
+"ShortCode": "DeiekjVHAuKZOn3IW",
+"disPlace": "24.",
+"disGrade": "12",
+"disAthlete": "Thomas Medley",
+"disTeam": "West Allis Nathan Hale",
+"Score": 0.0,
+"IDResult": 264164852,
+"Result": "44' 1.75\"",
+"SortInt": 19470250,
+"Official": 1,
+"AthleteID": 19721111,
+"FirstName": "Thomas",
+"LastName": "Medley",
+"Handle": "ThomasMedley",
+"Grade": "12",
+"AgeGrade": "12",
+"TeamID": 20302,
+"SchoolName": "West Allis Nathan Hale",
+"TeamMascot": "//lh3.googleusercontent.com/6QTJVNwmcnhQDOt-F1-uLVvCWEy13ERhiNookdsOjGv-YyKBJznJfWT351NHGH11R9eCdRmdE0LRrz8mEjAATg",
+"Gender": "M",
+"EditorID": -4004668,
+"isOwned": 1,
+"SourceId": 80414,
+"hasSplitsSeries": true,
+"MediaCount": {}
+}
+]
+],
+"eventTypes": [
+{
+"eventId": 12,
+"IDEventType": 0,
+"Description": "12lb"
+},
+{
+"eventId": 12,
+"IDEventType": 99,
+"Description": "12lb Seated"
+}
+],
+"rounds": [
+{
+"IDRound": "F",
+"RoundDesc": "Finals",
+"SortID": 1
+},
+{
+"IDRound": "P",
+"RoundDesc": "Prelims",
+"SortID": 4
+}
+],
+"eventDivsWithResults": [
+{
+"e": 1,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 1,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 1,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 1,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 2,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 2,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 2,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 3,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 3,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 3,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 3,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 4,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 4,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 4,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 4,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 7,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 1
+},
+{
+"eventId": 1
+},
+{
+"eventId": 1
+},
+{
+"eventId": 1
+}
+]
+},
+{
+"e": 7,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 1
+},
+{
+"eventId": 1
+},
+{
+"eventId": 1
+},
+{
+"eventId": 1
+}
+]
+},
+{
+"e": 7,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 1
+},
+{
+"eventId": 1
+},
+{
+"eventId": 1
+},
+{
+"eventId": 1
+}
+]
+},
+{
+"e": 8,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 3
+},
+{
+"eventId": 3
+},
+{
+"eventId": 3
+},
+{
+"eventId": 3
+}
+]
+},
+{
+"e": 8,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 3
+},
+{
+"eventId": 3
+},
+{
+"eventId": 3
+},
+{
+"eventId": 3
+}
+]
+},
+{
+"e": 8,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 3
+},
+{
+"eventId": 3
+},
+{
+"eventId": 3
+},
+{
+"eventId": 3
+}
+]
+},
+{
+"e": 9,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 9,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 9,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 10,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 10,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 10,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 11,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 11,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 11,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 12,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 12,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 12,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 12,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 13,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 13,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 13,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 16,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 16,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 16,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 17,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 17,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 17,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 18,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 18,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 18,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 19,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 19,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 19,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 19,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 20,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 20,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 20,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 21,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 21,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 21,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 21,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 22,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 22,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 22,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 22,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 25,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 19
+},
+{
+"eventId": 19
+},
+{
+"eventId": 19
+},
+{
+"eventId": 19
+}
+]
+},
+{
+"e": 25,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 19
+},
+{
+"eventId": 19
+},
+{
+"eventId": 19
+},
+{
+"eventId": 19
+}
+]
+},
+{
+"e": 25,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 19
+},
+{
+"eventId": 19
+},
+{
+"eventId": 19
+},
+{
+"eventId": 19
+}
+]
+},
+{
+"e": 26,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 21
+},
+{
+"eventId": 21
+},
+{
+"eventId": 21
+},
+{
+"eventId": 21
+}
+]
+},
+{
+"e": 26,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 21
+},
+{
+"eventId": 21
+},
+{
+"eventId": 21
+},
+{
+"eventId": 21
+}
+]
+},
+{
+"e": 26,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 21
+},
+{
+"eventId": 21
+},
+{
+"eventId": 21
+},
+{
+"eventId": 21
+}
+]
+},
+{
+"e": 27,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 27,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 27,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 28,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 28,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 28,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 29,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 29,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 29,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 30,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 30,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 30,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 30,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 31,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 31,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 31,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 34,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 34,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 34,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 35,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 35,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 35,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 36,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 36,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 36,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 39,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 4
+},
+{
+"eventId": 4
+},
+{
+"eventId": 4
+},
+{
+"eventId": 4
+}
+]
+},
+{
+"e": 39,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 4
+},
+{
+"eventId": 4
+},
+{
+"eventId": 4
+},
+{
+"eventId": 4
+}
+]
+},
+{
+"e": 39,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 4
+},
+{
+"eventId": 4
+},
+{
+"eventId": 4
+},
+{
+"eventId": 4
+}
+]
+},
+{
+"e": 50,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 2
+},
+{
+"eventId": 2
+},
+{
+"eventId": 2
+},
+{
+"eventId": 2
+}
+]
+},
+{
+"e": 50,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 2
+},
+{
+"eventId": 2
+},
+{
+"eventId": 2
+},
+{
+"eventId": 2
+}
+]
+},
+{
+"e": 50,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 2
+},
+{
+"eventId": 2
+},
+{
+"eventId": 2
+},
+{
+"eventId": 2
+}
+]
+},
+{
+"e": 51,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 20
+},
+{
+"eventId": 20
+},
+{
+"eventId": 20
+},
+{
+"eventId": 20
+}
+]
+},
+{
+"e": 51,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 20
+},
+{
+"eventId": 20
+},
+{
+"eventId": 20
+},
+{
+"eventId": 20
+}
+]
+},
+{
+"e": 51,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 20
+},
+{
+"eventId": 20
+},
+{
+"eventId": 20
+},
+{
+"eventId": 20
+}
+]
+},
+{
+"e": 52,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 52,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 52,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 52,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 53,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 53,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 53,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 53,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 60,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 60,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 60,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 61,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 61,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 61,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 67,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 22
+},
+{
+"eventId": 22
+},
+{
+"eventId": 22
+},
+{
+"eventId": 22
+}
+]
+},
+{
+"e": 67,
+"d": 2,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 22
+},
+{
+"eventId": 22
+},
+{
+"eventId": 22
+},
+{
+"eventId": 22
+}
+]
+},
+{
+"e": 67,
+"d": 3,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 22
+},
+{
+"eventId": 22
+},
+{
+"eventId": 22
+},
+{
+"eventId": 22
+}
+]
+}
+],
+"groupedEventsParents": [],
+"events": [
+{
+"Entry": 1,
+"Event": "100 Meters",
+"EventShort": "100m",
+"Gender": "M",
+"ID": 1,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 310,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "100 Meters",
+"EventShort": "100m",
+"Gender": "F",
+"ID": 19,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 320,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "200 Meters",
+"EventShort": "200m",
+"Gender": "M",
+"ID": 2,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 390,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "200 Meters",
+"EventShort": "200m",
+"Gender": "F",
+"ID": 20,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 400,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "400 Meters",
+"EventShort": "400m",
+"Gender": "M",
+"ID": 3,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 490,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "400 Meters",
+"EventShort": "400m",
+"Gender": "F",
+"ID": 21,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 500,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "800 Meters",
+"EventShort": "800m",
+"Gender": "M",
+"ID": 4,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 630,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "800 Meters",
+"EventShort": "800m",
+"Gender": "F",
+"ID": 22,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 640,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "1600 Meters",
+"EventShort": "1600m",
+"Gender": "M",
+"ID": 52,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 810,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "1600 Meters",
+"EventShort": "1600m",
+"Gender": "F",
+"ID": 53,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 820,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "3200 Meters",
+"EventShort": "3200m",
+"Gender": "M",
+"ID": 60,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 950,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "3200 Meters",
+"EventShort": "3200m",
+"Gender": "F",
+"ID": 61,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 960,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "100m Hurdles",
+"EventShort": "100mh",
+"Gender": "F",
+"ID": 28,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": true,
+"isPersonal": true,
+"sort": 1420,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "110m Hurdles",
+"EventShort": "110mh",
+"Gender": "M",
+"ID": 10,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": true,
+"isPersonal": true,
+"sort": 1450,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "300m Hurdles",
+"EventShort": "300mh",
+"Gender": "M",
+"ID": 11,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": true,
+"isPersonal": true,
+"sort": 1580,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "300m Hurdles",
+"EventShort": "300mh",
+"Gender": "F",
+"ID": 29,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": true,
+"isPersonal": true,
+"sort": 1590,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x100 Relay",
+"EventShort": "4x100m",
+"Gender": "M",
+"ID": 7,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1800,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x100 Relay",
+"EventShort": "4x100m",
+"Gender": "F",
+"ID": 25,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1810,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x200 Relay",
+"EventShort": "4x200m",
+"Gender": "M",
+"ID": 50,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1880,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x200 Relay",
+"EventShort": "4x200m",
+"Gender": "F",
+"ID": 51,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1890,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x400 Relay",
+"EventShort": "4x400m",
+"Gender": "M",
+"ID": 8,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1960,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x400 Relay",
+"EventShort": "4x400m",
+"Gender": "F",
+"ID": 26,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1970,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x800 Relay",
+"EventShort": "4x800m",
+"Gender": "M",
+"ID": 39,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 2040,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x800 Relay",
+"EventShort": "4x800m",
+"Gender": "F",
+"ID": 67,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 2050,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Shot Put",
+"EventShort": "shot",
+"Gender": "M",
+"ID": 12,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2610,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Shot Put",
+"EventShort": "shot",
+"Gender": "F",
+"ID": 30,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2620,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Discus",
+"EventShort": "discus",
+"Gender": "M",
+"ID": 13,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "L",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2660,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Discus",
+"EventShort": "discus",
+"Gender": "F",
+"ID": 31,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "L",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2670,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "High Jump",
+"EventShort": "hj",
+"Gender": "M",
+"ID": 9,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "V",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2700,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "High Jump",
+"EventShort": "hj",
+"Gender": "F",
+"ID": 27,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "V",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2710,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Pole Vault",
+"EventShort": "pv",
+"Gender": "M",
+"ID": 16,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "V",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2720,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Pole Vault",
+"EventShort": "pv",
+"Gender": "F",
+"ID": 34,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "V",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2730,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Long Jump",
+"EventShort": "lj",
+"Gender": "M",
+"ID": 17,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2740,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Long Jump",
+"EventShort": "lj",
+"Gender": "F",
+"ID": 35,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2750,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Triple Jump",
+"EventShort": "tj",
+"Gender": "M",
+"ID": 18,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2780,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Triple Jump",
+"EventShort": "tj",
+"Gender": "F",
+"ID": 36,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2790,
+"photos": null,
+"focus": null
+}
+],
+"relayLegs": null,
+"advancementData": null,
+"correctedResultIDs": []
+}

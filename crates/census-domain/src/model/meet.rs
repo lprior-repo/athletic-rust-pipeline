@@ -53,9 +53,7 @@ where
         }),
     }
 }
-fn valid_date(date: &str) -> bool {
-    chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").is_ok()
-}
+use super::dates::valid_date;
 
 impl CanonicalMeet {
     pub fn new(
@@ -69,7 +67,7 @@ impl CanonicalMeet {
         debug_assert!(!name.is_empty(), "meet name must not be empty");
         debug_assert!(
             valid_date(&date),
-            "meet date {date:?} is not a valid ISO date"
+            "meet date {date:?} is not a valid ISO date or year"
         );
         let normalized_name = normalize_name(&name);
         let id = CanonicalMeet::mint(state, &date, &name, None);
@@ -92,30 +90,19 @@ impl CanonicalMeet {
 
     pub fn mint(
         state: Option<UsJurisdiction>,
-        _date: &str,
+        date: &str,
         name: &str,
-        division: Option<&str>,
+        _venue: Option<&str>,
     ) -> MeetId {
-        let mut parts = Vec::new();
-        if let Some(s) = state {
-            parts.push(s.to_string());
-        }
-        parts.push(name.to_string());
-        if let Some(d) = division {
-            parts.push(d.to_string());
-        }
-        let mut hasher = Sha256::new();
-        hasher.update(b"meet:");
-        for part in &parts {
-            hasher.update([0x1f]);
-            hasher.update(part.as_bytes());
-        }
-        let digest = hasher.finalize();
-        let mut hex = String::with_capacity(16);
-        for byte in digest.iter().take(8) {
-            hex.push_str(&format!("{byte:02x}"));
-        }
-        Id::mint("meet", &[&hex])
+        let normalized = normalize_name(name);
+        Id::mint(
+            "meet",
+            &[
+                state.map_or(MEET_STATE_UNRESOLVED, UsJurisdiction::code),
+                date,
+                normalized.as_str(),
+            ],
+        )
     }
 
     pub fn new_checked(
@@ -130,7 +117,9 @@ impl CanonicalMeet {
             return Err("meet name must not be empty".to_string());
         }
         if !valid_date(&date) {
-            return Err(format!("meet date {date:?} is not a valid ISO date"));
+            return Err(format!(
+                "meet date {date:?} is not a valid ISO date or year"
+            ));
         }
         let normalized_name = normalize_name(&name);
         let id = CanonicalMeet::mint(state, &date, &name, None);

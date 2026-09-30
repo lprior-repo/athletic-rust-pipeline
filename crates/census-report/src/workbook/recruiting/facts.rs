@@ -1,7 +1,7 @@
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalPerformance, CanonicalSchool, EventKind,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use crate::bests::SharedSelection;
 
@@ -12,10 +12,12 @@ pub(super) struct AthleteTally {
     pub(super) events: BTreeSet<String>,
 }
 
-pub(super) fn school_index(schools: &[CanonicalSchool]) -> BTreeMap<String, CanonicalSchool> {
+pub(super) fn school_index(
+    schools: &[CanonicalSchool],
+) -> BTreeMap<census_domain::model::SchoolId, CanonicalSchool> {
     schools
         .iter()
-        .map(|school| (school.id.as_str().to_string(), school.clone()))
+        .map(|school| (school.id.clone(), school.clone()))
         .collect()
 }
 
@@ -28,8 +30,9 @@ pub(super) fn kind_index(events: &[CanonicalEvent]) -> BTreeMap<String, EventKin
 
 pub(super) fn tally(
     athletes: &[CanonicalAthlete],
-    performances: &[CanonicalPerformance],
+    performances: &[&CanonicalPerformance],
     kinds: &BTreeMap<String, EventKind>,
+    aliases: &HashMap<String, String>,
 ) -> BTreeMap<String, AthleteTally> {
     let cohort: BTreeSet<&str> = athletes.iter().map(|athlete| athlete.id.as_str()).collect();
     let mut tallies: BTreeMap<String, AthleteTally> = athletes
@@ -37,10 +40,12 @@ pub(super) fn tally(
         .map(|athlete| (athlete.id.as_str().to_string(), AthleteTally::default()))
         .collect();
     for performance in performances {
-        if !cohort.contains(performance.athlete.as_str()) {
+        let subject = performance.athlete.as_str();
+        let athlete_id = aliases.get(subject).map_or(subject, String::as_str);
+        if !cohort.contains(athlete_id) {
             continue;
         }
-        let Some(tally) = tallies.get_mut(performance.athlete.as_str()) else {
+        let Some(tally) = tallies.get_mut(athlete_id) else {
             continue;
         };
         tally.performances = tally.performances.saturating_add(1);

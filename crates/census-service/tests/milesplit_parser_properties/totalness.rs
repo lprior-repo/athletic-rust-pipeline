@@ -1,6 +1,6 @@
 use super::{
     arbitrary_body, parse_meet_index, parse_meet_result_files, parse_raw, seam_config, shaped_body,
-    ResultSetRef, OH_FILE_LIST_URL, OH_RAW_URL,
+    ResultSetRef, NC_RAW_URL, OH_FILE_LIST_URL,
 };
 use proptest::prelude::*;
 
@@ -13,12 +13,12 @@ proptest! {
 
     #[test]
     fn parse_raw_answers_or_refuses_arbitrary_bytes(body in arbitrary_body()) {
-        let _ = answer(parse_raw(&body, OH_RAW_URL));
+        let _ = answer(parse_raw(&body, NC_RAW_URL));
     }
 
     #[test]
     fn parse_raw_answers_or_refuses_shaped_bytes(body in shaped_body()) {
-        let _ = answer(parse_raw(&body, OH_RAW_URL));
+        let _ = answer(parse_raw(&body, NC_RAW_URL));
     }
 
     #[test]
@@ -36,8 +36,8 @@ proptest! {
     #[test]
     fn the_same_bytes_give_the_same_answer(body in shaped_body()) {
         prop_assert_eq!(
-            answer(parse_raw(&body, OH_RAW_URL)).map(|page| format!("{page:?}")),
-            answer(parse_raw(&body, OH_RAW_URL)).map(|page| format!("{page:?}")),
+            answer(parse_raw(&body, NC_RAW_URL)).map(|page| format!("{page:?}")),
+            answer(parse_raw(&body, NC_RAW_URL)).map(|page| format!("{page:?}")),
         );
         prop_assert_eq!(
             answer(parse_meet_index(&body)).map(|meets| format!("{meets:?}")),

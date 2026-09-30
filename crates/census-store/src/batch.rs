@@ -85,25 +85,34 @@ pub(super) fn stage_derived_encoded(
     table: Table,
     records: Vec<Vec<u8>>,
 ) -> StoreResult<Staged> {
+    let mode = table.storage_mode();
     let mut staged = Staged {
         named: HashSet::with_capacity(records.len()),
         added: 0,
     };
     for value in records {
-        let id = observation_id(&value)?.to_string();
+        let id = observation_id(&value)?;
         let key = observation_key(table, &id, DERIVED_SEQUENCE);
-        let held = entities
-            .get(&key)
-            .map_err(|source| StoreError::Read { source })?
-            .is_some();
-        let first_named = staged.named.insert(id.clone());
-        if first_named && !held {
-            staged.added = staged.added.saturating_add(1);
+        if mode == StorageMode::DerivedSnapshot {
+            staged.named.insert(id);
+        } else {
+            let held = entities
+                .get(&key)
+                .map_err(|source| StoreError::Read { source })?
+                .is_some();
+            let first_named = staged.named.insert(id);
+            if first_named && !held {
+                staged.added = staged.added.saturating_add(1);
+            }
         }
         batch.insert(entities, key, value);
     }
-    if table.storage_mode() != StorageMode::ObservationLog {
-        drop_foreign_batch(entities, batch, table, &staged.named)?;
+    match mode {
+        StorageMode::DerivedSnapshot => {
+            prune_derived_snapshot(entities, batch, table, &staged.named)?
+        }
+        StorageMode::DerivedMap => drop_foreign_batch(entities, batch, table, &staged.named)?,
+        StorageMode::ObservationLog => {}
     }
     Ok(staged)
 }
@@ -132,7 +141,7 @@ fn drop_foreign_batch(
     Ok(())
 }
 
-pub(super) fn drop_unnamed(
+fn prune_derived_snapshot(
     entities: &Keyspace,
     batch: &mut OwnedWriteBatch,
     table: Table,
@@ -141,13 +150,14 @@ pub(super) fn drop_unnamed(
     let prefix = table_prefix(table);
     for guard in entities.prefix(&prefix) {
         let key = guard.key().map_err(|source| StoreError::Read { source })?;
-        let (_, id, _) = split_observation_key(&key).ok_or_else(|| StoreError::Invariant {
-            detail: format!("table {} holds a malformed observation key", table.file()),
-        })?;
-        let id_str = String::from_utf8_lossy(id);
-        if !named.contains(id_str.as_ref()) {
-            batch.remove(entities, key);
+        let (_, id, sequence) =
+            split_observation_key(&key).ok_or_else(|| StoreError::Invariant {
+                detail: format!("table {} holds a malformed observation key", table.file()),
+            })?;
+        if sequence == DERIVED_SEQUENCE && named.contains(String::from_utf8_lossy(id).as_ref()) {
+            continue;
         }
+        batch.remove(entities, key);
     }
     Ok(())
 }

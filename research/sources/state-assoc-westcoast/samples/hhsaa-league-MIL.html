@@ -1,0 +1,817 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="oHI4kPr-fRhFE0lsKupy6jxJYxAM6cdx4HbuZZwWx1R6O14AoUHdHh5L58x7cNHCgnzIKzzjd01ezVH-WSiqJw" />
+
+    <meta name="description" content="Hawaii High School Athletics Association (HHSAA) tournament information, news and photos"/>
+    <meta name="google-site-verification" content="4aKoANQA7ahRbfc2iCQtGL7H4kOlxLXK5juMCccKl9E" />
+    <meta name="google-site-verification" content="lDZKDqyZt5ykBrVGY_UCDan845WYaiBX-JSaQjajr0A" />
+    <meta name="google-site-verification" content="ZhZ3YlaIZV3f9zuEI7zh_9mc3u2I0OZcnEshB6xXIrc" />
+
+    <script type="text/javascript">var _sf_startpt=(new Date()).getTime()</script>
+
+    <title>
+      
+      
+      MIL
+      - Hawaii High School Athletic Association (HHSAA)
+    </title>
+
+    <link rel="stylesheet" href="/assets/application-b92a14e8a1543183cf1846a38b3c4f871fe439af7776f92cf8f8f6f9a2ce7cf0.css" media="all" />
+    <link rel="stylesheet" href="/assets/print-b1cc767a41064c941977e6ddeeafeccbc5d809aa8ba28efe2fe64158201b2ac1.css" media="print" />
+    <script src="/assets/application-c693b023291f72f7837bd9f58b59c0b6117cb45c53aa22d283e2cf895cb89279.js" defer="defer"></script>
+
+    
+<script>
+    function readCookie(name) {
+        var ca = document.cookie.split(';');
+        for (var i=0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(name+'=') == 0) return c.substring((name+'=').length, c.length);
+        }
+        return null;
+    }
+    
+    function loggedIn() {
+        return readCookie('user_auth_status') == 'authenticated';
+    }
+
+    var load_imagine_controls = loggedIn() || false;
+
+    if (load_imagine_controls) {
+        document.writeln('<link href="/assets/imagine_controls.css" media="screen" rel="stylesheet" type="text/css" />')
+    }
+
+    function imagineCmsInsertToolbar(host, html) {
+        if (!host || !html || html.indexOf('imagine-cms-toolbar') === -1) return;
+
+        var wrap = document.createElement('div');
+        wrap.innerHTML = html;
+        var scripts = [];
+        wrap.querySelectorAll('script').forEach(function(script) {
+            scripts.push(script.textContent);
+            script.parentNode.removeChild(script);
+        });
+        while (wrap.firstChild) {
+            host.parentNode.insertBefore(wrap.firstChild, host);
+        }
+        host.parentNode.removeChild(host);
+        scripts.forEach(function(code) {
+            var script = document.createElement('script');
+            script.textContent = code;
+            document.body.appendChild(script);
+        });
+    }
+
+    // Cached public HTML never includes the toolbar (revision history must not leak).
+    // If the auth cookie is set, load it from the session-protected endpoint.
+    function imagineCmsLoadPreviewToolbar() {
+        if (!loggedIn()) return;
+        var host = document.getElementById('imagine-cms-toolbar-host');
+        if (!host || document.getElementById('imagine_cms-toolbar')) return;
+        var url = host.getAttribute('data-toolbar-url');
+        if (!url) return;
+
+        fetch(url, {
+            credentials: 'same-origin',
+            headers: { 'Accept': 'text/html', 'X-Requested-With': 'XMLHttpRequest' }
+        }).then(function(response) {
+            return response.ok ? response.text() : '';
+        }).then(function(html) {
+            imagineCmsInsertToolbar(host, html);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', imagineCmsLoadPreviewToolbar);
+    } else {
+        imagineCmsLoadPreviewToolbar();
+    }
+</script>
+
+<link rel="stylesheet" href="/assets/cms_dialog-1ccd42c3193f2322c09a85db646ddd4c0657be7a2a7aeb2d5f3ab72b69f480a6.css" media="screen" />
+
+<script>
+  window.ImagineCmsConfig = {
+    toolbarStickyOffset: 82,
+    toolbarStickyOffsetMobile: 64
+  };
+</script>
+
+
+
+
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        if (loggedIn()) {
+          document.querySelectorAll('.hidden.auth-inline').forEach(el => el.style.display = 'inline');
+          document.querySelectorAll('.hidden.auth-inline-block').forEach(el => el.style.display = 'inline-block');
+          document.querySelectorAll('.hidden.auth-block').forEach(el => el.style.display = 'block');
+          document.querySelectorAll('.hidden.auth-flex').forEach(el => el.style.display = 'flex');
+          document.querySelectorAll('.hidden.auth-grid').forEach(el => el.style.display = 'grid');
+        }
+      });
+    </script>
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-4271781-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-4271781-1');
+    </script>
+  </head>
+
+  <body class="league">
+    <style>
+      :root {
+        --base-rem: 1rem;
+        --header-height: 64px;
+        --swiper-theme-color: #008568;
+        --swiper-navigation-sides-offset: 20px;
+        --swiper-pagination-bottom: 0px;
+        --swiper-pagination-bullet-width: 10px;
+        --swiper-pagination-bullet-height: 10px;
+        --swiper-pagination-bullet-horizontal-gap: 6px;
+      }
+
+      @media (min-width: 768px) {
+        :root {
+          --header-height: 80px;
+        }
+      }
+
+      @media (min-width: 1024px) {
+        :root {
+          --header-height: 82px;
+        }
+      }
+
+      main a:not(:has(img)):is([href^="http"], [href^="//"]) {
+        display: inline;
+        padding-right: 18px;
+        background-image: url('/assets/2024/icon-external-link-190d724705eb8164deb74e5e6ec00715aab7b43aaa0f33672eb42d209cde77ac.svg');
+        background-repeat: no-repeat;
+        background-position: right center;
+        background-size: 0.9em;
+      }
+
+      main a.button:not(:has(img)):is([href^="http"], [href^="//"]) {
+        display: inline-block;
+        padding-right: 24px;
+        background-position: right 8px center;
+        background-image: url('/assets/2024/icon-external-link-green-57389c46e778bcb71a6fe0e67287a8108054724c2cfc5367486bbedda2f992c5.svg');
+      }
+
+      main a.button:not(:has(img)):is([href^="http"], [href^="//"]):hover {
+        background-image: url('/assets/2024/icon-external-link-white-cad36c7ec0583dfff1afc46d3a7b6c13885a2e46f0e2c1e6bca173357efc18a9.svg');
+      }
+
+      header a:not(:has(img)):is([href^="http"], [href^="//"]) {
+        display: inline;
+        padding-right: 22px;
+        background-image: url('/assets/2024/icon-external-link-white-cad36c7ec0583dfff1afc46d3a7b6c13885a2e46f0e2c1e6bca173357efc18a9.svg');
+        background-repeat: no-repeat;
+        background-position: right center;
+        background-size: 0.9em;
+      }
+
+      main a:not(:has(img)):is([href^="mailto:"]) {
+        display: inline;
+        padding-right: 22px;
+        background-image: url('/assets/2024/icon-email-9ae9bd077c1024c6382495aae682b557152b168f0e278da22421dad05065f7cf.svg');
+        background-repeat: no-repeat;
+        background-position: right center;
+        background-size: 1.25em;
+      }
+
+      body.imagine-editor header.sticky {
+        position: sticky;
+      }
+    </style>
+
+    <div class="print:hidden imagine-cms-toolbar-shell">      <div id="imagine-cms-toolbar-host" hidden data-toolbar-url="/manage/cms_pages/9262/toolbar_preview"></div>
+</div>
+
+    <style>
+  #ad-container img {
+    display: block;
+    width: 100%;
+    max-width: 720px;
+    object-fit: contain;
+  }
+</style>
+<div id="ad-container" class="print:hidden w-full md:py-[16px] flex flex-row justify-center items-center bg-lightGray">
+    <a href="http://www.datahouse.com" target="_blank"><img src="/assets/content/sponsors/DataHouse-banner-2018-01-15.jpg?1516060827" alt="DataHouse" width="720" height="90" /></a>
+</div>
+
+    
+<style>
+  body.imagine-editor header {
+    position: static;
+  }
+  .ts-dropdown, .ts-control, .ts-control input {
+    font-size: 15px;
+  }
+</style>
+
+<header class="print:hidden sticky top-0 z-50">
+  <div class="bg-hhsaaGreen flex flex-row items-center justify-between">
+    <div id="header-logo" class="relative flex-none h-[var(--header-height)] bg-white w-[252px] md:w-[314px] lg:w-[316px] maxcc:w-[calc(50%-250px)]" style="clip-path: polygon(0 0, calc(100% - var(--header-height)) 0, 100% 100%, 0 100%);">
+      <a href="/"><img alt="Hawaii High School Athletic Association" class="w-[168px] md:w-[206px] maxcc:w-[225px] h-auto absolute print:static right-[var(--header-height)] top-[10px]" src="/assets/2024/hhsaa-logo-2b1031b9f07031f815bacf209bef00fd7a7fc899bb4da185e032f9b72bdae190.png" /></a>
+    </div>
+
+    <div id="desktop-search-and-menu" class="lg:block print:hidden hidden">
+      <ul class="pr-[max(50vw-560px,20px)] flex flex-row justify-end items-center gap-[1.5px] maxcc:gap-[10px]">
+        <li class="px-[10px]" x-data="{ subMenuOpen: false, timer: null }" @mouseover="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = true, 200)" @mouseout="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = false, 100)">
+          <a href="/sports" class="relative h-[var(--header-height)] flex flex-row items-center" @click.prevent="subMenuOpen = true">
+            <span class="text-white font-patuaOne text-[17px] uppercase hover:text-highlight" :class="{ '!text-highlight': subMenuOpen }">Sports</span>
+            <img src="/assets/2024/caret-highlight-f12c55e689ba2e143f6f5bc50062606d291eb08362b22c008a13a46a81b60773.svg" alt="" class="absolute bottom-[10px] left-[50%] translate-x-[-50%] w-[12px]" :class="{ 'hidden': !subMenuOpen }">
+          </a>
+          <ul class="desktop-nav-submenu hidden w-screen max-w-screen-maxc bg-hhsaaGreen absolute top-[var(--header-height)] left-[50%] translate-x-[-50%] px-[64px] py-[32px]" :class="{ 'hidden': !subMenuOpen }">
+            <div class="grid grid-cols-3 gap-[64px]">
+                <ul>
+                  <li class="pb-[12px] border-b-[1px] border-transparentWhite">
+                    <h3 class="font-patuaOne text-[22px] uppercase text-transparentWhite">Fall</h3>
+                  </li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/air_riflery/tournament/2026">Air Riflery</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/bowling/tournament/2026">Bowling</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/cheerleading/tournament/2026">Cheerleading</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/cross_country/tournament/2026">Cross Country</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/football/tournament/2026">Football</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/volleyball_girls/tournament/2026">Girls Volleyball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/esports/tournament/2026">Esports</a></li>
+                </ul>
+                <ul>
+                  <li class="pb-[12px] border-b-[1px] border-transparentWhite">
+                    <h3 class="font-patuaOne text-[22px] uppercase text-transparentWhite">Winter</h3>
+                  </li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/basketball_boys/tournament/2026">Boys Basketball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/basketball_girls/tournament/2026">Girls Basketball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/canoe_paddling/tournament/2026">Canoe Paddling</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/soccer_boys/tournament/2026">Boys Soccer</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/soccer_girls/tournament/2026">Girls Soccer</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/swimming_diving/tournament/2026">Swimming &amp; Diving</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/wrestling/tournament/2026">Wrestling</a></li>
+                </ul>
+                <ul>
+                  <li class="pb-[12px] border-b-[1px] border-transparentWhite">
+                    <h3 class="font-patuaOne text-[22px] uppercase text-transparentWhite">Spring</h3>
+                  </li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/baseball/tournament/2026">Baseball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/flag-football/tournament/2026">Girls Flag Football</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/golf/tournament/2026">Golf</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/judo/tournament/2026">Judo</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/softball/tournament/2026">Softball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/surfing/tournament/2026">Surfing</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/tennis/tournament/2026">Tennis</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/track_field/tournament/2026">Track &amp; Field</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/volleyball_boys/tournament/2026">Boys Volleyball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/water_polo/tournament/2026">Girls Water Polo</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sports/esports/tournament/2026">Esports</a></li>
+                </ul>
+            </div>
+          </ul>
+        </li>
+        <li class="px-[10px]" x-data="{ subMenuOpen: false, timer: null }" @mouseover="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = true, 200)" @mouseout="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = false, 100)">
+          <a href="/tournaments" class="relative h-[var(--header-height)] flex flex-row items-center" @click.prevent="subMenuOpen = true">
+            <span class="text-white font-patuaOne text-[17px] uppercase hover:text-highlight" :class="{ '!text-highlight': subMenuOpen }">Tournaments</span>
+            <img src="/assets/2024/caret-highlight-f12c55e689ba2e143f6f5bc50062606d291eb08362b22c008a13a46a81b60773.svg" alt="" class="absolute bottom-[10px] left-[50%] translate-x-[-50%] w-[12px]" :class="{ 'hidden': !subMenuOpen }">
+          </a>
+          <ul class="desktop-nav-submenu hidden w-screen max-w-screen-maxc gap-[64px] bg-hhsaaGreen absolute top-[var(--header-height)] left-[50%] translate-x-[-50%] px-[64px] py-[32px]" :class="{ 'hidden': !subMenuOpen, 'flex': subMenuOpen }">
+            <li class="flex-none">
+              <a href="https://docs.google.com/document/d/1qnVOvmzYf5VMcbRyx1ZYB2SW6vExTT7DfyVKwMc_A7Y/edit?usp=sharing" target=&quot;_blank&quot;><img src="/assets/content/tournament_schedules/2627-state-tournament-schedule-thumb.png" alt="2025–2026 State Tournament Schedule" width="320"></a>
+            </li>
+            <li class="flex-auto">
+              <ul>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="https://docs.google.com/document/d/1qnVOvmzYf5VMcbRyx1ZYB2SW6vExTT7DfyVKwMc_A7Y/edit?usp=sharing" target=&quot;_blank&quot;>2026–2027 State Tournament Schedule</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="https://gofan.co/hhsaa" target=&quot;_blank&quot;>Get Your Tickets</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="https://docs.google.com/spreadsheets/d/1ue88lrNAXpCqrTOfTtJYrI2tljOebNDHXGhlEdA2J5s/edit?usp=sharing" target=&quot;_blank&quot;>2026–2027 Start Date Calendar</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="https://docs.google.com/spreadsheets/d/1hpvfwDoRjE_sZlinlEfA03144cVfirS6qmPNWFoWOHo/edit?usp=sharing" target=&quot;_blank&quot;>2026–2027 League Representation</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="https://docs.google.com/spreadsheets/d/1UiOX9VJry4oNRpoJCHb1WxeAD9azvg2bh2jM_c8vjik/edit?usp=sharing" target=&quot;_blank&quot;>Host School Rotation</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li class="px-[10px]" x-data="{ subMenuOpen: false, timer: null }" @mouseover="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = true, 200)" @mouseout="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = false, 100)">
+          <a href="/schools" class="relative h-[var(--header-height)] flex flex-row items-center" @click.prevent="subMenuOpen = true">
+            <span class="text-white font-patuaOne text-[17px] uppercase hover:text-highlight" :class="{ '!text-highlight': subMenuOpen }">Schools</span>
+            <img src="/assets/2024/caret-highlight-f12c55e689ba2e143f6f5bc50062606d291eb08362b22c008a13a46a81b60773.svg" alt="" class="absolute bottom-[10px] left-[50%] translate-x-[-50%] w-[12px]" :class="{ 'hidden': !subMenuOpen }">
+          </a>
+          <ul class="desktop-nav-submenu hidden w-screen max-w-screen-maxc bg-hhsaaGreen absolute top-[var(--header-height)] left-[50%] translate-x-[-50%] px-[64px] py-[32px] gap-[50px] justify-center" :class="{ 'hidden': !subMenuOpen, 'flex': subMenuOpen }">
+              <li class="py-[12px] flex flex-col items-center gap-[10px] leading-[1.2] text-white text-[17px] border-transparentWhite group">
+                <a href="/schools/OIA" class="rounded-full overflow-hidden border-[1px] border-transparent group-hover:border-highlight"><img src="/assets/2024/league-logos/oia-logo-6b012db4b5d87392d732873a0371b1311e6be9f5fb678d241167045a5c706295.png" alt="OIA" width="110"></a>
+                <a class="group-hover:text-highlight block" href="/schools/OIA">OIA</a>
+              </li>
+              <li class="py-[12px] flex flex-col items-center gap-[10px] leading-[1.2] text-white text-[17px] border-transparentWhite group">
+                <a href="/schools/ILH" class="rounded-full overflow-hidden border-[1px] border-transparent group-hover:border-highlight"><img src="/assets/2024/league-logos/ilh-logo-1644ccd92158f81c491516f88694c5651a27a0d471f36a44a594b1f241bc64d7.png" alt="ILH" width="110"></a>
+                <a class="group-hover:text-highlight block" href="/schools/ILH">ILH</a>
+              </li>
+              <li class="py-[12px] flex flex-col items-center gap-[10px] leading-[1.2] text-white text-[17px] border-transparentWhite group">
+                <a href="/schools/BIIF" class="rounded-full overflow-hidden border-[1px] border-transparent group-hover:border-highlight"><img src="/assets/2024/league-logos/biif-logo-af2a004b0aa0d47de767b0cca316a93a58380dbabdaf58458e4ac4e284a47698.png" alt="BIIF" width="110"></a>
+                <a class="group-hover:text-highlight block" href="/schools/BIIF">BIIF</a>
+              </li>
+              <li class="py-[12px] flex flex-col items-center gap-[10px] leading-[1.2] text-white text-[17px] border-transparentWhite group">
+                <a href="/schools/MIL" class="rounded-full overflow-hidden border-[1px] border-transparent group-hover:border-highlight"><img src="/assets/2024/league-logos/mil-logo-2de886ebecd295a1fba499d5b939d89d6c8bab7890f0e3e082971a9c1f61b29b.png" alt="MIL" width="110"></a>
+                <a class="group-hover:text-highlight block" href="/schools/MIL">MIL</a>
+              </li>
+              <li class="py-[12px] flex flex-col items-center gap-[10px] leading-[1.2] text-white text-[17px] border-transparentWhite group">
+                <a href="/schools/KIF" class="rounded-full overflow-hidden border-[1px] border-transparent group-hover:border-highlight"><img src="/assets/2024/league-logos/kif-logo-7ed50350fd68dad14ca5941add85323615b48d11c8596c9ae43912266690f456.png" alt="KIF" width="110"></a>
+                <a class="group-hover:text-highlight block" href="/schools/KIF">KIF</a>
+              </li>
+          </ul>
+        </li>
+        <li class="px-[10px]" x-data="{ subMenuOpen: false, timer: null }" @mouseover="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = true, 200)" @mouseout="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = false, 100)">
+          <a href="/resources" class="relative h-[var(--header-height)] flex flex-row items-center" @click.prevent="subMenuOpen = true">
+            <span class="text-white font-patuaOne text-[17px] uppercase hover:text-highlight" :class="{ '!text-highlight': subMenuOpen }">Resources</span>
+            <img src="/assets/2024/caret-highlight-f12c55e689ba2e143f6f5bc50062606d291eb08362b22c008a13a46a81b60773.svg" alt="" class="absolute bottom-[10px] left-[50%] translate-x-[-50%] w-[12px]" :class="{ 'hidden': !subMenuOpen }">
+          </a>
+          <ul class="desktop-nav-submenu hidden w-screen max-w-screen-maxc bg-hhsaaGreen absolute top-[var(--header-height)] left-[50%] translate-x-[-50%] px-[64px] py-[32px] gap-[64px]" :class="{ 'hidden': !subMenuOpen, 'flex': subMenuOpen }">
+            <li class="flex-none">
+              <a href="/resources/bulletin"><img src="/assets/content/resources/bulletin/bulletin-thumb.png?1758351856" alt="Bulletin Board" width="320"></a>
+            </li>
+            <li class="flex-1">
+              <ul>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/resources/bulletin">Bulletin Board</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/resources/governing_documents">Governing Documents</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/resources/sanctioning">Sanctioning Information</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/resources/media">Media Policy</a></li>
+              </ul>
+            </li>
+            <li class="flex-1">
+              <ul>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/resources/students">For Students</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/resources/coaches">For Coaches</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/resources/officials">For Officials</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/resources/statisticians">For Statisticians</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li class="px-[10px]" x-data="{ subMenuOpen: false, timer: null }" @mouseover="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = true, 200)" @mouseout="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = false, 100)">
+          <a href="/sponsors" class="relative h-[var(--header-height)] flex flex-row items-center">
+            <span class="text-white font-patuaOne text-[17px] uppercase hover:text-highlight" :class="{ '!text-highlight': subMenuOpen }">Sponsors</span>
+            <img src="/assets/2024/caret-highlight-f12c55e689ba2e143f6f5bc50062606d291eb08362b22c008a13a46a81b60773.svg" alt="" class="absolute bottom-[10px] left-[50%] translate-x-[-50%] w-[12px]" :class="{ 'hidden': true }">
+          </a>
+          <ul class="desktop-nav-submenu hidden w-screen max-w-screen-maxc bg-hhsaaGreen absolute top-[var(--header-height)] left-[50%] translate-x-[-50%] px-[64px] py-[32px]" :class="{ 'hidden': true }">
+              <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/sponsors">Sponsors</a></li>
+          </ul>
+        </li>
+        <li class="px-[10px]" x-data="{ subMenuOpen: false, timer: null }" @mouseover="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = true, 200)" @mouseout="clearTimeout(timer); timer = setTimeout(() => subMenuOpen = false, 100)">
+          <a href="/about" class="relative h-[var(--header-height)] flex flex-row items-center" @click.prevent="subMenuOpen = true">
+            <span class="text-white font-patuaOne text-[17px] uppercase hover:text-highlight" :class="{ '!text-highlight': subMenuOpen }">About HHSAA</span>
+            <img src="/assets/2024/caret-highlight-f12c55e689ba2e143f6f5bc50062606d291eb08362b22c008a13a46a81b60773.svg" alt="" class="absolute bottom-[10px] left-[50%] translate-x-[-50%] w-[12px]" :class="{ 'hidden': !subMenuOpen }">
+          </a>
+          <ul class="desktop-nav-submenu hidden w-screen max-w-screen-maxc bg-hhsaaGreen absolute top-[var(--header-height)] left-[50%] translate-x-[-50%] px-[64px] py-[32px] gap-[64px]" :class="{ 'hidden': !subMenuOpen, 'flex': subMenuOpen }">
+            <li class="flex-none">
+              <a href="/resources/officials"><img src="/assets/2024/nav-features/nav-about-10f21c610de5b83683363f641d56980bf480a721e3836113bf1f226bde8ee72d.png" alt="Interested in Officiating?" width="320"></a>
+            </li>
+            <li class="flex-1">
+              <ul>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/about/leadership-team">Leadership Team</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/about/sport-coordinators">Sport Coordinators</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/about/officials-coordinators">Officials Coordinator</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/about/football-committee">Football Committee</a></li>
+              </ul>
+            </li>
+            <li class="flex-1">
+              <ul>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/about/hall-of-honor-selection-committee">Hall of Honor Selection Committee</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/about/records-committee-and-statisticians">Records Committee &amp; Statisticians</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a class="hover:text-highlight block" href="/about/sports-medicine-advisory-committee">Sports Medicine Advisory Committee</a></li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li class="pl-[10px]">
+          <div id="header-search" x-data="{ searchOpen: false }">
+            <a href="/search" class="hover:text-highlight text-white" @click.prevent="searchOpen = !searchOpen" @click.outside="searchOpen = false">
+              <svg alt="Search" class="w-[24px]" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9.47513 17.5999C13.5846 17.5999 16.916 14.2815 16.916 10.1881C16.916 6.09473 13.5846 2.77637 9.47513 2.77637C5.36568 2.77637 2.0343 6.09473 2.0343 10.1881C2.0343 14.2815 5.36568 17.5999 9.47513 17.5999Z" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M14.7363 13.2109L23.4955 21.936H19.0414L12.5092 15.4293L14.7363 13.2109Z" fill="currentColor"/>
+              </svg>
+            </a>
+            <div class="absolute -z-10 top-[calc(var(--header-height))] right-0 bg-black py-[16px]  w-full" x-show="searchOpen" x-transition>
+              <form action="/search" method="get" class="px-[20px] adaptive-padding-x w-full mx-auto max-w-screen-maxc flex flex-row items-stretch gap-[8px]">
+                <input id="search-input-header-desktop" type="text" name="q" value="" placeholder="Search by school, sport, or keyword" class="flex-auto rounded-[5px]">
+                <button class="flex-none text-[13px] font-semibold text-hhsaaGreen bg-lightGray rounded-[5px] px-[8px] hover:bg-white" type="submit">Search</button>
+              </form>
+            </div>
+          </div>
+
+        </li>
+      </ul>
+    </div>
+
+
+
+    <div id="header-mobile-search-and-menu" class="lg:hidden print:hidden flex flex-row items-center justify-end gap-[24px] mr-[20px] z-10">
+      <div id="header-search" class="flex-shrink-0" x-data="{ searchOpen: false }">
+        <a href="/search" @click.prevent="searchOpen = !searchOpen" @click.outside="searchOpen = false">
+          <img alt="Search" class="w-[24px]" src="/assets/2024/icon-search-2d6c945ade71637e98c97b7f2a0cf186562b3a8bef6ec431783aeb61b9e1598a.svg" />
+        </a>
+        <form action="/search" method="get" class="absolute z-10 top-[100%] bg-black p-[16px] left-0 flex flex-row items-stretch gap-[8px] w-full" x-show="searchOpen" x-transition>
+          <input id="search-input-header-mobile" type="text" name="q" value="" placeholder="Search by school, sport, or keyword" class="flex-auto rounded-[5px]">
+          <button class="flex-none text-[13px] font-semibold text-hhsaaGreen bg-white rounded-[5px] px-[8px]" type="submit">Search</button>
+        </form>
+      </div>
+      <div id="header-primary-nav" class="flex-shrink-0" x-data="{ menuOpen: false }">
+        <div id="header-primary-nav-button">
+          <a href="#" @click.prevent="menuOpen = !menuOpen">
+            <img alt="Menu" class="w-[24px]" x-show="!menuOpen" src="/assets/2024/icon-menu-031bf572b5db828cbeac24cdd9ae640b88c578f010744039f32cd7841beebed9.svg" />
+            <img alt="Close" class="w-[24px]" x-show="menuOpen" src="/assets/2024/icon-close-f5eb4007dde6b31564fe5ef1eaa9e5c8b0aad6bda7df8e0605340b14df78c31e.svg" />
+          </a>
+        </div>
+        <div id="header-primary-nav-menu" class="hidden" :class="{ 'hidden': !menuOpen }">
+          <ul class="absolute top-[var(--header-height)] left-0 w-full bg-hhsaaGreen pb-[20px] max-h-[calc(100vh-var(--header-height))]" style="overflow-y: auto;">
+            <li x-data="{ subMenuOpen: false }">
+              <div class="flex flex-row items-center justify-stretch border-b-[1px] border-white">
+                <a href="/sports" @click.prevent="subMenuOpen = !subMenuOpen" class="flex-auto block p-[20px] text-white" :class="{ '!text-highlight': subMenuOpen }">
+                  <span class="font-patuaOne text-[20px] uppercase">Sports</span>
+                </a>
+                <div class="flex-none pr-[20px] cursor-pointer" @click.prevent="subMenuOpen = !subMenuOpen">
+                  <img alt="" class="w-[24px] -rotate-90 transition-transform duration-300" x-bind:class="{ &#39;-rotate-90&#39;: !subMenuOpen }" src="/assets/2024/caret-425178fe71b8446b2e709e835b57c35b8a5d8f0641070b7abfe32f1d26de30e8.svg" />
+                </div>
+              </div>
+              <ul class="hidden pl-[20px] pb-[20px]" :class="{ 'hidden': !subMenuOpen }">
+                  <li class="pt-[30px] pb-[12px] text-[18px] border-b-[1px] border-transparentWhite">
+                    <h3 class="font-patuaOne text-transparentWhite text-[22px] uppercase">Fall</h3>
+                  </li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/air_riflery/tournament/2026">Air Riflery</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/bowling/tournament/2026">Bowling</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/cheerleading/tournament/2026">Cheerleading</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/cross_country/tournament/2026">Cross Country</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/football/tournament/2026">Football</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/volleyball_girls/tournament/2026">Girls Volleyball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/esports/tournament/2026">Esports</a></li>
+                  <li class="pt-[30px] pb-[12px] text-[18px] border-b-[1px] border-transparentWhite">
+                    <h3 class="font-patuaOne text-transparentWhite text-[22px] uppercase">Winter</h3>
+                  </li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/basketball_boys/tournament/2026">Boys Basketball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/basketball_girls/tournament/2026">Girls Basketball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/canoe_paddling/tournament/2026">Canoe Paddling</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/soccer_boys/tournament/2026">Boys Soccer</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/soccer_girls/tournament/2026">Girls Soccer</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/swimming_diving/tournament/2026">Swimming &amp; Diving</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/wrestling/tournament/2026">Wrestling</a></li>
+                  <li class="pt-[30px] pb-[12px] text-[18px] border-b-[1px] border-transparentWhite">
+                    <h3 class="font-patuaOne text-transparentWhite text-[22px] uppercase">Spring</h3>
+                  </li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/baseball/tournament/2026">Baseball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/flag-football/tournament/2026">Girls Flag Football</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/golf/tournament/2026">Golf</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/judo/tournament/2026">Judo</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/softball/tournament/2026">Softball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/surfing/tournament/2026">Surfing</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/tennis/tournament/2026">Tennis</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/track_field/tournament/2026">Track &amp; Field</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/volleyball_boys/tournament/2026">Boys Volleyball</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/water_polo/tournament/2026">Girls Water Polo</a></li>
+                    <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/sports/esports/tournament/2026">Esports</a></li>
+              </ul>
+            </li>
+            <li x-data="{ subMenuOpen: false }">
+              <div class="flex flex-row items-center justify-stretch border-b-[1px] border-white">
+                <a href="/tournaments" @click.prevent="subMenuOpen = !subMenuOpen" class="flex-auto block p-[20px] text-white" :class="{ '!text-highlight': subMenuOpen }">
+                  <span class="font-patuaOne text-[20px] uppercase">Tournaments</span>
+                </a>
+                <div class="flex-none pr-[20px] cursor-pointer" @click.prevent="subMenuOpen = !subMenuOpen">
+                  <img alt="" class="w-[24px] -rotate-90 transition-transform duration-300" x-bind:class="{ &#39;-rotate-90&#39;: !subMenuOpen }" src="/assets/2024/caret-425178fe71b8446b2e709e835b57c35b8a5d8f0641070b7abfe32f1d26de30e8.svg" />
+                </div>
+              </div>
+              <ul class="hidden pl-[20px] pb-[20px]" :class="{ 'hidden': !subMenuOpen }">
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="https://docs.google.com/document/d/1qnVOvmzYf5VMcbRyx1ZYB2SW6vExTT7DfyVKwMc_A7Y/edit?usp=sharing">2026–2027 State Tournament Schedule</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="https://gofan.co/hhsaa">Get Your Tickets</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="https://docs.google.com/spreadsheets/d/1ue88lrNAXpCqrTOfTtJYrI2tljOebNDHXGhlEdA2J5s/edit?usp=sharing">2026–2027 Start Date Calendar</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="https://docs.google.com/spreadsheets/d/1hpvfwDoRjE_sZlinlEfA03144cVfirS6qmPNWFoWOHo/edit?usp=sharing">2026–2027 League Representation</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="https://docs.google.com/spreadsheets/d/1UiOX9VJry4oNRpoJCHb1WxeAD9azvg2bh2jM_c8vjik/edit?usp=sharing">Host School Rotation</a></li>
+              </ul>
+            </li>
+            <li x-data="{ subMenuOpen: false }">
+              <div class="flex flex-row items-center justify-stretch border-b-[1px] border-white">
+                <a href="/schools" @click.prevent="subMenuOpen = !subMenuOpen" class="flex-auto block p-[20px] text-white" :class="{ '!text-highlight': subMenuOpen }">
+                  <span class="font-patuaOne text-[20px] uppercase">Schools</span>
+                </a>
+                <div class="flex-none pr-[20px] cursor-pointer" @click.prevent="subMenuOpen = !subMenuOpen">
+                  <img alt="" class="w-[24px] -rotate-90 transition-transform duration-300" x-bind:class="{ &#39;-rotate-90&#39;: !subMenuOpen }" src="/assets/2024/caret-425178fe71b8446b2e709e835b57c35b8a5d8f0641070b7abfe32f1d26de30e8.svg" />
+                </div>
+              </div>
+              <ul class="hidden pl-[20px] pb-[20px]" :class="{ 'hidden': !subMenuOpen }">
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/schools/OIA">OIA</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/schools/ILH">ILH</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/schools/BIIF">BIIF</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/schools/MIL">MIL</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/schools/KIF">KIF</a></li>
+              </ul>
+            </li>
+            <li x-data="{ subMenuOpen: false }">
+              <div class="flex flex-row items-center justify-stretch border-b-[1px] border-white">
+                <a href="/resources" @click.prevent="subMenuOpen = !subMenuOpen" class="flex-auto block p-[20px] text-white" :class="{ '!text-highlight': subMenuOpen }">
+                  <span class="font-patuaOne text-[20px] uppercase">Resources</span>
+                </a>
+                <div class="flex-none pr-[20px] cursor-pointer" @click.prevent="subMenuOpen = !subMenuOpen">
+                  <img alt="" class="w-[24px] -rotate-90 transition-transform duration-300" x-bind:class="{ &#39;-rotate-90&#39;: !subMenuOpen }" src="/assets/2024/caret-425178fe71b8446b2e709e835b57c35b8a5d8f0641070b7abfe32f1d26de30e8.svg" />
+                </div>
+              </div>
+              <ul class="hidden pl-[20px] pb-[20px]" :class="{ 'hidden': !subMenuOpen }">
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/resources/bulletin">Bulletin Board</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/resources/governing_documents">Governing Documents</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/resources/sanctioning">Sanctioning Information</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/resources/media">Media Policy</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/resources/students">For Students</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/resources/coaches">For Coaches</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/resources/officials">For Officials</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/resources/statisticians">For Statisticians</a></li>
+              </ul>
+            </li>
+            <li>
+              <div class="border-b-[1px] border-white">
+                <a href="/sponsors" class="flex-auto block p-[20px] text-white">
+                  <span class="font-patuaOne text-[20px] uppercase">Sponsors</span>
+                </a>
+              </div>
+            </li>
+            <li x-data="{ subMenuOpen: false }">
+              <div class="flex flex-row items-center justify-stretch border-b-[1px] border-white">
+                <a href="/about" @click.prevent="subMenuOpen = !subMenuOpen" class="flex-auto block p-[20px] text-white" :class="{ '!text-highlight': subMenuOpen }">
+                  <span class="font-patuaOne text-[20px] uppercase">About HHSAA</span>
+                </a>
+                <div class="flex-none pr-[20px] cursor-pointer" @click.prevent="subMenuOpen = !subMenuOpen">
+                  <img alt="" class="w-[24px] -rotate-90 transition-transform duration-300" x-bind:class="{ &#39;-rotate-90&#39;: !subMenuOpen }" src="/assets/2024/caret-425178fe71b8446b2e709e835b57c35b8a5d8f0641070b7abfe32f1d26de30e8.svg" />
+                </div>
+              </div>
+              <ul class="hidden pl-[20px] pb-[20px]" :class="{ 'hidden': !subMenuOpen }">
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/about/leadership-team">Leadership Team</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/about/sport-coordinators">Sport Coordinators</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/about/officials-coordinators">Officials Coordinator</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/about/football-committee">Football Committee</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/about/hall-of-honor-selection-committee">Hall of Honor Selection Committee</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/about/records-committee-and-statisticians">Records Committee &amp; Statisticians</a></li>
+                  <li class="py-[12px] leading-[1.2] text-white text-[17px] border-b-[1px] border-transparentWhite"><a href="/about/sports-medicine-advisory-committee">Sports Medicine Advisory Committee</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+
+
+
+    <main class="relative w-full bg-white">
+        
+<div id="league-nav-bar" class="bg-black">
+  <div class="adaptive-padding-x px-[20px] md:h-[56px] py-[15px] maxcc:px-0 max-w-screen-maxc flex flex-row items-center justify-start mx-auto gap-[16px]">
+    <div class="font-patuaOne text-[30px] leading-none uppercase text-white">
+      MIL
+    </div>
+      <a class="inline-block bg-darkGray pl-[8px] py-[4px] rounded-[5px] !pr-[32px]" href="https://milsports.org/home" target="_blank" style="background-image: url('/assets/2024/icon-external-link-white-cad36c7ec0583dfff1afc46d3a7b6c13885a2e46f0e2c1e6bca173357efc18a9.svg'); background-position: right 8px center; background-size: 1.2em;">
+        <span class="text-white text-[12px] leading-[1] font-bold uppercase">Website</span>
+      </a>
+  </div>
+</div>
+<div class="mb-[56px]" style="background: linear-gradient(94deg, #BD910E 0%, #0A9444 100%);">
+  <div class="adaptive-padding-x px-[20px] maxcc:px-0 max-w-screen-maxc mx-auto flex flex-col items-center justify-center py-[32px] gap-[24px]">
+    <img src="/assets/content/schools/MIL/thumb-MIL-thumb.png?1730163000" alt="MIL" class="max-w-[185px] max-h-[185px]">
+    <div class="text-[23px] leading-[1.3] font-bold text-white text-center">
+        Maui Interscholastic League (MIL)
+    </div>
+  </div>
+</div>
+
+
+<article class="max-w-screen-[100vw] overflow-x-auto">
+  <div class="adaptive-padding-x maxcc:px-0 max-w-screen-maxc mx-auto">
+    <h2 class="text-white text-[18px] font-patuaOne font-normal h-[38px] px-[8px] mr-[20px] md:mr-0 lg:mr-0 flex items-center bg-black uppercase" style="clip-path: polygon(0 0, calc(100% - 38px) 0, 100% 100%, 0 100%);">Member Schools (14)</h2>
+  </div>
+
+  <main class="adaptive-padding-x px-[20px] maxcc:px-0 max-w-screen-maxc mx-auto pb-[56px]">
+    <ul class="mt-[32px] grid items-start grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-[16px] md:gap-[24px] lg:gap-[32px]">
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/baldwin_high_school" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/baldwin_high_school/MIL=Baldwin-thumb.png?1730181497" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Baldwin High School</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/haleakala_waldorf_school" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/haleakala_waldorf_school/MIL=Haleakala-Walforf-thumb.png?1730181514" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Haleakala Waldorf School</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/hana_high_school" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/hana_high_school/MIL=Hana-thumb.png?1730181532" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Hana High School</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/kamehameha_schools_maui" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/kamehameha_schools_maui/MIL=KS-Maui-thumb.png?1730181554" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Kamehameha Schools - Maui</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/kihei_charter_school" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/kihei_charter_school/MIL=Kihei-Charter-School-thumb.png?1730181576" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Kihei Charter School</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/king_kekaulike_high_school" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/king_kekaulike_high_school/MIL=King-Kehaulike-thumb.png?1771980146" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">King Kekaulike High School</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/kulanihakoi_high_school" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/kulanihakoi_high_school/MIL=Kulanihakoi-thumb.png?1730181615" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Kulanihako‘i High School</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/lahainaluna_high_school" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/lahainaluna_high_school/MIL=Lahainaluna-thumb.png?1730181637" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Lahainaluna High School</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/lanai_high_school" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/lanai_high_school/MIL=Lanai-thumb.png?1730181656" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Lanai High School</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/maui_high_school" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/maui_high_school/MIL=Maui-High-School-thumb.png?1730181700" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Maui High School</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/maui_preparatory_academy" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/maui_preparatory_academy/MIL=Maui-Prep-thumb.png?1730181720" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Maui Preparatory Academy</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/maui-christian-academy" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/maui-christian-academy/MIL=Maui-Christian-Academy-thumb.png?1730181678" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Maui Christian Academy</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/molokai_high_school" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/molokai_high_school/MIL=Molokai-thumb.png?1730181738" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Molokai High School</h4>
+          </a>
+        </li>
+        <li class="flex flex-col items-center justify-center">
+          <a href="/schools/seabury_hall" class="flex flex-col items-center text-center">
+            <img src="/assets/content/schools/seabury_hall/MIL=Seabury-Hall-thumb-thumb.png?1753917004" alt="" class="h-[60px] object-contain">
+            <h4 class="text-[15px] leading-[1.2] font-normal text-black">Seabury Hall</h4>
+          </a>
+        </li>
+    </ul>
+  </main>
+
+</article>
+    </main>
+
+    <footer class="print:hidden bg-hhsaaGreen text-center text-white font-inter text-[11px] py-[40px] px-[20px]">
+      <div class="md:flex-row md:items-start md:gap-[24px] max-w-screen-maxc flex flex-col items-center mx-auto">
+        <img alt="Hawaii High School Athletic Association" class="block w-[160px] mb-[16px]" src="/assets/2024/hhsaa-logo-footer-29b7b1968daa615ee4f4a8c8b0ae8dae8a5022c0e46fe28d9e6619c4854fa5c1.svg" />
+
+        <div>
+          <p class="md:text-left">
+            Copyright &copy; 2026 The Hawaii High School Athletic Association.<br/>
+            A Community Services Website Designed by <a href="https://biggerbird.com/?ref=hhsaa" target="_blank" class="underline">Bigger Bird</a> and Hosted by <a href="https://www.datahouse.com/?ref=hhsaa" target="_blank" class="underline">DataHouse</a>
+          </p>
+
+          <hr class="my-[16px] border-transparentWhite">
+
+          <div id="maker-logos" class="flex flex-row justify-center md:justify-start items-center gap-[64px]">
+            <a href="https://biggerbird.com/?ref=hhsaa" target="_blank">
+              <img alt="Bigger Bird" class="w-[104px]" src="/assets/2024/bigger-bird-logo-footer-539f30de59d10f411654a65dbf731aca6e3eb9737c6c3ff24b124fa4de7c0d1e.png" />
+            </a>
+            <a href="https://www.datahouse.com/?ref=hhsaa" target="_blank">
+              <img alt="DataHouse" class="w-[103px]" src="/assets/2024/datahouse-logo-footer-935dca764e30b2308f5dba6b88bdbe3f352f3e2d9f10cc1bb66b6870bcb84718.png" />
+            </a>
+          </div>
+
+          <hr class="md:hidden my-[32px] border-transparentWhite">
+        </div>
+
+        <div class="md:flex-auto"></div>
+
+        <div id="social-media-icons" class="flex flex-row justify-center gap-[20px]">
+          <a href="https://x.com/HHSAAsports" target="_blank">
+            <img alt="X" src="/assets/2024/social-icon-x-e165614dce99c1eaddc214a2abe9c77704f18bfb1e7a494e936725bc6de92512.svg" />
+          </a>
+          <a href="https://www.instagram.com/hhsaasports" target="_blank">
+            <img alt="Instagram" src="/assets/2024/social-icon-instagram-fbd8883032d4cfb6bc535c9b26305bcf299aa2ff9bea1901f3dd90943bf26f4f.svg" />
+          </a>
+          <a href="https://www.tiktok.com/@hhsaasports" target="_blank">
+            <img alt="TikTok" src="/assets/2024/social-icon-tiktok-9f290a0c4473ab4fa48bb88d6bbf0448285d4e1dbc8fccbc1bb9f27f30668b05.svg" />
+          </a>
+        </div>
+      </div>
+    </footer>
+
+    <div id="properties_dialog" class="imagine-cms-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="properties_dialog_title">
+  <div class="imagine-cms-dialog__panel imagine-cms-dialog__panel--properties">
+    <div class="imagine-cms-dialog__header">
+      <h2 id="properties_dialog_title" data-imagine-dialog-title>Page Properties</h2>
+      <button type="button" class="imagine-cms-dialog__close" onclick="cancelEditProperties();" aria-label="Close">×</button>
+    </div>
+    <div id="properties_dialog_content" class="imagine-cms-dialog__content"></div>
+  </div>
+</div>
+
+<div id="page_browser_dialog" class="imagine-cms-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="page_browser_dialog_title">
+  <div class="imagine-cms-dialog__panel">
+    <div class="imagine-cms-dialog__header">
+      <h2 id="page_browser_dialog_title" data-imagine-dialog-title>Select Page</h2>
+      <button type="button" class="imagine-cms-dialog__close" onclick="hideDojoDialog('page_browser_dialog');" aria-label="Close">×</button>
+    </div>
+    <div class="imagine-cms-dialog__content">
+      <div id="page_browser" class="imagine-cms-page-browser">Loading...</div>
+      <div class="imagine-cms-dialog__footer">
+        <input id="page_browser_selection" type="text" class="form imagine-cms-dialog__input" />
+        <button type="button" onclick="closePageBrowser(); return false;" class="form_button">Select</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="insert_image_dialog" class="imagine-cms-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="insert_image_dialog_title">
+  <div class="imagine-cms-dialog__panel imagine-cms-dialog__panel--media">
+    <div class="imagine-cms-dialog__header">
+      <h2 id="insert_image_dialog_title" data-imagine-dialog-title>Insert Image</h2>
+      <button type="button" class="imagine-cms-dialog__close" onclick="cancelInsertImage();" aria-label="Close">×</button>
+    </div>
+    <div id="insert_image_dialog_content" class="imagine-cms-dialog__content"></div>
+  </div>
+</div>
+
+<div id="insert_file_dialog" class="imagine-cms-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="insert_file_dialog_title">
+  <div class="imagine-cms-dialog__panel imagine-cms-dialog__panel--media">
+    <div class="imagine-cms-dialog__header">
+      <h2 id="insert_file_dialog_title" data-imagine-dialog-title>Create Download Link</h2>
+      <button type="button" class="imagine-cms-dialog__close" onclick="cancelInsertFile();" aria-label="Close">×</button>
+    </div>
+    <div id="insert_file_dialog_content" class="imagine-cms-dialog__content"></div>
+  </div>
+</div>
+
+<div id="select_thumbnail_dialog" class="imagine-cms-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="select_thumbnail_dialog_title">
+  <div class="imagine-cms-dialog__panel imagine-cms-dialog__panel--media">
+    <div class="imagine-cms-dialog__header">
+      <h2 id="select_thumbnail_dialog_title" data-imagine-dialog-title>Select Thumbnail</h2>
+      <button type="button" class="imagine-cms-dialog__close" onclick="cancelSelectThumbnail();" aria-label="Close">×</button>
+    </div>
+    <div id="select_thumbnail_dialog_content" class="imagine-cms-dialog__content"></div>
+  </div>
+</div>
+
+<div id="gallery_dialog" class="imagine-cms-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="gallery_dialog_title">
+  <div class="imagine-cms-dialog__panel imagine-cms-dialog__panel--media">
+    <div class="imagine-cms-dialog__header">
+      <h2 id="gallery_dialog_title" data-imagine-dialog-title>Gallery</h2>
+      <button type="button" class="imagine-cms-dialog__close" onclick="hideDojoDialog('gallery_dialog');" aria-label="Close">×</button>
+    </div>
+    <div id="gallery_dialog_content" class="imagine-cms-dialog__content"></div>
+  </div>
+</div>
+
+<div id="preview_cover" onclick="return false;" style="display: none;"></div>
+<div id="dialog-temp"></div>
+
+
+    <script>
+      window.schoolMap = {"aiea_high_school":"‘Aiea High School","iolani_school":"‘Iolani School","anuenue_school":"Anuenue School","assets_school":"ASSETS School","baldwin_high_school":"Baldwin High School","campbell_high_school":"Campbell High School","castle_high_school":"Castle High School","christian_academy":"Christian Academy","christian_liberty_academy":"Christian Liberty Academy","connections_public_charter_school":"Connections Public Charter School","damien_memorial_high_school":"Damien Memorial High School","dreamhouse_ewa_beach_PCS":"Dreamhouse ‘Ewa Beach PCS","farrington_high_school":"Farrington High School","hakipuu_learning_center":"Hakipu‘u Learning Center","halau_ku_mana":"Halau Ku Mana","haleakala_waldorf_school":"Haleakala Waldorf School","hana_high_school":"Hana High School","hanalani_schools":"Hanalani Schools","hawaii_academy_of_arts_and_science":"Hawaii Academy of Arts \u0026 Science","hawaii_baptist_academy":"Hawaii Baptist Academy","hawaii_center_for_the_deaf_and_blind":"Hawaii Center for the Deaf and Blind","hawaii_preparatory_academy":"Hawaii Preparatory Academy","la_pietra_hawaii_school_for_girls":"Hawaii School for Girls at La Pietra","hawaii_technology_academy":"Hawaii Technology Academy","hawaiian_mission_academy":"Hawaiian Mission Academy","hilo_high_school":"Hilo High School","honokaa_high_school":"Honoka‘a High School","island_pacific_academy":"Island Pacific Academy","island_school":"Island School","ka_umeke_public_school":"Ka Umeke Public School","kau_high_school":"Ka‘u High School","kahuku_high_school":"Kahuku High School","kailua_high_school":"Kailua High School","kaimuki_high_school":"Kaimuki High School","kaiser_high_school":"Kaiser High School","kalaheo_high_school":"Kalaheo High School","kalani_high_school":"Kalani High School","kamaile_academy":"Kamaile Academy","kamehameha_schools_hawaii":"Kamehameha Schools - Hawaii","kamehameha_schools":"Kamehameha Schools - Kapalama","kamehameha_schools_maui":"Kamehameha Schools - Maui","kanu_o_ka_aina_new_century":"Kanu ‘O Ka ‘Aina New Century","kanuikapono":"Kanuikapono Public Charter School","kapaa_high_school":"Kapa‘a High School","kapolei_charter_school":"Kapolei Charter School","kapolei_high_school":"Kapolei High School","kauai_high_school":"Kaua‘i High School","kauai_christian_academy":"Kauai Christian Academy","kawaikini_school":"Kawaikini NCPCS","ke_ana_laahana_charter":"Ke Ana La‘ahana Charter","ke_kula_o_ehunuikaimalino":"Ke Kula ‘O Ehunuikaimalino","ke_kula_niihau_o_kekaha":"Ke Kula Niihau O Kekaha","keaau_high_school":"Kea‘au High School","kealakehe_high_school":"Kealakehe High School","kihei_charter_school":"Kihei Charter School","king_kekaulike_high_school":"King Kekaulike High School","kohala_high_school":"Kohala High School","konawaena_high_school":"Konawaena High School","kulanihakoi_high_school":"Kulanihako‘i High School","lahainaluna_high_school":"Lahainaluna High School","lanai_high_school":"Lanai High School","laupahoehoe_high_school":"Laupahoehoe High School","le_jardin_academy":"Le Jardin Academy","leilehua_high_school":"Leilehua High School","makua_lani_christian_school":"Makua Lani Christian Academy","maryknoll_school":"Maryknoll School","maui-christian-academy":"Maui Christian Academy","maui_high_school":"Maui High School","maui_preparatory_academy":"Maui Preparatory Academy","mckinley_high_school":"McKinley High School","mid_pacific_institute":"Mid-Pacific Institute","mililani_high_school":"Mililani High School","moanalua_high_school":"Moanalua High School","molokai_high_school":"Molokai High School","nanakuli_high_school":"Nanakuli High School","pac_five":"Pac-Five","pacific_buddhist_academy":"Pacific Buddhist Academy","pahoa_high_school":"Pahoa High School","parker_school":"Parker School","pearl_city_high_school":"Pearl City High School","punahou_school":"Punahou School","radford_high_school":"Radford High School","roosevelt_high_school":"Roosevelt High School","sacred_hearts_academy":"Sacred Hearts Academy","saint_louis_school":"Saint Louis School","samuel_m_kamakau_lab":"Samuel M. Kamakau Lab","seabury_hall":"Seabury Hall","st_andrews_priory":"St. Andrew’s Schools - The Priory","st_joseph_high_school":"St. Joseph High School","thompson_academy":"Thompson Academy","university_high_school":"University Laboratory School","volcano-school-of-arts-and-sciences":"Volcano School of Arts and Sciences","waianae_high_school":"Wai‘anae High School","waiakea_high_school":"Waiakea High School","waialua_high_school":"Waialua High School","waimea_high_school":"Waimea High School","waipahu_high_school":"Waipahu High School","west_hawaii_explorers_academy":"West Hawaii Explorers Academy"};
+      window.sportMap = {"air_riflery":"Air Riflery","baseball":"Baseball","basketball_boys":"Boys Basketball","basketball_girls":"Girls Basketball","bowling":"Bowling","canoe_paddling":"Canoe Paddling","cheerleading":"Cheerleading","cross_country":"Cross Country","esports":"esports","flag-football":"Girls Flag Football","football":"Football","golf":"Golf","judo":"Judo","soccer_boys":"Boys Soccer","soccer_girls":"Girls Soccer","softball":"Softball","surfing":"Surfing","swimming_diving":"Swimming \u0026 Diving","tennis":"Tennis","track_field":"Track \u0026 Field","volleyball_boys":"Boys Volleyball","volleyball_girls":"Girls Volleyball","water_polo":"Girls Water Polo","wrestling":"Wrestling"};
+      window.schoolList = Object.values(window.schoolMap);
+      window.sportList = Object.values(window.sportMap);
+    </script>
+
+    <script type="text/javascript">
+    var infolinks_pid = 3443005;
+    var infolinks_wsid = 0;
+    </script>
+    <script type="text/javascript" src="//resources.infolinks.com/js/infolinks_main.js"></script>
+  </body>
+</html>

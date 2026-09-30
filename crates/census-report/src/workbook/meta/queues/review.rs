@@ -1,14 +1,16 @@
 use super::super::{school_of, subject_of, Family, StoreRows};
 use super::{
-    class_of_2027, queue_row, COHORT_UNVERIFIED, IDENTITY_UNVERIFIED, UNRESOLVED_SCHOOL,
-    UNRESOLVED_VENUE,
+    queue_row, COHORT_UNVERIFIED, IDENTITY_UNVERIFIED, UNRESOLVED_SCHOOL, UNRESOLVED_VENUE,
 };
 use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalSchool};
 use std::collections::HashMap;
 
-pub(super) fn cohort_unverified(rows: &StoreRows, names: &HashMap<&str, &str>) -> Family {
+pub(super) fn cohort_unverified(
+    cohort: &[CanonicalAthlete],
+    names: &HashMap<&str, &str>,
+) -> Family {
     let mut family = Family::new(COHORT_UNVERIFIED);
-    for athlete in class_of_2027(&rows.athletes) {
+    for athlete in cohort {
         if !athlete.observed_grades.is_empty() {
             continue;
         }
@@ -31,10 +33,11 @@ pub(super) fn cohort_unverified(rows: &StoreRows, names: &HashMap<&str, &str>) -
 
 pub(super) fn identity_unverified(
     rows: &StoreRows,
+    cohort: &[CanonicalAthlete],
     names: &HashMap<&str, &str>,
 ) -> crate::report::ReportResult<Family> {
     let mut family = Family::new(IDENTITY_UNVERIFIED);
-    for athlete in class_of_2027(&rows.athletes) {
+    for athlete in cohort {
         let status = rows
             .identities
             .status(athlete.id.as_str())

@@ -59,16 +59,16 @@ pub(crate) fn jurisdiction_of(
     school_state.get(school).copied().flatten().into()
 }
 
-pub(crate) fn school_state_index(
-    schools: &[CanonicalSchool],
-) -> HashMap<&str, Option<UsJurisdiction>> {
+pub(crate) fn school_state_index<'a>(
+    schools: impl IntoIterator<Item = &'a CanonicalSchool>,
+) -> HashMap<&'a str, Option<UsJurisdiction>> {
     schools
-        .iter()
+        .into_iter()
         .map(|school| (school.id.as_str(), school.state))
         .collect()
 }
 
-pub(super) fn in_cohort(athlete: &CanonicalAthlete, grad_year: Option<i16>) -> bool {
+pub(crate) fn in_cohort(athlete: &CanonicalAthlete, grad_year: Option<i16>) -> bool {
     match grad_year {
         Some(year) => athlete.grad_year.get() == year,
         None => true,

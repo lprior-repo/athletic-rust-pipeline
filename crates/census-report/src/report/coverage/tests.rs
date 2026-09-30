@@ -9,6 +9,19 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use tempfile::TempDir;
 
+fn coverage_of(store: &Store, grad_year: Option<i16>) -> CoverageReport {
+    let dataset = crate::export::ExportDataset::load(store).unwrap();
+    coverage_report(&dataset, grad_year).unwrap()
+}
+
+fn census_of(store: &Store, scope: crate::report::Scope) -> crate::report::Census {
+    let dataset = crate::export::ExportDataset::load(store).unwrap();
+    crate::report::build_census(
+        &crate::report::Derivation::of(&dataset, scope, None),
+        &store.out_dir(),
+    )
+}
+
 fn fixture_store() -> (TempDir, Store) {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
@@ -277,7 +290,7 @@ fn an_empty_store_publishes_every_jurisdiction_with_a_gap() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
 
-    let report = coverage_report(&store, None).unwrap();
+    let report = coverage_of(&store, None);
 
     assert_eq!(
         report.jurisdictions.len(),
@@ -321,7 +334,7 @@ fn an_empty_store_publishes_every_jurisdiction_with_a_gap() {
 fn jurisdiction_rows_sum_to_the_store_totals() {
     let (_dir, store) = fixture_store();
 
-    let report = coverage_report(&store, Some(2027)).unwrap();
+    let report = coverage_of(&store, Some(2027));
     let published = report.published_totals();
 
     let stored_athletes = store
@@ -375,7 +388,7 @@ fn jurisdiction_rows_sum_to_the_store_totals() {
 fn a_jurisdiction_row_carries_the_counted_columns() {
     let (_dir, store) = fixture_store();
 
-    let report = coverage_report(&store, Some(2027)).unwrap();
+    let report = coverage_of(&store, Some(2027));
 
     let wi = row(&report, "WI");
     assert_eq!(wi.schools, 1);
@@ -428,7 +441,7 @@ fn a_jurisdiction_row_carries_the_counted_columns() {
 fn gap_classes_carry_the_count_that_produced_them() {
     let (_dir, store) = fixture_store();
 
-    let report = coverage_report(&store, Some(2027)).unwrap();
+    let report = coverage_of(&store, Some(2027));
 
     assert_eq!(
         gap(&report, "WI", GapClass::MissingGraduationEvidence),
@@ -508,7 +521,7 @@ fn a_mirror_result_plane_row_is_counted_but_never_core() {
         .push(evidence("athleticlive_results"));
     store.append(Table::Athletes, &mirror_athlete).unwrap();
 
-    let report = coverage_report(&store, Some(2027)).unwrap();
+    let report = coverage_of(&store, Some(2027));
     let ohio = row(&report, "OH");
     assert_eq!(ohio.athletes, 2);
     assert_eq!(ohio.athletes_core, 1);
@@ -516,7 +529,7 @@ fn a_mirror_result_plane_row_is_counted_but_never_core() {
     assert_eq!(ohio.sources.get("athleticlive_results"), Some(&1));
     assert_eq!(ohio.sources.get("ohsaa_results"), Some(&1));
 
-    let core = crate::report::build_census(&store, crate::report::Scope::Core).unwrap();
+    let core = census_of(&store, crate::report::Scope::Core);
     assert_eq!(core.totals.athletes, 1);
 }
 
@@ -589,7 +602,7 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
     );
     store.append(Table::Performances, &ak_result).unwrap();
 
-    let report = coverage_report(&store, Some(2027)).unwrap();
+    let report = coverage_of(&store, Some(2027));
 
     assert!(report
         .jurisdictions
@@ -622,7 +635,7 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
 #[test]
 fn reconcile_refuses_a_report_whose_rows_lost_or_invented_a_row() {
     let (_dir, store) = fixture_store();
-    let report = coverage_report(&store, Some(2027)).unwrap();
+    let report = coverage_of(&store, Some(2027));
 
     let mut lost = report.clone();
     lost.jurisdictions.pop();
@@ -646,7 +659,7 @@ fn reconcile_refuses_a_report_whose_rows_lost_or_invented_a_row() {
 #[test]
 fn reconcile_refuses_a_read_count_the_rows_do_not_publish() {
     let (_dir, store) = fixture_store();
-    let mut report = coverage_report(&store, Some(2027)).unwrap();
+    let mut report = coverage_of(&store, Some(2027));
 
     report.read.athletes = report.read.athletes.saturating_add(1);
     let error = report.reconcile().unwrap_err();

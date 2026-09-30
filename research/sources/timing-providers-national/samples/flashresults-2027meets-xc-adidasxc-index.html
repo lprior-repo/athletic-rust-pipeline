@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang='en'><head>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src='https://www.googletagmanager.com/gtag/js?id=UA-51589728-1'></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-51589728-1');
+</script>
+<meta charset='UTF-8'>
+<title>adidas XC Challenge</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='google' content='notranslate'>
+<link rel='stylesheet' href='css/bootstrap.min.css'>
+<link rel='stylesheet' type='text/css' href='css/my_style.css'>
+<script src='js/jquery-3.4.1.min.js'></script>
+<script src='js/bootstrap.min.js'></script>
+<link href='https://fonts.googleapis.com/css?family=Roboto|Roboto+Condensed&display=swap' rel='stylesheet'>
+<script type='text/Javascript'>
+function timedRefresh(timeoutPeriod){
+setTimeout('location.reload(true);',timeoutPeriod)}
+</script>
+<script>
+$(document).ready(function() {
+$(window).scroll(function() {
+if ($(this).scrollTop() > 20) {
+$('#toTopBtn').fadeIn();
+} else {
+$('#toTopBtn').fadeOut();
+}
+});
+$('#toTopBtn').click(function() {
+$('html, body').animate({
+scrollTop: 0
+}, 1000);
+return false;
+});
+});
+</script>
+</head>
+<script src='js/status.js'></script>
+<script src='js/index_status.js'></script>
+<script src='js/update_leaderboard.js'></script>
+<script src='js/update_weather.js'></script>
+<nav class='navbar navbar-expand-lg navbar-dark fixed-top'>
+<a class='navbar-brand' href='index.htm'><img src='adidasXC2.png'class='img-responsive logo_header'></a><p class='navbar-text text'>adidas XC Challenge<br><small>Cary, NC | September 18-19, 2026</small></p>
+<button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#collapsibleNavbar'>
+<span class='navbar-toggler-icon'></span></button>
+<div class='collapse navbar-collapse' id='collapsibleNavbar' >
+<ul class='navbar-nav ml-auto text-right'>
+<li class='nav-item' >
+<a class='nav-link'  href='https://thexcchallenge.com/'>Meet Info</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link' href='rosters.pdf'>Athletes</a>
+</li>
+</ul>
+</div>
+</nav>
+<div class='hide-on-landscape'>
+<div class='container'>
+<div class='jumbotron text-center'>
+<img src = 'adidasXC.png' width = '220' height = '150'/>
+<h4></h4>
+</div>
+</div>
+</div>
+<!-- Begin Friday Events table section. -->
+<div class='container-fluid col-md-10'>
+<div class='table-responsive'>
+<table  id='Sidebar' class='table  table-striped  table-sm  table-condensed'>
+<thead class='thead-dark'>
+<tr><th style='width: 10%' class='d-none d-sm-table-cell'>Day</th><th style='width: 8%'>Start</th><th style='width: 2%'></th><th class = 'fixed-column' style='width: 30%'>Friday Events</th><th style='width: 10%'></th><th style='width: 10%'></th><th style='width: 10%'>Result</th><th style='width: 4%'></th><th style='width: 16%'>Status</th></tr></thead>
+<tbody>
+<tr><td class='d-none d-sm-table-cell'><b>Friday</b></td><td><b>5:50 PM</b></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=001-1_compiled.htm><b>Men College/Open 6k </b></a></td><td></td><td><a href=001-1_start.htm></a></td><td><a href=001-1_compiled.htm><b>Result</b></a></td><td class='pdf_display'></td><td  id=001-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'><b>Friday</b></td><td><b>6:30 PM</b></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=002-1_compiled.htm><b>Women College/Open 5k </b></a></td><td></td><td><a href=002-1_start.htm></a></td><td><a href=002-1_compiled.htm><b>Result</b></a></td><td class='pdf_display'></td><td  id=002-1status></td></tr>
+</tbody></table>
+</div>
+</div>
+<!-- End Friday Running Events table section. -->
+<!--------------------------------------->
+<!-- Begin Saturday Running Events table section. -->
+<div class='container-fluid col-md-10'>
+<div class='table-responsive'>
+<table  id='Sidebar' class='table  table-striped  table-sm  table-condensed'>
+<thead class='thead-dark'>
+<tr><th style='width: 10%' class='d-none d-sm-table-cell'>Day</th><th style='width: 8%'>Start</th><th style='width: 2%'></th><th class = 'fixed-column' style='width: 30%'>Saturday Events</th><th style='width: 10%'></th><th style='width: 10%'></th><th style='width: 10%'>Result</th><th style='width: 4%'></th><th style='width: 16%'>Status</th></tr></thead>
+<tbody>
+<tr><td class='d-none d-sm-table-cell'><b>Saturday</b></td><td><b>8:00 AM</b></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=003-1_compiled.htm><b>Boys JV Red 5k</b></a></td><td></td><td><a href=003-1_start.htm></a></td><td><a href=003-1_compiled.htm><b>Result</b></a></td><td class='pdf_display'></td><td  id=003-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'><b>Saturday</b></td><td><b>8:30 AM</b></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=004-1_compiled.htm><b>Girls JV Red 5k</b></a></td><td></td><td><a href=004-1_start.htm></a></td><td><a href=004-1_compiled.htm><b>Result</b></a></td><td class='pdf_display'></td><td  id=004-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'><b>Saturday</b></td><td><b>9:00 AM</b></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=005-1_compiled.htm><b>Boys Championship 5k</b></a></td><td></td><td><a href=005-1_start.htm></a></td><td><a href=005-1_compiled.htm><b>Result</b></a></td><td class='pdf_display'></td><td  id=005-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'><b>Saturday</b></td><td><b>9:36 AM</b></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=006-1_compiled.htm><b>Girls Championship 5k</b></a></td><td></td><td><a href=006-1_start.htm></a></td><td><a href=006-1_compiled.htm><b>Result</b></a></td><td class='pdf_display'></td><td  id=006-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'><b>Saturday</b></td><td><b>9:54 AM</b></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=007-1_compiled.htm><b>Boys Invitational 5k</b></a></td><td></td><td><a href=007-1_start.htm></a></td><td><a href=007-1_compiled.htm><b>Result</b></a></td><td class='pdf_display'></td><td  id=007-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'><b>Saturday</b></td><td><b>10:22 AM</b></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=008-1_compiled.htm><b>Girls Invitational 5k</b></a></td><td></td><td><a href=008-1_start.htm></a></td><td><a href=008-1_compiled.htm><b>Result</b></a></td><td class='pdf_display'></td><td  id=008-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'><b>Saturday</b></td><td><b>10:51 AM</b></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=011-1_compiled.htm><b>Boys JV White 5k</b></a></td><td></td><td><a href=011-1_start.htm></a></td><td><a href=011-1_compiled.htm><b>Result</b></a></td><td class='pdf_display'></td><td  id=011-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'><b>Saturday</b></td><td><b>11:21 AM</b></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=012-1_compiled.htm><b>Girls JV White 5k</b></a></td><td></td><td><a href=012-1_start.htm></a></td><td><a href=012-1_compiled.htm><b>Result</b></a></td><td class='pdf_display'></td><td  id=012-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'><b>Saturday</b></td><td><b>12:00 PM</b></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=013-1_compiled.htm><b>Youth 2k</b></a></td><td></td><td><a href=013-1_start.htm></a></td><td><a href=013-1_compiled.htm><b>Result</b></a></td><td class='pdf_display'></td><td  id=013-1status></td></tr>
+</tbody></table>
+</div>
+</div>
+<!-- End Saturday Running Events table section. -->
+<!--------------------------------------->
+<!--------------------------------------->
+<!-- Begin Hidden Events table section. -->
+<div class='container-fluid col-md-10'>
+<div class='table-responsive'>
+<table style="display:none" id='Sidebar' class='table  table-striped  table-sm  table-condensed'>
+<thead class='thead-dark'>
+<tr><th style='width: 10%' class='d-none d-sm-table-cell'>Day</th><th style='width: 8%'>Start</th><th style='width: 2%'></th><th class = 'fixed-column' style='width: 30%'>Friday Events</th><th style='width: 10%'></th><th style='width: 10%'></th><th style='width: 10%'>Result</th><th style='width: 4%'></th><th style='width: 16%'>Status</th></tr></thead>
+<tbody>
+<!-- Paste Hidden Table Rows Here -->
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=101-1_compiled.htm><i>Men 2.9k Split</i></a></td><td></td><td><a href=101-1_start.htm></a></td><td><a href=101-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=101-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=201-1_compiled.htm><i>Men 4k Split</i></a></td><td></td><td><a href=201-1_start.htm></a></td><td><a href=201-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=201-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=102-1_compiled.htm><i>Women 2k Split</i></a></td><td></td><td><a href=102-1_start.htm></a></td><td><a href=102-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=102-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=202-1_compiled.htm><i>Women 3.2k Split</i></a></td><td></td><td><a href=202-1_start.htm></a></td><td><a href=202-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=202-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=103-1_compiled.htm><i>Boys JV Red 2k Split</i></a></td><td></td><td><a href=103-1_start.htm></a></td><td><a href=103-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=103-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=203-1_compiled.htm><i>Boys JV Red 3.2k Split</i></a></td><td></td><td><a href=203-1_start.htm></a></td><td><a href=203-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=203-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=104-1_compiled.htm><i>Girls JV Red 2k Split</i></a></td><td></td><td><a href=104-1_start.htm></a></td><td><a href=104-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=104-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=204-1_compiled.htm><i>Girls JV Red 3.2k Split</i></a></td><td></td><td><a href=204-1_start.htm></a></td><td><a href=204-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=204-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=105-1_compiled.htm><i>Boys Championship 2k Split</i></a></td><td></td><td><a href=105-1_start.htm></a></td><td><a href=105-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=105-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=205-1_compiled.htm><i>Boys Championship 3.2k Split</i></a></td><td></td><td><a href=205-1_start.htm></a></td><td><a href=205-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=205-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=106-1_compiled.htm><i>Girls Championship 2k Split</i></a></td><td></td><td><a href=106-1_start.htm></a></td><td><a href=106-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=106-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=206-1_compiled.htm><i>Girls Championship 3.2k Split</i></a></td><td></td><td><a href=206-1_start.htm></a></td><td><a href=206-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=206-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=107-1_compiled.htm><i>Boys Invitational 2k Split</i></a></td><td></td><td><a href=107-1_start.htm></a></td><td><a href=107-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=107-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=207-1_compiled.htm><i>Boys Invitational 3.2k Split</i></a></td><td></td><td><a href=207-1_start.htm></a></td><td><a href=207-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=207-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=108-1_compiled.htm><i>Girls Invitational 2k Split</i></a></td><td></td><td><a href=108-1_start.htm></a></td><td><a href=108-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=108-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=208-1_compiled.htm><i>Girls Invitational 3.2k Split</i></a></td><td></td><td><a href=208-1_start.htm></a></td><td><a href=208-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=208-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=111-1_compiled.htm><i>Boys JV White 2k Split</i></a></td><td></td><td><a href=111-1_start.htm></a></td><td><a href=111-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=111-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=211-1_compiled.htm><i>Boys JV White 3.2k Split</i></a></td><td></td><td><a href=211-1_start.htm></a></td><td><a href=211-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=211-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=112-1_compiled.htm><i>Girls JV White 2k Split</i></a></td><td></td><td><a href=112-1_start.htm></a></td><td><a href=112-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=112-1status></td></tr>
+<tr><td class='d-none d-sm-table-cell'></td><td></td><td class = 'e-status'></td><td class = 'fixed-column'><a href=212-1_compiled.htm><i>Girls JV White 3.2k Split</i></a></td><td></td><td><a href=212-1_start.htm></a></td><td><a href=212-1_compiled.htm><i>Split</i></a></td><td class=''></td><td  id=212-1status></td></tr>
+
+</tbody></table>
+</div>
+</div>
+<!-- End Hidden Events table section. -->
+<body onload='Javascript:timedRefresh(180000);'>
+<div id='statusRequest' style='display:none;'></div>
+<br>
+<div class='container'>
+<div class='panel panel-default'>
+<a href='https://www.wunderground.com/dashboard/pws/KNCCARY441'><div class='panel-body text-center' id='currentweather'></div></a>
+</div>
+</div>
+</body>
+<div class='hide-on-landscape'>
+<nav class='navbar fixed-bottom navbar-dark custom-footer'>
+<a class='navbar-brand-venue'>WakeMed Soccer Park</a>
+<span><a href = 'http://www.flashresults.com'>Flash Results Inc.</a><small> (&copy  VS25.9)</small></span>
+</nav>
+</div>
+</html>
+

@@ -1,0 +1,825 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <link rel="icon" href="https://cms-files.tssaa.org/images/logos/favicon.png" />
+    <link rel="icon" href="https://cms-files.tssaa.org/images/logos/favicon.png" sizes="32x32" />
+    <link rel="icon" href="https://cms-files.tssaa.org/images/logos/favicon-large.png" sizes="192x192" />
+    <link rel="apple-touch-icon-precomposed" href="https://cms-files.tssaa.org/images/logos/favicon-large.png" />
+    <meta name="msapplication-TileImage" content="https://cms-files.tssaa.org/images/logos/favicon-large.png" />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.min.css" integrity="sha256-UzFD2WYH2U1dQpKDjjZK72VtPeWP50NoJjd26rnAdUI=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha256-YLGeXaapI0/5IgZopewRJcFXomhRMlYYjugPLSyNjTY=" crossorigin="anonymous" />
+    <!-- <link href="https://stackpath.bootstrapcdn.com/bootswatch/4.3.1/pulse/bootstrap.min.css" rel="stylesheet"> -->
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/HackerThemes/theme-machine/dist/business-tycoon/css/bootstrap4-business-tycoon.min.css" />
+    
+    <!--
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.7.1/css/mdb.min.css" />
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.7.1/js/mdb.min.js"></script>
+    -->
+    
+    <style>
+      /* @import url(https://fonts.googleapis.com/css?family=IBM+Plex+Sans+Condensed:400,400italic,500,600,700,700italic); */
+      @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+      BODY {
+        font-family: "Google Sans Flex", sans-serif;
+        font-optical-sizing: auto;
+        font-weight: 400;
+        font-size: 1rem;
+        letter-spacing: 0.01rem;
+        line-height: 1.65;
+        font-style: normal;
+        overflow-y: scroll !important;
+      }
+      .h1, .h2, h1, h2 {
+        font-weight: 700;
+      }
+      .navbar-dark .navbar-nav .nav-link {
+        color: rgba(255,255,255,.75);
+      }
+      .nav-item {
+        margin: 0 0.5rem 0 0;
+        border-bottom: 1px solid rgba(0,0,0,0.2);
+      }
+      
+      .linkBlockColumnCards {
+        column-count: 1;
+      }
+
+      @media (min-width: 768px) {
+        .linkBlockColumnCards {
+          column-count: 2;
+        }
+      }
+      
+      .card-header {
+        border-radius: 0 !important;
+      }
+      
+      .btn-tertiary, .bg-tertiary { background-color: #94125b; color: white; }
+      .btn-tertiary:hover { background-color: #750243; color: white; }
+      
+      .btn-dark, .bg-dark { background-color: #222 !important; color: white; }
+      .btn-dark:hover { background-color: #000; }
+    </style>
+    
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.1/css/theme.bootstrap_4.min.css" />
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha256-CjSoeELFOcH0/uxWu6mC/Vlrc1AARqbm/jiiImDGV3s=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.1/js/jquery.tablesorter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sharer.js/0.5.3/sharer.min.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-C4KC7QLVK1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-C4KC7QLVK1');
+    </script>
+    
+  <title>Coaches | TSSAA</title><meta name="keywords" content="coach, educator, uses, athletics, develop, character, teach, strategies, skill, development, creates, atmosphere, makes, athlete, feel">
+<meta name="description" content="A coach is an educator that uses athletics to develop character and teach strategies for skill development and strategic thinking. A coach creates an…">
+<meta name="referrer" content="no-referrer-when-downgrade">
+<meta name="robots" content="all">
+<meta content="en_US" property="og:locale">
+<meta content="TSSAA" property="og:site_name">
+<meta content="website" property="og:type">
+<meta content="https://tssaa.org/home/coaches" property="og:url">
+<meta content="Coaches" property="og:title">
+<meta content="A coach is an educator that uses athletics to develop character and teach strategies for skill development and strategic thinking. A coach creates an…" property="og:description">
+<meta content="https://cms-files.tssaa.org/images/header-images/_1200x630_crop_center-center_82_none/Banner1_Plain.jpg?mtime=1777307379" property="og:image">
+<meta content="1200" property="og:image:width">
+<meta content="630" property="og:image:height">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@tssaa">
+<meta name="twitter:creator" content="@tssaa">
+<meta name="twitter:title" content="Coaches">
+<meta name="twitter:description" content="A coach is an educator that uses athletics to develop character and teach strategies for skill development and strategic thinking. A coach creates an…">
+<meta name="twitter:image" content="https://cms-files.tssaa.org/images/header-images/_800x418_crop_center-center_82_none/Banner1_Plain.jpg?mtime=1777307379">
+<meta name="twitter:image:width" content="800">
+<meta name="twitter:image:height" content="418">
+<link href="https://tssaa.org/home/coaches" rel="canonical">
+<link href="https://tssaa.org/" rel="home">
+<link type="text/plain" href="https://tssaa.org/humans.txt" rel="author"></head>
+
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-danger ht-tm-element">
+      <button class="navbar-toggler navbar-toggler-right py-2 px-3" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo03" aria-controls="navbarTogglerDemo03" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="fa fa-bars text-white mr-2"></span> TSSAA
+      </button>
+      <!-- <a class="navbar-brand" href="#!">TSSAA</a> -->
+
+      <div class="collapse navbar-collapse" id="navbarTogglerDemo03">
+        <ul class="navbar-nav mr-auto mt-2 mt-md-0">
+          <li class="nav-item active">
+            <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item dropdown">
+            
+                        
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              My TSSAA
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                              <a class="dropdown-item" href="https://tssaa.org/home/principals">For Principals</a>
+                              <a class="dropdown-item" href="https://tssaa.org/home/athletic-administrators">For Athletic Administrators</a>
+                              <a class="dropdown-item" href="https://tssaa.org/home/coaches">For Coaches</a>
+                              <a class="dropdown-item" href="https://tssaa.org/home/contest-officials">For Contest Officials</a>
+                              <a class="dropdown-item" href="https://tssaa.org/home/students-parents">For Students &amp; Parents</a>
+                              <a class="dropdown-item" href="https://tssaa.org/home/media">For Media</a>
+                          </div>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/sports">Sports</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/news">News</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              More
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                                <a class="dropdown-item" href="https://tssaa.org//directory/">Member Directory</a>
+                                  <a class="dropdown-item" href="https://tssaa.org//calendar/">Calendar</a>
+                                  <a class="dropdown-item" href="https://tssaa.org//classification">Classification/Alignments</a>
+                                  <a class="dropdown-item" href="https://tssaasports.com/">Championships</a>
+                                            <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="https://ms.tssaa.org/">Middle Schools</a>
+            </div>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/about-tssaa">About TSSAA</a>
+          </li>
+        </ul>
+        <!--<div class="mx-auto ">
+            <a href="/" class="navbar-brand font-weight-bolder">TSSAA</a>
+        </div>-->
+        <form class="form-inline my-2 my-lg-0" action="https://tssaa.org/search">
+          <input class="form-control mr-sm-2" name="q" type="text" placeholder="Search">
+          <button class="btn btn-danger" type="submit"><i class="fa fa-search my-1"></i></button>
+        </form>
+      </div>
+    </nav>
+    
+    
+    
+    <style>
+      .sportJumbotron {
+        background-image: url(https://cms-files.tssaa.org/images/header-images/_standard/coaches.jpg);
+        background-position: left;
+        background-repeat: no-repeat;
+        background-size: cover;
+      }
+      .jumbotron {
+        position: relative;
+        min-height: 8rem;
+        background-color: rgba(25,25,0,0.5);
+        text-shadow: 1px 1px 5px Black;
+      }
+      .sportJumbotron h1 {
+        position: absolute;
+        bottom: 0;
+      }
+    </style>
+
+    <div class="sportJumbotron">
+      <div class="jumbotron">
+        <div class="container">
+          <h1 class="font-weight-bolder text-white mb-3">
+            Coaches
+          </h1>
+        </div>
+      </div>
+    </div>
+  
+    
+  
+  <div class="container mt-4">
+  
+    <div class="row">
+      <div class="col-lg-8">
+        
+                  <div class="mb-4">
+              <div class="entry-text ">
+    <p>A coach is an educator that uses athletics to develop character and teach strategies for skill development and strategic thinking. A coach creates an atmosphere that makes each athlete feel valued and motivates them to work hard and improve in each practice or drill with the goal of contributing to the team.</p>
+</div>          </div>
+                
+        
+        
+                  <div class="mb-4">
+            <div class="card">
+              <div class="card-header bg-tertiary text-white">
+                From the Library
+              </div>
+              <div class="card-body">
+                <h3>
+                  <a href="https://tssaa.org/library/how-to-resolve-conflict-in-intense-situations" class="text-dark">
+                    How to resolve conflict in intense situations
+                  </a>
+                </h3>
+                <p>Drawing from principles of psychology and conflict resolution, this presentation from retired athletic director Jay Hammes shows you how to speak to disruptive individuals in a kind, respectful and question-based manner. This tactic not only diffuses the situation but also encourages communication, leading to a potential resolution.</p>
+                <a href="https://tssaa.org/library/how-to-resolve-conflict-in-intense-situations" class="btn btn-tertiary">Read More</a>
+                <a href="https://tssaa.org/home/coaches/library" class="btn btn-dark float-right">All Articles</a> 
+              </div>
+            </div>
+          </div>
+                
+                
+        <div class="card-columns linkBlockColumnCards">
+          
+
+
+    
+            <div class="card border-0 mb-4">
+        <div class="card-header bg-dark text-white">
+          Postseason Information
+        </div>
+        <div class="list-group">
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/tssaa-state-championship-participation-certificates">TSSAA State Championship Participation Certificates</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/postseason-tournament-fees">Postseason Tournament Fees</a>
+                  </div>
+      </div>
+                <div class="card border-0 mb-4">
+        <div class="card-header bg-dark text-white">
+          Membership Essentials
+        </div>
+        <div class="list-group">
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/portal-login">TSSAA Portal</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/public-meetings">Board and Council Meetings</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/tssaa-constitution-and-bylaws">2026-27 TSSAA Constitution and Bylaws</a>
+                  </div>
+      </div>
+                <div class="card border-0 mb-4">
+        <div class="card-header bg-dark text-white">
+          General Information
+        </div>
+        <div class="list-group">
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/awards">Awards</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/bulletin-board">Bulletin Board</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/officials-game-fees">Officials&#039; Game Fees</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/hall-of-fame">TSSAA Hall of Fame</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/academic-achievement-forms">Academic Achievement Awards</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/title-ix-trailblazers">Title IX Trailblazers</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/career-opportunities">Career Opportunities</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/tssaa-news">TSSAA Newsletter</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/classification">Classification</a>
+                  </div>
+      </div>
+                <div class="card border-0 mb-4">
+        <div class="card-header bg-dark text-white">
+          Sport Administration
+        </div>
+        <div class="list-group">
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/public-address-announcements">Public Address Announcements</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/maxpreps-official-sports-statistics">MaxPreps Official Sports Statistics</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/sports-information-assistance-for-ads">Sports Information Assistance for ADs</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/arbitergame-webinar">ArbiterGame Webinar</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/tssaa-sports-calendar-26-27">2026-27 Sports Calendars</a>
+                  </div>
+      </div>
+                <div class="card border-0 mb-4">
+        <div class="card-header bg-dark text-white">
+          Health and Safety
+        </div>
+        <div class="list-group">
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/physical-forms">Physical, Parental Consent, &amp; Other Health Forms</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/sports-medicine">Sports Medicine</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/health-safety-policies">Health &amp; Safety Policies</a>
+                  </div>
+      </div>
+                <div class="card border-0 mb-4">
+        <div class="card-header bg-dark text-white">
+          Education
+        </div>
+        <div class="list-group">
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/student-services">Student Services</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/attendance-for-tssaa-meetings">Voucher Entry for Meeting Attendance</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/nfc-coaches-education">Non-Faculty/Classified Employee Coaches Requirements</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/coaches-education">Coaching Requirements</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/rules-meetings-infomation">Rules Meetings Information</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/rules-books-for-coaches">Sport Rules Books</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/ncaa-eligibility-information">NCAA Eligibility Information</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/name-image-likeness">Name, Image and Likeness and the TSSAA Amateur Rule</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/refreps">RefReps Officiating Education System</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/parent-meeting-presentation">Parent Meeting Presentation</a>
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/tssaa-recruiting-rule-course">TSSAA Recruiting Rule Course</a>
+                  </div>
+      </div>
+                      <div class="card border-0 mb-4">
+        <div class="card-header bg-dark text-white">
+          Forms
+        </div>
+        <div class="list-group">
+                      <a class="list-group-item list-group-item-action" href="https://tssaa.org/sanctioning">Guide to Sanctioning or Hosting an Event</a>
+                  </div>
+      </div>
+          
+        </div>
+
+        
+                
+        <div class="card-columns linkBlockColumnCards">
+                                
+              
+<!--Card-->
+<div class="card mb-4">
+  
+    <!--Card image-->
+  <div class="view overlay">
+              <a href="https://tssaa.org/article/longtime-board-of-control-president-retires">
+        <img src="https://cms-files.tssaa.org/images/tssaa/articles/2026/_preview/89086/IMG_7738.jpg.jpg" class="img-fluid w-100" alt="Mike Reed with BOC members">
+      </a>
+      </div>
+    
+  <!--Card content-->
+  <div class="card-body">
+    <!--Title-->
+    <div class="text-muted pb-1">September 16, 2026</div>
+    <h4 class="card-title"><a href="https://tssaa.org/article/longtime-board-of-control-president-retires" class="text-dark">Longtime Board of Control president retires</a></h4>
+    <!--Text-->
+    <p class="card-text">Mike Reed dedicated nearly 6 decades to education in Tennessee</p>    <a href="https://tssaa.org/article/longtime-board-of-control-president-retires" class="btn btn-primary">Read More</a>  </div>
+
+</div>
+<!--/.Card-->  
+
+                                            
+              
+<!--Card-->
+<div class="card mb-4">
+  
+    <!--Card image-->
+  <div class="view overlay">
+              <a href="https://tssaa.org/article/division-i-and-girls-individual-wrestling-tournament-to-be-held-in-chattanooga">
+        <img src="https://cms-files.tssaa.org/images/tssaa/articles/2026/_preview/89189/McKenzie-Arena.jpg" class="img-fluid w-100" alt="Mc Kenzie Arena">
+      </a>
+      </div>
+    
+  <!--Card content-->
+  <div class="card-body">
+    <!--Title-->
+    <div class="text-muted pb-1">September 9, 2026</div>
+    <h4 class="card-title"><a href="https://tssaa.org/article/division-i-and-girls-individual-wrestling-tournament-to-be-held-in-chattanooga" class="text-dark">Division I Boys and Girls Individual Wrestling Tournament to be held in Chattanooga</a></h4>
+    <!--Text-->
+    <p class="card-text">No changes to be made for Division II individuals or Duals</p>    <a href="https://tssaa.org/article/division-i-and-girls-individual-wrestling-tournament-to-be-held-in-chattanooga" class="btn btn-primary">Read More</a>  </div>
+
+</div>
+<!--/.Card-->  
+
+                                            
+              
+<!--Card-->
+<div class="card mb-4">
+  
+    <!--Card image-->
+  <div class="view overlay">
+              <a href="https://tssaa.org/article/coach-of-the-year-winners-announced">
+        <img src="https://cms-files.tssaa.org/images/tssaa/articles/2026/_preview/COYBanner_2026-08-18-154713_dooj.jpg" class="img-fluid w-100" alt="COY Banner">
+      </a>
+      </div>
+    
+  <!--Card content-->
+  <div class="card-body">
+    <!--Title-->
+    <div class="text-muted pb-1">August 20, 2026</div>
+    <h4 class="card-title"><a href="https://tssaa.org/article/coach-of-the-year-winners-announced" class="text-dark">Coach of the Year winners announced</a></h4>
+    <!--Text-->
+    <p class="card-text">Coaches are selected based on their accomplishments for the 2025-26 school year</p>    <a href="https://tssaa.org/article/coach-of-the-year-winners-announced" class="btn btn-primary">Read More</a>  </div>
+
+</div>
+<!--/.Card-->  
+
+                                            
+              
+<!--Card-->
+<div class="card mb-4">
+  
+    <!--Card image-->
+  <div class="view overlay">
+              <a href="https://tssaa.org/article/middle-tennessee-administrator-honored-for-distinguished-service">
+        <img src="https://cms-files.tssaa.org/images/tssaa/articles/2026/_preview/Banner4_DistService.jpg" class="img-fluid w-100" alt="Banner4 Dist Service">
+      </a>
+      </div>
+    
+  <!--Card content-->
+  <div class="card-body">
+    <!--Title-->
+    <div class="text-muted pb-1">August 18, 2026</div>
+    <h4 class="card-title"><a href="https://tssaa.org/article/middle-tennessee-administrator-honored-for-distinguished-service" class="text-dark">Former coach and A.D. in Rutherford County honored for distinguished service</a></h4>
+    <!--Text-->
+    <p class="card-text"></p>    <a href="https://tssaa.org/article/middle-tennessee-administrator-honored-for-distinguished-service" class="btn btn-primary">Read More</a>  </div>
+
+</div>
+<!--/.Card-->  
+
+                                            
+              
+<!--Card-->
+<div class="card mb-4">
+  
+    <!--Card image-->
+  <div class="view overlay">
+              <a href="https://tssaa.org/article/board-meets-leading-into-2026-27-school-year">
+        <img src="https://cms-files.tssaa.org/images/tssaa/articles/2026/_preview/1000003352.jpg" class="img-fluid w-100" alt="1000003352">
+      </a>
+      </div>
+    
+  <!--Card content-->
+  <div class="card-body">
+    <!--Title-->
+    <div class="text-muted pb-1">August 17, 2026</div>
+    <h4 class="card-title"><a href="https://tssaa.org/article/board-meets-leading-into-2026-27-school-year" class="text-dark">Board meets leading into 2026-27 school year</a></h4>
+    <!--Text-->
+    <p class="card-text">Lacrosse seasons set to begin one week earlier for the 2026-27 school year only</p>    <a href="https://tssaa.org/article/board-meets-leading-into-2026-27-school-year" class="btn btn-primary">Read More</a>  </div>
+
+</div>
+<!--/.Card-->  
+
+                                            
+              
+<!--Card-->
+<div class="card mb-4">
+  
+    <!--Card image-->
+  <div class="view overlay">
+              <a href="https://tssaa.org/article/board-of-control-set-to-meet-on-monday-august-17">
+        <img src="https://cms-files.tssaa.org/images/tssaa/articles/2026/_preview/Banner7_BOC.jpg" class="img-fluid w-100" alt="Banner7 BOC">
+      </a>
+      </div>
+    
+  <!--Card content-->
+  <div class="card-body">
+    <!--Title-->
+    <div class="text-muted pb-1">August 13, 2026</div>
+    <h4 class="card-title"><a href="https://tssaa.org/article/board-of-control-set-to-meet-on-monday-august-17" class="text-dark">Board of Control set to meet on Monday, August 17</a></h4>
+    <!--Text-->
+    <p class="card-text">First full Board meeting of the 2026-27 school year to be held in Mt. Juliet</p>    <a href="https://tssaa.org/article/board-of-control-set-to-meet-on-monday-august-17" class="btn btn-primary">Read More</a>  </div>
+
+</div>
+<!--/.Card-->  
+
+                              </div>
+        
+        <div class="text-center mb-4">
+          <a href="/news" class="btn btn-primary">More News</a>
+        </div>
+        
+                
+                
+                
+        
+
+  <div class="card mb-4 pb-4">
+
+    <div class="card-header bg-primary text-white">
+      Upcoming
+            Events
+    </div>
+    
+    <table class="table">
+      <tbody>
+                  <tr>
+            <td>
+              <div>
+                Monday, September 21
+                                  <br/><small>at 9:30am Central</small>
+                              </div>
+            </td>
+            <td>
+              
+              <div>
+                              
+                                  <span class="badge badge-dark">Administrative Meetings</span>
+                              </div>
+              
+              <div style="margin-top: 0.25rem; margin-bottom: 0.075rem;">
+                High School Division Administrators&#039; Mtg. (Cookeville)
+              </div>
+              
+                              <div><small><em>Location: Cookeville High School (Cookeville)</em></small></div>
+                                        </td>
+          </tr>
+                  <tr>
+            <td>
+              <div>
+                Monday, September 21
+                                  <br/><small>at 10:30am Central</small>
+                              </div>
+            </td>
+            <td>
+              
+              <div>
+                              
+                                  <span class="badge badge-dark">Administrative Meetings</span>
+                              </div>
+              
+              <div style="margin-top: 0.25rem; margin-bottom: 0.075rem;">
+                Middle School Division Administrators&#039; Mtg. (Cookeville)
+              </div>
+              
+                              <div><small><em>Location: Cookeville High School (Cookeville)</em></small></div>
+                                        </td>
+          </tr>
+                  <tr>
+            <td>
+              <div>
+                Tuesday, September 22
+                                  <br/><small>ALL DAY</small>
+                              </div>
+            </td>
+            <td>
+              
+              <div>
+                                                      <a class="badge badge-danger" href="https://tssaa.org/sports/golf-boys">Boys&#039; Golf</a>
+                                      <a class="badge badge-danger" href="https://tssaa.org/sports/golf-girls">Girls&#039; Golf</a>
+                                                
+                                  <span class="badge badge-dark">Reminders</span>
+                              </div>
+              
+              <div style="margin-top: 0.25rem; margin-bottom: 0.075rem;">
+                G DI-A Districts Must Be Completed
+              </div>
+              
+                                        </td>
+          </tr>
+                  <tr>
+            <td>
+              <div>
+                Tuesday, September 22
+                                  <br/><small>ALL DAY</small>
+                              </div>
+            </td>
+            <td>
+              
+              <div>
+                                                      <a class="badge badge-danger" href="https://tssaa.org/sports/golf-boys">Boys&#039; Golf</a>
+                                      <a class="badge badge-danger" href="https://tssaa.org/sports/golf-girls">Girls&#039; Golf</a>
+                                                
+                                  <span class="badge badge-dark">Reminders</span>
+                              </div>
+              
+              <div style="margin-top: 0.25rem; margin-bottom: 0.075rem;">
+                G DII-A Districts Must Be Completed
+              </div>
+              
+                                        </td>
+          </tr>
+                  <tr>
+            <td>
+              <div>
+                Tuesday, September 22
+                                  <br/><small>at 8:00am Central</small>
+                              </div>
+            </td>
+            <td>
+              
+              <div>
+                              
+                                  <span class="badge badge-dark">Administrative Meetings</span>
+                              </div>
+              
+              <div style="margin-top: 0.25rem; margin-bottom: 0.075rem;">
+                High School Division Administrators&#039; Mtg. (Gray)
+              </div>
+              
+                              <div><small><em>Location: Daniel Boone High School (Gray)</em></small></div>
+                                            <div><small>This meeting is being held in the Eastern time zone and will take place at 9 AM eastern time.</small></div>
+                          </td>
+          </tr>
+                  <tr>
+            <td>
+              <div>
+                Tuesday, September 22
+                                  <br/><small>at 9:00am Central</small>
+                              </div>
+            </td>
+            <td>
+              
+              <div>
+                              
+                                  <span class="badge badge-dark">Administrative Meetings</span>
+                              </div>
+              
+              <div style="margin-top: 0.25rem; margin-bottom: 0.075rem;">
+                Middle School Division Administrators&#039; Mtg. (Gray)
+              </div>
+              
+                              <div><small><em>Location: Daniel Boone High School (Gray)</em></small></div>
+                                            <div><small>This meeting is being held in the Eastern time zone and will take place at 10 AM eastern time.</small></div>
+                          </td>
+          </tr>
+              </tbody>
+    </table>
+
+        
+    <div class="card-body py-0 text-center">
+      <a href="https://tssaa.org//calendar/" class="btn btn-primary">View Full Calendar</a>
+    </div>
+    
+  </div>
+
+        
+      </div> <!-- col -->
+      <div class="col-lg-4">
+        
+        <p>
+          <a href="https://tssaa.org//calendar" class="btn btn-success btn-block btn-lg font-weight-bold">September Calendar</a>
+        </p>
+        
+                
+                  <div class="card mb-4" id="sportsAccordion">
+            <div class="btn card-header bg-dark text-white text-left dropdown-toggle" id="sportsCollapseHeading" data-toggle="collapse" data-target="#sportsCollapse" aria-expanded="true" aria-controls="sportsCollapse">
+              Select a Sport
+            </div>
+            <div id="sportsCollapse" class="collapse" aria-labelledby="sportsCollapseHeading" data-parent="#sportsAccordion">
+              <div class="card-body p-0 m-0">
+                                  <a href="https://tssaa.org/sports/baseball" class="list-group-item list-group-item-action border-right-0 border-left-0">Baseball</a>
+                                  <a href="https://tssaa.org/sports/basketball-boys" class="list-group-item list-group-item-action border-right-0 border-left-0">Boys&#039; Basketball</a>
+                                  <a href="https://tssaa.org/sports/basketball-girls" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Basketball</a>
+                                  <a href="https://tssaa.org/sports/bowling" class="list-group-item list-group-item-action border-right-0 border-left-0">Bowling</a>
+                                  <a href="https://tssaa.org/sports/bowling-girls" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Bowling</a>
+                                  <a href="https://tssaa.org/sports/bowling-unified" class="list-group-item list-group-item-action border-right-0 border-left-0">Unified Bowling</a>
+                                  <a href="https://tssaa.org/sports/cheerleading" class="list-group-item list-group-item-action border-right-0 border-left-0">Cheerleading</a>
+                                  <a href="https://tssaa.org/sports/cross-country-boys" class="list-group-item list-group-item-action border-right-0 border-left-0">Boys&#039; Cross Country</a>
+                                  <a href="https://tssaa.org/sports/cross-country-girls" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Cross Country</a>
+                                  <a href="https://tssaa.org/sports/dance" class="list-group-item list-group-item-action border-right-0 border-left-0">Dance</a>
+                                  <a href="https://tssaa.org/sports/football" class="list-group-item list-group-item-action border-right-0 border-left-0">Football</a>
+                                  <a href="https://tssaa.org/sports/football-flag-girls" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Flag Football</a>
+                                  <a href="https://tssaa.org/sports/football-flag-unified" class="list-group-item list-group-item-action border-right-0 border-left-0">Unified Flag Football</a>
+                                  <a href="https://tssaa.org/sports/golf-boys" class="list-group-item list-group-item-action border-right-0 border-left-0">Boys&#039; Golf</a>
+                                  <a href="https://tssaa.org/sports/golf-girls" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Golf</a>
+                                  <a href="https://tssaa.org/sports/lacrosse-boys" class="list-group-item list-group-item-action border-right-0 border-left-0">Boys&#039; Lacrosse</a>
+                                  <a href="https://tssaa.org/sports/lacrosse-girls" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Lacrosse</a>
+                                  <a href="https://tssaa.org/sports/soccer" class="list-group-item list-group-item-action border-right-0 border-left-0">Soccer</a>
+                                  <a href="https://tssaa.org/sports/soccer-girls" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Soccer</a>
+                                  <a href="https://tssaa.org/sports/softball" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Softball</a>
+                                  <a href="https://tssaa.org/sports/tennis-boys" class="list-group-item list-group-item-action border-right-0 border-left-0">Boys&#039; Tennis</a>
+                                  <a href="https://tssaa.org/sports/tennis-girls" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Tennis</a>
+                                  <a href="https://tssaa.org/sports/track-boys" class="list-group-item list-group-item-action border-right-0 border-left-0">Boys&#039; Track and Field</a>
+                                  <a href="https://tssaa.org/sports/track-girls" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Track and Field</a>
+                                  <a href="https://tssaa.org/sports/track-unified" class="list-group-item list-group-item-action border-right-0 border-left-0">Unified Track and Field</a>
+                                  <a href="https://tssaa.org/sports/volleyball" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Volleyball</a>
+                                  <a href="https://tssaa.org/sports/wrestling" class="list-group-item list-group-item-action border-right-0 border-left-0">Wrestling</a>
+                                  <a href="https://tssaa.org/sports/wrestling-girls" class="list-group-item list-group-item-action border-right-0 border-left-0">Girls&#039; Wrestling</a>
+                              </div>
+            </div>
+          </div>
+                
+        
+                
+          
+<!--Card-->
+<div class="card mb-4">
+  
+    <!--Card image-->
+  <div class="view overlay">
+              <a href="https://tssaa.org/article/football-regional-matchups-heat-up-in-week-5">
+        <img src="https://cms-files.tssaa.org/images/tssaa/articles/2026/_preview/89238/09_CH104221.jpg" class="img-fluid w-100" alt="09 CH104221">
+      </a>
+      </div>
+    
+  <!--Card content-->
+  <div class="card-body">
+    <!--Title-->
+    <div class="text-muted pb-1">September 16, 2026</div>
+    <h4 class="card-title"><a href="https://tssaa.org/article/football-regional-matchups-heat-up-in-week-5" class="text-dark">Football regional matchups heat up in Week 5</a></h4>
+    <!--Text-->
+    <p class="card-text"></p>    <a href="https://tssaa.org/article/football-regional-matchups-heat-up-in-week-5" class="btn btn-primary">Read More</a>  </div>
+
+</div>
+<!--/.Card-->  
+
+        
+          
+<!--Card-->
+<div class="card mb-4">
+  
+    <!--Card image-->
+  <div class="view overlay">
+              <a href="https://tssaa.org/article/longtime-board-of-control-president-retires">
+        <img src="https://cms-files.tssaa.org/images/tssaa/articles/2026/_preview/89086/IMG_7738.jpg.jpg" class="img-fluid w-100" alt="Mike Reed with BOC members">
+      </a>
+      </div>
+    
+  <!--Card content-->
+  <div class="card-body">
+    <!--Title-->
+    <div class="text-muted pb-1">September 16, 2026</div>
+    <h4 class="card-title"><a href="https://tssaa.org/article/longtime-board-of-control-president-retires" class="text-dark">Longtime Board of Control president retires</a></h4>
+    <!--Text-->
+    <p class="card-text">Mike Reed dedicated nearly 6 decades to education in Tennessee</p>    <a href="https://tssaa.org/article/longtime-board-of-control-president-retires" class="btn btn-primary">Read More</a>  </div>
+
+</div>
+<!--/.Card-->  
+
+        
+          
+<!--Card-->
+<div class="card mb-4">
+  
+    <!--Card image-->
+  <div class="view overlay">
+              <a href="https://tssaa.org/article/ready-set-kickoff">
+        <img src="https://cms-files.tssaa.org/images/tssaa/articles/2026/_preview/89160/04_CR103069.jpg" class="img-fluid w-100" alt="04 CR103069">
+      </a>
+      </div>
+    
+  <!--Card content-->
+  <div class="card-body">
+    <!--Title-->
+    <div class="text-muted pb-1">September 9, 2026</div>
+    <h4 class="card-title"><a href="https://tssaa.org/article/ready-set-kickoff" class="text-dark">Week 4 action kicks off for TSSAA football</a></h4>
+    <!--Text-->
+    <p class="card-text"></p>    <a href="https://tssaa.org/article/ready-set-kickoff" class="btn btn-primary">Read More</a>  </div>
+
+</div>
+<!--/.Card-->  
+
+        
+      </div>
+    </div>
+  </div>
+    
+       
+    <div class="container d-print-none">
+      <div class="row my-4">
+                  <div class="col-sm-2 col-4">
+            <a href='https://pubads.g.doubleclick.net/gampad/jump?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=1'>
+              <img src='https://pubads.g.doubleclick.net/gampad/ad?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=1&pre=1' alt="Sponsor Logo" target="_blank" class="img-fluid"/>
+            </a>
+          </div>
+                  <div class="col-sm-2 col-4">
+            <a href='https://pubads.g.doubleclick.net/gampad/jump?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=2'>
+              <img src='https://pubads.g.doubleclick.net/gampad/ad?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=2&pre=1' alt="Sponsor Logo" target="_blank" class="img-fluid"/>
+            </a>
+          </div>
+                  <div class="col-sm-2 col-4">
+            <a href='https://pubads.g.doubleclick.net/gampad/jump?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=3'>
+              <img src='https://pubads.g.doubleclick.net/gampad/ad?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=3&pre=1' alt="Sponsor Logo" target="_blank" class="img-fluid"/>
+            </a>
+          </div>
+                  <div class="col-sm-2 col-4">
+            <a href='https://pubads.g.doubleclick.net/gampad/jump?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=4'>
+              <img src='https://pubads.g.doubleclick.net/gampad/ad?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=4&pre=1' alt="Sponsor Logo" target="_blank" class="img-fluid"/>
+            </a>
+          </div>
+                  <div class="col-sm-2 col-4">
+            <a href='https://pubads.g.doubleclick.net/gampad/jump?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=5'>
+              <img src='https://pubads.g.doubleclick.net/gampad/ad?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=5&pre=1' alt="Sponsor Logo" target="_blank" class="img-fluid"/>
+            </a>
+          </div>
+                  <div class="col-sm-2 col-4">
+            <a href='https://pubads.g.doubleclick.net/gampad/jump?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=6'>
+              <img src='https://pubads.g.doubleclick.net/gampad/ad?iu=/345689235/general_sponsor_square&sz=320x320&c=216812&tile=6&pre=1' alt="Sponsor Logo" target="_blank" class="img-fluid"/>
+            </a>
+          </div>
+              </div>
+    </div>
+    
+    <footer class="d-print-none bg-dark text-white mt-4 pt-4">
+      <div class="container">
+        <div class="row justify-content-center font-weight-bold">
+            <!-- <div class="col-sm-2 offset-sm-3">
+                <h2 class="logo"><a href="/"><img src="https://cms-files.tssaa.org/images/logos/tssaa-logo-white-block.png" class="img-fluid w-75"></a></h2>
+            </div> -->
+          
+            <div class="col-6 col-md-3 col-xl-2 text-center">
+                <a href="/">Home</a><br/>
+                <a href="/sports">Sports</a><br/>
+                <a href="/news">News</a>
+                </ul>
+            </div>
+          
+            <div class="col-6 col-md-3 col-xl-2 text-center">
+              <a href="/directory">Member Directory</a><br/>
+              <a href="/calendar">Calendar</a><br/>
+              <a href="/about-tssaa">About TSSAA</a>
+            </div>
+          
+            
+        </div>
+      </div>
+      <div class="text-center py-3">
+        <p>©2026 Tennessee Secondary School Athletic Association</p>
+      </div>
+    </footer>
+    
+        
+    <script>
+      $(function() {
+        $(".tablesorter").tablesorter({
+          theme : "bootstrap"
+        });
+      });
+    </script>
+    
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","author":{"@id":"#identity"},"copyrightHolder":{"@id":"#identity"},"copyrightYear":"2019","creator":{"@id":"https://tssaa.org/#creator"},"dateCreated":"2019-04-03T09:44:03-05:00","dateModified":"2019-07-10T13:52:52-05:00","datePublished":"2019-04-03T09:44:00-05:00","description":"A coach is an educator that uses athletics to develop character and teach strategies for skill development and strategic thinking. A coach creates an atmosphere that makes each athlete feel valued and motivates them to work hard and improve in each practice or drill with the goal of contributing to the team.","headline":"Coaches","image":{"@type":"ImageObject","url":"https://cms-files.tssaa.org/images/header-images/_1200x630_fit_center-center_82_none/Banner1_Plain.jpg?mtime=1777307379"},"inLanguage":"en-us","mainEntityOfPage":"https://tssaa.org/home/coaches","name":"Coaches","publisher":{"@id":"https://tssaa.org/#creator"},"url":"https://tssaa.org/home/coaches"},{"@id":"#identity","@type":"NGO","address":{"@type":"PostalAddress","addressCountry":"US","addressLocality":"Hermitage","addressRegion":"TN","postalCode":"37076","streetAddress":"3333 Lebanon Pike"},"alternateName":"TSSAA","description":"The Tennessee Secondary School Athletic Association is a voluntary, nonprofit, self-supported organization, conceived by school people (teachers, principals, superintendents). The purpose of the Association is to stimulate and regulate the athletic relations of the secondary schools in Tennessee. Recognizing that the primary objective of all secondary schools is to educate youth, the TSSAA aims to coordinate the athletic and scholastic programs.","duns":"075379479","email":"tssaa@tssaa.org","foundingDate":"07-01-1925","image":{"@type":"ImageObject","height":"476","url":"https://cms-files.tssaa.org/images/logos/tssaa-logo.png","width":"900"},"logo":{"@type":"ImageObject","height":"60","url":"https://cms-files.tssaa.org/images/logos/_600x60_fit_center-center_82_none/tssaa-logo.png?mtime=1770221019","width":"113"},"name":"Tennessee Secondary School Athletic Association","telephone":"615-889-6740"},{"@id":"https://tssaa.org/#creator","@type":"NGO","address":{"@type":"PostalAddress","addressCountry":"US","addressLocality":"Hermitage","addressRegion":"TN","postalCode":"37076","streetAddress":"3333 Lebanon Pike"},"alternateName":"TSSAA","description":"The Tennessee Secondary School Athletic Association is a voluntary, nonprofit, self-supported organization, conceived by school people (teachers, principals, superintendents). The purpose of the Association is to stimulate and regulate the athletic relations of the secondary schools in Tennessee. Recognizing that the primary objective of all secondary schools is to educate youth, the TSSAA aims to coordinate the athletic and scholastic programs.","duns":"075379479","email":"tssaa@tssaa.org","foundingDate":"07-01-1925","name":"Tennessee Secondary School Athletic Association","telephone":"615-889-6740","url":"https://tssaa.org/"},{"@type":"BreadcrumbList","description":"Breadcrumbs list","itemListElement":[{"@type":"ListItem","item":"https://tssaa.org/","name":"Home","position":1},{"@type":"ListItem","item":"https://tssaa.org/home/coaches","name":"Coaches","position":2}],"name":"Breadcrumbs"}]}</script></body>    
+</html>

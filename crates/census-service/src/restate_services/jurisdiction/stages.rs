@@ -30,12 +30,15 @@ impl JurisdictionCensus {
     pub(super) async fn fetcher(
         &self,
         authorized_hosts: &[String],
+        source_parallelism: usize,
     ) -> Result<Arc<Fetcher>, HandlerError> {
         let normalized = normalize_hosts(authorized_hosts);
+        let source_parallelism =
+            source_parallelism.max(census_crawl::net::DEFAULT_FAMILY_PARALLELISM);
         {
             let slot = self.fetcher.lock().await;
-            if let Some((cached, fetcher)) = slot.as_ref() {
-                if *cached == normalized {
+            if let Some((cached, lanes, fetcher)) = slot.as_ref() {
+                if *cached == normalized && *lanes == source_parallelism {
                     return Ok(Arc::clone(fetcher));
                 }
             }
@@ -52,13 +55,14 @@ impl JurisdictionCensus {
                 "the fetcher could not be built: {error}"
             )))
         })?
-        .with_family_budgets(default_family_delays());
+        .with_family_budgets(default_family_delays())
+        .with_family_parallelism(source_parallelism);
         let built = match &self.lane {
             Some(lane) => built.with_browser_lane(lane.clone()),
             None => built,
         };
         let shared = Arc::new(built);
-        *self.fetcher.lock().await = Some((normalized, Arc::clone(&shared)));
+        *self.fetcher.lock().await = Some((normalized, source_parallelism, Arc::clone(&shared)));
         Ok(shared)
     }
 
@@ -118,7 +122,9 @@ impl JurisdictionCensus {
         state: &mut JurisdictionState,
         today: &str,
     ) -> Result<(), HandlerError> {
-        let fetcher = self.fetcher(&request.authorized_hosts).await?;
+        let fetcher = self
+            .fetcher(&request.authorized_hosts, request.source_parallelism)
+            .await?;
         let lane = BrowserLaneState::of(&fetcher);
         let fingerprint =
             compute_plan_fingerprint(request.jurisdiction, request.season, request.revision, lane);

@@ -1,0 +1,1041 @@
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head><meta name='description' content='The Maine Principals' Association is a nonprofit serving Maine schools through high school interscholastic athletics governance and professional support for Kâ€“12 administrators.'/><link href="/_Styles/2010/Config.css?v=20260921c" rel="stylesheet" type="text/css" /><link href="/_Styles/Controls.css?v=20260921c" rel="stylesheet" type="text/css" /><link href="/_Styles/Dashboard.css?v=20260921c" rel="stylesheet" type="text/css" /><link href="/_Styles/TournamentCentral.css?v=20260921c" rel="stylesheet" type="text/css" /><meta charset="utf-8" /><title>
+	FusionPoint Sports - Maine Principal's Association
+</title><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta id="Viewport" name="viewport" content="width=device-width, initial-scale=1, minimal-ui" /><meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" /><meta http-equiv="Cache-control" content="max-age=300" /><link id="SiteCss" rel="stylesheet" type="text/css" href="/_Styles/Site.css?v=20260921c" /><link rel="stylesheet" type="text/css" href="/_Styles/parsley.css" /><link rel="stylesheet" type="text/css" href="/_Styles/jquery-ui.css" /><link rel="stylesheet" type="text/css" href="/_Fonts/Awesome/css/fontawesome.css" /><link rel="stylesheet" type="text/css" href="/_Fonts/Awesome/css/regular.css" /><link rel="stylesheet" type="text/css" href="/_Fonts/Awesome/css/solid.css" /><link rel="stylesheet" type="text/css" href="_Fonts/Awesome/css/duotone.css" /><link href="favicon.ico" rel="shortcut icon" type="image/x-icon" />
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+
+
+    <script type="text/javascript" src="/_Scripts/Application.js"></script>
+    <script type="text/javascript" src="/_Scripts/Controls.js"></script>
+    <script type="text/javascript" src="https://cdn.fpsports.org/3rdParty/Parsley/v2.0.7/parsley.js"></script>
+    <script type="text/javascript" src="https://cdn.fpsports.org/3rdParty/JLoadImage/js/load-image.all.min.js"></script>
+    <script src="https://cdn.fpsports.org/3rdParty/slick/slick.js"></script>
+    <link rel="stylesheet" href="https://cdn.fpsports.org/3rdParty/slick/slick.css" /><link rel="stylesheet" href="https://cdn.fpsports.org/3rdParty/slick/slick-theme.css" /><link rel="icon" sizes="196x196" href="/_Images/Logos/196x196.png" /><link rel="manifest" href="/manifest.json" /><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" /><meta name="theme-color" content="#ffffff" />
+
+    <!--jstree References-->
+    <script type="text/javascript" src="https://cdn.fpsports.org/3rdParty/jsTree/V3.1/jstree.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.fpsports.org/3rdParty/jsTree/jstree.css" /><link href="_Styles/fancy.css" rel="stylesheet" />
+    <script src="https://cdn.fpsports.org/3rdParty/fancygrid/fp/fancy_v7.full.min.js"></script>
+
+    <script type="text/javascript">
+        //Prevent Links in Standalone Web Apps Opening Mobile Safari
+        if (("standalone" in window.navigator) && window.navigator.standalone) {
+            var noddy, remotes = false;
+            document.addEventListener('click', function (event) {
+                noddy = event.target;
+                while (noddy.nodeName !== "A" && noddy.nodeName !== "HTML") {
+                    noddy = noddy.parentNode;
+                }
+                if ('href' in noddy && noddy.href.indexOf('http') !== -1 && (noddy.href.indexOf(document.location.host) !== -1 || remotes)) {
+                    event.preventDefault();
+                    document.location.href = noddy.href;
+                }
+            }, false);
+        }
+
+        $(document).ready(function () {
+            Fancy.MODULESDIR = 'https://cdn.fpsports.org/3rdParty/fancygrid/modules/';
+            FancyGrid.LICENSE = ['f3e1cd90dfb49ba1b9d16d7c5abe7260'];
+
+            FixCSS();
+
+            bindToolbarMenuFunctions('SchoolMenu_');
+
+
+        });
+
+        $(window).on('load', function () { ProcessesLinkTracking(); });
+
+        $(window).on("resize", function () {
+            FixCSS();
+        });
+
+        function FixCSS() {
+            $(":root").css("--toolbarheight", ($("#ToolbarPanel").outerHeight() ?? 0) + 'px');
+            $(":root").css("--noticeheight", ($(".dsSiteNotice").outerHeight(true) ?? 0) + 'px');
+        }
+
+
+        function ProcessesLinkTracking() {
+            var Items = [];
+
+            $('.CarouselTracker:visible').each(function () {
+                var CarouselTracker = $(this);
+                Items.push({ CarouselID: $(this).attr('carouselid'), Carousel: $(this).attr('carousel'), CarouselEntryID: $(this).attr('carouselentryid'), CarouselEntry: $(this).attr('carouselentry') });
+                $(this).find('a').each(function () { $(this).on('click', function () { ProcessLinkClick(CarouselTracker.attr('carouselid'), CarouselTracker.attr('carousel'), CarouselTracker.attr('carouselentryid'), CarouselTracker.attr('carouselentry')) }); });
+            });
+
+            var dto = {
+                'Links': Items
+            };
+
+            $.ajax({
+                type: 'post',
+                contentType: 'application/json; charset-utf-8',
+                dataType: 'json',
+                url: '/Services/CoreServices.asmx/LogLinkImpression',
+                data: JSON.stringify(dto),
+                success: function (result) {
+                }
+            });
+        }
+
+        function ProcessLinkClick(CarouselID, Carousel, CarouselEntryID, CarouselEntry) {
+            var dto = {
+                'CarouselID': CarouselID,
+                'Carousel': Carousel,
+                'CarouselEntryID': CarouselEntryID,
+                'CarouselEntry': CarouselEntry,
+            };
+
+            $.ajax({
+                type: 'post',
+                contentType: 'application/json; charset-utf-8',
+                dataType: 'json',
+                url: '/Services/CoreServices.asmx/LogLinkClick',
+                data: JSON.stringify(dto),
+                success: function (result) {
+                }
+            });
+        }
+
+
+
+    </script>
+
+    <style>
+        .LegacyItem {
+            font-size: 9px;
+            color: red;
+        }
+
+        .NewItem {
+            font-size: 9px;
+            color: red;
+        }
+
+        .dsNavigationMenuHidden {
+            display: none;
+        }
+
+        #mnuTournamentCentralButton {
+            background-color: #b12e34;
+            color: white;
+        }
+
+    </style>
+
+
+
+    
+    <link id="ShellCss" rel="stylesheet" type="text/css" href="/_Styles/SiteShell.css?v=20260921c"></link>
+
+    
+
+    <link rel="canonical" href="https://www.mpa.cc/default.aspx" />
+
+    
+    <link href="/_Styles/Calendar.css" rel="stylesheet" />
+
+    <style>
+        .dsFormPanelNormal,
+        .dsPagePanel {
+            background-color: var(--dashboard-background-color);
+        }
+
+
+        .dashboard-content {
+            gap: 40px;
+        }
+
+            .dashboard-content h2 {
+                margin: 0;
+                padding: 15px 10px 15px 10px;
+                text-align: center;
+                font-size: 25px;
+            }
+
+            .dashboard-content .dsFlexBlockFill img {
+                width: 100%;
+            }
+
+        .slick-dotted.slick-slider {
+            margin-bottom: 0px;
+        }
+
+
+
+        .dsNewsBlockBackground {
+            background-color: var(--background-inactive-color);
+        }
+
+
+        .NewsBlockWrapperPanel {
+            display: block;
+            margin: 0 auto;
+            width: Calc(100% - 100px) !important;
+        }
+
+        .NewsBlock {
+            width: Calc(100% - 20px);
+            padding: 8px;
+        }
+
+            .NewsBlock a {
+                width: Calc(100% - 24px);
+                display: block;
+                margin: 6px;
+                padding: 6px;
+                background-color: white;
+            }
+
+                .NewsBlock a:hover {
+                    text-decoration: none;
+                }
+
+            .NewsBlock .thumbimagewrapper {
+                width: Calc(100% - 8px);
+                display: block;
+                margin: 4px;
+                background-color: black;
+            }
+
+            .NewsBlock .thumbimage {
+                width: 100%;
+                display: block;
+                aspect-ratio: auto;
+                margin: 0 auto;
+            }
+
+            .NewsBlock .article {
+                display: block;
+                margin: 4px 8px 4px 8px;
+                width: Calc(100% - 16px);
+                font-size: 12px;
+                overflow: hidden;
+            }
+
+            .NewsBlock .articletitle {
+                display: block;
+                font-size: 14px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+
+            .NewsBlock .articletext {
+                overflow: hidden;
+            }
+
+            .NewsBlock .articleellipsis {
+                float: right;
+                margin-right: 10px;
+                font-weight: bold;
+            }
+
+            .NewsBlock .date {
+                font-size: 12px;
+                margin: 8px 0 8px 0;
+            }
+
+
+        .CalendarWrapper h2 {
+            margin: 0;
+        }
+
+
+        #Calendar {
+            width: 100%;
+            height: 400px;
+            font-family: Avalon;
+            font-size: 12px;
+            color: black;
+            overflow: auto;
+            background-color: white;
+            list-style-type: none;
+        }
+
+
+            #Calendar li {
+                display: block;
+                margin: 10px 0 10px 0px;
+            }
+
+            #Calendar .CalendarWrapper {
+                display: flex;
+                padding: 8px;
+                background-color: #f8f8f8;
+                width: Calc(100% - 16px);
+            }
+
+            #Calendar .CalendarDateWrapper {
+                display: block;
+                padding: 0 4px 0 0;
+                width: 68px;
+                height: 68px;
+                background: #960000;
+                font-family: Lato, sans-serif;
+                font-size: 12px;
+                line-height: 1.1;
+                font-weight: 700;
+            }
+
+            #Calendar .CalendarBody {
+                display: block;
+                width: Calc(100% - 100px);
+                height: 100%;
+                font-weight: bold;
+                font-size: 13px;
+                line-height: 1.6;
+                padding: 0 4px 4px 10px;
+            }
+
+            #Calendar .CalendarMonth {
+                font-weight: Normal;
+                margin: 10px auto 0 auto;
+                display: block;
+                color: white;
+                font-size: 18px;
+                text-align: center;
+            }
+
+            #Calendar .CalendarDay {
+                font-weight: normal;
+                margin-bottom: 0;
+                display: block;
+                color: white;
+                font-size: 26px;
+                text-align: center;
+            }
+
+            #Calendar .CalendarTitle {
+                font-weight: normal;
+                display: block;
+            }
+
+            #Calendar .CalendarLocation {
+                display: block;
+                font-weight: normal;
+                font-size: 12px;
+                font-style: italic;
+            }
+
+
+        .dsSideAds {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+            .dsSideAds span {
+                flex: 1 0 20%;
+            }
+
+            .dsSideAds a img {
+                display: block;
+                width: 100%;
+            }
+
+            .dsSideAds .HighlightedEntry {
+                flex: 1 0 50% !important;
+            }
+
+        .dsSideAds2 {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+            .dsSideAds2 span {
+                flex: 1 0 40%;
+            }
+
+            .dsSideAds2 a img {
+                display: block;
+                width: 100%;
+            }
+
+            .dsSideAds2 .HighlightedEntry {
+                flex: 1 0 100% !important;
+            }
+
+        .dsSideAds3 img {
+            width: Calc(50% - 3px) !important;
+        }
+
+
+        .dsSpotlight2 img {
+            width: Calc(50% - 3px) !important;
+        }
+
+
+
+
+
+
+
+        /* ─── SPORTS GRID ─── */
+        .sports-section {
+            margin-top: 10px;
+            margin-top: 20px;
+        }
+
+        .season-tabs {
+            display: flex;
+            gap: 0;
+            /*border-bottom: 2px solid var(--primary-dark-color);*/
+            margin-bottom: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .season-tab {
+            padding: 0.6rem 1.25rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--primary-dark-color);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: color 0.2s, border-color 0.2s;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            font-family: inherit;
+        }
+
+            .season-tab.active {
+                color: red;
+                border-bottom-color: red;
+            }
+
+            .season-tab:hover:not(.active) {
+                color: var(--primary-dark-color);
+            }
+
+        .sports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .sport-chip {
+            background: white;
+            border: 1px solid lightgrey;
+            border-radius: 5px;
+            padding: 0.75rem;
+            text-align: center;
+            text-decoration: none;
+            color: var(--primary-dark-color);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            line-height: 1.3;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+            min-height: 33px;
+        }
+
+            .sport-chip:hover {
+                background: var(--primary-dark-color);
+                color: var(--primary-light-color);
+                border-color: var(--primary-dark-color);
+                transform: translateY(-1px);
+            }
+
+        .sport-icon {
+            font-size: 1.4rem;
+        }
+
+                .sport-chip-fancy {
+            background: white;
+            border: 1px solid lightgrey;
+            border-radius: 8px;
+            padding: 0;
+            text-align: center;
+            text-decoration: none;
+            color: var(--primary-dark-color);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 17px;
+            font-weight: normal;
+            line-height: 1.3;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+            min-height: 33px;
+        }
+
+            .sport-chip-fancy:hover {
+                background-color: var(--primary-light-color) !important;
+                background-image: none !important;
+                color: var(--primary-light-color);
+                border-color: var(--primary-dark-color);
+                transform: translateY(-1px);
+            }
+
+
+
+
+
+
+        @media (max-width: 900px) {
+            .dsSideAds {
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+                .dsSideAds span {
+                    flex: 1 0 40%;
+                }
+
+                .dsSideAds .HighlightedEntry {
+                    flex: 1 0 100% !important;
+                }
+
+            .dsSpotlight2 {
+                margin-top: 10px;
+                margin-bottom: 10px;
+                display: flex;
+                flex-wrap: wrap;
+                width: 100%;
+            }
+
+                .dsSpotlight2 span {
+                    flex: 1 0 100%;
+                }
+
+                .dsSpotlight2 img {
+                    width: 100% !important;
+                    display: block;
+                }
+
+            .dsSideAds3 {
+                margin-top: 10px;
+                margin-bottom: 10px;
+                display: flex;
+                flex-wrap: wrap;
+                width: 100%;
+            }
+
+                .dsSideAds3 a {
+                    flex: 1 0 100%;
+                }
+
+                .dsSideAds3 img {
+                    width: 100% !important;
+                    display: block;
+                }
+
+            .dsSideAds2 {
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+                .dsSideAds2 span {
+                    flex: 1 0 40%;
+                }
+
+                .dsSideAds2 .HighlightedEntry {
+                    flex: 1 0 100% !important;
+                }
+        }
+
+        @media (max-width: 800px) {
+            .dashboard-content {
+                gap: 20px;
+            }
+
+            #Calendar {
+                height: 300px;
+            }
+        }
+    </style>
+
+    <script>
+        function showSeason(season, btn) {
+            document.querySelectorAll('.sports-grid').forEach(t => t.style.display = 'none');
+            document.getElementById('season-' + season).style.display = 'grid';
+            document.querySelectorAll('.season-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            return false;
+        }
+    </script>
+
+    <script>
+
+        $(document).ready(function () {
+            $('.NewsBlockWrapperPanel').slick({
+                dots: false,
+                infinite: false,
+                speed: 300,
+                centerPadding: '40px',
+                slidesToShow: 3,
+                slidesToScroll: 3,
+                responsive: [
+                    {
+                        breakpoint: 1100,
+                        settings: {
+                            slidesToShow: 3,
+                            slidesToScroll: 3
+                        }
+                    },
+                    {
+                        breakpoint: 800,
+                        settings: {
+                            slidesToShow: 1,
+                            slidesToScroll: 2
+                        }
+                    },
+                    {
+                        breakpoint: 400,
+                        settings: {
+                            slidesToShow: 1,
+                            slidesToScroll: 1
+                        }
+                    }
+                ]
+
+
+            });
+        });
+
+    </script>
+
+
+</head>
+<body>
+    <iframe id="hidden-iframe" name="hidden-iframe" style="visibility: hidden; position: absolute;"></iframe>
+    <form method="post" action="./" id="MainForm">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="v0gVjd4wKSda2tWs5RStPryZ1XCFFieT7ogAWWsb2+n1jLxI3MLokdmmVeMF0j/q8j0yDoiKagtmwAdMV6LhI2qo5SI5Smm93ggbWh6sHhE9hd/N/XS1IKMt8aYjw4MA5PeiN1B4T8oe3YapbchmcGbD8yVDTzFYAjpRBkH8RoI4G67ySHNKnrCQYzWnMKGuIuKYqjlTdCZFRrGAeUgLQIjczk/M96YBA6cH86HCTD6cCm1zovxw6gWvcx8yQ0vpXqYhkBhrANPKyy0iE2WvrQNakfO+FhDgjgdV9cLxjZPDO/y+swt0F7CuOvV6TdOWQhQ2mcWUzV27izrJa3fi0oPX/xncvuQPwGSqy1Eu4Kg6G3OEnpy0fCYLFPQ8e1PbTJtIp7N6gqsG6ZgGLiyyyjxmEIylbUjMi4z3UAF9bfP6tIM4upZ4nKFdv3bt7vd+KMOMyo7recw72vR7UF1JocykHPiysk6IyuzXXzwtTPJ9sWfDaaeL8+ZZUshXmSt3GEOTS310WLTyii5tTvZBKRHoZaNqPasIp1h60J2GVOsGXvHLNHE6iKHxCvFW2qqieGKA/qPb6RHF6ZiRcD6O95VCos93VGxGupUsnmiop0S9zKO8MsPnmKmpaJUpZHCD6J7dH51JK4kjC75i4ZByMbStpsbuFrWPhX0jPA8rPm2Ik0gY3UJK+f2iFmO1q15hb77EzulFX87BHezkB2iK7eTFXwVxGJ7KbjsJWURukIM=" />
+
+<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="CA0B0334" />
+        <div id="dsLoader"></div>
+
+        <div id="dsNavigation" class="dsNavigationOverlay">
+	
+            <div id="dsNavigationMenu" class="dsNavigationMenu">
+                <a href="javascript:void(0)" class="dsNavigationCloseButton" onclick="closeNav()">×</a>
+                <div id="dsNavigationMenuContent" class="dsNavigationMenuContent">
+		
+                    <ul id="dsNavigationMenuUL" class="dsNavigationMenuUL dsNavigationMenuSubPanel active"><li><a id="mnuDashboard" href="\">Dashboard</a></li><li><a id="mnuSportHS" class=" dsNavigationMenuLink " href="https://www.mpa.cc/default.aspx#NavigationMenu_mnuSportHS"><div style="float:left;">Sport Info - High School</div><i class="fa fa-chevron-right" style="float:right;"></i><div style="clear:both;"></div></a></li><li><a id="mnuScheduleHS" href="\DashboardSchedule.aspx">Schedules</a></li><li><a id="mnuSchoolPages" href="/SchoolPages/School.aspx">School Pages</a></li><li><a id="mnuSchoolSchedule" href="/DashboardTeamSchedule.aspx">Team Schedule</a></li><li><a id="mnuSchoolRoster" href="/DashboardTeamRoster.aspx?SeasonRoster=1">Team Rosters</a></li><li><a id="mnuMasterSchedule" href="/MasterSchedule.aspx?TeamLevelID=5">Master Schedule</a></li><li><a id="mnuTournamentCentralPastChamps" href="\Reports\PastChampionsBySport.aspx">Past Champions</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Tournament Central</div></li><li><a id="mnuTournamentDashboard" href="\DashboardTournamentCentral.aspx">Dashboard</a></li><li><a id="mnuTournamentRankings" href="\TournamentCentralRankings.aspx">Tournament Standings</a></li><li><a id="mnuTournamentRankingDetail" href="\Custom\MPA\MPADetail.aspx">Standings Detail</a></li><li><a id="mnuTournamentBrackets" href="\TournamentCentralBrackets.aspx">Brackets</a></li><li><a id="mnuTournamentTeamStats" href="\DashboardTeamRoster.aspx">Tournament Rosters</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">MPA Members</div></li><li><a id="mnuDirectory" href="\Directory.aspx">School Directory</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Important Links</div></li><li><a id="mnuSubResources_bc151e55-998d-4059-b787-bd7358089710" href="https://gofan.co/app/school/MPA" target="_blank">GoFan Tickets</a></li><li><a id="mnuSubResources_995b8d5e-a92b-42a9-a69d-e25ccb7bd59b" href="https://nwd.ink/s/mpa/" target="_blank">Championship Apparel</a></li><li><a id="mnuSubResources_81b27a2c-17b4-4f87-b76b-4c9ba0d064cd" href="https://www.flipsnack.com/tpg2020/25-26-maine-state-championships" target="_blank">Championship Programs</a></li><li><a id="mnuSubResources_bc19edee-8b9f-493b-8b85-1b522f17f382" href="https://mpaprof.org" target="_blank">Professional Division</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Resources</div></li><li><a id="mnuSubResources_4ec81bda-b4dc-4a87-97d2-ed49d96dbeba" href="/TenantHTML.aspx?D=Resources&amp;F=Heart of the Arts Awards.html">Heart of the Arts Awards</a></li><li><a id="mnuSubResources_790ab1ce-9839-4c4b-8c53-0f685ec49f1f" href="/TenantHTML.aspx?D=Resources&amp;F=Larry LaBrie Award.html">Larry LaBrie Award</a></li><li><a id="mnuSubResources_89314846-d9ea-4014-87ae-dba2d3e8bef7" href="/TenantHTML.aspx?D=Resources&amp;F=State Coaches of the Year.html">State Coaches of the Year</a></li><li><a id="mnuSubResources_2e6aacdc-eae3-40a0-9533-4d17c58be8f6" href="/TenantHTML.aspx?D=Resources&amp;F=Hall of Excellence.html">Hall of Excellence</a></li><li><a id="mnuSubResources_97264800-e8ec-4b70-97d9-950945a815b9" href="/resources/Resources/Sport%20Season%20Dates%202026-2027.pdf" target="_blank">Sport Season Dates 2026-2027</a></li><li><a id="mnuSubResources_74386b14-5073-4f49-a180-d2c035123aec" href="/resources/Resources/Sport%20Season%20Dates%202026-2030.pdf" target="_blank">Sport Season Dates 2026-2030</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">About Us</div></li><li><a id="mnuSubResources_dc6d1e2d-3d01-4121-91a2-4f0506bf6fe6" href="/TenantHTML.aspx?D=About Us&amp;F=Conference and Meeting Center.html">Conference and Meeting Center</a></li><li><a id="mnuSubResources_91872bf4-85d0-4f96-816d-d9cb32c46822" href="/TenantHTML.aspx?D=About Us&amp;F=Directions.html">Directions</a></li><li><a id="mnuSubResources_519c64de-1346-4983-a504-e35a3af37681" href="/resources/About%20Us/Handbook.pdf" target="_blank">Handbook</a></li><li><a id="mnuSubResources_05ca20cc-9f27-4d88-9ca4-b76f8c86498d" href="/TenantHTML.aspx?D=About Us&amp;F=Membership and Dues.html">Membership and Dues</a></li><li><a id="mnuSubResources_c4d62414-d45c-47bb-a31f-d04b54924eb7" href="/TenantHTML.aspx?D=About Us&amp;F=MPA Information.html">MPA Information</a></li><li><a id="mnuSubResources_aec2742a-a6f2-40a8-80e0-5d0453c3e11c" href="/TenantHTML.aspx?D=About Us&amp;F=MPA Media.html">MPA Media</a></li><li><a id="mnuSubResources_3b1946f9-be1c-4f85-abfb-977bf0edebd1" href="/TenantHTML.aspx?D=About Us&amp;F=Officers and Staff.html">Officers and Staff</a></li><li><a id="mnuSubResources_4fa45c6b-367f-47ca-9640-bbaf50b74532" href="/resources/About%20Us/Professional%20Membership%20Form.pdf" target="_blank">Professional Membership Form</a></li><li><a id="mnuSubResources_2ad7c4ce-6a0e-43f8-8d66-6d02561218c6" href="/CarouselAll.aspx?CarouselID=9" target="_blank">Sponsors</a></li><li><a id="mnuSubResources_a43b4aa0-6853-4136-a046-08df6088a406" href="/resources/About%20Us/MPA%20Acceptable%20Use%20Policy.pdf" target="_blank">MPA Acceptable Use Policy</a></li><li><a id="mnuSubResources_0c569e65-67ed-4c2b-9348-f6a4ba00b5ed" href="/resources/About%20Us/MPA%20Third-Party%20For-Profit%20Data%20Access%20Policy.pdf" target="_blank">MPA Third-Party For-Profit Data Access Policy</a></li><li><a id="mnuSubResources_616a142d-fe61-4db7-bfcc-89ad8fe286ad" href="/resources/About%20Us/MPA%20Committees%202026-2027.pdf" target="_blank">MPA Committees 2026-2027</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Account</div></li><li><a id="mnuLogin" href="Login.aspx?ReturnUrl=%2fdefault.aspx">Login</a></li><li><a id="mnuSignUp" href="SignUp.aspx?ReturnUrl=%2fdefault.aspx">Sign-Up</a></li><li><a id="mnuPasswordReset" href="\PasswordReset.aspx">Forgot Password</a></li></ul>
+                    <div style="display: none">
+                        <ul id="dsNavigationMenuHidden" class="dsNavigationMenuUL dsNavigationMenuSubPane"></ul>
+                    </div>
+                <ul id="NavigationMenu_mnuSportHS" class="dsNavigationMenuUL dsNavigationMenuSubPanel"><li><div class="dsNavigationSubMenuTitle">Sport Info - High School</div></li><li><a id="SUB_MAIN_mnuSportHS" class=" dsNavigationMenuLink " onclick="changeToMainMenu();"><i class="fa fa-arrow-left" style="float:left;"></i><div style="float:left;" class="dsNavigationMenuBackButton">MAIN MENU</div><div style="clear:both;"></div></a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Fall</div></li><li><a id="mnuSportButtonHSCornhole (Unified)" href="\SportPages\SportPageInfo.aspx?TournamentID=1026">Cornhole (Unified)</a></li><li><a id="mnuSportButtonHSCross Country (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=1">Cross Country (Boys)</a></li><li><a id="mnuSportButtonHSCross Country (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=9">Cross Country (Girls)</a></li><li><a id="mnuSportButtonHSESports Fall" href="\SportPages\SportPageInfo.aspx?TournamentID=304">ESports Fall</a></li><li><a id="mnuSportButtonHSField Hockey" href="\SportPages\SportPageInfo.aspx?TournamentID=2">Field Hockey</a></li><li><a id="mnuSportButtonHSFootball" href="\SportPages\SportPageInfo.aspx?TournamentID=3">Football</a></li><li><a id="mnuSportButtonHSGolf (Coed)" href="\SportPages\SportPageInfo.aspx?TournamentID=4">Golf (Coed)</a></li><li><a id="mnuSportButtonHSSoccer (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=5">Soccer (Boys)</a></li><li><a id="mnuSportButtonHSSoccer (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=6">Soccer (Girls)</a></li><li><a id="mnuSportButtonHSSoccer (Unified)" href="\SportPages\SportPageInfo.aspx?TournamentID=1007">Soccer (Unified)</a></li><li><a id="mnuSportButtonHSVolleyball (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=8">Volleyball (Girls)</a></li><li><a id="mnuSportButtonHSVolleyball (Unified)" href="\SportPages\SportPageInfo.aspx?TournamentID=303">Volleyball (Unified)</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Winter</div></li><li><a id="mnuSportButtonHSAlpine Ski (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=403">Alpine Ski (Boys)</a></li><li><a id="mnuSportButtonHSAlpine Ski (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=404">Alpine Ski (Girls)</a></li><li><a id="mnuSportButtonHSBasketball (Unified)" href="\SportPages\SportPageInfo.aspx?TournamentID=302">Basketball (Unified)</a></li><li><a id="mnuSportButtonHSBoys Basketball" href="\SportPages\SportPageInfo.aspx?TournamentID=100">Boys Basketball</a></li><li><a id="mnuSportButtonHSGirls Basketball" href="\SportPages\SportPageInfo.aspx?TournamentID=101">Girls Basketball</a></li><li><a id="mnuSportButtonHSDrama (Coed)" href="\SportPages\SportPageInfo.aspx?TournamentID=1010">Drama (Coed)</a></li><li><a id="mnuSportButtonHSIce Hockey (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=103">Ice Hockey (Boys)</a></li><li><a id="mnuSportButtonHSIce Hockey (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=108">Ice Hockey (Girls)</a></li><li><a id="mnuSportButtonHSIndoor Track (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=104">Indoor Track (Boys)</a></li><li><a id="mnuSportButtonHSIndoor Track (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=300">Indoor Track (Girls)</a></li><li><a id="mnuSportButtonHSNordic Ski" href="\SportPages\SportPageInfo.aspx?TournamentID=402">Nordic Ski</a></li><li><a id="mnuSportButtonHSSwimming (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=105">Swimming (Boys)</a></li><li><a id="mnuSportButtonHSSwimming (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=7">Swimming (Girls)</a></li><li><a id="mnuSportButtonHSCheerleading Winter (Coed)" href="\SportPages\SportPageInfo.aspx?TournamentID=1005">Cheerleading Winter (Coed)</a></li><li><a id="mnuSportButtonHSWrestling" href="\SportPages\SportPageInfo.aspx?TournamentID=106">Wrestling</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Spring</div></li><li><a id="mnuSportButtonHSBaseball" href="\SportPages\SportPageInfo.aspx?TournamentID=200">Baseball</a></li><li><a id="mnuSportButtonHSBocce (Unified)" href="\SportPages\SportPageInfo.aspx?TournamentID=400">Bocce (Unified)</a></li><li><a id="mnuSportButtonHSESports Spring" href="\SportPages\SportPageInfo.aspx?TournamentID=1003">ESports Spring</a></li><li><a id="mnuSportButtonHSLacrosse (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=202">Lacrosse (Boys)</a></li><li><a id="mnuSportButtonHSLacrosse (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=203">Lacrosse (Girls)</a></li><li><a id="mnuSportButtonHSOutdoor Track (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=204">Outdoor Track (Boys)</a></li><li><a id="mnuSportButtonHSOutdoor Track (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=301">Outdoor Track (Girls)</a></li><li><a id="mnuSportButtonHSSoftball" href="\SportPages\SportPageInfo.aspx?TournamentID=205">Softball</a></li><li><a id="mnuSportButtonHSTennis (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=206">Tennis (Boys)</a></li><li><a id="mnuSportButtonHSTennis (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=207">Tennis (Girls)</a></li></ul>
+	</div>
+            </div>
+        
+</div>
+
+        <div id="dsPagePanel" class="dsPagePanel">
+	
+
+            <div id="dsHeaderPanel" class="dsHeaderPanel">
+		
+                
+                <ul id="ToolbarUL" class="dsHeaderMenu">
+                    <li class="dsHeaderLeft dsNavigationMenuClosed" role="button" tabindex="0" aria-label="Open menu" onclick="openNav()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openNav();}"><i class="fa fa-bars" aria-hidden="true"></i></li>
+                    <li class="dsHeaderLeft dsNavigationMenuOpen" role="button" tabindex="0" aria-label="Close menu" onclick="closeNav()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();closeNav();}"><span style="font-size: 32px !important; font-weight: normal;" aria-hidden="true">×</span></li>
+
+                    <li id="NavBack" class="dsHeaderLeft dsHeaderNavButton">
+                        <a role="button" tabindex="0" aria-label="Back" onclick="history.back();return false;"
+                           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();history.back();}"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                    </li>
+
+                    <li id="NavRefresh" class="dsHeaderLeft dsHeaderNavButton">
+                        <a role="button" tabindex="0" aria-label="Refresh" onclick="window.location.reload();return false;"
+                           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.reload();}"><i class="fa fa-arrow-rotate-right" aria-hidden="true"></i></a>
+                    </li>
+
+                    <li id="Logo" class="dsHeaderLeft">
+                        
+                        <a href="/" id="LogoLink" onclick="changeToMainMenu();">
+                            <img id="LogoImage" class="fpLogoImage" src="/resources/_LogoSmall.png?t=2010" alt="Home" /></a>
+                        <!--<div class="dsLogoTextDatable">datable</div>-->
+                    </li>
+
+                </ul>
+                <div id="WelcomeText" class="dsWelcomeText">
+                    <a id="Signup" title="Sign-Up" class="dsHeaderButton" href="SignUp.aspx?ReturnUrl=%2fdefault.aspx">Sign-Up</a>
+                    <a id="Login" title="Login" class="dsHeaderButton" href="Login.aspx?ReturnUrl=%2fdefault.aspx">Login</a>
+                </div>
+            
+	</div>
+
+
+
+            <div class="dsMiddlePanel">
+
+                
+
+    <div class="dsSiteContent">
+
+        
+        <div id="NoticePanel" class="dsSiteNotice" role="status">
+		
+            <i class="fa fa-circle-info" aria-hidden="true"></i>
+            We are currently applying upgrades to the site. You may experience temporary display issues while the migration completes.
+        
+	</div>
+
+        
+        
+
+        
+        
+
+        
+        <main class="dsSiteContentBody">
+            
+
+    <div id="Panel1" class="dsFormPanelNormal ">
+		
+        <div id="HeaderWrapper">
+			
+        
+		</div>
+
+        <div id="BodyWrapper" class="dashboard-content">
+			
+        <div class="dsFlexBlockFill" style="margin:0;">
+				<picture><source media='(max-width: 900px)' srcset='/resources/Dashboard/Bannernarrow.jpg'><img src='/resources/Dashboard/Banner.jpg' style='vertical-align: middle;' /></picture>
+			</div><div class="dsSideAds">
+				<span class='CarouselTracker' CarouselID='1004' Carousel='Homepage Buttons' CarouselEntryID='1087' CarouselEntry='Programs'><a  target='_blank' href='https://www.flipsnack.com/tpg2020/25-26-maine-state-championships'><img src='\Resources\Carousel\Home Buttons\Images\0000001087.png'></a></span>
+<span class='CarouselTracker' CarouselID='1004' Carousel='Homepage Buttons' CarouselEntryID='1085' CarouselEntry='Go Fan Tickets'><a  target='_blank' href='https://gofan.co/app/school/MPA'><img src='\Resources\Carousel\Home Buttons\Images\0000001085.png'></a></span>
+<span class='CarouselTracker' CarouselID='1004' Carousel='Homepage Buttons' CarouselEntryID='1114' CarouselEntry='NFHS Network'><a  target='_blank' href='https://www.nfhsnetwork.com/associations/mpa'><img src='\Resources\Carousel\Home Buttons\Images\0000001114.png'></a></span>
+<span class='CarouselTracker' CarouselID='1004' Carousel='Homepage Buttons' CarouselEntryID='1081' CarouselEntry='Merchandise'><a  target='_blank' href='https://online-apparel.com/s/mpa-store/'><img src='\Resources\Carousel\Home Buttons\Images\0000001081.png'></a></span>
+
+			</div>
+<!-- SPORTS -->
+    <div class="sports-section dsFlexBlockFill">
+        <h2 class="section-title">Sports</h2>
+
+      <div class="season-tabs ">
+        <button class='season-tab active' onclick='showSeason("Fall", this); return false;'>Fall</button>
+<button class='season-tab ' onclick='showSeason("Winter", this); return false;'>Winter</button>
+<button class='season-tab ' onclick='showSeason("Spring", this); return false;'>Spring</button>
+
+      </div>
+
+      <div id="season-Fall" class="sports-grid" >
+<a href="/SportPages/SportPageInfo.aspx?TournamentID=1001" class="sport-chip">Cheerleading Fall</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=1" class="sport-chip">Cross Country</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=9" class="sport-chip">Cross Country</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=304" class="sport-chip">ESports Fall</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=2" class="sport-chip">Field Hockey</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=3" class="sport-chip">Football</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=4" class="sport-chip">Golf</br>Coed</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=5" class="sport-chip">Soccer</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=6" class="sport-chip">Soccer</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=1007" class="sport-chip">Soccer</br>Unified</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=8" class="sport-chip">Volleyball</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=303" class="sport-chip">Volleyball</br>Unified</a></div>
+<div id="season-Winter" class="sports-grid" style="display:none">
+<a href="/SportPages/SportPageInfo.aspx?TournamentID=403" class="sport-chip">Alpine Ski</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=404" class="sport-chip">Alpine Ski</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=302" class="sport-chip">Basketball</br>Unified</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=100" class="sport-chip">Boys Basketball</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=1005" class="sport-chip">Cheerleading Winter</br>Coed</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=1010" class="sport-chip">Drama</br>Coed</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=101" class="sport-chip">Girls Basketball</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=103" class="sport-chip">Ice Hockey</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=108" class="sport-chip">Ice Hockey</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=104" class="sport-chip">Indoor Track</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=300" class="sport-chip">Indoor Track</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=402" class="sport-chip">Nordic Ski</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=105" class="sport-chip">Swimming</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=7" class="sport-chip">Swimming</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=106" class="sport-chip">Wrestling</a></div>
+<div id="season-Spring" class="sports-grid" style="display:none">
+<a href="/SportPages/SportPageInfo.aspx?TournamentID=200" class="sport-chip">Baseball</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=400" class="sport-chip">Bocce</br>Unified</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=1003" class="sport-chip">ESports Spring</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=202" class="sport-chip">Lacrosse</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=203" class="sport-chip">Lacrosse</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=204" class="sport-chip">Outdoor Track</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=301" class="sport-chip">Outdoor Track</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=205" class="sport-chip">Softball</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=206" class="sport-chip">Tennis</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=207" class="sport-chip">Tennis</br>Girls</a></div>
+
+    </div>
+            <div class="dsFlexBlockFill">
+				
+
+
+<style>
+    .slick-dots {
+        bottom: -15px;
+    }
+
+        .slick-dots li.slick-active button:before {
+            color: white;
+            opacity: 1;
+        }
+
+        .slick-dots li button:before {
+            color: white;
+            opacity: .75;
+        }
+
+	.slider1 {
+		padding:20px;
+		background-color: black;
+	}
+
+ @media (max-width: 900px) {
+.slider1 {
+		padding:0px;
+}
+}
+
+</style>
+
+<script>
+    $(document).ready(function () {
+        $('.slider1').slick({
+            arrows: false,
+
+            prevArrow: '<button type="button" data-role="none" class="slick-prev">Previous</button>',
+            nextArrow: '<button type="button" data-role="none" class="slick-next">Next</button>',
+            autoplay: true,
+            autoplaySpeed: 2000,
+            speed: 1000,
+            cssEase: 'ease',
+
+            dots: true,
+            dotsClass: 'slick-dots',
+            fade: false,
+            infinite: true,
+            pauseOnHover: false,
+            pauseOnDotsHover: true
+
+
+        });
+    });
+</script>
+
+<div id="spotlight" class="slider1">
+
+<span class='CarouselTracker' CarouselID='3' Carousel='Homepage Featured' CarouselEntryID='1001' CarouselEntry='Banner'><div><a target='_blank' href=''><img src='\Resources\Carousel\Home Featured\Images\0000001001.png' /></a></div>
+</span>
+
+
+</div>
+
+			</div><div class="dsFlexBlockFill">
+				
+<style>
+    #partnerbanner {
+        background-color: white;
+        padding: 10px;
+        line-height: 1;
+    }
+
+        #partnerbanner a {
+            display: block;
+            margin: 0px 20px 0px 20px;
+        }
+
+        #partnerbanner img {
+            height: 60px;
+            width: auto;
+        }
+
+    
+</style>
+
+<script>
+    $(document).ready(function () {
+
+        $('span', $('#partnerbannerads')).sort(function () { return (Math.round(Math.random()) - 0.5) }).appendTo($('#partnerbannerads'));
+
+        for (let i = 0; i < $('#partnerbannerads').children().length - 1; i += 1) {
+            $('#partnerbanner').append('<div>' + $('#partnerbannerads').children()[i].outerHTML + '</div>');
+        }
+
+
+        $('.bannerp').slick({
+            arrows: false,
+            autoplay: true,
+
+            speed: 9000, autoplay: true, autoplaySpeed: 0, cssEase: 'linear', slidesToShow: 1, slidesToScroll: 1, variableWidth: true,
+
+            dots: false,
+            infinite: true,
+            pauseOnHover: true,
+            pauseOnDotsHover: true
+
+            //slidesToShow: 3,
+            //slidesToScroll: 1,
+            //responsive: [
+            //    {
+            //        breakpoint: 1024,
+            //        settings: {
+            //            slidesToShow: 3
+            //        }
+            //    },
+            //    {
+            //        breakpoint: 600,
+            //        settings: {
+            //            slidesToShow: 2
+            //        }
+            //    },
+            //    {
+            //        breakpoint: 480,
+            //        settings: {
+            //            slidesToShow: 1
+            //        }
+            //    } ]
+
+        });
+    });
+</script>
+
+<div id="partnerbanner" class="bannerp">
+
+</div>
+
+<div id="partnerbannerads" style="display:none">
+    <span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1047' CarouselEntry='Hammond Lumber Comapny'><a target='_blank' href='https://www.hammondlumber.com/'><img src='\Resources\Carousel\Partner\Images\0000001047.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1043' CarouselEntry='Maine Savings'><a target='_blank' href='https://www.mainesavings.com/'><img src='\Resources\Carousel\Partner\Images\0000001043.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1130' CarouselEntry='ROTC'><a target='_blank' href='https://www.goarmy.com/info?iom=CQTG-XX_LAP_Exhibit_2932408_C1B_NA_ROTC'><img src='\Resources\Carousel\Partner\Images\0000001130.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1033' CarouselEntry='ConvenientMD'><a target='_blank' href='https://convenientmd.com/'><img src='\Resources\Carousel\Partner\Images\0000001033.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1095' CarouselEntry='FAME'><a target='_blank' href='https://www.famemaine.com/levelup/'><img src='\Resources\Carousel\Partner\Images\0000001095.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1079' CarouselEntry='Just Drive'><a target='_blank' href='https://www.maine.gov/dps/bhs/ '><img src='\Resources\Carousel\Partner\Images\0000001079.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1053' CarouselEntry='Maine Golf'><a target='_blank' href='https://www.mainegolf.org/'><img src='\Resources\Carousel\Partner\Images\0000001053.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1041' CarouselEntry='Gosline Retirement Planning'><a target='_blank' href='https://www.grplans.com/'><img src='\Resources\Carousel\Partner\Images\0000001041.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1049' CarouselEntry='American Heart Association'><a target='_blank' href='https://cpr.heart.org/en/training-programs/cardiac-emergency-response-plan-cerp'><img src='\Resources\Carousel\Partner\Images\0000001049.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1051' CarouselEntry='Diadem'><a target='_blank' href='https://diademsports.com/'><img src='\Resources\Carousel\Partner\Images\0000001051.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1039' CarouselEntry='Presentation Systems'><a target='_blank' href='https://www.presentationsys.com/ecolor-poster-printer-system'><img src='\Resources\Carousel\Partner\Images\0000001039.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1027' CarouselEntry='MaxPreps'><a target='_blank' href='https://www.maxpreps.com/photography/browse-galleries?state=me'><img src='\Resources\Carousel\Partner\Images\0000001027.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1025' CarouselEntry='Mile Split'><a target='_blank' href='https://me.milesplit.com/'><img src='\Resources\Carousel\Partner\Images\0000001025.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1023' CarouselEntry='Neptune'><a target='_blank' href='https://neptunenow.com/'><img src='\Resources\Carousel\Partner\Images\0000001023.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1017' CarouselEntry='Dudley'><a target='_blank' href='https://www.mpa.cc/page/spalding.com/dudley'><img src='\Resources\Carousel\Partner\Images\0000001017.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1015' CarouselEntry='Mikasa'><a target='_blank' href='https://mikasasports.com/product-category/indoor-volleyball/'><img src='\Resources\Carousel\Partner\Images\0000001015.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1013' CarouselEntry='Penn Monto'><a target='_blank' href='https://penn-monto.com'><img src='\Resources\Carousel\Partner\Images\0000001013.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1011' CarouselEntry='Rawlings'><a target='_blank' href='https://rawlings.com'><img src='\Resources\Carousel\Partner\Images\0000001011.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1009' CarouselEntry='Select'><a target='_blank' href='https://www.mpa.cc/page/select-sport.com'><img src='\Resources\Carousel\Partner\Images\0000001009.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1007' CarouselEntry='Spalding'><a target='_blank' href='https://www.mpa.cc/page/spalding.com'><img src='\Resources\Carousel\Partner\Images\0000001007.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1005' CarouselEntry='Wilson'><a target='_blank' href='https://www.mpa.cc/page/wilson.com'><img src='\Resources\Carousel\Partner\Images\0000001005.png'  /></a></span>
+
+</div>
+
+
+
+
+
+			</div><div class="dsFlexBlockFill">
+				
+<style>
+
+	#homepageads2 {
+		margin-bottom: 40px;
+	}
+
+        #homepageads1,
+	#homepageads2 {
+	    float: left;
+	    width: 50% !important;        
+	    line-height: 1;
+        }
+
+        #homepageads1 img,
+	#homepageads2 img {
+            height: auto;
+	    width: 100%;
+        }
+
+	/* applied in code */
+	.InnerPageAdWrapper {
+	    display: flex;
+	    flex-wrap: wrap;
+    	    padding-top: 20px; 
+	}
+
+
+
+
+ @media (max-width: 800px) {
+    #homepageads1,    
+    #homepageads2 {
+        width: 100% !important;
+    }
+
+    #homepageads1 img {
+        margin-bottom:20px;
+    }
+ }
+
+    
+</style>
+
+<script>
+    $(document).ready(function () {
+
+        $('span', $('#homepageads1pool')).sort(function () { return (Math.round(Math.random()) - 0.5) }).appendTo($('#homepageads1pool'));
+
+        //for (let i = 0; i < $('#homepageads1pool').children().length; i += 1) {
+        //    $('#homepageads1').append('<div>' + $('#homepageads1pool').children()[i].outerHTML + '</div>');
+        //}
+
+	$('#homepageads1').append('<div>' + $('#homepageads1pool').children()[0].outerHTML + '</div>');
+	$('#homepageads2').append('<div>' + $('#homepageads1pool').children()[1].outerHTML + '</div>');
+
+       
+    });
+</script>
+
+<div id="homepageads1">
+
+</div>
+
+<div id="homepageads2">
+
+</div>
+
+<div id="homepageads1pool" style="display:none">
+    <span class='CarouselTracker' CarouselID='7' Carousel='Homepage Ads' CarouselEntryID='1125' CarouselEntry='ANG - Maine'><a  target='_blank' href=' https://www.airforce.com/ways-to-serve/air-national-guard/maine'><img src='\Resources\Carousel\Home Ads\Images\0000001125.png'></a></span>
+<span class='CarouselTracker' CarouselID='7' Carousel='Homepage Ads' CarouselEntryID='1121' CarouselEntry='988 - Maine'><a  target='_blank' href='https://988maine.com/'><img src='\Resources\Carousel\Home Ads\Images\0000001121.png'></a></span>
+<span class='CarouselTracker' CarouselID='7' Carousel='Homepage Ads' CarouselEntryID='1112' CarouselEntry='Measles'><a  target='_blank' href='https://www.maine.gov/dhhs/measles'><img src='\Resources\Carousel\Home Ads\Images\0000001112.png'></a></span>
+<span class='CarouselTracker' CarouselID='7' Carousel='Homepage Ads' CarouselEntryID='1099' CarouselEntry='Army ROTC'><a  target='_blank' href='https://www.goarmy.com/info?iom=CQTG-XX_LAP_Exhibit_2932408_C1B_NA_ROTC'><img src='\Resources\Carousel\Home Ads\Images\0000001099.png'></a></span>
+<span class='CarouselTracker' CarouselID='7' Carousel='Homepage Ads' CarouselEntryID='1061' CarouselEntry='Hammond'><a  target='_blank' href='https://www.hammondlumber.com/'><img src='\Resources\Carousel\Home Ads\Images\0000001061.png'></a></span>
+<span class='CarouselTracker' CarouselID='7' Carousel='Homepage Ads' CarouselEntryID='1065' CarouselEntry='Maine Savings'><a  target='_blank' href='https://mainesavings.com/'><img src='\Resources\Carousel\Home Ads\Images\0000001065.png'></a></span>
+<span class='CarouselTracker' CarouselID='7' Carousel='Homepage Ads' CarouselEntryID='1093' CarouselEntry='Finance Authority of Maine'><a  target='_blank' href='https://www.famemaine.com/levelup/'><img src='\Resources\Carousel\Home Ads\Images\0000001093.png'></a></span>
+<span class='CarouselTracker' CarouselID='7' Carousel='Homepage Ads' CarouselEntryID='1063' CarouselEntry='Just Drive'><a  target='_blank' href='https://www.maine.gov/dps/bhs/ '><img src='\Resources\Carousel\Home Ads\Images\0000001063.png'></a></span>
+<span class='CarouselTracker' CarouselID='7' Carousel='Homepage Ads' CarouselEntryID='1059' CarouselEntry='ConvenientMD'><a  target='_blank' href='https://convenientmd.com/'><img src='\Resources\Carousel\Home Ads\Images\0000001059.png'></a></span>
+
+</div>
+
+
+
+
+
+			</div><div class="dsFlexBlockFill">
+				<h2>Featured News Articles</h2><div class="NewsBlockWrapperPanel dsFlexBlockFill">
+					<span class='CarouselTracker' CarouselID='1' Carousel='News' CarouselEntryID='1978' CarouselEntry='A Message from the NFHS'><div class='NewsBlock'>
+    <a href='https://a-us.storyblok.com/f/1022696/x/100e935ea7/education-based-case-for-athletics-and-activities-the-parent-perspective-full-report.pdf?cv=1786468175599'>
+        <div class='thumbimagewrapper'>
+            <img class='thumbimage' src='\Resources\Carousel\News\Images\0000001978.png' />
+        </div>
+        <div class='article'>
+            <div class='date'>August 12, 2026</div>
+            <div class='articletext'>
+                <div class='articletitle'>A Message from the NFHS</div>The Parents' Case for Education-Based Athletics and Activities
+Findings from the National Parent Benchmark Study, July 2026
+            </div>
+        </div>
+    </a>
+</div></span>
+
+				</div>
+			</div>
+		</div>
+    <div style='clear: both;'></div>
+	</div>
+
+
+        </main>
+
+        
+        <div id="FooterPanel" class="dsSiteFooter" role="contentinfo">
+		
+            <div id="FooterLinks" class="dsSiteFooterLinks">
+
+		</div>
+            <div class="dsSiteFooterMark">
+                Powered by <span class="dsSiteFooterMarkName">FusionPoint Sports</span>
+            </div>
+        
+	</div>
+
+    </div>
+
+
+
+            </div>
+        
+</div>
+
+
+    </form>
+</body>
+</html>

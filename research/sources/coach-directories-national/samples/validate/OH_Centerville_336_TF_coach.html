@@ -1,0 +1,498 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Sports Information</title>
+    
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.core.css?501672312f6b8494e00907e69858a7f1d1f38525" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.resizable.css?301b76a5f895f39ee884d906fdb668867e39ed9a" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.selectable.css?b2ad31ce60c85bd7ec295ba7877790c827d93d9e" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.accordion.css?8f3852e482cc4ac12bde3e9e3c1edd1c2444a0f1" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.autocomplete.css?a03ae90d45d7b2312cc4d95f4d007672a3cc9b34" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.button.css?83813697ca687aaa58e7bfb4ca38eb7e6ff1f5de" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.dialog.css?6f99866341fbb6f048c16c151118f3b1ce93e582" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.slider.css?0ee8c26e00772e9ef0bfff6c2b03c60fb056d746" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.tabs.css?4c63dc7ac79130fba6eabdbe85cb42e4de581339" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.datepicker.css?a4b65839df423778fc727b5596b6766687d6eff1" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.progressbar.css?c9af6cdb74470053980ec578e69a99ab3e62a4f7" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/themes/base/jquery.ui.theme.css?6bb2a78bcbf3b2efeba24c1f2355781b0bf653bc" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/css/jPicker-1.1.6.css?c1576034ea4c4744d638272de98874844581f541" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/css/outside.css?9a56f7e8bcda301b6b8a71236c6df1bd5041624b" type="text/css" rel="stylesheet"/>
+<link href="/cassette.axd/asset/Content/css/homepagenews.css?5b132ad2ced7c3264c5d9097dc38cdebb26469c4" type="text/css" rel="stylesheet"/>
+
+    
+<script src="/cassette.axd/asset/Scripts/jquery/aaajquery-1.7.1.js?6fb1c88177ea85b7c24830db2d820ffb93929d7d" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/jquery/jpicker-1.1.6.js?76741ca3ed7ae3ef14df07039d255ba7215cd9e6" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/jquery/jquery-ui-1.8.18.js?adc7effe52a4bd89c5e0545f7436a89902d0edf1" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/jquery/jquery.maskedinput.js?fd90d9549ccb3d0f723a2b63c2c316ac345619f1" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/jquery/jquery.tmpl.min.js?7269e8403c65b5001461afcd9e53b48377d5091b" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/jquery/jquery.unobtrusive-ajax.js?d5ee3f63a0bf768b0d0f0e6f9cffc73099c939a2" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/jquery/jquery.validate.js?cdacfd69c59d1c79c95e2b462eb416cad998666e" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/jquery/jquery.validate.unobtrusive.js?84d12eed9fcb492d63ee8a5385171d659016a886" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/jquery/jquery.watermark.js?9a86fc10985edfd38ecd8cd397eb9df931bfa904" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/jquery/wysihtml5-0.3.0_rc2.js?a3b5021cbc12a10ef7a25ce8554655c476a58b70" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/base/bootstrap-wysihtml5.js?6d23dfe8d7e38b6ac82b1a2131e68d779d23bdfb" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/base/bootstrap.js?d1b6405f8a70f4bec8206f12b0129b175e02562c" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/base/json2.js?658af31f7fdab79b357cb346c7086dad0df2b09d" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/base/modernizr-2.5.3.js?2e74d516f1c83a113d522388ee98320993a0103f" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/base/site.js?7570edd64d1f718731dc6b9f93e9124b49227fcf" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/base/UnobtrusiveValidators.js?286c207c7d6b1e2d6d3b1c350f27931f1ea71b19" type="text/javascript"></script>
+<script src="/cassette.axd/asset/Scripts/base/updateValidation.js?a32ff39b28d06cd4919328233433c0cde62a9b52" type="text/javascript"></script>
+
+    <style type="text/css">
+        #content {padding-top:0px;}
+        header {
+                background:none;
+                height:0px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navbar" data-dropdown="dropdown">
+            <div class="navbar-inner">
+                <div class="container">
+                    <!-- production -->
+                </div>
+            </div>
+        </div>
+        <header>   
+            <a href="http://www.ohsaa.org" class="logo"><img src="/Content/Images/mock_cuts/OHSAALogo.png" /></a>
+        </header>
+    </div>
+    <div class="container">
+        <section id="content">
+        <div class="row-fluid">
+            
+<link href="/Content/css/SchoolDirectory.css" rel="stylesheet" />
+<div class="span2" style="margin-left:10em; width:83%; margin-top:0em;">
+    <br />
+    <a href="/Outside/SearchSchool"><input type="button" class="btn btn-warning" style="float:right" value="Find Another School"></a>
+<br />
+<br />
+<div class="schoolHeader" style="color: #FFFF11; background-color: #000000;">
+    <h2>CENTERVILLE (336)</h2>
+    500 E Franklin St
+    <br />
+    Centerville, OH 45459
+</div>
+
+
+</div>
+<div class="span10" style="margin-left:10em;">
+    
+
+<ul class="nav nav-pills">
+        <li class="">
+        <a href="/Outside/Schedule?ohsaaId=336">School Information</a>
+    </li>
+    <li>
+        &nbsp; &nbsp; 
+    </li>
+
+        <li class="">
+        <a href="/Outside/Schedule/SchoolDistrict?ohsaaId=336">School District</a>
+    </li>
+    <li>
+        &nbsp; &nbsp; 
+    </li>
+
+        <li class="">
+        <a href="/Outside/Schedule/AthleticDirector?ohsaaId=336">Athletic Department</a>
+    </li>
+    <li>
+        &nbsp; &nbsp; 
+    </li>
+
+        <li class="active">
+        <a href="/Outside/Schedule/SportsInformation?ohsaaId=336">Sports</a>
+    </li>
+    <li>
+        &nbsp; &nbsp; 
+    </li>
+
+    <li><a href="https://go.dragonflyathletics.com/sites/OHSAA/97JV2N/about" target="_blank">Athletic Schedules</a></li>
+</ul>
+
+    <div class="displaySection">
+        <div class="hero-unit" style="height:15px; padding-bottom:30px; text-align:center">
+            <h2>Sports (2026-27)</h2>
+        </div>
+        <span class="displaySubheader">Note: N/A indicates sport not offered. The OHSAA tournament division is displayed after each coaches name. Ex: Div-II</span>
+        <br />
+        <br />
+        <table class="displayTable">
+            <tr id="informationSportHeaderRow">
+                <th>
+                    Sport
+                </th>
+                <th>
+                    Head Boys Coach
+                </th>
+                <th>
+                    Head Girls Coach
+                </th>
+            </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Baseball
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:jason.whited@centerville.k12.oh.us" class="fieldValue">Jason  Whited (Div-I)</a>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Basketball
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+TBA (Div-I)                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+TBA (Div-I)                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Bowling
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:jrezabek@aol.com" class="fieldValue">Jeff Rezabek (Div-I)</a>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+TBA (Div-I)                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Cross Country
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:steeple844@aol.com" class="fieldValue">James Weckesser (Div-I)</a>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:ali.erickson@centerville.k12.oh.us" class="fieldValue">Ali Erickson (Div-I)</a>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Field Hockey
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Flag Football
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Football - 11 player
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:john.puckett@centerville.k12.oh.us" class="fieldValue">John Puckett (Div-I)</a>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Golf
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:wes.mercer@centerville.k12.oh.us" class="fieldValue">Wesley Mercer (Div-I)</a>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:nick.nagel@centerville.k12.oh.us" class="fieldValue">Nicholas Nagel (Div-I)</a>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Gymnastics
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+TBA (Div-I)                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Ice Hockey
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Lacrosse - Boys
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:troy.stehlin@centerville.k12.oh.us" class="fieldValue">Troy  Stehlin (Div-I)</a>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Lacrosse - Girls
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:kziegert25@gmail.com" class="fieldValue">Katie Ziegert (Div-I)</a>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Soccer
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:jeff.monbeck@centerville.k12.oh.us" class="fieldValue">Jeff Monbeck (Div-I)</a>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:bradley.schluter@fcdayton.org" class="fieldValue">Bradley Schluter (Div-I)</a>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Softball-Fast Pitch
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:whutch16@yahoo.com" class="fieldValue">Wendell Hutchinson (Div-I)</a>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Swimming &amp; Diving
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+TBA (Div-I)                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+TBA (Div-I)                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Tennis - Boys
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+TBA (Div-I)                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Tennis - Girls
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+N/A                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:mike.laughlin@centerville.k12.oh.us" class="fieldValue">Michael Laughlin  (Div-I)</a>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Track &amp; Field
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:matt.somerlot@centerville.k12.oh.us" class="fieldValue">Matt Somerlot (Div-I)</a>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+TBA (Div-I)                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Volleyball
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:Brewerto@mail.uc.edu" class="fieldValue">Troy Brewer (Div-I)</a>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:dan.peterson@centerville.k12.oh.us" class="fieldValue">Dan Peterson (Div-I)</a>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <span class="fieldValue">
+                            Wrestling
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+                                <a href="mailto:alan.bair@centerville.k12.oh.us" class="fieldValue">Alan Bair (Div-I)</a>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="fieldValue">
+TBA (Div-I)                        </span>
+                    </td>
+                </tr>
+        </table>
+    </div>
+    <br />
+    <br />
+</div>
+
+<script type="text/javascript">
+function ChangeUrl(title, url) {
+    if (typeof (history.pushState) != "undefined") {
+        var obj = { Title: title, Url: url };
+        history.pushState(obj, obj.Title, obj.Url);
+    } else {
+        alert("Browser does not support HTML5.");
+    }
+}
+ChangeUrl("Sports Information", "SportsInformation")
+</script>
+        </div>
+        </section>
+    </div>
+    <div class="container">
+        <footer>
+    <div class="row">
+        <div class="span4">
+            <div id="footer_logo">
+                <p> Copyright © 2012-2026 OHSAA. All rights reserved.<br />
+                <a href="/Outside/Home/TermsofService">Terms of Service</a> | 
+                <a href="/Outside/Home/PrivacyPolicy">Privacy Policy</a><br />
+                (v.2.15.6.1)
+                </p>
+            </div>
+        </div>
+        <div class="span2 offset6">
+            <div id="footer_info">
+                <a target="blank" href="http://maps.google.com/maps?q=4080+Roselea+Pl,+Columbus,+Franklin,+Ohio+43214&hl=en&sll=37.0625,-95.677068&sspn=51.887315,104.414063&geocode=FeAIYwId2zEN-w&hnear=4080+Roselea+Pl,+Columbus,+Franklin,+Ohio+43214&t=m&z=16">4080 Roselea Place<br /> 
+                Columbus, Ohio 43214</a><br />
+                P: <strong>614-267-2502</strong><br /> 
+                Fax: <strong>614-267-1677</strong>
+            </div>
+        </div>
+    </div>
+</footer>
+    </div>
+</body>
+</html>

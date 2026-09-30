@@ -16,18 +16,18 @@ observed results from unverified requirements.
 | Work in this repository | [AGENTS.md](AGENTS.md) |
 | Understand scope, boundaries and binding standards | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Understand why a decision was made | [ADR register](docs/adr/README.md) |
-| Understand identity, cohort, marks and provenance | [DOMAIN.md](DOMAIN.md) |
+| Understand identity, cohort, marks and provenance | [ARCHITECTURE.md](ARCHITECTURE.md) §§8–9 |
 | Implement the remaining delivery | [National plan](docs/NATIONAL-CENSUS-PLAN.md) |
-| Integrate/qualify a source | [Adapter guide](SOURCE_ADAPTER_GUIDE.md) |
-| Find public source observations and captures | [Research index](research/README.md) |
-| Understand headed browser acquisition | [Browser contract](CHROMIUM_DESIGN.md) |
-| Understand persistence and snapshots | [Fjall schema](FJALL_SCHEMA.md) |
-| Inspect durable handlers and replay boundaries | [Restate workflow catalog](RESTATE_WORKFLOWS.md) |
+| Integrate/qualify a source | [xtask](xtask/README.md), per-source `research/sources/<name>/SOURCE_REPORT.md` |
+| Find public source observations and captures | [Source research](research/sources) |
+| Understand headed browser acquisition | [Browser lane](ARCHITECTURE.md#6-admission-and-browser-state-10-26-28) |
+| Understand persistence and snapshots | [Backup/restore](docs/FJALL_BACKUP.md) |
+| Inspect durable handlers and replay boundaries | [Durable execution](docs/restate/durable-execution.md) |
 | Run or inspect the census | [Operations](docs/OPERATIONS.md) |
 | Deploy, stop or recover services | [Lifecycle](docs/deployment-lifecycle.md) |
 | Back up or restore evidence | [Backup/restore](docs/FJALL_BACKUP.md) |
-| Run gates, fixtures and fault scenarios | [Testing](TESTING.md), [17 fault obligations](docs/NATIONAL-CENSUS-FAULTS.md) |
-| Measure performance | [Performance](PERFORMANCE.md) |
+| Run gates, fixtures and fault scenarios | [Gates](tools/gate.sh), [17 fault obligations](docs/NATIONAL-CENSUS-FAULTS.md) |
+| Measure performance | [Perf commands](xtask/README.md) |
 | Use developer commands | [xtask](xtask/README.md) |
 | Use service binaries and CLI | [census-service](crates/census-service/README.md) |
 

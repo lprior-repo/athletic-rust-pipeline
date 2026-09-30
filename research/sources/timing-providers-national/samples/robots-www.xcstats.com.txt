@@ -1,0 +1,90 @@
+# =========================
+# BLOCK SPECIFIC BOTS
+# =========================
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: Alibaba
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: Amzn-SearchBot
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: Barkrowler
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: DataForSeoBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: YandexBot
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+# =========================
+# GPTBot (ALLOW + THROTTLE)
+# =========================
+User-agent: GPTBot
+Allow: /
+Crawl-delay: 5
+
+# =========================
+# DEFAULT RULE (ALL OTHERS)
+# =========================
+User-agent: *
+Disallow: /FusionCharts
+Disallow: /PHPMailer_5.2.0
+Disallow: /PHPMailer_v5.0.2
+Disallow: /calc_scripts
+Disallow: /config_dir
+Disallow: /docs
+Disallow: /exports
+Disallow: /ie7
+Disallow: /images
+Disallow: /img
+Disallow: /includes
+Disallow: /jcarousel
+Disallow: /lib
+Disallow: /photos
+Disallow: /phpajax
+Disallow: /scripts
+Disallow: /style
+Disallow: /team_docs
+Disallow: /tinymce
+Disallow: /track_report_folder
+Disallow: /videos
+
+# File types
+Disallow: /*.gif$
+Disallow: /*.jpg$
+Disallow: /*.jpeg$
+Disallow: /*.pdf$
+Disallow: /*.zip$

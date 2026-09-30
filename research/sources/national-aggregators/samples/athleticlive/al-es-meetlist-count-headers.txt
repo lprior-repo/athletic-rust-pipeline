@@ -1,0 +1,13 @@
+HTTP/1.1 200 OK
+content-length: 165
+content-type: application/json
+x-cloud-request-id: F6hBCPGvTq6tDY6czDx_Ug
+x-elastic-product: Elasticsearch
+x-found-handling-cluster: b407a021a0394b2c98425ed7604995c6
+x-found-handling-instance: instance-0000000003
+date: Tue, 22 Sep 2026 03:55:19 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Origin, X-Requested-With, Content-Type, Accept, Authorization, JSNLog-RequestId, activityId, applicationId, applicationUserId, channelId, senderId, sessionId
+access-control-max-age: 3628800
+access-control-allow-methods: GET, OPTIONS, POST
+

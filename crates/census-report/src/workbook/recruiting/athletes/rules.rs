@@ -1,11 +1,10 @@
 pub(crate) const TITLE: &str = "Athletes";
 
-pub(crate) const HEADERS: [&str; 60] = [
+pub(crate) const HEADERS: [&str; 59] = [
     "Athlete ID",
     "Name",
     "Gender",
     "Graduation Year",
-    "Observed Grade",
     "Observed School Year",
     "State",
     "School",
@@ -63,10 +62,10 @@ pub(crate) const HEADERS: [&str; 60] = [
     "Review Status",
 ];
 
-pub(crate) const WIDTHS: [u16; 60] = [
-    20, 26, 10, 16, 12, 14, 8, 30, 16, 20, 8, 8, 8, 8, 30, 30, 12, 12, 12, 12, 12, 12, 12, 18, 18,
-    18, 16, 16, 16, 16, 16, 16, 16, 12, 16, 12, 24, 32, 24, 32, 24, 32, 24, 24, 24, 24, 48, 30, 24,
-    32, 28, 36, 36, 40, 14, 18, 18, 14, 14, 14,
+pub(crate) const WIDTHS: [u16; 59] = [
+    20, 26, 10, 16, 14, 8, 30, 16, 20, 8, 8, 8, 8, 30, 30, 12, 12, 12, 12, 12, 12, 12, 18, 18, 18,
+    16, 16, 16, 16, 16, 16, 16, 12, 16, 12, 24, 32, 24, 32, 24, 32, 24, 24, 24, 24, 48, 30, 24, 32,
+    28, 36, 36, 40, 14, 18, 18, 14, 14, 14,
 ];
 
 pub(crate) const PR_EVENTS: [&str; 19] = [

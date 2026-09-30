@@ -3,9 +3,8 @@ use serde::Deserialize;
 use super::{Store, StoreError, StoreResult, Table, MAX_ID_BYTES};
 
 #[derive(Deserialize)]
-struct ObservationId<'a> {
-    #[serde(borrow)]
-    id: &'a str,
+struct ObservationId {
+    id: String,
 }
 
 pub(super) fn table_prefix(table: Table) -> Vec<u8> {
@@ -58,8 +57,8 @@ pub(super) fn key_label(key: &[u8]) -> String {
     }
 }
 
-pub(super) fn observation_id(bytes: &[u8]) -> StoreResult<&str> {
-    let parsed: ObservationId<'_> =
+pub(super) fn observation_id(bytes: &[u8]) -> StoreResult<String> {
+    let parsed: ObservationId =
         serde_json::from_slice(bytes).map_err(|source| StoreError::Json {
             detail: "observation has no string id field".to_string(),
             source,

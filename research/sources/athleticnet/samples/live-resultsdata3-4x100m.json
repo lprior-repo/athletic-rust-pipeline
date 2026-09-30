@@ -1,0 +1,2711 @@
+{
+"eventId": 7,
+"divId": 1,
+"groupParentId": 0,
+"currentEventValid": true,
+"canValidateResults": false,
+"host": false,
+"resultsTF": [
+[
+{
+"IDDiv": 1,
+"Place": "1",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "1",
+"pr": 14,
+"sr": 7,
+"EventID": 7,
+"PersonalEvent": false,
+"EventTypeID": 0,
+"SortIntRaw": 41960,
+"SortIntTemp": 41960,
+"Measure": " ",
+"ShortCode": "E1iP1jncRfqYaYEf1",
+"disPlace": "1.",
+"disGrade": "-",
+"disAthlete": "A",
+"disTeam": "Sun Prairie West - A",
+"Score": 10.0,
+"IDResult": 294438037,
+"Result": "41.96a",
+"SortInt": 41960,
+"AthleteName": "A",
+"Official": 1,
+"AthleteID": 32123233,
+"FirstName": "Kevin Fitzgerald<BR>Rich Aketa<BR>Ebrima Barrow<BR>Antonio Jackson",
+"Grade": "-",
+"TeamID": 83745,
+"SchoolName": "Sun Prairie West",
+"TeamMascot": "//lh3.googleusercontent.com/FVmTq-cT1T3jBO1hFTQD63UPMJ1kPq2uYttqWTG-cUvcJ4Ofs7JO3ajPtlh6L1PiTDHhnUSZzx5xhxwvNNQvWvkHu9NJlFc6mg",
+"Gender": "M",
+"EditorID": -6072022,
+"isOwned": 0,
+"SourceId": 0,
+"hasSplitsSeries": false,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "2",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "2",
+"pr": 14,
+"sr": 7,
+"EventID": 7,
+"PersonalEvent": false,
+"EventTypeID": 0,
+"SortIntRaw": 42301,
+"SortIntTemp": 42301,
+"Measure": " ",
+"ShortCode": "dvi3VKatofngo2Dtz",
+"disPlace": "2.",
+"disGrade": "-",
+"disAthlete": "A",
+"disTeam": "Waunakee - A",
+"Score": 8.0,
+"IDResult": 294438035,
+"Result": "42.31a",
+"SortInt": 42301,
+"AthleteName": "A",
+"Official": 1,
+"AthleteID": 32017104,
+"FirstName": "Andrew Mussallem<BR>Ross Kidau<BR>Benton Cralam<BR>Cooper Johanns",
+"Grade": "-",
+"TeamID": 2857,
+"SchoolName": "Waunakee",
+"TeamMascot": "//lh3.googleusercontent.com/XMn5LUmsGkPNU4m9XudMVkoI4GMikOhqPfZnJ5LkTW60qxelqtvxkYz4ahjpptg2GOHEDjHo4BxaKEtbmNNobDgcAzk0iTJxr5A",
+"Gender": "M",
+"EditorID": -6072022,
+"isOwned": 0,
+"SourceId": 0,
+"hasSplitsSeries": false,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "3",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "3",
+"pr": 14,
+"sr": 7,
+"EventID": 7,
+"PersonalEvent": false,
+"EventTypeID": 0,
+"SortIntRaw": 42303,
+"SortIntTemp": 42303,
+"Measure": " ",
+"ShortCode": "YVixzEwIjfdQZM1CR",
+"disPlace": "3.",
+"disGrade": "-",
+"disAthlete": "A",
+"disTeam": "Middleton - A",
+"Score": 6.0,
+"IDResult": 294438041,
+"Result": "42.31a",
+"SortInt": 42303,
+"AthleteName": "A",
+"Official": 1,
+"AthleteID": 32565897,
+"FirstName": "Jackson Brereton<BR>Iniyaan Karthikeyan<BR>Christopher Hogan<BR>Kingston Penn",
+"Grade": "-",
+"TeamID": 3204,
+"SchoolName": "Middleton",
+"TeamMascot": "//lh3.googleusercontent.com/EYbdkkKTMlSXSNdBtsk9yB2xE9yuvpvXkbDm_JU5hmWF-evSXbhNEq6oNrCy6k66t6DVb2xxURubdLbnXogayPvPnhvWRsz-vYQ",
+"Gender": "M",
+"EditorID": -6072022,
+"isOwned": 0,
+"SourceId": 0,
+"hasSplitsSeries": false,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "4",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "4",
+"pr": 14,
+"sr": 7,
+"EventID": 7,
+"PersonalEvent": false,
+"EventTypeID": 0,
+"SortIntRaw": 42552,
+"SortIntTemp": 42552,
+"Measure": " ",
+"ShortCode": "W3iNZ83HjfvRrrLFZ",
+"disPlace": "4.",
+"disGrade": "-",
+"disAthlete": "A",
+"disTeam": "DeForest - A",
+"Score": 5.0,
+"IDResult": 294438038,
+"Result": "42.56a",
+"SortInt": 42552,
+"AthleteName": "A",
+"Official": 1,
+"AthleteID": 32566063,
+"FirstName": "CJ Galloway<BR>Aidan Nolan<BR>Shane Schroeder<BR>Kyle Skoug",
+"Grade": "-",
+"TeamID": 3228,
+"SchoolName": "DeForest",
+"TeamMascot": "//lh3.googleusercontent.com/4lbSzEs5DxVGqgn4tzi7ypEekqzdKBUx5W3QAVLxp4h7Sxk6k6VzLleRU_X-lndW9weuECY77eupgNWNgvjXgcNT89tfQhEdJQ",
+"Gender": "M",
+"EditorID": -6072022,
+"isOwned": 0,
+"SourceId": 0,
+"hasSplitsSeries": false,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "5",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "5",
+"pr": 14,
+"sr": 7,
+"EventID": 7,
+"PersonalEvent": false,
+"EventTypeID": 0,
+"SortIntRaw": 42620,
+"SortIntTemp": 42620,
+"Measure": " ",
+"ShortCode": "yEiR2o6tof6mNyKSN",
+"disPlace": "5.",
+"disGrade": "-",
+"disAthlete": "A",
+"disTeam": "Reedsburg Area - A",
+"Score": 4.0,
+"IDResult": 294438040,
+"Result": "42.62a",
+"SortInt": 42620,
+"AthleteName": "A",
+"Official": 1,
+"AthleteID": 32565899,
+"FirstName": "Lincoln Benish<BR>Lucas Spencer<BR>Cormac McGowan<BR>Will Mikonowicz",
+"Grade": "-",
+"TeamID": 2959,
+"SchoolName": "Reedsburg Area",
+"TeamMascot": "//lh3.googleusercontent.com/ZmSkJNGgrldOL0kReJmgADHZZBqhy2_W1ZcqWRy0mI-raImQMQ_KY4aX1kAmkgHEg10kRC62vvMU2wCAADcE8TCFiqEMOJPVYPEg",
+"Gender": "M",
+"EditorID": -6072022,
+"isOwned": 0,
+"SourceId": 0,
+"hasSplitsSeries": false,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "6",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "6",
+"pr": 14,
+"sr": 7,
+"EventID": 7,
+"PersonalEvent": false,
+"EventTypeID": 0,
+"SortIntRaw": 42774,
+"SortIntTemp": 42774,
+"Measure": " ",
+"ShortCode": "31ixQPmIyfqK66eH1",
+"disPlace": "6.",
+"disGrade": "-",
+"disAthlete": "A",
+"disTeam": "Monona Grove - A",
+"Score": 3.0,
+"IDResult": 294438036,
+"Result": "42.78a",
+"SortInt": 42774,
+"AthleteName": "A",
+"Official": 1,
+"AthleteID": 32566064,
+"FirstName": "Makai Fowler<BR>Ousman Njai<BR>Gavin Weiss<BR>Isiah Tecpoyotl",
+"Grade": "-",
+"TeamID": 3176,
+"SchoolName": "Monona Grove",
+"TeamMascot": "//lh3.googleusercontent.com/0rNYSqwyvUO3YE44AaYM8afhFJXZCL9Pih-NfMldN3UI1aWYasYdj2-fb5e6Gf20dJGizkHtLprckQy6PB95mdUOBF3ZV7SDp5s",
+"Gender": "M",
+"EditorID": -6072022,
+"isOwned": 0,
+"SourceId": 0,
+"hasSplitsSeries": false,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "7",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "7",
+"pr": 14,
+"sr": 7,
+"EventID": 7,
+"PersonalEvent": false,
+"EventTypeID": 0,
+"SortIntRaw": 43148,
+"SortIntTemp": 43148,
+"Measure": " ",
+"ShortCode": "0Ni0aZBIef3YO63Cm",
+"disPlace": "7.",
+"disGrade": "-",
+"disAthlete": "A",
+"disTeam": "Verona Area - A",
+"Score": 2.0,
+"IDResult": 294438034,
+"Result": "43.15a",
+"SortInt": 43148,
+"AthleteName": "A",
+"Official": 1,
+"AthleteID": 31915980,
+"FirstName": "Eddie Brown<BR>Braelin Weiss<BR>Sammy Delgado-Lopez<BR>Grant Ehle",
+"Grade": "-",
+"TeamID": 2840,
+"SchoolName": "Verona Area",
+"TeamMascot": "//lh3.googleusercontent.com/2txGj53KutNm6XWaYN-U-baXRz72cGjX4pN2y_4JQ3ASExf7NB5Hxolb6auBvnWc4WgTm8zOhone003chD1lZg",
+"Gender": "M",
+"EditorID": -6072022,
+"isOwned": 0,
+"SourceId": 0,
+"hasSplitsSeries": false,
+"MediaCount": {}
+},
+{
+"IDDiv": 1,
+"Place": "",
+"Exhibition": false,
+"JD": false,
+"Round": "F",
+"Heat": 1,
+"HeatPlace": "",
+"pr": 0,
+"sr": 0,
+"EventID": 7,
+"PersonalEvent": false,
+"EventTypeID": 0,
+"SortIntRaw": 20000001,
+"SortIntTemp": 20000001,
+"Measure": " ",
+"ShortCode": "wOidW83szfXxeyaiy",
+"disPlace": "",
+"disGrade": "-",
+"disAthlete": "A",
+"disTeam": "Holmen - A",
+"Score": 0.0,
+"IDResult": 294438039,
+"Result": "DNF",
+"SortInt": 20000001,
+"AthleteName": "A",
+"Official": 1,
+"AthleteID": 32565898,
+"FirstName": "Jakai Ayed<BR>John Faherty<BR>Eli Kane<BR>Ryland Eickhoff",
+"Grade": "-",
+"TeamID": 3124,
+"SchoolName": "Holmen",
+"TeamMascot": "//lh3.googleusercontent.com/Zq-DS4HM_USHTudgY2hGowQfp5MCX7ZOj9_W9rDaZTVPGWmWsgOQagz3iKVwW3izsKTNy6mS3cW6ukZtJWauyEs7HQpKlK5ux1Y",
+"Gender": "M",
+"EditorID": -6072022,
+"isOwned": 0,
+"SourceId": 0,
+"hasSplitsSeries": false,
+"MediaCount": {}
+}
+]
+],
+"eventTypes": [],
+"rounds": [
+{
+"IDRound": "F",
+"RoundDesc": "Finals",
+"SortID": 1
+}
+],
+"eventDivsWithResults": [
+{
+"e": 1,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 1,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 2,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 3,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 3,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 4,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 4,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 7,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 1
+},
+{
+"eventId": 1
+},
+{
+"eventId": 1
+},
+{
+"eventId": 1
+}
+]
+},
+{
+"e": 8,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 3
+},
+{
+"eventId": 3
+},
+{
+"eventId": 3
+},
+{
+"eventId": 3
+}
+]
+},
+{
+"e": 9,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 10,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 11,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 12,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 12,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 13,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 16,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 17,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 18,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 19,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 19,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 20,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 21,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 21,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 22,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 22,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 25,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 19
+},
+{
+"eventId": 19
+},
+{
+"eventId": 19
+},
+{
+"eventId": 19
+}
+]
+},
+{
+"e": 26,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 21
+},
+{
+"eventId": 21
+},
+{
+"eventId": 21
+},
+{
+"eventId": 21
+}
+]
+},
+{
+"e": 27,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 28,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 29,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 30,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 30,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 31,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 34,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 35,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 36,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 39,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 4
+},
+{
+"eventId": 4
+},
+{
+"eventId": 4
+},
+{
+"eventId": 4
+}
+]
+},
+{
+"e": 50,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 2
+},
+{
+"eventId": 2
+},
+{
+"eventId": 2
+},
+{
+"eventId": 2
+}
+]
+},
+{
+"e": 51,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 20
+},
+{
+"eventId": 20
+},
+{
+"eventId": 20
+},
+{
+"eventId": 20
+}
+]
+},
+{
+"e": 52,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 53,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 53,
+"d": 4,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 60,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 61,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": null
+},
+{
+"e": 67,
+"d": 1,
+"t": null,
+"pE": null,
+"ge_p": null,
+"cE": [
+{
+"eventId": 22
+},
+{
+"eventId": 22
+},
+{
+"eventId": 22
+},
+{
+"eventId": 22
+}
+]
+}
+],
+"groupedEventsParents": [],
+"events": [
+{
+"Entry": 1,
+"Event": "100 Meters",
+"EventShort": "100m",
+"Gender": "M",
+"ID": 1,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 310,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "100 Meters",
+"EventShort": "100m",
+"Gender": "F",
+"ID": 19,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 320,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "200 Meters",
+"EventShort": "200m",
+"Gender": "M",
+"ID": 2,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 390,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "200 Meters",
+"EventShort": "200m",
+"Gender": "F",
+"ID": 20,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 400,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "400 Meters",
+"EventShort": "400m",
+"Gender": "M",
+"ID": 3,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 490,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "400 Meters",
+"EventShort": "400m",
+"Gender": "F",
+"ID": 21,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 500,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "800 Meters",
+"EventShort": "800m",
+"Gender": "M",
+"ID": 4,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 630,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "800 Meters",
+"EventShort": "800m",
+"Gender": "F",
+"ID": 22,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 640,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "1600 Meters",
+"EventShort": "1600m",
+"Gender": "M",
+"ID": 52,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 810,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "1600 Meters",
+"EventShort": "1600m",
+"Gender": "F",
+"ID": 53,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 820,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "3200 Meters",
+"EventShort": "3200m",
+"Gender": "M",
+"ID": 60,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 950,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "3200 Meters",
+"EventShort": "3200m",
+"Gender": "F",
+"ID": 61,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": true,
+"sort": 960,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "100m Hurdles",
+"EventShort": "100mh",
+"Gender": "F",
+"ID": 28,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": true,
+"isPersonal": true,
+"sort": 1420,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "110m Hurdles",
+"EventShort": "110mh",
+"Gender": "M",
+"ID": 10,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": true,
+"isPersonal": true,
+"sort": 1450,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "300m Hurdles",
+"EventShort": "300mh",
+"Gender": "M",
+"ID": 11,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": true,
+"isPersonal": true,
+"sort": 1580,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "300m Hurdles",
+"EventShort": "300mh",
+"Gender": "F",
+"ID": 29,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": true,
+"isPersonal": true,
+"sort": 1590,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x100 Relay",
+"EventShort": "4x100m",
+"Gender": "M",
+"ID": 7,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1800,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x100 Relay",
+"EventShort": "4x100m",
+"Gender": "F",
+"ID": 25,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1810,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x200 Relay",
+"EventShort": "4x200m",
+"Gender": "M",
+"ID": 50,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1880,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x200 Relay",
+"EventShort": "4x200m",
+"Gender": "F",
+"ID": 51,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1890,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x400 Relay",
+"EventShort": "4x400m",
+"Gender": "M",
+"ID": 8,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1960,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x400 Relay",
+"EventShort": "4x400m",
+"Gender": "F",
+"ID": 26,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 1970,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x800 Relay",
+"EventShort": "4x800m",
+"Gender": "M",
+"ID": 39,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 2040,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "4x800 Relay",
+"EventShort": "4x800m",
+"Gender": "F",
+"ID": 67,
+"Measure": "M",
+"Result": 1,
+"Type": "T",
+"FieldMeasureType": null,
+"isHurdle": false,
+"isPersonal": false,
+"sort": 2050,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Shot Put",
+"EventShort": "shot",
+"Gender": "M",
+"ID": 12,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2610,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Shot Put",
+"EventShort": "shot",
+"Gender": "F",
+"ID": 30,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2620,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Discus",
+"EventShort": "discus",
+"Gender": "M",
+"ID": 13,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "L",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2660,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Discus",
+"EventShort": "discus",
+"Gender": "F",
+"ID": 31,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "L",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2670,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "High Jump",
+"EventShort": "hj",
+"Gender": "M",
+"ID": 9,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "V",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2700,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "High Jump",
+"EventShort": "hj",
+"Gender": "F",
+"ID": 27,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "V",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2710,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Pole Vault",
+"EventShort": "pv",
+"Gender": "M",
+"ID": 16,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "V",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2720,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Pole Vault",
+"EventShort": "pv",
+"Gender": "F",
+"ID": 34,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "V",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2730,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Long Jump",
+"EventShort": "lj",
+"Gender": "M",
+"ID": 17,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2740,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Long Jump",
+"EventShort": "lj",
+"Gender": "F",
+"ID": 35,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2750,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Triple Jump",
+"EventShort": "tj",
+"Gender": "M",
+"ID": 18,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2780,
+"photos": null,
+"focus": null
+},
+{
+"Entry": 1,
+"Event": "Triple Jump",
+"EventShort": "tj",
+"Gender": "F",
+"ID": 36,
+"Measure": "E",
+"Result": 1,
+"Type": "F",
+"FieldMeasureType": "S",
+"isHurdle": false,
+"isPersonal": true,
+"sort": 2790,
+"photos": null,
+"focus": null
+}
+],
+"relayLegs": [
+{
+"ResultID": 294438034,
+"ID": 31915980,
+"AthleteID": 31501840,
+"Name": "Eddie Brown",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438034,
+"ID": 31915980,
+"AthleteID": 31477957,
+"Name": "Braelin Weiss",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438034,
+"ID": 31915980,
+"AthleteID": 28987376,
+"Name": "Sammy Delgado-Lopez",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438034,
+"ID": 31915980,
+"AthleteID": 28674268,
+"Name": "Grant Ehle",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438035,
+"ID": 32017104,
+"AthleteID": 28289809,
+"Name": "Andrew Mussallem",
+"ShortDesc": "11",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438035,
+"ID": 32017104,
+"AthleteID": 28976949,
+"Name": "Ross Kidau",
+"ShortDesc": "9",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438035,
+"ID": 32017104,
+"AthleteID": 22241314,
+"Name": "Benton Cralam",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438035,
+"ID": 32017104,
+"AthleteID": 24714608,
+"Name": "Cooper Johanns",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438037,
+"ID": 32123233,
+"AthleteID": 31505941,
+"Name": "Kevin Fitzgerald",
+"ShortDesc": "10",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438037,
+"ID": 32123233,
+"AthleteID": 31505934,
+"Name": "Rich Aketa",
+"ShortDesc": "10",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438037,
+"ID": 32123233,
+"AthleteID": 26052553,
+"Name": "Ebrima Barrow",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438037,
+"ID": 32123233,
+"AthleteID": 26935452,
+"Name": "Antonio Jackson",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438041,
+"ID": 32565897,
+"AthleteID": 23113661,
+"Name": "Jackson Brereton",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438041,
+"ID": 32565897,
+"AthleteID": 25820258,
+"Name": "Iniyaan Karthikeyan",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438041,
+"ID": 32565897,
+"AthleteID": 31544778,
+"Name": "Christopher Hogan",
+"ShortDesc": "11",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438041,
+"ID": 32565897,
+"AthleteID": 28872883,
+"Name": "Kingston Penn",
+"ShortDesc": "11",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438039,
+"ID": 32565898,
+"AthleteID": 24818171,
+"Name": "Jakai Ayed",
+"ShortDesc": "11",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438039,
+"ID": 32565898,
+"AthleteID": 24666179,
+"Name": "John Faherty",
+"ShortDesc": "11",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438039,
+"ID": 32565898,
+"AthleteID": 27912481,
+"Name": "Eli Kane",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438039,
+"ID": 32565898,
+"AthleteID": 22102338,
+"Name": "Ryland Eickhoff",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438040,
+"ID": 32565899,
+"AthleteID": 18900658,
+"Name": "Lincoln Benish",
+"ShortDesc": "10",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438040,
+"ID": 32565899,
+"AthleteID": 22271619,
+"Name": "Lucas Spencer",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438040,
+"ID": 32565899,
+"AthleteID": 25267544,
+"Name": "Cormac McGowan",
+"ShortDesc": "9",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438040,
+"ID": 32565899,
+"AthleteID": 22271611,
+"Name": "Will Mikonowicz",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438038,
+"ID": 32566063,
+"AthleteID": 22469877,
+"Name": "CJ Galloway",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438038,
+"ID": 32566063,
+"AthleteID": 27728432,
+"Name": "Aidan Nolan",
+"ShortDesc": "11",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438038,
+"ID": 32566063,
+"AthleteID": 22460155,
+"Name": "Shane Schroeder",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438038,
+"ID": 32566063,
+"AthleteID": 22509068,
+"Name": "Kyle Skoug",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438036,
+"ID": 32566064,
+"AthleteID": 27974910,
+"Name": "Makai Fowler",
+"ShortDesc": "11",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438036,
+"ID": 32566064,
+"AthleteID": 22523326,
+"Name": "Ousman Njai",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438036,
+"ID": 32566064,
+"AthleteID": 27974905,
+"Name": "Gavin Weiss",
+"ShortDesc": "10",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+},
+{
+"ResultID": 294438036,
+"ID": 32566064,
+"AthleteID": 22523357,
+"Name": "Isiah Tecpoyotl",
+"ShortDesc": "12",
+"split": null,
+"SortIntRaw": null,
+"ShortCode": null
+}
+],
+"advancementData": [
+{
+"AthleteID": 28289809,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 28976949,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22241314,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24714608,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 31287971,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 28645960,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27770073,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 20227879,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24893460,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 28447860,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27770068,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24893458,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24889142,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30837424,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22302332,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22302342,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27997031,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22302325,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22652893,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24802058,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22652925,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22652934,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25109410,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 31483169,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 21807235,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 21807244,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30779922,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 21807238,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27708140,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27708108,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 26141518,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 29982087,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22195837,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 23031006,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24849970,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24850507,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27717406,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27717400,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27717395,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22196505,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 32699930,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27717408,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24889397,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22322251,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24889401,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27080693,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24889400,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24889404,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25619636,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27733921,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27733927,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27733917,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27733911,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30781109,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25470872,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30819505,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30819513,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27974890,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22174785,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25579936,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 28458980,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 31527816,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22781214,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22774479,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22460766,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27759670,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22382278,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27997068,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 26145845,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30043233,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24951990,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22271340,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30683749,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27682517,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 20142105,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27682503,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25389890,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22206888,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22206873,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 28297364,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 29982063,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24456070,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24702368,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 23113661,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25820258,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 31544778,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 28872883,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 23113668,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25401381,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24784823,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24784822,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 32697024,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24111329,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30868254,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30868249,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22048555,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24787130,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24787111,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27745836,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22615778,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24787137,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27954791,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 31305731,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22234651,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22234649,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22682693,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27954795,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 28493948,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22485919,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22206826,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30771891,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30771830,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24716883,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22577394,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30778475,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27769901,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 21225931,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24687185,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22562353,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22238303,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22195868,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25619637,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 26087747,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24878530,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27830834,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25172663,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27830840,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25172656,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25746375,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 30950098,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 25052875,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22195986,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22195990,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22196001,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 24991482,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 23518828,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 27770133,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 31505941,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 31505934,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 26052553,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 26935452,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 22402122,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+},
+{
+"AthleteID": 29114744,
+"EventID": 7,
+"DestMeet": 667524,
+"DestDiv": 1,
+"IDDiv": 1
+}
+],
+"correctedResultIDs": []
+}

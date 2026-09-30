@@ -1,0 +1,16 @@
+HTTP/2 301 
+date: Tue, 22 Sep 2026 04:00:14 GMT
+content-type: text/html; charset=UTF-8
+location: https://va.milesplit.com/meets/742518-vhsl-class-5-state-championships-2026
+server: nginx
+x-frame-options: sameorigin
+set-cookie: unique_id=a1f3a2db36a41168b8b8a82578e915fa; expires=Fri, 24-Dec-2100 00:39:17 GMT; Max-Age=2343242343; path=/; domain=.milesplit.com
+
+HTTP/2 200 
+date: Tue, 22 Sep 2026 04:00:14 GMT
+content-type: text/html; charset=UTF-8
+server: nginx
+x-frame-options: sameorigin
+set-cookie: unique_id=da7522dab0efc2ad6a87ac199c12f677; expires=Fri, 24-Dec-2100 00:39:17 GMT; Max-Age=2343242343; path=/; domain=.milesplit.com
+server-side-cache-ttl: 
+

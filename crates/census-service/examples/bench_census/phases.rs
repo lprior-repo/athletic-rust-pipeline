@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
-use census_report::report::{self, Scope};
+use census_report::export::ExportDataset;
+use census_report::report::{self, Derivation, Scope};
 use census_report::{bests, workbook};
 use census_service::census;
 use census_store::{Store, Table};
@@ -96,9 +97,23 @@ fn ensure_count(counts: &[(String, usize)], table: &str, expected: usize) -> Res
     Ok(())
 }
 
-pub(super) fn census_phases(store: &Store, cohort: usize) -> Result<(Phase, Phase)> {
+pub(super) fn load_phase(store: &Store, athletes: usize) -> Result<(ExportDataset, Phase)> {
     let started = Instant::now();
-    let core = report::build_census(store, Scope::Core).context("building the core census")?;
+    let dataset = ExportDataset::load(store).context("loading the export dataset")?;
+    let phase = measure("dataset", athletes, "athletes", started.elapsed())?;
+    Ok((dataset, phase))
+}
+
+pub(super) fn census_phases(
+    dataset: &ExportDataset,
+    store: &Store,
+    cohort: usize,
+) -> Result<(Phase, Phase, workbook::Censuses)> {
+    let started = Instant::now();
+    let core = report::build_census(
+        &Derivation::of(dataset, Scope::Core, None),
+        &store.out_dir(),
+    );
     let core_phase = measure("census_core", cohort, "athletes", started.elapsed())?;
     anyhow::ensure!(
         core.totals.athletes == cohort,
@@ -112,32 +127,35 @@ pub(super) fn census_phases(store: &Store, cohort: usize) -> Result<(Phase, Phas
     );
 
     let started = Instant::now();
-    let all_sources = report::build_census(store, Scope::AllSources)
-        .context("building the all-sources census")?;
+    let all_sources = report::build_census(
+        &Derivation::of(dataset, Scope::AllSources, None),
+        &store.out_dir(),
+    );
     let all_sources_phase = measure("census_all_sources", cohort, "athletes", started.elapsed())?;
     anyhow::ensure!(
         all_sources.totals.athletes == cohort,
         "all-sources census counted {} athletes, expected {cohort}",
         all_sources.totals.athletes
     );
-    Ok((core_phase, all_sources_phase))
+    Ok((
+        core_phase,
+        all_sources_phase,
+        workbook::Censuses { core, all_sources },
+    ))
 }
 
 pub(super) fn bests_phase(
-    store: &Store,
+    dataset: &ExportDataset,
     athletes: usize,
     performances: usize,
 ) -> Result<(Phase, usize)> {
     let started = Instant::now();
-    let rows = bests::build(
-        store,
-        &bests::Options {
-            scope: Scope::Core,
-            grad_year: Some(2027),
-            limit: None,
-        },
-    )
-    .context("reducing best marks")?;
+    let options = bests::Options {
+        scope: Scope::AllSources,
+        grad_year: Some(2027),
+        limit: None,
+    };
+    let rows = bests::build_from_dataset(dataset, &options);
     let phase = measure("bests", performances, "performances", started.elapsed())?;
     anyhow::ensure!(
         rows.len() == athletes,
@@ -156,18 +174,26 @@ pub(super) fn bests_phase(
     Ok((phase, rows.len()))
 }
 
-pub(super) fn workbook_phase(store: &Store, dir: &TempDir, entities: usize) -> Result<Phase> {
+pub(super) fn workbook_phase(
+    dataset: &ExportDataset,
+    store: &Store,
+    dir: &TempDir,
+    entities: usize,
+    censuses: &workbook::Censuses,
+) -> Result<Phase> {
     let out = dir.path().join("synthetic-census.xlsx");
     let started = Instant::now();
-    let path = workbook::build(
+    let path = workbook::build_from(
+        dataset,
         store,
         &workbook::Options {
             grad_year: Some(2027),
             out: Some(out.clone()),
             limit: None,
-            scope: Scope::Core,
+            scope: Scope::AllSources,
             school_year: None,
         },
+        censuses,
     )
     .context("building the workbook")?;
     let phase = measure("workbook", entities, "entities", started.elapsed())?;

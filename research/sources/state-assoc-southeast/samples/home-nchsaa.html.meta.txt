@@ -1,0 +1,11 @@
+HTTP/1.1 200 OK
+Date: Tue, 22 Sep 2026 03:54:33 GMT
+Server: Apache/2.4.62 (Rocky Linux) OpenSSL/3.5.5
+Last-Modified: Tue, 22 Sep 2026 02:11:59 GMT
+ETag: "243be-65c08e4418171"
+Accept-Ranges: bytes
+Content-Length: 148414
+Vary: Accept-Encoding
+Referrer-Policy: no-referrer-when-downgrade
+Content-Type: text/html; charset=UTF-8
+

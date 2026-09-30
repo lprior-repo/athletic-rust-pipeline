@@ -1,6 +1,5 @@
 use crate::bests;
-use crate::report::{ReportResult, Scope};
-use census_store::Store;
+use crate::report::{Derivation, ReportResult};
 use rust_xlsxwriter::Workbook;
 use std::path::Path;
 
@@ -14,27 +13,24 @@ mod contact;
 mod dataset;
 mod facts;
 mod profiles;
-mod prs;
 
 #[cfg(test)]
 mod tests;
 
-pub(in crate::workbook) use contact::{coach_observations, disagreements, Disagreement};
+pub(in crate::workbook) use contact::{disagreements, Disagreement};
 
 pub(super) struct Recruiting {
     dataset: Dataset,
 }
 
 impl Recruiting {
-    pub(super) fn load(
-        store: &Store,
-        scope: Scope,
-        grad_year: Option<i16>,
+    pub(super) fn of(
+        derivation: &Derivation<'_>,
         school_year: census_domain::model::SchoolYear,
         prs: Vec<bests::SharedSelection>,
     ) -> ReportResult<Self> {
         Ok(Self {
-            dataset: Dataset::load(store, scope, grad_year, school_year, prs)?,
+            dataset: Dataset::of(derivation, school_year, prs)?,
         })
     }
 
@@ -49,17 +45,6 @@ impl Recruiting {
         )
     }
 
-    pub(super) fn write_prs(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
-        write_sheet(
-            book,
-            path,
-            prs::TITLE,
-            prs::sheet(&self.dataset.prs)?,
-            &prs::WIDTHS,
-            true,
-        )
-    }
-
     pub(super) fn write_coaches(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
         write_sheet(
             book,
@@ -69,10 +54,6 @@ impl Recruiting {
             &coaches::WIDTHS,
             true,
         )
-    }
-
-    pub(super) fn cohort_athletes(&self) -> usize {
-        self.dataset.audit().cohort_athletes
     }
 
     pub(super) fn selected_prs(&self) -> &[bests::SharedSelection] {

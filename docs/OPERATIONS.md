@@ -2,7 +2,7 @@
 
 `restate-server` owns invocation journals/ingress/admin; `census-serve` owns the Fjall store and
 endpoint; `census-service` is the CLI. [Lifecycle](deployment-lifecycle.md) owns deployment and
-handoff, [workflow catalog](../RESTATE_WORKFLOWS.md) owns handler/retry contracts, and
+handoff, [durable execution](restate/durable-execution.md) owns handler/retry contracts, and
 [CLI reference](../crates/census-service/README.md) owns command groups.
 
 ## Run selection and inspection
@@ -24,9 +24,40 @@ census-service national-report --help
 ```
 
 Serving commands default to loopback ingress `http://127.0.0.1:18095/` and open no second store.
+The ingress client rewrites the SDK's synchronous `/restate/call/...` and `/restate/invoke/...`
+routes onto the served `/<service>[/<key>]/<handler>` path, and the SDK's asynchronous
+`/restate/send/...` route onto the served `/<service>[/<key>]/<handler>/send` suffix, so `national`
+and `jurisdiction` submit through the CLI. The SDK's invocation-handle routes have no ingress
+equivalent on this server version, so a submission that returns a handle can be submitted with
+`--detach` and inspected through `Census/open_work`, `JurisdictionCensus/<key>/state` or the admin
+API; the same run can also be submitted on the workflow route itself:
+
+```sh
+curl -X POST http://127.0.0.1:18095/NationalCensus/national:<year>:<plan>:<revision>/run \
+  -H 'content-type: application/json' -d '{"source_parallelism":4}'
+```
 Explicit `--store <dir>` selects an offline route where supported and requires the endpoint owner
 stopped. Service-only commands reject it. The endpoint itself is loopback HTTP/2, conventionally
 9080; the Restate admin API is conventionally 19095. Do not expose an unauthenticated endpoint.
+
+Inspecting a run's server-side state needs the admin API's JSON accept header; without it the query
+returns a binary body. With the admin API at `http://127.0.0.1:19095/`:
+
+```sh
+curl -s http://127.0.0.1:19095/query -H 'content-type: application/json' \
+  -H 'accept: application/json' \
+  -d '{"query":"SELECT status, COUNT(*) as n FROM sys_invocation GROUP BY status"}'
+```
+
+`open-work` is the owed-work view: `jurisdiction sweeps owed` counts sweeps a run still owes, and
+`source objects owed` reads `unmeasured` when the run cannot enumerate them. A client-side
+observation timeout is not a job failure: `national` observes for `--timeout-seconds` (default
+172800) and the run continues either way, so a submission that printed `Terminal error [500]: the
+invocation stream was closed after the 'abort timeout' (1h) fired` may have completed server-side —
+confirm through the admin API before concluding a jurisdiction failed. A submission whose run
+identity already exists is deduplicated, not restarted: reattaching returns the existing invocation,
+and starting a different run needs a revision bump, which remains the documented way to invalidate
+completed work and must not be used merely to reset an exhausted attempt budget.
 
 `teams`, `meets` and `collect` without `--states`/`--all-states` default to Wisconsin qualification.
 `--all-states` selects the 49-jurisdiction `CENSUS_SCOPE`, not all 51 modeled locations. Provider
@@ -49,9 +80,30 @@ An index rebuild and review application can change review-case populations. Reta
 unresolved candidates must reconcile; never choose a smaller intermediate case table to obtain a
 seal. Reusing cached bytes does not advance the actual acquisition timestamp or establish freshness.
 
+Request pacing has two independent dials, and both default to the polite setting:
+
+- Per-source spacing. Each host (or, for a single-lane source family, the family as a whole) leaves
+  its configured delay between turns. `--delay-ms` overrides the default host delay; a source's own
+  robots `crawl-delay` raises it, an authorized host never drops below 500 ms, and a family budget in
+  `default_family_delays` holds across that family's hosts. Raising concurrency never shortens this.
+- `--source-parallelism <N>`. Above the default of 1, a source family admits N requests in flight and
+  each of its hosts carries its own spacing slot, so a state whose work spans several subdomains of
+  one family no longer serializes them behind a single family turn. At 1 the family keeps one slot and
+  one turn at a time, which is the historic behavior. Hosts outside a registered family always keep
+  their own slot. Use it to raise a family's ceiling, not its rate: it cannot make any single host
+  faster than its spacing, and it never overrides robots or an access condition.
+
+Aggregate throughput also follows the endpoint's `--max-concurrent` (handlers executing at once) and
+the per-request `--concurrency` (in-state tasks). Every jurisdiction paces its own hosts, so raising
+them parallelizes different hosts rather than shortening any one host's spacing. Measure the result:
+count cache entries written per minute under the store's `http/` directory, since a cache hit adds no
+file.
+
 ## Browser lane
 
 Start the endpoint with a dedicated `--browser-profile <dir>` and an allowed browser executable.
+Use an absolute path: the lane's settings validation rejects a relative profile directory or
+executable, and binaries built before this tree report that rejection as an invalid tab count.
 Use the headed profile required for Athletic.net; a headless flag's existence is not an authorization
 to bypass that source policy. Then use ingress:
 
@@ -81,8 +133,11 @@ SIGTERM requests stop-intake, drain/finalize and storage flush. Keep systemd `Ti
 drained: accepted=<n> completed=<n> cancelled=<n> timed_out=<n> aborted=<n> panicked=<n>
 ```
 
-Reconcile outcomes and persisted unfinished work. An abort/panic is not normal success to hide with
-retries; started blocking effects may outlive a cancelled async waiter. Confirm process exit/store
+A stop request is broadcast to cooperative region tasks before the drain begins, so a healthy stop
+reports `timed_out=0`; a non-zero `timed_out` names work the deadline had to abort. The endpoint's
+own shutdown is the SDK's, not `--drain-timeout`'s: `restate-sdk` waits up to ten seconds for open
+connections to close. Reconcile outcomes and persisted unfinished work. An abort/panic is not
+normal success to hide with retries; started blocking effects may outlive a cancelled async waiter. Confirm process exit/store
 lock release before a new owner starts. `RUST_LOG` controls structured runtime diagnostics.
 
 Use Restate admin queries for invocation state without opening Fjall:

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head><!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1S7NTN7QJC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-1S7NTN7QJC');
+</script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="../../docs-assets/ico/favicon.png">
+    <title>Demo Meet | MeetPro by DirectAthletics</title>
+    <link rel="stylesheet" type="text/css" href="css/prism.css">
+      <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+      <script src="jquery-1.11.0.min.js"></script>
+      <script src="js/bootstrap.min.js"></script>
+      
+      <script src="js/prism.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="shortcut icon" href="http://images.tfmeetpro.com/icon-16x16.png"/>
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+  <style>
+      #intro-explainer {
+            height:540px;  
+      }
+      
+      #intro-part-2, #intro-part-3, #intro-part-4 {
+        display:none;  
+      }
+      
+  </style>
+    
+    </head>
+    
+  <!--DO NOT ERASE! VERSION:&MeetProTemplate_v1.0-->
+<body>
+  <div class="container">
+  <!--Bootstrap wrapper for the body of the webpage. Documentation @ http://getbootstrap.com/css-->
+    <div class="header">
+      <!-- your logo here-->
+      <a id="logo" href="http://www.tfmeetpro.com" target="_new"><img src="meetProLogoBlack.png" border=0></a>
+      <h3 class="text-muted"><a class="home-link-hdr" href="index.html">Demo Meet</a><span style="font-size: 12px;">Brooklyn, NY<br></span><span style="font-size: 12px;">4/15/2015</span></h3>
+    </div>
+
+    <div class="row">
+    <div class="col-md-12 explainer" id="intro-explainer">
+        <h2>MeetPro <small>Web Reports Guide</small></h2>
+        <div class="col-md-12 explainer" id="intro-part-1">
+        <p class="lead">Follow this guide to learn how to customize your MeetPro web reports. The tour includes:</p>
+        <ul>
+            <li>Where to find the necessary files</li>
+            <li>How to add your own custom logo</li>
+            <li>Extensive examples of the HTML produced by MeetPro</li>
+            <li>Detailed illustration of the CSS classes applied to the HTML produced</li>
+        </ul>
+        <p>MeetPro uses the <a href='http://getbootstrap.com'>Bootstrap</a> framework as a base to create stylish, modern, and responsive HTML designed to be viewed on any internet capable device. In addition, we have done our best to implement our own comprehensive framework of CSS classes to provide you, the user, with the ability to completely customize your reports. Let's get started!</p>
+        <button id="part-1-to-2" class="btn btn-md btn-info pull-right">Proceed &gt;</button>
+        </div>
+        <div class="col-md-12 explainer" id="intro-part-2">
+            <p class="lead">The first thing you'll probably want to know is...</p>
+            <p>where to find the files to customize! MeetPro creates a folder in your computer's documents directory called <i>MeetPro Report Templates</i>. Here you will find a number of <i>.html</i> files. Each file is a template responsible for a different report:</p>
+            <ul>
+                <li><i>index.html, index_with_updating.html, session_order_index.html, session_order_index_with_updating.html, and compiledResultsIndex.html</i> are responsible for producing the ''Home'' page for your web results. This will look something like the table you see below.</li>
+                <li><i>event_entries.html, event_performance_lists.html, event_results.html, and event_start_lists.html</i> are responsible for producing a page display an entries, performance list, results, or start list table for one event.</li>
+                <li><i>rosters.html</i> produces a table of each team's athletes.</li>
+                <li><i>team_entries.html</i> produces a table of each team's athletes, as well as their entries and any relay entries the team may have.</li>
+                <li><i>events.html</i> produces a list of events, with their respective entries, heats, status, and any event notes.</li>
+                <li><i>style.css</i> is where the default styles applied to every template can be found.</li>
+            </ul>
+            <p>Every template has the same header structure and references the <i>style.css</i> file. The <i>css</i> and <i>js</i> folders hold additional stylesheets and scripts that pertain to Bootstrap and others. It is not recommended that you edit these files. The easiest way to customize your templates is to add/edit the styles applied to selectors in the <i>style.css</i> file. Small changes can also be made to the <i>.html</i> templates. Next, we'll see how to add your own logo.</p>
+        <button id="part-2-to-1" class="btn btn-md btn-info pull-left">&lt; Back</button>
+            <button id="part-2-to-3" class="btn btn-md btn-info pull-right">Forward &gt;</button>
+        </div>
+        
+        <div class="col-md-12 explainer" id="intro-part-3">
+        <p class="lead">Open one of the HTML template files with the word processor of your choice.</p>
+            <p>At around line 20, you should see something like this:</p>
+            <pre><code class="language-markup">&lt;!--DO NOT ERASE! VERSION:&MeetProTemplate_v1.0--&gt;
+&lt;body&gt;
+  &lt;div class="container"&gt;
+  &lt;!--Bootstrap wrapper for the body of the webpage. Documentation @ http://getbootstrap.com/css--&gt;
+    &lt;div class="header"&gt;
+      &lt;!-- your logo here--&gt;
+      &lt;a id="logo" href="http://www.tfmeetpro.com" target="_new"&gt;&lt;img src="meetProLogoBlack.png" border=0&gt;&lt;/a&gt;
+      &lt;h3 class="text-muted"&gt;[$name]&lt;span style="font-size: 12px;"&gt;[$town]&lt;/span&gt;&lt;span style="font-size: 12px;"&gt;[$date]&lt;/span&gt;&lt;/h3&gt;
+    &lt;/div&gt;</code></pre>
+            <p>To add your own logo, ensure that the image file you need is copied to the <i>MeetPro Report Templates Directory</i>. Then change the <code>src</code> attribute of the <code>&lt;img&gt;</code> tag to the appropriate filename. Make sure it remains in quotation marks. If you have a website you would like to link to, change <code>href</code> attribute of the <code>&lt;a&gt;</code> tag to the desired URL. Save your changes, and voila! All your reports will display your logo at the top of the page. The <code>&lt;!--DO NOT ERASE! VERSION:&MeetProTemplate_v1.0--&gt;</code> comment is very important and should not be edited. If the templates are updated, you will be prompted to update your templates to the latest version. Your customized files will be kept, but have the string ''_mmddyyyy'' appended to the end of it. MeetPro will always reference the default template files, so you will have to reapply your custom changes to the updated templates. Template updates are very rare and can always be declined. Finally, changing any of the placeholders that look like <code>[$placeholder]</code> will prevent MeetPro from writing data to your template files. You are welcome to alter the arrangement and HTML wrapping of these placeholders, but they should remain unchanged.</p>
+            <button id="part-3-to-2" class="btn btn-md btn-info pull-left">&lt; Back</button>
+            <button id="part-3-to-4" class="btn btn-md btn-info pull-right">Forward &gt;</button>
+        </div> 
+        <div class="col-md-12 explainer" id="intro-part-4">
+        <p class="lead">
+        That was easy! What else?    
+        </p>
+            <p>Now that you now how to add your logo, the rest is up to you. You will need a basic knowledge of HTML and CSS, but the possibilities are endless. Click around to the various sample reports to get an idea of the structure and selectors applied, and read up on the <a href="http://getbootstrap.com/css">Bootstrap Docs</a> as well! You can start right below with the index page tables. All report tables use the Bootstrap column system to stay responsive. The most common class you will see is <code>.col-md-12</code> which spans the whole screen on all devices. The default styles applied are meant as a barebones framework to provide easily usable factory results, and 100% meant to be played with! Happy customizing!</p>
+            <button id="part-4-to-3" class="btn btn-md btn-info pull-left">&lt; Back</button>
+        </div>
+    </div>    
+      <div class="col-md-6">
+        <h3>Men</h3><table class="events-table table table-striped table-bordered table-condensed">
+	<thead>
+		<tr>
+		<th class="event-num"></th>
+		<th class="event">Event</th>
+		<th class="entries">Entries</th>
+		<th class="start-list">Start List</th>
+		<th class="performance-list">Performance List</th>
+		<th class="results">Results</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+		<td class="event-num">1</td>
+		<td class="event">Sample Results with Splits</td>
+		<td class="entries"></td>
+		<td class="start-list"></td>
+		<td class="performance-list"></td>
+		<td class="results"><a href='splits_guide.html'>Results</a></td>
+		</tr>
+		<tr>
+		<td class="event-num">3</td>
+		<td class="event">Sample Relay Results</td>
+		<td class="entries"></td>
+		<td class="start-list"></td>
+		<td class="performance-list"></td>
+		<td class="results"><a href='relay_guide.html'>Results</a></td>
+		</tr>
+		<tr>
+		<td class="event-num">5</td>
+		<td class="event">Sample Start List</td>
+		<td class="entries"></td>
+		<td class="start-list"><a href='start_list_guide.html'>Start List</a></td>
+		<td class="performance-list"></td>
+		<td class="results"></td>
+		</tr>
+		<tr>
+		<td class="event-num">21</td>
+		<td class="event">Sample Multi-Event Results</td>
+		<td class="entries"></td>
+		<td class="start-list"></td>
+		<td class="performance-list"></td>
+		<td class="results"><a href='multi_guide.html'>Results</a></td>
+		</tr>
+		</tbody>
+</table>
+
+       
+	  </div>
+      <div class="col-md-6">	
+		<h3>Women</h3><table class="events-table table table-striped table-bordered table-condensed">
+	<thead>
+		<tr>
+		<th class="event-num"></th>
+		<th class="event">Event</th>
+		<th class="entries">Entries</th>
+		<th class="start-list">Start List</th>
+		<th class="performance-list">Performance List</th>
+		<th class="results">Results</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+		<td class="event-num">2</td>
+		<td class="event">Sample Sprint Results</td>
+		<td class="entries"></td>
+		<td class="start-list"></td>
+		<td class="performance-list"></td>
+		<td class="results"><a href='sprint_guide.html'>Results</a></td>
+		</tr>
+		<tr>
+		<td class="event-num">4</td>
+		<td class="event">Sample Vertical Results</td>
+		<td class="entries"></td>
+		<td class="start-list"></td>
+		<td class="performance-list"></td>
+		<td class="results"><a href='vertical_guide.html'>Results</a></td>
+		</tr>
+		<tr>
+		<td class="event-num">6</td>
+		<td class="event">Sample Horizontal Results</td>
+		<td class="entries"></td>
+		<td class="start-list"></td>
+		<td class="performance-list"></td>
+		<td class="results"><a href='horizontal_guide.html'>Results</a></td>
+		</tr>
+		<tr>
+		<td class="event-num">8</td>
+		<td class="event">Sample Performance List</td>
+		<td class="entries"></td>
+		<td class="start-list"></td>
+		<td class="performance-list"><a href='performance_list_guide.html'>Performance List</a></td>
+		<td class="results"></td>
+		</tr>
+		<tr>
+		<td class="event-num">10</td>
+		<td class="event">Sample Entries</td>
+		<td class="entries"><a href='event_entries_guide.html'>Entries</a></td>
+		<td class="start-list"></td>
+		<td class="performance-list"></td>
+		<td class="results"></td>
+		</tr>
+		</tbody>
+</table>
+
+        
+          
+		<!--same behavior as above-->
+      </div>
+        <div id="events-table-explainer" class="col-md-12 explainer">
+            <p>All the events in MeetPro will be printed in two event <code>&lt;table&gt;</code>s for each gender. Mixed gender events will appear in a table below, spanning the entire page width. You can include entries, start lists, performance lists, and results for ell events. Links will only be displayed when there is a corresponding page to go to. The <code>&lt;table&gt;</code> has classes <code>.events-table, .table, .table-striped, .tabled-bordered, .table-condensed</code> <a href="http://getbootstrap.com/css/#tables">Bootstrap Docs</a>. The structure of an events table is detailed below:</p>
+            <pre><code class="language-markup">&lt;table class="events-table table table-striped table-bordered table-condensed"&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+	  &lt;th class="event-num"&gt;&lt;/th&gt;
+      &lt;th class="event"&gt;Event&lt;/th&gt;
+      &lt;th class="entries"&gt;Entries&lt;/th&gt;
+      &lt;th class="start-list"&gt;Start List&lt;/th&gt;
+      &lt;th class="performance-list"&gt;Performance List&lt;/th&gt;
+      &lt;th class="results"&gt;Results&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td class="event-num"&gt;...&lt;/td&gt;
+	  &lt;td class="event"&gt;...&lt;/td&gt;
+	  &lt;td class="entries"&gt;&lt;a href='entries_1.html'&gt;Entries&lt;/a&gt;&lt;/td&gt;
+	  &lt;td class="start-list"&gt;&lt;a href='start_list_1.html'&gt;Start List&lt;/a&gt;&lt;/td&gt;
+	  &lt;td class="performance-list"&gt;&lt;a href='performance_list_1.html'&gt;Performance List&lt;/a&gt;&lt;/td&gt;
+	  &lt;td class="results"&gt;&lt;a href='results_1.html'&gt;Results&lt;/a&gt;&lt;/td&gt;
+    &lt;/tr&gt;
+    ...
+  &lt;/tbody&gt;
+&lt;/table&gt;</code></pre>
+            <p>The following default styles are applied:</p>
+            <pre><code class="language-css">th.entries, th.start-list, th.performance-list, th.results {
+    text-align: center;
+}
+
+td.entries, td.start-list, td.performance-list, td.results {
+    text-align:center;
+}
+            
+th.entries, td.entries, th.results, td.results {
+    width:65px;
+}
+            
+th.start-list, td.start-list {
+    width:80px;
+}
+
+th.performance-list, td.performance-list {
+    width:135px;
+}</code></pre>
+            
+            
+        </div>  
+        <div class="col-md-12">
+            <h3>More Reports</h3>
+          <div class="col-md-4">
+              <a href="events_guide.html"><h4>Events</h4></a>
+          </div>
+          <div class="col-md-4">
+              <a href="team_entries_guide.html"><h4>Team Entries</h4></a>
+          </div>
+          <div class="col-md-4">
+              <a href="rosters_guide.html"><h4>Rosters</h4></a>
+          </div>
+        </div>
+             
+        
+	</div><!-- row -->
+	
+	 <div class="row">
+	 <!--Results for mixed go in this bootstrap row-->
+      <div class="eventLinks col-md-12">	
+		
+		<!--List of results with division (if any) goes here -->
+      </div>
+	</div><!-- row -->
+	
+      
+	<div class="row">  
+      <div id="scores">  
+        <div class="col-md-12">
+            <div class="team-scores col-md-6"><h3 class="team-scores-hdr">Male Teams</h3>
+<table class="scores-table table table-striped table-bordered table-condensed">
+	<thead>
+		<tr>
+		<th class="place">PL</th>
+		<th class="team">Team</th>
+		<th class="code">Code</th>
+		<th class="points">Pts</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+		<td class="place">1</td>
+		<td class="team">Cleveland</td>
+		<td class="code">CLEV</td>
+		<td class="points">154</td>
+		</tr>
+		<tr>
+		<td class="place">2</td>
+		<td class="team">Roosevelt</td>
+		<td class="code">ROOS</td>
+		<td class="points">95</td>
+		</tr>
+		<tr>
+		<td class="place">3</td>
+		<td class="team">Fillmore</td>
+		<td class="code">FILL</td>
+		<td class="points">65.5</td>
+		</tr>
+		<tr>
+		<td class="place">4</td>
+		<td class="team">Lincoln</td>
+		<td class="code">LINC</td>
+		<td class="points">63.5</td>
+		</tr>
+		<tr>
+		<td class="place">5</td>
+		<td class="team">Hayes</td>
+		<td class="code">HAYE</td>
+		<td class="points">30</td>
+		</tr>
+		<tr>
+		<td class="place">6</td>
+		<td class="team">Buchanan</td>
+		<td class="code">BUCH</td>
+		<td class="points">26</td>
+		</tr>
+		<tr>
+		<td class="place">7</td>
+		<td class="team">Johnson</td>
+		<td class="code">JOHN</td>
+		<td class="points">22</td>
+		</tr>
+		<tr>
+		<td class="place">8</td>
+		<td class="team">Harding</td>
+		<td class="code">HARD</td>
+		<td class="points">21</td>
+		</tr>
+		<tr>
+		<td class="place">9</td>
+		<td class="team">Garfield</td>
+		<td class="code">GARF</td>
+		<td class="points">18</td>
+		</tr>
+		<tr>
+		<td class="place">10</td>
+		<td class="team">Taft</td>
+		<td class="code">TAFT</td>
+		<td class="points">1</td>
+		</tr>
+	</tbody>
+</table>
+    
+</div>
+<div class="team-scores col-md-6"><h3 class="team-scores-hdr">Female Teams</h3>
+<table class="scores-table table table-striped table-bordered table-condensed">
+	<thead>
+		<tr>
+		<th class="place">PL</th>
+		<th class="team">Team</th>
+		<th class="code">Code</th>
+		<th class="points">Pts</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+		<td class="place">1</td>
+		<td class="team">Roosevelt</td>
+		<td class="code">ROOS</td>
+		<td class="points">152</td>
+		</tr>
+		<tr>
+		<td class="place">2</td>
+		<td class="team">Fillmore</td>
+		<td class="code">FILL</td>
+		<td class="points">129</td>
+		</tr>
+		<tr>
+		<td class="place">3</td>
+		<td class="team">Hayes</td>
+		<td class="code">HAYE</td>
+		<td class="points">81</td>
+		</tr>
+		<tr>
+		<td class="place">4</td>
+		<td class="team">Harding</td>
+		<td class="code">HARD</td>
+		<td class="points">39</td>
+		</tr>
+		<tr>
+		<td class="place">5</td>
+		<td class="team">Taylor</td>
+		<td class="code">TAYL</td>
+		<td class="points">24</td>
+		</tr>
+		<tr>
+		<td class="place">6</td>
+		<td class="team">McKinley</td>
+		<td class="code">MCKI</td>
+		<td class="points">16</td>
+		</tr>
+		<tr>
+		<td class="place">6</td>
+		<td class="team">Wilson</td>
+		<td class="code">WILS</td>
+		<td class="points">16</td>
+		</tr>
+		<tr>
+		<td class="place">8</td>
+		<td class="team">Taft</td>
+		<td class="code">TAFT</td>
+		<td class="points">12</td>
+		</tr>
+		<tr>
+		<td class="place">9</td>
+		<td class="team">Pierce</td>
+		<td class="code">PIER</td>
+		<td class="points">8</td>
+		</tr>
+		<tr>
+		<td class="place">10</td>
+		<td class="team">Grant</td>
+		<td class="code">GRAN</td>
+		<td class="points">7</td>
+		</tr>
+		<tr>
+		<td class="place">11</td>
+		<td class="team">Garfield</td>
+		<td class="code">GARF</td>
+		<td class="points">2</td>
+		</tr>
+		<tr>
+		<td class="place">11</td>
+		<td class="team">Arthur</td>
+		<td class="code">ARTH</td>
+		<td class="points">2</td>
+		</tr>
+	</tbody>
+</table>
+</div>
+
+       
+</div>
+<div id="scores-explainer" class="col-md-12 explainer">
+    <p>When the option for Team Scores is selected, scores tables are printed per gender as above. When division scoring is used, a table will be drawn for each division-gender pair. The <code>&lt;table&gt;</code> has classes <code>.scores-table, .table, .table-striped, .tabled-bordered, .table-condensed</code> <a href="http://getbootstrap.com/css/#tables">Bootstrap Docs</a>. In addition, you can target the entire <code>&lt;div&gt;</code> element that scores are kept in with the <code>#scores</code> selector. The structure of a scores table is detailed below:</p>
+    
+    <pre><code class="language-markup">&lt;div class="team-scores col-md-6"&gt;
+  &lt;h3 class="team-scores-hdr"&gt;Male Teams&lt;/h3&gt;
+    &lt;table class="scores-table table table-striped table-bordered table-condensed"&gt;
+      &lt;thead&gt;
+		&lt;tr&gt;
+		  &lt;th class="place"&gt;PL&lt;/th&gt;
+		  &lt;th class="team"&gt;Team&lt;/th&gt;
+		  &lt;th class="code"&gt;Code&lt;/th&gt;
+		  &lt;th class="points"&gt;Pts&lt;/th&gt;
+		&lt;/tr&gt;
+	  &lt;/thead&gt;
+	  &lt;tbody&gt;
+	    &lt;tr&gt;
+		  &lt;td class="place"&gt;...&lt;/td&gt;
+		  &lt;td class="team"&gt;...&lt;/td&gt;
+		  &lt;td class="code"&gt;...&lt;/td&gt;
+		  &lt;td class="points"&gt;...&lt;/td&gt;
+		&lt;/tr&gt;
+        ...
+    &lt;/tbody&gt;
+  &lt;/table&gt;
+&lt;/div&gt;</code></pre>
+    <p>The following default styles are applied:</p>
+    <pre><code class="language-css">th.place, th.code, th.points {
+    text-align:center;
+}
+
+td.place, td.code, td.points {
+    text-align:center;
+}
+
+th.place, td.place, th.points, td.points {
+    width:35px;
+}
+
+th.code, td.code, th.heat-lane, td.heat-lane {
+    width:60px;
+}</code></pre>
+    
+    </div> 
+        <!--
+        This placeholder gets a scores table component with bootstrapped styles. ex:
+        <table class="table table-striped table-bordered table-condensed">
+        	<thead>
+        		<tr>
+        			<th>PL</th>
+        			<th>Team</th>
+        			<th>Code</th>
+        			<th>Points</th>
+        		</tr>
+        	</thead>
+        	<tbody>
+        		<tr>
+        			<td>1</td>
+        			<td>Direct Athletics</td>
+        			<td>DA</td>
+        			<td>168</td>
+        		</tr>
+        		<tr>
+        			etc.
+        		</tr>
+        	</tbody>
+        </table>	
+        -->
+      </div>
+    </div><!-- row -->
+    
+    <div class="footer">
+      <!--footer logo-->
+      <img src="DA_Logo.jpg">
+    </div>
+
+  </div><!-- Container -->
+    
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var $part_1_to_2 = $('#part-1-to-2');
+            var $part_2_to_1 = $('#part-2-to-1');
+
+            var $part_2_to_3 = $('#part-2-to-3');
+            var $part_3_to_2 = $('#part-3-to-2');
+
+            var $part_3_to_4 = $('#part-3-to-4');
+            var $part_4_to_3 = $('#part-4-to-3');
+
+            var $part_1 = $('#intro-part-1');
+            var $part_2 = $('#intro-part-2');
+            var $part_3 = $('#intro-part-3');
+            var $part_4 = $('#intro-part-4');
+
+            $part_1_to_2.click(function() {
+                $part_2.show('slow');
+                $part_1.hide('fast');
+                
+            });
+            
+            $part_2_to_3.click(function() {
+                $part_3.show('slow');
+                $part_2.hide('fast');
+            });
+            
+            $part_3_to_4.click(function() {
+                $part_4.show('slow');
+                $part_3.hide('fast');
+            });
+            
+            $part_2_to_1.click(function() {
+                $part_1.show('slow');
+                $part_2.hide('fast');
+            });
+            
+            $part_3_to_2.click(function() {
+                $part_2.show('slow');
+                $part_3.hide('fast');
+            });
+            
+            $part_4_to_3.click(function() {
+                $part_3.show('slow');
+                $part_4.hide('fast');
+            });
+                
+        });
+        
+        
+        
+        
+    </script>
+  </body>
+</html>

@@ -89,6 +89,12 @@ pub enum BootstrapError {
     LaneFlagWithoutProfile { flag: String },
     #[error("{program} is on no PATH entry: name the browser with --browser-executable")]
     LaneBrowserNotOnPath { program: String },
+    #[error("resolving the browser lane path {path} failed: {source}")]
+    LanePathUnresolvable {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
     #[error("building the browser lane's client for {origin} failed: {detail}")]
     LaneIngressUnusable { origin: String, detail: String },
 }

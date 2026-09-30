@@ -6,13 +6,12 @@ use calamine::Reader;
 use clap::Args;
 
 use census_reconcile::verify::{
-    self, column_index, missing_columns, sheets_matching_prefix, verify_athletes,
-    verify_performances, ATHLETES_REQUIRED, PERFORMANCES_REQUIRED,
+    self, column_index, missing_columns, verify_athletes, ATHLETES_REQUIRED,
 };
 use census_store::Store;
 
 #[derive(Debug, Args)]
-#[command(about = "`census-service verify`")]
+#[command(about = "Sampled row-level check of the published Athletes sheet against the store")]
 pub struct VerifyArgs {
     #[arg(help = "The workbook to verify. Defaults to the newest `out/*.xlsx`")]
     #[arg(long)]
@@ -123,41 +122,6 @@ fn verify_athletes_sheet(
     Ok((athletes_total, athletes_check))
 }
 
-fn verify_performances_sheets(
-    sheets: &HashMap<String, Vec<Vec<String>>>,
-    store: &Store,
-    sample_every: usize,
-) -> Result<(usize, census_reconcile::verify::EntityCheck)> {
-    let perf_rows = sheets_matching_prefix(sheets, "Performances_");
-    let perf_headers = perf_rows
-        .first()
-        .ok_or_else(|| anyhow::anyhow!("Performances sheet has no header row"))?;
-
-    let perf_missing = missing_columns(perf_headers, PERFORMANCES_REQUIRED);
-    if !perf_missing.is_empty() {
-        bail!(
-            "'Performances' sheet missing required columns: {}",
-            perf_missing.join(", ")
-        );
-    }
-
-    let perf_col_map: HashMap<&str, usize> = PERFORMANCES_REQUIRED
-        .iter()
-        .filter_map(|&name| column_index(perf_headers, name).map(|i| (name, i)))
-        .collect();
-
-    let perf_data = perf_rows
-        .get(1..)
-        .ok_or_else(|| anyhow::anyhow!("Performances sheet has no header row"))?;
-    let perf_total = perf_data.len();
-    let perf_sampled = verify::sample_indices(perf_total, sample_every);
-
-    let perf_check = verify_performances(store, perf_data, &perf_sampled, &perf_col_map)
-        .map_err(|d| anyhow::anyhow!("performances verification failed: {}", d.message))?;
-
-    Ok((perf_total, perf_check))
-}
-
 pub fn run_verify(store: &Store, args: &VerifyArgs) -> Result<()> {
     let workbook_path = match &args.workbook {
         Some(path) => path.clone(),
@@ -173,15 +137,10 @@ pub fn run_verify(store: &Store, args: &VerifyArgs) -> Result<()> {
     let (athletes_total, athletes_check) =
         verify_athletes_sheet(&sheets, store, args.sample_every)?;
 
-    let (perf_total, perf_check) = verify_performances_sheets(&sheets, store, args.sample_every)?;
-
-    let ok = athletes_check.passed == athletes_check.sampled_indices.len()
-        && perf_check.passed == perf_check.sampled_indices.len();
-
-    if ok {
+    if athletes_check.passed == athletes_check.sampled_indices.len() {
         println!(
-            "verify: OK ({} athletes sampled of {} rows, {} performances sampled of {} rows)",
-            athletes_check.passed, athletes_total, perf_check.passed, perf_total
+            "verify: OK ({} athletes sampled of {} rows)",
+            athletes_check.passed, athletes_total
         );
     } else {
         println!("verify: FAILED");

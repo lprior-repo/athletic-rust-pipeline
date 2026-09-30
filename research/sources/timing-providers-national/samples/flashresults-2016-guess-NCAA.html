@@ -1,0 +1,174 @@
+<html><head>
+<title>NCAA Division I Track & Field Championships</title>
+<link rel='stylesheet' type='text/css' href='js/style.css'>
+<meta http-equiv='refresh' content='600'>
+<link rel='stylesheet' href='js/jquery.mobile-1.4.4.css'>
+<script src='js/jquery.mobile-1.4.4.min.js'></script>
+<script src='js/jquery.mobile-1.4.4.js'></script>
+<script src='js/jquery-1.10.2.js'></script>
+<script src='js/status.js'></script>
+<script src='js/update_leaderboard.js'></script>
+<script src='js/update_weather.js'></script>
+</head>
+<body style='color: black; background-color: white;' alink=black link=black vlink=black> 
+<div class='top'><p class='meetNameTop'>NCAA Division I Track & Field Championships</p><p class='meetDateTop'>Eugene, OR | June 8-11, 2016</p></div>
+<div style='clear: both;'></div>
+<br>
+<br>
+<center><img align='top' border='0' hspace='0' src=16_NCAA-TF_full-color.png width=200height=50/></center>
+<div data-role='main' class='ui-content'><a href='scores.htm' class='ui-btn ui-btn-a ui-btn-inline ui-icon-user ui-btn-icon-left'>Team Scores</a><br>
+<a href='compiled.pdf' class='ui-btn ui-btn-a ui-btn-inline ui-icon-info ui-btn-icon-left'>Compiled Results</a><br>
+
+<table id='currentevent'>
+<tr><th>Leaderboard - Women</th><th>Leaderboard - Men</th></tr>
+<tr><td id='wleader'></td><td id='mleader'></td></tr>
+</table>
+<br>
+
+
+
+
+
+
+
+
+
+<br>
+<table id='SideBar2'><tr><th width='70' align='left'>Day  </th><th width='75' align='left'>Start Time </th><th width ='290'>Saturday Running Events          </th><th width='80'>Rnd</th><th width='70'>Start List</th><th width='70'>Result</th><th width='90' style='text-align:center'>Status</th></tr>
+<tr class='alt'><td>Saturday</td><td>3:32 PM</td><td>Women 4x100 M Relay</td><td>Final</td><td><a href=031-2_start.htm>Start List</a></td><td><a href=031-2_compiled.htm>Result</a></td><td style='text-align:center' id=031-2></td></tr>
+<tr class='normal'><td>Saturday</td><td>3:41 PM</td><td>Women 1500 M</td><td>Final</td><td><a href=025-2_start.htm>Start List</a></td><td><a href=025-2_compiled.htm>Result</a></td><td style='text-align:center' id=025-2></td></tr>
+<tr class='alt'><td>Saturday</td><td>3:54 PM</td><td>Women 3000 M Steeplechase</td><td>Final</td><td><a href=026-2_start.htm>Start List</a></td><td><a href=026-2_compiled.htm>Result</a></td><td style='text-align:center' id=026-2></td></tr>
+<tr class='normal'><td>Saturday</td><td>4:12 PM</td><td>Women 100 M Hurdles</td><td>Final</td><td><a href=029-2_start.htm>Start List</a></td><td><a href=029-2_compiled.htm>Result</a></td><td style='text-align:center' id=029-2></td></tr>
+<tr class='alt'><td>Saturday</td><td>4:22 PM</td><td>Women 100 M</td><td>Final</td><td><a href=021-2_start.htm>Start List</a></td><td><a href=021-2_compiled.htm>Result</a></td><td style='text-align:center' id=021-2></td></tr>
+<tr class='normal'><td>Saturday</td><td>4:32 PM</td><td>Women 400 M</td><td>Final</td><td><a href=023-2_start.htm>Start List</a></td><td><a href=023-2_compiled.htm>Result</a></td><td style='text-align:center' id=023-2></td></tr>
+<tr class='alt'><td>Saturday</td><td>4:47 PM</td><td>Women 800 M</td><td>Final</td><td><a href=024-2_start.htm>Start List</a></td><td><a href=024-2_compiled.htm>Result</a></td><td style='text-align:center' id=024-2></td></tr>
+<tr class='normal'><td>Saturday</td><td>4:57 PM</td><td>Women 400 M Hurdles</td><td>Final</td><td><a href=030-2_start.htm>Start List</a></td><td><a href=030-2_compiled.htm>Result</a></td><td style='text-align:center' id=030-2></td></tr>
+<tr class='alt'><td>Saturday</td><td>5:07 PM</td><td>Women 200 M</td><td>Final</td><td><a href=022-2_start.htm>Start List</a></td><td><a href=022-2_compiled.htm>Result</a></td><td style='text-align:center' id=022-2></td></tr>
+<tr class='normal'><td>Saturday</td><td>5:25 PM</td><td>Women 5000 M</td><td>Final</td><td><a href=027-1_start.htm>Start List</a></td><td><a href=027-1_compiled.htm>Result</a></td><td style='text-align:center' id=027-1></td></tr>
+<tr class='alt'><td>Saturday</td><td>5:51 PM</td><td>Women 4x400 M Relay</td><td>Final</td><td><a href=032-2_start.htm>Start List</a></td><td><a href=032-2_compiled.htm>Result</a></td><td style='text-align:center' id=032-2></td></tr>
+</table>
+
+
+<br><table id='SideBar2'><tr><th width='70' align='left'>Day  </th><th width='75' align='left'>Start Time </th><th width ='290'>Saturday Field Events          </th><th width='80'>Rnd</th><th width='70'>Start List</th><th width='70'>Result</th><th width='90' style='text-align:center'>Status</th></tr>
+<tr class='alt'><td>Saturday</td><td>3:00 PM</td><td>Women High Jump</td><td>Finals</td><td><a href=033-1_start.htm>Start List</a></td><td><a href=033-1_compiled.htm>Result</a></td><td style='text-align:center' id=033-1></td></tr>
+<tr class='normal'><td>Saturday</td><td>3:05 PM</td><td>Women Discus</td><td>Finals</td><td><a href=038-1_start.htm>Start List</a></td><td><a href=038-1_compiled.htm>Result</a></td><td style='text-align:center' id=038-1></td></tr>
+<tr class='alt'><td>Saturday</td><td>3:30 PM</td><td>Women Triple Jump</td><td>Finals</td><td><a href=036-1_start.htm>Start List</a></td><td><a href=036-1_compiled.htm>Result</a></td><td style='text-align:center' id=036-1></td></tr>
+</table>
+
+
+
+
+<br><table id='SideBar2'><tr><th width='70' align='left'>Day  </th><th width='75' align='left'>Start Time </th><th width ='290'>Heptathlon        </th><th width='80'>Rnd</th><th width='70'>Start List</th><th width='70'>Result</th><th width='90' style='text-align:center'>Status</th></tr>
+<tr class='normal'><td>Friday</td><td>12:30 PM</td><td>100 M Hurdles</td><td>Finals</td><td><a href=042-1_start.htm>Start List</a></td><td><a href=042-1_compiled.htm>Result</a></td><td style='text-align:center' id=042-1></td></tr>
+<tr class='alt'><td>Friday</td><td>1:30 PM</td><td>High Jump</td><td>Finals</td><td><a href=042-2_start.htm>Start List</a></td><td><a href=042-2_compiled.htm>Result</a></td><td style='text-align:center' id=042-2></td></tr>
+<tr class='normal'><td>Friday</td><td>3:30 PM</td><td>Shot Put</td><td>Finals</td><td><a href=042-3_start.htm>Start List</a></td><td><a href=042-3_compiled.htm>Result</a></td><td style='text-align:center' id=042-3></td></tr>
+<tr class='alt'><td>Friday</td><td>7:13 PM</td><td>200 M</td><td>Finals</td><td><a href=042-4_start.htm>Start List</a></td><td><a href=042-4_compiled.htm>Result</a></td><td style='text-align:center' id=042-4></td></tr>
+<tr class='normal'><td>Saturday</td><td>11:30 AM</td><td>Long Jump</td><td>Finals</td><td><a href=042-5_start.htm>Start List</a></td><td><a href=042-5_compiled.htm>Result</a></td><td style='text-align:center' id=042-5></td></tr>
+<tr class='alt'><td>Saturday</td><td>12:45 PM</td><td>Javelin</td><td>Finals</td><td><a href=042-6_start.htm>Start List</a></td><td><a href=042-6_compiled.htm>Result</a></td><td style='text-align:center' id=042-6></td></tr>
+<tr class='normal'><td>Saturday</td><td>5:13 PM</td><td>800 M</td><td>Finals</td><td><a href=042-7_start.htm>Start List</a></td><td><a href=042-7_compiled.htm>Result</a></td><td style='text-align:center' id=042-7></td></tr>
+<tr class='alt'><td> </td><td>--</td><td>Heptathlon Scores</td><td></td><td></td><td><a href=042_Scores.htm>Scores</a></td><td style='text-align:center' id=042-100></td></tr>
+
+</table>
+
+
+
+
+
+<br>
+<table id='SideBar'><tr><th width='70' align='left'>Day  </th><th width='75' align='left'>Start Time </th><th width ='290'>Friday Running Events          </th><th width='80'>Rnd</th><th width='70'>Start List</th><th width='70'>Result</th><th width='90' style='text-align:center'>Status</th></tr>
+<tr class='alt'><td>Friday</td><td>5:32 PM</td><td>Men 4x100 M Relay</td><td>Final</td><td><a href=011-2_start.htm>Start List</a></td><td><a href=011-2_compiled.htm>Result</a></td><td style='text-align:center' id=011-2></td></tr>
+<tr class='normal'><td>Friday</td><td>5:42 PM</td><td>Men 1500 M</td><td>Final</td><td><a href=005-2_start.htm>Start List</a></td><td><a href=005-2_compiled.htm>Result</a></td><td style='text-align:center' id=005-2></td></tr>
+<tr class='alt'><td>Friday</td><td>5:54 PM</td><td>Men 3000 M Steeplechase</td><td>Final</td><td><a href=006-2_start.htm>Start List</a></td><td><a href=006-2_compiled.htm>Result</a></td><td style='text-align:center' id=006-2></td></tr>
+<tr class='normal'><td>Friday</td><td>6:12 PM</td><td>Men 110 M Hurdles</td><td>Final</td><td><a href=009-2_start.htm>Start List</a></td><td><a href=009-2_compiled.htm>Result</a></td><td style='text-align:center' id=009-2></td></tr>
+<tr class='alt'><td>Friday</td><td>6:22 PM</td><td>Men 100 M</td><td>Final</td><td><a href=001-2_start.htm>Start List</a></td><td><a href=001-2_compiled.htm>Result</a></td><td style='text-align:center' id=001-2></td></tr>
+<tr class='normal'><td>Friday</td><td>6:32 PM</td><td>Men 400 M</td><td>Final</td><td><a href=003-2_start.htm>Start List</a></td><td><a href=003-2_compiled.htm>Result</a></td><td style='text-align:center' id=003-2></td></tr>
+<tr class='alt'><td>Friday</td><td>6:47 PM</td><td>Men 800 M</td><td>Final</td><td><a href=004-2_start.htm>Start List</a></td><td><a href=004-2_compiled.htm>Result</a></td><td style='text-align:center' id=004-2></td></tr>
+<tr class='normal'><td>Friday</td><td>6:57 PM</td><td>Men 400 M Hurdles</td><td>Final</td><td><a href=010-2_start.htm>Start List</a></td><td><a href=010-2_compiled.htm>Result</a></td><td style='text-align:center' id=010-2></td></tr>
+<tr class='alt'><td>Friday</td><td>7:07 PM</td><td>Men 200 M</td><td>Final</td><td><a href=002-2_start.htm>Start List</a></td><td><a href=002-2_compiled.htm>Result</a></td><td style='text-align:center' id=002-2></td></tr>
+<tr class='normal'><td>Friday</td><td>7:25 PM</td><td>Men 5000 M</td><td>Final</td><td><a href=007-1_start.htm>Start List</a></td><td><a href=007-1_compiled.htm>Result</a></td><td style='text-align:center' id=007-1></td></tr>
+<tr class='alt'><td>Friday</td><td>7:51 PM</td><td>Men 4x400 M Relay</td><td>Final</td><td><a href=012-2_start.htm>Start List</a></td><td><a href=012-2_compiled.htm>Result</a></td><td style='text-align:center' id=012-2></td></tr>
+</table>
+
+
+<br><table id='SideBar'><tr><th width='70' align='left'>Day  </th><th width='75' align='left'>Start Time </th><th width ='290'>Friday Field Events          </th><th width='80'>Rnd</th><th width='70'>Start List</th><th width='70'>Result</th><th width='90' style='text-align:center'>Status</th></tr>
+<tr class='normal'><td>Friday</td><td>5:00 PM</td><td>Men High Jump</td><td>Finals</td><td><a href=013-1_start.htm>Start List</a></td><td><a href=013-1_compiled.htm>Result</a></td><td style='text-align:center' id=013-1></td></tr>
+<tr class='alt'><td>Friday</td><td>5:05 PM</td><td>Men Discus</td><td>Finals</td><td><a href=018-1_start.htm>Start List</a></td><td><a href=018-1_compiled.htm>Result</a></td><td style='text-align:center' id=018-1></td></tr>
+<tr class='normal'><td>Friday</td><td>5:30 PM</td><td>Men Triple Jump</td><td>Finals</td><td><a href=016-1_start.htm>Start List</a></td><td><a href=016-1_compiled.htm>Result</a></td><td style='text-align:center' id=016-1></td></tr>
+</table>
+
+
+
+<br>
+<table id='SideBar2'><tr><th width='70' align='left'>Day  </th><th width='75' align='left'>Start Time </th><th width ='290'>Thursday Running Events          </th><th width='80'>Rnd</th><th width='70'>Start List</th><th width='70'>Result</th><th width='90' style='text-align:center'>Status</th></tr>
+<tr class='alt'><td>Thursday</td><td>4:32 PM</td><td>Women 4x100 M Relay</td><td>Semifinals</td><td><a href=031-1_start.htm>Start List</a></td><td><a href=031-1_compiled.htm>Result</a></td><td style='text-align:center' id=031-1></td></tr>
+<tr class='normal'><td>Thursday</td><td>4:46 PM</td><td>Women 1500 M</td><td>Semifinals</td><td><a href=025-1_start.htm>Start List</a></td><td><a href=025-1_compiled.htm>Result</a></td><td style='text-align:center' id=025-1></td></tr>
+<tr class='alt'><td>Thursday</td><td>5:02 PM</td><td>Women 3000 M Steeplechase</td><td>Semifinals</td><td><a href=026-1_start.htm>Start List</a></td><td><a href=026-1_compiled.htm>Result</a></td><td style='text-align:center' id=026-1></td></tr>
+<tr class='normal'><td>Thursday</td><td>5:32 PM</td><td>Women 100 M Hurdles</td><td>Semifinals</td><td><a href=029-1_start.htm>Start List</a></td><td><a href=029-1_compiled.htm>Result</a></td><td style='text-align:center' id=029-1></td></tr>
+<tr class='alt'><td>Thursday</td><td>5:46 PM</td><td>Women 100 M</td><td>Semifinals</td><td><a href=021-1_start.htm>Start List</a></td><td><a href=021-1_compiled.htm>Result</a></td><td style='text-align:center' id=021-1></td></tr>
+<tr class='normal'><td>Thursday</td><td>6:00 PM</td><td>Women 400 M</td><td>Semifinals</td><td><a href=023-1_start.htm>Start List</a></td><td><a href=023-1_compiled.htm>Result</a></td><td style='text-align:center' id=023-1></td></tr>
+<tr class='alt'><td>Thursday</td><td>6:14 PM</td><td>Women 800 M</td><td>Semifinals</td><td><a href=024-1_start.htm>Start List</a></td><td><a href=024-1_compiled.htm>Result</a></td><td style='text-align:center' id=024-1></td></tr>
+<tr class='normal'><td>Thursday</td><td>6:30 PM</td><td>Women 400 M Hurdles</td><td>Semifinals</td><td><a href=030-1_start.htm>Start List</a></td><td><a href=030-1_compiled.htm>Result</a></td><td style='text-align:center' id=030-1></td></tr>
+<tr class='alt'><td>Thursday</td><td>6:44 PM</td><td>Women 200 M</td><td>Semifinals</td><td><a href=022-1_start.htm>Start List</a></td><td><a href=022-1_compiled.htm>Result</a></td><td style='text-align:center' id=022-1></td></tr>
+<tr class='normal'><td>Thursday</td><td>7:08 PM</td><td>Women 10000 M</td><td>Final</td><td><a href=028-1_start.htm>Start List</a></td><td><a href=028-1_compiled.htm>Result</a></td><td style='text-align:center' id=028-1></td></tr>
+<tr class='alt'><td>Thursday</td><td>7:48 PM</td><td>Women 4x400 M Relay</td><td>Semifinals</td><td><a href=032-1_start.htm>Start List</a></td><td><a href=032-1_compiled.htm>Result</a></td><td style='text-align:center' id=032-1></td></tr>
+</table>
+
+<br><table id='SideBar2'><tr><th width='70' align='left'>Day  </th><th width='75' align='left'>Start Time </th><th width ='290'>Thursday Field Events          </th><th width='80'>Rnd</th><th width='70'>Start List</th><th width='70'>Result</th><th width='90' style='text-align:center'>Status</th></tr>
+<tr class='alt'><td>Thursday</td><td>2:00 PM</td><td>Women Hammer</td><td>Finals</td><td><a href=039-1_start.htm>Start List</a></td><td><a href=039-1_compiled.htm>Result</a></td><td style='text-align:center' id=039-1></td></tr>
+<tr class='normal'><td>Thursday</td><td>5:00 PM</td><td>Women Pole Vault</td><td>Finals</td><td><a href=034-1_start.htm>Start List</a></td><td><a href=034-1_compiled.htm>Result</a></td><td style='text-align:center' id=034-1></td></tr>
+<tr class='alt'><td>Thursday</td><td>5:45 PM</td><td>Women Javelin</td><td>Finals</td><td><a href=040-1_start.htm>Start List</a></td><td><a href=040-1_compiled.htm>Result</a></td><td style='text-align:center' id=040-1></td></tr>
+<tr class='normal'><td>Thursday</td><td>6:00 PM</td><td>Women Long Jump</td><td>Finals</td><td><a href=035-1_start.htm>Start List</a></td><td><a href=035-1_compiled.htm>Result</a></td><td style='text-align:center' id=035-1></td></tr>
+<tr class='alt'><td>Thursday</td><td>6:30 PM</td><td>Women Shot Put</td><td>Finals</td><td><a href=037-1_start.htm>Start List</a></td><td><a href=037-1_compiled.htm>Result</a></td><td style='text-align:center' id=037-1></td></tr>
+</table>
+
+
+
+
+<br>
+<table id='SideBar'><tr><th width='70' align='left'>Day  </th><th width='75' align='left'>Start Time </th><th width ='290'>Wednesday Running Events          </th><th width='80'>Rnd</th><th width='70'>Start List</th><th width='70'>Result</th><th width='90' style='text-align:center'>Status</th></tr>
+<tr class='normal'><td>Wednesday</td><td>4:32 PM</td><td>Men 4x100 M Relay</td><td>Semifinals</td><td><a href=011-1_start.htm>Start List</a></td><td><a href=011-1_compiled.htm>Result</a></td><td style='text-align:center' id=011-1></td></tr>
+<tr class='alt'><td>Wednesday</td><td>4:46 PM</td><td>Men 1500 M</td><td>Semifinals</td><td><a href=005-1_start.htm>Start List</a></td><td><a href=005-1_compiled.htm>Result</a></td><td style='text-align:center' id=005-1></td></tr>
+<tr class='normal'><td>Wednesday</td><td>5:02 PM</td><td>Men 3000 M Steeplechase</td><td>Semifinals</td><td><a href=006-1_start.htm>Start List</a></td><td><a href=006-1_compiled.htm>Result</a></td><td style='text-align:center' id=006-1></td></tr>
+<tr class='alt'><td>Wednesday</td><td>5:32 PM</td><td>Men 110 M Hurdles</td><td>Semifinals</td><td><a href=009-1_start.htm>Start List</a></td><td><a href=009-1_compiled.htm>Result</a></td><td style='text-align:center' id=009-1></td></tr>
+<tr class='normal'><td>Wednesday</td><td>5:46 PM</td><td>Men 100 M</td><td>Semifinals</td><td><a href=001-1_start.htm>Start List</a></td><td><a href=001-1_compiled.htm>Result</a></td><td style='text-align:center' id=001-1></td></tr>
+<tr class='alt'><td>Wednesday</td><td>6:00 PM</td><td>Men 400 M</td><td>Semifinals</td><td><a href=003-1_start.htm>Start List</a></td><td><a href=003-1_compiled.htm>Result</a></td><td style='text-align:center' id=003-1></td></tr>
+<tr class='normal'><td>Wednesday</td><td>6:14 PM</td><td>Men 800 M</td><td>Semifinals</td><td><a href=004-1_start.htm>Start List</a></td><td><a href=004-1_compiled.htm>Result</a></td><td style='text-align:center' id=004-1></td></tr>
+<tr class='alt'><td>Wednesday</td><td>6:30 PM</td><td>Men 400 M Hurdles</td><td>Semifinals</td><td><a href=010-1_start.htm>Start List</a></td><td><a href=010-1_compiled.htm>Result</a></td><td style='text-align:center' id=010-1></td></tr>
+<tr class='normal'><td>Wednesday</td><td>6:44 PM</td><td>Men 200 M</td><td>Semifinals</td><td><a href=002-1_start.htm>Start List</a></td><td><a href=002-1_compiled.htm>Result</a></td><td style='text-align:center' id=002-1></td></tr>
+<tr class='alt'><td>Wednesday</td><td>7:08 PM</td><td>Men 10000 M</td><td>Final</td><td><a href=008-1_start.htm>Start List</a></td><td><a href=008-1_compiled.htm>Result</a></td><td style='text-align:center' id=008-1></td></tr>
+<tr class='normal'><td>Wednesday</td><td>7:48 PM</td><td>Men 4x400 M Relay</td><td>Semifinals</td><td><a href=012-1_start.htm>Start List</a></td><td><a href=012-1_compiled.htm>Result</a></td><td style='text-align:center' id=012-1></td></tr>
+</table>
+
+<br><table id='SideBar'><tr><th width='70' align='left'>Day  </th><th width='75' align='left'>Start Time </th><th width ='290'>Wednesday Field Events          </th><th width='80'>Rnd</th><th width='70'>Start List</th><th width='70'>Result</th><th width='90' style='text-align:center'>Status</th></tr>
+<tr class='normal'><td>Wednesday</td><td>2:00 PM</td><td>Men Hammer</td><td>Finals</td><td><a href=019-1_start.htm>Start List</a></td><td><a href=019-1_compiled.htm>Result</a></td><td style='text-align:center' id=019-1></td></tr>
+<tr class='alt'><td>Wednesday</td><td>5:00 PM</td><td>Men Pole Vault</td><td>Finals</td><td><a href=014-1_start.htm>Start List</a></td><td><a href=014-1_compiled.htm>Result</a></td><td style='text-align:center' id=014-1></td></tr>
+<tr class='normal'><td>Wednesday</td><td>5:45 PM</td><td>Men Javelin</td><td>Finals</td><td><a href=020-1_start.htm>Start List</a></td><td><a href=020-1_compiled.htm>Result</a></td><td style='text-align:center' id=020-1></td></tr>
+<tr class='alt'><td>Wednesday</td><td>6:00 PM</td><td>Men Long Jump</td><td>Finals</td><td><a href=015-1_start.htm>Start List</a></td><td><a href=015-1_compiled.htm>Result</a></td><td style='text-align:center' id=015-1></td></tr>
+<tr class='normal'><td>Wednesday</td><td>6:30 PM</td><td>Men Shot Put</td><td>Finals</td><td><a href=017-1_start.htm>Start List</a></td><td><a href=017-1_compiled.htm>Result</a></td><td style='text-align:center' id=017-1></td></tr>
+</table>
+
+<br><table id='SideBar'><tr><th width='70' align='left'>Day  </th><th width='75' align='left'>Start Time </th><th width ='290'>Decathlon         </th><th width='80'>Rnd</th><th width='70'>Start List</th><th width='70'>Result</th><th width='90' style='text-align:center'>Status</th></tr>
+<tr class='normal'><td>Wednesday</td><td>12:30 PM</td><td>100 M</td><td>Finals</td><td><a href=041-1_start.htm>Start List</a></td><td><a href=041-1_compiled.htm>Result</a></td><td style='text-align:center' id=041-1></td></tr>
+<tr class='alt'><td>Wednesday</td><td>1:10 PM</td><td>Long Jump</td><td>Finals</td><td><a href=041-2_start.htm>Start List</a></td><td><a href=041-2_compiled.htm>Result</a></td><td style='text-align:center' id=041-2></td></tr>
+<tr class='normal'><td>Wednesday</td><td>2:25 PM</td><td>Shot Put</td><td>Finals</td><td><a href=041-3_start.htm>Start List</a></td><td><a href=041-3_compiled.htm>Result</a></td><td style='text-align:center' id=041-3></td></tr>
+<tr class='alt'><td>Wednesday</td><td>3:40 PM</td><td>High Jump</td><td>Finals</td><td><a href=041-4_start.htm>Start List</a></td><td><a href=041-4_compiled.htm>Result</a></td><td style='text-align:center' id=041-4></td></tr>
+<tr class='normal'><td>Wednesday</td><td>6:56 PM</td><td>400 M</td><td>Finals</td><td><a href=041-5_start.htm>Start List</a></td><td><a href=041-5_compiled.htm>Result</a></td><td style='text-align:center' id=041-5></td></tr>
+<tr class='alt'><td>Thursday</td><td>10:30 AM</td><td>110 M Hurdles</td><td>Finals</td><td><a href=041-6_start.htm>Start List</a></td><td><a href=041-6_compiled.htm>Result</a></td><td style='text-align:center' id=041-6></td></tr>
+<tr class='normal'><td>Thursday</td><td>11:20 AM</td><td>Discus</td><td>Finals</td><td><a href=041-7_start.htm>Start List</a></td><td><a href=041-7_compiled.htm>Result</a></td><td style='text-align:center' id=041-7></td></tr>
+<tr class='alt'><td>Thursday</td><td>12:30 PM</td><td>Pole Vault</td><td>Finals</td><td><a href=041-8_start.htm>Start List</a></td><td><a href=041-8_compiled.htm>Result</a></td><td style='text-align:center' id=041-8></td></tr>
+<tr class='normal'><td>Thursday</td><td>3:00 PM</td><td>Javelin</td><td>Finals</td><td><a href=041-9_start.htm>Start List</a></td><td><a href=041-9_compiled.htm>Result</a></td><td style='text-align:center' id=041-9></td></tr>
+<tr class='alt'><td>Thursday</td><td>6:56 PM</td><td>1500 M</td><td>Finals</td><td><a href=041-0_start.htm>Start List</a></td><td><a href=041-0_compiled.htm>Result</a></td><td style='text-align:center' id=041-0></td></tr>
+<tr class='normal'><td> </td><td>--</td><td>Decathlon Scores</td><td></td><td></td><td><a href=041_Scores.htm>Scores</a></td><td style='text-align:center' id=041-100></td></tr>
+</table>
+
+
+
+
+
+<br>
+<table id='weather'>
+<tr><th width='425'>Weather</th></tr>
+<tr><td id=currentweather></td></tr>
+</table>
+<br><div class='bottom'><p class='meetName'>NCAA Division I Track & Field Championships | Eugene, OR | June 8-11, 2016</p><p class='companyName'>Flash Results, Inc. | VS14.0 &copy;2013-2016</p></div>
+</body></html>

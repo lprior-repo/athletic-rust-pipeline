@@ -192,8 +192,16 @@ fn athlete() -> impl Strategy<Value = CanonicalAthlete> {
         })
 }
 
+fn meet_date() -> impl Strategy<Value = String> {
+    prop_oneof![
+        (1900i16..=2100).prop_map(|year| format!("{year:04}")),
+        (2000i16..=2030, 1u8..=12, 1u8..=28)
+            .prop_map(|(year, month, day)| format!("{year:04}-{month:02}-{day:02}")),
+    ]
+}
+
 fn meet() -> impl Strategy<Value = CanonicalMeet> {
-    (state(), word(20), word(8), level())
+    (state(), word(20), meet_date(), level())
         .prop_map(|(state, name, date, level)| CanonicalMeet::new(Some(state), name, date, level))
 }
 

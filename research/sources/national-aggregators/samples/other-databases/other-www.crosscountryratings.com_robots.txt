@@ -1,0 +1,65 @@
+# Default rules for all bots
+User-agent: *
+Allow: /
+Crawl-delay: 1
+
+# Block admin and API endpoints
+Disallow: /admin/
+Disallow: /api/
+
+# Block sensitive business documents from indexing (linked directly in invoice footers, not meant to surface in search)
+Disallow: /static/docs/xcr-w9.pdf
+
+# Allow important pages for search engines
+Allow: /individuals
+Allow: /teams
+Allow: /results
+Allow: /search
+Allow: /help/
+Allow: /runner/
+Allow: /school/
+Allow: /event/
+Allow: /race/
+
+# Rate limit aggressive AI training bots (added Jan 3, 2026)
+# OpenAI (ChatGPT training)
+User-agent: GPTBot
+User-agent: ChatGPT-User
+Crawl-delay: 10
+
+# Anthropic (Claude training)
+User-agent: anthropic-ai
+User-agent: Claude-Web
+Crawl-delay: 10
+
+# Google AI (Bard/Gemini training)
+User-agent: Google-Extended
+Crawl-delay: 10
+
+# ByteDance (TikTok/Doubao AI)
+User-agent: Bytespider
+Crawl-delay: 10
+
+# Amazon AI (Alexa training)
+User-agent: Amazonbot
+Crawl-delay: 5
+
+# Meta AI (Facebook/Instagram training)
+User-agent: FacebookBot
+User-agent: meta-externalagent
+Crawl-delay: 5
+
+# Perplexity AI
+User-agent: PerplexityBot
+Crawl-delay: 10
+
+# Allow major search engines without delay (important for SEO)
+User-agent: Googlebot
+User-agent: Googlebot-Image
+Crawl-delay: 0
+
+User-agent: Bingbot
+Crawl-delay: 0
+
+# Sitemap location (index for paginated sitemaps)
+Sitemap: https://crosscountryratings.com/sitemap.xml

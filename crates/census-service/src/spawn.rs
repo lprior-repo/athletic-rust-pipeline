@@ -1,9 +1,10 @@
 use std::future::Future;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 
-use tokio::sync::{oneshot, OwnedSemaphorePermit, Semaphore, TryAcquireError};
+use tokio::sync::{oneshot, watch, OwnedSemaphorePermit, Semaphore, TryAcquireError};
 use tokio::task::JoinSet;
 
 use crate::outcome::{DrainState, Outcome};
@@ -44,6 +45,7 @@ enum Completion<T, E> {
 struct Region {
     tasks: JoinSet<()>,
     ledger: Ledger,
+    blocking: Arc<AtomicUsize>,
 }
 
 impl Region {
@@ -58,6 +60,7 @@ pub struct Spawner {
     capacity: usize,
     permits: Arc<Semaphore>,
     region: Mutex<Region>,
+    stopping: watch::Sender<bool>,
 }
 
 impl Default for Spawner {
@@ -77,6 +80,7 @@ impl Spawner {
             capacity: bound,
             permits: Arc::new(Semaphore::new(bound)),
             region: Mutex::new(Region::default()),
+            stopping: watch::Sender::new(false),
         }
     }
 
@@ -89,8 +93,14 @@ impl Spawner {
             region: Mutex::new(Region {
                 tasks,
                 ledger: Ledger::holding(held),
+                blocking: Arc::new(AtomicUsize::new(0)),
             }),
+            stopping: watch::Sender::new(false),
         })
+    }
+
+    pub fn stopping(&self) -> watch::Receiver<bool> {
+        self.stopping.subscribe()
     }
 
     #[tracing::instrument(skip_all)]
@@ -139,8 +149,9 @@ impl Spawner {
         }
     }
 
-    #[tracing::instrument(skip_all, fields(timeout_secs = timeout.as_secs()))]
+    #[tracing::instrument(skip_all, fields(timeout = ?timeout))]
     pub async fn drain(&self, timeout: Duration) -> Result<TaskReport, SpawnError> {
+        self.stopping.send_replace(true);
         let mut region = self.take();
         let deadline = SystemClock.now().checked_add(timeout);
         while !region.tasks.is_empty() {
@@ -153,15 +164,15 @@ impl Spawner {
                             tracing::warn!(remaining, "drain deadline reached; aborting");
                             region.ledger.note_deadline(remaining);
                             region.tasks.abort_all();
-                            const REAP_TURNS: usize = 8;
-                            for _ in 0..REAP_TURNS {
-                                while let Some(joined) = region.tasks.try_join_next() {
-                                    region.ledger.classify_reaped(DrainState::from_join(joined));
+                            while region.tasks.len() > region.blocking.load(Ordering::Acquire) {
+                                match region.tasks.join_next().await {
+                                    Some(joined) => {
+                                        region
+                                            .ledger
+                                            .classify_reaped(DrainState::from_join(joined));
+                                    }
+                                    None => break,
                                 }
-                                if region.tasks.is_empty() {
-                                    break;
-                                }
-                                tokio::task::yield_now().await;
                             }
                             region.ledger.set_remaining(narrow(region.tasks.len())?);
                             break;
@@ -201,8 +212,11 @@ impl Spawner {
     {
         let mut region = self.lock();
         region.reap_finished();
+        let blocking = Arc::clone(&region.blocking);
+        blocking.fetch_add(1, Ordering::AcqRel);
         region.tasks.spawn_blocking(move || {
             let _slot = slot;
+            let _owing = BlockingGuard(blocking);
             job();
         });
         region.ledger.accept();
@@ -213,6 +227,7 @@ impl Spawner {
         Region {
             tasks: std::mem::take(&mut region.tasks),
             ledger: std::mem::take(&mut region.ledger),
+            blocking: Arc::clone(&region.blocking),
         }
     }
 
@@ -221,6 +236,14 @@ impl Spawner {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         }
+    }
+}
+
+struct BlockingGuard(Arc<AtomicUsize>);
+
+impl Drop for BlockingGuard {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
     }
 }
 

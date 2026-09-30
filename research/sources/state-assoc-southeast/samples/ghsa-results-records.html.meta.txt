@@ -1,0 +1,15 @@
+HTTP/1.1 200 OK
+Date: Tue, 22 Sep 2026 04:00:14 GMT
+Server: Apache/2.4.52 (Ubuntu)
+Expires: Sun, 19 Nov 1978 05:00:00 GMT
+Cache-Control: no-cache, must-revalidate
+X-Content-Type-Options: nosniff
+Set-Cookie: UUID=92dae217-88c7-5ab4-45b9-2dde2acb9ef6; expires=Wed, 22 Sep 2027 04:00:14 GMT; Max-Age=31536000; path=/; domain=.www.ghsa.net; HttpOnly
+Content-Language: en
+X-Frame-Options: SAMEORIGIN
+X-Generator: Drupal 7 (http://drupal.org)
+Link: </ghsa-results-and-records-state-playoff-events>; rel="canonical",</node/959>; rel="shortlink"
+Vary: Accept-Encoding
+Transfer-Encoding: chunked
+Content-Type: text/html; charset=utf-8
+

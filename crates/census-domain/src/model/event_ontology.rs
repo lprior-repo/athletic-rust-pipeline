@@ -40,6 +40,51 @@ pub enum EventKind {
     Unmapped { label: String },
 }
 
+const LABEL_QUALIFIERS: &[&str] = &[
+    "girls",
+    "boys",
+    "womens",
+    "women",
+    "mens",
+    "men",
+    "male",
+    "female",
+    "mixed",
+    "coed",
+    "results",
+    "finals",
+    "final",
+    "prelims",
+    "prelim",
+    "preliminary",
+    "preliminaries",
+    "semifinals",
+    "semifinal",
+    "semis",
+    "heats",
+    "varsity",
+    "jv",
+    "junior",
+    "senior",
+    "freshman",
+    "freshmen",
+    "frosh",
+    "sophomore",
+    "sophomores",
+    "open",
+    "championship",
+    "championships",
+    "champ",
+    "division",
+    "div",
+    "class",
+    "invitational",
+    "dash",
+    "run",
+];
+
+const LABEL_PHRASES: &[(&str, &str)] = &[("high", "school")];
+
 impl EventKind {
     pub fn stable_key(&self) -> Cow<'_, str> {
         match self {
@@ -82,6 +127,22 @@ impl EventKind {
     }
 
     pub fn from_source_label(label: &str) -> Self {
+        let direct = Self::direct_label(label);
+        if !matches!(direct, EventKind::Unmapped { .. }) {
+            return direct;
+        }
+        for candidate in Self::qualified_candidates(label) {
+            let kind = Self::direct_label(&candidate);
+            if !matches!(kind, EventKind::Unmapped { .. }) {
+                return kind;
+            }
+        }
+        EventKind::Unmapped {
+            label: label.trim().to_string(),
+        }
+    }
+
+    fn direct_label(label: &str) -> Self {
         let compact = Self::normalized_label(label);
         match compact.as_str() {
             "100m" => EventKind::Track100m,
@@ -95,7 +156,9 @@ impl EventKind {
             "5000m" | "5k" => EventKind::Track5000m,
             "110mh" | "110h" | "110mhurdles" | "110mhhurdles" => EventKind::Track110mHurdles,
             "100mh" | "100h" | "100mhurdles" => EventKind::Track100mHurdles,
-            "300mh" | "300h" | "300mhurdles" | "300mhhurdles" => EventKind::Track300mHurdles,
+            "300mh" | "300h" | "300mhurdles" | "300mhhurdles" | "300hurdles" => {
+                EventKind::Track300mHurdles
+            }
             "400mh" | "400h" => EventKind::Track400mHurdles,
             "2000msteeplechase" | "2ksteeplechase" | "2000msteeple" => {
                 EventKind::Track2000mSteeplechase
@@ -139,13 +202,89 @@ impl EventKind {
     fn normalized_label(label: &str) -> String {
         let normalized: String = label
             .chars()
-            .filter(|c| !c.is_whitespace() && *c != '-' && *c != '_')
+            .filter(|c| !c.is_whitespace() && !matches!(c, '-' | '_' | ',' | '\'' | '’'))
             .collect::<String>()
             .to_ascii_lowercase();
         normalized
             .replace("meters", "m")
             .replace("metre", "m")
             .replace("meter", "m")
+    }
+
+    fn qualified_candidates(label: &str) -> Vec<String> {
+        let tokens: Vec<&str> = label.split_whitespace().collect();
+        let cleaned: Vec<String> = tokens
+            .iter()
+            .map(|token| Self::clean_token(token))
+            .collect();
+        let mut keep = vec![true; tokens.len()];
+        for (left, right) in LABEL_PHRASES {
+            for index in 0..tokens.len().saturating_sub(1) {
+                if cleaned[index] == *left && cleaned[index + 1] == *right {
+                    keep[index] = false;
+                    keep[index + 1] = false;
+                }
+            }
+        }
+        for (index, token) in cleaned.iter().enumerate() {
+            if LABEL_QUALIFIERS.contains(&token.as_str()) || Self::division_code(tokens[index]) {
+                keep[index] = false;
+            }
+        }
+        let kept: Vec<&str> = tokens
+            .iter()
+            .zip(&keep)
+            .filter_map(|(token, keep)| keep.then_some(*token))
+            .collect();
+        let mut candidates = Vec::new();
+        if !kept.is_empty() {
+            candidates.push(kept.join(" "));
+        }
+        for width in (1..=kept.len().min(4)).rev() {
+            for start in 0..=kept.len().saturating_sub(width) {
+                if width == kept.len() && start == 0 {
+                    continue;
+                }
+                let window = &kept[start..start + width];
+                let compact_len: usize = window
+                    .iter()
+                    .map(|token| Self::clean_token(token).len())
+                    .sum();
+                if compact_len < 3 {
+                    continue;
+                }
+                let follower_relay = kept
+                    .get(start + width)
+                    .is_some_and(|token| Self::clean_token(token) == "relay");
+                let ends_relay = Self::clean_token(window[width - 1]) == "relay";
+                if follower_relay && !ends_relay {
+                    continue;
+                }
+                candidates.push(window.join(" "));
+            }
+        }
+        candidates
+    }
+
+    fn clean_token(token: &str) -> String {
+        token
+            .chars()
+            .filter(char::is_ascii_alphanumeric)
+            .map(|ch| ch.to_ascii_lowercase())
+            .collect()
+    }
+
+    fn division_code(token: &str) -> bool {
+        fn code(part: &str) -> bool {
+            let bytes = part.as_bytes();
+            (bytes.len() == 2 && bytes[0].is_ascii_digit() && matches!(bytes[1], b'a'..=b'f'))
+                || (bytes.len() == 2 && bytes[0] == b'd' && bytes[1].is_ascii_digit())
+        }
+        let lower = token.to_ascii_lowercase();
+        match lower.split_once('-') {
+            Some((head, tail)) => code(head) && code(tail),
+            None => code(&lower),
+        }
     }
 
     pub fn is_field(&self) -> bool {

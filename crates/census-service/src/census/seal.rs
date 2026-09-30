@@ -1,9 +1,10 @@
 use std::path::PathBuf;
 
-use census_domain::model::{AccessBlockKind, ReviewCase, SourceAccessCondition};
+use census_domain::model::{AccessBlockKind, SourceAccessCondition};
 
 use super::{CensusState, SealEvidence, SealedCensus};
-use census_report::report::{self, Scope};
+use census_report::export::ExportDataset;
+use census_report::report::{self, Derivation, Scope};
 use census_store::{Store, StoreStats, Table};
 
 pub mod workbook;
@@ -70,26 +71,24 @@ impl SealOutcome {
 }
 
 pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWorkflowError> {
-    let coverage = report::coverage_report(store, Some(request.grad_year))
-        .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
-    let census = report::build_census(store, request.scope)
+    let dataset = ExportDataset::load(store)
         .map_err(|error| SealWorkflowError::CensusBuild(error.to_string()))?;
+    let coverage = report::coverage_report(&dataset, Some(request.grad_year))
+        .map_err(|error| SealWorkflowError::Coverage(error.to_string()))?;
+    let derivation = Derivation::of(&dataset, request.scope, Some(request.grad_year));
+    let census = report::build_census(&derivation, &store.out_dir());
     let stats = store
         .stats()
         .map_err(|error| SealWorkflowError::Store(error.to_string()))?;
-    let cases = store
-        .scan::<ReviewCase>(Table::ReviewCases)
-        .map_err(|error| SealWorkflowError::Store(error.to_string()))?;
-    let access = store
-        .scan::<SourceAccessCondition>(Table::SourceAccess)
-        .map_err(|error| SealWorkflowError::Store(error.to_string()))?;
+    let cases = &dataset.review_cases;
+    let access = &dataset.source_access;
 
     let Some(path) = workbook_path(store, request.workbook.as_deref())
         .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?
     else {
         return Err(SealWorkflowError::WorkbookMissing);
     };
-    let workbook = inspect_workbook(&path, store, request.grad_year, request.scope)
+    let workbook = inspect_workbook(&path, &dataset, request.grad_year, request.scope)
         .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
     let evidence = assemble(
         &coverage, &census, &stats, &cases, &access, request, workbook,

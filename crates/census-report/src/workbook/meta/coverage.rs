@@ -1,6 +1,6 @@
+use crate::export::ExportDataset;
 use crate::report::{coverage_report, CoverageReport, JurisdictionCoverage, ReportResult};
 use census_domain::model::GradYear;
-use census_store::Store;
 use std::collections::BTreeMap;
 
 use crate::workbook::cells::{row, Cell};
@@ -75,8 +75,8 @@ const COLUMNS: [(&str, Column); 27] = [
     ("Performances", Column::Count(|row| row.performances)),
 ];
 
-pub(super) fn coverage_sheet(store: &Store) -> ReportResult<Vec<Vec<Cell>>> {
-    let report = coverage_report(store, Some(GradYear::CO2027.get()))?;
+pub(super) fn coverage_sheet(dataset: &ExportDataset) -> ReportResult<Vec<Vec<Cell>>> {
+    let report = coverage_report(dataset, Some(GradYear::CO2027.get()))?;
     let mut cells = jurisdiction_table(&report)?;
     cells.push(row!());
     cells.extend(gap_table(&report)?);

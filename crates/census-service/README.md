@@ -2,7 +2,7 @@
 
 This crate composes the census CLI, native Restate endpoint and supervised runtime.
 [ARCHITECTURE.md](../../ARCHITECTURE.md) owns mission/crate boundaries;
-[RESTATE_WORKFLOWS.md](../../RESTATE_WORKFLOWS.md) owns handler schemas and durable keys.
+[durable execution](../../docs/restate/durable-execution.md) owns handler schemas and durable keys.
 Do not interpret historical Midwest help text as the fresh census's run scope.
 
 ## Binaries
@@ -53,7 +53,7 @@ be destroyed/rebuilt.
 Source policy is binding regardless of available CLI flags. The existing `--authorized-host` option
 can alter robots handling; its presence is not permission to bypass access policy. Do not use it to
 work around denial or challenges. Identity/review, cohort, contacts and PR semantics live in
-[DOMAIN.md](../../DOMAIN.md), not command-specific variants.
+[ARCHITECTURE.md](../../ARCHITECTURE.md) §§8–9, not command-specific variants.
 
 Current workbook generation and seal checks are not proof of a recoverable same-snapshot atomic
 bundle or full record-level reconciliation. The required output and oracle are in
@@ -62,8 +62,8 @@ behavior actually observed and verified.
 
 ## Development and evidence
 
-Source qualification belongs in [SOURCE_ADAPTER_GUIDE.md](../../SOURCE_ADAPTER_GUIDE.md),
-gates in [TESTING.md](../../TESTING.md), benchmarks in [PERFORMANCE.md](../../PERFORMANCE.md),
+Source qualification belongs in [xtask](../../xtask/README.md) and the registry's descriptor table,
+gates in [tools/gate.sh](../../tools/gate.sh), benchmarks in `cargo xtask perf`,
 and dated ingestion/recovery results in [VERIFICATION-EVIDENCE.md](../../docs/VERIFICATION-EVIDENCE.md).
 The previous crate-local schema, workflow, adapter and measurement tables were consolidated into
 those owners; do not reintroduce duplicate inventories here.

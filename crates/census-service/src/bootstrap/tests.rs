@@ -95,6 +95,21 @@ fn options_enable_the_lane_only_with_a_profile() {
     assert_eq!(lane.source_origin.as_str(), "https://www.athletic.net/");
     assert_eq!(lane.tabs, 2);
 
+    let relative = ["--browser-profile", "var/browser-profile"]
+        .into_iter()
+        .map(str::to_string);
+    let lane = ServeOptions::from_env_with_path(relative, Some(path.as_os_str()))
+        .expect("a relative profile still enables the lane")
+        .lane
+        .expect("the lane is configured");
+    assert!(
+        lane.profile_dir.is_absolute(),
+        "the lane rejects a relative profile directory, so the flag must resolve against the \
+         working directory: {}",
+        lane.profile_dir.display()
+    );
+    assert!(lane.profile_dir.ends_with("var/browser-profile"));
+
     let executable_alone = ["--browser-executable", "/usr/bin/chromium"]
         .into_iter()
         .map(str::to_string);

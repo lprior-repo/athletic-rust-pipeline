@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <!-- HTML Head -->
+    <head>
+
+        <!-- Google Analytics -->
+        <!-- Google tag (gtag.js) -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-JQSLYYK5GS"></script>
+		<script>
+		    window.dataLayer = window.dataLayer || [];
+		    function gtag(){dataLayer.push(arguments);}
+		    gtag('js', new Date());
+		    gtag('config', 'G-JQSLYYK5GS');
+		</script>        
+        <!-- Page Title -->
+        <title>
+                OSAA - Coaches        </title>
+
+        <!-- Meta Tage -->          
+                    <meta charset="utf-8" />
+            <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+            <meta name="description" content="Oregon School Activities Association">
+            <meta name="viewport" content="width=device-width">
+        
+        <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.10.3/themes/redmond/jquery-ui.css">        
+
+        <!-- Stylesheets -->
+        <link rel="stylesheet" type="text/css" href="https://www.osaa.org/css/default.css">
+        <link rel="stylesheet" type="text/css" href="https://www.osaa.org/css/fix_nav.css">
+
+        <!-- JQuery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>       
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+
+        <!-- JavaScripts -->
+                        <script src="https://www.osaa.org/scripts/twitter.js" type="text/javascript"></script>
+            <script src="https://www.osaa.org/scripts/scroller.js" type="text/javascript"></script>
+        
+
+    <style type="text/css">
+        h3 {
+            color: #990000 !important;
+        }
+
+        .odd {
+            background-color: #efefef;
+        }
+
+        .course_item {
+            margin-bottom: 1.5em;
+            height: 8em;
+        }
+
+        .course_item img {
+            width: 80px;
+            float: left;
+            margin: 0 10px 0 0;
+        }
+
+        .course_item .course_title {
+            font-weight: bold;
+            font-size: 12pt;
+        }
+
+        .course_item .course_when {
+            font-style: italic;
+            font-size: 9pt;            
+        }
+
+        .course_item .course_link {
+            font-size: 9pt;
+        }    
+
+        .course_item .course_name {
+            font-size: 9pt;
+        }
+
+        ol li {
+            margin-bottom: 1em;
+        }
+
+        form.workshop_registration label {
+            font-weight: bold;
+            width: 100px;
+            display: inline-block;
+        }
+
+        #workshop li.full {
+            background-color: #dedede;
+        }
+
+        .success_bar {
+            position: fixed;
+            top: 600px;
+            left: 0;
+            width: 100%;
+            padding: 0.25em 0;
+            line-height: 1.5em;
+            background-color: rgba(176, 255, 190, 0.0);
+            border-bottom: 2px solid rgba(13, 88, 27, 0.50);
+            border-top: 2px solid rgba(13, 88, 27, 0.50);
+            z-index: 500;
+        }
+
+        .success_bar .message {
+            width: 1200px;
+            margin: 0 auto;
+            font-size: 14pt;
+            color: #151515;
+        }     
+        
+        .required {
+            color: #990000;
+            font-weight: bold;
+            position: absolute;
+        }
+
+        .ui-accordion-header {
+            font-size: 10pt !important;
+            margin: 0 !important;
+            color: #222222 !important;
+        }
+
+        .header_selected {
+            color: #1db73a;
+        }
+
+        form.workshop_registration .date_title {
+            width: 300px;
+            display: inline-block;
+        }
+
+        form.workshop_registration .session_title {            
+            width: 400px;
+            display: inline-block;
+        }
+
+        form.workshop_registration .options_title {
+            float: right;
+            text-align: right;            
+        }
+
+        form.workshop_registration .date_option_info table {
+            border-collapse: collapse;            
+            width: 100%;
+            border-left: 3px solid #dedede;
+        }
+
+        form.workshop_registration .date_option_info table td {
+            vertical-align: top;
+            line-height: 2em;
+        }
+
+        form.workshop_registration .date_option_info table td:first-child {
+            padding-left: 12px;
+        }
+
+        form.workshop_registration .date_option_info table.session_hover {
+            border-color: #f9bd01;            
+        }
+
+        form.workshop_registration .date_option_info table.session_selected {
+            border-color: #31e653;
+            background-color: #f5f5f5;
+        }
+
+        form.workshop_registration .submit_button_section {
+            float: left;
+            width: 440px;    
+            position: relative;     
+        }       
+
+        .rotate-90 {            
+            display: inline-block;
+            transform: rotate(90deg);
+
+            /* Legacy vendor prefixes that you probably don't need... */          
+            -webkit-transform: rotate(90deg);                                    /* Safari */
+            -moz-transform: rotate(90deg);                                       /* Firefox */          
+            -ms-transform: rotate(90deg);                                        /* IE */
+            -o-transform: rotate(90deg);                                         /* Opera */
+            filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=1);    /* Internet Explorer */
+        } 
+
+        .indicator-arrow {
+            display: inline-block;
+            position: relative;
+            top: 3px;
+            left: -5px;
+            margin-right: -0.5em;
+        }
+
+        .viewing-form {
+            background-color: #dedede !important;
+        }
+
+        table.webinar-list {
+            width: 96%;
+            margin: 0.25em 0 0 40px;
+            font-size: 10pt;
+            border-collapse: collapse;            
+        }
+
+        table.webinar-list img {
+            vertical-align: middle;
+        }
+
+        table.webinar-list tr {
+            height: 2.5em;
+        }
+
+    </style>
+
+        <script src='https://www.google.com/recaptcha/api.js'></script>
+
+
+        <!-- JQuery Page Initialization -->
+        <script type="text/javascript">        
+
+            $(document).ready(function()
+            {
+                
+    // Success bar
+    $('.success_bar').animate({ 'top' : 32, 'background-color' : 'rgba(176, 255, 190, 1.0)'}, 1600, 'easeOutQuad', function ()
+    {   
+        $(this).delay(6000).fadeOut(4000);  
+
+        $(this).hover(function ()
+        {
+            $(this).stop(true).css('opacity', '1.0');
+        },
+        function ()
+        {
+            $(this).fadeOut(4000);
+        })
+    });
+  	
+    function colorRows (selector, start)
+    {   
+        if (selector == undefined || selector == null || selector == "")
+        {
+            selector = "table";
+        }
+
+        if (start == undefined || start == null || start == NaN)
+        {
+            start = 1;
+        }    
+    
+        $(selector).each(function ()
+        {
+            var i = 0;
+        
+            $('tbody tr:visible', $(this)).each(function ()
+            {
+                if (i % 2 == start)
+                {
+                    $(this).addClass('odd');
+                }
+                else
+                {
+                    $(this).removeClass('odd');
+                }
+                i = i + 1;
+            });    
+        });   
+    }
+
+    colorRows('table.webinar-list', 0);
+
+    $('table.webinar-list td img').tooltip();
+
+    $('.button').button();
+
+  	$('.tabs').tabs({
+        beforeActivate : function (event, ui)
+        {
+            if (ui.newTab.is('[data-escape]'))
+            {
+                event.preventDefault();
+                window.location = ui.newTab.attr('data-escape');                
+            }   
+        }
+    });
+
+    $('.tab_button')
+        .button()
+        .css({'font-size' : '12pt',
+              'height' : '4.5em',
+              'width' : '150px',
+              'padding-top' : '1em',
+              'margin-right' : '40px'})
+        .click(function(event)
+        {
+            event.preventDefault();
+
+            var target = $(this).attr('data-goto-index');
+            $('.tabs').tabs('option', 'active', target);
+        });
+
+    
+
+    /*
+     * Tab activation and element focus
+     */
+    function activateTab(target_tab_id, focus)
+    {
+        var target_tab = $('.tabs ul:first li a[href="#' + target_tab_id + '"]');
+        var target_tab_index = target_tab.attr('data-tab-order');
+
+        $('.tabs').tabs('option', 'active', target_tab_index);        
+
+        if (focus != null)
+        {
+            focusOnElement($(focus));
+        }
+    }    
+
+            var anchor = "coaches";        
+    
+    var focus = null;
+    
+    if (anchor)
+    {
+        activateTab(anchor, focus);
+        focus = '#content';
+    }
+
+    
+    function focusOnElement(focus_element)
+    {        
+        var top = focus_element.offset().top - 75;
+        setTimeout(function() {                                
+            $('html, body').scrollTop(top);
+        }, 1);
+    }   
+
+    if (focus != null)
+    {        
+        focusOnElement($(focus));  
+    }    
+
+    // Required field marker
+    $('[data-required]:not([data-required-indicator])').after('<span class="required">*</span>'); 
+
+        
+    $('[data-initial-form="hidden"]').hide();    
+    $('[data-show-form]').on('click', function(event)
+    {
+        event.preventDefault();
+        
+        $('[data-show-form]').removeClass('viewing-form');
+        var link = $(this);                
+        
+        var form_id = link.attr('data-show-form');
+
+        var frame = $('#' + form_id);
+        var indicator = $('[data-indicator="' + form_id + '"]');
+
+        if (!frame.is(':visible'))
+        {
+            link.addClass('viewing-form');
+            indicator.addClass('rotate-90');
+            frame.slideDown(400);            
+        }
+        else
+        {
+            link.removeClass('viewing-form');
+            indicator.removeClass('rotate-90');
+            frame.slideUp(400);
+        }
+
+        var other_forms = $('[data-initial-form="hidden"][id!="' + form_id + '"]').each(function(index, element)
+        {
+            var other_frame = $(element);
+            var other_id = other_frame.attr('id');
+            var other_indicator = $('[data-indicator="' + other_id + '"]');
+
+            if (other_frame.is(':visible'))
+            {                
+                other_indicator.removeClass('rotate-90');
+                other_frame.slideUp(400);
+            }
+        });
+
+    });
+
+
+
+    $('[data-action="show-dialog"]')            
+            .click(function(event)
+            {
+                event.preventDefault();
+
+                var link = $(this);
+                var content_element_id = link.attr('data-content-id');
+                var content_element_title = link.attr('data-content-title');
+                var content_element_width = parseInt(link.attr('data-content-width'));
+                var content_element_height = parseInt(link.attr('data-content-height'));
+                var content_element = $('#' + content_element_id);
+
+
+                // Show a dialog
+                $('<div></div>')
+                    .appendTo('body')
+                    .dialog(
+                    {                       
+                        draggable : true,
+                        resizable : false,
+                        modal : true,
+                        height : content_element_height,
+                        width : content_element_width,                    
+                        title : content_element_title,
+                        buttons: [
+                            {                                
+                                text : "Close",
+                                'class' : "float_right",                             
+                                icons : { primary : 'ui-icon-closethick'},
+                                click : function()
+                                {
+                                    // Close the dialog box
+                                    $(this).dialog("close");
+                                }
+                            }
+                        ],
+                        open : function ()
+                            {  
+                                var dialog_object = $(this);
+
+                                dialog_object.html(content_element.html());
+                                
+                                $('.ui-dialog-buttonpane').css('padding', '0 0.5em').css('font-size', '9pt');
+                                $('.ui-dialog-buttonpane .ui-dialog-buttonset').css('width', '100%');                                   
+                            },
+                        close : function ()
+                            {
+                                var dialog_object = $(this);
+                                $(dialog_object).remove();
+                            }                
+                    });
+            });
+
+
+        
+
+
+                $('.auto_submit_onchange').change(function(){
+                    var form = $(this).parents('form:first');
+                    form.submit();
+                });
+
+                
+                // Search OSAA website with Google
+                $('input[data-action="search"]').on('keypress', function(event)
+                {
+                    var keycode = (event.keyCode ? event.keyCode : event.which);
+                    if (keycode == '13')
+                    {
+                        searchSite();
+                    }
+                });
+                $('img[data-action="search"]').on('click', function(event)
+                {
+                    searchSite();
+                });
+                function searchSite()
+                {                    
+                    var term = $('input[data-action="search"]').val();
+                    if (term == "")
+                    {
+                        return false;
+                    }
+
+                    var root = "https://www.google.com/search";
+                    var query = "?q=site:www.osaa.org ";                    
+
+                    var url = root + query + term;
+                    
+                    console.log(url);
+
+                    window.open(url);
+                }                
+
+            });                
+
+        </script>   
+
+
+                        
+
+    </head>
+
+
+
+    <body>                                   
+
+                        
+
+        <!-- Fixed Navigation -->
+
+        <div id="navigation">                      
+    <div class="holder">
+        
+        
+
+                
+                             
+        
+         <!-- User Login -->
+        <div id="user_login">
+                            <a href="https://www.osaa.org/account/login">Login</a>
+                            
+            
+            <a href="https://www.osaa.org/help">Help</a>
+
+            
+        </div>    
+
+        <div id="menu">
+            <ul>
+                <li><a href="https://www.osaa.org"><span>Home</span></a>
+                    <ul>
+                                                    <li><a href="https://www.osaa.org/help">Help</a></li>
+                            <li><a href="https://www.osaa.org/account/login">Login</a></li>
+                                            </ul>
+                </li>
+                <li><a href="https://www.osaa.org/activities"><span>Activities</span></a>
+                <ul>
+                    <li><a href="https://www.osaa.org/activities/fall"><span>Fall</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/activities/fbl">Football</a></li>
+                                                    <li><a href="https://www.osaa.org/activities/gvb">Girls Volleyball</a></li>
+                                                <li><a href="https://www.osaa.org/activities/bsc">Boys Soccer</a></li>
+                        <li><a href="https://www.osaa.org/activities/gsc">Girls Soccer</a></li>
+                        <li><a href="https://www.osaa.org/activities/bxc">Boys Cross Country</a></li>
+                        <li><a href="https://www.osaa.org/activities/gxc">Girls Cross Country</a></li>
+                    </ul>
+                    </li>                                             
+
+                    <li><a href="https://www.osaa.org/activities/winter"><span>Winter</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/activities/bbx">Boys Basketball</a></li>
+                        <li><a href="https://www.osaa.org/activities/gbx">Girls Basketball</a></li>
+                        <li><a href="https://www.osaa.org/activities/bsw">Boys Swimming</a></li>
+                        <li><a href="https://www.osaa.org/activities/gsw">Girls Swimming</a></li>
+                                                    <li><a href="https://www.osaa.org/activities/bwr">Boys Wrestling</a></li>
+                            <li><a href="https://www.osaa.org/activities/gwr">Girls Wrestling</a></li>
+                                                <li><a href="https://www.osaa.org/activities/dnc">Dance/Drill</a></li>
+                        <li><a href="https://www.osaa.org/activities/che">Cheerleading</a></li>
+                    </ul>
+                    </li>
+
+                    <li><a href="https://www.osaa.org/activities/spring"><span>Spring</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/activities/bbl">Baseball</a></li>
+                        <li><a href="https://www.osaa.org/activities/sbl">Softball</a></li>
+                        <li><a href="https://www.osaa.org/activities/bvb">Boys Volleyball</a></li> 
+                        <li><a href="https://www.osaa.org/activities/btf">Boys Track &amp; Field</a></li>
+                        <li><a href="https://www.osaa.org/activities/gtf">Girls Track &amp; Field</a></li>
+                        <li><a href="https://www.osaa.org/activities/btn">Boys Tennis</a></li>
+                        <li><a href="https://www.osaa.org/activities/gtn">Girls Tennis</a></li>
+                        <li><a href="https://www.osaa.org/activities/bgf">Boys Golf</a></li>
+                        <li><a href="https://www.osaa.org/activities/ggf">Girls Golf</a></li>
+                        <li><a href="https://www.osaa.org/activities/bnd">Band/Orchestra</a></li>
+                        <li><a href="https://www.osaa.org/activities/cho">Choir</a></li>
+                        <li><a href="https://www.osaa.org/activities/sol">Solo Music</a></li>
+                        <li><a href="https://www.osaa.org/activities/spe">Speech</a></li>
+                    </ul>
+                    </li>   
+
+                    <li><a href="https://www.osaa.org/activities/emerging"><span>Emerging</span></a>
+                    <ul>                        
+                        <li><a href="https://www.osaa.org/activities/gff">Girls Flag Football</a></li>
+                    </ul>
+                    </li>   
+                    
+                </ul>
+                </li>
+                <li><a href="https://www.osaa.org/schools"><span>Schools</span></a>
+                <ul>
+                    <li><a href="https://www.osaa.org/schools/full-members">Member Schools</a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/schools/full-members">Alphabetically</a></li>
+                        <li><a href="https://www.osaa.org/schools/counties">By County</a></li>
+                        <li><a href="https://www.osaa.org/schools/regions">By Region</a></li>
+                    </ul>
+                    </li>
+                    <li><a href="https://www.osaa.org/schools/associate-members">Associate Members</a></li>
+                    <li><a href="https://www.osaa.org/schools/classifications-districts">Classifications &amp; Districts</a></li>                            
+                    <li><a href="https://www.osaa.org/schools/maps">Maps</a></li>
+                    <li><a href="https://www.osaa.org/schools/participation">Participation</a></li>
+                </ul>
+                </li>
+                <li><a href="https://www.osaa.org/governance"><span>Governance</span></a>
+                <ul>
+                    <li><a href="https://www.osaa.org/governance/handbooks">Handbooks</a></li>                            
+                    <li><a href="https://www.osaa.org/governance/forms">Forms</a></li>
+                    <li><a href="https://www.osaa.org/governance/delegate-assembly">Delegate Assembly</a></li>
+                    <li><a href="https://www.osaa.org/governance/executive-board">Executive Board</a></li>
+                    <li><a href="https://www.osaa.org/governance/committees">Committees</a></li>
+                    <li><a href="https://www.osaa.org/governance/task-forces">Task Forces</a></li>
+                </ul>
+                </li>
+                <li>
+                    <a href="https://www.osaa.org/health-safety">Health &amp; Safety</a>
+                    <ul>
+                                                
+                        <li><a href="https://www.osaa.org/health-safety/pre-event-safety">Pre-Event Safety Timeout</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/air-quality">Air Quality</a></li>
+                        <li><a href="https://www.osaa.org/heat-index">Heat Index</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/eap">Emergency Action Plan</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/concussion">Concussion</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/steroid">Steroids</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/heat">Heat &amp; Hydration</a></li>                                
+                        <li><a href="https://www.osaa.org/health-safety/nutrition">Sport Nutrition</a></li>                                
+                        <li><a href="https://www.osaa.org/health-safety/wellness">Student Wellness</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/lightning">Lightning</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/resources">Resources</a></li>
+                    </ul>
+                </li>                
+                <li>
+                    <a href="https://www.osaa.org/equity">Support &amp; Equity</a>
+                    <ul>                                
+                        <li><a href="https://www.osaa.org/equity/star-resources">S.T.A.R. &amp; Resources</a></li>                        
+                        <li><a href="https://www.osaa.org/equity/training-resources">Training &amp; Resources</a></li>                        
+                        <li><a href="https://www.osaa.org/equity/anti-discrimination">Anti-Discrimination</a></li>
+                        <li><a href="https://www.osaa.org/governance/committees/equity-committee">Advisory Committee</a></li>
+                        <li><a href="https://www.osaa.org/equity/title-IX">Title IX</a></li>
+                                                <li><a href="https://www.osaa.org/equity/forms">Forms &amp; Policies</a></li>                        
+                        <li><a href="https://www.osaa.org/equity/event-toolkits">Event Toolkits</a></li>
+                        <li><a href="https://www.osaa.org/equity/sportsmanship">Sportsmanship</a></li>
+                        <li><a href="https://www.osaa.org/equity/star-application">S.T.A.R. Application</a></li>
+                        <li><a href="https://www.osaa.org/forms/complaint">Complaint Form</a></li>
+                    </ul>
+                </li>                
+                <li><a href="https://www.osaa.org/calendar">Calendar</a></li>                        
+                <li>
+                    <a href="https://www.osaa.org/awards">Awards</a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/forms/all-team/state/results">OSAA All-State</a></li>
+                        <li><a href="https://www.osaa.org/awards">Academic All-State</a></li>
+                        <li><a href="https://www.osaa.org/awards/athlete-of-the-week">Athlete of the Week</a></li>
+                        <li><a href="https://www.osaa.org/awards/team-of-the-month">Team of the Month</a></li>
+                        <li><a href="https://www.osaa.org/awards/player-of-the-game">Player of the Game</a></li>
+                        <li><a href="https://www.osaa.org/awards/most-valuable-teammate">Most Valuable Teammate</a></li>
+                        <li><a href="https://www.osaa.org/awards/osaa-cup">OSAA Cup</a></li>                                
+                        <li><a href="https://www.osaa.org/awards/scholar">Scholar</a></li>
+                        <li><a href="https://www.osaa.org/awards/sportsmanship">Sportsmanship</a></li>
+                                                <li><a href="https://www.osaa.org/awards/salute-to-coaches">Salute to Coaches</a></li>                        
+                        <li><a href="https://www.osaa.org/awards/distinguished-service">Distinguished Service</a></li>
+                        <li><a href="https://www.osaa.org/awards/nfhs-awards">NFHS Awards</a></li>
+                        <li><a href="https://www.osaa.org/certificates">OSAA Certificates</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="https://www.osaa.org/shop"><span>Shop</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/shop/tickets">Tickets</a></li>
+                        <li><a href="https://osaa-corner-store.myshopify.com/collections/" target="_blank">Corner Store</a></li>
+                        <li><a href="https://www.osaa.org/shop/merchandise">Merchandise</a></li>
+                        <li><a href="https://www.osaa.org/shop/photos">Photos</a></li>
+                        <li><a href="https://www.osaa.org/shop/videos">Videos</a></li>
+                        <li><a href="https://www.osaa.org/shop/trophies">Replica Trophies</a></li>
+						<li><a href="https://www.osaa.org/shop/jackets">Letterman Jackets</a></li>						
+                        <li><a href="https://www.osaa.org/programs">Programs</a></li>                                
+                    </ul>
+                </li>
+                <li><a href="https://www.osaa.org/for"><span>OSAA for...</span></a>
+                <ul>
+                    <li>
+                        <a href="https://www.osaa.org/administrators">Administrators</a>
+                        <ul style="width: auto; !important;">
+                            <li><a href="https://www.osaa.org/administrators">General Information</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/administrators/requirements">Training / Certifications</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/administrators/policies">Policies / Forms / Links</a></li>
+                            <li><a href="https://www.osaa.org/administrators/eligibility">Eligibility</a></li>
+                            <li><a href="https://www.osaa.org/administrators/workshops">Workshops</a></li>
+                            <li><a href="https://www.osaa.org/administrators/webinars">Webinars</a></li>
+                            <li><a href="https://www.osaa.org/equity/sportsmanship">Sportsmanship</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="https://www.osaa.org/coaches">Coaches</a>
+                        <ul style="width: auto; !important;">
+                            <li><a href="https://www.osaa.org/coaches">General Information</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/coaches/requirements">Training / Certifications</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/coaches/policies">Policies / Forms / Links</a></li>
+                            <li><a href="https://www.osaa.org/coaches/eligibility">Eligibility</a></li>
+                            <li><a href="https://www.osaa.org/coaches/workshops">Workshops</a></li>
+                            <li><a href="https://www.osaa.org/coaches/webinars">Webinars</a></li>
+                            <li><a href="https://www.osaa.org/equity/sportsmanship">Sportsmanship</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="https://www.osaa.org/parents-students">Parents/Students</a></li>
+                    <li><a href="https://www.osaa.org/officials">Officials</a></li>
+                    <li><a href="https://www.osaa.org/media">Media</a></li>
+                </ul>
+                </li>
+            </ul>
+        </div>                            
+        
+                   
+    </div>
+</div>
+<!-- End Header Navigation Menu -->
+                        
+
+        <!-- Content -->
+
+		<div id="content">
+
+
+
+			<!-- Holder -->
+
+			<div class="holder">			
+
+			
+
+			    <!-- Page Masthead -->
+
+                <div id="masthead" style="position: relative;">
+
+
+        <div id="masthead" style="position: relative;">
+        <!-- Title -->    
+        <div class="title">
+            Oregon School Activities Association
+        </div>    
+    
+                
+        <div style="position: absolute; left: 775px;">
+
+            <div style="float: left; margin-top: 26px;">
+                <a href="https://www.onpointcu.com/join-a-local-credit-union-onpoint-cu/?utm_source=osaa&utm_medium=display&utm_campaign=onpoint+partnerships&tactic_id=Brand_GP_04-25_OSAA_Web_Nav" target="_blank"><img src="https://www.osaa.org/images/ads/onpoint.png" alt="OnPoint Community Credit Union" title="OnPoint Community Credit Union" /></a>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div style="position: absolute; right: 0px; width: 234px; top: 16px;">
+        <!-- Half Banner Ad (234x60) -->
+        <!-- Half Banner Ad 234x60 -->
+<div id="half_banner_ad" class="ad">
+	
+	
+		<!-- WMT AdServer Asynchronous JS Tag - Generated with Revive Adserver v5.5.2 -->
+		<ins data-revive-zoneid="373" data-revive-id="56fdbe9a86d7e93f02fe33751ab5524d"></ins>
+		<script async src="//ads.wmt.digital/delivery/asyncjs.php"></script>
+
+	</div>    </div>    
+
+        
+</div>                    
+<!-- End Page Masthead -->                
+
+                
+
+                <!-- Live Alert Container (optional) -->                                
+
+                
+                
+
+                <!-- User Tool Box (optional) -->
+
+                
+
+
+                <!-- Large Leaderboard Ad (970x90) -->                
+
+                <!-- Leader Board Ad 728x90 -->
+<div id="leaderboard_ad" class="ad">
+
+    
+        <!-- WMT AdServer Asynchronous JS Tag - Generated with Revive Adserver v5.5.2 -->
+        <ins data-revive-zoneid="375" data-revive-id="56fdbe9a86d7e93f02fe33751ab5524d"></ins>
+        <script async src="//ads.wmt.digital/delivery/asyncjs.php"></script>
+
+        
+</div>                  
+
+<!-- OSAA Website Plug (Left) -->
+<div id="next_to_leaderboard">
+        
+    <a href="https://www.osaa.org/officials/registration" >
+        <img src="https://www.osaa.org/images/become_an_official_215x90px.jpg" alt="Become as Official" title="Become as Official" width="215" height="90" style="width: 215px; height: 90px;">
+    </a>    
+    
+</div>
+
+
+                <!-- Other OSAA Website Plugs -->                
+
+                <!-- OSAA Website Plug (Right) -->
+<div id="osaa_websites">
+	
+	    
+    <a href="https://www.osaa.org/today" >
+        <img src="https://www.osaa.org/images/logos/OSAAtoday-Ad-Read 215x90px.png" alt="OSAAtoday" title="OSAAtoday" width="215" height="90" style="width: 215px; height: 90px;">
+    </a> 
+
+	
+</div>                               
+
+                
+
+                <!-- Wide Scraper Ad (160x600) -->
+
+                <!-- Wide Scraper Ad 160x600 -->
+<div id="wide_scraper_ad" class="ad">	
+
+    
+        <!-- WMT AdServer Asynchronous JS Tag - Generated with Revive Adserver v5.5.2 -->
+        <ins data-revive-zoneid="372" data-revive-id="56fdbe9a86d7e93f02fe33751ab5524d"></ins>
+        <script async src="//ads.wmt.digital/delivery/asyncjs.php"></script>
+
+    
+</div>                                                            
+
+                                
+
+                <!-- Main Page Content -->
+
+                <div id="full_page_content">                    
+
+                    
+
+                    <!-- Special Page Functions -->
+
+                    <div class="page_functions">
+
+                        	
+
+                    </div>
+
+
+
+                    <!-- Main Content Sub-Header -->
+
+                    <h1 class="header">    
+   OSAA Information and Resources for Coaches</h1>                   
+
+                                        
+
+                    <!-- Sub-Page Main Content -->
+
+                    <div class="main_content">
+
+                    
+
+                            
+  
+         
+
+
+    <div class="tabs awards">
+        <ul style="padding-left:5px; font-size:9pt;">            
+            <li><a href="#administrators" data-tab-order="0">Administrators</a></li>
+            <li><a href="#coaches" data-tab-order="1">Coaches</a></li>
+            <li><a href="#requirements" data-tab-order="2">AD/Coach Requirements</a></li>
+            <li><a href="#policies" data-tab-order="3">Policies, Forms, &amp; Links</a></li>
+            <li><a href="#eligibility" data-tab-order="4">Eligibility</a></li>          
+            <li><a href="#workshop" data-tab-order="5">Workshops</a></li>
+            <li><a href="#webinars" data-tab-order="6">Webinars</a></li>
+            <li data-escape="https://www.osaa.org/equity/sportsmanship"><a href="#sportsmanship" data-tab-order="7">Sportsmanship</a></li>
+                    </ul>
+      
+
+                <div id="administrators">
+            <a href="http://www.oadaonline.org/" style="float: right; text-align: center; border: none; margin: 1em 1.5em;">
+                <img src="https://www.osaa.org/images/icons/oada.jpg" height="50px" border="0" /><br/>
+                Oregon Athletic<br>Directors Association
+            </a>
+
+            <h1>Administrators</h1>
+            The OSAA values its relationship with administrators and support staffs of our member schools.  Your leadership allows the Association to function efficiently and effectively in enriching the educational experiences of more than 130,000 high school students annually throughout Oregon. We hope you'll find what you need at www.osaa.org to assist you in achieving our common educational goals. We encourage you to contact the OSAA staff directly if you have questions or need further clarification on a specific policy.
+
+            <br /><br />			
+			
+            <div style="float: left; width: 400px;">
+                <h2>Workshops &amp; Webinars</h2>
+                <div style="margin-left: 40px; line-height: 1.25em;">                    
+                    &raquo; <a href="https://www.osaa.org/administrators/webinars">OSAA Essentials Webinars</a><br />
+                    &raquo; <a href="https://www.osaa.org/administrators/webinars">Athletic Director Chat &amp; Chew Sessions</a><br />
+                    &raquo; <a href="https://www.osaa.org/administrators/workshop">Mandatory Annual Administrator Workshops</a><br />
+					&raquo; <a href="https://www.osaa.org/docs/osaainfo/New AD Workshop 2026.pdf" target="_blank">2026-27 New Athletic Director Workshops</a><br />
+                                                            
+                </div>
+            </div>
+
+            <div style="float: left;">
+                <h2>AD Checklists</h2>
+                <div style="margin-left: 40px; line-height: 1.25em;">
+				                    &raquo; <a href="https://www.osaa.org/docs/osaainfo/adchecklistfall26.pdf" target="_blank">Fall Checklist</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+                    &raquo;<a href="https://www.osaa.org/docs/osaainfo/adchecklistwinter2627.pdf" target="_blank">Winter Checklist</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+                    &raquo; <a href="https://www.osaa.org/docs/osaainfo/adchecklistspring27.pdf" target="_blank">Spring Checklist</a>
+                </div>			  
+            </div>      
+
+            <br class="clear" /><br />            
+            
+            <h2>Professional Organizations for Administrators</h2>
+            The OSAA has relationships with several professional organizations that work closely with school administrators.  Follow the links below for additional information.
+            
+            <div style="margin-left: 40px; line-height: 1.25em;">
+                &raquo; <a href="http://www.oadaonline.org/" target="_blank">Oregon Athletic Directors Association (OADA)</a><br />
+                &raquo; <a href="https://members.niaaa.org/" target="_blank">National Interscholastic Athletic Administrators Association (NIAAA)</a><br />
+                &raquo; <a href="http://www.cosa.k12.or.us/" target="_blank">Coalition of Oregon School Administrators (COSA)</a><br />
+                &raquo; <a href="http://nassp.org/" target="_blank">National Association of Secondary School Principals (NASSP)</a><br />
+                &raquo; <a href="http://www.nfhs.org/" target="_blank">National Federation of State High School Associations (NFHS)</a><br />     
+    
+            </div>
+
+            <br /><br />
+
+        </div>
+
+
+                <div id="coaches">
+            <a href="http://www.oregoncoach.org/" style="float: right; text-align: center; border: none; margin: 1em 1.5em;">
+                <img src="https://www.osaa.org/images/icons/oaca.jpg" height="50px" border="0" /><br/>
+                Oregon Athletic<br>Coaches Association
+            </a>
+
+            <h1>Coaches</h1>
+            School coaches are tremendously important educators who have the opportunity to make lasting impressions on students as they learn 
+            lifelong lessons through participation in activities. Thank you for your efforts in developing your students. We hope you'll find this page helpful in reaching your goals.
+
+            <br /><br />
+
+			
+            <h2>Professional Organizations for Coaches</h2>
+            The OSAA works closely with several professional organizations that provide excellent resources for high school coaches.  Follow the links below for additional information.
+            
+            <div style="margin-left: 40px; line-height: 1.25em;">
+                &raquo; <a href="http://www.nfhs.org/" target="_blank">National Federation of State High School Associations (NFHS)</a><br />
+                &raquo; <a href="http://www.oregoncoach.org/" target="_blank">Oregon Athletic Coaches Association (OACA)</a><br />
+                &raquo; <a href="http://www.occa.net/" target="_blank">Oregon Cheerleading Coaches Association (OCCA)</a><br />
+                &raquo; <a href="http://www.ddcaoregon.org/" target="_blank">Dance Drill Coaches Association (DDCA) </a><br />
+                &raquo; <a href="http://www.speechoregon.org/" target="_blank">Oregon High School Speech League Coaches Association (OHSSL)</a><br />   
+				&raquo; <a href="http://www.oregonmusic.org/" target="_blank">Oregon Music Educators Association (OMEA)</a><br />				
+            </div>
+
+            <br /><br />
+
+
+            <h2>NFHS Digital Mobile App</h2>
+            <img src="https://www.osaa.org/images/logos/nfhs_128px.png" alt="" title="" style="width: 64px; float: left; margin: 0 10px 0 30px;" />
+            At the start of the season, OSAA staff upload coach contacts to the new NFHS Digital platform. Varsity team head coaches with contact information entered onto their school's Manage Staff page will receive a free rules book subscription.  Coaches will receive an email alert from the NFHS once publications are ready.
+
+            <br /><br />
+
+            <a href="https://support.nfhsdigital.org/support/solutions/151000220387" target="_blank"><div class="ui-corner-all" style="float: left; width: 128px; height: 36px; background-color: #000000; color: #ffffff; text-align: center; margin: 0.5em 40px 0 0; line-height: 38px; border: 1px solid #bebebe;">NFHS Digital</div></a>
+
+            <a href="https://play.google.com/store/apps/details?id=com.hurix.nfhs.cloudreader&hl=en&gl=US" target="_blank" style=""><img src="https://www.osaa.org/images/logos/play_store_128x38px.png" alt="" title="" style="margin: 0.5em 40px 0 0;" /></a>
+
+            <a href="https://apps.apple.com/us/app/nfhs-allaccess/id1614787085" target="_blank" style=""><img src="https://www.osaa.org/images/logos/app_store_128x38px.png" alt="" title="" style="margin: 0.5em 0 0 0;" /></a>
+
+            <br />
+
+           <h3>How to Access NFHS Rules Books &amp; Other Publications</h3>
+            Coaches can view NFHS publications from the NFHS Digital platform by visiting <a href="https://support.nfhsdigital.org/support/solutions/151000220387" target="_blank">NFHS Digital Mobile App Support</a> or by downloading the "NFHS Digital" mobile app on the App Store or Google Play.
+
+            <ol class="small" style="margin-top: 0.5em;">
+                <li style="margin-top: 0.5em;">Physical rules books are sent to each member school for their offered activities.</li>
+                <li style="margin-top: 0.5em;">Additional NFHS publications: rules books, case books, officials manuals, etc. can be purchased from the <a href="https://osaa-corner-store.myshopify.com/" target="_blank">OSAA Corner Store</a>.</li>                
+                <li style="margin-top: 0.5em;">Head coaches can view rules books, case books, officials manuals, and other NFHS publications from NFHS Digital on a web-page or on a mobile device:
+                    <ol style="list-style-type: lower-alpha; width: 80%; padding-left: 15px;">
+                        <li style="margin-top: 0.5em;">Go to <a href="https://rules.nfhsdigital.org/home" target="_blank">rules.nfhsdigital.org</a> or open the NFHS Digital app (see links above).</li>
+                        <li style="margin-top: 0.5em;">Log into your NFHS account or register for a new account using the address listed on your school's Manage Staff page.</li>
+                        <li style="margin-top: 0.5em;">Once signed in, your assigned publications will appear.  Your free books will appear under your subscription after you receive an email confirmation from the NFHS.</li>
+                    </ol>
+                </li>
+            </ol>
+
+            <br /><br />
+
+                       
+        </div>
+
+
+                <div id="requirements">
+
+            <h1>AD and Coach Requirements</h1>
+            This page highlights the certification and training program requirements for Oregon high school Athletic Directors and Coaches.  Full details on AD and Coach certification requirements can be found in the <a href="https://www.osaa.org/docs/handbooks/CertificationAthleticDirectorsandCoachesBP.pdf" target="_blank"> OSAA Handbook</a>.
+
+            <br /><br />
+      
+            For athletics (football, volleyball, soccer, cross country, basketball, swimming, wrestling, baseball, softball, track &amp; field, golf, and tennis), coaches must complete required certifications before interacting with participants during that sport's season.
+
+            <br /><br />
+
+            Cheerleading and dance/drill coaches must complete required certifications by the first day of the association year (the first practice date in the fall).
+
+            <br /><br />
+
+            Coaches that were ASEP-certified prior to August 1, 2007 are grandfathered into the OSAA requirement for the NFHS Fundamentals of Coaching course.  Those previously certified coaches are not required to take the NFHS Fundamentals of Coaching course.
+
+            <br /><br />
+
+            <h2>Required Certifications and Training Courses for Oregon High School Coaches</h2>
+
+            <div class="columns">
+                <div class="half">
+                    
+                    
+                                            
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/beyond_the_scoreboard_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">Interscholastic Coaching Course</div>
+                                <div class="course_when">
+                                    One-time requirement                                                                            <br />Required by OSAA Board Policy                                                                    </div>
+                                <div class="course_name">"OSAA Beyond the Scoreboard" - $45 or<br />
+"NFHS Fundamentals of Coaching" - $50</div>                            
+                                <div class="course_link">
+                                                                            &raquo; <a href="https://3dinstitute.com/product/osaa-beyond-the-scoreboard/" target="_blank">OSAA Beyond the Scoreboard Online Course</a>
+                                                                                                                <br />&raquo; <a href="https://nfhslearn.com/courses/fundamentals-of-coaching" target="_blank">NFHS Online Course</a>
+                                                                    </div>
+                            </div>
+                        </div>
+                                            
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/concussion_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">Concussion Recognition &amp; Management</div>
+                                <div class="course_when">
+                                    Annual - required every year                                                                            <br />Required by Oregon State Law (ORS 336.485)                                                                    </div>
+                                <div class="course_name">"NFHS Concussion in Sports" - free</div>                            
+                                <div class="course_link">
+                                                                            &raquo; <a href="https://nfhslearn.com/courses/concussion-in-sports-2" target="_blank">NFHS Online Course</a>
+                                                                                                        </div>
+                            </div>
+                        </div>
+                                            
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/heat_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">Heat Illness Prevention</div>
+                                <div class="course_when">
+                                    Quadrennial - required every 4 years<br />
+Annual - required every year (only for football coaches)                                                                            <br />Required by OSAA Rule (8-B-3)                                                                    </div>
+                                <div class="course_name">"NFHS Heat Illness Prevention" - free</div>                            
+                                <div class="course_link">
+                                                                            &raquo; <a href="https://nfhslearn.com/courses/heat-illness-prevention-2" target="_blank">NFHS Online Course</a>
+                                                                                                        </div>
+                            </div>
+                        </div>
+                                            
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/steroids_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">Anabolic Steroids and Performance-Enhancing Substances</div>
+                                <div class="course_when">
+                                    Quadrennial - required every 4 years                                                                            <br />Required by Oregon State Law (ORS 342.726)                                                                    </div>
+                                <div class="course_name">NFHS Online Course or <a href="https://www.osaa.org/steroids" target="_blank">ODE Training</a></div>                            
+                                <div class="course_link">
+                                                                            &raquo; <a href="https://nfhslearn.com/courses/appearance-and-performance-enhancing-drugs-and-substances" target="_blank">NFHS Online Course</a>
+                                                                                                        </div>
+                            </div>
+                        </div>
+                                            
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/discriminatory_acts_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">Interrupting and Preventing Discriminatory Acts Training</div>
+                                <div class="course_when">
+                                    One-time requirement                                                                            <br />Required by OSAA Board Policy                                                                    </div>
+                                <div class="course_name">OSAA Online Training - free</div>                            
+                                <div class="course_link">
+                                                                            &raquo; <a href="https://www.osaa.org/training-courses/discriminatory-acts/index.html" target="_blank">OSAA Online Course</a>
+                                                                                                        </div>
+                            </div>
+                        </div>
+                                            
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/equity_training_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">Racial Equity Training</div>
+                                <div class="course_when">
+                                    Optional                                                                    </div>
+                                <div class="course_name">Not an OSAA or state requirement<br />OSAA Online Training - free</div>                            
+                                <div class="course_link">
+                                                                            &raquo; <a href="https://www.osaa.org/training-courses/racial-equity/index.html" target="_blank">OSAA Online Course</a>
+                                                                                                        </div>
+                            </div>
+                        </div>
+                                            
+                                                    </div>
+                            <div class="half">
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/spirit_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">Spirit Safety Clinic</div>
+                                <div class="course_when">
+                                    Annual - required every year (only for cheerleading & dance/drill coaches)                                                                            <br />Required by OSAA Rule (8-B-5)                                                                    </div>
+                                <div class="course_name">OSAA Online Training - free</div>                            
+                                <div class="course_link">
+                                                                            &raquo; <a href="https://www.osaa.org/spirit-safety" target="_blank">OSAA Online Course</a>
+                                                                                                        </div>
+                            </div>
+                        </div>
+                                            
+                                                    </div>
+                            <div class="half">
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/osaa_football_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">OSAA Football Certification</div>
+                                <div class="course_when">
+                                    Annual - required every year (only for football coaches)                                                                            <br />Required by OSAA Board Policy                                                                    </div>
+                                <div class="course_name">Composed of 4 course components that must be completed annually: <u>Concussion in Sports</u>, <u>Heat Illness Prevention</u>, <u>Sudden Cardiac Arrest</u>, &amp; <u>Football Tackling</u></div>                            
+                                <div class="course_link">
+                                                                                                        </div>
+                            </div>
+                        </div>
+                                            
+                                                    </div>
+                            <div class="half">
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/cardiac_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">Sudden Cardiac Arrest</div>
+                                <div class="course_when">
+                                    Annual - required every year (only for football coaches)                                                                            <br />Required by OSAA Board Policy                                                                    </div>
+                                <div class="course_name">"NFHS Sudden Cardiac Arrest" - free</div>                            
+                                <div class="course_link">
+                                                                            &raquo; <a href="https://nfhslearn.com/courses/sudden-cardiac-arrest" target="_blank">NFHS Online Course</a>
+                                                                                                        </div>
+                            </div>
+                        </div>
+                                            
+                                                    </div>
+                            <div class="half">
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/blocking_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">NFHS Football Tackling</div>
+                                <div class="course_when">
+                                    Annual - required every year (only for football coaches)                                                                            <br />Required by OSAA Board Policy                                                                    </div>
+                                <div class="course_name">"NFHS Football Tackling" - free</div>                            
+                                <div class="course_link">
+                                                                            &raquo; <a href="https://nfhslearn.com/courses/football-tackling" target="_blank">NFHS Online Course</a>
+                                                                                                        </div>
+                            </div>
+                        </div>
+                                            
+                                                    </div>
+                            <div class="half">
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/first_aid_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">First Aid</div>
+                                <div class="course_when">
+                                    Optional - per district/school policy                                                                    </div>
+                                <div class="course_name">Not an OSAA or state requirement
+</div>                            
+                                <div class="course_link">
+                                                                                                        </div>
+                            </div>
+                        </div>
+                                            
+                                                    </div>
+                            <div class="half">
+                        
+                        <div class="course_item">
+                            <div class="float_left" style="width: 19%;">
+                                <img src="https://www.osaa.org/images/icons/badges/cpr_128px.png" alt="" title="" />
+                            </div>
+                            <div class="float_left" style="width: 81%;">
+                                <div class="course_title">CPR / AED Training</div>
+                                <div class="course_when">
+                                    Optional - per district/school policy                                                                    </div>
+                                <div class="course_name">Not an OSAA or state requirement
+</div>                            
+                                <div class="course_link">
+                                                                                                        </div>
+                            </div>
+                        </div>
+                    
+                </div>
+            </div>
+
+                    
+
+            <br class="clear" />            
+
+            <div class="columns">
+                <div class="half">
+
+                    <h2>Online Training Course Help</h2>
+                    <a href="http://nfhslearn.com/help_desk" target="_blank">Answers to common NFHS online course questions, logins, etc.</a>
+
+                </div>
+
+                <div class="half">
+                    <br />
+                    <a href="http://www.nfhslearn.com" target="_blank">
+                          <img src="https://www.osaa.org/images/icons/NFHSlearningcenter.jpg" height="42px" border="0" />
+                      </a>
+                  <div class="small gray">Visit the NFHS Learning Center for additional online courses.</div>
+                </div>
+
+            </div>
+
+            <br class="clear" /><br />
+
+            <h2>Lookup a Certification</h2>
+            <div class="columns">
+                <div class="half">
+                    <h3>NFHS Course Completions</h3>
+                    <div style="margin-left: 40px;">
+                        &raquo; <a href="http://nfhslearn.com/lookup/users" target="_blank">NFHS Learning Center User Lookup</a>
+                    </div>
+                  
+                    <br />
+
+                    <h3>OSAA Beyond the Scoreboard</h3>
+                    <b>List Updates Once a Day</b>
+                    <div style="margin-left: 40px;">
+                                                    <span class="small gray note">You must be logged into your OSAA website user account to view this list of OSAA course completions.</span>
+                                            </div>
+
+                    <br />
+
+                    <h3>ASEP Fundamentals of Coaching</h3>
+                    <b>Prior to August 1, 2007</b>
+                    <div style="margin-left: 40px;">
+                        &raquo; <a href="https://www.osaa.org/docs/osaainfo/ASEPCertifiedCoachesList.pdf" target="_blank">ASEP Certified List (sorted by last name)</a>                      
+                    </div>
+                  
+                    <br />
+                    
+                    <h3>ODE Steroid Training and Assessment</h3>
+                    <div style="margin-left: 40px;">
+                        &raquo; <a href="https://www.osaa.org/docs/health-safety/ODESteroidsList.pdf" target="_blank">Updated List of ODE Trainings</a>
+                    </div>
+                </div>
+
+                <div class="half">
+                    <h3>OSAA Spirit Safety</h3>
+                    <div style="margin-left: 40px;">
+                        &raquo; <a href="https://www.osaa.org/exams/view-list/5" target="_blank">View OSAA Certifications List</a>
+                    </div>
+
+                    <br />
+
+                    <h3>OSAA Interrupting and Preventing Discriminatory Acts</h3>
+                    <div style="margin-left: 40px;">
+                                                    <span class="small gray note">You must be logged into your OSAA website user account to view this list of OSAA course completions.</span>
+                                            </div>
+
+                    <br />
+
+                    <h3>OSAA Racial Equity</h3>
+                    <div style="margin-left: 40px;">
+                                                    <span class="small gray note">You must be logged into your OSAA website user account to view this list of OSAA course completions.</span>
+                                            </div>
+
+
+                </div>
+            </div>
+
+            <br class="clear" /><br />
+
+              <h2>Frequently Asked Questions</h2>
+              <div style="font-size: 9pt;">
+                  <b>Q. Does certification through the American Sport Education Program (ASEP) satisfy the one time requirement for NFHS Fundamentals of Coaching?</b><br />
+                  A. Yes, so long as the athletic director or coach was certified through ASEP prior to August 1, 2007.  Thereafter, only the NFHS Coach Education Program "Fundamentals of Coaching" will satisfy this requirement unless an exception is granted in writing by the OSAA.
+                  
+                  <br /><br >
+
+                  <b>Q. When must a coach be certified?</b><br />
+                  A. All coaches must be certified prior to assuming coaching duties unless an emergency exception is authorized in writing by the OSAA.  This includes cheerleading coaches, dance/drill coaches, and choreographers at schools that do not participate in competitions.
+              
+                  <br /><br />
+
+                  <b>Q. Is certification required of volunteer coaches?</b><br />
+                  A. Yes.
+             
+                  <br /><br />
+
+                  <b>Q. Must a "guest" coach be certified?</b><br />
+                  A. No, but if the coach has contact with students more than three times in a sport season, the coach shall no longer be considered a "guest" and must be certified.  A non-certified "guest" coach may not serve as a coach at a contest.  Coaches may not use this provision to circumvent the training requirements, i.e. a regular coach does not get a three day grace period to interact with participants prior to being wholly certified.
+              
+                  <br /><br />
+
+                  <b>Q.  May a school bring in alumni or other non-high school personnel to scrimmage with teams or individuals as "guest coaches" if those personnel are limited to student contact on no more than three occasions during the sport season?</b><br />
+                  A. No. The "guest coach" exception is intended to allow a limited number of visits by a guest instructor; it is NOT intended to allow coaches to bring in coaches or players to participate in drills or scrimmages against teams or individuals.  Any attempt to circumvent the Participation Limitations by calling practice participants "guest coaches" or to have coaches interact with participants prior to being wholly certified would be a violation of OSAA rules.
+              
+                  <br /><br />
+
+                  <b>Q. In individual sports, may a parent or non-certified coach accompany a participant to a contest as the school representative if that person is an authorized representative of the principal?</b><br />
+                  A. Yes, but the authorized representative may not coach the participant unless specific permission has been granted in writing by the Executive Director.
+              
+                  <br /><br />
+
+                  <b>Q. Does the OSAA require high school coaches to have current first aid certification?</b><br />
+                  A. No.  However, coaches should check with their athletic directors as most high schools or school districts have this as a requirement.
+
+                  <br /><br />
+
+                  <b>Q. How long is the Heads Up Football certification valid?</b><br />
+                  A. The answer depends on the four component courses that comprise the Heads Up Football certification: Concussion in Sports, Heat Illness Prevention, Sudden Cardiac Arrest, and Blocking, Tackling &amp; Equipment Fitting.  Heads Up Football certification expires one year after the earliest component completion date.  Even if an individual component course is valid for more than one year, for the purposes of retaining Heads Up Football certification, the four component courses must be completed annually.
+              
+			                    <br /><br />
+
+                  <b>Q. What is required of a Player Safety Coach (PSC) during the year they attend an in-person PSC clinic in order to be Heads Up Football certified?</b><br />
+                  A. Coaches attending an in-person PSC clinic are required to complete the following online courses in order to be Heads Up Football certified: Concussion Recognition and Training; Heat Illness Prevention.
+              
+			                    <br /><br />
+
+                  <b>Q. What is required of every football coach, including previously certified PSC coaches, not attending an in-person PSC clinic in order to be Heads Up Football certified?</b><br />
+                  A. Every football coach, including previously certified PSC coaches, not attending an in-person PSC clinic are required to complete the following online courses in order to be Heads Up Football certified: Concussion Recognition and Training; Heat Illness Prevention; Blocking and Defeating Blocks, Shoulder Tackilng & Equipment Fitting; Sudden Cardiac Arrest.
+              
+			</div>                
+
+        </div>
+
+    
+                <div id="policies">            
+
+            <h1>OSAA Policies, Forms, and Links</h1>
+            OSAA policies and forms can be found by using the <b>Governance</b> navigational bar at the top of every OSAA webpage.  Most of the questions we receive from Coaches are on the following topics.
+
+            <br /><br />
+
+            <h2>Policies</h2>
+            <div style="margin-left: 40px; line-height: 1.25em;">            
+                <div class="columns">
+                    <div class="half">
+                        &raquo; <a href="https://www.osaa.org/governance/handbooks" target="_blank">OSAA Handbooks</a><br />                        
+                        &raquo; <a href="https://www.osaa.org/docs/osaainfo/coachescodeofethics.pdf" target="_blank">OSAA Coaches Code of Ethics</a><br />            
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=79" target="_blank">Ejection Policies</a><br />
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=109" target="_blank">Practice Model</a><br />
+                        &raquo; <a href="/heat-index" target="_blank">Heat Index Calculator and Subscription Alerts</a><br />
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=97" target="_blank">Moratorium Week</a><br />
+						&raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=30" target="_blank">Rule 3: Contests-Sportsmanship-Crowd Control</a><br />
+                    </div>
+                    <div class="half">
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=131" target="_blank">Participation Limitations by Sport</a><br />
+													&raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=101" target="_blank">Practice Limitation Rule(6A, 5A, 4A)</a><br />
+						&raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=105" target="_blank">Practice Limitation Rule(3A, 2A, 1A)</a><br />
+						                        &raquo; <a href="https://www.osaa.org/docs/forms/SanctioningRequestProcedures.pdf" target="_blank">NFHS Sanctioning Request Procedures (Non-Bordering States)</a><br />
+			            &raquo; <a href="https://www.osaa.org/docs/forms/MedicalRelease-ReturntoSportParticipationFollowingaConcussion.pdf" target="_blank"><b><i>Medical Release - Return to Sport Participation Medical Release Following a Concussion</b></i></a><br />
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=77" target="_blank">Concussion Management Policy</a><br/>
+						&raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=90" target="_blank">Gender Identity Participation Policy</a>
+                    </div>
+                </div>
+
+                <br class="clear" />
+            </div>
+
+            <br />
+
+            <h2>Forms</h2>
+            For a complete list of OSAA forms:
+            <div style="margin-left: 40px; line-height: 1.25em;">                        
+                &raquo; <a href="https://www.osaa.org/governance/forms">OSAA Forms</a><br />            
+            </div>
+
+            <br />
+
+            <h2>Links</h2>
+            <div style="margin-left: 40px; line-height: 1.25em;">            
+                <div class="columns">
+                    <div class="half">
+                        &raquo; <a href="https://www.osaa.org/governance/handbooks" target="_blank">OSAA Handbooks</a><br />
+                        &raquo; <a href="https://www.osaa.org/governance/forms" target="_blank">OSAA Forms</a><br />                        
+              	        &raquo; <a href="https://www.osaa.org/forms/ejection" target="_blank">Online Ejection Report</a><br />
+            	          &raquo; <a href="https://www.osaa.org/forms/eligibility" target="_blank">Online Student Eligibility Form</a><br />
+                        &raquo; <a href="https://www.osaa.org/about" target="_blank">About the OSAA</a><br />
+                        &raquo; <a href="https://www.osaa.org/contact" target="_blank">Contact Information</a><br />
+                        &raquo; <a href="https://www.osaa.org/privacy" target="_blank">Privacy Policy</a><br />
+                        &raquo; <a href="https://www.osaa.org/weekly " target="_blank">OSAA Weekly (Newsletter)</a><br />
+                    </div>
+
+                    <div class="half">
+                        &raquo; <a href="https://www.osaa.org/classifieds" target="_blank">Classifieds</a><br />
+                        &raquo; <a href="https://www.osaa.org/archives" target="_blank">Records/Archives</a><br />
+                        &raquo; <a href="http://www.osaafoundation.org" target="_blank">OSAA Foundation</a><br />
+                        &raquo; <a href="https://www.osaa.org/health-safety" target="_blank">Health &amp; Safety</a><br />
+                        &raquo; <a href="https://www.osaa.org/mobile" target="_blank">OSAA Mobile</a><br />
+                        &raquo; <a href="https://www.osaa.org/radio-network" target="_blank">OSAA Radio Network</a><br />
+                        &raquo; <a href="https://www.osaa.org/sponsors" target="_blank">Sponsors</a><br />
+                        &raquo; <a href="https://www.osaa.org/links" target="_blank">More Links</a>
+                    </div>
+                </div>
+
+                <br class="clear" />
+    			  </div>
+
+            <br />
+
+        </div>
+
+
+                <div id="eligibility">            
+
+            <h1>OSAA Eligibility Policies and Forms</h1>
+            OSAA eligibility policies and forms can be found by using the <b>Governance</b> navigational bar at the top of every OSAA webpage.  Most of the eligibility questions we receive in the office are on the following topics.
+
+            <br /><br />
+
+            <h2>Policies</h2>
+            <div style="margin-left: 40px; line-height: 1.25em;">            
+                <div class="columns">
+                    <div class="half">
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/MajorRuleChanges.pdf" target="_blank">Major Rule Changes</a><br />
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=39" target="_blank">Academic Eligibility</a><br />
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/rule8chart.pdf" target="_blank">Satisfactory Progress Toward Graduation Chart</a><br />
+                        
+                        <br />
+
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=53" target="_blank">Transfers</a><br />
+                        &raquo; <a href="https://www.osaa.org/forms/student-transfer" target="_blank"><b><i>OSAA Transfer Form - Online Only</b></i></a><br />
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=57" target="_blank">Transfers to a School with Affiliation</a><br />
+                        &raquo; <a href="https://www.osaa.org/docs/forms/StudentIntentToTransfer.pdf" target="_blank">Student Intent to Transfer Certificate</a><br />
+                        
+                        <br />
+
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=49" target="_blank">School Representation</a><br />
+                        &raquo; <a href="https://www.osaa.org/docs/forms/SchoolRepresentationEligibilityCertificate.pdf" target="_blank">School Representation Eligibility Certificate</a><br />
+						&raquo; <a href="https://www.osaa.org/schools/associate-members" target="_blank">Associate Member Schools</a><br />
+
+                        
+
+                    </div>
+
+                    <div class="half">
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=54" target="_blank">International Students</a><br />
+                        &raquo; <a href="https://www.osaa.org/docs/forms/InternationalStudentEligibilityChecklist.pdf" target="_blank">International Student Eligibility Checklist</a><br />
+                        &raquo; <a href="http://www.csiet.org/" target="_blank">CSIET List of Approved Programs</a><br />
+
+                        <br />
+
+                        &raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=40" target="_blank">Home School Students</a><br />
+                        &raquo; <a href="https://www.osaa.org/docs/forms/HomeSchoolEligibilityParentChecklist.pdf" target="_blank">Home School Eligibility Parent Checklist</a><br />
+						&raquo; <a href="https://www.osaa.org/docs/handbooks/osaahandbook.pdf#page=40" target="_blank">High School Equivalency Students</a><br />
+						
+
+                        <br />
+                        
+                        <b>District Committee:</b><br />
+                        &raquo; <a href="https://www.osaa.org/governance/committees#district-committees">District Committees Page</a><br />                       
+                    </div>
+                </div>
+
+                <br class="clear" />
+            </div>
+
+            <br />
+
+            <h2>Forms</h2>        
+            <div style="margin-left: 40px; line-height: 1.25em;">                        
+                &raquo; <a href="https://www.osaa.org/forms/student-transfer" target="_blank"><b><i>OSAA Transfer Form - Online Only</b></i></a><br />
+				&raquo; <a href="https://www.osaa.org/forms/eligibility" target="_blank">Online Eligibility Request Form</a><br />
+                &raquo; <a href="https://www.osaa.org/forms/eligibility" target="_blank">Lookup Student Eligibility Waiver</a><br />
+                &raquo; <a href="https://www.osaa.org/docs/osaainfo/OnlineEligibilityInstructions.pdf" target="_blank">Online Form Help &amp; Assistance</a><br />
+                &raquo; <a href="https://www.osaa.org/docs/forms/EligibilityPrimerForParents.pdf" target="_blank">Eligibility Primer for Parents</a><br />
+            </div>
+
+            <br />        
+
+        </div>
+
+    
+                
+
+                <div id="workshop">            
+
+            
+            <div class="ui-corner-all" style="float: right; width: 300px; margin: 1em 0 1em 1.5em; padding: 0 1em 0.5em 1em; border: 1px solid #dedede; font-size: 10pt;">
+                <h3>Who Should Attend?</h3>
+                Workshops are ideal for:
+                <ul>
+                    <li>Athletic Directors</li>
+                    <li>Assistant Athletic Directors</li>
+                    <li>Administrative Assistants/Secretaries</li>
+                </ul>            
+                <br />
+
+                                    <h3>Fall Administrator Workshops</h3>            
+                
+                                
+                
+                                                            <b>Held in August</b><br />
+                        Workshop registration opens May 1
+                                                    
+
+            </div>
+
+            <h1>Annual Administrator Workshops</h1>        
+
+            The OSAA hosts annual Administrator Workshops to familiarize representatives from the member schools with the services, policies, procedures, rules, and interpretations of the Association.
+
+            <br />
+
+            <br />
+
+            <h2>Mandatory Attendance</h2>
+            Each member school shall ensure that at least one representative participates in one of the annual Administrator Workshops presented by OSAA staff.  Roll shall be taken at the Workshops to confirm compliance with this policy.
+
+            <br /><br />
+
+            Should it be determined that a member school failed to have a representative at any of the Administrator Workshops, that school shall have an administrator view a recorded version of the workshop within five days, receive a $1,000 fine, appear before the Executive Board at their next meeting, and be placed on probation during the Association Year of non-attendance.  The Executive Board shall consider the probationary status of the school when assigning penalties for any violations of OSAA Regulations by the school that might occur during the period of probation.  (<a href="https://www.osaa.org/governance/handbooks/osaa#_Toc456100325" target="_blank">Executive Board policy</a>)
+
+            <br /><br />
+            
+            <h2>Information</h2>
+            <div style="margin-left: 40px; line-height: 1.25em;">                
+                &raquo; <a href="https://www.osaa.org/docs/osaainfo/26-27AdministratorWorkshopMemo.pdf" target="_blank">2026-27 OSAA Administrator Workshops - Memo</a><br />
+				&raquo; <a href="https://www.osaa.org/docs/osaainfo/26powerpointnotes.pdf" target="_blank">2026-27 OSAA Administrator Workshops - PowerPoint notes</a><br />
+				&raquo; <a href="https://www.osaa.org/docs/osaainfo/26Materials.pdf" target="_blank">2026-27 OSAA Administrator Workshops - Packet</a><br />
+				&raquo; <a href="https://www.osaa.org/docs/osaainfo/26Scenarios.pdf" target="_blank">2026-27 OSAA Administrator Workshops - Scenarios</a><br />		
+				&raquo; <a href="https://www.osaa.org/docs/osaainfo/26Scenarios_AnswerKey.pdf" target="_blank">2026-27 OSAA Administrator Workshops - Scenarios Answer Key</a><br />	
+				
+                					                              
+				
+                				 				
+				
+           
+            </div>
+
+                        
+            <br />
+            
+            
+        </div>  
+
+
+                <div id="webinars">
+
+            <h1>Webinars, Trainings, and Q &amp; A Sessions</h1>            
+
+            <br />
+
+            <h2>OSAA "Essentials" Webinar Series</h2>
+            These webinars are designed to help Athletic Directors and administrators become more efficient and share best practices.  Each webinar will be recorded and posted on the website, see below.
+
+                        <table class="webinar-list">
+
+                <tr>
+                    <td>
+                        <b>2024-25 Administrator Workshop</b><br />                        
+                    </td>
+                    <td>
+                        Tues. 8/13/2024 - 8:30am
+                    </td>
+                    <td>
+                        <a href="https://osaa-webinars.s3.us-west-2.amazonaws.com/Webinar+-+2024-08-13+-+OSAA+Administrator+Workshop.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>
+
+                        <a href="https://www.osaa.org/docs/webinars/2024-08-13/2024-25 Administrator Workshop - Presentation.pdf" target="_blank"><img src="https://www.osaa.org/images/icons/pdf_2_24px.png" alt="Download Presentation" title="Download Presentation" /></a>
+
+                        <a href="https://www.osaa.org/docs/webinars/2024-08-13/2024-25 Administrator Workshop - Handout Packet.pdf" target="_blank"><img src="https://www.osaa.org/images/icons/pdf_2_24px.png" alt="Materials and Handouts" title="Materials/Handouts" /></a>
+                    </td>
+                </tr>
+
+
+                <tr>
+                    <td>
+                        <b>Practice Limitation</b><br />
+                        <span class="small note">A webinar on the Practice Limitation Rule - 6A, 5A, 4A Pilot</span>                      
+                    </td>
+                    <td>
+                        Thurs. 8/11/2022 - 3:00pm
+                    </td>
+                    <td>
+                        <a href="https://osaa-webinars.s3.us-west-2.amazonaws.com/Essentials+-+2022-08-11+-+Practice+Limitation.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>
+
+                        <a href="https://www.osaa.org/docs/webinars/2022-08-11/Practice Limitation Webinar 2022-08-11.pptx" target="_blank"><img src="https://www.osaa.org/images/icons/powerpoint_24px.png" alt="Download PowerPoint Presentation" title="Download PowerPoint Presentation" /></a>
+                    </td>
+                </tr>
+
+                
+                <tr>
+                    <td>
+                        <b>Resources for Athletes' Continued Education</b>                        
+                    </td>
+                    <td>
+                        Wed. 9/30/2020 - 2:30pm
+                    </td>
+                    <td>
+                        <a href="https://osaa-webinars.s3-us-west-2.amazonaws.com/Essentials+-+2020-09-30+-+Resources+for+Athletes.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <b>Dealing with Challenging Parents</b>                        
+                    </td>
+                    <td>
+                        Thurs. 6/25/2020 - 1:00pm
+                    </td>
+                    <td>
+                        <a href="https://osaa-webinars.s3-us-west-2.amazonaws.com/Essentials+-+2020-06-25+-+Dealing+with+Challenging+Parents.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <b>Evaluations, Interviews, &amp; Hiring Coaches</b><br />
+                        <span class="small note">Presenters - Kevin Bryant, Nathan Stanley, and Kris Welch</span>
+                    </td>
+                    <td>
+                        Thurs. 6/18/2020 - 1:00pm
+                    </td>
+                    <td>
+                        <a href="https://osaa-webinars.s3-us-west-2.amazonaws.com/Essentials+-+2020-06-18+-+Interviewing%2C+Hiring%2C+and+Evaluating+Coaches.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>
+
+
+                        <a href="https://www.osaa.org/docs/osaainfo/Coaching Evaluations, Interviews.zip" target="_blank"><img src="https://www.osaa.org/images/icons/zip_24px.png" alt="Download Supplemental Files" title="Download Supplemental Files" /></a>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <b>Inputting Schedules &amp; Rosters</b>                        
+                    </td>
+                    <td>
+                        Thurs. 6/4/2020 - 1:00pm
+                    </td> 
+                    <td>
+                        <a href="https://osaa-webinars.s3-us-west-2.amazonaws.com/Essentials+-+2020-06-04+-+Inputting+Schedules+and+Rosters.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>
+                    </td>
+                </tr>                         
+                
+                <tr>
+                    <td>
+                        <b>Managing YOUR school on the OSAA Website</b>
+                    </td>
+                    <td>
+                        Thurs. 5/14/2020 - 1:00pm
+                    </td>
+                    <td>
+                        <a href="https://osaa-webinars.s3-us-west-2.amazonaws.com/Essentials+-+2020-05-14+-+Managing+Your+School+on+OSAA+Website.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>                        
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <b>Transfers and Eligibility Policies &amp; Rules/Forms</b>
+                    </td>
+                    <td>
+                        Thurs. 5/7/2020 - 1:00pm
+                    </td>
+                    <td>
+                        <a href="https://osaa-webinars.s3-us-west-2.amazonaws.com/Essentials+-+2020-05-07+-+Eligibility+and+Transfers.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>
+                    </td>
+                </tr>
+
+                
+                
+                
+                                
+
+                
+                
+                
+                
+                               
+
+                	
+
+                 	
+
+                	
+
+                			
+            
+            </table>
+
+            <br />
+
+            <h2>AD Chat &amp; Chew Webinar Series</h2>
+                These webinars are designed to provide a forum for sharing, learning and growing as Athletic Administrators.  
+                ALL are welcome, and we highly encourage New Athletic Directors and their Mentors to attend. Most sessions 
+                will have a theme, with 20-30 minute presentations followed by a Q &amp; A session.
+                Each webinar will be recorded and posted on the website, see below. 
+
+            <table class="webinar-list">                
+                
+                <tr>
+                    <td>
+                        <b>Leading with Character </b><br />
+                        <span class="small note">Bruce Brown, Proactive Coaching</span>
+                    </td>
+                    <td>
+                        Thurs. 03/04/2021 - 12:00pm
+                    </td>
+                    <td>
+                        <a href="https://osaa-webinars.s3-us-west-2.amazonaws.com/Chat+%26+Chew+-+2021-03-04+-+Leading+with+Character.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <b>Eligibility &amp; Transfers</b><br />
+                        <span class="small note">OSAA Staff</span>
+                    </td>
+                    <td>
+                        Thurs. 02/18/2021 - 12:00pm
+                    </td>
+                    <td>
+                        <a href="https://osaa-webinars.s3-us-west-2.amazonaws.com/Chat+%26+Chew+-+2021-02-18+-+Eligibility+and+Transfers.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td>
+                        <b>Scheduling with Integrity, Communicating / Tracking</b><br />
+                        <span class="small note">Dennis Burke &amp; OADA Executive Board</span>
+                    </td>
+                    <td>
+                        Thurs. 02/04/2021 - 12:00pm
+                    </td>
+                    <td>
+                        <a href="https://osaa-webinars.s3-us-west-2.amazonaws.com/Chat+%26+Chew+-+2021-02-04+-+Scheduling+with+Integrity%2C+Communicating%2C+Tracking.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>
+
+                        <a href="https://www.osaa.org/docs/osaainfo/GMT20210204-200437_OADA-Chat-.txt" target="_blank"><img src="https://www.osaa.org/images/icons/plain_text_24px.png" alt="Download Chat Log" title="Download Chat Log" /></a>
+                    </td>
+                </tr>  
+
+                <tr>
+                    <td>
+                        <b>First Session Q &amp; A with OSAA Staff</b><br />
+                        <span class="small note">How are you doing, what is on your mind, needs, questions, concerns?</span>
+                    </td>
+                    <td>
+                        Thurs. 01/21/2021 - 12:00pm
+                    </td>
+                    <td>
+                        <a href="https://osaa-webinars.s3-us-west-2.amazonaws.com/Chat+%26+Chew+-+2021-01-21+-+Q%26A.mp4" target="_blank"><img src="https://www.osaa.org/images/icons/video_file_2_24px.png" alt="Download Video Recording" title="Download Video Recording" /></a>                      
+
+                        <a href="https://www.osaa.org/docs/osaainfo/OADA Chat & Chew chat 01212021.txt" target="_blank"><img src="https://www.osaa.org/images/icons/plain_text_24px.png" alt="Download Chat Log" title="Download Chat Log" /></a>
+                    </td>
+                </tr> 
+            
+            </table>    
+
+            <br />
+
+        </div>
+
+    </div>
+	
+                    
+
+
+
+                    </div>
+
+                    <!-- End Main Content -->
+
+                        
+
+                </div>              
+
+                
+
+                <!-- Championships Logo -->
+
+                <!-- Championships Logo -->
+<div id="championships">
+    <img src="https://www.osaa.org/images/osaa_championships_2018.png" alt="" title="" width="152" height="110" style="position:relative; top:0px; left:2px;" />
+	        
+</div>
+                        
+
+            </div>
+
+            <!-- End Holder -->
+
+    
+
+        </div>
+
+        <!-- End Content -->
+
+        
+
+        <!-- Page Footer -->
+
+        <div id="footer">        
+    <div class="holder">
+
+        <!-- Copyright and Address -->                
+        <div class="copyright">
+           &copy; 2026 Oregon School Activities Association<br />
+           25200 SW Parkway Avenue Suite 1<br />
+           Wilsonville, OR 97070<br /><br />
+           SERVER-2020.2
+        </div>
+
+        <!-- Additional Page Links -->                
+        <div class="extra_links">
+            <div class="group">
+                <a href="https://www.osaa.org/about">About the OSAA</a><br />
+                <a href="https://www.osaa.org/contact">Contact Information</a><br />
+                <a href="http://www.osaafoundation.org" target="_blank">OSAA Foundation</a><br />                
+                <a href="https://www.osaa.org/privacy">Privacy Policy</a><br />
+                <a href="https://www.osaa.org/partners">Partners</a>                               
+            </div>
+            
+            <div class="group">
+                <a href="https://www.osaa.org/weekly ">OSAA Weekly</a><br />                       
+                <a href="https://www.osaa.org/classifieds">Classifieds</a><br />
+                <a href="https://www.osaa.org/open-dates">Open Dates</a><br />
+                                <a href="https://www.osaa.org/media">Broadcast Schedule</a><br />
+                <a href="https://www.osaa.org/archives">Records/Archives</a>
+            </div>                                
+            
+            <div class="group">                
+                <a href="https://www.osaa.org/today">OSAA<i>today</i></a><br />                                                
+                <a href="https://www.osaa.org/championships">Championship Central</a><br />
+                <a href="https://www.osaa.org/know-before-you-go">Know Before You Go</a><br />
+                <a href="https://www.osaa.org/radio-network">OSAA Radio Network</a><br />
+                <a href="https://www.osaa.org/links">Links &amp; Media</a><br />                
+                
+            </div>             
+
+                        
+
+            <div class="group search">
+
+                Search the OSAA Website:<br />                    
+                <input type="text" name="query" data-action="search" style="margin-bottom: 11px;" />
+                <img src="https://www.osaa.org/images/icons/magnifier_16px.png" alt="" title="" data-action="search" />
+                                
+
+                <a href="https://www.osaa.org/mobile" style="font-size: 10pt;">OSAA Mobile</a><br />
+                <a href="https://www.osaa.org/app" style="font-size: 10pt;">OSAA <i>Live</i> App</a><br />
+                
+
+
+            </div> 
+        </div>                
+        
+        <!-- Social Media Links -->
+        <div class="social_media">
+                    </div>
+        
+        <!-- Brief Contact Information -->
+        <div class="contact">
+            <a href="mai&#108;to&#58;i&#x6e;f&#37;6f&#64;os%6&#49;%&#x36;1&#46;%6&#x66;rg" rel="nofollow">i&#110;f&#111;&#x40;osaa&#x2e;&#111;rg</a><br />
+            (503) 682-6722<br />                    
+
+            <!-- Year Select -->
+            <form method="GET" action="https://www.osaa.org/coaches" accept-charset="UTF-8" id="year_select">                
+                <select class="auto_submit_onchange" name="year"><option value="2013">13-14</option><option value="2014">14-15</option><option value="2015">15-16</option><option value="2016">16-17</option><option value="2017">17-18</option><option value="2018">18-19</option><option value="2019">19-20</option><option value="2020">20-21</option><option value="2021">21-22</option><option value="2022">22-23</option><option value="2023">23-24</option><option value="2024">24-25</option><option value="2025">25-26</option><option value="2026" selected="selected">26-27</option></select>                
+            </form>            Year
+        </div>                              
+        
+        <!-- Sponsors -->                                
+        <div class="sponsors" style="display: flex; justify-content: space-between;">        
+            
+                        <a href="https://www.onpointcu.com/join-a-local-credit-union-onpoint-cu/?utm_source=osaa&utm_medium=display&utm_campaign=onpoint+partnerships&tactic_id=Brand_GP_04-25_OSAA_Web_Footer" target="_blank" data-before="Yes"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 0; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/OnPoint_3_111x50.png'); background-repeat:no-repeat;">Sponsor - OnPoint Community Credit Union</div></a>
+
+                                            
+            <a href="http://www.lesschwab.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/LesSchwab_111x50px.png'); background-repeat:no-repeat;">Sponsor - LesSchwab Tires</div></a>
+
+            
+                    
+            <a href="http://www.pacificoffice.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/POA_111x50px.png'); background-repeat:no-repeat;">Sponsor - Pacific Office Automation</div></a>
+
+			
+            
+            
+            
+            
+            <a href="http://www.wilson.com" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/Wilson_111x50px.png'); background-repeat:no-repeat;">Sponsor - Wilson</div></a>
+            
+            <a href="http://www.nike.com" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 0 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/Nike_111x50px.png'); background-repeat:no-repeat;">Sponsor - Nike</div></a>
+
+			<a href="https://www.toyota.com/pacificnorthwest/deals-incentives/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/toyota_111x50px.png'); background-repeat:no-repeat;">Sponsor - Toyota</div></a>
+
+						
+			
+			<a href="https://www.osaastore.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/RTA 111x50 Logo for Corp Partner pg.png'); background-repeat:no-repeat;">Sponsor - RushTeamApparel / OSAA Store</div></a>
+
+						
+			
+            
+
+			
+            <a href="https://www.oregon.gov/odot/pages/index.aspx" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/ODOT_AD_2_111x50px.png'); background-repeat:no-repeat;">Sponsor - ODOT</div></a>
+        
+
+            <a href="https://dairywest.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/DairyWest_111x50.png'); background-repeat:no-repeat;">Sponsor - DairyWest</div></a>
+
+
+        </div> 
+   
+    
+    </div>
+
+
+</div>
+<!-- End Footer -->                     
+
+        
+
+    </body>    
+
+</html>

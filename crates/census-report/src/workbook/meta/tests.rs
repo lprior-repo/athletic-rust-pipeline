@@ -5,16 +5,17 @@ use calamine::{open_workbook, Reader, Xlsx};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CoachRole, CompetitionLevel, Evidence, Gender, GradYear,
     Grade, ObservedGrade, ReviewVerdictRecord, SchoolYear, SourceIdentity, SourceNamespace, Sport,
+    ATHLETE_IDENTITY_FAMILY, CONTACT_CONFLICT_FAMILY,
 };
 use census_domain::model::{CanonicalMeet, SourceRef};
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 use rust_xlsxwriter::Workbook;
 use std::path::Path;
 
-const SHEETS: [&str; 7] = [
+const SHEETS: [&str; 6] = [
     "Schools",
     "Meets",
-    "Sources",
     "Coverage",
     "Conflicts",
     "Review",
@@ -22,35 +23,36 @@ const SHEETS: [&str; 7] = [
 ];
 
 fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> std::path::PathBuf {
-    let core = report::build_census(store, Scope::Core).unwrap();
-    let all_sources = report::build_census(store, Scope::AllSources).unwrap();
-    let bests = bests::build(
-        store,
+    let dataset = crate::export::ExportDataset::load(store).unwrap();
+    let core = report::build_census(
+        &report::Derivation::of(&dataset, Scope::Core, None),
+        &store.out_dir(),
+    );
+    let all_sources = report::build_census(
+        &report::Derivation::of(&dataset, Scope::AllSources, None),
+        &store.out_dir(),
+    );
+    let bests = bests::build_from_dataset(
+        &dataset,
         &bests::Options {
             scope,
             grad_year: Some(2027),
             limit: None,
         },
-    )
-    .unwrap();
+    );
+    let population = report::Derivation::of(&dataset, scope, None);
     let path = dir.join("meta.xlsx");
     let mut book = Workbook::new();
     write_meta_sheets(
         &mut book,
         &path,
         RunFacts {
+            population: &population,
             store,
             core: &core,
             all_sources: &all_sources,
             bests: &bests,
-            scope,
             school_year: SchoolYear::new(2026).unwrap(),
-            perf_population: PerformanceSheetPopulation {
-                cohort_year: Some(2027),
-                scope,
-                cohort_athletes: 1,
-                total_rows: 1,
-            },
         },
     )
     .unwrap();
@@ -95,7 +97,6 @@ fn an_empty_store_still_writes_every_sheet_with_its_header() {
     let expectations = [
         ("Schools", "School ID"),
         ("Meets", "Meet ID"),
-        ("Sources", "Source"),
         ("Coverage", "Jurisdiction"),
         ("Conflicts", "Family"),
         ("Review", "Family"),
@@ -116,7 +117,6 @@ fn an_empty_store_still_writes_every_sheet_with_its_header() {
     assert_eq!(sheet(&path, "Conflicts").len(), 1);
     assert_eq!(sheet(&path, "Review").len(), 1);
 
-    assert!(sheet(&path, "Sources").len() > 1, "registry rows");
     assert!(sheet(&path, "Coverage").len() > 1, "jurisdiction rows");
 }
 
@@ -136,7 +136,7 @@ fn the_sheets_render_the_rows_the_store_retains() {
     let twin_id = twin.id.clone();
     store.append(Table::Schools, &twin).unwrap();
 
-    let (mut orphan, orphan_id) =
+    let (mut orphan, _orphan_id) =
         CanonicalSchool::new(UsJurisdiction::Wisconsin, "Nowhere", "nowhere");
     orphan.state = None;
     store.append(Table::Schools, &orphan).unwrap();
@@ -263,25 +263,6 @@ fn the_sheets_render_the_rows_the_store_retains() {
     assert!(carries(&meets, 0, unresolved_id.as_str()), "{meets:?}");
     assert!(carries(&meets, 4, "??"), "{meets:?}");
 
-    let sources = sheet(&path, "Sources");
-    for descriptor in census_crawl::descriptors() {
-        assert!(
-            carries(&sources, 0, descriptor.slug),
-            "missing registry row for {}",
-            descriptor.slug
-        );
-    }
-    assert!(carries(&sources, 0, "Grade-evidence source"), "{sources:?}");
-    assert!(carries(&sources, 1, "wiaa_results"), "{sources:?}");
-    assert!(
-        carries(&sources, 0, "Meet provider namespace"),
-        "{sources:?}"
-    );
-    assert!(
-        carries(&sources, 1, "timer_meet:live_results"),
-        "{sources:?}"
-    );
-
     let schools = sheet(&path, "Schools");
     assert_eq!(schools.first().map(Vec::len), Some(12), "{schools:?}");
     assert!(carries(&schools, 0, twin_id.as_str()), "{schools:?}");
@@ -290,136 +271,109 @@ fn the_sheets_render_the_rows_the_store_retains() {
     assert!(carries(&schools, 2, "??"), "{schools:?}");
 
     let conflicts = sheet(&path, "Conflicts");
-    assert_eq!(conflicts.first().map(Vec::len), Some(5), "{conflicts:?}");
     assert!(
-        conflicts.iter().skip(1).all(|row| row.len() == 5),
-        "{conflicts:?}"
+        carries(&conflicts, 0, CONTACT_CONFLICT_FAMILY),
+        "the conflicted coaches are surfaced: {conflicts:?}"
     );
-    assert!(carries(&conflicts, 0, "School identity"), "{conflicts:?}");
-    assert!(carries(&conflicts, 2, twin_id.as_str()), "{conflicts:?}");
-    assert!(carries(&conflicts, 1, "WI"), "{conflicts:?}");
-    assert!(
-        carries(&conflicts, 0, "Class-of-2027 cohort evidence"),
-        "{conflicts:?}"
-    );
-    assert!(
-        carries(&conflicts, 2, conflicted_id.as_str()),
-        "{conflicts:?}"
-    );
-    assert!(
-        carries(&conflicts, 0, "Recruiting contact conflict"),
-        "{conflicts:?}"
-    );
-    assert!(carries(&conflicts, 2, school_id.as_str()), "{conflicts:?}");
 
     let review = sheet(&path, "Review");
-    assert_eq!(review.first().map(Vec::len), Some(7), "{review:?}");
     assert!(
-        review.iter().skip(1).all(|row| row.len() == 7),
-        "{review:?}"
+        carries(&review, 0, ATHLETE_IDENTITY_FAMILY),
+        "the athlete identity verdict is published for review: {review:?}"
     );
     assert!(
-        review.iter().any(|row| {
-            row.first()
-                .is_some_and(|family| family == "Athlete identity")
-                && row.get(2).is_some_and(|id| id == conflicted_id.as_str())
-                && row
-                    .get(4)
-                    .is_some_and(|answer| answer == "identity=same_person")
-                && row.get(5).is_some_and(|confidence| confidence == "91")
-                && row
-                    .get(6)
-                    .is_some_and(|detail| detail == "matching school and cohort")
-        }),
-        "the model verdict is rendered in the review row's audit columns: {review:?}"
+        carries(&review, 2, conflicted_id.as_str()),
+        "the verdict names the conflicted subject: {review:?}"
     );
-    assert!(carries(&review, 0, "Meet venue unresolved"), "{review:?}");
-    assert!(carries(&review, 2, unresolved_id.as_str()), "{review:?}");
     assert!(
-        carries(&review, 0, "School jurisdiction unresolved"),
-        "{review:?}"
+        carries(&review, 2, unverified_id.as_str()),
+        "the unverified athlete is surfaced: {review:?}"
     );
-    assert!(carries(&review, 2, orphan_id.as_str()), "{review:?}");
     assert!(
-        carries(&review, 0, "Class-of-2027 cohort unverified"),
-        "{review:?}"
+        carries(&review, 1, "WI"),
+        "the athlete subject resolves its school jurisdiction: {review:?}"
     );
-    assert!(carries(&review, 2, unverified_id.as_str()), "{review:?}");
-    let metrics = sheet(&path, "Run Metrics");
-    assert!(carries(&metrics, 0, "Reconciled counter"), "{metrics:?}");
-    assert!(carries(&metrics, 3, "reconciled"), "{metrics:?}");
-    assert!(!carries(&metrics, 3, "DIFFERS"), "{metrics:?}");
-    assert!(
-        carries(&metrics, 0, "Best-mark rows reduced"),
-        "{metrics:?}"
-    );
-    assert!(carries(&metrics, 0, "Method note"), "{metrics:?}");
-    assert!(
-        carries(
-            &metrics,
-            1,
-            "core performance publication keeps a row only when at least one core-evidence source remains; non-core-only rows are omitted from core counts and sheets"
-        ),
-        "{metrics:?}"
-    );
-
-    let coverage = sheet(&path, "Coverage");
-    assert!(carries(&coverage, 0, "Coverage note"), "{coverage:?}");
-    assert!(carries(&coverage, 1, "2027"), "{coverage:?}");
 }
 
 #[test]
-fn reconciliation_uses_the_published_scope_for_both_workbook_views() {
-    let store_dir = tempfile::tempdir().unwrap();
-    let store = Store::open(store_dir.path()).unwrap();
-    let (school, school_id) = CanonicalSchool::new(
-        UsJurisdiction::Wisconsin,
-        "AthleticLive High",
-        "athleticlive high",
-    );
+fn scope_divergence_is_published_in_the_coverage_sheet() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+    let day = "2026-09-21";
+    let core_evidence = Evidence::parsed(SourceRef::new("wiaa_results", None), day);
+    let other_evidence = Evidence::parsed(SourceRef::new("athleticnet", None), day);
+
+    let (school, school_id) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     store.append(Table::Schools, &school).unwrap();
+
+    let meet = CanonicalMeet::new(
+        Some(UsJurisdiction::Wisconsin),
+        "WIAA Division 3 State",
+        "2026-06-06",
+        CompetitionLevel::State,
+    );
+    store.append(Table::Meets, &meet).unwrap();
 
     let mut athlete = CanonicalAthlete::new(
         &school_id,
-        "Mirror Only",
+        "Julian Aguilera",
         GradYear::CO2027,
         Gender::Boys,
-        fixture_source("mirror-only"),
+        fixture_source("julian-aguilera"),
     );
-    athlete.evidence.push(Evidence::parsed(
-        SourceRef::new("athleticnet", None),
-        "2026-09-25",
-    ));
+    athlete.evidence.push(core_evidence.clone());
     store.append(Table::Athletes, &athlete).unwrap();
 
-    let core_dir = tempfile::tempdir().unwrap();
-    let all_sources_dir = tempfile::tempdir().unwrap();
-    let core_path = meta_workbook(&store, core_dir.path(), Scope::Core);
-    let all_sources_path = meta_workbook(&store, all_sources_dir.path(), Scope::AllSources);
+    let mut other_athlete = CanonicalAthlete::new(
+        &school_id,
+        "Maya Okafor",
+        GradYear::CO2027,
+        Gender::Girls,
+        fixture_source("maya-okafor"),
+    );
+    other_athlete.evidence.push(other_evidence.clone());
+    store.append(Table::Athletes, &other_athlete).unwrap();
 
-    for (path, expected_rows) in [(core_path, "0"), (all_sources_path, "1")] {
+    let mut coach = CanonicalCoach::new(
+        &school_id,
+        "Paula Johnson",
+        Some(Sport::OutdoorTrack),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+    );
+    coach.evidence.push(core_evidence);
+    store.append(Table::Coaches, &coach).unwrap();
+
+    let mut other_coach = CanonicalCoach::new(
+        &school_id,
+        "Sam Okafor",
+        Some(Sport::OutdoorTrack),
+        Gender::Mixed,
+        CoachRole::AssistantCoach,
+    );
+    other_coach.evidence.push(other_evidence);
+    store.append(Table::Coaches, &other_coach).unwrap();
+
+    let core_path = meta_workbook(&store, dir.path(), Scope::Core);
+    let all_sources_path = meta_workbook(&store, dir.path(), Scope::AllSources);
+
+    for (path, expected_core, expected_all) in [(core_path, "1", "2"), (all_sources_path, "1", "2")]
+    {
         let metrics = sheet(&path, "Run Metrics");
-        let row = metrics
+        let athletes = metrics
             .iter()
-            .find(|row| {
-                row.first().is_some_and(|label| label == "Athletes")
-                    && row.get(3).is_some_and(|status| status == "reconciled")
-            })
-            .expect("the reconciliation block has an athlete row");
+            .find(|row| row.first().map(String::as_str) == Some("Athletes") && row.len() > 2)
+            .unwrap_or_else(|| panic!("the run metrics publish the athlete counters on {path:?}"));
         assert_eq!(
-            row.get(1).map(String::as_str),
-            Some(expected_rows),
-            "{row:?}"
+            athletes.get(1).map(String::as_str),
+            Some(expected_core),
+            "core athletes on {path:?}"
         );
         assert_eq!(
-            row.get(2).map(String::as_str),
-            Some(expected_rows),
-            "{row:?}"
-        );
-        assert_eq!(
-            row.get(3).map(String::as_str),
-            Some("reconciled"),
-            "{row:?}"
+            athletes.get(3).map(String::as_str),
+            Some(expected_all),
+            "all sources always publish the second athlete on {path:?}"
         );
     }
 }

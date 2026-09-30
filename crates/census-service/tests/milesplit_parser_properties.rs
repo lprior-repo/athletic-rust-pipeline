@@ -18,16 +18,16 @@ const OH_INDEX: &str =
     include_str!("../../census-crawl/tests/fixtures/milesplit/oh_results_index.html");
 const OH_FILE_LIST: &str =
     include_str!("../../census-crawl/tests/fixtures/milesplit/oh_meet_770621_results.html");
-const OH_RAW: &str =
-    include_str!("../../census-crawl/tests/fixtures/milesplit/oh_meet_770621_rs1321880_raw.html");
+const NC_RAW: &str =
+    include_str!("../../census-crawl/tests/fixtures/milesplit/nc_meet_684812_rs1283641_raw.html");
 
 const OH_FILE_LIST_URL: &str =
     "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results";
 
-const OH_RAW_URL: &str =
-    "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results/1321880/raw";
+const NC_RAW_URL: &str =
+    "https://nc.milesplit.com/meets/684812-asics-carolina-distance-carnival-2026/results/1283641/raw";
 
-const OH_RAW_ROWS: usize = 80;
+const NC_RAW_ROWS: usize = 214;
 
 fn seam_config() -> ProptestConfig {
     ProptestConfig {

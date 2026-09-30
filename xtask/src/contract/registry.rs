@@ -114,7 +114,7 @@ pub(super) fn admissions() -> Result<Check> {
     Ok(Check::violated(5, NAME, detail, failures))
 }
 
-const NON_ADAPTERS: [(&str, &str); 12] = [
+const NON_ADAPTERS: [(&str, &str); 13] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
@@ -149,6 +149,10 @@ const NON_ADAPTERS: [(&str, &str); 12] = [
     (
         "net",
         "the polite fetcher and the browser bridge every adapter draws on",
+    ),
+    (
+        "ingress",
+        "the loopback client that submits pipeline work to the serving census through Restate instead of opening the store: it admits no origin of its own",
     ),
     (
         "lib",

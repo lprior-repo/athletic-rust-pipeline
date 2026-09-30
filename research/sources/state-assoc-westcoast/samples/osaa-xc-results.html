@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <!-- HTML Head -->
+    <head>
+
+        <!-- Google Analytics -->
+        <!-- Google tag (gtag.js) -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-JQSLYYK5GS"></script>
+		<script>
+		    window.dataLayer = window.dataLayer || [];
+		    function gtag(){dataLayer.push(arguments);}
+		    gtag('js', new Date());
+		    gtag('config', 'G-JQSLYYK5GS');
+		</script>        
+        <!-- Page Title -->
+        <title>
+                OSAA - Activities
+        </title>
+
+        <!-- Meta Tage -->          
+                    <meta charset="utf-8" />
+            <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+            <meta name="description" content="Oregon School Activities Association">
+            <meta name="viewport" content="width=device-width">
+        
+        <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.10.3/themes/redmond/jquery-ui.css">        
+
+        <!-- Stylesheets -->
+        <link rel="stylesheet" type="text/css" href="https://www.osaa.org/css/default.css">
+        <link rel="stylesheet" type="text/css" href="https://www.osaa.org/css/fix_nav.css">
+
+        <!-- JQuery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>       
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+
+        <!-- JavaScripts -->
+                        <script src="https://www.osaa.org/scripts/twitter.js" type="text/javascript"></script>
+            <script src="https://www.osaa.org/scripts/scroller.js" type="text/javascript"></script>
+        
+
+    <style type="text/css">
+        .page_functions {
+            width: auto !important;
+        }
+
+        .results-frame {
+            border: 0;
+            width: 100%;
+            width: 980px;
+            height: 800px;
+            position: relative;
+            overflow: scroll;
+        }
+    </style>
+
+
+        <!-- JQuery Page Initialization -->
+        <script type="text/javascript">        
+
+            $(document).ready(function()
+            {
+                    
+    $('.tabs').tabs();
+    $('.back_button').button({ icons : {primary : 'ui-icon-arrowthick-1-w'}});
+    $('.switch_button').button({ icons : {primary : 'ui-icon-clipboard'}});
+    $('.program_button').button();
+    $('.live_results_button').button();
+    $('.upload_link_button').button();
+   
+
+
+        
+
+
+                $('.auto_submit_onchange').change(function(){
+                    var form = $(this).parents('form:first');
+                    form.submit();
+                });
+
+                
+                // Search OSAA website with Google
+                $('input[data-action="search"]').on('keypress', function(event)
+                {
+                    var keycode = (event.keyCode ? event.keyCode : event.which);
+                    if (keycode == '13')
+                    {
+                        searchSite();
+                    }
+                });
+                $('img[data-action="search"]').on('click', function(event)
+                {
+                    searchSite();
+                });
+                function searchSite()
+                {                    
+                    var term = $('input[data-action="search"]').val();
+                    if (term == "")
+                    {
+                        return false;
+                    }
+
+                    var root = "https://www.google.com/search";
+                    var query = "?q=site:www.osaa.org ";                    
+
+                    var url = root + query + term;
+                    
+                    console.log(url);
+
+                    window.open(url);
+                }                
+
+            });                
+
+        </script>   
+
+
+                        
+
+    </head>
+
+
+
+    <body>                                   
+
+                        
+
+        <!-- Fixed Navigation -->
+
+        <div id="navigation">                      
+    <div class="holder">
+        
+        
+
+                
+                             
+        
+         <!-- User Login -->
+        <div id="user_login">
+                            <a href="https://www.osaa.org/account/login">Login</a>
+                            
+            
+            <a href="https://www.osaa.org/help">Help</a>
+
+            
+        </div>    
+
+        <div id="menu">
+            <ul>
+                <li><a href="https://www.osaa.org"><span>Home</span></a>
+                    <ul>
+                                                    <li><a href="https://www.osaa.org/help">Help</a></li>
+                            <li><a href="https://www.osaa.org/account/login">Login</a></li>
+                                            </ul>
+                </li>
+                <li><a href="https://www.osaa.org/activities"><span>Activities</span></a>
+                <ul>
+                    <li><a href="https://www.osaa.org/activities/fall"><span>Fall</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/activities/fbl/results">Football</a></li>
+                                                    <li><a href="https://www.osaa.org/activities/gvb/results">Girls Volleyball</a></li>
+                                                <li><a href="https://www.osaa.org/activities/bsc/results">Boys Soccer</a></li>
+                        <li><a href="https://www.osaa.org/activities/gsc/results">Girls Soccer</a></li>
+                        <li><a href="https://www.osaa.org/activities/bxc/results">Boys Cross Country</a></li>
+                        <li><a href="https://www.osaa.org/activities/gxc/results">Girls Cross Country</a></li>
+                    </ul>
+                    </li>                                             
+
+                    <li><a href="https://www.osaa.org/activities/winter"><span>Winter</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/activities/bbx/results">Boys Basketball</a></li>
+                        <li><a href="https://www.osaa.org/activities/gbx/results">Girls Basketball</a></li>
+                        <li><a href="https://www.osaa.org/activities/bsw/results">Boys Swimming</a></li>
+                        <li><a href="https://www.osaa.org/activities/gsw/results">Girls Swimming</a></li>
+                                                    <li><a href="https://www.osaa.org/activities/bwr/results">Boys Wrestling</a></li>
+                            <li><a href="https://www.osaa.org/activities/gwr/results">Girls Wrestling</a></li>
+                                                <li><a href="https://www.osaa.org/activities/dnc/results">Dance/Drill</a></li>
+                        <li><a href="https://www.osaa.org/activities/che/results">Cheerleading</a></li>
+                    </ul>
+                    </li>
+
+                    <li><a href="https://www.osaa.org/activities/spring"><span>Spring</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/activities/bbl/results">Baseball</a></li>
+                        <li><a href="https://www.osaa.org/activities/sbl/results">Softball</a></li>
+                        <li><a href="https://www.osaa.org/activities/bvb/results">Boys Volleyball</a></li> 
+                        <li><a href="https://www.osaa.org/activities/btf/results">Boys Track &amp; Field</a></li>
+                        <li><a href="https://www.osaa.org/activities/gtf/results">Girls Track &amp; Field</a></li>
+                        <li><a href="https://www.osaa.org/activities/btn/results">Boys Tennis</a></li>
+                        <li><a href="https://www.osaa.org/activities/gtn/results">Girls Tennis</a></li>
+                        <li><a href="https://www.osaa.org/activities/bgf/results">Boys Golf</a></li>
+                        <li><a href="https://www.osaa.org/activities/ggf/results">Girls Golf</a></li>
+                        <li><a href="https://www.osaa.org/activities/bnd/results">Band/Orchestra</a></li>
+                        <li><a href="https://www.osaa.org/activities/cho/results">Choir</a></li>
+                        <li><a href="https://www.osaa.org/activities/sol/results">Solo Music</a></li>
+                        <li><a href="https://www.osaa.org/activities/spe/results">Speech</a></li>
+                    </ul>
+                    </li>   
+
+                    <li><a href="https://www.osaa.org/activities/emerging"><span>Emerging</span></a>
+                    <ul>                        
+                        <li><a href="https://www.osaa.org/activities/gff">Girls Flag Football</a></li>
+                    </ul>
+                    </li>   
+                    
+                </ul>
+                </li>
+                <li><a href="https://www.osaa.org/schools"><span>Schools</span></a>
+                <ul>
+                    <li><a href="https://www.osaa.org/schools/full-members">Member Schools</a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/schools/full-members">Alphabetically</a></li>
+                        <li><a href="https://www.osaa.org/schools/counties">By County</a></li>
+                        <li><a href="https://www.osaa.org/schools/regions">By Region</a></li>
+                    </ul>
+                    </li>
+                    <li><a href="https://www.osaa.org/schools/associate-members">Associate Members</a></li>
+                    <li><a href="https://www.osaa.org/schools/classifications-districts">Classifications &amp; Districts</a></li>                            
+                    <li><a href="https://www.osaa.org/schools/maps">Maps</a></li>
+                    <li><a href="https://www.osaa.org/schools/participation">Participation</a></li>
+                </ul>
+                </li>
+                <li><a href="https://www.osaa.org/governance"><span>Governance</span></a>
+                <ul>
+                    <li><a href="https://www.osaa.org/governance/handbooks">Handbooks</a></li>                            
+                    <li><a href="https://www.osaa.org/governance/forms">Forms</a></li>
+                    <li><a href="https://www.osaa.org/governance/delegate-assembly">Delegate Assembly</a></li>
+                    <li><a href="https://www.osaa.org/governance/executive-board">Executive Board</a></li>
+                    <li><a href="https://www.osaa.org/governance/committees">Committees</a></li>
+                    <li><a href="https://www.osaa.org/governance/task-forces">Task Forces</a></li>
+                </ul>
+                </li>
+                <li>
+                    <a href="https://www.osaa.org/health-safety">Health &amp; Safety</a>
+                    <ul>
+                                                
+                        <li><a href="https://www.osaa.org/health-safety/pre-event-safety">Pre-Event Safety Timeout</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/air-quality">Air Quality</a></li>
+                        <li><a href="https://www.osaa.org/heat-index">Heat Index</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/eap">Emergency Action Plan</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/concussion">Concussion</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/steroid">Steroids</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/heat">Heat &amp; Hydration</a></li>                                
+                        <li><a href="https://www.osaa.org/health-safety/nutrition">Sport Nutrition</a></li>                                
+                        <li><a href="https://www.osaa.org/health-safety/wellness">Student Wellness</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/lightning">Lightning</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/resources">Resources</a></li>
+                    </ul>
+                </li>                
+                <li>
+                    <a href="https://www.osaa.org/equity">Support &amp; Equity</a>
+                    <ul>                                
+                        <li><a href="https://www.osaa.org/equity/star-resources">S.T.A.R. &amp; Resources</a></li>                        
+                        <li><a href="https://www.osaa.org/equity/training-resources">Training &amp; Resources</a></li>                        
+                        <li><a href="https://www.osaa.org/equity/anti-discrimination">Anti-Discrimination</a></li>
+                        <li><a href="https://www.osaa.org/governance/committees/equity-committee">Advisory Committee</a></li>
+                        <li><a href="https://www.osaa.org/equity/title-IX">Title IX</a></li>
+                                                <li><a href="https://www.osaa.org/equity/forms">Forms &amp; Policies</a></li>                        
+                        <li><a href="https://www.osaa.org/equity/event-toolkits">Event Toolkits</a></li>
+                        <li><a href="https://www.osaa.org/equity/sportsmanship">Sportsmanship</a></li>
+                        <li><a href="https://www.osaa.org/equity/star-application">S.T.A.R. Application</a></li>
+                        <li><a href="https://www.osaa.org/forms/complaint">Complaint Form</a></li>
+                    </ul>
+                </li>                
+                <li><a href="https://www.osaa.org/calendar">Calendar</a></li>                        
+                <li>
+                    <a href="https://www.osaa.org/awards">Awards</a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/forms/all-team/state/results">OSAA All-State</a></li>
+                        <li><a href="https://www.osaa.org/awards">Academic All-State</a></li>
+                        <li><a href="https://www.osaa.org/awards/athlete-of-the-week">Athlete of the Week</a></li>
+                        <li><a href="https://www.osaa.org/awards/team-of-the-month">Team of the Month</a></li>
+                        <li><a href="https://www.osaa.org/awards/player-of-the-game">Player of the Game</a></li>
+                        <li><a href="https://www.osaa.org/awards/most-valuable-teammate">Most Valuable Teammate</a></li>
+                        <li><a href="https://www.osaa.org/awards/osaa-cup">OSAA Cup</a></li>                                
+                        <li><a href="https://www.osaa.org/awards/scholar">Scholar</a></li>
+                        <li><a href="https://www.osaa.org/awards/sportsmanship">Sportsmanship</a></li>
+                                                <li><a href="https://www.osaa.org/awards/salute-to-coaches">Salute to Coaches</a></li>                        
+                        <li><a href="https://www.osaa.org/awards/distinguished-service">Distinguished Service</a></li>
+                        <li><a href="https://www.osaa.org/awards/nfhs-awards">NFHS Awards</a></li>
+                        <li><a href="https://www.osaa.org/certificates">OSAA Certificates</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="https://www.osaa.org/shop"><span>Shop</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/shop/tickets">Tickets</a></li>
+                        <li><a href="https://osaa-corner-store.myshopify.com/collections/" target="_blank">Corner Store</a></li>
+                        <li><a href="https://www.osaa.org/shop/merchandise">Merchandise</a></li>
+                        <li><a href="https://www.osaa.org/shop/photos">Photos</a></li>
+                        <li><a href="https://www.osaa.org/shop/videos">Videos</a></li>
+                        <li><a href="https://www.osaa.org/shop/trophies">Replica Trophies</a></li>
+						<li><a href="https://www.osaa.org/shop/jackets">Letterman Jackets</a></li>						
+                        <li><a href="https://www.osaa.org/programs">Programs</a></li>                                
+                    </ul>
+                </li>
+                <li><a href="https://www.osaa.org/for"><span>OSAA for...</span></a>
+                <ul>
+                    <li>
+                        <a href="https://www.osaa.org/administrators">Administrators</a>
+                        <ul style="width: auto; !important;">
+                            <li><a href="https://www.osaa.org/administrators">General Information</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/administrators/requirements">Training / Certifications</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/administrators/policies">Policies / Forms / Links</a></li>
+                            <li><a href="https://www.osaa.org/administrators/eligibility">Eligibility</a></li>
+                            <li><a href="https://www.osaa.org/administrators/workshops">Workshops</a></li>
+                            <li><a href="https://www.osaa.org/administrators/webinars">Webinars</a></li>
+                            <li><a href="https://www.osaa.org/equity/sportsmanship">Sportsmanship</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="https://www.osaa.org/coaches">Coaches</a>
+                        <ul style="width: auto; !important;">
+                            <li><a href="https://www.osaa.org/coaches">General Information</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/coaches/requirements">Training / Certifications</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/coaches/policies">Policies / Forms / Links</a></li>
+                            <li><a href="https://www.osaa.org/coaches/eligibility">Eligibility</a></li>
+                            <li><a href="https://www.osaa.org/coaches/workshops">Workshops</a></li>
+                            <li><a href="https://www.osaa.org/coaches/webinars">Webinars</a></li>
+                            <li><a href="https://www.osaa.org/equity/sportsmanship">Sportsmanship</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="https://www.osaa.org/parents-students">Parents/Students</a></li>
+                    <li><a href="https://www.osaa.org/officials">Officials</a></li>
+                    <li><a href="https://www.osaa.org/media">Media</a></li>
+                </ul>
+                </li>
+            </ul>
+        </div>                            
+        
+                   
+    </div>
+</div>
+<!-- End Header Navigation Menu -->
+                        
+
+        <!-- Content -->
+
+		<div id="content">
+
+
+
+			<!-- Holder -->
+
+			<div class="holder">			
+
+			
+
+			    <!-- Page Masthead -->
+
+                <div id="masthead" style="position: relative;">
+
+
+        <div id="masthead" style="position: relative;">
+        <!-- Title -->    
+        <div class="title">
+            Oregon School Activities Association
+        </div>    
+    
+                
+        <div style="position: absolute; left: 775px;">
+
+            <div style="float: left; margin-top: 26px;">
+                <a href="https://www.onpointcu.com/join-a-local-credit-union-onpoint-cu/?utm_source=osaa&utm_medium=display&utm_campaign=onpoint+partnerships&tactic_id=Brand_GP_04-25_OSAA_Web_Nav" target="_blank"><img src="https://www.osaa.org/images/ads/onpoint.png" alt="OnPoint Community Credit Union" title="OnPoint Community Credit Union" /></a>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div style="position: absolute; right: 0px; width: 234px; top: 16px;">
+        <!-- Half Banner Ad (234x60) -->
+        <!-- Half Banner Ad 234x60 -->
+<div id="half_banner_ad" class="ad">
+	
+	
+		<!-- WMT AdServer Asynchronous JS Tag - Generated with Revive Adserver v5.5.2 -->
+		<ins data-revive-zoneid="373" data-revive-id="56fdbe9a86d7e93f02fe33751ab5524d"></ins>
+		<script async src="//ads.wmt.digital/delivery/asyncjs.php"></script>
+
+	</div>    </div>    
+
+        
+</div>                    
+<!-- End Page Masthead -->                
+
+                
+
+                <!-- Live Alert Container (optional) -->                                
+
+                
+                
+
+                <!-- User Tool Box (optional) -->
+
+                
+
+
+                <!-- Large Leaderboard Ad (970x90) -->                
+
+                <!-- Leader Board Ad 728x90 -->
+<div id="leaderboard_ad" class="ad">
+
+    
+        <!-- WMT AdServer Asynchronous JS Tag - Generated with Revive Adserver v5.5.2 -->
+        <ins data-revive-zoneid="375" data-revive-id="56fdbe9a86d7e93f02fe33751ab5524d"></ins>
+        <script async src="//ads.wmt.digital/delivery/asyncjs.php"></script>
+
+        
+</div>                  
+
+<!-- OSAA Website Plug (Left) -->
+<div id="next_to_leaderboard">
+        
+    <a href="https://www.osaa.org/officials/registration" >
+        <img src="https://www.osaa.org/images/become_an_official_215x90px.jpg" alt="Become as Official" title="Become as Official" width="215" height="90" style="width: 215px; height: 90px;">
+    </a>    
+    
+</div>
+
+
+                <!-- Other OSAA Website Plugs -->                
+
+                <!-- OSAA Website Plug (Right) -->
+<div id="osaa_websites">
+	
+	    
+    <a href="https://www.osaa.org/heat-index" >
+        <img src="https://www.osaa.org/images/heat_index_2_220x90px.png" alt="OSAA Heat Index" title="OSAA Heat Index" width="215" height="90" style="width: 215px; height: 90px;">
+    </a> 
+
+	
+</div>                               
+
+                
+
+                <!-- Wide Scraper Ad (160x600) -->
+
+                <!-- Wide Scraper Ad 160x600 -->
+<div id="wide_scraper_ad" class="ad">	
+
+    
+        <!-- WMT AdServer Asynchronous JS Tag - Generated with Revive Adserver v5.5.2 -->
+        <ins data-revive-zoneid="372" data-revive-id="56fdbe9a86d7e93f02fe33751ab5524d"></ins>
+        <script async src="//ads.wmt.digital/delivery/asyncjs.php"></script>
+
+    
+</div>                                                            
+
+                                
+
+                <!-- Main Page Content -->
+
+                <div id="full_page_content">                    
+
+                    
+
+                    <!-- Special Page Functions -->
+
+                    <div class="page_functions">
+
+                        
+    <a class="live_results_button" href="https://live.athletictiming.net/meets/58997" style="font-size:9pt; margin-right: 8px;" target="_blank">Live Results</a>
+    <a class="program_button" href="https://www.osaa.org/programs" style="font-size:9pt; margin-right: 8px;">Meet Program</a>
+    <a class="switch_button" href="https://www.osaa.org/activities/bxc-gxc/entries" style="font-size:9pt; margin-right: 8px;">Entries</a>
+    <a class="back_button" href="https://www.osaa.org/activities/bxc" style="font-size:9pt;">Back</a>
+    
+
+                    </div>
+
+
+
+                    <!-- Main Content Sub-Header -->
+
+                    <h1 class="header">    
+    2026 OSAA Cross Country Results
+</h1>                   
+
+                                        
+
+                    <!-- Sub-Page Main Content -->
+
+                    <div class="main_content">
+
+                    
+
+                            	
+    
+    
+        <div class="tabs awards" style="min-height: 650px;">
+        
+                <ul style="padding-left:5px;">            
+                            <li><a href="#tabs-8">6A Boys</a></li>
+                            <li><a href="#tabs-9">6A Girls</a></li>
+                            <li><a href="#tabs-6">5A Boys</a></li>
+                            <li><a href="#tabs-7">5A Girls</a></li>
+                            <li><a href="#tabs-4">4A Boys</a></li>
+                            <li><a href="#tabs-5">4A Girls</a></li>
+                            <li><a href="#tabs-2">3A Boys</a></li>
+                            <li><a href="#tabs-3">3A Girls</a></li>
+                            <li><a href="#tabs-0">2A/1A Boys</a></li>
+                            <li><a href="#tabs-1">2A/1A Girls</a></li>
+                        
+        </ul>
+        
+                
+            
+            <div id="tabs-8">
+                				
+                                <h1 style="line-height: 1.25em;">2026 OSAA / OnPoint Community Credit Union Cross Country State Championships Presented by Nike</h1>
+                <h2>
+                    6A Boys Results
+
+                    
+                </h2>            
+            
+                                <div style="font-size: 10pt;">
+
+                                                               
+
+                        Results will be posted following the completion of the race.
+
+                        
+                    
+                   
+                </div>
+
+            </div>
+
+        
+            
+            <div id="tabs-9">
+                				
+                                <h1 style="line-height: 1.25em;">2026 OSAA / OnPoint Community Credit Union Cross Country State Championships Presented by Nike</h1>
+                <h2>
+                    6A Girls Results
+
+                    
+                </h2>            
+            
+                                <div style="font-size: 10pt;">
+
+                                                               
+
+                        Results will be posted following the completion of the race.
+
+                        
+                    
+                   
+                </div>
+
+            </div>
+
+        
+            
+            <div id="tabs-6">
+                				
+                                <h1 style="line-height: 1.25em;">2026 OSAA / OnPoint Community Credit Union Cross Country State Championships Presented by Nike</h1>
+                <h2>
+                    5A Boys Results
+
+                    
+                </h2>            
+            
+                                <div style="font-size: 10pt;">
+
+                                                               
+
+                        Results will be posted following the completion of the race.
+
+                        
+                    
+                   
+                </div>
+
+            </div>
+
+        
+            
+            <div id="tabs-7">
+                				
+                                <h1 style="line-height: 1.25em;">2026 OSAA / OnPoint Community Credit Union Cross Country State Championships Presented by Nike</h1>
+                <h2>
+                    5A Girls Results
+
+                    
+                </h2>            
+            
+                                <div style="font-size: 10pt;">
+
+                                                               
+
+                        Results will be posted following the completion of the race.
+
+                        
+                    
+                   
+                </div>
+
+            </div>
+
+        
+            
+            <div id="tabs-4">
+                				
+                                <h1 style="line-height: 1.25em;">2026 OSAA / OnPoint Community Credit Union Cross Country State Championships Presented by Nike</h1>
+                <h2>
+                    4A Boys Results
+
+                    
+                </h2>            
+            
+                                <div style="font-size: 10pt;">
+
+                                                               
+
+                        Results will be posted following the completion of the race.
+
+                        
+                    
+                   
+                </div>
+
+            </div>
+
+        
+            
+            <div id="tabs-5">
+                				
+                                <h1 style="line-height: 1.25em;">2026 OSAA / OnPoint Community Credit Union Cross Country State Championships Presented by Nike</h1>
+                <h2>
+                    4A Girls Results
+
+                    
+                </h2>            
+            
+                                <div style="font-size: 10pt;">
+
+                                                               
+
+                        Results will be posted following the completion of the race.
+
+                        
+                    
+                   
+                </div>
+
+            </div>
+
+        
+            
+            <div id="tabs-2">
+                				
+                                <h1 style="line-height: 1.25em;">2026 OSAA / OnPoint Community Credit Union Cross Country State Championships Presented by Nike</h1>
+                <h2>
+                    3A Boys Results
+
+                    
+                </h2>            
+            
+                                <div style="font-size: 10pt;">
+
+                                                               
+
+                        Results will be posted following the completion of the race.
+
+                        
+                    
+                   
+                </div>
+
+            </div>
+
+        
+            
+            <div id="tabs-3">
+                				
+                                <h1 style="line-height: 1.25em;">2026 OSAA / OnPoint Community Credit Union Cross Country State Championships Presented by Nike</h1>
+                <h2>
+                    3A Girls Results
+
+                    
+                </h2>            
+            
+                                <div style="font-size: 10pt;">
+
+                                                               
+
+                        Results will be posted following the completion of the race.
+
+                        
+                    
+                   
+                </div>
+
+            </div>
+
+        
+            
+            <div id="tabs-0">
+                				
+                                <h1 style="line-height: 1.25em;">2026 OSAA / OnPoint Community Credit Union Cross Country State Championships Presented by Nike</h1>
+                <h2>
+                    2A/1A Boys Results
+
+                    
+                </h2>            
+            
+                                <div style="font-size: 10pt;">
+
+                                                               
+
+                        Results will be posted following the completion of the race.
+
+                        
+                    
+                   
+                </div>
+
+            </div>
+
+        
+            
+            <div id="tabs-1">
+                				
+                                <h1 style="line-height: 1.25em;">2026 OSAA / OnPoint Community Credit Union Cross Country State Championships Presented by Nike</h1>
+                <h2>
+                    2A/1A Girls Results
+
+                    
+                </h2>            
+            
+                                <div style="font-size: 10pt;">
+
+                                                               
+
+                        Results will be posted following the completion of the race.
+
+                        
+                    
+                   
+                </div>
+
+            </div>
+
+        
+    </div>          
+    
+	
+                    
+
+
+
+                    </div>
+
+                    <!-- End Main Content -->
+
+                        
+
+                </div>              
+
+                
+
+                <!-- Championships Logo -->
+
+                <!-- Championships Logo -->
+<div id="championships">
+    <img src="https://www.osaa.org/images/osaa_championships_2018.png" alt="" title="" width="152" height="110" style="position:relative; top:0px; left:2px;" />
+	        
+</div>
+                        
+
+            </div>
+
+            <!-- End Holder -->
+
+    
+
+        </div>
+
+        <!-- End Content -->
+
+        
+
+        <!-- Page Footer -->
+
+        <div id="footer">        
+    <div class="holder">
+
+        <!-- Copyright and Address -->                
+        <div class="copyright">
+           &copy; 2026 Oregon School Activities Association<br />
+           25200 SW Parkway Avenue Suite 1<br />
+           Wilsonville, OR 97070<br /><br />
+           SERVER-2020.2
+        </div>
+
+        <!-- Additional Page Links -->                
+        <div class="extra_links">
+            <div class="group">
+                <a href="https://www.osaa.org/about">About the OSAA</a><br />
+                <a href="https://www.osaa.org/contact">Contact Information</a><br />
+                <a href="http://www.osaafoundation.org" target="_blank">OSAA Foundation</a><br />                
+                <a href="https://www.osaa.org/privacy">Privacy Policy</a><br />
+                <a href="https://www.osaa.org/partners">Partners</a>                               
+            </div>
+            
+            <div class="group">
+                <a href="https://www.osaa.org/weekly ">OSAA Weekly</a><br />                       
+                <a href="https://www.osaa.org/classifieds">Classifieds</a><br />
+                <a href="https://www.osaa.org/open-dates">Open Dates</a><br />
+                                <a href="https://www.osaa.org/media">Broadcast Schedule</a><br />
+                <a href="https://www.osaa.org/archives">Records/Archives</a>
+            </div>                                
+            
+            <div class="group">                
+                <a href="https://www.osaa.org/today">OSAA<i>today</i></a><br />                                                
+                <a href="https://www.osaa.org/championships">Championship Central</a><br />
+                <a href="https://www.osaa.org/know-before-you-go">Know Before You Go</a><br />
+                <a href="https://www.osaa.org/radio-network">OSAA Radio Network</a><br />
+                <a href="https://www.osaa.org/links">Links &amp; Media</a><br />                
+                
+            </div>             
+
+                        
+
+            <div class="group search">
+
+                Search the OSAA Website:<br />                    
+                <input type="text" name="query" data-action="search" style="margin-bottom: 11px;" />
+                <img src="https://www.osaa.org/images/icons/magnifier_16px.png" alt="" title="" data-action="search" />
+                                
+
+                <a href="https://www.osaa.org/mobile" style="font-size: 10pt;">OSAA Mobile</a><br />
+                <a href="https://www.osaa.org/app" style="font-size: 10pt;">OSAA <i>Live</i> App</a><br />
+                
+
+
+            </div> 
+        </div>                
+        
+        <!-- Social Media Links -->
+        <div class="social_media">
+                    </div>
+        
+        <!-- Brief Contact Information -->
+        <div class="contact">
+            <a href="m&#97;ilt&#111;&#x3a;&#105;%6efo&#x40;%6fs%6&#49;&#37;61&#46;%6frg" rel="nofollow">&#x69;nfo&#64;osaa&#x2e;org</a><br />
+            (503) 682-6722<br />                    
+
+            <!-- Year Select -->
+            <form method="GET" action="https://www.osaa.org/activities/bxc-gxc/results" accept-charset="UTF-8" id="year_select">                
+                <select class="auto_submit_onchange" name="year"><option value="2013">13-14</option><option value="2014">14-15</option><option value="2015">15-16</option><option value="2016">16-17</option><option value="2017">17-18</option><option value="2018">18-19</option><option value="2019">19-20</option><option value="2020">20-21</option><option value="2021">21-22</option><option value="2022">22-23</option><option value="2023">23-24</option><option value="2024">24-25</option><option value="2025">25-26</option><option value="2026" selected="selected">26-27</option></select>                
+            </form>            Year
+        </div>                              
+        
+        <!-- Sponsors -->                                
+        <div class="sponsors" style="display: flex; justify-content: space-between;">        
+            
+                        <a href="https://www.onpointcu.com/join-a-local-credit-union-onpoint-cu/?utm_source=osaa&utm_medium=display&utm_campaign=onpoint+partnerships&tactic_id=Brand_GP_04-25_OSAA_Web_Footer" target="_blank" data-before="Yes"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 0; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/OnPoint_3_111x50.png'); background-repeat:no-repeat;">Sponsor - OnPoint Community Credit Union</div></a>
+
+                                            
+            <a href="http://www.lesschwab.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/LesSchwab_111x50px.png'); background-repeat:no-repeat;">Sponsor - LesSchwab Tires</div></a>
+
+            
+                    
+            <a href="http://www.pacificoffice.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/POA_111x50px.png'); background-repeat:no-repeat;">Sponsor - Pacific Office Automation</div></a>
+
+			
+            
+            
+            
+            
+            <a href="http://www.wilson.com" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/Wilson_111x50px.png'); background-repeat:no-repeat;">Sponsor - Wilson</div></a>
+            
+            <a href="http://www.nike.com" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 0 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/Nike_111x50px.png'); background-repeat:no-repeat;">Sponsor - Nike</div></a>
+
+			<a href="https://www.toyota.com/pacificnorthwest/deals-incentives/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/toyota_111x50px.png'); background-repeat:no-repeat;">Sponsor - Toyota</div></a>
+
+						
+			
+			<a href="https://www.osaastore.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/RTA 111x50 Logo for Corp Partner pg.png'); background-repeat:no-repeat;">Sponsor - RushTeamApparel / OSAA Store</div></a>
+
+						
+			
+            
+
+			
+            <a href="https://www.oregon.gov/odot/pages/index.aspx" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/ODOT_AD_2_111x50px.png'); background-repeat:no-repeat;">Sponsor - ODOT</div></a>
+        
+
+            <a href="https://dairywest.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/DairyWest_111x50.png'); background-repeat:no-repeat;">Sponsor - DairyWest</div></a>
+
+
+        </div> 
+   
+    
+    </div>
+
+
+</div>
+<!-- End Footer -->                     
+
+        
+
+    </body>    
+
+</html>

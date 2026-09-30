@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::sync::Notify;
+use tokio::sync::{watch, Notify};
 
 pub(super) const SAMPLE_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -22,10 +22,14 @@ pub(super) async fn watch_memory_with(
     budget_bytes: u64,
     interval: Duration,
     over_budget: Arc<Notify>,
+    mut stopping: watch::Receiver<bool>,
 ) {
     let mut ticker = tokio::time::interval(interval);
     loop {
-        ticker.tick().await;
+        tokio::select! {
+            _ = stopping.wait_for(|stopping| *stopping) => return,
+            _ = ticker.tick() => {}
+        }
         let Some(rss) = reader() else {
             tracing::warn!("no resident-set reading on this platform; the memory guard is off");
             return;
@@ -46,8 +50,19 @@ pub(super) async fn watch_memory_with(
     budget_gib = budget_bytes / (1024 * 1024 * 1024),
     interval = ?super::guard::SAMPLE_INTERVAL
 ))]
-pub(super) async fn watch_memory(budget_bytes: u64, over_budget: Arc<Notify>) {
-    watch_memory_with(resident_bytes, budget_bytes, SAMPLE_INTERVAL, over_budget).await
+pub(super) async fn watch_memory(
+    budget_bytes: u64,
+    over_budget: Arc<Notify>,
+    stopping: watch::Receiver<bool>,
+) {
+    watch_memory_with(
+        resident_bytes,
+        budget_bytes,
+        SAMPLE_INTERVAL,
+        over_budget,
+        stopping,
+    )
+    .await
 }
 
 #[cfg(test)]
@@ -74,11 +89,13 @@ mod tests {
     async fn a_reading_over_budget_trips_the_watcher() {
         let over_budget = Arc::new(Notify::new());
         let reader = || Some(64 * 1024 * 1024 * 1024_u64);
+        let (_stop, stopping) = watch::channel(false);
         let watcher = tokio::spawn(watch_memory_with(
             reader,
             48 * 1024 * 1024 * 1024,
             Duration::from_millis(1),
             Arc::clone(&over_budget),
+            stopping,
         ));
         tokio::time::timeout(Duration::from_secs(5), over_budget.notified())
             .await
@@ -91,11 +108,13 @@ mod tests {
         let over_budget = Arc::new(Notify::new());
         let reader = || Some(1024_u64);
         let budget = 48 * 1024 * 1024 * 1024;
+        let (_stop, stopping) = watch::channel(false);
         let watcher = tokio::spawn(watch_memory_with(
             reader,
             budget,
             Duration::from_millis(1),
             Arc::clone(&over_budget),
+            stopping,
         ));
         assert!(
             tokio::time::timeout(Duration::from_secs(30), over_budget.notified())

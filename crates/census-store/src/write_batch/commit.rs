@@ -1,6 +1,6 @@
 use fjall::{OwnedWriteBatch, PersistMode};
 
-use super::super::batch::{drop_unnamed, stage_derived_encoded};
+use super::super::batch::stage_derived_encoded;
 use super::super::keys::observation_key;
 use super::super::receipt::{self, Application, Decision};
 use super::super::sequences::Reserved;
@@ -140,9 +140,6 @@ fn write_replacements(
             replacement.table,
             replacement.records,
         )?;
-        if replacement.table.storage_mode() == StorageMode::DerivedSnapshot {
-            drop_unnamed(&store.entities, batch, replacement.table, &staged.named)?;
-        }
         let held = store.count(replacement.table)?;
         let rows = match replacement.table.storage_mode() {
             StorageMode::DerivedSnapshot => staged.named_count()?,

@@ -53,6 +53,7 @@ use census_store::{Store, Table};
 
 mod core_scope;
 mod coverage;
+mod derivation;
 mod notes;
 mod projection;
 mod rows;
@@ -63,13 +64,12 @@ pub use coverage::{
     coverage_report, CoverageGap, CoverageReport, CoverageTotals, GapClass, JurisdictionCoverage,
     UNKNOWN_JURISDICTION,
 };
-pub(crate) use coverage::{jurisdiction_of, school_state_index};
+pub use derivation::Derivation;
 pub use projection::build_census;
-pub(crate) use projection::{exclude_out_of_scope, in_run_scope};
 pub use writer::write_census;
 
 pub use census_domain::core_scope::{is_core_source, NON_CORE_SOURCE_IDS};
-pub use core_scope::{retain_core, retain_core_row, CoreScoped, Scope};
+pub use core_scope::{is_core_evidenced, retain_core, retain_core_row, CoreScoped, Scope};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RowLabel {

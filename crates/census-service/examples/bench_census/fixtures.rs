@@ -53,6 +53,7 @@ pub(super) fn meet_of(state: UsJurisdiction, index: usize) -> CanonicalMeet {
         CompetitionLevel::Invitational,
     );
     meet.evidence.push(evidence());
+    meet.sports.push(Sport::OutdoorTrack);
     meet.source_identities.push(SourceIdentity::new(
         SourceNamespace::TimerMeet {
             provider: "synthetic_timer".to_string(),

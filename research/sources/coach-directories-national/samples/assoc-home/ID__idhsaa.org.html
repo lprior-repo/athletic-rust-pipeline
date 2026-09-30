@@ -1,0 +1,1402 @@
+﻿<!DOCTYPE html>
+<html lang='en'>
+	<head>
+		<meta charset='utf-8'>
+		<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />
+		<meta http-equiv='X-UA-Compatible' content='IE=edge' />
+		<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
+		<meta name="HandheldFriendly" content="true" />
+		<meta name='description' content="The Idaho High School Activities Association" />
+
+                <link rel="preconnect" href="https://challenges.cloudflare.com">
+
+		
+		<!--	<link rel="stylesheet" type="text/css" href="/res/pkg/highslide/highslide.css" media="screen"> -->
+
+		
+				<link rel="stylesheet" type="text/css" href="/res/pkg/bootstrap/css/bootstrap.min.css" />
+		<link rel="stylesheet" type="text/css" href="/res/pkg/bootstrap/css/bootstrap-tempusdominus.css" />
+		<link rel="stylesheet" type="text/css" href="/res/pkg/bootstrap/css/bootstrap-colorpicker.min.css" />
+		<link rel="stylesheet" type="text/css" href="/res/pkg/bootstrap/css/bootstrap-colorpicker.custom.css" />
+
+				<link rel="stylesheet" type="text/css" href="/admin/box/box.css" />
+		<link rel="stylesheet" type="text/css" href="/admin/assets/minimalist-basic/content.css" />
+
+		
+		<link rel='stylesheet' type='text/css' href='/res/css/main.php?em=&me=1' />
+		<link rel='stylesheet' type='text/css' href='/res/pkg/fontawesome/css/all.css'>
+		<link rel='stylesheet' type='text/css' href='/res/css/awesome-bootstrap-checkbox.css' />
+		<link rel='stylesheet' type='text/css' href='/res/css/animate.min.css' />
+
+		<title>Welcome | IHSAA - Idaho High School Activities Association</title>
+
+		<script language='JavaScript' type='text/javascript' src='/res/pkg/jquery/jquery-3.4.1.min.js'></script>
+							<!--		<script language="JavaScript" type="text/javascript" src="/res/pkg/paver/jquery.ba-throttle-debounce.min.js"></script> -->
+<!--		<script language="JavaScript" type="text/javascript" src="/res/pkg/paver/jquery.paver.min.js"></script> -->
+<!--		<link rel='stylesheet' type='text/css' href='/res/pkg/paver/paver.min.css' /> -->
+				<script language='JavaScript' type='text/javascript' src="/res/pkg/tablesorter/js/jquery.tablesorter.min.js"></script>
+<!--	<script language='JavaScript' type='text/javascript' src="/res/pkg/waypoints/jquery.waypoints.min.js"></script> -->
+
+		<script language='JavaScript' type='text/javascript' src='/res/pkg/bootstrap/js/bootstrap.min.js'></script>
+		<script language="JavaScript" type="text/javascript" src="/res/pkg/bootstrap/js/bootstrap-checkbox.min.js"></script>
+		<script language="JavaScript" type="text/javascript" src="/res/pkg/bootstrap/js/bootstrap-colorpicker.js"></script>
+		<script language="JavaScript" type="text/javascript" src="/res/pkg/momentjs/moment.min.js"></script> <!-- must be loaded before tempusdominus -->
+		<script language="JavaScript" type="text/javascript" src="/res/pkg/bootstrap/js/bootstrap-tempusdominus.min.js"></script>
+
+		<script language="JavaScript" type="text/javascript">window.FontAwesomeConfig = { autoReplaceSvg: false }</script>
+		<script language="JavaScript" type="text/javascript" src="/res/pkg/fontawesome/js/all.js" defer></script>
+
+		<script language='JavaScript' type='text/javascript' src="/res/pkg/lazysizes/lazysizes.min.js" async=""></script>
+
+		
+		<script language='JavaScript' type='text/javascript' src='/res/js/getbyid.js'></script>
+		<script language='JavaScript' type='text/javascript' src='/res/js/scrollto.js'></script>
+		<script language='JavaScript' type='text/javascript' src='/res/js/window_open.js'></script>
+		<script language='JavaScript' type='text/javascript' src='/res/js/new_window.js'></script>
+		<script language='JavaScript' type='text/javascript' src='/res/js/filterlsn.js'></script>
+<!--	<script language='JavaScript' type="text/javascript" src="https://maps.googleapis.com/maps/api/js"></script> -->
+
+		<!--
+		<script language="JavaScript" type="text/javascript" src="/res/pkg/highslide/highslide.js"></script>
+		<script language="JavaScript" type="text/javascript">
+			//<![CDATA[
+			hs.registerOverlay({
+				html: '<div class="closebutton" onclick="return hs.close(this)" title="Close"></div>',
+				position: 'top right',
+				fade: 2 // fading the semi-transparent overlay looks bad in IE
+			});
+			hs.graphicsDir = '/res/pkg/highslide/images/';
+			hs.wrapperClassName = 'borderless';
+			//]]>
+		</script>
+-->
+
+		
+		<script language="JavaScript" type="text/javascript">
+
+/*** begin document ready *******************************************************************************************/
+
+			$(document).ready(function() {
+
+				(function($) {
+	$.fn.hideUp = function() {
+		this.animate({opacity: 'hide', height: 'hide'}, 400);
+		return this;
+	};
+$	.fn.showDown = function() {
+		this.animate({opacity: 'show', height: 'show'}, 400);
+		return this;
+	};
+}(jQuery));
+
+				// hide message bar on hover
+				$("#message_text").on('mouseover',function(){ $(this).hide(); $("#message_container").hide(); });
+
+				
+				// apply bootstrap tempusdominus (calendar/datetime picker) plugin
+				$(function() {
+					//set defaults
+						$.fn.datetimepicker.Constructor.Default = $.extend({}, $.fn.datetimepicker.Constructor.Default, {
+							buttons: {
+								showToday: true,
+								showClear: true,
+								showClose: true,
+							},
+							icons: {
+								time: 'fas fa-clock',
+								date: 'fas fa-calendar-alt',
+								up: 'fas fa-arrow-up',
+								down: 'fas fa-arrow-down',
+								previous: 'fas fa-chevron-left',
+								next: 'fas fa-chevron-right',
+								today: 'fas fa-calendar-check',
+								clear: 'fas fa-trash',
+								close: 'fas fa-times',
+							}
+						});
+
+					// define formatting of individual classes
+						$('.datepicker').datetimepicker({ 			format: 'MM-DD-YYYY', showTodayButton: true, showClear: true, showClose: true, });
+						$('.timepicker').datetimepicker({ 			format: 'h:mm A', showTodayButton: false, showClear: true, showClose: true, });
+						$('.datetimepicker').datetimepicker({ 		format: 'MM-DD-YYYY h:mm A', showTodayButton: true, showClear: true, showClose: true, });
+						$('.datetimesecpicker').datetimepicker({ 	format: 'MM-DD-YYYY HH:mm:ss', showTodayButton: true, showClear: true, showClose: true, });
+				});
+
+				// apply bootstrap-checkbox plugin
+				$('input:checkbox.slider').checkboxpicker();
+
+				// apply bootstrap-colorpicker plugin
+				$(function(){ colorpicker(); });
+
+				// apply ckeditor rich text editor for blog post editor
+				
+				// link table rows (eg. "<table><tr class='table_row_link' data-href='url.php' data-target='new'><td>linked</td><td class='void_table_row_link'>not linked</td></tr></table>")
+				$('tr.table_row_link').each(function(i,e) {
+					$(e).children('td:not(.void_table_row_link)').on('click',function(){
+						var href = $(this).closest('tr').data('href');
+						var target = $(this).closest('tr').data('target');
+						if (href) {
+							if ($('#search').val() !== undefined && $('#search').val() != '') {
+								href += '&search='+$('#search').val();
+							}
+							if (target == 'new') {
+								window.open(href);
+							}
+							else {
+								window.location = href;
+							}
+						}
+					});
+				});
+
+				// enables table heading sorter jquery plugin
+				$(function(){
+					$('table.tablesorter').tablesorter();
+				});
+
+									// load youtube iframe api, if background video present
+					if ($('#youtube-background-player').length) {
+						$('#youtube-background-thumbnail').hide();
+						var tag = document.createElement('script');
+						tag.src = "https://www.youtube.com/iframe_api";
+						var firstScriptTag = document.getElementsByTagName('script')[0];
+						firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+						// automatically calls the onYouTubeIframeAPIReady() function below when ready
+					}
+				
+				// format form phone numbers on field change
+				$('.phone').on('input', function() {
+					var number = $(this).val().replace(/[^\d]/g, '');
+					number = number.replace(/(\d{3})/, "$1");
+					number = number.replace(/(\d{3})(\d{1,3})/, "$1-$2");
+					number = number.replace(/(\d{3})\-(\d{3})(\d{1,4}).*/, "$1-$2-$3");
+					$(this).val(number);
+				});
+
+				// format form postal code on field change
+				$('.postal_code').on('input', function() {
+					var number = $(this).val().replace(/[^\d]/g, '');
+					number = number.replace(/(\d{5})/, "$1");
+					number = number.replace(/(\d{5})(\d{1,4}).*/, "$1-$2");
+					$(this).val(number);
+				});
+
+				// number only
+				$('.number').on('input', function() {
+					var number = $(this).val().replace(/[^\d]/g, '');
+					$(this).val(number);
+				});
+
+				// decimal only
+				$('.decimal').on('input', function() {
+					var decimal = $(this).val().replace(/[^0-9.]/g, '');
+					$(this).val(decimal);
+				});
+
+				/*
+					// jquery paver panorama plugin
+					$(function() {
+						$('div.panorama').paver({
+							tiltSensitivity: 0.5,
+							tiltThresholdPortrait: 24,
+							tiltThresholdLandscape: 24
+						});
+					});
+*/
+				
+			});
+
+/*** end document ready **************************************************************************************/
+
+							// mutes background youtube video (if present) when called by the iframe api
+				var player;
+				function onYouTubeIframeAPIReady() {
+					player = new YT.Player('youtube-background-player', {
+						events: { 'onReady': onPlayerReady }
+					});
+				}
+				function onPlayerReady(event) {
+					event.target.mute();
+event.target.pauseVideo();
+event.target.setPlaybackQuality('hd720');
+event.target.playVideo();
+				}
+			
+			// define function to initialize color picker (done above and manually elsewhere)
+			function colorpicker(initial_color) {
+				$('.colorpicker').colorpicker({
+					align: 'left',
+					fallbackColor: '',
+					customClass: 'colorpicker-2x',
+					sliders: {
+						saturation: {
+							maxLeft: 200,
+							maxTop: 200
+						},
+						hue: {
+							maxTop: 200
+						},
+						alpha: {
+							maxTop: 200
+						}
+					}
+				});
+			}
+
+			// youtube (light) embeds (source: http://labnol.org/?p=27941)
+			document.addEventListener("DOMContentLoaded",
+				function() {
+					var div, n, v = document.getElementsByClassName("youtube-player");
+					for (n = 0; n < v.length; n++) {
+						div = document.createElement("div");
+						div.setAttribute("data-id", v[n].dataset.id);
+						div.innerHTML = labnol_thumb(v[n].dataset.id);
+						div.onclick = labnol_iframe;
+						v[n].appendChild(div);
+					}
+				});
+
+			function labnol_thumb(id) {
+				var thumb = '<img src="//i.ytimg.com/vi/ID/maxresdefault.jpg">', play = '<div class="play"></div>';
+				return thumb.replace("ID", id) + play;
+			}
+
+			function labnol_iframe() {
+				var iframe = document.createElement("iframe");
+				var embed = "https://www.youtube.com/embed/ID?autoplay=1&rel=0";
+				iframe.setAttribute("src", embed.replace("ID", this.dataset.id));
+				iframe.setAttribute("frameborder", "0");
+				iframe.setAttribute("allowfullscreen", "1");
+				this.parentNode.replaceChild(iframe, this);
+			}
+
+			// display notification/message bar
+			function display_message(msg, mood, delay) {
+				var mood = (typeof mood !== 'undefined') ? mood : 'default';
+				var delay = (typeof delay !== 'undefined') ? delay : 0;
+				if (msg != '') {
+					var inner_width = $(window).width();
+					// add class by mood
+					$("#message_container").addClass('message_container_mood_'+mood);
+					$("#message_text").addClass('message_text_mood_'+mood);
+					// output message
+					$("#message_text").html(msg);
+					$("#message_container").css({height: $("#message_text").css("height")});
+					$("#message_container").css({width: inner_width});
+					$("#message_text").show().animate({top: '+=80'}, 500).animate({opacity: 1}, 'fast').delay(delay).animate({top: '-=80'}, 1000).animate({opacity: 0});
+					$("#message_container").show().animate({top: '+=80'}, 500).animate({opacity: 0.9}, "fast").delay(delay).animate({top: '-=80'}, 1000).animate({opacity: 0}, function() {
+						$("#message_container").removeClass('message_container_mood_'+mood);
+					});
+				}
+			}
+
+			// wrap inputs in form tags, hide and submit
+			function form_submit(form_identifier, action, method, target) {
+				action = (action == null) ? '/form_email.php' : action;
+				method = (method == '' || method == null) ? 'post' : method;
+				target = (target == '' || target == null) ? '_self' : target;
+				$("div." + form_identifier).parent().wrapAll("<div id='" + form_identifier + "_container' />");
+				$("div#" + form_identifier + "_container").fadeTo('slow', 0, function() {
+					$("div#" + form_identifier + "_container").slideUp(function() {
+						$("<input type='hidden' name='form_id' value='" + form_identifier + "' />").prependTo($("div#" + form_identifier + "_container"));
+						$("div#" + form_identifier + "_container").wrap("<form id='" + form_identifier + "' action='" + action + "' method='" + method + "' target='" + target + "' />");
+						$('form#' + form_identifier).submit();
+					});
+				});
+			}
+
+			// reset form
+			function form_reset(form_identifier) {
+				$("*[name^='fields']").each(function(index) {
+					$(this).val('');
+					if ($(this).prop('checked')) {
+						$(this).prop('checked', false);
+					}
+				});
+			}
+
+		</script>
+
+			</head>
+
+	<body id='page_top'   >
+<script language='JavaScript' type='text/javascript'>
+
+</script>
+
+
+		<iframe name='hidden_iframe' id='hidden_iframe' src='' style='display: none;'></iframe>
+
+		<div id='message_container' class='message_container_mood_default'></div>
+		<div id='message_text' class='message_container_text_default'></div>
+
+					<nav class='navbar navbar-expand-sm fixed-top'>
+				<div class="container-fluid" >
+					<div class='navbar-brand pl-1 pl-sm-0'>
+<a href='/'><img id='menu_brand_image' class='navbar-logo' style='margin-right: -2%;' src='/asset/theme/logo_menu_brand.png' alt="IHSAA"></a></div>
+<button type='button' class='navbar-toggler p-3 mr-1' data-toggle='collapse' data-target='#main_navbar' aria-expanded='false' aria-controls='main_navbar' aria-label='Toggle Menu'>
+	<span class='fas fa-bars'></span>
+</button>
+
+					<div class='collapse navbar-collapse' id='main_navbar'>
+						<ul class='navbar-nav'>
+<li class='nav-item dropdown'>
+	<a class='nav-link text-left ' href='#' target='_top'  data-toggle='dropdown'>Schools</a>
+<ul class='dropdown-menu  multi-column' style='width: 400px;'>
+<div class='row'>
+	<div class='col-sm-6'>
+		<ul class='multi-column-dropdown'>
+<li class='nav-item '><a class='nav-link text-left' href='/directory' target='_top'  >Directory</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/coaches' target='_top'  >Coaches</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/job-openings' target='_top'  >Job Openings</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/games-wanted' target='_top'  >Games Wanted</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/account/roster' target='_top'  >Rosters</a></li>
+	</ul>
+</div>
+<div class='col-sm-6' style='border-left: 1px solid #ddd;'>
+	<ul class='multi-column-dropdown'>
+<li class='nav-item '><a class='nav-link text-left' href='/concussion' target='_top'  >Concussion</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/sports-medicine' target='_top'  >Sports Medicine</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/nutrition' target='_top'  >Nutrition</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/mental-health' target='_top'  >Student Mental Health</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/help-teens-quit-vaping' target='_top'  >Help Teens Quit Vaping</a></li>
+		</ul>
+	</div>
+</div>
+</ul>
+</li>
+<li class='nav-item dropdown'>
+	<a class='nav-link text-left ' href='#' target='_top'  data-toggle='dropdown'>Sports & Activities</a>
+<ul class='dropdown-menu  multi-column' style='width: 800px;'>
+<div class='row'>
+	<div class='col-sm-3'>
+		<ul class='multi-column-dropdown'>
+<li class='nav-item '><a class='nav-link text-left' href='#' target='_top' style='font-weight: 600; color: black; margin-bottom: 5px; margin-top: 5px; cursor: default;' >FALL SPORTS</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/cross-country' target='_top'  >Cross Country</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/football' target='_top'  >Football</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/golf' target='_top'  >Golf 6A/5A</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/soccer' target='_top'  >Soccer</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/swimming' target='_top'  >Swimming</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/volleyball' target='_top'  >Volleyball</a></li>
+	</ul>
+</div>
+<div class='col-sm-3' style='border-left: 1px solid #ddd;'>
+	<ul class='multi-column-dropdown'>
+<li class='nav-item '><a class='nav-link text-left' href='#' target='_top' style='font-weight: 600; color: black; margin-bottom: 5px; margin-top: 5px; cursor: default;' >WINTER SPORTS</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/basketball' target='_top'  >Basketball</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/wrestling' target='_top'  >Wrestling</a></li>
+	</ul>
+</div>
+<div class='col-sm-3' style='border-left: 1px solid #ddd;'>
+	<ul class='multi-column-dropdown'>
+<li class='nav-item '><a class='nav-link text-left' href='#' target='_top' style='font-weight: 600; color: black; margin-bottom: 5px; margin-top: 5px; cursor: default;' >SPRING SPORTS</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/baseball' target='_top'  >Baseball</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/golf' target='_top'  >Golf 4A/3A</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/softball' target='_top'  >Softball</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/tennis' target='_top'  >Tennis</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/track-and-field' target='_top'  >Track & Field</a></li>
+	</ul>
+</div>
+<div class='col-sm-3' style='border-left: 1px solid #ddd;'>
+	<ul class='multi-column-dropdown'>
+<li class='nav-item '><a class='nav-link text-left' href='#' target='_top' style='font-weight: 600; color: black; margin-bottom: 5px; margin-top: 5px; cursor: default;' >ACTIVITIES</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/cheer' target='_top'  >Cheer</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/dance' target='_top'  >Dance</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/music' target='_top'  >Music</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/debate' target='_top'  >Debate</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/drama' target='_top'  >Drama</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/speech' target='_top'  >Speech</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/unified-sports' target='_top'  >Unified Sports</a></li>
+		</ul>
+	</div>
+</div>
+</ul>
+</li>
+<li class='nav-item dropdown'>
+	<a class='nav-link text-left ' href='#' target='_top'  data-toggle='dropdown'>Officials</a>
+<ul class='dropdown-menu  multi-column' style='width: 400px;'>
+<div class='row'>
+	<div class='col-sm-6'>
+		<ul class='multi-column-dropdown'>
+<li class='nav-item '><a class='nav-link text-left' href='/new-officials' target='_top'  >New Officials (Start Here)</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='https://max.dragonflyathletics.com/maxweb/max-cover/login' target='_blank'  >Returning Officials</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='https://idhsaa.sharepoint.com/:w:/s/IHSAAOffice/IQBRf8I8XitUQraiyOBgnB7RAeUSxqzNIuDSSlF7K1FrmDk?e=cZcEJm' target='_blank'  >State Rules Clinic</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='https://idhsaa.sharepoint.com/:w:/s/IHSAAOffice/IQB5_hQ1XiDDSJrz7jRdb89iAZ6L2WPA9l-cUCxskwgddFU?e=SDPqBC&wdLOR=c71EFD733-8595-0649-A353-EAC442192A40' target='_top'  >Officials Handbook</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='https://idhsaa.sharepoint.com/:w:/s/IHSAAOffice/EZ4mzcxTuI1BsembNIZI73oB5svU44a1g85SxMa42HjZoQ?e=GVILdi' target='_blank'  >Ejection Report</a></li>
+	</ul>
+</div>
+<div class='col-sm-6' style='border-left: 1px solid #ddd;'>
+	<ul class='multi-column-dropdown'>
+<li class='nav-item '><a class='nav-link text-left' href='https://max.dragonflyathletics.com/maxweb/max-cover/login' target='_blank'  >Required Exams</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='https://training.idhsaa.org' target='_top'  >Concussion Course</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='https://nfhslearn.com/courses/sudden-cardiac-arrest' target='_blank'  >SCA Course</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/additional-official-courses' target='_top'  >NFHS Courses</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='https://idhsaa.sharepoint.com/:w:/s/IHSAAOffice/EVn0fJpWoDRKhAm_ehYDaTkBp14u-a-LemtfRdX3w_RpUQ?e=3XGZix' target='_blank'  >Officials Pass</a></li>
+		</ul>
+	</div>
+</div>
+</ul>
+</li>
+<li class='nav-item dropdown'>
+	<a class='nav-link text-left ' href='#' target='_top'  data-toggle='dropdown'>Awards & Honors</a>
+<ul class='dropdown-menu  ' >
+<li class='nav-item '><a class='nav-link text-left' href='/hall-of-fame' target='_top'  >Hall of Fame</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/academic-champions' target='_top'  >Academic State Champions</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/legends-of-the-game' target='_top'  >Legends of the Game</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/interscholastic-stars' target='_top'  >Interscholastic Stars</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='coaches-in-the-classroom' target='_top'  >Coaches in the Classroom</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/schools-of-excellence' target='_top'  >Schools of Excellence</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/athlete-of-the-week' target='_top'  >Athlete of the Week</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/play-of-the-week' target='_top'  >Play of the Week</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/team-of-the-month' target='_top'  >Team of the Month</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/additional-awards-and-honors' target='_top'  >Additional Awards & Honors</a></li>
+</ul>
+</li>
+<li class='nav-item dropdown'>
+	<a class='nav-link text-left ' href='#' target='_top'  data-toggle='dropdown'>Resources</a>
+<ul class='dropdown-menu  multi-column' style='width: 400px;'>
+<div class='row'>
+	<div class='col-sm-6'>
+		<ul class='multi-column-dropdown'>
+<li class='nav-item '><a class='nav-link text-left' href='/rules' target='_top'  >Rules</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/forms' target='_top'  >Forms</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/athletic-directors' target='_top'  >Athletic Directors</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='https://yeafoundation.org' target='_blank'  >YEA</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/links' target='_top'  >Links</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/sponsors' target='_top'  >Sponsors</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/psa' target='_top'  >PSAs</a></li>
+	</ul>
+</div>
+<div class='col-sm-6' style='border-left: 1px solid #ddd;'>
+	<ul class='multi-column-dropdown'>
+<li class='nav-item '><a class='nav-link text-left' href='/students' target='_top'  >Students</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/captain' target='_top'  >Being a Captain</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/parents' target='_top'  >Parents</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/state-tournaments' target='_top'  >State Tournaments</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/express' target='_top'  >IHSAA Express</a></li>
+<li class='nav-item '><a class='nav-link text-left' href='/nfhs' target='_top'  >NFHS</a></li>
+		</ul>
+	</div>
+</div>
+</ul>
+</li>
+</ul>
+<ul class='navbar-nav ml-auto'>
+<li class='nav-item '>
+	<a class='nav-link text-left' href='https://twitter.com/idhsaa' target='_blank'  ><span class='icon ion-social-twitter' title="Twitter"></span></a>
+</li>
+<li class='nav-item '>
+	<a class='nav-link text-left' href='https://www.facebook.com/idhsaa' target='_blank'  ><span class='icon ion-social-facebook' title="Facebook"></span></a>
+</li>
+<li class='nav-item '>
+	<a class='nav-link text-left' href='https://www.instagram.com/idhsaa' target='_blank'  ><span class='icon ion-social-instagram' title="Instagram"></span></a>
+</li>
+<li class='nav-item '>
+	<a class='nav-link text-left' href='#' target='_top' onclick="this.blur(); show_login();" ><span class='icon ion-android-lock' title="Login"></span><span class='hidden-sm' style='margin-left: 5px; line-height: 1;'>Login</span></a>
+</li>
+</ul>
+					</div>
+				</div>
+			</nav>
+
+			<div class='is-wrapper'>
+
+<div class="is-section is-light-text is-box is-bg-grey is-section-auto">
+
+        <div class="is-overlay">
+            <div class="is-overlay-bg" style="background-image: url(/asset/background/home_hero_bw.jpg); background-position: 65% right;"></div>
+            <div class="is-overlay-color" style="display: block; opacity: 0.6; background-color: rgb(0, 0, 0);"></div>
+            <div class="is-overlay-content"></div>
+        </div>
+
+        <div class="is-boxes">
+
+            <div class="is-box-centered">
+                <div class="is-container is-builder container is-content-1200" id="contentareaTO02B" style="margin: 10px 20px !important;"><div class="row clearfix"><div class="row">
+	<div class="col-12 col-md-6">
+		<img src="/asset/theme/ihsaa_logo.png" alt="" style="float: left; margin-right: 25px;">
+		<div style="overflow: hidden; padding-top: 15px;">
+			<span style="color: rgb(153, 0, 51); font-family: &quot;Tenor Sans&quot;, sans-serif;"><b><span class="text-shadow-5 d-none d-sm-inline-block" style="font-size: 4vw; line-height: 4.5vw;"><span>IHSAA</span></span></b><b class="text-shadow-5" style="color: rgb(255, 255, 255);"><br>Idaho High School Activities Association</b></span>
+		</div>
+	</div>
+	<div class="col-12 col-md-6">
+		<a href='https://dairywest.com/' target='_blank'><img xclass='box-shadow-outer-bottom-5' xstyle='max-width: 100%; margin-top: 20px;' src='/asset/ad/home/ID_WEB_01_728_90_NA.png'></a>
+	</div>
+</div></div><div class="ui-draggable"></div><link href="//fonts.googleapis.com/css?family=Tenor Sans" rel="stylesheet" property="stylesheet" type="text/css"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+<div class="is-section is-box is-section-auto is-bg-dark is-light-text">
+
+        <div class="is-boxes" style="min-height: auto;">
+
+            <div class="is-box-centered">
+                <div class="is-container is-builder container is-content-1200" id="contentarea4G33j" style="margin: auto;"><div class="row clearfix"><div class="column col-6 col-sm-4 col-md-2 pt-1 text-center" style="font-size: 16px;"><b><a class="footer" href="/about" title="">About</a></b></div>
+<div class="column col-6 col-sm-4 col-md-2 pt-1 text-center" style="font-size: 16px;"><b><a class="footer" href="/board" title="">Board / Financials</a></b></div>
+<div class="column col-6 col-sm-4 col-md-2 pt-1 text-center" style="font-size: 16px;"><b><a class="footer" href="https://idhsaa.org/calendar" title="">Calendar</a></b></div>
+<div class="column col-6 col-sm-4 col-md-2 pt-1 text-center" style="font-size: 16px;"><b><a class="footer" href="https://idhsaa.org/sportsmanship" title="">Sportsmanship</a></b></div>
+<div class="column col-6 col-sm-4 col-md-2 pt-1 text-center" style="font-size: 16px;"><b><a class="footer" href="https://idhsaa.org/media" title="">Media</a></b></div>
+<div class="column col-6 col-sm-4 col-md-2 pt-1 text-center" style="font-size: 16px;"><b><a class="footer" href="/contact" title="">Contact</a></b></div></div><div class="row clearfix">
+	<div class="column full">
+		<img class=" lazyload" style="width: 100%; height: auto;" data-src="/asset/HOME PAGE/protect the purpose.jpg" alt="">
+	</div>
+</div></div>
+            </div>
+
+        </div>
+
+    </div>
+
+<div class="is-section is-section-100 is-shadow-1">
+
+        <div class="is-boxes">
+
+            <div class="is-box is-box-9">
+
+                <div class="is-boxes">
+
+                    <div class="is-box-centered is-content-top">
+                        <div class="is-container is-builder container is-content-800" id="contentareaCxz6R" style=""><div class="row clearfix">
+		<div class="column half">
+				<i style=""><div class="edit" style=""><p align="center" style="color: rgb(0, 0, 255);"><span style="font-size: 16px;"><b></b></span></p><div class="edit"><a name="_Hlk143677808" title="" style="color: rgb(0, 0, 255); font-size: 18px;"><b style="font-size: 16px;">New NFHS Executive Director Says Importance of Education-Based Sports, Activities Has Never Been Higher.</b></a></div><p></p></div></i><p style="text-align: justify;"><span style="caret-color: rgb(0, 0, 0); text-align: start; font-size: 12px;"><b></b></span></p><div class="edit"><p style="text-align: justify;"><b style="font-size: 14px;">Periodically, The NFHS Voice will be presented in the form of video. This week, as he begins his tenure as executive director of the NFHS, Davis Whitfield shares the vision of the NFHS to be the leading advocate for education-based sports and performing arts in our nation’s schools. He says the importance of education-based sports and activities in our nation’s schools has never been higher, and it is the vision of the NFHS to be the first place to turn for resources, for education, for innovation and for solutions. As the 2026-27 school year begins, he urges support for our state associations, our schools, and the millions of students in these life-changing activity programs.&nbsp;<i></i></b></p></div><p></p>
+		</div>
+		<div class="column half">
+				<div class="embed-responsive embed-responsive-4by3">
+					<iframe width="560" height="315" src="//www.youtube.com/embed/lc-qwCnZZLE?rel=0" frameborder="0" allowfullscreen=""></iframe>
+				</div>
+		</div>
+	</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="row clearfix">
+		<div class="column half center">
+				<div class="embed-responsive embed-responsive-4by3" style="margin-right:20px">
+					<iframe width="560" height="315" src="//www.youtube.com/embed/7RfaQ0KZW8k?rel=0" frameborder="0" allowfullscreen=""></iframe>
+				</div>
+		</div>
+		<div class="column half">
+				<h3 style="text-align: center;"><b><span style="color: rgb(153, 0, 51);">GEM State of Mind </span></b></h3>
+				<p></p><div class="edit"><p style="font-size: 18px;">The IHSAA Student Advisory Council would like to promote Gem State of Mind:&nbsp;</p><p style="text-align: center; color: rgb(153, 0, 51);"><b style="font-size: 20px;">Give Everyone Their Moment&nbsp;</b></p><p style="font-size: 18px; text-align: justify;">our new sportsmanship brand. We encourage everyone across Idaho to practice good sportsmanship, whether you're in the stands or out on the court. It takes all of us to create a positive environment.</p></div><p></p>
+		</div>
+	</div>
+
+
+<div class="row clearfix"><div class="column full">
+		<hr>
+	</div></div><div class="row clearfix">
+		<div class="column full">
+				<div class="embed-responsive embed-responsive-16by9">
+					<iframe width="560" height="315" src="//www.youtube.com/embed/YHVQD2RiC1k?rel=0" frameborder="0" allowfullscreen=""></iframe>
+				</div>
+		</div>
+	</div>
+
+
+
+
+
+
+<div class="row clearfix">
+	<div class="column full">
+		<hr>
+	</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="row clearfix"><div class="column full">
+	<ins data-revive-zoneid='59' data-revive-id='56fdbe9a86d7e93f02fe33751ab5524d'></ins>
+<script async src='//ads.wmt.digital/delivery/asyncjs.php'></script>
+
+	</div></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="row clearfix"><div class="column full">
+<p style="text-align: center;"><iframe src='https://www.maxpreps.com/widgets/scores.aspx?associationid=115bf7df-85cc-428e-aee6-bcf3dcff5297&gendersport=boys,basketball&theme=2' scrolling='0' class='maxpreps-widget' style='width: 100%; height: 200px;' frameborder='0'></iframe><span style="text-align: left;">&nbsp;</span></p>                                                                                                                                                                                                                                                                                                                                                         
+</div></div>
+
+
+
+
+
+<div class="row clearfix">
+	<div class="column fourth center">
+		<a href="https://www.toyota.com/inlandnorthwest/deals-incentives/" title=""><img class=" lazyload" data-src="/asset/Sponsors/toyota_logo_horiz_us_black_rgb.png" alt=""></a>
+		
+		</div>
+	<div class="column fourth center">
+		<a href="https://idhsaa.org/asset/Sponsors/First%20Federal%20Bank%20Primary%20Logo_New.png" title="" class="is-lightbox" target="_blank"><img class=" lazyload" data-src="/asset/Sponsors/First Federal Bank Primary Logo_New.png" alt=""></a>
+		
+	</div>
+	<div class="column fourth center">
+		<a href="https://www.maxpreps.com/" title=""><img class=" lazyload" data-src="/asset/Sponsors/MaxPreps.png" alt=""></a>
+		
+	</div>
+	<div class="column fourth center">
+		<a href="https://www.countryfinancial.com/" title=""><img class=" lazyload" data-src="/asset/Sponsors/cf_r_rgb_clr_pos.png" alt=""></a>
+		
+	</div>
+</div>
+<div class="row clearfix">
+	<div class="column third"><br></div>
+	<div class="column third">
+		<a href="https://dairywest.com/" title=""><img class=" lazyload" data-src="/asset/Sponsors/DIGITAL Dairy-West-Logo-Stack-Horizontal-Blue-Real-Good-Yellow3000px.png" alt=""></a>
+	</div>
+	<div class="column third"><br></div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="row clearfix">
+	<div class="column third"><figure><figcaption>
+						
+					</figcaption>
+			</figure>
+		</div>
+		<div class="column third">
+				<figure><br>
+			</figure>
+		</div>
+		<div class="column third">
+				<figure><figcaption>
+						
+					</figcaption>
+			</figure>
+		</div>
+</div><link href="//fonts.googleapis.com/css?family=Felipa" rel="stylesheet" property="stylesheet" type="text/css"><link href="//fonts.googleapis.com/css?family=Forum" rel="stylesheet" property="stylesheet" type="text/css"><link href="//fonts.googleapis.com/css?family=Allura" rel="stylesheet" property="stylesheet" type="text/css"></div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="is-box is-box-3" style="border-left: 1px solid #ccc; border-top: 1px solid #ccc; background: rgb(232,232,232);
+background: linear-gradient(90deg, rgba(232,232,232,1) 0%, rgba(255,255,255,1) 8%, rgba(255,255,255,1) 100%);">
+
+                <div class="is-boxes">
+
+                    <div class="is-box-centered is-content-top">
+                        <div class="is-container is-builder container is-content-1200" id="contentareaRetfu" style=""><div class="row clearfix">
+	<div class="column full">
+		<div class="center">
+			<a href="https://www.nfhsnetwork.com/associations/ihsaa-id" title=""><img class=" lazyload" data-src="/asset/graphic/General Display Ads - Winter Sports - 1200x630.png" alt=""></a></div><p style="text-align: center;"><a href="https://www.nfhsnetwork.com/associations/ihsaa-id" title="" style="font-size: 14px;">WATCH Live and On-Demand on the NFHS Network</a></p><p></p>
+	</div>
+</div><div class="row clearfix"><div class="column full ihsaa-side center"><form method='get' action='/search'>
+<input type='text'class='form-control' style='width: 100%; margin-bottom: 20px; background-color: #fff;' name='q' placeholder='Search...' required='required' value="">
+</form>
+</div></div><div class="row clearfix"><div class="column full ihsaa-side">
+                            <p style="text-align: center; font-family: Arial, sans-serif;"><b style="font-size: 24px; color: rgb(0, 0, 0);">Upcoming</b></p>
+                        </div></div><div class="row clearfix"><div class="column full ihsaa-side">
+                            <p><span color="#000000"><span style="font-size: 12px;"></span></span></p><p></p><div class="edit" style=""><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">9/24</span><b style="font-size: 12px;"> Fall Academic Champions Due</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">9/28</span><b style="font-size: 12px;"> Board Work Session &amp; Appeals</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">9/29</span><b style="font-size: 12px;"> Board of Directors Meeting 2:00PM</b></p><p style=""><b style="font-size: 12px;">Blaine Co. SD Campus, Minnie Moor Room</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">10/12</span><b style="font-size: 12px;"> State Soccer Pictures/Rosters Due</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">10/12-13</span><b style="font-size: 12px;"> 6A/5A State Golf</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">10/13</span><b style="font-size: 12px;"> Soccer MaxPreps Deadline</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">10/19</span><b style="font-size: 12px;"> Wrestling Assessment Window</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">10/19</span><b style="font-size: 12px;"> State Volleyball Pictures/Rosters Due</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">10/20</span><b style="font-size: 12px;"> Volleyball MaxPreps Deadline</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">10/22-24</span><b style="font-size: 12px;"> State Soccer</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">10/24</span><b style="font-size: 12px;"> Football MaxPreps Deadline</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">10/29-31</span><b style="font-size: 12px;"> State Volleyball</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">10/31</span><b style="font-size: 12px;"> State Cross Country</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">11/1</span><b style="font-size: 12px;"> State Swim Seeding Meeting</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">11/2</span><b style="font-size: 12px;"> Girls Basketball 1st Practice</b></p><p style=""><span style="font-size: 14px; color: rgb(153, 0, 51);">11/6-7</span><b style="font-size: 12px;"> State Swim</b></p></div><p style="text-align: center;"><span style="font-size: 12px; background-color: initial;"><b>&nbsp; &nbsp;&nbsp;</b><span style="font-size: 22px;"><b><span style="font-family: Arial, sans-serif;"><a href="https://idhsaa.org/board" title="" style="color: rgb(0, 0, 0);">Board of Directors</a></span></b></span><b><span style="font-family: Arial, sans-serif;">&nbsp;&nbsp;</span></b></span></p><div style="font-size: 12px;"><p style="text-align: left; font-size: 14px;"><b><a href="https://idhsaa.sharepoint.com/:w:/s/IHSAAOffice/IQAFBG3rPpKKRa55klL1yEKwAcVUmDcUAk_G64MttvOyUPY?e=PffqDJ" title="">September Agenda</a></b></p><p></p><p></p>
+                        </div></div></div>
+
+<div class="row clearfix"><div class="column full ihsaa-side">
+<h5 class="ihsaa-side" style="font-size: 24px; text-align: center; color: rgb(0, 0, 0);">Quick Links</h5><p style="font-size: 16px;"><b style="font-size: 14px;"><a href="/asset/Express/September_26.pdf" title="">September 26 IHSAA Express</a></b></p><p style="font-size: 14px;"><a href="https://idhsaa-my.sharepoint.com/:w:/g/personal/williamsc_idhsaa_org/IQDlsqEFIssoQZWXpeLkr18TARWiKT316-w5_-9G4LodmL0?e=TMceq8" title=""><b>2026-27 Administrative Meetings</b></a></p><p style="text-align: left; color: rgb(0, 0, 0); font-size: 14px;"><b><a href="https://idhsaa.sharepoint.com/:w:/s/IHSAAOffice/IQBRf8I8XitUQraiyOBgnB7RAeUSxqzNIuDSSlF7K1FrmDk?e=cZcEJm" title="">26-27 Rules Clinics</a></b></p><p></p><p></p>
+</div></div><div class="row clearfix">
+	<div class="column full"><div class="column full"><ins data-revive-zoneid='58' data-revive-id='56fdbe9a86d7e93f02fe33751ab5524d'></ins>
+<script async src='//ads.wmt.digital/delivery/asyncjs.php'></script>
+	</div></div>
+</div>
+
+
+
+<div class="row clearfix"><div class="column full">
+		<hr>
+	</div></div></div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+<div class="is-section is-light-text is-box is-section-auto">
+
+        <div class="is-overlay">
+            <div class="is-overlay-bg" style="background-image: url(&quot;/asset/background/dark_glow.jpg&quot;); display: block;"></div>
+            <div class="is-overlay-color" style="display: block;"></div>
+            <div class="is-overlay-content"></div>
+        </div>
+
+        <div class="is-boxes box-shadow-inner-top-20 text-shadow-4">
+
+            <div class="is-box-centered">
+                <div class="is-container is-builder container" id="contentarea500yc" style=""><div class="row clearfix"><div class="column third text-center">
+		<div><a href="https://dairywest.com/" title=""><img style="max-width: 200px; margin-top: 15px;" class=" lazyload" data-src="/asset/Sponsors/DIGITAL Dairy-West-Logo-Stack-Horizontal-Cream-Real-Good-Yellow3000px.png" alt=""></a></div><br><b>Provided by local dairy farm families</b><br>
+Official IHSAA Tournament Sponsor
+	</div>
+<div class="column third text-center">
+		<div><img class=" lazyload" data-src="/asset/theme/logo.png" alt=""></div><br>
+	</div>
+<div class="column third text-center" style="padding-top: 10px;">
+		<div><a target="_blank" href="http://www.yeafoundation.org/" title=""><img class=" lazyload" data-src="/asset/ad/yea_white.gif" alt=""></a></div><div><br></div><b>YEA Foundation of Idaho</b><br>
+Youth Endowment for Activities
+	</div></div>
+
+<div class="row clearfix"><div class="column full">
+
+            <p style="text-align: center;"><span style="font-size: 14px;"><span style="color: rgb(166, 166, 166);">© Copyright 2009-2026 Idaho High School Activities Association (IHSAA).&nbsp; All rights reserved.</span></span></p>
+
+        </div></div></div>
+            </div>
+
+        </div>
+
+    </div></div><script language='javascript' type='text/javascript'>
+</script>
+
+		<!-- box framework -->
+		<script language='JavaScript' type='text/javascript' src="/admin/box/box.js"></script>
+
+		<div class='modal fade' id='modal_login' tabindex='-1' role='dialog'>
+	<div class='modal-dialog modal-md'>
+		<div class='modal-content'>
+			<form class='form-horizontal' id='frm_modal_login' name='frm_modal_login' method='post' action='/auth.php'>
+			<div class='modal-header'>
+				<span class='modal-title'>Account Login</span>
+				<button type='button' class='close' data-dismiss='modal'><span>&times;</span></button>
+			</div>
+			<div class='modal-body'>
+				<div class='form-group row m-0'>
+				<div class='col-6 text-center'>
+						<img src='/asset/theme/logo_login.png' style='max-height: 170px; width: auto;'>
+					<div class='visible-xs'><br></div>
+				</div>
+				<div class='col-6'>
+						Please enter your credentials...<br><br>
+						<input class='form-control' type='text' style='text-align: center;' id='username' name='username' value='' placeholder='Username or Email'><br>
+						<input class='form-control' type='password' style='text-align: center;' id='password' name='password' value='' placeholder='Password'>
+					</div>
+				</div>
+			</div>
+			<div class='modal-footer'>
+				<button type='button' class='btn btn-default' data-dismiss='modal'>Cancel</button>
+				<button type='submit' class='btn btn-success' style='width: 160px;'>Login</button>
+			</div>
+			</form>		</div>
+	</div>
+</div>
+<script>
+	function show_login() {
+		$('#modal_login').modal('show');
+	}
+</script>
+<script language='JavaScript' type='text/javascript'>
+
+</script>
+
+
+		<script src='https://challenges.cloudflare.com/turnstile/v0/api.js' async defer></script>
+
+	</body>
+</html>
+

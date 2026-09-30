@@ -1,0 +1,136 @@
+OSSAA MEMBER SCHOOLS
+
+
+
+
+    1.    Achille                60. Caddo                  119. Cushing                178. Goodwell
+    2.    Ada                    61. Calera                 120. Cyril                  179. Gore
+    3.    Adair                  62. Calumet                121. Dale                   180. Gracemont
+    4.    Afton                  63. Calvin                 122. Daniel Webster         181. Graham-Dustin
+    5.    Agra                   64. Cameron                123. Davenport              182. Grandfield
+    6.    Alex                   65. Canadian               124. Davis                  183. Granite
+    7.    Aline-Cleo             66. Caney                  125. Deer Creek-Edmond      184. Grove
+    8.    Allen                  67. Caney Valley           126. Deer Creek-Lamont      185. Guthrie
+    9.    Altus                  68. Canton                 127. Del City               186. Guymon
+    10.   Alva                   69. Canute                 128. Depew                  187. Haileyville
+    11.   Amber-Pocasset         70. Capitol Hill           129. Dewar                  188. Hammon
+    12.   Anadarko               71. Carl Albert            130. Dewey                  189. Hanna
+    13.   Antlers                72. Carnegie               131. Dibble                 190. Hardesty
+    14.   Apache                 73. Carney                 132. Dickson                191. Harding Charter Prep
+    15.   Arapaho-Butler         74. Casady                 133. Douglass               192. Harding Fine Arts
+    16.   Ardmore                75. Cascia Hall            134. Dove Science (OKC)     193. Harrah
+    17.   Arkoma                 76. Cashion                135. Dove Science (TULSA)   194. Hartshorne
+    18.   Arnett                 77. Catoosa                136. Dover                  195. Haskell
+    19.   Asher                  78. Cave Springs           137. Drummond               196. Haworth
+    20.   ASTEC Charter          79. Cement                 138. Drumright              197. Healdton
+    21.   Atoka                  80. Central High           139. Duke                   198. Heavener
+    22.   Balko                  81. Central-Sallisaw       140. Duncan                 199. Hennessey
+    23.   Barnsdall              82. Central-Tulsa          141. Durant                 200. Henryetta
+    24.   Bartlesville           83. Chandler               142. Eagletown              201. Heritage Hall
+    25.   Battiest               84. Chattanooga            143. Earlsboro              202. Hilldale
+    26.   Beaver                 85. Checotah               144. East Central           203. Hillsdale Christian
+    27.   Beggs                  86. Chelsea                145. Edmond Memorial        204. Hinton
+    28.   Bennington             87. Cherokee               146. Edmond North           205. Hobart
+    29.   Berryhill              88. Cheyenne               147. Edmond Santa Fe        206. Holdenville
+    30.   Bethany                89. Chickasha              148. Eisenhower             207. Holland Hall
+    31.   Bethel                 90. Chisholm               149. El Reno                208. Hollis
+    32.   Big Pasture            91. Choctaw                150. Elgin                  209. Hominy
+    33.   Billings               92. Chouteau-Mazie         151. Elk City               210. Hooker
+    34.   Binger-Oney            93. Christian Heritage     152. Elmore City            211. Howe
+    35.   Bishop Kelley          94. Cimarron               153. Empire                 212. Hugo
+    36.   Bishop McGuinness      95. Claremore              154. Enid                   213. Hulbert
+    37.   Bixby                  96. Classen SAS at NE      155. Erick                  214. Hydro-Eakly
+    38.   Blackwell              97. Clayton                156. Eufaula                215. Idabel
+    39.   Blair                  98. Cleveland              157. Fairland               216. Indiahoma
+    40.   Blanchard              99. Clinton                158. Fairview               217. Indianola
+    41.   Bluejacket             100. Coalgate              159. Fargo-Gage             218. Inola
+    42.   Boise City             101. Colbert               160. Felt                   219. Jay
+    43.   Bokoshe                102. Colcord               161. Fletcher               220. Jenks
+    44.   Booker T. Washington   103. Coleman               162. Forgan                 221. John Marshall
+    45.   Boswell                104. Collinsville          163. Fox                    222. Jones
+    46.   Bowlegs                105. Comanche              164. Foyil                  223. Kansas
+    47.   Braggs                 106. Commerce              165. Frederick              224. Kellyville
+    48.   Bray-Doyle             107. Community Christian   166. Freedom                225. Keota
+    49.   Bridge Creek           108. Copan                 167. Frontier               226. Ketchum
+    50.   Bristow                109. Cordell               168. Ft. Cobb-Broxton       227. Keys (Parkhill)
+    51.   Broken Arrow           110. Corn Bible Academy    169. Ft. Gibson             228. Kiefer
+    52.   Broken Bow             111. Covington-Douglas     170. Ft. Supply             229. Kingfisher
+    53.   Buffalo                112. Coweta                171. Ft. Towson             230. Kingston
+    54.   Buffalo Valley         113. Coyle                 172. Gans                   231. Kinta
+    55.   Burlington             114. Crescent              173. Garber                 232. Kiowa
+    56.   Burns Flat-Dill City   115. Crooked Oak           174. Geary                  233. KIPP Tulsa
+    57.   Butner                 116. Crossings Christian   175. Geronimo               234. Konawa
+    58.   Byng                   117. Crossover Prep        176. Glencoe                235. Kremlin-Hillsdale
+    59.   Cache                  118. Crowder               177. Glenpool               236. Latta
+
+
+OSSAA ADMINISTRATOR’S HANDBOOK
+    237. Laverne                 300. Norman                   363. Roff                 426. Tupelo
+    238. Lawton                  301. Norman North             364. Roland               427. Turner
+    239. Lawton Aca Of Arts      302. North Rock Creek         365. Rush Springs         428. Turpin
+    240. Leedey                  303. Northwest Classen        366. Ryan                 429. Tushka
+    241. LeFlore                 304. Nowata                   367. Salina               430. Tuttle
+    242. Legacy Christian        305. Oaks                     368. Sallisaw             431. Tyrone
+    243. Lexington               306. Oilton                   369. Sand Springs         432. U. S. Grant
+    244. Liberty                 307. Okarche                  370. Santa Fe South       433. Union
+    245. Lincoln Christian       308. Okay                     371. Sapulpa              434. Union City
+    246. Lindsay                 309. Okeene                   372. Sasakwa              435. Valliant
+    247. Little Axe              310. Okemah                   373. Savanna              436. Vanoss
+    248. Locust Grove            311. Ok School for the Deaf   374. Sayre                437. Varnum
+    249. Lomega                  312. Ok Bible Academy         375. Schulter             438. Velma-Alma
+    250. Lone Grove              313. Ok Christian Academy     376. Seiling              439. Verden
+    251. Lone Wolf               314. Ok Christian School      377. Seminole             440. Verdigris
+    252. Lookeba-Sickles         315. Oklahoma Union           378. Sentinel             441. Vian
+    253. Luther                  316. Okmulgee                 379. Sequoyah Claremore   442. Vici
+    254. MacArthur               317. Oktaha                   380. Sequoyah-Tahlequah   443. Victory Christian
+    255. Macomb                  318. Olive                    381. Sharon-Mutual        444. Vinita
+    256. Madill                  319. Olustee-Eldorado         382. Shattuck             445. Wagoner
+    257. Mangum                  320. Oologah-Talala           383. Shawnee              446. Walters
+    258. Mannford                321. Owasso                   384. Shidler              447. Wanette
+    259. Marietta                322. Paden                    385. Silo                 448. Wapanucka
+    260. Marlow                  323. Panama                   386. Skiatook             449. Warner
+    261. Mason                   324. Paoli                    387. Smithville           450. Washington
+    262. Maud                    325. Parkview                 388. Snyder               451. Watonga
+    263. Maysville               326. Pauls Valley             389. Soper                452. Watts
+    264. McAlester               327. Pathways                 390. South Coffeyville    453. Waukomis
+    265. McCurtain               328. Pawhuska                 391. Southeast            454. Waurika
+    266. McLain                  329. Pawnee                   392. Southmoore           455. Wayne
+    267. McLoud                  330. Perkins-Tryon            393. Southwest Covenant   456. Waynoka
+    268. Medford                 331. Perry                    394. Sperry               457. Weatherford
+    269. Meeker                  332. Piedmont                 395. Spiro                458. Webbers Falls
+    270. Memorial (Tulsa)        333. Pioneer-Pleasant Vale    396. Springer             459. Welch
+    271. Merritt                 334. Pittsburg                397. Star-Spencer         460. Weleetka
+    272. Metro Christian         335. Plainview                398. Sterling             461. Wellston
+    273. Miami                   336. Pocola                   399. Stigler              462. Wesleyn Christian
+    274. Midway                  337. Ponca City               400. Stillwater           463. Western Heights
+    275. Midwest City            338. Pond Creek-Hunter        401. Stilwell             464. Westmoore
+    276. Milburn                 339. Porter Consolidated      402. Stonewall            465. Westville
+    277. Mill Creek              340. Porum                    403. Stratford            466. Wetumka
+    278. Millwood                341. Poteau                   404. Stringtown           467. Wewoka
+    279. Minco                   342. Prague                   405. Strother             468. Whitesboro
+    280. Moore                   343. Preston                  406. Stroud               469. Wilburton
+    281. Mooreland               344. Prue                     407. Stuart               470. Will Rogers
+    282. Morris                  345. Pryor                    408. Sulphur              471. Wilson
+    283. Morrison                346. Purcell                  409. Summit Christian     472. Wilson Henryetta
+    284. Moss                    347. Putnam City              410. Sweetwater           473. Wister
+    285. Mounds                  348. Putnam City North        411. Tahlequah            474. Woodland
+    286. Moyers                  349. Putnam City West         412. Talihina             475. Woodward
+    287. Mt. Saint Mary          350. Quapaw                   413. Taloga               476. Wright City
+    288. Mt. View-Gotebo         351. Quinton                  414. Tecumseh             477. Wyandotte
+    289. Muldrow                 352. Rattan                   415. Temple               478. Wynnewood
+    290. Mulhall-Orlando         353. Red Oak                  416. Texhoma              479. Wynona
+    291. Muskogee                354. Rejoice Christian Sch    417. Thackerville         480. Yale
+    292. Mustang                 355. Regent Prep School       418. The Academy          481. Yarbrough
+    293. Nathan Hale             356. Reydon                   419. Thomas Edison        482. Yukon
+    294. Navajo                  357. Ringling                 420. Thomas-Fay-Custer
+    295. New Lima                358. Ringwood                 421. Timberlake
+    296. Newcastle               359. Ripley                   422. Tipton
+    297. Newkirk                 360. Riverfield Country Day   423. Tishomingo
+    298. Ninnekah                361. Riverside                424. Tonkawa
+    299. Noble                   362. Rock Creek               425. TSAS
+
+
+
+
+OSSAA ADMINISTRATOR’S HANDBOOK
+

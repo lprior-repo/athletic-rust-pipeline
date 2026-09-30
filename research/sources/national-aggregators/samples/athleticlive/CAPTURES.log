@@ -1,0 +1,32 @@
+2026-09-22T03:55:18Z | 200 5890 text/xml | al-sitemap.xml | https://live.athletic.net/sitemap.xml
+2026-09-22T03:55:19Z | 200 165 application/json | al-es-meetlist-count.json | https://search.athletic.live/live_results_meet_list/_search
+2026-09-22T03:55:21Z | 200 160 application/json | al-es-meetlist-sample.json | https://search.athletic.live/live_results_meet_list/_search
+2026-09-22T03:55:22Z | 200 30436 application/json | al-blob-ind-res-2254285.json | https://athleticlive.blob.core.windows.net/$web/ind_res_list/_doc/2254285
+2026-09-22T03:56:10Z | 200 164 application/json | al-es-total.json | https://search.athletic.live/live_results_meet_list/_search
+2026-09-22T03:56:12Z | 400 1833 application/json;charset=utf-8 | al-es-agg-states.json | https://search.athletic.live/live_results_meet_list/_search
+2026-09-22T03:56:13Z | 200 2500 application/json | al-tenant-config-wayzata.json | https://livestatic.athletic.net/assets/sites/wayzata/config.json
+2026-09-22T03:56:15Z | 200 820 application/json | al-tenant-config-base.json | https://livestatic.athletic.net/assets/sites/base-site/config.json
+2026-09-22T03:56:25Z | 200 163 | (probe) wayzata_meet_list | https://search.athletic.live/wayzata_meet_list/_search
+2026-09-22T03:56:27Z | 200 163 | (probe) aatiming_meet_list | https://search.athletic.live/aatiming_meet_list/_search
+2026-09-22T03:56:29Z | 200 163 | (probe) heros_meet_list | https://search.athletic.live/heros_meet_list/_search
+2026-09-22T03:56:30Z | 200 164 | (probe) live_results_meet_list | https://search.athletic.live/live_results_meet_list/_search
+2026-09-22T03:56:32Z | 200 164 | (probe) athleticlive_meet_list | https://search.athletic.live/athleticlive_meet_list/_search
+2026-09-22T03:56:34Z | 404 443 | (probe) base-site_meet_list | https://search.athletic.live/base-site_meet_list/_search
+2026-09-22T03:58:28Z | 200 6458 application/json | al-es-sample-2026.json | (see cmd)
+2026-09-22T03:58:50Z | 200 44948 application/json | al-es-msearch-all-tenants.json | POST https://search.athletic.live/_msearch (256 tenants, body /tmp/msearch.ndjson)
+2026-09-22T03:59:05Z | 200 168 | (probe) all-indices _search lsa:Ohio | POST https://search.athletic.live/_search
+2026-09-22T03:59:05Z | 200 168 | (probe) wildcard *_meet_list | POST https://search.athletic.live/*_meet_list/_search
+2026-09-22T03:59:23Z | 200 5680 application/json | al-es-msearch-state-counts.json | POST https://search.athletic.live/_msearch (37 state queries; body /tmp/msearch-states.ndjson)
+2026-09-22T03:59:36Z | 200 2870 | al-es-ani-cardinality.json | POST https://search.athletic.live/_msearch (12 state cardinality queries)
+2026-09-22T03:59:50Z | 404 215 application/xml | al-blob-meet-61710.json | https://athleticlive.blob.core.windows.net/$web/meet_61710/event_summary.json
+2026-09-22T04:00:32Z | 200 295358 application/javascript | al-main-js.js | https://livestatic.athletic.net/main-5ADGVJIV.js
+2026-09-22T04:00:59Z | 200 19932 application/json; charset=utf-8 | al-rtdb-meet-61710.json | https://s-gke-usc1-nssi3-33.firebaseio.com/meet_61710/event_summary.json?ns=trackmeet-io
+2026-09-22T04:01:13Z | 200 17175 application/json | al-blob-ind-res-2254280.json | https://athleticlive.blob.core.windows.net/$web/ind_res_list/_doc/2254280
+2026-09-22T04:02:34Z | 200 (final) | al-meet-page-59382.html | https://live.athletic.net/meets/59382 -> 200 50184 https://results.wayzatatiming.com/meets/59382
+2026-09-22T04:06:57Z | 400 226 | al-athleticlive_blob_core_windows_net-robots.txt | https://athleticlive.blob.core.windows.net/robots.txt
+2026-09-22T04:06:59Z | 404 146 | al-livestatic_athletic_net-robots.txt | https://livestatic.athletic.net/robots.txt
+2026-09-22T04:09:30Z | 200 186 text/plain | al-liveathleticnet-robots.txt | https://live.athletic.net/robots.txt
+2026-09-22T04:09:32Z | 200 192 text/plain | al-tenant-michiana-robots.txt | https://live.michianatiming.com/robots.txt
+2026-09-22T04:09:33Z | 200 50184 text/html | al-live-athletic-net-root.html | https://live.athletic.net/
+2026-09-22T04:09:35Z | 403 485 application/json;charset=utf-8 | al-search-robots.txt | https://search.athletic.live/robots.txt
+2026-09-22T04:10:01Z | 200 164 application/json | al-es-anon-probe.json | POST https://search.athletic.live/live_results_meet_list/_search (no auth headers)

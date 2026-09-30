@@ -21,7 +21,7 @@ pub struct BrowserManager {
     status: Arc<RwLock<BrowserStatus>>,
     cooldown_until: Arc<Mutex<Option<Instant>>>,
     gate: Arc<ProfileGate>,
-#[allow(clippy::type_complexity)]
+    #[allow(clippy::type_complexity)]
     join: Arc<AsyncMutex<Option<JoinHandle<Result<(), BrowserStartupError>>>>>,
     clock: Arc<dyn Clock>,
 }

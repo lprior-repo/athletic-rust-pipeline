@@ -1,0 +1,6 @@
+user-agent:*
+Sitemap: https://usatf.org/sitemap.xml
+Disallow: /admin
+Disallow: /cmsdesk
+
+

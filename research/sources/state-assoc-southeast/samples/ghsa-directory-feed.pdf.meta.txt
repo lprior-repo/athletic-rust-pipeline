@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+Date: Tue, 22 Sep 2026 03:58:34 GMT
+Server: Apache/2.4.52 (Ubuntu)
+Expires: Sun, 19 Nov 1978 05:00:00 GMT
+Cache-Control: private, max-age=0, must-revalidate
+X-Content-Type-Options: nosniff
+Set-Cookie: UUID=e35fff23-bda2-c0b4-d99d-d3e7d54df196; expires=Wed, 22 Sep 2027 03:58:34 GMT; Max-Age=31536000; path=/; domain=.www.ghsa.net; HttpOnly
+Content-Disposition: attachment; filename="directory.pdf"
+Pragma: public
+Transfer-Encoding: chunked
+Content-Type: application/x-download
+

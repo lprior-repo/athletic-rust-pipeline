@@ -1,0 +1,25 @@
+[workbook]
+# Only these rows are sent into athlete matching. Every workbook row is still
+# streamed and counted by `inspect` and during `run`.
+sports = ["Track and Field: Mens", "Track and Field: Womens"]
+expected_graduation_year = 2027
+
+# The `[discovery]` and `[retrieval]` sections this file used to carry configured a direct HTTP
+# Athletic.net search/fetch lane (`athletic_search_url`, `authorized_direct_fetch`, saved pages).
+# Nothing reads them: the census acquires Athletic.net through the browser lane the registry's
+# descriptor declares (`TransportKind::Browser`, `crates/census-crawl/src/registry/table/`), which
+# is also why `www.athletic.net` has no direct-HTTP path to delete.
+
+[ollama]
+# Existing local llama.cpp server on the dual-GPU workstation.
+api = "openai-compatible"
+enabled = true
+url = "http://127.0.0.1:11000"
+model = "Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf"
+timeout_seconds = 180
+
+[matching]
+match_threshold = 0.93
+close_threshold = 0.86
+review_threshold = 0.75
+require_corroboration = true

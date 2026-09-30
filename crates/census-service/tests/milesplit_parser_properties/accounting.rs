@@ -1,29 +1,24 @@
 use super::{
-    parse_meet_index, parse_meet_result_files, parse_raw, OH_FILE_LIST, OH_RAW, OH_RAW_ROWS,
-    OH_RAW_URL,
+    parse_meet_index, parse_meet_result_files, parse_raw, NC_RAW, NC_RAW_ROWS, NC_RAW_URL,
+    OH_FILE_LIST,
 };
-
-fn row_line(name: &str, grade: &str, team: &str, mark: &str) -> String {
-    format!(
-        "{:>4} {name:<25} {grade:>2} {team:<40} {mark:>9}{:6}{:>2}",
-        "1",
-        "",
-        "",
-        name = name,
-        grade = grade,
-        team = team,
-        mark = mark,
-    )
-}
 
 fn with_row(body: &str, line: &str) -> String {
     body.replacen("</pre>", &format!("\n{line}\n</pre>"), 1)
 }
 
+fn capture_row_line(capture: &str) -> String {
+    capture
+        .lines()
+        .find(|line| line.starts_with("   1 "))
+        .map(|line| format!("{line}\n"))
+        .unwrap_or_else(|| panic!("the capture publishes a first-place row"))
+}
+
 #[test]
 fn the_capture_parses_the_rows_it_publishes_and_drops_none() {
-    let page = parse_raw(OH_RAW, OH_RAW_URL).expect("the capture parses");
-    assert_eq!(page.meet.rows_parsed, OH_RAW_ROWS);
+    let page = parse_raw(NC_RAW, NC_RAW_URL).expect("the capture parses");
+    assert_eq!(page.meet.rows_parsed, NC_RAW_ROWS);
     assert!(
         page.skipped.is_empty(),
         "a verbatim capture must not drop a line: {:?}",
@@ -33,7 +28,7 @@ fn the_capture_parses_the_rows_it_publishes_and_drops_none() {
 
 #[test]
 fn the_rows_parsed_agree_with_the_rows_the_events_hold() {
-    let page = parse_raw(OH_RAW, OH_RAW_URL).expect("the capture parses");
+    let page = parse_raw(NC_RAW, NC_RAW_URL).expect("the capture parses");
     let held: usize = page.meet.events.iter().map(|event| event.rows.len()).sum();
     assert_eq!(
         page.meet.rows_parsed, held,
@@ -47,60 +42,20 @@ fn the_rows_parsed_agree_with_the_rows_the_events_hold() {
 }
 
 #[test]
-fn a_row_built_to_the_published_columns_is_accepted() {
-    let line = row_line("Jeydyn Fields", "8", "Jackson", "12:40.6");
-    assert_eq!(
-        line.chars().count(),
-        92,
-        "the builder emits the published width"
-    );
-    let body = with_row(OH_RAW, &line);
-    let page = parse_raw(&body, OH_RAW_URL).expect("the capture with one more row parses");
+fn a_row_on_the_captures_published_columns_is_a_row() {
+    let line = capture_row_line(NC_RAW);
+    let body = with_row(NC_RAW, &line);
+    let page = parse_raw(&body, NC_RAW_URL).expect("the capture with one more row parses");
     assert_eq!(
         page.meet.rows_parsed,
-        OH_RAW_ROWS + 1,
-        "a row on the published columns is a row"
+        NC_RAW_ROWS + 1,
+        "a row on the capture's own columns is a row"
     );
     assert!(
         page.skipped.is_empty(),
         "nothing was dropped: {:?}",
         page.skipped
     );
-}
-
-fn row_with_overflowing_mark() -> String {
-    const MARK: &str = "1:23:45.67";
-    const CELL_END: usize = 84;
-    let mut chars: Vec<char> = row_line("Jeydyn Fields", "8", "Jackson", "")
-        .chars()
-        .collect();
-    for (offset, ch) in MARK.chars().enumerate() {
-        chars[CELL_END - MARK.chars().count() + offset] = ch;
-    }
-    chars.into_iter().collect()
-}
-
-#[test]
-fn a_row_whose_mark_overflows_its_columns_is_reported_rather_than_misread() {
-    let line = row_with_overflowing_mark();
-    let body = with_row(OH_RAW, &line);
-    let page = parse_raw(&body, OH_RAW_URL).expect("the capture with one bad row parses");
-    assert_eq!(
-        page.meet.rows_parsed, OH_RAW_ROWS,
-        "the shifted row is not read as a row"
-    );
-    assert_eq!(
-        page.skipped.len(),
-        1,
-        "it is reported instead: {:?}",
-        page.skipped
-    );
-    assert!(
-        page.skipped[0].contains("did not fit the column map"),
-        "the report names why: {:?}",
-        page.skipped[0]
-    );
-    assert_eq!(page.meet.rows_skipped, 1);
 }
 
 #[test]

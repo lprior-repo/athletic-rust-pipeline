@@ -1,0 +1,14 @@
+HTTP/2 200 
+content-type: application/json
+server: nginx
+set-cookie: XSRF-TOKEN=eyJpdiI6ImhsaDFORWgvaktTWlVrZUFLQ2JlWmc9PSIsInZhbHVlIjoiazBJQkpIdE9kb2cyMmxTVXB6Zjl0Y0ZNT3B1OVJoenp3c1NBdWcxdlhyeExveHJFK2EyZ1pqVExaZ3JNbjdUYjk2SzZablRQa25vZ1FHUWppQ2VoaFZRNWhCQm9yR0QrdURGanUvMFppV0o2d25FcmJSVTh3b0dPZ3NpUHZpMTgiLCJtYWMiOiIyMzVjNWJjMDA4YWQ3YmYyNTk0M2RmZGYxNzg5NmEwMGYzZWM1YTMxYTc0YzdmYzUxZjk0NzU1M2NhZjM1ZTI1IiwidGFnIjoiIn0%3D; expires=Tue, 22-Sep-2026 04:56:08 GMT; Max-Age=3600; path=/; secure; samesite=lax
+set-cookie: fhsaa_session=i8NC3ul2hHHVGXTr9bRmAmRRAb2rsH9hSg9kmqIw; expires=Tue, 22-Sep-2026 04:56:08 GMT; Max-Age=3600; path=/; secure; httponly; samesite=lax
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+cache-control: no-cache, private
+date: Tue, 22 Sep 2026 03:56:08 GMT
+x-cache: Miss from cloudfront
+via: 1.1 e97a1ac424196b355214d47c2768b37c.cloudfront.net (CloudFront)
+x-amz-cf-pop: ORD56-P7
+x-amz-cf-id: iKNEqRElo4F9X5aGmMyGtFFttOwajzt0K83F4BllQh5Uf_wnD3peiA==
+vary: Origin
+

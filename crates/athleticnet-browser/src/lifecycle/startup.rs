@@ -21,9 +21,7 @@ impl BrowserManager {
         settings: BrowserSettings,
         clock: Arc<dyn Clock>,
     ) -> Result<Self, BrowserStartupError> {
-        settings
-            .validate()
-            .map_err(|_| BrowserStartupError::InvalidTabCount)?;
+        settings.validate()?;
         pool::prepare_profile(&settings).map_err(|_| BrowserStartupError::ProfileNotDirectory)?;
         let config = browser_config(&settings)?;
         let (browser, handler) = Browser::launch(config)
@@ -38,9 +36,7 @@ impl BrowserManager {
         settings: BrowserSettings,
         clock: Arc<dyn Clock>,
     ) -> Result<Self, BrowserStartupError> {
-        settings
-            .validate()
-            .map_err(|_| BrowserStartupError::InvalidTabCount)?;
+        settings.validate()?;
         let handler_config = HandlerConfig {
             request_timeout: settings.request_timeout,
             ..Default::default()

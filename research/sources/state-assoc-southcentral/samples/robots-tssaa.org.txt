@@ -1,0 +1,13 @@
+# robots.txt for https://tssaa.org/
+
+sitemap: https://tssaa.org/sitemaps-1-sitemap.xml
+sitemap: https://ms.tssaa.org/sitemaps-1-sitemap.xml
+
+# live - don't allow web crawlers to index cpresources/ or vendor/
+
+User-agent: *
+Disallow: /cpresources/
+Disallow: /vendor/
+Disallow: /.env
+Disallow: /cache/
+

@@ -3,7 +3,7 @@
 **Date:** 2026-09-25
 **Scope:** `crates/census-reconcile/`, `crates/census-review/`, `crates/census-domain/src/model/`, `crates/census-store/src/entities/`
 **Objective:** Historical adversarial-identity review of commit `183fca13dd6d48165d04c76fd56648998e6b432f`; static findings, not reproduced failures or current release status.
-**Authority:** [DOMAIN.md](../DOMAIN.md) and [ADR-005](adr/ADR-005-ai-cannot-override-contradictions.md) own current adjudication. Rust accepts identities; ambiguous cases require both local Qwen reviews. This audit's former single-model assignment assumption is superseded.
+**Authority:** [ARCHITECTURE.md](../ARCHITECTURE.md) §8 and [ADR-005](adr/ADR-005-ai-cannot-override-contradictions.md) own current adjudication. Rust accepts identities; ambiguous cases require both local Qwen reviews. This audit's former single-model assignment assumption is superseded.
 
 Paths and guards below describe the pinned tree. Later identity repairs and their executed checks
 are recorded in [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md). Recheck a finding before

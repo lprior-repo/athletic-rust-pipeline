@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head><!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1S7NTN7QJC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-1S7NTN7QJC');
+</script>
+    <meta charset="utf-8">
+    <title>MeetPro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Track &amp; Field Meet Management For Mac &amp; Windows">
+
+    <!-- Le styles -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+	<link href="css/style.css" rel="stylesheet">
+<!--	<link href="https://fonts.googleapis.com/css?family=Oswald:400,700" rel="stylesheet" type="text/css">-->
+    <!--[if lt IE 9]>
+	<script>
+	document.createElement('header');
+	document.createElement('nav');
+	document.createElement('section');
+	document.createElement('article');
+	document.createElement('aside');
+	document.createElement('footer');
+	document.createElement('hgroup');
+	</script>
+	<![endif]-->
+    
+    <style>
+
+    /* GLOBAL STYLES
+    -------------------------------------------------- */
+    /* Padding below the footer and lighter body text */
+
+	.carousel-inner > .item > img.mobile {
+		display:none;
+	}
+
+    /* CUSTOMIZE THE CAROUSEL
+    -------------------------------------------------- */
+
+    /* Carousel base class */
+    .carousel {
+      margin-bottom: 60px;
+    }
+
+    .carousel .container {
+      position: relative;
+      z-index: 9;
+      width:88%;
+    }
+
+    .carousel-control {
+      height: 80px;
+      margin-top: 0;
+      font-size: 120px;
+      text-shadow: 0 1px 1px rgba(0,0,0,.4);
+      background-color: transparent;
+      border: 0;
+      z-index: 10;
+    }
+
+    .carousel .item {
+      height: 500px;
+    }
+    .carousel img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      min-width: 100%;
+      height: 500px;
+    }
+
+    .carousel-caption {
+      background-color: transparent;
+      position: static;
+      max-width: 550px;
+      padding: 0 20px;
+      margin-top: 200px;
+    }
+    .carousel-caption h1,
+    .carousel-caption .lead {
+      margin: 0;
+      line-height: 1.25;
+      color: #fff;
+      text-shadow: 0 1px 1px rgba(0,0,0,.4);
+    }
+    .carousel-caption .btn {
+      margin-top: 10px;
+    }
+
+
+
+    /* MARKETING CONTENT
+    -------------------------------------------------- */
+
+    /* Center align the text within the three columns below the carousel */
+    .marketing .span4 {
+      text-align: center;
+    }
+    .marketing h2 {
+      font-weight: normal;
+    }
+    .marketing .span4 p {
+      margin-left: 10px;
+      margin-right: 10px;
+    }
+
+
+    /* Featurettes
+    ------------------------- */
+
+    .featurette-divider {
+      margin: 80px 0; /* Space out the Bootstrap <hr> more */
+    }
+    .featurette {
+      padding-top: 120px; /* Vertically center images part 1: add padding above and below text. */
+      overflow: hidden; /* Vertically center images part 2: clear their floats. */
+    }
+    .featurette-image {
+      margin-top: -120px; /* Vertically center images part 3: negative margin up the image the same amount of the padding to center it. */
+    }
+
+    /* Give some space on the sides of the floated elements so text doesn't run right into it. */
+    .featurette-image.pull-left {
+      margin-right: 40px;
+    }
+    .featurette-image.pull-right {
+      margin-left: 40px;
+    }
+
+    /* Thin out the marketing headings */
+    .featurette-heading {
+      font-size: 50px;
+      font-weight: 300;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+
+	#div6 {
+		border-bottom: 1px solid #E1E1E1; 
+		color: #000; 
+		height: 80px; 
+		background: #E6EDED; 
+		background-image: -webkit-linear-gradient(top, #ffffff, #E6EDED); 
+		background-image: -ms-linear-gradient(top, #ffffff, #E6EDED); 
+	 	filter:progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr='#ffffff', endColorstr='#E6EDED'); 
+	}
+	
+	#div8 {
+		height: 80px; 
+		background: #E6EDED; 
+		background-image: -webkit-linear-gradient(top, #E6EDED, #ffffff); 
+		background-image: -ms-linear-gradient(top, #E6EDED, #ffffff); 
+ 		filter:progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr='#E6EDED', endColorstr='#ffffff'); 
+	}
+
+    /* RESPONSIVE CSS
+    -------------------------------------------------- */
+	@media (max-width:1100px) {
+		
+	
+		.carousel-caption {
+			max-width:460px;
+		}
+	}
+
+
+    @media (max-width:979px) {
+		
+      .carousel .item {
+        height: 500px;
+      }
+      .carousel img {
+        width: auto;
+        height: 500px;
+      }
+
+      .featurette {
+        height: auto;
+        padding: 0;
+      }
+      .featurette-image.pull-left,
+      .featurette-image.pull-right {
+        display: block;
+        float: none;
+        max-width: 70%;
+        margin: 0 auto 20px;
+      }	
+    
+    	.carousel-inner > .item > img.mobile {
+    		display:block;
+    	}
+    	
+    	.carousel-inner > .item > img.regular {
+    		display:none;
+    	}
+    
+    }
+    
+
+
+    @media (max-width:767px) {
+	
+		body {
+			padding:0px;
+		}
+		
+		#navHeader {
+			margin:0px;
+		}
+
+      .carousel .item {
+        height: 300px;
+      }
+      .carousel img {
+        height: 300px;
+      }
+      .carousel-caption {
+        width: 88%;
+        padding: 0 30px;
+        margin-top: 65px;
+      }
+      .carousel-caption h1 {
+        font-size: 30px;
+      }
+      .carousel-caption .lead,
+      .carousel-caption .btn {
+        font-size: 18px;
+      }
+
+      .marketing .span4 + .span4 {
+        margin-top: 40px;
+      }
+
+	  .marketing .container {
+	  	margin:0px 10px;
+	  }
+
+      .featurette-heading {
+        font-size: 30px;
+      }
+      .featurette .lead {
+        font-size: 18px;
+        line-height: 1.5;
+      }
+
+    }
+    
+    @media (max-width:400px) {
+    	#meetPro_intro .carousel-caption {
+    		padding:0px 30px;
+    		margin-top: 10px;
+    	}
+    	
+    	.carousel-caption h1 {
+    		font-size:24px;
+    	}
+    	
+    	.carousel-caption .lead {
+    		font-size:16px;
+    	}
+    
+    }	
+    </style>
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="../assets/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+  	<link rel="shortcut icon" href="https://d25ff44qw0vvh6.cloudfront.net/icon-16x16.png">
+ </head>
+<body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js" type="text/javascript"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/respond.min.js"></script>
+
+
+<div id="navHeader">
+    <div class="navbar-inner nav_thing">
+    	<div class="container-fluid" style="padding-right:10px;">
+            <a id="logo_link" href="index.html"><img width="160" style="padding-top:0px;" id="logo" src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/meetProLogo.png"></a>
+          <button type="button" class="btn btn-navbar collapsed" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+         
+          <div class="nav-collapse collapse" style="height: 0px;">
+           <ul class="nav">
+        <li id="nav_home" style="width:10%"><a class="nav_link" href="index.html">Home</a></li>
+        <li style="width:9%"><a class="nav_link" href="features.html">Features</a></li>
+        <li style="width:9%"><a class="nav_link" href="meetpro_server.html">Server</a></li>
+        <li style="width:16%"><a class="nav_link" href="guide/reports_guide.html" target="_blank">Custom HTML</a></li>
+				<li id="nav_get" style="width:16%"><a class="nav_link" href="get.html">Get MeetPro</a></li>
+
+				<li style="width:11%"><a class="nav_link" href="documentation.html">Documentation</a></li>
+
+				<li style="width:5%"><a class="nav_link" href="FAQ.html">FAQ</a></li>
+			</ul> 
+          </div><!--/.nav-collapse -->
+        </div>
+    </div>
+</div>
+
+<div id="meetProCarousel" class="carousel slide">
+	<div class="carousel-inner">
+		
+		<div id="meetPro_intro" class="item active">
+        	<img class="regular" src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/trackbackground2.png" />
+        	<img class="mobile" src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/trackbackground.JPG" />
+        	<div class="container">
+        		<div class="carousel-caption">
+        		<h1>Track & Field Meet</br>Management Made Easy</h1>
+        		<p class="lead"> Introducing MeetPro, the new track & field and cross country meet 
+        		management application from DirectAthletics. 
+        		MeetPro is an inexpensive and full-featured meet management solution designed to meet the needs of timers, 
+        		meet directors, coaches, athletes and fans. </p>
+        		</div>
+        	</div>
+        </div>
+    	<div class="item">
+        	<img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/tracklanes.png" /> <!--Thanks to ~jlgm25 for the laptop image-->
+        	<img class="mobile" src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/tracklanes_mob.png" />
+        	<div class="container">
+        		<div class="carousel-caption">
+        		<h1>Web Ready</h1>
+        		<p class="lead"> MeetPro is designed with the web in mind. Seamlessly integrated with DirectAthletics and TFRRS. 
+        		Uploads live results via FTP or Amazon's S3. Imports entries in common formats. </p>
+        		</div>
+        	</div>
+        </div>
+        
+        <div class="item">
+        	<img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/hurdles.png" /> <!--Hurdles photo credit: Phil Roeder. Accessed commons.wikimedia.org-->
+        	<img class="mobile" src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/hurdles_mob.jpg" />
+        	<div class="container">
+        		<div class="carousel-caption">
+        		<h1>Flexible & Powerful</h1>
+        		<p class="lead"> MeetPro generates reports in PDF, HTML and Rich Text and exports data to Excel and CSV.
+        		 Data can be imported from TFRRS, DirectAthletics, Semi-Colon Delimited files, TCL files, templates and existing meet databases. </p>
+        		</div>
+        	</div>
+        </div>
+        
+
+        <div class="item">
+        	<img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/polevault.png" /> <!--Apple(tm) logo by zandog. Microsoft(tm) logo by ~mppagano.-->
+        	<img class="mobile" src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/polevault_mob.jpg" />
+        	<div class="container">
+        		<div class="carousel-caption">
+        		<h1>Platform Neutral</h1>
+        		<p class="lead"> MeetPro works the same in Windows and Mac, no emulation necessary. </p>
+        		</div>
+        	</div>
+        </div>
+    </div>
+    <a class="left carousel-control" href="#meetProCarousel" data-slide="prev">‹</a>
+	<a class="right carousel-control" href="#meetProCarousel" data-slide="next">›</a>
+</div>
+
+<div class="marketing">
+<div id="div6" style="">
+
+    <div style="width: auto; text-align: center; color: #626D71; letter-spacing: 1px; font-family: 'Oswald', sans-serif; font-size: 18px;"><br>
+        People Using MeetPro
+    </div>
+    <div style="width: auto; text-align: center; color: #626D71; letter-spacing: 1px; font-family: 'Oswald', sans-serif; font-size: 20px; margin-top: 50px;">            
+    </div>
+</div>
+<div id="div7" style="border-bottom: 1px solid #D9D9D9;">
+                
+        <div class="simply-scroll simply-scroll-container">
+        <div class="simply-scroll-clip">
+        <ul id="scroller" style="margin-top: 40px; width: 5200px;" class="simply-scroll-list">
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/airforce.png" height="40"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/cal_state_stanis.png" height="40" width="150"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/ucolorado.png" height="40"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/etown.png" height="40"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/hendrix.png" height="40"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/iwu.png" height="40"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/laverne.png" height="40"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/ManhattanJaspers.png" height="40"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/minot_state.png" height="40"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/trine.png" height="40"></li> 
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/wabash.png" height="40"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/wells-express.png" height="70"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/Western_Oregon_Wolves.png" height="70"></li>
+            <li><img src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/williamette.png" height="70"></li>
+        </ul>
+        </div>
+        </div>
+        
+     
+
+</div>
+<div id="div8" style="">
+	<a class="pull-right" href="results.php#customResultsUsers" style="margin:70px 10px 0px 0px;">Featured Customers >>></a>
+</div>
+
+
+<div class="container">
+<hr class="featurette-divider">
+<div class="featurette" style="padding-top:0px">
+<img class="featurette-img pull-right" src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/guide_html.png"/>
+    <h2 class="featurette-heading">MeetPro Web Reports</h2>
+<p class="lead">MeetPro offers fully customizable HTML report templates. Check out the new guide <a href="guide/reports_guide.html" target="_blank">here.</a>
+    
+</p>    
+</div>           
+<hr class="featurette-divider">
+<div class="featurette">
+	<img class="featurette-image pull-left" src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/mp_splits_shadow.png">
+	<h2 class="featurette-heading">Splits</h2>
+	<p class="lead">MeetPro is the only meet manager on the market to publish split times in results.</p>
+</div>
+<hr class="featurette-divider">
+<div class="featurette">
+	<img class="featurette-image pull-right" src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/web_app_featurette.png">
+	<h2 class="featurette-heading">WebApp Integration</h2>
+	<p class="lead">Enter results for field events quickly and easily. Seamlessly upload to your host computer. No paper, no hassle.</p>
+</div>
+<hr class="featurette-divider">
+<div class="featurette">
+	<img class="featurette-image pull-left" src="https://d25ff44qw0vvh6.cloudfront.net/NewMeetPro/da_inside_trackoutline.png">
+	<h2 class="featurette-heading">All Inclusive</h2>
+    <p class="lead">MeetPro is a full featured meet management system for Track &amp; Field and Cross Country. It is available for Windows and Mac OS X. Every feature is included and all upgrades are free. <a href="get.html#try"> Try MeetPro free for 30 days</a>.</p>
+	
+</div>
+<a class="pull-right" href="features.html">More features >>></a>	
+
+<script type="text/javascript" src="jquery-simplyscroll/jquery.simplyscroll.js"></script>
+<link rel="stylesheet" href="jquery-simplyscroll/jquery.simplyscroll.css" media="all" type="text/css">
+<!--<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script-->   
+
+
+<hr class="featurette-divider">
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/all.js#xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-66287-9']);
+  _gaq.push(['_setDomainName', 'tfmeetpro.com']);
+  _gaq.push(['_setAllowLinker', true]);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>	
+	<footer class="footer">
+
+		<p>Useful Links: <a href="index.html">Home</a> · <a href="features.html">Features</a> · <a href="get.html">Get</a> · <a href="http://blog.tfmeetpro.com">Blog</a> · <a href="faq.html">FAQ</a></p>
+		<div class="fb-like" data-href="https://www.facebook.com/meetpro" data-layout="button_count" data-action="like" data-show-faces="false" data-share="false"></div>	
+			<div><a href="https://twitter.com/meetpro" class="twitter-follow-button" data-show-count="false" data-lang="en">Follow @MeetPro</a>
+			<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="//platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+			<p class="pull-right">© DirectAthletics, Inc.</p>
+        </div>
+
+	</footer>
+</div>	
+</div>
+<script>
+	
+      !function ($) {
+        $(function(){
+          // carousel demo
+          $('#meetProCarousel').carousel()
+        })
+      }(window.jQuery)
+      
+      !function($) {
+	$(function() { //on DOM ready 
+    		$("#scroller").simplyScroll();
+			console.log('scrolled');
+	});
+ }(window.jQuery);
+
+</script>
+</body>
+</html>
+    				

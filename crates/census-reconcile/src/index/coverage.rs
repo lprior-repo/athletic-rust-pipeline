@@ -4,14 +4,14 @@ use census_domain::model::{
     CoverageRow, CoverageScope, GradYear, SourceNamespace, SourceObjectIdentity,
 };
 
+use census_report::export::ExportDataset;
 use census_report::report::{coverage_report, ReportResult};
-use census_store::Store;
 
 pub(super) fn coverage_rows(
-    store: &Store,
+    dataset: &ExportDataset,
     identities: &[SourceObjectIdentity],
 ) -> ReportResult<Vec<CoverageRow>> {
-    let report = coverage_report(store, Some(GradYear::CO2027.get()))?;
+    let report = coverage_report(dataset, Some(GradYear::CO2027.get()))?;
     let mut rows = Vec::with_capacity(report.jurisdictions.len().saturating_add(identities.len()));
     for jurisdiction in &report.jurisdictions {
         rows.push(

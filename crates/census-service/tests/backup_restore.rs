@@ -6,7 +6,8 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 use census_report::bests;
-use census_report::report::{self, Census, Scope};
+use census_report::export::ExportDataset;
+use census_report::report::{self, Census, Derivation, Scope};
 use census_service::census;
 use census_store::{Store, StoreError, StoreStats, Table};
 use sha2::{Digest, Sha256};
@@ -306,30 +307,27 @@ fn capture(store: &Store, history_id: &SchoolId) -> ReadModel {
         .find(|row| &row.id == history_id)
         .expect("the merged history school")
         .clone();
+    let dataset = ExportDataset::load(store).expect("export dataset");
+    let core = Derivation::of(&dataset, Scope::Core, None);
+    let all_sources = Derivation::of(&dataset, Scope::AllSources, None);
     ReadModel {
         tables: stats.tables,
         observations: stats.observations,
         merged_schools: schools.len(),
         history,
-        core: census_json(
-            &report::build_census(store, Scope::Core).expect("core census"),
-            store.root(),
-        ),
+        core: census_json(&report::build_census(&core, &store.out_dir()), store.root()),
         all_sources: census_json(
-            &report::build_census(store, Scope::AllSources).expect("all-sources census"),
+            &report::build_census(&all_sources, &store.out_dir()),
             store.root(),
         ),
-        bests: serde_json::to_string_pretty(
-            &bests::build(
-                store,
-                &bests::Options {
-                    scope: Scope::Core,
-                    grad_year: Some(2027),
-                    limit: None,
-                },
-            )
-            .expect("best marks"),
-        )
+        bests: serde_json::to_string_pretty(&bests::build_from_dataset(
+            &dataset,
+            &bests::Options {
+                scope: Scope::Core,
+                grad_year: Some(2027),
+                limit: None,
+            },
+        ))
         .expect("best marks serialize"),
         counts: census::consolidate(store).expect("consolidating the store"),
         snapshots: snapshots(&store.out_dir()),

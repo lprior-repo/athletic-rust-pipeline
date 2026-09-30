@@ -11,6 +11,7 @@ mod snapshot;
 mod view;
 
 pub(crate) use directory::directory_bytes;
+pub use identity::build_athlete_identity_projection;
 pub(crate) use snapshot::sweep_stale_temporaries;
 pub use snapshot::{csv_failure, publish_atomically, read_rows, write_snapshot_rows};
 pub use view::StoreSnapshot;

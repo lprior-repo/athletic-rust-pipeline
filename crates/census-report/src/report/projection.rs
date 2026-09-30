@@ -1,17 +1,17 @@
-use super::coverage::{jurisdiction_of, school_state_index};
+use super::coverage::jurisdiction_of;
+use super::derivation::Derivation;
 use super::notes::{bump, census_notes, state_entry};
 use super::rows::{
     coach_sport, school_coach_index, tally_co2027, AthleteRollup, CoachRollup, RowCounts,
 };
 use super::tables::{duplicate_school_names, meet_coverage, schools_by_state, totals_of};
-use super::{retain_core, Census, ProviderCoverage, ReportResult, Scope, StateCensus};
+use super::{Census, ProviderCoverage, StateCensus};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, GradYear,
 };
 use census_domain::{JurisdictionBucket, UsJurisdiction};
-use census_store::clock::{Clock, SystemClock};
-use census_store::{Store, Table};
 use std::collections::{BTreeMap, HashMap};
+use std::path::Path;
 
 fn rollup_athletes(
     athletes: &[CanonicalAthlete],
@@ -81,22 +81,6 @@ fn seed_states(by_state: &mut BTreeMap<JurisdictionBucket, StateCensus>) {
     state_entry(by_state, JurisdictionBucket::Unplaced);
 }
 
-pub(crate) fn in_run_scope(bucket: JurisdictionBucket) -> bool {
-    bucket
-        .jurisdiction()
-        .is_none_or(UsJurisdiction::is_in_census_scope)
-}
-
-pub(crate) fn exclude_out_of_scope<T>(
-    rows: &mut Vec<T>,
-    place: impl Fn(&T) -> JurisdictionBucket,
-) -> Vec<T> {
-    let (kept, excluded): (Vec<T>, Vec<T>) =
-        rows.drain(..).partition(|row| in_run_scope(place(row)));
-    *rows = kept;
-    excluded
-}
-
 #[derive(Debug, Default)]
 struct OutsideRow {
     schools: usize,
@@ -151,33 +135,6 @@ fn outside_scope_note(bucket: JurisdictionBucket, row: &OutsideRow) -> String {
     )
 }
 
-type ScannedTables = (
-    Vec<CanonicalSchool>,
-    Vec<CanonicalAthlete>,
-    Vec<CanonicalCoach>,
-    Vec<CanonicalMeet>,
-);
-
-fn scan_tables(store: &Store) -> ReportResult<ScannedTables> {
-    Ok((
-        store.scan(Table::Schools)?,
-        store.scan(Table::Athletes)?,
-        store.scan(Table::Coaches)?,
-        store.scan(Table::Meets)?,
-    ))
-}
-
-fn apply_evidence_scope(
-    scope: Scope,
-    athletes: &mut Vec<CanonicalAthlete>,
-    meets: &mut Vec<CanonicalMeet>,
-) -> usize {
-    match scope {
-        Scope::AllSources => 0,
-        Scope::Core => retain_core(athletes).saturating_add(retain_core(meets)),
-    }
-}
-
 fn fill_school_counts(
     by_state: &mut BTreeMap<JurisdictionBucket, StateCensus>,
     schools: &[CanonicalSchool],
@@ -188,41 +145,32 @@ fn fill_school_counts(
     }
 }
 
-pub fn build_census(store: &Store, scope: Scope) -> ReportResult<Census> {
-    let out = store.out_dir();
-    let (mut schools, mut athletes, mut coaches, mut meets) = scan_tables(store)?;
-    let outside_schools = exclude_out_of_scope(&mut schools, |school| school.state.into());
-    let mut school_state = school_state_index(&schools);
-    school_state.extend(school_state_index(&outside_schools));
-    let outside_athletes = exclude_out_of_scope(&mut athletes, |athlete| {
-        jurisdiction_of(&school_state, athlete.school.as_str())
-    });
-    let outside_coaches = exclude_out_of_scope(&mut coaches, |coach| {
-        jurisdiction_of(&school_state, coach.school.as_str())
-    });
-    let outside_meets = exclude_out_of_scope(&mut meets, |meet| meet.state.into());
-    let dropped = apply_evidence_scope(scope, &mut athletes, &mut meets);
-    let counts = RowCounts::of(&schools, &athletes, &coaches, dropped);
-    let school_coach = school_coach_index(&coaches);
-    let athlete_rollup = rollup_athletes(&athletes, &school_state, &school_coach);
-    let coach_rollup = rollup_coaches(&coaches, &school_state);
+pub fn build_census(derivation: &Derivation<'_>, out: &Path) -> Census {
+    let schools = derivation.schools();
+    let athletes = derivation.athletes();
+    let coaches = derivation.coaches();
+    let school_state = derivation.school_state();
+    let counts = RowCounts::of(schools, athletes, coaches, derivation.dropped_rows());
+    let school_coach = school_coach_index(coaches);
+    let athlete_rollup = rollup_athletes(athletes, school_state, &school_coach);
+    let coach_rollup = rollup_coaches(coaches, school_state);
     let coach_sources_empty = coach_rollup.sources.is_empty();
     let mut by_state = athlete_rollup.by_state;
     seed_states(&mut by_state);
     apply_coach_states(&mut by_state, &coach_rollup.by_state);
-    fill_school_counts(&mut by_state, &schools);
-    let mut notes = census_notes(scope, &counts, coach_sources_empty, &out);
+    fill_school_counts(&mut by_state, schools);
+    let mut notes = census_notes(derivation.scope(), &counts, coach_sources_empty, out);
     notes.extend(outside_scope_notes(
-        &outside_schools,
-        &outside_athletes,
-        &outside_coaches,
-        &outside_meets,
-        &school_state,
+        derivation.outside_schools(),
+        derivation.outside_athletes(),
+        derivation.outside_coaches(),
+        derivation.outside_meets(),
+        school_state,
     ));
-    Ok(Census {
-        generated_on: SystemClock.today(),
-        store_dir: store.root().display().to_string(),
-        scope: scope.as_str().to_string(),
+    Census {
+        generated_on: derivation.dataset().lineage.generated_on.clone(),
+        store_dir: derivation.dataset().lineage.store_root.clone(),
+        scope: derivation.scope().as_str().to_string(),
         totals: totals_of(&by_state, &counts),
         by_state,
         athletes_by_grad_year: athlete_rollup.by_grad_year,
@@ -236,8 +184,8 @@ pub fn build_census(store: &Store, scope: Scope) -> ReportResult<Census> {
         coach_roles: coach_rollup.roles,
         coach_sports: coach_rollup.sports,
         coach_sources: coach_rollup.sources,
-        meets: meet_coverage(&meets),
-        duplicate_school_names: duplicate_school_names(&schools),
+        meets: meet_coverage(derivation.meets()),
+        duplicate_school_names: duplicate_school_names(schools),
         notes,
-    })
+    }
 }

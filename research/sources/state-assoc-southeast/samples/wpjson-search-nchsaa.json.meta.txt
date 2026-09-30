@@ -1,0 +1,19 @@
+HTTP/1.1 200 OK
+Date: Tue, 22 Sep 2026 03:58:37 GMT
+Server: Apache/2.4.62 (Rocky Linux) OpenSSL/3.5.5
+X-Powered-By: PHP/8.3.33
+X-Robots-Tag: noindex
+X-Content-Type-Options: nosniff
+Access-Control-Expose-Headers: X-WP-Total, X-WP-TotalPages, Link
+Access-Control-Allow-Headers: Authorization, X-WP-Nonce, Content-Disposition, Content-MD5, Content-Type
+X-WP-Total: 147
+X-WP-TotalPages: 30
+Link: <https://www.nchsaa.org/wp-json/wp/v2/search?search=track+and+field+state+championship&per_page=5&page=2>; rel="next"
+Allow: GET
+Vary: Origin,Accept-Encoding
+Cache-Control: max-age=31536000
+Expires: Wed, 22 Sep 2027 03:58:37 GMT
+Referrer-Policy: no-referrer-when-downgrade
+Transfer-Encoding: chunked
+Content-Type: application/json; charset=UTF-8
+

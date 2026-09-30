@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <!-- HTML Head -->
+    <head>
+
+        <!-- Google Analytics -->
+        <!-- Google tag (gtag.js) -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-JQSLYYK5GS"></script>
+		<script>
+		    window.dataLayer = window.dataLayer || [];
+		    function gtag(){dataLayer.push(arguments);}
+		    gtag('js', new Date());
+		    gtag('config', 'G-JQSLYYK5GS');
+		</script>        
+        <!-- Page Title -->
+        <title>
+                Adrian        </title>
+
+        <!-- Meta Tage -->          
+                    <meta charset="utf-8" />
+            <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+            <meta name="description" content="Oregon School Activities Association">
+            <meta name="viewport" content="width=device-width">
+        
+        <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.10.3/themes/redmond/jquery-ui.css">        
+
+        <!-- Stylesheets -->
+        <link rel="stylesheet" type="text/css" href="https://www.osaa.org/css/default.css">
+        <link rel="stylesheet" type="text/css" href="https://www.osaa.org/css/fix_nav.css">
+
+        <!-- JQuery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>       
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+
+        <!-- JavaScripts -->
+                        <script src="https://www.osaa.org/scripts/twitter.js" type="text/javascript"></script>
+            <script src="https://www.osaa.org/scripts/scroller.js" type="text/javascript"></script>
+        
+
+    <style type="text/css">
+    	body {
+    		position: relative;
+    	}
+
+    	tbody tr.odd {
+    		background-color: #f2f2f2;
+    	}
+
+    	.success_bar {
+    		position: fixed;
+    		top: 600px;
+    		left: 0;
+    		width: 100%;
+    		padding: 0.25em 0;
+    		line-height: 1.5em;
+    		background-color: rgba(176, 255, 190, 0.0);
+    		border-bottom: 2px solid rgba(13, 88, 27, 0.50);
+    		border-top: 2px solid rgba(13, 88, 27, 0.50);
+    		z-index: 500;
+    	}
+
+    	.success_bar .message {
+    		width: 1200px;
+    		margin: 0 auto;
+    		font-size: 14pt;
+    		color: #151515;
+    	}  
+
+    	.page_functions {
+    		width: auto !important;
+    	}
+
+    	/* Schools Menu */
+    	#schools_menu.ui-menu {
+    		position: absolute;
+    		width: 200px;
+    		max-height: 30em;
+    		overflow-x: hidden;
+    		overflow-y: scroll;
+    	}
+
+        ul#schools_menu.ui-menu {
+            padding: 0 !important;
+            z-index: 200;
+        }
+
+        #schools_menu .ui-menu-item {
+        	text-align: left;
+        	white-space: nowrap;
+        }
+
+        /* Help Dialog */
+        .help_dialog {
+            font-size: 10pt;
+        }
+
+        .help_dialog h1 {
+            font-size: 14pt;
+            color: #005fa9 !important;
+            margin: 1em 0 1em 0;
+        }
+
+        .help_dialog h2 {
+            font-size: 12pt;
+            color: #1C43A6 !important;
+            margin: 1em 0 0.5em 0;
+        }
+
+        .help_dialog h3 {
+            font-size: 10pt;
+            color: #000000 !important;
+            margin: 0.75em 0 0em 0;
+        }
+
+        .help_dialog h4.line {
+        	border-bottom: 1px solid #005fa9;
+        	margin-bottom: 0.5em;
+        	padding-bottom: 0.25em;
+        }
+
+        .help_dialog ul, ol {
+            margin-left: 28px;
+        }
+
+        .help_dialog dl dt {
+            float: left;
+            width: 200px;
+            text-align: right;
+            margin-right: 20px;
+            font-weight: bold;
+            clear: both;
+        }
+
+        .help_dialog label {
+            font-weight: bold;
+            width: 100px;
+            display: inline-block;
+        }
+
+        .help_dialog label.disabled {
+        	color: #cccccc;
+        }
+
+        .help_dialog input[type="checkbox"] {
+        	vertical-align: middle;
+        }    
+
+        .help_dialog .activities {        	
+        	white-space: nowrap;
+        }
+
+        .help_dialog .activities input {
+        	margin-right: 6px;
+        }
+
+        .help_dialog .activities .season_options,
+        .help_dialog .all_activities_options {
+        	font-size: 8pt;        	
+        }
+
+        .help_dialog .activities .season_options img,
+        .help_dialog .all_activities_options img {
+        	width: .75em;
+        	height: .75em;
+        	margin-right: 4px;
+        }        
+
+    </style>
+
+
+        <!-- JQuery Page Initialization -->
+        <script type="text/javascript">        
+
+            $(document).ready(function()
+            {
+                
+	$('.button').button();
+	$('.button.no_text').button({ text : false});
+	$('.button.map_link').button({ icons : { primary : 'ui-icon-pin-s' }});
+	$('.button.edit').button({ icons : { primary : 'ui-icon-pencil' }});
+	$('.button.edit_league').button({ icons : { primary : 'ui-icon-pencil' }, text : false}).css('width', '16px').css('height', '16px').tooltip();
+	$('.button.add').button({ icons : { primary : 'ui-icon-plusthick' }});
+	$('.button.delete').button({ text : false, icons : { primary : 'ui-icon-closethick'}}).css('width', '16px').css('height', '16px');
+
+	$('.tooltip').tooltip();
+
+	$('.edit_school_info_button')
+		.button({ icons : { primary : 'ui-icon-pencil' }})
+		.css({
+		    'font-size' : '9pt',
+		    'float' : 'right',
+		    'margin-left' : '10px',		    
+			'top' : '0.75em',
+			'float' : 'right',
+			'position' : 'relative'});
+
+
+		$('.back_to_schools_list').button ({ icons : { primary : 'ui-icon-arrowreturnthick-1-w'}});
+	$('.prev_school_button').button({'icons' : { 'primary' : 'ui-icon-triangle-1-w'}, 'text' : false});
+	$('.next_school_button').button({'icons' : { 'primary' : 'ui-icon-triangle-1-e'}, 'text' : false});
+	
+	$('.disabled').button('disable');
+
+    // All schools menu
+    $('#schools_menu')
+		.menu()
+        .css({'font-size' : '9pt'})
+        .hide()
+        
+    $(document).click(function(event)
+    {
+    	$('#schools_menu').hide();
+    	$('.list_school_button').button('option', 'icons', { 'primary' : 'ui-icon-triangle-2-n-s'}); 
+	});
+
+	$('.list_school_button')
+		.button({'icons' : { 'primary' : 'ui-icon-triangle-2-n-s'}, 'text' : false})
+		.click(function(event)
+        {
+            var menu_button = $(this);
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            var menu = $('#schools_menu');
+
+            if (menu.is(':visible'))
+           	{
+           		menu.hide();
+           		menu_button.button('option', 'icons', { 'primary' : 'ui-icon-triangle-2-n-s'});           		
+           	}
+           	else
+           	{
+            	menu_button.button('option', 'icons', { 'primary' : 'ui-icon-triangle-1-s'});
+            	menu.show()
+                .position({'my' : 'right top',
+                           'at' : 'right bottom',
+                           'of' : '.list_school_button'});                    
+            }
+        });
+
+
+	function colorRows ()
+	{		
+		$('table').each(function ()
+		{
+			var i = 0;
+
+			$('tbody tr:visible', $(this)).each(function ()
+			{
+				if (i % 2 == 1)
+				{
+					$(this).addClass('odd');
+				}
+				else
+				{
+					$(this).removeClass('odd');
+				}
+				i = i + 1;
+			});		
+
+
+		});		
+	}
+
+	colorRows();
+
+	$('.success_bar').animate({ 'top' : 32, 'background-color' : 'rgba(176, 255, 190, 1.0)'}, 1600, 'easeOutQuad', function ()
+	{		
+		$(this).delay(6000).fadeOut(4000);	
+
+		$(this).hover(function ()
+		{
+			$(this).stop(true).css('opacity', '1.0');
+		},
+		function ()
+		{
+			$(this).fadeOut(4000);
+		})
+	});	
+	
+	$('.staff_info')
+		.button({ text : false,
+		          icons : { primary : 'ui-icon-help'}})
+		.css({'width' : '16px', 'height' : '16px'})
+		.tooltip()
+		.click(function ()
+		{
+			var staff_obj = $(this);
+			var staff_id = $(staff_obj).attr('data-staff-id');			
+			var staff_lookup = $(staff_obj).attr('data-lookup');
+
+			$('<div></div>')
+			    .appendTo('body')			    
+			    .dialog(
+			    {	      		    
+	      			dialogClass: 'contact_information_card',
+	      			resizable: false,
+	      			height: 200,
+	      				      			width: 400,
+	      				      			modal: false,	      			
+	      			title: 'Contact Information',
+			      	open : function ()
+				    	{  
+				       		var dialog_object = $(this);				       		
+
+				       		dialog_object.html("<div class='ajax_loader' style='width:16px; height:11px; margin:4em auto; background-image: url(https://www.osaa.org/images/icons/ajax_loader2.gif); background-repeat:no-repeat;'></div>");          
+
+				          	var jqxhr = $.ajax({
+				          							type : 'GET',
+				          							url : 'https://www.osaa.org/' + staff_lookup + '/' + staff_id,
+				          							dataType : 'html'
+				          						})
+				          						.done(function (data)
+												{
+			                                    	dialog_object.html(data);
+			                                        
+			                                    }).fail(function (jqXHR, status, error)
+			                                    {			                                    	
+			                                    	var response = jqXHR.responseText;
+			                                    	var errorData = $.parseJSON(response);			                                    	
+			                                    	console.log(errorData);
+			                                    	dialog_object.html('<h3 style="margin: 0.5em 0;">' + errorData.error.type + '</h3>' + errorData.error.message + '<br /><br /><span style="font-size: 9pt;">Line ' + errorData.error.line + ' in ' + errorData.error.file);
+
+			                                    	if (dialog_object.html() == '')
+			                                    	{
+			                                    		dialog_object.html('There was an error.');
+			                                    	}
+			                                    });	
+
+			                $('.contact_information_card .ui-widget-header').addClass('ui-state-hover');
+			                $('.contact_information_card .ui-dialog-title').css('font-size', '11pt');
+				      	}
+				});
+		});
+
+	
+	/*
+	 * School schedule setup
+	 */
+
+	$('#download_list')
+		.css({'position' : 'relative',
+			  'top' : '9px',
+			  'float' : 'right',
+			  'left' : '0'});
+
+	// Download drop-down menu
+    $('#grabber_list')
+        .menu()
+        .css({'display' : 'none',
+              'z-index' : '200',
+              'position' : 'absolute',
+              'left' : '0',
+              'top' : '25px',
+              'margin' : '0',
+              'padding' : '0',
+              'font-size' : '9pt',
+			  'width' : '150px'});   
+
+	$('#grabber_list a').on('click', function(event)
+	{
+		if ($(this).is('[data-event="prevent-default"]'))
+		{
+			event.preventDefault();
+		}
+		else
+		{
+			event.stopPropagation();
+		}
+	});
+
+    $('#grabber_list li ul')
+        .css({'margin' : '0',
+              'padding' : '0',
+              'width' : '190px'});
+
+    $('#grabber_list img')
+        .css({'position' : 'relative',
+              'top' : '2px',
+              'margin-right' : '6px'});
+
+    $('#grabber_button')
+        .button({ icons : { primary : 'ui-icon-document', secondary : 'ui-icon-triangle-1-s'}})
+        .css({'float' : 'right',
+              'font-size' : '9pt',
+          	  'margin-right' : '20px'})
+        .click(function (event)
+        {
+            if ($('#grabber_list').is(':visible'))
+            {
+                $('#grabber_list').slideUp(200);
+                $(this).button({icons : { primary : 'ui-icon-document', secondary : 'ui-icon-triangle-1-s'}});
+            }
+            else
+            {
+                $('#grabber_list').slideDown(200);
+                $(this).button({icons : { primary : 'ui-icon-document-b', secondary : 'ui-icon-triangle-1-n'}});
+            }
+
+            event.stopPropagation();
+        });
+
+    $(document).on('click', function() 
+    {
+    	if ($('#grabber_list').is(':visible'))
+        {
+            $('#grabber_list').slideUp(200);
+            $('#grabber_button').button({icons : { primary : 'ui-icon-document', secondary : 'ui-icon-triangle-1-s'}});
+        }
+	});
+
+	$('[data-action="school-schedule"]').on('click', function(event)
+	{
+		event.preventDefault();
+		$('#grabber_button').click();
+
+		$('<div></div>')
+        .appendTo('body')
+        .dialog(
+        {                       
+            draggable : true,
+            resizable : false,
+            modal : true,
+            height : 600,
+            width : 600,                    
+            title : 'School Schedule',
+            buttons: [                                
+                {
+                    text : "Download",
+                    'class' : "float_left",                            
+                    'data-autofocus' : 'true',
+                    icons : { primary : 'ui-icon-document'},
+                    click : function()
+                    {
+                        // Get the form
+                        var form = $('form[name="download-schedule"]', $(this))[0];	                        
+
+                        
+                        form.submit();
+                    }
+                },                                             
+                {
+                    text : "Cancel",
+                    'class' : "float_right",                            
+                    icons : { primary : 'ui-icon-cancel'},                            
+                    click : function()
+                    {
+                        // Close the dialog box
+                        $(this).dialog("close");   
+                    }
+                }
+            ],
+            open : function ()
+                {
+                    var dialog_object = $(this);
+
+                    dialog_object.html("<div class='ajax_loader' style='width:16px; height:11px; margin:4em auto; background-image: url(https://www.osaa.org/images/icons/ajax_loader2.gif); background-repeat:no-repeat;'></div>");
+
+                    $(".ui-dialog-buttonpane button:contains('Download')").button("disable");	                    
+
+                    var jqxhr = $.ajax(
+                        {
+                            type : 'GET',
+                            url : 'https://www.osaa.org/schools/347/download-schedule',
+                            dataType : 'html'
+                        })
+                        .done(function (returned_data)
+                        {                               
+                            dialog_object.html(returned_data);
+
+                            $(".ui-dialog-buttonpane button:contains('Download')").button("enable").focus();
+                        })                                                                            
+                        .fail(function (jqXHR, status, error)
+                        {                                                   
+                            var response = jqXHR.responseText;
+                            var errorData = $.parseJSON(response);
+                            console.log(errorData);
+                            dialog_object.html("There was an error loading the information.<br /><br />" + errorData.error.message);	                              
+                        })              
+                        .complete(function ()
+                        {
+                            $('.tooltip', dialog_object).tooltip();
+
+                            // Limit options for specific formats
+                            $('#format').on('change', function()
+                            {
+                            	var format = $('option:selected', $(this)).val();
+
+                            	$('input[data-limit-to-format]').each(function(index)
+                            	{
+                            		var item = $(this);
+                            		var item_format = item.attr('data-limit-to-format');
+
+                            		if (item_format != format)
+                            		{
+                            			item.attr('disabled', 'disabled');
+                            			$('label[for="' + item.attr('id') + '"]').addClass('disabled');
+                            		}
+                            		else
+                            		{
+                            			item.removeAttr('disabled');
+                            			$('label[for="' + item.attr('id') + '"]').removeClass('disabled');
+                            		}
+                            	});
+                        	});
+
+                        	function setupDatePicker(duration)
+                        	{
+                        		if (duration == 'week')
+                        		{
+                        			var options = {
+								    	'dateFormat' : 'm/d/yy',
+								        'showOtherMonths' : true,
+								        'selectOtherMonths' : true
+								   	};
+								   	var label_text = 'Week Containing';
+								   	var value = '9/21/2026';
+
+								   	$('label[for="range"]').text(label_text);
+
+								    var field = $('<input />')
+								   		.attr('type', 'text')
+								   		.attr('name', 'range')
+								   		.attr('id', 'range')
+								   		.css({'width':'125px'});
+
+								   	$('#range').replaceWith(field);
+
+		                        	$('#range').val(value);			                        	
+		                        	$('#range').datepicker(options);
+                        		}
+                        		else if (duration == 'month')
+                        		{
+                        			var options = {
+								    	'dateFormat' : 'MM, yy',
+								        'showOtherMonths' : true,
+								        'selectOtherMonths' : true
+								   	};
+								   	var label_text = 'Month Of';									   	
+								   	var value = 'September, 2026';
+
+								   	var field = $('<input />')
+								   		.attr('type', 'text')
+								   		.attr('name', 'range')
+								   		.attr('id', 'range')
+								   		.css({'width':'125px'});
+
+								   	$('#range').replaceWith(field);
+
+								   	$('label[for="range"]').text(label_text);
+		                        	$('#range').val(value);			                        	
+		                        	$('#range').datepicker(options);
+	                        	}
+	                        	else if (duration == 'season')
+	                        	{
+	                        		var current_year = 2026;
+	                        		var label_text = current_year + '-' + ((current_year + 1).toString()).substring(2) + ' Season';
+		                        	
+	                        		var options = [
+	                        			$('<option></option>').attr('value', 'F').text('Fall ' + current_year),
+	                        			$('<option></option>').attr('value', 'W').text('Winter ' + (current_year.toString()).substring(2) + '-' + ((current_year + 1).toString()).substring(2)),
+	                        			$('<option></option>').attr('value', 'S').text('Spring ' + (current_year + 1))
+	                        		];
+
+	                        		var current_season = "F";		                        		
+
+	                        		var field = $('<select></select>')
+	                        			.attr('name', 'range')
+								   		.attr('id', 'range')
+								   		.css({'width':'125px'})
+								   		.append(options);
+
+								   	$('#range').replaceWith(field);
+
+								   	$('#range option[value="' + current_season + '"]').attr('selected', 'selected');
+
+								   	$('label[for="range"]').text(label_text);		                        		
+	                        	}
+	                        	else
+	                        	{
+	                        		console.log('Unknown duration.');
+	                        	}		                        	
+	                        }
+
+	                        $('#duration').on('change', function()
+	                        {
+	                        	var duration = $('option:selected', $(this)).val();
+	                        	setupDatePicker(duration);
+	                    	});
+	                    	setupDatePicker('week');
+
+	                    	// All/clear activity links
+	                    	$('.season_options a[data-action]', dialog_object)
+	                    		.on('click', function(event)
+	                    		{
+	                    			event.preventDefault();
+
+	                    			var link = $(this);
+	                    			var action = link.attr('data-action');
+	                    			var season = link.parents('.season');
+
+	                    			// Select all 
+	                    			if (action == 'all-season')
+	                    			{
+	                    				$('input.activity_option', season).prop('checked', true);
+	                    			}
+
+	                    			// Clear
+	                    			if (action == 'clear-season')
+	                    			{
+	                    				$('input.activity_option', season).prop('checked', false);
+	                    			}
+	                    		});
+
+	                    	// All/clear activity links
+	                    	$('.all_activities_options a[data-action]', dialog_object)
+	                    		.on('click', function(event)
+	                    		{
+	                    			event.preventDefault();
+
+	                    			var link = $(this);
+	                    			var action = link.attr('data-action');
+	                    			var activities = $('.activities', dialog_object);
+
+	                    			// Select all 
+	                    			if (action == 'all-activities')
+	                    			{
+	                    				$('input.activity_option', activities).prop('checked', true);
+	                    			}
+
+	                    			// Clear
+	                    			if (action == 'clear-activities')
+	                    			{
+	                    				$('input.activity_option', activities).prop('checked', false);
+	                    			}
+	                    		});
+
+							$(document).on('mousemove','#ui-datepicker-div .ui-datepicker-calendar tr',function() {$(this).find('td a').addClass('ui-state-hover'); });
+							$(document).on('mouseleave','#ui-datepicker-div .ui-datepicker-calendar tr',function() {$(this).find('td a').removeClass('ui-state-hover'); });
+                        });                            
+
+                    $('.ui-dialog-buttonpane', dialog_object.parents('.ui-dialog')).css({'padding' : '0 0.5em', 'font-size' : '9pt', 'position' : 'relative'});
+                    $('.ui-dialog-buttonpane .ui-dialog-buttonset', dialog_object.parents('.ui-dialog')).css({'width' : '100%'});                            
+                },
+            close : function ()
+                {
+                    var dialog_object = $(this);
+                    $(dialog_object).remove();
+                }
+        });
+	});	
+
+	
+        
+
+
+                $('.auto_submit_onchange').change(function(){
+                    var form = $(this).parents('form:first');
+                    form.submit();
+                });
+
+                
+                // Search OSAA website with Google
+                $('input[data-action="search"]').on('keypress', function(event)
+                {
+                    var keycode = (event.keyCode ? event.keyCode : event.which);
+                    if (keycode == '13')
+                    {
+                        searchSite();
+                    }
+                });
+                $('img[data-action="search"]').on('click', function(event)
+                {
+                    searchSite();
+                });
+                function searchSite()
+                {                    
+                    var term = $('input[data-action="search"]').val();
+                    if (term == "")
+                    {
+                        return false;
+                    }
+
+                    var root = "https://www.google.com/search";
+                    var query = "?q=site:www.osaa.org ";                    
+
+                    var url = root + query + term;
+                    
+                    console.log(url);
+
+                    window.open(url);
+                }                
+
+            });                
+
+        </script>   
+
+
+                        
+
+    </head>
+
+
+
+    <body>                                   
+
+                        
+
+        <!-- Fixed Navigation -->
+
+        <div id="navigation">                      
+    <div class="holder">
+        
+        
+
+                
+                             
+        
+         <!-- User Login -->
+        <div id="user_login">
+                            <a href="https://www.osaa.org/account/login">Login</a>
+                            
+            
+            <a href="https://www.osaa.org/help">Help</a>
+
+            
+        </div>    
+
+        <div id="menu">
+            <ul>
+                <li><a href="https://www.osaa.org"><span>Home</span></a>
+                    <ul>
+                                                    <li><a href="https://www.osaa.org/help">Help</a></li>
+                            <li><a href="https://www.osaa.org/account/login">Login</a></li>
+                                            </ul>
+                </li>
+                <li><a href="https://www.osaa.org/activities"><span>Activities</span></a>
+                <ul>
+                    <li><a href="https://www.osaa.org/activities/fall"><span>Fall</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/activities/fbl">Football</a></li>
+                                                    <li><a href="https://www.osaa.org/activities/gvb">Girls Volleyball</a></li>
+                                                <li><a href="https://www.osaa.org/activities/bsc">Boys Soccer</a></li>
+                        <li><a href="https://www.osaa.org/activities/gsc">Girls Soccer</a></li>
+                        <li><a href="https://www.osaa.org/activities/bxc">Boys Cross Country</a></li>
+                        <li><a href="https://www.osaa.org/activities/gxc">Girls Cross Country</a></li>
+                    </ul>
+                    </li>                                             
+
+                    <li><a href="https://www.osaa.org/activities/winter"><span>Winter</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/activities/bbx">Boys Basketball</a></li>
+                        <li><a href="https://www.osaa.org/activities/gbx">Girls Basketball</a></li>
+                        <li><a href="https://www.osaa.org/activities/bsw">Boys Swimming</a></li>
+                        <li><a href="https://www.osaa.org/activities/gsw">Girls Swimming</a></li>
+                                                    <li><a href="https://www.osaa.org/activities/bwr">Boys Wrestling</a></li>
+                            <li><a href="https://www.osaa.org/activities/gwr">Girls Wrestling</a></li>
+                                                <li><a href="https://www.osaa.org/activities/dnc">Dance/Drill</a></li>
+                        <li><a href="https://www.osaa.org/activities/che">Cheerleading</a></li>
+                    </ul>
+                    </li>
+
+                    <li><a href="https://www.osaa.org/activities/spring"><span>Spring</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/activities/bbl">Baseball</a></li>
+                        <li><a href="https://www.osaa.org/activities/sbl">Softball</a></li>
+                        <li><a href="https://www.osaa.org/activities/bvb">Boys Volleyball</a></li> 
+                        <li><a href="https://www.osaa.org/activities/btf">Boys Track &amp; Field</a></li>
+                        <li><a href="https://www.osaa.org/activities/gtf">Girls Track &amp; Field</a></li>
+                        <li><a href="https://www.osaa.org/activities/btn">Boys Tennis</a></li>
+                        <li><a href="https://www.osaa.org/activities/gtn">Girls Tennis</a></li>
+                        <li><a href="https://www.osaa.org/activities/bgf">Boys Golf</a></li>
+                        <li><a href="https://www.osaa.org/activities/ggf">Girls Golf</a></li>
+                        <li><a href="https://www.osaa.org/activities/bnd">Band/Orchestra</a></li>
+                        <li><a href="https://www.osaa.org/activities/cho">Choir</a></li>
+                        <li><a href="https://www.osaa.org/activities/sol">Solo Music</a></li>
+                        <li><a href="https://www.osaa.org/activities/spe">Speech</a></li>
+                    </ul>
+                    </li>   
+
+                    <li><a href="https://www.osaa.org/activities/emerging"><span>Emerging</span></a>
+                    <ul>                        
+                        <li><a href="https://www.osaa.org/activities/gff">Girls Flag Football</a></li>
+                    </ul>
+                    </li>   
+                    
+                </ul>
+                </li>
+                <li><a href="https://www.osaa.org/schools"><span>Schools</span></a>
+                <ul>
+                    <li><a href="https://www.osaa.org/schools/full-members">Member Schools</a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/schools/full-members">Alphabetically</a></li>
+                        <li><a href="https://www.osaa.org/schools/counties">By County</a></li>
+                        <li><a href="https://www.osaa.org/schools/regions">By Region</a></li>
+                    </ul>
+                    </li>
+                    <li><a href="https://www.osaa.org/schools/associate-members">Associate Members</a></li>
+                    <li><a href="https://www.osaa.org/schools/classifications-districts">Classifications &amp; Districts</a></li>                            
+                    <li><a href="https://www.osaa.org/schools/maps">Maps</a></li>
+                    <li><a href="https://www.osaa.org/schools/participation">Participation</a></li>
+                </ul>
+                </li>
+                <li><a href="https://www.osaa.org/governance"><span>Governance</span></a>
+                <ul>
+                    <li><a href="https://www.osaa.org/governance/handbooks">Handbooks</a></li>                            
+                    <li><a href="https://www.osaa.org/governance/forms">Forms</a></li>
+                    <li><a href="https://www.osaa.org/governance/delegate-assembly">Delegate Assembly</a></li>
+                    <li><a href="https://www.osaa.org/governance/executive-board">Executive Board</a></li>
+                    <li><a href="https://www.osaa.org/governance/committees">Committees</a></li>
+                    <li><a href="https://www.osaa.org/governance/task-forces">Task Forces</a></li>
+                </ul>
+                </li>
+                <li>
+                    <a href="https://www.osaa.org/health-safety">Health &amp; Safety</a>
+                    <ul>
+                                                
+                        <li><a href="https://www.osaa.org/health-safety/pre-event-safety">Pre-Event Safety Timeout</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/air-quality">Air Quality</a></li>
+                        <li><a href="https://www.osaa.org/heat-index">Heat Index</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/eap">Emergency Action Plan</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/concussion">Concussion</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/steroid">Steroids</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/heat">Heat &amp; Hydration</a></li>                                
+                        <li><a href="https://www.osaa.org/health-safety/nutrition">Sport Nutrition</a></li>                                
+                        <li><a href="https://www.osaa.org/health-safety/wellness">Student Wellness</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/lightning">Lightning</a></li>
+                        <li><a href="https://www.osaa.org/health-safety/resources">Resources</a></li>
+                    </ul>
+                </li>                
+                <li>
+                    <a href="https://www.osaa.org/equity">Support &amp; Equity</a>
+                    <ul>                                
+                        <li><a href="https://www.osaa.org/equity/star-resources">S.T.A.R. &amp; Resources</a></li>                        
+                        <li><a href="https://www.osaa.org/equity/training-resources">Training &amp; Resources</a></li>                        
+                        <li><a href="https://www.osaa.org/equity/anti-discrimination">Anti-Discrimination</a></li>
+                        <li><a href="https://www.osaa.org/governance/committees/equity-committee">Advisory Committee</a></li>
+                        <li><a href="https://www.osaa.org/equity/title-IX">Title IX</a></li>
+                                                <li><a href="https://www.osaa.org/equity/forms">Forms &amp; Policies</a></li>                        
+                        <li><a href="https://www.osaa.org/equity/event-toolkits">Event Toolkits</a></li>
+                        <li><a href="https://www.osaa.org/equity/sportsmanship">Sportsmanship</a></li>
+                        <li><a href="https://www.osaa.org/equity/star-application">S.T.A.R. Application</a></li>
+                        <li><a href="https://www.osaa.org/forms/complaint">Complaint Form</a></li>
+                    </ul>
+                </li>                
+                <li><a href="https://www.osaa.org/calendar">Calendar</a></li>                        
+                <li>
+                    <a href="https://www.osaa.org/awards">Awards</a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/forms/all-team/state/results">OSAA All-State</a></li>
+                        <li><a href="https://www.osaa.org/awards">Academic All-State</a></li>
+                        <li><a href="https://www.osaa.org/awards/athlete-of-the-week">Athlete of the Week</a></li>
+                        <li><a href="https://www.osaa.org/awards/team-of-the-month">Team of the Month</a></li>
+                        <li><a href="https://www.osaa.org/awards/player-of-the-game">Player of the Game</a></li>
+                        <li><a href="https://www.osaa.org/awards/most-valuable-teammate">Most Valuable Teammate</a></li>
+                        <li><a href="https://www.osaa.org/awards/osaa-cup">OSAA Cup</a></li>                                
+                        <li><a href="https://www.osaa.org/awards/scholar">Scholar</a></li>
+                        <li><a href="https://www.osaa.org/awards/sportsmanship">Sportsmanship</a></li>
+                                                <li><a href="https://www.osaa.org/awards/salute-to-coaches">Salute to Coaches</a></li>                        
+                        <li><a href="https://www.osaa.org/awards/distinguished-service">Distinguished Service</a></li>
+                        <li><a href="https://www.osaa.org/awards/nfhs-awards">NFHS Awards</a></li>
+                        <li><a href="https://www.osaa.org/certificates">OSAA Certificates</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="https://www.osaa.org/shop"><span>Shop</span></a>
+                    <ul>
+                        <li><a href="https://www.osaa.org/shop/tickets">Tickets</a></li>
+                        <li><a href="https://osaa-corner-store.myshopify.com/collections/" target="_blank">Corner Store</a></li>
+                        <li><a href="https://www.osaa.org/shop/merchandise">Merchandise</a></li>
+                        <li><a href="https://www.osaa.org/shop/photos">Photos</a></li>
+                        <li><a href="https://www.osaa.org/shop/videos">Videos</a></li>
+                        <li><a href="https://www.osaa.org/shop/trophies">Replica Trophies</a></li>
+						<li><a href="https://www.osaa.org/shop/jackets">Letterman Jackets</a></li>						
+                        <li><a href="https://www.osaa.org/programs">Programs</a></li>                                
+                    </ul>
+                </li>
+                <li><a href="https://www.osaa.org/for"><span>OSAA for...</span></a>
+                <ul>
+                    <li>
+                        <a href="https://www.osaa.org/administrators">Administrators</a>
+                        <ul style="width: auto; !important;">
+                            <li><a href="https://www.osaa.org/administrators">General Information</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/administrators/requirements">Training / Certifications</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/administrators/policies">Policies / Forms / Links</a></li>
+                            <li><a href="https://www.osaa.org/administrators/eligibility">Eligibility</a></li>
+                            <li><a href="https://www.osaa.org/administrators/workshops">Workshops</a></li>
+                            <li><a href="https://www.osaa.org/administrators/webinars">Webinars</a></li>
+                            <li><a href="https://www.osaa.org/equity/sportsmanship">Sportsmanship</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="https://www.osaa.org/coaches">Coaches</a>
+                        <ul style="width: auto; !important;">
+                            <li><a href="https://www.osaa.org/coaches">General Information</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/coaches/requirements">Training / Certifications</a></li>
+                            <li style="white-space: nowrap;"><a href="https://www.osaa.org/coaches/policies">Policies / Forms / Links</a></li>
+                            <li><a href="https://www.osaa.org/coaches/eligibility">Eligibility</a></li>
+                            <li><a href="https://www.osaa.org/coaches/workshops">Workshops</a></li>
+                            <li><a href="https://www.osaa.org/coaches/webinars">Webinars</a></li>
+                            <li><a href="https://www.osaa.org/equity/sportsmanship">Sportsmanship</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="https://www.osaa.org/parents-students">Parents/Students</a></li>
+                    <li><a href="https://www.osaa.org/officials">Officials</a></li>
+                    <li><a href="https://www.osaa.org/media">Media</a></li>
+                </ul>
+                </li>
+            </ul>
+        </div>                            
+        
+                   
+    </div>
+</div>
+<!-- End Header Navigation Menu -->
+                        
+
+        <!-- Content -->
+
+		<div id="content">
+
+
+
+			<!-- Holder -->
+
+			<div class="holder">			
+
+			
+
+			    <!-- Page Masthead -->
+
+                <div id="masthead" style="position: relative;">
+
+
+        <div id="masthead" style="position: relative;">
+        <!-- Title -->    
+        <div class="title">
+            Oregon School Activities Association
+        </div>    
+    
+                
+        <div style="position: absolute; left: 775px;">
+
+            <div style="float: left; margin-top: 26px;">
+                <a href="https://www.onpointcu.com/join-a-local-credit-union-onpoint-cu/?utm_source=osaa&utm_medium=display&utm_campaign=onpoint+partnerships&tactic_id=Brand_GP_04-25_OSAA_Web_Nav" target="_blank"><img src="https://www.osaa.org/images/ads/onpoint.png" alt="OnPoint Community Credit Union" title="OnPoint Community Credit Union" /></a>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div style="position: absolute; right: 0px; width: 234px; top: 16px;">
+        <!-- Half Banner Ad (234x60) -->
+        <!-- Half Banner Ad 234x60 -->
+<div id="half_banner_ad" class="ad">
+	
+	
+		<!-- WMT AdServer Asynchronous JS Tag - Generated with Revive Adserver v5.5.2 -->
+		<ins data-revive-zoneid="373" data-revive-id="56fdbe9a86d7e93f02fe33751ab5524d"></ins>
+		<script async src="//ads.wmt.digital/delivery/asyncjs.php"></script>
+
+	</div>    </div>    
+
+        
+</div>                    
+<!-- End Page Masthead -->                
+
+                
+
+                <!-- Live Alert Container (optional) -->                                
+
+                
+    <div id="live_alert_2" class="tools">
+		<div class="bar left"></div>			
+		<div class="bar right"></div>
+				
+				
+		<a href="https://www.osaa.org/activities/fall" target="_blank">
+		<img src="https://www.osaa.org/images/logos/OSAACircle.png" alt="" title="" style="position: relative; top: 2px; float: left; margin: 0 2px 0 2px;" />     			
+		</a>
+	    <div class="item" style="margin-right: 25px;">
+			<b><a href="https://www.osaa.org/activities/fall">Fall Team Sports Schedules, Scores, Rankings</b></a><br />
+			<small>
+         	<a href="https://www.osaa.org/activities/gvb/schedules" target="_blank">Girls Volleyball</a> | 
+			<a href="https://www.osaa.org/activities/gsc/schedules" target="_blank">Girls Soccer</a> | 
+			<a href="https://www.osaa.org/activities/bsc/schedules" target="_blank">Boys Soccer</a> | 
+			<a href="https://www.osaa.org/activities/fbl/schedules" target="_blank">Football</a>
+			</small>
+		</div>
+		
+				<a href="https://www.osaa.org/activities/fall" target="_blank">
+		<img src="https://www.osaa.org/images/logos/OSAACircle.png" alt="" title="" style="position: relative; top: 2px; float: left; margin: 0 2px 0 2px; height: 32px;" />
+		</a>
+	    <div class="item" style="margin-right: 25px;">
+			<b><a href="https://www.osaa.org/activities/fall">Fall Individual Sports Schedules</b></a><br />
+			<small>
+			<a href="https://www.osaa.org/activities/gxc/meet-schedules" target="_blank">Girls Cross Country</a> |  
+			<a href="https://www.osaa.org/activities/bxc/meet-schedules" target="_blank">Boys Cross Country</a> |  
+			<a href="https://www.athletic.net/cross-country/usa/high-school/oregon" target="_blank">Athletic.net</a>
+			</small>
+		</div> 
+		
+				<a href="https://www.osaa.org/activities/fall" target="_blank">
+     	<img src="https://www.osaa.org/images/logos/OSAACircle.png" alt="" title="" style="position: relative; top: 2px; float: left; margin: 0 5px 0 5px;" />    	
+		</a> 	
+	    <div class="item" style="margin-right: 25px;">
+			<b><a href="https://www.osaa.org/activities/fall" target="_blank">Fall Sports Plan Books</b></a><br />
+			<small>
+				<a href="https://www.osaa.org/docs/planbooks/xcplan.pdf" target="_blank">Cross Country</a> | 			
+			    <a href="https://www.osaa.org/docs/planbooks/gvbplan.pdf" target="_blank">Girls Volleyball</a> | 
+				<a href="https://www.osaa.org/docs/planbooks/scplan.pdf" target="_blank">Soccer</a> | 
+				<a href="https://www.osaa.org/docs/planbooks/fblplan.pdf" target="_blank">Football</a> 
+			</small>
+		</div>			
+		
+	</div>    
+
+                
+
+                <!-- User Tool Box (optional) -->
+
+                
+
+
+                <!-- Large Leaderboard Ad (970x90) -->                
+
+                <!-- Leader Board Ad 728x90 -->
+<div id="leaderboard_ad" class="ad">
+
+    
+        <!-- WMT AdServer Asynchronous JS Tag - Generated with Revive Adserver v5.5.2 -->
+        <ins data-revive-zoneid="375" data-revive-id="56fdbe9a86d7e93f02fe33751ab5524d"></ins>
+        <script async src="//ads.wmt.digital/delivery/asyncjs.php"></script>
+
+        
+</div>                  
+
+<!-- OSAA Website Plug (Left) -->
+<div id="next_to_leaderboard">
+        
+    <a href="https://www.osaa.org/officials/registration" >
+        <img src="https://www.osaa.org/images/become_an_official_215x90px.jpg" alt="Become as Official" title="Become as Official" width="215" height="90" style="width: 215px; height: 90px;">
+    </a>    
+    
+</div>
+
+
+                <!-- Other OSAA Website Plugs -->                
+
+                <!-- OSAA Website Plug (Right) -->
+<div id="osaa_websites">
+	
+	    
+    <a href="https://www.osaa.org/today" >
+        <img src="https://www.osaa.org/images/logos/OSAAtoday-Ad-Read 215x90px.png" alt="OSAAtoday" title="OSAAtoday" width="215" height="90" style="width: 215px; height: 90px;">
+    </a> 
+
+	
+</div>                               
+
+                
+
+                <!-- Wide Scraper Ad (160x600) -->
+
+                <!-- Wide Scraper Ad 160x600 -->
+<div id="wide_scraper_ad" class="ad">	
+
+    
+        <!-- WMT AdServer Asynchronous JS Tag - Generated with Revive Adserver v5.5.2 -->
+        <ins data-revive-zoneid="372" data-revive-id="56fdbe9a86d7e93f02fe33751ab5524d"></ins>
+        <script async src="//ads.wmt.digital/delivery/asyncjs.php"></script>
+
+    
+</div>                                                            
+
+                                
+
+                <!-- Main Page Content -->
+
+                <div id="full_page_content">                    
+
+                    
+
+                    <!-- Special Page Functions -->
+
+                    <div class="page_functions">
+
+                        	
+
+        	<a href="#" class="prev_school_button disabled" style="font-size: 9pt; height: 2em;"></a>
+    
+  
+
+     
+    		<a href="https://www.osaa.org/schools/full-members" class="back_to_schools_list" style="font-size: 9pt;">All Member Schools</a>
+        
+
+        	<a href="#" class="list_school_button" style="font-size: 9pt; height: 2em;"></a>
+
+    	<ul id="schools_menu" style="display: none;">
+                        	<li><a href="https://www.osaa.org/schools/347">Adrian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/92">Aloha</a></li>
+                        	<li><a href="https://www.osaa.org/schools/200">Alsea</a></li>
+                        	<li><a href="https://www.osaa.org/schools/36">Amity</a></li>
+                        	<li><a href="https://www.osaa.org/schools/211">Arlington</a></li>
+                        	<li><a href="https://www.osaa.org/schools/222">Ashland</a></li>
+                        	<li><a href="https://www.osaa.org/schools/53">Astoria</a></li>
+                        	<li><a href="https://www.osaa.org/schools/17">Baker</a></li>
+                        	<li><a href="https://www.osaa.org/schools/18">Bandon</a></li>
+                        	<li><a href="https://www.osaa.org/schools/209">Banks</a></li>
+                        	<li><a href="https://www.osaa.org/schools/30">Barlow</a></li>
+                        	<li><a href="https://www.osaa.org/schools/95">Beaverton</a></li>
+                        	<li><a href="https://www.osaa.org/schools/46">Bend</a></li>
+                        	<li><a href="https://www.osaa.org/schools/145">Benson</a></li>
+                        	<li><a href="https://www.osaa.org/schools/273">Blanchet Catholic</a></li>
+                        	<li><a href="https://www.osaa.org/schools/223">Bonanza</a></li>
+                        	<li><a href="https://www.osaa.org/schools/159">Brookings-Harbor</a></li>
+                        	<li><a href="https://www.osaa.org/schools/59">Burns</a></li>
+                        	<li><a href="https://www.osaa.org/schools/69">Burnt River</a></li>
+                        	<li><a href="https://www.osaa.org/schools/77">Butte Falls</a></li>
+                        	<li><a href="https://www.osaa.org/schools/287">C.S. Lewis Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/618">Caldera</a></li>
+                        	<li><a href="https://www.osaa.org/schools/70">Camas Valley</a></li>
+                        	<li><a href="https://www.osaa.org/schools/76">Canby</a></li>
+                        	<li><a href="https://www.osaa.org/schools/121">Cascade</a></li>
+                        	<li><a href="https://www.osaa.org/schools/78">Cascade Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/416">Cascades Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/225">Catlin Gabel</a></li>
+                        	<li><a href="https://www.osaa.org/schools/126">Centennial</a></li>
+                        	<li><a href="https://www.osaa.org/schools/155">Central</a></li>
+                        	<li><a href="https://www.osaa.org/schools/226">Central Catholic</a></li>
+                        	<li><a href="https://www.osaa.org/schools/142">Central Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/133">Central Linn</a></li>
+                        	<li><a href="https://www.osaa.org/schools/279">Century</a></li>
+                        	<li><a href="https://www.osaa.org/schools/5">Chemawa</a></li>
+                        	<li><a href="https://www.osaa.org/schools/198">Chiloquin</a></li>
+                        	<li><a href="https://www.osaa.org/schools/227">Churchill</a></li>
+                        	<li><a href="https://www.osaa.org/schools/6">Clackamas</a></li>
+                        	<li><a href="https://www.osaa.org/schools/103">Clatskanie</a></li>
+                        	<li><a href="https://www.osaa.org/schools/144">Cleveland</a></li>
+                        	<li><a href="https://www.osaa.org/schools/229">Colton</a></li>
+                        	<li><a href="https://www.osaa.org/schools/75">Columbia Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/199">Condon</a></li>
+                        	<li><a href="https://www.osaa.org/schools/230">Coquille</a></li>
+                        	<li><a href="https://www.osaa.org/schools/231">Corbett</a></li>
+                        	<li><a href="https://www.osaa.org/schools/12">Corvallis</a></li>
+                        	<li><a href="https://www.osaa.org/schools/232">Cottage Grove</a></li>
+                        	<li><a href="https://www.osaa.org/schools/168">Country Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/11">Cove</a></li>
+                        	<li><a href="https://www.osaa.org/schools/96">Crane</a></li>
+                        	<li><a href="https://www.osaa.org/schools/204">Crater</a></li>
+                        	<li><a href="https://www.osaa.org/schools/13">Crescent Valley</a></li>
+                        	<li><a href="https://www.osaa.org/schools/215">Creswell</a></li>
+                        	<li><a href="https://www.osaa.org/schools/100">Crook County</a></li>
+                        	<li><a href="https://www.osaa.org/schools/441">Crosshill Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/610">Crosspoint Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/163">Crow</a></li>
+                        	<li><a href="https://www.osaa.org/schools/106">Culver</a></li>
+                        	<li><a href="https://www.osaa.org/schools/202">Dallas</a></li>
+                        	<li><a href="https://www.osaa.org/schools/112">Damascus Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/233">David Douglas</a></li>
+                        	<li><a href="https://www.osaa.org/schools/137">Days Creek</a></li>
+                        	<li><a href="https://www.osaa.org/schools/54">Dayton</a></li>
+                        	<li><a href="https://www.osaa.org/schools/180">Dayville</a></li>
+                        	<li><a href="https://www.osaa.org/schools/370">De La Salle North Catholic</a></li>
+                        	<li><a href="https://www.osaa.org/schools/141">Delphian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/3">Douglas</a></li>
+                        	<li><a href="https://www.osaa.org/schools/220">Dufur</a></li>
+                        	<li><a href="https://www.osaa.org/schools/154">Eagle Point</a></li>
+                        	<li><a href="https://www.osaa.org/schools/16">East Linn Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/234">Echo</a></li>
+                        	<li><a href="https://www.osaa.org/schools/398">Eddyville Charter</a></li>
+                        	<li><a href="https://www.osaa.org/schools/19">Elgin</a></li>
+                        	<li><a href="https://www.osaa.org/schools/28">Elkton</a></li>
+                        	<li><a href="https://www.osaa.org/schools/113">Elmira</a></li>
+                        	<li><a href="https://www.osaa.org/schools/236">Enterprise</a></li>
+                        	<li><a href="https://www.osaa.org/schools/26">Estacada</a></li>
+                        	<li><a href="https://www.osaa.org/schools/631">Eugene Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/321">Faith Bible</a></li>
+                        	<li><a href="https://www.osaa.org/schools/80">Falls City</a></li>
+                        	<li><a href="https://www.osaa.org/schools/98">Forest Grove</a></li>
+                        	<li><a href="https://www.osaa.org/schools/563">Four Rivers</a></li>
+                        	<li><a href="https://www.osaa.org/schools/153">Franklin</a></li>
+                        	<li><a href="https://www.osaa.org/schools/157">Gaston</a></li>
+                        	<li><a href="https://www.osaa.org/schools/158">Gervais</a></li>
+                        	<li><a href="https://www.osaa.org/schools/237">Gilchrist</a></li>
+                        	<li><a href="https://www.osaa.org/schools/238">Gladstone</a></li>
+                        	<li><a href="https://www.osaa.org/schools/239">Glencoe</a></li>
+                        	<li><a href="https://www.osaa.org/schools/240">Glendale</a></li>
+                        	<li><a href="https://www.osaa.org/schools/604">Glenwood</a></li>
+                        	<li><a href="https://www.osaa.org/schools/174">Glide</a></li>
+                        	<li><a href="https://www.osaa.org/schools/176">Gold Beach</a></li>
+                        	<li><a href="https://www.osaa.org/schools/425">Grand View Christian Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/152">Grant</a></li>
+                        	<li><a href="https://www.osaa.org/schools/162">Grant Union</a></li>
+                        	<li><a href="https://www.osaa.org/schools/224">Grants Pass</a></li>
+                        	<li><a href="https://www.osaa.org/schools/29">Gresham</a></li>
+                        	<li><a href="https://www.osaa.org/schools/241">Griswold</a></li>
+                        	<li><a href="https://www.osaa.org/schools/179">Harper Charter</a></li>
+                        	<li><a href="https://www.osaa.org/schools/164">Harrisburg</a></li>
+                        	<li><a href="https://www.osaa.org/schools/639">Harvest Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/245">Henley</a></li>
+                        	<li><a href="https://www.osaa.org/schools/60">Heppner</a></li>
+                        	<li><a href="https://www.osaa.org/schools/34">Hidden Valley</a></li>
+                        	<li><a href="https://www.osaa.org/schools/246">Hillsboro</a></li>
+                        	<li><a href="https://www.osaa.org/schools/81">Hood River Valley</a></li>
+                        	<li><a href="https://www.osaa.org/schools/196">Horizon Christian, Hood River</a></li>
+                        	<li><a href="https://www.osaa.org/schools/417">Horizon Christian, Tualatin</a></li>
+                        	<li><a href="https://www.osaa.org/schools/243">Huntington</a></li>
+                        	<li><a href="https://www.osaa.org/schools/146">Ida B. Wells</a></li>
+                        	<li><a href="https://www.osaa.org/schools/35">Illinois Valley</a></li>
+                        	<li><a href="https://www.osaa.org/schools/184">Imbler</a></li>
+                        	<li><a href="https://www.osaa.org/schools/62">Ione</a></li>
+                        	<li><a href="https://www.osaa.org/schools/404">Irrigon</a></li>
+                        	<li><a href="https://www.osaa.org/schools/170">Jefferson</a></li>
+                        	<li><a href="https://www.osaa.org/schools/337">Jefferson, Portland</a></li>
+                        	<li><a href="https://www.osaa.org/schools/247">Jesuit</a></li>
+                        	<li><a href="https://www.osaa.org/schools/15">Jewell</a></li>
+                        	<li><a href="https://www.osaa.org/schools/171">Jordan Valley</a></li>
+                        	<li><a href="https://www.osaa.org/schools/67">Joseph</a></li>
+                        	<li><a href="https://www.osaa.org/schools/214">Junction City</a></li>
+                        	<li><a href="https://www.osaa.org/schools/175">Kennedy</a></li>
+                        	<li><a href="https://www.osaa.org/schools/450">Kings Valley Char.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/116">Klamath Union</a></li>
+                        	<li><a href="https://www.osaa.org/schools/606">Klickitat</a></li>
+                        	<li><a href="https://www.osaa.org/schools/104">Knappa</a></li>
+                        	<li><a href="https://www.osaa.org/schools/248">La Grande</a></li>
+                        	<li><a href="https://www.osaa.org/schools/47">La Pine</a></li>
+                        	<li><a href="https://www.osaa.org/schools/249">La Salle Prep</a></li>
+                        	<li><a href="https://www.osaa.org/schools/37">Lake Oswego</a></li>
+                        	<li><a href="https://www.osaa.org/schools/38">Lakeridge</a></li>
+                        	<li><a href="https://www.osaa.org/schools/181">Lakeview</a></li>
+                        	<li><a href="https://www.osaa.org/schools/250">Lebanon</a></li>
+                        	<li><a href="https://www.osaa.org/schools/387">Liberty</a></li>
+                        	<li><a href="https://www.osaa.org/schools/338">Life Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/150">Lincoln</a></li>
+                        	<li><a href="https://www.osaa.org/schools/363">Livingstone Adventist Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/109">Long Creek</a></li>
+                        	<li><a href="https://www.osaa.org/schools/197">Lost River</a></li>
+                        	<li><a href="https://www.osaa.org/schools/41">Lowell</a></li>
+                        	<li><a href="https://www.osaa.org/schools/602">Lyle</a></li>
+                        	<li><a href="https://www.osaa.org/schools/186">Madras</a></li>
+                        	<li><a href="https://www.osaa.org/schools/23">Mannahouse Christian Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/44">Mapleton</a></li>
+                        	<li><a href="https://www.osaa.org/schools/251">Marist Catholic</a></li>
+                        	<li><a href="https://www.osaa.org/schools/65">Marshfield</a></li>
+                        	<li><a href="https://www.osaa.org/schools/115">Mazama</a></li>
+                        	<li><a href="https://www.osaa.org/schools/151">McDaniel</a></li>
+                        	<li><a href="https://www.osaa.org/schools/129">McKay</a></li>
+                        	<li><a href="https://www.osaa.org/schools/64">McKenzie</a></li>
+                        	<li><a href="https://www.osaa.org/schools/252">McLoughlin</a></li>
+                        	<li><a href="https://www.osaa.org/schools/24">McMinnville</a></li>
+                        	<li><a href="https://www.osaa.org/schools/131">McNary</a></li>
+                        	<li><a href="https://www.osaa.org/schools/7">Milwaukie</a></li>
+                        	<li><a href="https://www.osaa.org/schools/430">Milwaukie Acad. of the Arts</a></li>
+                        	<li><a href="https://www.osaa.org/schools/32">Mitchell</a></li>
+                        	<li><a href="https://www.osaa.org/schools/39">Mohawk</a></li>
+                        	<li><a href="https://www.osaa.org/schools/253">Molalla</a></li>
+                        	<li><a href="https://www.osaa.org/schools/254">Monroe</a></li>
+                        	<li><a href="https://www.osaa.org/schools/74">Monument</a></li>
+                        	<li><a href="https://www.osaa.org/schools/48">Mountain View</a></li>
+                        	<li><a href="https://www.osaa.org/schools/570">Mountainside</a></li>
+                        	<li><a href="https://www.osaa.org/schools/221">Myrtle Point</a></li>
+                        	<li><a href="https://www.osaa.org/schools/255">Neah-Kah-Nie</a></li>
+                        	<li><a href="https://www.osaa.org/schools/617">Nelson</a></li>
+                        	<li><a href="https://www.osaa.org/schools/207">Nestucca</a></li>
+                        	<li><a href="https://www.osaa.org/schools/88">New Hope Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/4">Newberg</a></li>
+                        	<li><a href="https://www.osaa.org/schools/256">Newport</a></li>
+                        	<li><a href="https://www.osaa.org/schools/405">Nixyaawii</a></li>
+                        	<li><a href="https://www.osaa.org/schools/132">North Bend</a></li>
+                        	<li><a href="https://www.osaa.org/schools/90">North Clackamas Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/138">North Douglas</a></li>
+                        	<li><a href="https://www.osaa.org/schools/257">North Eugene</a></li>
+                        	<li><a href="https://www.osaa.org/schools/25">North Lake</a></li>
+                        	<li><a href="https://www.osaa.org/schools/57">North Marion</a></li>
+                        	<li><a href="https://www.osaa.org/schools/51">North Medford</a></li>
+                        	<li><a href="https://www.osaa.org/schools/130">North Salem</a></li>
+                        	<li><a href="https://www.osaa.org/schools/33">North Valley</a></li>
+                        	<li><a href="https://www.osaa.org/schools/649">Northwest Christian Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/136">Nyssa</a></li>
+                        	<li><a href="https://www.osaa.org/schools/258">Oakland</a></li>
+                        	<li><a href="https://www.osaa.org/schools/101">Oakridge</a></li>
+                        	<li><a href="https://www.osaa.org/schools/673">Oaks Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/66">Ontario</a></li>
+                        	<li><a href="https://www.osaa.org/schools/366">Open Door Christian Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/68">Oregon City</a></li>
+                        	<li><a href="https://www.osaa.org/schools/108">Oregon Episcopal</a></li>
+                        	<li><a href="https://www.osaa.org/schools/216">Oregon School f/t Deaf</a></li>
+                        	<li><a href="https://www.osaa.org/schools/71">Pacific</a></li>
+                        	<li><a href="https://www.osaa.org/schools/597">Paideia Classical Christian School</a></li>
+                        	<li><a href="https://www.osaa.org/schools/259">Paisley</a></li>
+                        	<li><a href="https://www.osaa.org/schools/89">Parkrose</a></li>
+                        	<li><a href="https://www.osaa.org/schools/123">Pendleton</a></li>
+                        	<li><a href="https://www.osaa.org/schools/97">Perrydale</a></li>
+                        	<li><a href="https://www.osaa.org/schools/177">Philomath</a></li>
+                        	<li><a href="https://www.osaa.org/schools/178">Phoenix</a></li>
+                        	<li><a href="https://www.osaa.org/schools/124">Pilot Rock</a></li>
+                        	<li><a href="https://www.osaa.org/schools/213">Pine Eagle</a></li>
+                        	<li><a href="https://www.osaa.org/schools/183">Pleasant Hill</a></li>
+                        	<li><a href="https://www.osaa.org/schools/119">Portland Adventist Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/212">Portland Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/356">Portland Waldorf</a></li>
+                        	<li><a href="https://www.osaa.org/schools/105">Powder Valley</a></li>
+                        	<li><a href="https://www.osaa.org/schools/218">Powers</a></li>
+                        	<li><a href="https://www.osaa.org/schools/107">Prairie City</a></li>
+                        	<li><a href="https://www.osaa.org/schools/208">Prospect Charter</a></li>
+                        	<li><a href="https://www.osaa.org/schools/8">Putnam</a></li>
+                        	<li><a href="https://www.osaa.org/schools/110">Rainier</a></li>
+                        	<li><a href="https://www.osaa.org/schools/260">Redmond</a></li>
+                        	<li><a href="https://www.osaa.org/schools/49">Reedsport</a></li>
+                        	<li><a href="https://www.osaa.org/schools/261">Regis</a></li>
+                        	<li><a href="https://www.osaa.org/schools/52">Reynolds</a></li>
+                        	<li><a href="https://www.osaa.org/schools/22">Riddle</a></li>
+                        	<li><a href="https://www.osaa.org/schools/522">Ridgeview</a></li>
+                        	<li><a href="https://www.osaa.org/schools/277">Riverdale</a></li>
+                        	<li><a href="https://www.osaa.org/schools/61">Riverside</a></li>
+                        	<li><a href="https://www.osaa.org/schools/645">Riverside, WLWV</a></li>
+                        	<li><a href="https://www.osaa.org/schools/118">Rogue River</a></li>
+                        	<li><a href="https://www.osaa.org/schools/408">Rogue Valley Adventist Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/149">Roosevelt</a></li>
+                        	<li><a href="https://www.osaa.org/schools/72">Roseburg</a></li>
+                        	<li><a href="https://www.osaa.org/schools/262">Salem Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/55">Sandy</a></li>
+                        	<li><a href="https://www.osaa.org/schools/40">Santiam</a></li>
+                        	<li><a href="https://www.osaa.org/schools/63">Santiam Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/79">Scappoose</a></li>
+                        	<li><a href="https://www.osaa.org/schools/122">Scio</a></li>
+                        	<li><a href="https://www.osaa.org/schools/99">Seaside</a></li>
+                        	<li><a href="https://www.osaa.org/schools/263">Sheldon</a></li>
+                        	<li><a href="https://www.osaa.org/schools/264">Sheridan</a></li>
+                        	<li><a href="https://www.osaa.org/schools/2">Sherman</a></li>
+                        	<li><a href="https://www.osaa.org/schools/125">Sherwood</a></li>
+                        	<li><a href="https://www.osaa.org/schools/419">Siletz Valley</a></li>
+                        	<li><a href="https://www.osaa.org/schools/139">Silverton</a></li>
+                        	<li><a href="https://www.osaa.org/schools/135">Sisters</a></li>
+                        	<li><a href="https://www.osaa.org/schools/31">Siuslaw</a></li>
+                        	<li><a href="https://www.osaa.org/schools/172">South Albany</a></li>
+                        	<li><a href="https://www.osaa.org/schools/85">South Eugene</a></li>
+                        	<li><a href="https://www.osaa.org/schools/50">South Medford</a></li>
+                        	<li><a href="https://www.osaa.org/schools/128">South Salem</a></li>
+                        	<li><a href="https://www.osaa.org/schools/165">South Umpqua</a></li>
+                        	<li><a href="https://www.osaa.org/schools/134">South Wasco County</a></li>
+                        	<li><a href="https://www.osaa.org/schools/326">Southridge</a></li>
+                        	<li><a href="https://www.osaa.org/schools/339">Southwest Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/127">Sprague</a></li>
+                        	<li><a href="https://www.osaa.org/schools/102">Spray</a></li>
+                        	<li><a href="https://www.osaa.org/schools/265">Springfield</a></li>
+                        	<li><a href="https://www.osaa.org/schools/156">St. Helens</a></li>
+                        	<li><a href="https://www.osaa.org/schools/266">St. Mary's Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/349">St. Mary's, Medford</a></li>
+                        	<li><a href="https://www.osaa.org/schools/20">St. Paul</a></li>
+                        	<li><a href="https://www.osaa.org/schools/435">St. Stephen's Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/242">Stanfield</a></li>
+                        	<li><a href="https://www.osaa.org/schools/42">Stayton</a></li>
+                        	<li><a href="https://www.osaa.org/schools/368">Summit</a></li>
+                        	<li><a href="https://www.osaa.org/schools/93">Sunset</a></li>
+                        	<li><a href="https://www.osaa.org/schools/9">Sutherlin</a></li>
+                        	<li><a href="https://www.osaa.org/schools/185">Sweet Home</a></li>
+                        	<li><a href="https://www.osaa.org/schools/268">Taft</a></li>
+                        	<li><a href="https://www.osaa.org/schools/409">The Dalles</a></li>
+                        	<li><a href="https://www.osaa.org/schools/269">Thurston</a></li>
+                        	<li><a href="https://www.osaa.org/schools/27">Tigard</a></li>
+                        	<li><a href="https://www.osaa.org/schools/188">Tillamook</a></li>
+                        	<li><a href="https://www.osaa.org/schools/228">Toledo</a></li>
+                        	<li><a href="https://www.osaa.org/schools/91">Triangle Lake</a></li>
+                        	<li><a href="https://www.osaa.org/schools/453">Trinity Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/432">Trinity Lutheran</a></li>
+                        	<li><a href="https://www.osaa.org/schools/601">Trout Lake</a></li>
+                        	<li><a href="https://www.osaa.org/schools/205">Tualatin</a></li>
+                        	<li><a href="https://www.osaa.org/schools/663">Tualatin Valley Acad.</a></li>
+                        	<li><a href="https://www.osaa.org/schools/330">Ukiah</a></li>
+                        	<li><a href="https://www.osaa.org/schools/73">Umatilla</a></li>
+                        	<li><a href="https://www.osaa.org/schools/189">Umpqua Valley Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/114">Union</a></li>
+                        	<li><a href="https://www.osaa.org/schools/190">Vale</a></li>
+                        	<li><a href="https://www.osaa.org/schools/270">Valley Catholic</a></li>
+                        	<li><a href="https://www.osaa.org/schools/564">Valor Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/376">Veritas</a></li>
+                        	<li><a href="https://www.osaa.org/schools/191">Vernonia</a></li>
+                        	<li><a href="https://www.osaa.org/schools/271">Waldport</a></li>
+                        	<li><a href="https://www.osaa.org/schools/192">Wallowa</a></li>
+                        	<li><a href="https://www.osaa.org/schools/117">Warrenton</a></li>
+                        	<li><a href="https://www.osaa.org/schools/173">West Albany</a></li>
+                        	<li><a href="https://www.osaa.org/schools/111">West Linn</a></li>
+                        	<li><a href="https://www.osaa.org/schools/372">West Salem</a></li>
+                        	<li><a href="https://www.osaa.org/schools/583">Western Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/21">Weston-McEwen</a></li>
+                        	<li><a href="https://www.osaa.org/schools/194">Westside Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/94">Westview</a></li>
+                        	<li><a href="https://www.osaa.org/schools/272">Wheeler</a></li>
+                        	<li><a href="https://www.osaa.org/schools/344">Willamette</a></li>
+                        	<li><a href="https://www.osaa.org/schools/195">Willamette Valley Christian</a></li>
+                        	<li><a href="https://www.osaa.org/schools/140">Willamina</a></li>
+                        	<li><a href="https://www.osaa.org/schools/210">Wilsonville</a></li>
+                        	<li><a href="https://www.osaa.org/schools/603">Wishram</a></li>
+                        	<li><a href="https://www.osaa.org/schools/244">Woodburn</a></li>
+                        	<li><a href="https://www.osaa.org/schools/83">Yamhill-Carlton</a></li>
+                        	<li><a href="https://www.osaa.org/schools/167">Yoncalla</a></li>
+                    </ul>
+       
+
+        	<a href="https://www.osaa.org/schools/92" class="next_school_button" style="font-size: 9pt; height: 2em;" title="Aloha"></a>
+    
+
+                    </div>
+
+
+
+                    <!-- Main Content Sub-Header -->
+
+                    <h1 class="header">    
+   Adrian High School</h1>                   
+
+                                        
+
+                    <!-- Sub-Page Main Content -->
+
+                    <div class="main_content">
+
+                    
+
+                            		
+	
+	 
+
+	<div style="float:left; width:128px; margin-right: 40px; text-align: left;">
+							<img src="https://www.osaa.org/images/school_logos/128x128/Adrian.png" alt="" title="Adrian High School Logo" class="tooltip" style="width:128px; height:128px;" />
+					
+			<br /><br />
+
+				
+		
+		
+					<h4>Mascot</h4>
+			Antelopes		
+
+			        	<br /><br />
+        	<div class="social_media_handles">
+           		                	                	<a href="https://www.facebook.com/AdrianHighSchool" target="_blank" style="margin-right: 6px;"><img src="https://www.osaa.org/images/icons/facebook_32px.png" alt="" title="@AdrianHighSchool" style="" /></a>
+            	        	</div>
+    		
+    	
+
+	</div>
+
+
+	
+	
+	<div class="columns">
+
+		<div class="fourth">
+
+			<h4>School Type</h4>
+							Public School
+			
+			<br /><br />
+			
+				    		<h4>Regular District</h4>
+	    		1A-8  High Desert League
+	    		<br /><br />
+	    		    	
+
+	    	<h4>School District</h4>
+			Adrian School District 61	    	
+	    	<br /><br />
+
+	    	<h4>Region / County</h4>
+	    	<a href="https://www.osaa.org/schools/regions#eastern">Eastern</a> / <a href="https://www.osaa.org/schools/counties#malheur">Malheur County</a>	    	
+
+			
+
+	    	
+
+				    </div>
+
+	    <div class="fourth" style="width: 30%; overflow: hidden; text-overflow: ellipsis;">
+			<h4>Website</h4>
+							<a href="https://www.adriansd.org/" target="_blank">https://www.adriansd.org/</a>
+			
+			<br /><br />
+
+			<h4>School Phone</h4>
+	    					
+				(541) 372-2335			
+			<br /><br />			
+
+							<a href="http://maps.google.com/?q=305+Owyhee+St++Adrian%2C+OR+97901" target="_blank" class="float_right button map_link tooltip" title="View school on a map or get directions." style="font-size:8pt; margin-right:20px;">Map</a> 
+						
+			
+				<h4>Physical Address</h4>
+									305 Owyhee St<br />
+					
+					
+					Adrian, OR 97901
+				
+				<br /><br />
+
+				<h4>Mailing Address</h4>
+									PO Box 108<br />
+					
+					
+					Adrian, OR 97901
+				
+
+						
+
+	    </div>
+
+				    <div class="fourth">
+		    	
+		    	<div class="float_right" style="position: relative;">
+
+		    			<h4>Hy-Tek Code</h4>
+		    			<div style="margin-top: 0.25em; font-family: monospace; letter-spacing: 2px; font-size: 12pt;">ADRI</div>
+
+		    		
+			    	
+		    	</div>		    	
+
+		    	<h4>Colors</h4>
+		    						<div style="">			
+								
+							
+							<div class="" style="float:left; width:24px; height:24px; background-color:#008000; margin-right:4px; border:1px solid #d9e1e0;"></div>
+							
+							<div class="" style="height: 24px; line-height: 24px; margin-bottom: 8px;">
+								Green							</div>							
+
+								
+							
+							<div class="" style="float:left; width:24px; height:24px; background-color:#FFD700; margin-right:4px; border:1px solid #d9e1e0;"></div>
+							
+							<div class="" style="height: 24px; line-height: 24px; margin-bottom: 8px;">
+								Gold							</div>							
+
+								
+							
+							<div class="" style="float:left; width:24px; height:24px; background-color:#FFFFFF; margin-right:4px; border:1px solid #d9e1e0;"></div>
+							
+							<div class="" style="height: 24px; line-height: 24px; margin-bottom: 8px;">
+								White							</div>							
+
+											</div>
+								
+
+
+				
+		    		<br />
+
+		    		<a href="https://www.nfhsnetwork.com/schools/adrian-high-school-adrian-or" target="_blank"><img src="https://www.osaa.org/images/logos/NFHS_Network_Generic_232x71px.png" alt="NFHS Network" title="NFHS Network" style="" /></a>
+
+		    					
+
+
+		    	
+		    </div>
+		
+	</div>	
+
+	<br class="clear" /><br />
+
+	
+	<h2>Contact Information</h2>
+
+	     
+	
+			
+
+		<table class="school_contacts">			
+
+			<thead class="head ui-widget-header">
+				<tr>
+					<th class="role">Position</th>
+					<th class="name">Name</th>
+					<th class="phone">Phone</th>
+					<th class="email">Email</th>
+					<th class="action"></th>						
+				</tr>
+			</thead>
+
+			<tbody>
+
+								
+					<tr class="contact">
+						<td class="role">Superintendent</td>
+						<td class="name">Nick Ketterling</td>
+						<td class="phone">(541) 372-2337 x3713</td>
+						<td class="email"><a href="mai&#x6c;&#116;o&#58;&#x25;6e%6&#x39;%63%&#x36;b&#x2e;ket%74&#101;&#x25;72l&#x25;&#x36;9n%6&#55;&#x40;%61%64r%69&#x61;%6e&#115;d&#x2e;o&#37;&#x37;2&#x67;" rel="nofollow">ni&#x63;k&#x2e;kett&#101;rl&#x69;ng&#x40;adriansd&#46;org</a></td>
+						<td class="action" style="text-align: right;">
+														<div class="staff_info" title="More Information" data-staff-id="317" data-lookup="school-district/staff"></div>
+						</td>
+					</tr>
+
+								
+				
+								
+					<tr class="contact">
+						<td class="role">Principal</td>
+						<td class="name">Bill Wortman</td>
+						<td class="phone">(541) 372-2335 x3708</td>
+						<td class="email"><a href="ma&#x69;lto&#58;b%6&#57;ll%7&#57;&#46;wo%7&#50;tm%61&#x6e;&#x40;%6&#49;%&#x36;4rian%&#x37;3d&#46;%&#x36;&#102;%72g" rel="nofollow">b&#x69;l&#108;y&#46;&#x77;ortman&#64;adr&#x69;&#97;nsd&#46;&#111;rg</a></td>
+						<td class="action" style="text-align: right;">
+														<div class="staff_info" title="More Information" data-staff-id="41706" data-lookup="schools/staff"></div>
+						</td>
+					</tr>
+
+				
+					<tr class="contact">
+						<td class="role">Athletic Director</td>
+						<td class="name">George Ellsworth</td>
+						<td class="phone">(541) 372-2335 x3735</td>
+						<td class="email"><a href="mailto&#58;%67eorge&#x2e;e&#108;&#x6c;%73wo&#114;%74%68&#64;&#37;61d%72ia%6es%64&#x2e;org" rel="nofollow">george&#46;ellsworth&#64;&#x61;drians&#x64;&#x2e;org</a></td>
+						<td class="action" style="text-align: right;">
+														<div class="staff_info" title="More Information" data-staff-id="53368" data-lookup="schools/staff"></div>
+						</td>
+					</tr>
+
+				
+					<tr class="contact">
+						<td class="role">Assistant Athletic Director</td>
+						<td class="name">Aimee Esplin</td>
+						<td class="phone">(541) 372-2335 x3705</td>
+						<td class="email"><a href="mailto&#58;%61&#x69;&#109;ee&#x2e;&#x65;sp&#x6c;in&#64;&#x25;&#54;1drians&#100;&#46;&#111;%72%&#x36;7" rel="nofollow">ai&#109;&#101;e&#x2e;&#101;splin&#64;a&#100;riansd&#46;org</a></td>
+						<td class="action" style="text-align: right;">
+														<div class="staff_info" title="More Information" data-staff-id="953" data-lookup="schools/staff"></div>
+						</td>
+					</tr>
+
+				
+					<tr class="contact">
+						<td class="role">Activities Director</td>
+						<td class="name">Michelle Dudley</td>
+						<td class="phone">(541) 372-2335 x3700</td>
+						<td class="email"><a href="m&#97;ilto&#58;m&#x69;chelle&#x2e;du&#100;%&#54;c&#101;y&#64;ad&#x25;72ia&#x6e;%73&#100;&#x2e;&#111;r%&#x36;7" rel="nofollow">mi&#99;h&#x65;ll&#x65;&#x2e;&#x64;u&#x64;&#x6c;&#x65;y&#x40;&#97;driansd&#x2e;or&#103;</a></td>
+						<td class="action" style="text-align: right;">
+														<div class="staff_info" title="More Information" data-staff-id="955" data-lookup="schools/staff"></div>
+						</td>
+					</tr>
+
+								
+				
+			</tbody>
+
+		</table>
+
+	
+	
+
+	
+		<br />
+
+		
+		
+		<div id="download_list">				
+	        <div id="grabber_button">Download</div>
+	        <ul id="grabber_list">            
+	            <li><a href="#" data-action="school-schedule"><img src="https://www.osaa.org/images/icons/schedule_16px.png" alt="" title="" />Schedules</a></li>	
+	        </ul>  
+	    </div>		
+
+		<h2>Sports / Activities</h2>
+
+		<table class="activity_programs">
+			
+			<thead>
+				<tr class="head ui-widget-header">
+					<th class="activity">Activity</th>
+					<th class="coach">Head Coach</th>
+					<th class="league">League</th>
+					<th class="coop">Coop</th>
+					<th class="teams">Teams</th>
+									</tr>
+			</thead>
+
+			<tbody>
+		
+											
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/67098">Football</a>
+															</td>
+
+							<td class="coach">
+																	
+																			Bill Wortman																		
+									<div class="staff_info" style="float: right; top: 0.4em; margin-right: 15px;" title="More Information" data-staff-id="244501" data-lookup="schools/activity-staff"></div>
+
+									
+															</td>
+
+							<td class="league">
+																									1A[8]-SD4 Special District 4								
+																							</td>
+
+							<td class="coop">
+															</td>
+
+							<td class="teams" style="text-align: right;">
+								V, JV							</td>
+
+							
+						</tr>
+							
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/67099">Girls Volleyball</a>
+															</td>
+
+							<td class="coach">
+																	
+																			Aimee Esplin																		
+									<div class="staff_info" style="float: right; top: 0.4em; margin-right: 15px;" title="More Information" data-staff-id="244505" data-lookup="schools/activity-staff"></div>
+
+									
+															</td>
+
+							<td class="league">
+																									1A-8 High Desert League								
+																							</td>
+
+							<td class="coop">
+															</td>
+
+							<td class="teams" style="text-align: right;">
+								V, JV, JV2							</td>
+
+							
+						</tr>
+							
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/67948">Boys Soccer</a>
+															</td>
+
+							<td class="coach">
+																	
+																			Miguel Segura																		
+									<div class="staff_info" style="float: right; top: 0.4em; margin-right: 15px;" title="More Information" data-staff-id="261775" data-lookup="schools/activity-staff"></div>
+
+									
+															</td>
+
+							<td class="league">
+																									3A-SD7 Greater Oregon League Hybrid								
+																							</td>
+
+							<td class="coop">
+																	Nyssa / Adrian															</td>
+
+							<td class="teams" style="text-align: right;">
+								V							</td>
+
+							
+						</tr>
+							
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/68510">Boys Basketball</a>
+															</td>
+
+							<td class="coach">
+																	
+																			George Ellsworth																		
+									<div class="staff_info" style="float: right; top: 0.4em; margin-right: 15px;" title="More Information" data-staff-id="250301" data-lookup="schools/activity-staff"></div>
+
+									
+															</td>
+
+							<td class="league">
+																									1A-8 High Desert League								
+																							</td>
+
+							<td class="coop">
+															</td>
+
+							<td class="teams" style="text-align: right;">
+								V, JV							</td>
+
+							
+						</tr>
+							
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/68512">Girls Basketball</a>
+															</td>
+
+							<td class="coach">
+																	
+																			Kiana Quintero																		
+									<div class="staff_info" style="float: right; top: 0.4em; margin-right: 15px;" title="More Information" data-staff-id="250307" data-lookup="schools/activity-staff"></div>
+
+									
+															</td>
+
+							<td class="league">
+																									1A-8 High Desert League								
+																							</td>
+
+							<td class="coop">
+															</td>
+
+							<td class="teams" style="text-align: right;">
+								V, JV							</td>
+
+							
+						</tr>
+							
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/68511">Boys Wrestling</a>
+															</td>
+
+							<td class="coach">
+																	
+																			Eddie Kinkade																		
+									<div class="staff_info" style="float: right; top: 0.4em; margin-right: 15px;" title="More Information" data-staff-id="250304" data-lookup="schools/activity-staff"></div>
+
+									
+															</td>
+
+							<td class="league">
+																									2A/1A-SD3 Special District 3								
+																							</td>
+
+							<td class="coop">
+															</td>
+
+							<td class="teams" style="text-align: right;">
+								V							</td>
+
+							
+						</tr>
+							
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/68513">Girls Wrestling</a>
+															</td>
+
+							<td class="coach">
+																	
+																			Eddie Kinkade																		
+									<div class="staff_info" style="float: right; top: 0.4em; margin-right: 15px;" title="More Information" data-staff-id="250309" data-lookup="schools/activity-staff"></div>
+
+									
+															</td>
+
+							<td class="league">
+																									4A/3A/2A/1A-SD4 Special District 4								
+																							</td>
+
+							<td class="coop">
+															</td>
+
+							<td class="teams" style="text-align: right;">
+								V							</td>
+
+							
+						</tr>
+							
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/69999">Baseball</a>
+															</td>
+
+							<td class="coach">
+								
+									TBD
+
+															</td>
+
+							<td class="league">
+																									3A-SD2 Special District 2								
+																							</td>
+
+							<td class="coop">
+															</td>
+
+							<td class="teams" style="text-align: right;">
+								V							</td>
+
+							
+						</tr>
+							
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/70000">Boys Track &amp; Field</a>
+															</td>
+
+							<td class="coach">
+																	
+																			Reagan Shira																		
+									<div class="staff_info" style="float: right; top: 0.4em; margin-right: 15px;" title="More Information" data-staff-id="255128" data-lookup="schools/activity-staff"></div>
+
+									
+															</td>
+
+							<td class="league">
+																									1A-SD4 Special District 4								
+																							</td>
+
+							<td class="coop">
+															</td>
+
+							<td class="teams" style="text-align: right;">
+								V							</td>
+
+							
+						</tr>
+							
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/70002">Girls Track &amp; Field</a>
+															</td>
+
+							<td class="coach">
+																	
+																			Reagan Shira																		
+									<div class="staff_info" style="float: right; top: 0.4em; margin-right: 15px;" title="More Information" data-staff-id="255133" data-lookup="schools/activity-staff"></div>
+
+									
+															</td>
+
+							<td class="league">
+																									1A-SD4 Special District 4								
+																							</td>
+
+							<td class="coop">
+															</td>
+
+							<td class="teams" style="text-align: right;">
+								V							</td>
+
+							
+						</tr>
+							
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/70001">Choir</a>
+															</td>
+
+							<td class="coach">
+								
+									TBD
+
+															</td>
+
+							<td class="league">
+																									2A/1A-SD4 Special District 4								
+																							</td>
+
+							<td class="coop">
+															</td>
+
+							<td class="teams" style="text-align: right;">
+								V							</td>
+
+							
+						</tr>
+							
+						<tr class="program">
+							<td class="activity">
+								<a href="https://www.osaa.org/teams/70003">Solo Music</a>
+															</td>
+
+							<td class="coach">
+								
+									TBD
+
+															</td>
+
+							<td class="league">
+																									OMEA-9 OMEA District 9								
+																							</td>
+
+							<td class="coop">
+															</td>
+
+							<td class="teams" style="text-align: right;">
+								V							</td>
+
+							
+						</tr>
+					
+				
+			</tbody>
+
+		</table>
+	
+	<br />
+
+	<div id="confirm_delete_ap" style="display: none;" title="Confirmation"></div>
+
+	<div id="add_ap" style="display: none;" title="Create New Activity Program"></div>
+	
+                    
+
+
+
+                    </div>
+
+                    <!-- End Main Content -->
+
+                        
+
+                </div>              
+
+                
+
+                <!-- Championships Logo -->
+
+                <!-- Championships Logo -->
+<div id="championships">
+    <img src="https://www.osaa.org/images/osaa_championships_2018.png" alt="" title="" width="152" height="110" style="position:relative; top:0px; left:2px;" />
+	        
+</div>
+                        
+
+            </div>
+
+            <!-- End Holder -->
+
+    
+
+        </div>
+
+        <!-- End Content -->
+
+        
+
+        <!-- Page Footer -->
+
+        <div id="footer">        
+    <div class="holder">
+
+        <!-- Copyright and Address -->                
+        <div class="copyright">
+           &copy; 2026 Oregon School Activities Association<br />
+           25200 SW Parkway Avenue Suite 1<br />
+           Wilsonville, OR 97070<br /><br />
+           SERVER-2020.2
+        </div>
+
+        <!-- Additional Page Links -->                
+        <div class="extra_links">
+            <div class="group">
+                <a href="https://www.osaa.org/about">About the OSAA</a><br />
+                <a href="https://www.osaa.org/contact">Contact Information</a><br />
+                <a href="http://www.osaafoundation.org" target="_blank">OSAA Foundation</a><br />                
+                <a href="https://www.osaa.org/privacy">Privacy Policy</a><br />
+                <a href="https://www.osaa.org/partners">Partners</a>                               
+            </div>
+            
+            <div class="group">
+                <a href="https://www.osaa.org/weekly ">OSAA Weekly</a><br />                       
+                <a href="https://www.osaa.org/classifieds">Classifieds</a><br />
+                <a href="https://www.osaa.org/open-dates">Open Dates</a><br />
+                                <a href="https://www.osaa.org/media">Broadcast Schedule</a><br />
+                <a href="https://www.osaa.org/archives">Records/Archives</a>
+            </div>                                
+            
+            <div class="group">                
+                <a href="https://www.osaa.org/today">OSAA<i>today</i></a><br />                                                
+                <a href="https://www.osaa.org/championships">Championship Central</a><br />
+                <a href="https://www.osaa.org/know-before-you-go">Know Before You Go</a><br />
+                <a href="https://www.osaa.org/radio-network">OSAA Radio Network</a><br />
+                <a href="https://www.osaa.org/links">Links &amp; Media</a><br />                
+                
+            </div>             
+
+                        
+
+            <div class="group search">
+
+                Search the OSAA Website:<br />                    
+                <input type="text" name="query" data-action="search" style="margin-bottom: 11px;" />
+                <img src="https://www.osaa.org/images/icons/magnifier_16px.png" alt="" title="" data-action="search" />
+                                
+
+                <a href="https://www.osaa.org/mobile" style="font-size: 10pt;">OSAA Mobile</a><br />
+                <a href="https://www.osaa.org/app" style="font-size: 10pt;">OSAA <i>Live</i> App</a><br />
+                
+
+
+            </div> 
+        </div>                
+        
+        <!-- Social Media Links -->
+        <div class="social_media">
+                    </div>
+        
+        <!-- Brief Contact Information -->
+        <div class="contact">
+            <a href="mail&#116;&#111;&#58;&#37;69n%66o&#64;o%73a&#97;&#x2e;o%72&#x67;" rel="nofollow">i&#x6e;&#102;o&#64;osaa&#x2e;o&#x72;g</a><br />
+            (503) 682-6722<br />                    
+
+            <!-- Year Select -->
+            <form method="GET" action="https://www.osaa.org/schools/347" accept-charset="UTF-8" id="year_select">                
+                <select class="auto_submit_onchange" name="year"><option value="2013">13-14</option><option value="2014">14-15</option><option value="2015">15-16</option><option value="2016">16-17</option><option value="2017">17-18</option><option value="2018">18-19</option><option value="2019">19-20</option><option value="2020">20-21</option><option value="2021">21-22</option><option value="2022">22-23</option><option value="2023">23-24</option><option value="2024">24-25</option><option value="2025">25-26</option><option value="2026" selected="selected">26-27</option></select>                
+            </form>            Year
+        </div>                              
+        
+        <!-- Sponsors -->                                
+        <div class="sponsors" style="display: flex; justify-content: space-between;">        
+            
+                        <a href="https://www.onpointcu.com/join-a-local-credit-union-onpoint-cu/?utm_source=osaa&utm_medium=display&utm_campaign=onpoint+partnerships&tactic_id=Brand_GP_04-25_OSAA_Web_Footer" target="_blank" data-before="Yes"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 0; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/OnPoint_3_111x50.png'); background-repeat:no-repeat;">Sponsor - OnPoint Community Credit Union</div></a>
+
+                                            
+            <a href="http://www.lesschwab.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/LesSchwab_111x50px.png'); background-repeat:no-repeat;">Sponsor - LesSchwab Tires</div></a>
+
+            
+                    
+            <a href="http://www.pacificoffice.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/POA_111x50px.png'); background-repeat:no-repeat;">Sponsor - Pacific Office Automation</div></a>
+
+			
+            
+            
+            
+            
+            <a href="http://www.wilson.com" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/Wilson_111x50px.png'); background-repeat:no-repeat;">Sponsor - Wilson</div></a>
+            
+            <a href="http://www.nike.com" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 0 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/Nike_111x50px.png'); background-repeat:no-repeat;">Sponsor - Nike</div></a>
+
+			<a href="https://www.toyota.com/pacificnorthwest/deals-incentives/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/toyota_111x50px.png'); background-repeat:no-repeat;">Sponsor - Toyota</div></a>
+
+						
+			
+			<a href="https://www.osaastore.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/RTA 111x50 Logo for Corp Partner pg.png'); background-repeat:no-repeat;">Sponsor - RushTeamApparel / OSAA Store</div></a>
+
+						
+			
+            
+
+			
+            <a href="https://www.oregon.gov/odot/pages/index.aspx" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/ODOT_AD_2_111x50px.png'); background-repeat:no-repeat;">Sponsor - ODOT</div></a>
+        
+
+            <a href="https://dairywest.com/" target="_blank"><div style="color: transparent; width:111px; height:50px; margin:5px 5px 5px 5px; float:left; background-image:url('https://www.osaa.org/images/ads/sponsors/DairyWest_111x50.png'); background-repeat:no-repeat;">Sponsor - DairyWest</div></a>
+
+
+        </div> 
+   
+    
+    </div>
+
+
+</div>
+<!-- End Footer -->                     
+
+        
+
+    </body>    
+
+</html>

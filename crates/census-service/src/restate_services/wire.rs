@@ -128,10 +128,16 @@ pub struct JurisdictionRequest {
     pub observed_on: Option<String>,
     #[serde(default)]
     pub authorized_hosts: Vec<String>,
+    #[serde(default = "default_source_parallelism")]
+    pub source_parallelism: usize,
 }
 
 fn default_concurrency() -> usize {
     4
+}
+
+pub(super) fn default_source_parallelism() -> usize {
+    census_crawl::net::DEFAULT_FAMILY_PARALLELISM
 }
 
 impl NationalRequest {
@@ -145,6 +151,7 @@ impl NationalRequest {
             concurrency: self.concurrency,
             observed_on: self.observed_on.clone(),
             authorized_hosts: self.authorized_hosts.clone(),
+            source_parallelism: self.source_parallelism,
         }
     }
 }

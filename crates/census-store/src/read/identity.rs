@@ -35,19 +35,28 @@ impl StoreSnapshot<'_> {
     ) -> StoreResult<AthleteIdentityProjection> {
         let cases: Vec<ReviewCase> = self.scan(Table::ReviewCases)?;
         let verdicts: Vec<ReviewVerdictRecord> = self.scan(Table::IdentityVerdicts)?;
-        let mut builder = IdentityProjectionBuilder::new(index, &cases, &verdicts)?;
-        self.for_each_merged::<AppliedIdentity>(Table::AthleteIdentityDecisions, |decision| {
-            if let Some(issue) = builder.consider(&decision)? {
-                tracing::warn!(
-                    decision_id = %decision.id,
-                    issue = ?issue,
-                    "Rejecting unsupported identity application"
-                );
-            }
-            Ok(())
-        })?;
-        builder.finish().map_err(StoreError::from)
+        let decisions: Vec<AppliedIdentity> = self.scan(Table::AthleteIdentityDecisions)?;
+        build_athlete_identity_projection(index, &cases, &verdicts, &decisions)
     }
+}
+
+pub fn build_athlete_identity_projection(
+    index: AthleteIdentityIndex,
+    cases: &[ReviewCase],
+    verdicts: &[ReviewVerdictRecord],
+    decisions: &[AppliedIdentity],
+) -> StoreResult<AthleteIdentityProjection> {
+    let mut builder = IdentityProjectionBuilder::new(index, cases, verdicts)?;
+    for decision in decisions {
+        if let Some(issue) = builder.consider(decision)? {
+            tracing::warn!(
+                decision_id = %decision.id,
+                issue = ?issue,
+                "Rejecting unsupported identity application"
+            );
+        }
+    }
+    builder.finish().map_err(StoreError::from)
 }
 
 #[cfg(test)]

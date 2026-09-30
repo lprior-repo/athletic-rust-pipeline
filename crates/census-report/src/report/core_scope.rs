@@ -23,6 +23,16 @@ impl Scope {
             Scope::Core => "-core",
         }
     }
+
+    pub fn primary_evidence<T: CoreScoped>(self, row: &T) -> Option<&Evidence> {
+        match self {
+            Self::AllSources => row.evidence().first(),
+            Self::Core => row
+                .evidence()
+                .iter()
+                .find(|evidence| is_core_source(&evidence.source.id)),
+        }
+    }
 }
 
 pub trait CoreScoped {
@@ -33,6 +43,12 @@ pub trait CoreScoped {
     fn drop_non_core_observations(&mut self) {}
 
     fn drop_non_core_identities(&mut self) {}
+}
+
+pub fn is_core_evidenced<T: CoreScoped>(row: &T) -> bool {
+    row.evidence()
+        .iter()
+        .any(|evidence| is_core_source(&evidence.source.id))
 }
 
 impl CoreScoped for CanonicalAthlete {

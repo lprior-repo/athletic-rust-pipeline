@@ -1,0 +1,19 @@
+2026-09-22T03:56:27Z	kshsaa-api.kshsaa.org	robots	404 0	bytes=0	curl -sS -A <ua> -o robots-kshsaa-api.txt https://kshsaa-api.kshsaa.org/robots.txt
+2026-09-22T03:56:29Z	www.kshsaa.org	robots	200 135	bytes=135	curl -sS -A <ua> -o robots-kshsaa.txt https://www.kshsaa.org/robots.txt
+2026-09-22T03:56:30Z	kshsaa-api.kshsaa.org	publicclassifications	200 31885	bytes=31885	curl -sS -A <ua> -o kshsaa-publicclassifications-2026-09-22.json https://kshsaa-api.kshsaa.org/PublicClassifications
+2026-09-22T03:56:31Z	ndhsaa.com	robots	200 24	bytes=24	curl -sS -A <ua> -o robots-ndhsaa.txt https://ndhsaa.com/robots.txt
+2026-09-22T03:56:32Z	ndhsaa.com	schools-index	200 97754	bytes=97754	curl -sS -A <ua> -o ndhsaa-schools-2026-09-22.html https://ndhsaa.com/schools
+2026-09-22T03:56:53Z	www.iahsaa.org	robots	200 146	bytes=146	curl -sS -A <ua> -o robots-iahsaa.txt https://www.iahsaa.org/robots.txt
+2026-09-22T03:56:54Z	www.iahsaa.org	member-schools	200 268201	bytes=268201	curl -sS -A <ua> -o iahsaa-member-schools-2026-09-22.html https://www.iahsaa.org/member-schools/
+2026-09-22T03:56:58Z	www.mshsl.org	robots	200 2385	bytes=2385	curl -sS -A <ua> -o robots-mshsl.txt https://www.mshsl.org/robots.txt
+2026-09-22T03:57:00Z	www.mshsl.org	sitemap-page1	200 341086	bytes=341086	curl -sS -A <ua> -o mshsl-sitemap-page1-2026-09-22.xml https://www.mshsl.org/sitemap.xml?page=1
+2026-09-22T03:57:01Z	www.mshsaa.org	robots	200 670	bytes=670	curl -sS -A <ua> -o robots-mshsaa.txt https://www.mshsaa.org/robots.txt
+2026-09-22T03:57:02Z	www.mshsaa.org	school-listing	200 721371	bytes=721371	curl -sS -A <ua> -o mshsaa-school-listing-2026-09-22.html https://www.mshsaa.org/Schools/SchoolListing.aspx
+2026-09-22T03:57:09Z	nsaahome.org	robots	200 31	bytes=31	curl -sS -A <ua> -o robots-nsaahome.txt https://nsaahome.org/robots.txt
+2026-09-22T03:57:10Z	secure.nsaahome.org	directory-form	200 11585	bytes=11585	curl -sS -A <ua> -o nsaa-directory-form-2026-09-22.html https://secure.nsaahome.org/nsaaforms/direxportscreen.php
+2026-09-22T03:57:11Z	sdhsaa.com	robots	200 156	bytes=156	curl -sS -A <ua> -o robots-sdhsaa.txt https://sdhsaa.com/robots.txt
+2026-09-22T03:57:12Z	sdhsaa.com	activity-cross-country	200 509970	bytes=509970	curl -sS -A <ua> -o sdhsaa-cross-country-2026-09-22.html https://sdhsaa.com/activity/cross-country/
+2026-09-22T03:57:44Z	secure.nsaahome.org	robots	302 0	bytes=0	curl -sS -A <ua> -o robots-secure-nsaahome.txt https://secure.nsaahome.org/robots.txt
+2026-09-22T03:57:45Z	sdhsaa.com	xc-region-results	200 286293	bytes=286293	curl -sS -A <ua> -o sdhsaa-cross-country-region-2026-09-22.html https://sdhsaa.com/cross-country-region/
+2026-09-22T03:58:00Z	search.athletic.live	POST heros_meet_list ND 2026 XC	200	bytes=1369	curl -X POST .../heros_meet_list/_search -d {ls:ND,md 2026-08-15..2026-11-30}
+2026-09-22T04:01:39Z apex robots bytes=146

@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+<head>
+    <style>
+    /* Constrain GAM ad containers so creatives render at intended sizes,
+       not stretched across full-width parents. */
+    .gam-banner-ad,
+    .gam-banner-ad-2 {
+        max-width: 728px;
+        margin: 0 auto;
+    }
+
+    .gam-banner-ad iframe,
+    .gam-banner-ad-2 iframe {
+        width: 100%;
+        height: auto;
+    }
+
+    .gam-presenting-sponsor-2,
+    .gam_ps {
+        max-width: 300px;
+        max-height: 75px;
+        margin: 0 auto;
+        overflow: hidden;
+    }
+
+    /* Mobile sponsor: GAM serves a 300x75 creative (until ad ops uploads
+       smaller variants), so visually scale the whole iframe down to fit
+       the header next to the brand + search + hamburger. The iframe still
+       loads at native 300x75 so impressions, click tracking, and viewability
+       reporting fire correctly — it just paints smaller. */
+    #gam-presenting-sponsor-mobile {
+        width: 200px;
+        height: 50px;
+        overflow: hidden;
+        position: relative;
+        margin: 0;
+    }
+    #gam-presenting-sponsor-mobile iframe {
+        width: 300px !important;
+        height: 75px !important;
+        transform: scale(0.6667);
+        transform-origin: top left;
+        border: 0;
+    }
+    @media (max-width: 380px) {
+        #gam-presenting-sponsor-mobile {
+            width: 160px;
+            height: 40px;
+        }
+        #gam-presenting-sponsor-mobile iframe {
+            transform: scale(0.5333);
+        }
+    }
+
+    .gam-presenting-sponsor-2 iframe,
+    .gam_ps iframe {
+        width: 100%;
+        height: 100%;
+    }
+
+    .prog-mobile-banners #gam-banner-ad,
+    .prog-mobile-banners #gam-banner-ad-2 {
+        min-height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
+<script>
+    window.googletag = window.googletag || { cmd: [] };
+
+    function isMobile() {
+        return window.innerWidth <= 768;
+    }
+
+    googletag.cmd.push(function () {
+        var isMobileDevice = isMobile();
+        var REFRESH_KEY = 'refresh';
+        var REFRESH_VALUE = 'true';
+        var REFRESH_MS = 30000;
+
+        // Add body class for stable layout on mobile
+        if (isMobileDevice) {
+            document.body.classList.add('prog-mobile-banners');
+        }
+
+        // ------- PRESENTING SPONSOR -------
+        if (isMobileDevice) {
+            googletag.defineSlot('/22870419559/headerwebmobile', [[300, 75]], 'gam-presenting-sponsor-mobile')
+                .setTargeting(REFRESH_KEY, REFRESH_VALUE)
+                .addService(googletag.pubads());
+        } else {
+            googletag.defineSlot('/22870419559/headerwebdesktop', [[300, 75]], 'gam-presenting-sponsor-2')
+                .setTargeting(REFRESH_KEY, REFRESH_VALUE)
+                .addService(googletag.pubads());
+        }
+
+        // ------- BANNER ADS -------
+        var desktopTabletSizes = [[640, 100], [728, 90]];
+        var mobileSizes = [[640, 100]];
+        var allSizes = [[640, 100], [728, 90]];
+
+        var bannerMapping = googletag.sizeMapping()
+            .addSize([1024, 0], desktopTabletSizes)
+            .addSize([768, 0], desktopTabletSizes)
+            .addSize([0, 0], mobileSizes)
+            .build();
+
+        googletag.defineSlot('/22870419559/bannerweb', allSizes, 'gam-banner-ad')
+            .defineSizeMapping(bannerMapping)
+            .setTargeting(REFRESH_KEY, REFRESH_VALUE)
+            .addService(googletag.pubads());
+
+        googletag.defineSlot('/22870419559/bannerweb', allSizes, 'gam-banner-ad-2')
+            .defineSizeMapping(bannerMapping)
+            .setTargeting(REFRESH_KEY, REFRESH_VALUE)
+            .addService(googletag.pubads());
+
+        // Site targeting
+        googletag.pubads().setTargeting('siteid', '2636250');
+        googletag.pubads().setTargeting('isschoolpay', '1');
+
+        // Auto-refresh on impression viewable
+        googletag.pubads().addEventListener('impressionViewable', function (event) {
+            var slot = event.slot;
+            if (slot.getTargeting(REFRESH_KEY).indexOf(REFRESH_VALUE) > -1) {
+                setTimeout(function () {
+                    googletag.pubads().refresh([slot]);
+                }, REFRESH_MS);
+            }
+        });
+
+        googletag.enableServices();
+
+        // Responsive image handling
+        document.addEventListener('DOMContentLoaded', function () {
+            handleResponsiveImages();
+
+            var resizeTimeout = null;
+            window.addEventListener('resize', function () {
+                if (resizeTimeout) clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(function () {
+                    handleResponsiveImages();
+                }, 250);
+            });
+        });
+
+        googletag.pubads().addEventListener('slotRenderEnded', function (event) {
+            var id = event.slot.getSlotElementId();
+
+            // No creative filled this banner slot — remove its wrapper so it
+            // doesn't leave an empty white band (e.g. tenants with no banner ad).
+            if (event.isEmpty) {
+                if (id === 'gam-banner-ad' || id === 'gam-banner-ad-2') {
+                    var emptyEl = document.getElementById(id);
+                    var wrapper = emptyEl && emptyEl.closest('.banner');
+                    if (wrapper) { wrapper.style.display = 'none'; }
+                }
+                return;
+            }
+
+            setTimeout(function () {
+                var container = document.getElementById(id);
+                if (container) {
+                    var iframes = container.querySelectorAll('iframe[id^="google_ads_iframe"]');
+                    iframes.forEach(applyResponsiveStyles);
+                }
+            }, 50);
+        });
+
+        function handleResponsiveImages() {
+            ['gam-banner-ad', 'gam-banner-ad-2', 'gam-presenting-sponsor-2', 'gam-presenting-sponsor-mobile'].forEach(function (adId) {
+                var adContainer = document.querySelector('#' + adId);
+                if (adContainer) {
+                    observeIframeInsertion(adContainer);
+                    var iframes = adContainer.querySelectorAll('iframe[id^="google_ads_iframe"]');
+                    iframes.forEach(applyResponsiveStyles);
+                }
+            });
+        }
+
+        function observeIframeInsertion(container) {
+            var observer = new MutationObserver(function (mutations) {
+                mutations.forEach(function (mutation) {
+                    if (mutation.addedNodes) {
+                        mutation.addedNodes.forEach(function (node) {
+                            if (node.tagName === 'IFRAME' && node.id.startsWith('google_ads_iframe')) {
+                                applyResponsiveStyles(node);
+                                observeIframeChanges(node);
+                            }
+                        });
+                    }
+                });
+            });
+
+            observer.observe(container, { childList: true, subtree: true });
+        }
+
+        function applyResponsiveStyles(iframe) {
+            if (
+                (iframe && iframe.closest('.gam-banner-ad')) ||
+                (iframe && iframe.closest('.gam-banner-ad-2')) ||
+                (iframe && iframe.closest('.gam-presenting-sponsor-2')) ||
+                (iframe && iframe.closest('.gam-presenting-sponsor-mobile'))
+            ) {
+                if (isMobile()) {
+                    iframe.style.width = '100%';
+                    iframe.style.height = 'auto';
+
+                    try {
+                        var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        var imgs = iframeDoc.querySelectorAll('img');
+                        imgs.forEach(function (img) {
+                            img.style.maxWidth = '100%';
+                            img.style.height = 'auto';
+                            if (iframe.closest('.gam-banner-ad')) {
+                                img.style.marginTop = '20%';
+                            } else {
+                                img.style.marginTop = '0';
+                            }
+                        });
+                    } catch (e) {
+                        console.error('Could not access iframe content:', e);
+                    }
+                }
+            }
+        }
+
+        function observeIframeChanges(iframe) {
+            iframe.addEventListener('load', function () {
+                applyResponsiveStyles(iframe);
+            });
+
+            var observer = new MutationObserver(function (mutations) {
+                mutations.forEach(function (mutation) {
+                    if (mutation.type === 'childList' || (mutation.type === 'attributes' && mutation.attributeName === 'src')) {
+                        applyResponsiveStyles(iframe);
+                    }
+                });
+            });
+
+            observer.observe(iframe, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+        }
+    });
+</script>
+
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <title>Cross Country - CIF Sac-Joaquin</title>
+        <meta name="keywords" content="cif sac-joaquin, athletics, membership, bulletin boards, schedules, broadcasts, scores, news, clinics, video,  photos, sports, state association" />
+        <meta name="description" content="The official home of CIF Sac-Joaquin. Stay updated with schedules, scores, and news." />
+        <meta property="og:title" content="Cross Country - CIF Sac-Joaquin - CIF Sac-Joaquin">
+        <meta property="og:image" content="https://5starassets.blob.core.windows.net/state-association-sites/9/6/images/6-6b43452b-a6a5-48c7-9843-2fa564b670a4-.png">
+        <meta property="og:description" content="The official home of CIF Sac-Joaquin. Stay updated with schedules, scores, and news.">
+    
+    <!-- creates browser icon using the association logo, falling back to the MM favicon -->
+    <link rel="icon" type="image/png" href="https://5starassets.blob.core.windows.net/state-association-sites/9/6/images/6-6b43452b-a6a5-48c7-9843-2fa564b670a4-.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="/lib/owl-carousel/dist/assets/owl.carousel.min.css">
+    <link rel="stylesheet" href="/lib/owl-carousel/dist/assets/owl.theme.default.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lity/2.3.1/lity.min.css" integrity="sha256-0SZxASYAglrmIuTx+ZYHE3hzTnCZWB7XLu+iA8AG0Z0=" crossorigin="anonymous" />
+    <script src="https://kit.fontawesome.com/cdb3f1f0ab.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.css" />
+    <link rel="stylesheet" href="/css/less/templates/3/main.min.css" />
+    <link rel="stylesheet" href="/css/site.css" )" />
+    <link href="css/TypeaheadCustom.css" rel="stylesheet" />
+    <link href="css/BootstrapModalCustom.css" rel="stylesheet" />
+    <link href="/lib/sweetalert/dist/sweetalert.css" rel="stylesheet" />
+
+    
+        <style>
+        h1, h2, h3, h4, h5, h6 {color: #000000;}
+        .header{background-color: #3646A6}
+        .footer{background-color: #C5960C;}
+        ul li a {color: #000000;}
+        table tr{color:#000000;}
+        .header-topper:before{background:#3646A6;}
+        .header-topper .row:before {background:#3646A6;}
+        .border-right-xl-secondary{border-right: 20px solid #C5960C;}
+        .header .dropdown{background-color: #C5960C;}
+        .header .main-nav::after{background-color: #C5960C;}
+        .bg-primary{background-color: #3646A6 !important}
+        .bg-secondary{background-color: #C5960C !important}
+        .text-primary{color: #000000 !important;}
+        .text-primary-font{color: #000000 !important;}
+        .text-secondary{color: #000000 !important;}
+        .border-all-thin-primary {border: solid 1px #3646A6; }
+        .border-all-thin-secondary {border: solid 1px #C5960C; }
+        .border-right-xl-secondary{border-right: 20px solid #C5960C;}
+        .border-right-xl-primary{border-right: 20px solid #3646A6;}
+        .bg-gradient-primary-dark{background-image: linear-gradient(180deg,#000,#3646A6);}
+        .navbar-nav > li > a:hover{color: #C5960C !important;}
+        .navli:hover {color: #FFF; background-color: #3646A6;}
+        .navli:hover a{color: #FFF !important;}
+        .btn-primary{background-color: #C5960C !important;}
+        .owl-carousel-sponsors {
+            background-color: #3646A6 !important;
+        }
+</style>
+    
+
+    
+    
+
+    <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function () {
+            /////// Prevent closing from click inside dropdown
+            document.querySelectorAll('.dropdown-menu').forEach(function (element) {
+                element.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+            })
+        });
+    </script>
+</head>
+<body class="d-flex flex-column h-100 mt-6">
+    <input type="hidden" id="SchoolId" value="2636250" />
+    <header class="header mb-5">
+        <!-- ******HEADER****** -->
+<!--Navbar Upper-->
+<nav class="navbar-inverse nav-upper fixed-top bg-secondary">
+    <div class="container-fluid">
+    </div>
+</nav>
+<!--Navbar Upper End-->
+<div class="fixed-container fixed">
+    <a href="/" class="u-hide-tab logo-container" style="height: 185px;">
+        <img src="https://5starassets.blob.core.windows.net/state-association-sites/9/6/images/6-6b43452b-a6a5-48c7-9843-2fa564b670a4-.png" class="logo" />
+        <div class="logo-background"></div>
+        <span class="mobile"><img src="https://5starassets.blob.core.windows.net/state-association-sites/9/6/images/6-9f3bb3a6-36b3-445c-a4c8-0b339c181b20-.png"></span>
+    </a>
+    <div class="nav-container">
+        <section id="main-nav" class="nav-bar bg-primary" role="menubar">
+            <div class="menu-btn bg-secondary" role="button" id="hamburgerToggle" aria-expanded="false">
+                <div class="menu-btn-container">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
+            <div class="brand-wrapper">
+                <span class="mobile-logo">
+                    <a href="/" class="u-show-tab">
+                        <img src="https://5starassets.blob.core.windows.net/state-association-sites/9/6/images/6-9f3bb3a6-36b3-445c-a4c8-0b339c181b20-.png" alt="CIF Sac-Joaquin Logo">
+                    </a>
+                </span>
+
+                <div class="presenting-sponsor">
+                    <div class="adzone adzone-0" data-adtypeid="106">
+                        <div class="adzone" data-adtypeid="106">
+    <div class="banner py-1 mt-2 mt-sm-2 mt-lg-3">
+        <div class="ad-placement text-center">
+                <div id='gam-presenting-sponsor-mobile' class="gam_ps">
+                    <script>
+                        if (isMobile()) {
+                            googletag.cmd.push(function () { googletag.display('gam-presenting-sponsor-mobile'); });
+                        }
+                    </script>
+                </div>
+                <div id='gam-presenting-sponsor-2' class="gam-presenting-sponsor-2">
+                    <script>
+                        if (!isMobile()) {
+                            googletag.cmd.push(function () { googletag.display('gam-presenting-sponsor-2'); });
+                        }
+                    </script>
+                </div>
+        </div>
+    </div>
+</div>
+
+                    </div>
+                </div>
+            </div>
+
+            <nav class="main-nav col-12 border-all-thin-secondary">
+                <ul class="page-links" role="menu">
+                            <li tabindex="0" aria-haspopup="true" role="menuitem">
+                                <div role="button" class="nav-link bg-primary" tabindex="index" id="menu-28885">
+                                    <span class="nav-text">Sports</span>
+                                    <span class="icn chevron-dropdown"></span>
+                                </div>
+                                <div class="dropdown" aria-hidden="true">
+                                    <ul role="menu" class="submenu">
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/badminton">Badminton</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/baseball">Baseball</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/basketball">Basketball</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/competitive-cheer">Competitive Cheer</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/cross-country">Cross Country</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/flag-football">Flag Football</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/football">Football</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/golf">Golf</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/lacrosse">Lacrosse</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/soccer">Soccer</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/softball">Softball</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/stunt">Stunt</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/swimming-diving">Swimming &amp; Diving</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/tennis">Tennis</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/track-field">Track &amp; Field</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/volleyball">Volleyball</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/water-polo">Water Polo</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/wrestling">Wrestling</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/past-champions">Past Champions</a>
+                                            </li>
+                                    </ul>
+                                </div>
+                            </li>
+                                <li role="menuitem">
+                                    <a class="nav-link bg-primary" role="menuitem" href="https://gofan.co/app/school/CIFSJS" target="_blank">Tickets</a>
+                                </li>
+                            <li tabindex="0" aria-haspopup="true" role="menuitem">
+                                <div role="button" class="nav-link bg-primary" tabindex="index" id="menu-28906">
+                                    <span class="nav-text">The SJS</span>
+                                    <span class="icn chevron-dropdown"></span>
+                                </div>
+                                <div class="dropdown" aria-hidden="true">
+                                    <ul role="menu" class="submenu">
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/classifieds">Classifieds</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/history">History</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/leagues">Leagues</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/media-policy">Media Policy</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/member-schools">Member Schools</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/officiating">Officiating</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/section-staff">Section Staff</a>
+                                            </li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li tabindex="0" aria-haspopup="true" role="menuitem">
+                                <div role="button" class="nav-link bg-primary" tabindex="index" id="menu-28914">
+                                    <span class="nav-text">Awards</span>
+                                    <span class="icn chevron-dropdown"></span>
+                                </div>
+                                <div class="dropdown" aria-hidden="true">
+                                    <ul role="menu" class="submenu">
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/academic-champions">Academic Champions</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/commissioner&#x27;s-cup">Commissioner&#x27;s Cup</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/model-coach-award">Model Coach Award</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/scholarships">Scholarships</a>
+                                            </li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li tabindex="0" aria-haspopup="true" role="menuitem">
+                                <div role="button" class="nav-link bg-primary" tabindex="index" id="menu-28919">
+                                    <span class="nav-text">Events</span>
+                                    <span class="icn chevron-dropdown"></span>
+                                </div>
+                                <div class="dropdown" aria-hidden="true">
+                                    <ul role="menu" class="submenu">
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/contest-management">Contest Management</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/foundation-games">Foundation Games</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/hall-of-fame">Hall of Fame</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/professional-development">Professional Development</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/the-huddle">THE HUDDLE</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/women-in-sports-conference">Women in Sports Conference</a>
+                                            </li>
+                                    </ul>
+                                </div>
+                            </li>
+                            <li tabindex="0" aria-haspopup="true" role="menuitem">
+                                <div role="button" class="nav-link bg-primary" tabindex="index" id="menu-28926">
+                                    <span class="nav-text">Governance</span>
+                                    <span class="icn chevron-dropdown"></span>
+                                </div>
+                                <div class="dropdown" aria-hidden="true">
+                                    <ul role="menu" class="submenu">
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/board-of-managers">Board of Managers</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/bylaws">Bylaws</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/cif-calendar">Calendar</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/finances">Finances</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/meetings">Meetings</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/misconducts">Misconducts</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/realignment">Realignment</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/sanctions">Sanctions</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/sport-calendars">Sport Calendars</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/transfers">Transfers</a>
+                                            </li>
+                                            <li tabindex="-1">
+                                                        <a role="menuitem" href="/transfer-rulings">Transfer Rulings</a>
+                                            </li>
+                                    </ul>
+                                </div>
+                            </li>
+                                <li role="menuitem">
+                                    <a class="nav-link bg-primary" role="menuitem" href="https://online-apparel.com/s/cifsjs-store/" target="_blank">Apparel</a>
+                                </li>
+                </ul>
+            </nav>
+        </section>
+    </div>
+</div>
+    </header>
+    <div class="container-fluid">
+        <div class="banner">
+    <div class="row">
+        <div class="col-md-12 col-sm-12">
+            <div class="ad-placement">
+                <div id='gam-banner-ad' class="gam-banner-ad">
+                    <script>
+                        googletag.cmd.push(function () { googletag.display('gam-banner-ad'); });
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    </div>
+    <main class="flex-shrink-0 mt-6">
+        
+<div class="container">
+    <div class="custom-page-content row">
+
+            <div class="col">
+
+                            <p class="text-center my-5"><p></p><p><img src="https://5starassets.blob.core.windows.net/state-association-sites/6/f2c8c01a-85a3-40c8-99ce-d6e390efea58.png" style="width: 100%;"><br></p></p>
+
+<section class="col-12 col-lg-12 sport-template" aria-label="Sport Information">
+
+
+    <div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <h2 class="card-title font-bold bg-primary text-white p-2">Information</h2>
+            <div class="card-body">
+                <dl class="sport-info-list">
+                </dl>
+                <br />
+                    <a class="btn d-block bg-primary text-white mb-1" href="https://cifsjs1-my.sharepoint.com/:x:/g/personal/wdeboard_cifsjs_org/IQDLoAEogdUDRbfWOBU5x0VRAeQB6KQXHKfegYpBtYJSAXc?e=SwuT3u" target="_blank" rel="noopener noreferrer">Enrollments <span class="sr-only">(opens in new tab)</span></a>
+                    <a class="btn d-block bg-primary text-white mb-1" href="https://cifsjs1-my.sharepoint.com/:f:/g/personal/wdeboard_cifsjs_org/EtaWmceTd8pFr6Nbkqh1ms4BFMsjkf1oZsDK-FBfCmq4jA?e=6M4qzn" target="_blank" rel="noopener noreferrer">Information <span class="sr-only">(opens in new tab)</span></a>
+                    <a class="btn d-block bg-primary text-white mb-1" href="https://cifsjs1-my.sharepoint.com/:x:/g/personal/wdeboard_cifsjs_org/EeLByIYgod5AhgPATS5N1IoBEuTLxCH0jJfT4alXKN1EMQ?e=7I4TVR" target="_blank" rel="noopener noreferrer">Boys Past Champions <span class="sr-only">(opens in new tab)</span></a>
+                    <a class="btn d-block bg-primary text-white mb-1" href="https://cifsjs1-my.sharepoint.com/:x:/g/personal/wdeboard_cifsjs_org/EeuspbXRTsVOpCUbkDuJYlYBTLQ8xjX-GEq4r1TzT_UDIg?e=nHnRUf" target="_blank" rel="noopener noreferrer">Girls Past Champions <span class="sr-only">(opens in new tab)</span></a>
+            </div>
+        </div>
+    </div>
+
+            <div class="col-md-6 col-lg-6">
+                <div class="row mb-2">
+                    <div class="col-md-12">
+                        <section class="col-12" aria-labelledby="article-title">
+                            <h3 id="article-title" class="force-mt-5 mt-2 text-center">Trojans excel at Grizzly 3200</h3>
+                            <img class="img-fluid" src="https://5starassets.blob.core.windows.net/state-association-article-photos/9/48687e11-de89-4a19-95a9-5a1d83befbe9_640x480.jpg" alt="Trojans excel at Grizzly 3200 - Featured image" />
+                            <div class="meta mt-2 blockquote-footer"><time datetime="2025-10-21">10/21/2025</time> / Posted by Matt Long, Gold Country Media</div>
+                            <div class="content mt-2">
+                                    <!--NOTE: if character limit is <= 0 we apply arbitrary 200 char limit on external articles, some third party articles are missing character limits.-->
+                                    <p style="white-space: pre-line;">
+                                        Oak Ridge athletes not only had a good performance on Saturday at the Grizzly 3,200, but also enjoyed competing and their results has them looking forward to the rest of the season.
+
+Athletes compet...
+                                        <a href="https://goldcountrymedia.com/news/337957/trojans-excel-at-grizzly-3200/" target="_blank" rel="noopener noreferrer" class="text-primary">Read full article <span class="sr-only">(opens in new tab)</span></a>
+                                    </p>
+                                    <div class="row">
+                                        <div class="col-md-6 col-md-offset-3 col-sm-6 col-sm-offset-3 col-xs-6 col-xs-offset-3">
+                                        </div>
+                                    </div>
+                                    <script type="application/ld+json">
+                                        {
+                                        "@context" : "http://schema.org",
+                                        "@type" : "Article",
+                                        "name" : "Trojans excel at Grizzly 3200",
+                                        "author" : {
+                                        "@type" : "Person",
+                                        "name" : "Matt Long, Gold Country Media"
+                                        },
+                                        "datePublished" : "2025-10-21",
+                                        "dateModified" : "2025-10-21",
+                                        "image" : "https://5starassets.blob.core.windows.net/state-association-article-photos/9/48687e11-de89-4a19-95a9-5a1d83befbe9_640x480.jpg",
+                                        "articleBody" : "Oak Ridge athletes not only had a good performance on Saturday at the Grizzly 3,200, but also enjoyed competing and their results has them looking forward to the rest of the season.&#xD;&#xA;&#xD;&#xA;Athletes competed against other athletes who had similar 3,200 times and there were 22 races total. The Oak Ridge boys&#x2019; teams placed first with 57 points, while the girls&#x2019; team took second with 58 points.&#xD;&#xA;&#xD;&#xA;Oak Ridge had three girls in the fastest girls&#x2019; race and three boys in the fastest boys&#x2019; race.&#xD;&#xA;&#xD;&#xA;In the boys&#x2019; race, Thomas Capelli placed fifth and Roman Zamora ran sixth for the Trojans, as they finished in 9:15.86 and 9:21.57, respectively. Wesley Ewing ran ninth in 9:33.46.&#xD;&#xA;&#xD;&#xA;In the girls&#x2019; race, Adriana Ingargiola took fourth in 10:41.29 and was followed by Giuliana Martino in sixth, 19:59.43 and Maya Day in 12th in 11:21.46.&#xD;&#xA;&#xD;&#xA;&#x201C;It was a fabulous day of racing for the team,&#x201D; Oak Ridge coach Rob Fairley said. &#x201C;Many Oak Ridge athletes obtained personal-best times and quite a few placed in the top-three in their heat and received a prize.&#x201D;&#xD;&#xA;&#xD;&#xA;First-place finishers received a Grizzly 3200 T-Shirt, second-place finishers received a Grizzly 3200 spike bag, and third place finishers received a Grizzly 3200 key chain.&#xD;&#xA;&#xD;&#xA;Oak Ridge had four athletes Dax Whann (9:54.75 PR), Doug Dudek (10:23.22 PR), Rob Anderson (11:40.50 PR), Lauren Tiedeman (11:25.65 PR) who placed first in their race.&#xD;&#xA;&#xD;&#xA;The top-seven boy finishers for the Trojans included Capelli, Zamora, Ewing, and Oscar Carrillo (15th, 9:44.80), Dax Whann  (22nd,  9:54.75  PR), Bailey Van Leemput  (23rd,   9:56.27   PR) and Austin Mackovic  (30th,  10:06.57).&#xD;&#xA;&#xD;&#xA;The top-seven girl finishers for the Trojans were Ingargiola, Martino, Day, Lauren Tiedeman (18th, 11:25.65 PR), Emi Madsen (20th, 11:31.65), Sutton Paulsen (27th, 11:43.41 PR) and Elise Sale (42nd, 12:32.67 PR).&#xD;&#xA;&#xD;&#xA;&#x201C;The Grizzly 3200 was a fun meet for the team to compete in because it showed our athletes their fitness level is high,&#x201D; Fairley said. &#x201C;They were able to race fast on the track from the strength training they have been doing throughout the season. This meet has got our athletes excited about completing the season strong in the big meets in November and also has got them excited about the upcoming track season.&#x201D;&#xD;&#xA;&#xD;&#xA;The next meet for the Oak Ridge cross country team is the Sierra Foothill League Championships at William Jessup University on November 1.",
+                                        "headline" : "Trojans excel at Grizzly 3200",
+                                        "publisher" : {
+                                        "@type": "Organization",
+                                        "name": "",
+                                        "logo": {
+                                        "@type": "ImageObject",
+                                        "url" :"https://5starassets.blob.core.windows.net/"
+                                        }
+                                        }
+                                        }
+                                    </script>
+                            </div>
+
+                        </section>
+
+                    </div>
+                </div>
+            </div>
+
+    <input type="hidden" id="SportTemplateSportId" data-val="true" data-val-required="The SportId field is required." name="SportTemplate.SportId" value="7" />
+    </div>
+</section>
+
+<style>
+    /* Override CSS setting to show only tab info */
+    .tab-pane.fade.show.active{
+        display: block !important;
+    }
+    .tab-pane.fade{
+        display: none !important;
+    }
+    /* Screen reader only class */
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+    /* Sport info list styling */
+    .sport-info-list {
+        margin: 0;
+    }
+    .sport-info-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    .sport-info-item dt {
+        font-weight: normal;
+    }
+    .sport-info-item dd {
+        margin: 0;
+        text-align: right;
+    }
+    /* Sport article read-more collapse */
+    .sport-article-body {
+        max-height: 400px;
+        overflow: hidden;
+        position: relative;
+        transition: max-height 0.3s ease;
+    }
+    .sport-article-body.expanded {
+        max-height: none;
+    }
+    .sport-read-more-toggle {
+        background: none;
+        border: none;
+        color: var(--bs-primary, #007bff);
+        cursor: pointer;
+        padding: 0.5rem 0;
+        font-size: 1rem;
+        text-decoration: underline;
+    }
+    .sport-read-more-toggle:hover {
+        opacity: 0.8;
+    }
+</style>
+
+<script>
+    function toggleSportArticle(btn) {
+        var article = btn.previousElementSibling;
+        if (article.classList.contains('expanded')) {
+            article.classList.remove('expanded');
+            btn.textContent = 'Read More';
+        } else {
+            article.classList.add('expanded');
+            btn.textContent = 'Read Less';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var articles = document.querySelectorAll('.sport-article-body');
+        articles.forEach(function (article) {
+            if (article.scrollHeight > 400) {
+                var btn = article.nextElementSibling;
+                if (btn && btn.classList.contains('sport-read-more-toggle')) {
+                    btn.style.display = 'inline-block';
+                }
+            }
+        });
+    });
+</script>
+                <br />
+                <div class="clearfix"></div>
+            </div>
+    </div>
+</div>
+
+
+
+<style>
+
+    article[data-readmore]
+    {
+        transition: height 200ms;
+        overflow: hidden;
+    }
+
+    article + [data-readmore-toggle], article[data-readmore]
+    {
+        display: block;
+        width: 100%;
+    }
+    /*
+    .custom-container
+    {
+        width: 100%;
+        padding-right: 10%;
+        padding-left: 10%;
+        margin-right: auto;
+        margin-left: auto;
+    }*/
+</style>
+
+
+    </main>
+
+    
+
+    <div class="container-fluid">
+        <footer class="mt-auto bg-primary">
+            
+    <div>
+        <div class="container-fluid">
+            <div class="adzone" data-adtypeid="181">
+    <div class="banner py-1">
+        <div class="ad-placement text-center mb-1 mt-2">
+            <div id='gam-banner-ad-2' class="gam-banner-ad-2">
+                <script>
+                    googletag.cmd.push(function () { googletag.display('gam-banner-ad-2'); });
+                </script>
+            </div>
+        </div>
+    </div>
+</div>
+
+        </div>
+    </div>
+
+<div id="app-downloads" class="bg-primary text-center py-3">
+    <div id="badges">
+            <a href="https://itunes.apple.com/us/app/niaaa/id963291250?mt=8" target="_blank"><img class="img-responsive download" src="/images/dl-apple.png" aria-label="Apple App Store Badge" alt="Apple App Store Badge" /></a>
+            <img class="img-responsive app-icon" src="/images/niaaa-icon.png" style="width:75px;" aria-label="Mascot Media App Icon Logo" alt="Mascot Media App Icon Logo" />
+            <a href="https://play.google.com/store/apps/details?id=com.sidelineaccess.niaaa&hl=en" target="_blank"><img class="img-responsive download" src="/images/dl-google.png" aria-label="Google Play Store Badge" alt="Google Play Store Badge" /></a>
+
+    </div>
+</div>
+
+<div class="bg-dark text-center py-2 text-light mt-auto mb-auto">
+    <div class="container-fluid">
+        <span>
+        
+        </span>
+       
+        <span>
+                <i class="far fa-building"></i>
+                <span>
+                    9381 East Stockton Blvd., Suite 112
+                    Elk Grove, CA 95624
+                </span>
+        </span>
+    </div>
+</div>
+
+<div>
+
+</div>
+<div>
+    <div class="container-fluid">
+        <div class="d-flex justify-content-evenly bd-highlight">
+        <div class="p-2 bd-highlight align-self-center">
+            <a href="https://mascotmedia.net" target="_blank">
+                <img src="https://5starassets.blob.core.windows.net/sa-affiliates/6/e98dcbc6-71cf-4e1e-9155-670deffe33fc_640x480.png" style="width: 200px; height: auto;" aria-label="Affiliate Image Link to https://mascotmedia.net"/>
+            </a>
+        </div>
+</div>
+    </div>
+</div>
+
+<div>
+    <div class="text-center bg-primary py-2">
+        <a href="http://www.mascotmedia.net/privacy-policy/" target="_blank" class="text-white">PRIVACY POLICY</a> |
+        <span class="text-white">&copy; 2026 MASCOT MEDIA, LLC</span>
+    </div>
+</div>
+        </footer>
+    </div>
+
+
+    <!-- JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lity/2.3.1/lity.min.js" integrity="sha256-3VzI8FuSG20IfvIDKRptBR+1d4T6G57eDIf6ZEO13iY=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/corejs-typeahead/1.3.1/typeahead.bundle.min.js"
+            integrity="sha512-lEb9Vp/rkl9g2E/LdHIMFTqz21+LA79f84gqP75fbimHqVTu6483JG1AwJlWLLQ8ezTehty78fObKupq3HSHPQ=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+
+    <script src="/lib/owl-carousel/dist/owl.carousel.min.js"></script>
+    <script src="/lib/sweetalert/dist/sweetalert.min.js"></script>
+
+    <script src="/js/IndexStyle3/topmenu2.js?v=XK4PoXloj5o9T5wN3UnaBZJGrgW4qjg-LDehqNy6SdE"></script>
+    <script src="/js/IndexStyle3/OwlSlider.js?v=NZADpUHjlc3y1ZvCR0X3n9eSxsaxjijuTACwVfWn5g4"></script>
+    <script type="text/javascript">
+        $(window).scroll(function () {
+            if ($(window).scrollTop() > $('body').offset().top && !($('body').hasClass('fixedbar'))) {
+                $('#fixedscroll').addClass('fixedbar');
+            } else if ($(window).scrollTop() == 0) {
+                $('#fixedscroll').removeClass('fixedbar');
+            }
+        });
+
+        $(document).ready(function () {
+            $(document).on('click',
+                '#hamburgerToggle',
+                function (e) {
+                    document.querySelector('body').classList.toggle('header-open');
+                });
+
+            //this handles mobile navigation animations
+            $(document).on('click',
+                '.nav-link',
+                function (e) {
+                    if ($('#hamburgerToggle').is(":visible")) { //if we are in mobile layout
+                        $('.nav-link.active').toggleClass('active');
+                        $(this).toggleClass('active');
+                    }
+                });
+
+            // Get current page URL
+            var url = window.location.href;
+            console.log(url);
+
+            // remove # from URL
+            url = url.substring(0, (url.indexOf("#") == -1) ? url.length : url.indexOf("#"));
+
+            // remove parameters from URL
+            url = url.substring(0, (url.indexOf("?") == -1) ? url.length : url.indexOf("?"));
+
+            // select file name
+            url = url.substr(url.lastIndexOf("/"));
+
+            // If file name not available
+            if (url == '') {
+                url = '/';
+            }
+
+            console.log(url);
+
+            // Loop all menu items
+            //$('.sub-nav ul li').each(function () {
+
+            //    // select href
+            //    var href = $(this).find('a').attr('href');
+            //    console.log("href " + href);
+            //    console.log("url " + url);
+            //    // Check filename
+            //    if (url == href) {
+            //        // Add class
+            //        $(this).find('a').addClass('active');
+            //        var parent = $(this).find('a').data("parentid");
+            //        $("#" + parent).addClass('active');
+            //    }
+            //});
+        });
+    </script>
+    
+    <script src="/lib/readmore-js/readmore.min.js"></script>
+    <script>
+        var boysTab = false;
+        var girlsTab = false;
+        $(document).ready(function () {
+            $('article').readmore(
+                { collapsedHeight: 400 }
+            );
+
+
+            $(document).on('change', '#SportTemplateClassification', function (e) {
+                var classificationId = $("#SportTemplateClassification").val();
+                var sportId = $('#SportTemplateSportId').val();
+                var sportValueBoys = sportId + "-1-1";
+                var sportValueGirls = sportId + "-2-1";
+
+                if (!sportId || classificationId == '0') {
+                    return;
+                }
+
+                $("#BoysTab, #GirlsTab, #Boys, #Girls").hide();
+                //$("#spinner").show();
+                $("#StandingsBoys").html("");
+                $("#StandingsGirls").html("");
+
+                GetStandings(classificationId, sportValueBoys, sportValueGirls);
+
+            })
+
+            $('#SportTemplateClassification').change();
+
+            $(document).on('change', '#classification', function (e) {
+                var id = $(this).val();
+                $.ajax({
+                    type: 'GET',
+                    url: 'standings/getclassificationsports',
+                    dataType: 'json',
+                    data: { classificationId: id },
+                    success: function (datas, textStatus, jqXHR) {
+                        if (datas != null) {
+                            $("#sports").empty();
+                            $("#sports").append("<option value='0'>Select a Sport</option>");
+                            $.each(datas,
+                                function (i, c) {
+                                    $("#sports").append('<option value="' + c.value + '">' + c.text + '</option>');
+
+                                });
+                        }
+                    },
+                    error: function (ex) {
+
+                    }
+                });
+            });
+
+            $(document).on('change', '#sports', function (e) {
+                var classificationId = $("#classification").val();
+                var sportValue = $(this).val();
+                if (sportValue == '0')
+                    return;
+
+                $.ajax({
+                    type: 'GET',
+                    url: 'standings/getleaguestandings',
+                    dataType: 'html',
+                    data: { classificationId: classificationId, sportValue: sportValue },
+                    success: function (data) {
+                        $("#standings").html(data);
+                    },
+                    error: function (ex) {
+
+                    }
+                });
+            })
+
+
+
+            async function GetStandings(classificationId, sportValueBoys, sportValueGirls) {
+                try {
+                    await Promise.allSettled([await GetBoysStandings(classificationId, sportValueBoys), await GetGirlsStandings(classificationId, sportValueGirls)])
+                        .then(function () {
+                            //var tab = document.querySelector('#nav-tab button:first');
+                            //bootstrap.Tab.getInstance(tab).show();
+
+                            //tab.show()
+                            //if (boysTab) {
+                            //    var boys = document.querySelector('#myTab button[data-bs-target="#profile"]')
+                            //    var tab = new bootstrap.Tab(boys)
+
+                            //    tab.show()
+                            //}
+                            //else {
+                            //    var girls = document.querySelector('#girlsTab')
+                            //    var tab = new bootstrap.Tab(girls)
+
+                            //    tab.show()
+                            //}
+                            //debugger;
+                            //$("#spinner").hide();
+                        })
+
+
+                } catch (ex) { debugger; }
+            }
+
+            var boysDataPresent = false;
+            var girlsDataPresent = false;
+
+            async function GetBoysStandings(classificationId, sportValueBoys) {
+                $.ajax({
+                    type: 'GET',
+                    url: 'page/getleaguestandings',
+                    dataType: 'html',
+                    data: { classificationId: classificationId, sportValue: sportValueBoys },
+                    success: function (data) {
+                        if (data && data.trim().length > 0) {
+                            $("#StandingsBoys").html(data);
+                            boysDataPresent = true;
+                        } else {
+                            boysDataPresent = false;
+                        }
+                        updateTabVisibilityAndContent();
+                    },
+                    error: function (ex) {
+                    }
+                });
+            }
+
+            async function GetGirlsStandings(classificationId, sportValueGirls) {
+                $.ajax({
+                    type: 'GET',
+                    url: 'page/getleaguestandings',
+                    dataType: 'html',
+                    data: { classificationId: classificationId, sportValue: sportValueGirls },
+                    success: function (data) {
+                        if (data && data.trim().length > 0) {
+                            $("#StandingsGirls").html(data);
+                            girlsDataPresent = true;
+                        } else {
+                            girlsDataPresent = false;
+                        }
+                        updateTabVisibilityAndContent();
+                    },
+                    error: function (ex) {
+                    }
+                });
+            }
+
+            function updateTabVisibilityAndContent() {
+                $("#boysTab, #girlsTab").removeClass("active").hide();
+                $("#boys, #girls").removeClass("show active").hide();
+
+                if (boysDataPresent) {
+                    $("#boysTab").addClass("active").show();
+                    $("#boys").addClass("show active").show();
+                }
+                if (girlsDataPresent) {
+                    // If both have data, make sure only one tab is marked as active initially
+                    if (!boysDataPresent) {
+                        $("#girlsTab").addClass("active").show();
+                        $("#girls").addClass("show active").show();
+                    } else {
+                        $("#girlsTab").show(); // Show the tab but don't make it active if boys data is also present
+                    }
+                }
+
+              
+            }
+
+
+        })
+    </script>
+
+    <script type="text/javascript">
+        $.extend(true, $.fn.dataTable.defaults, {
+            language: {
+                "processing": "<i class='fa fa-refresh fa-spin fa-2x'></i><br />Loading..."
+            }
+        });
+    </script>
+
+    <script type='text/javascript'>
+        var url = 'https://apps.apple.com/us/app/cif-sac-joaquin/id6448069113';
+        var regex = /([\d]{10,})/g;
+        var meta = document.createElement('meta');
+        meta.setAttribute('name', 'apple-itunes-app');
+        meta.setAttribute('content', 'app-id=' + url.match(regex));
+        document.getElementsByTagName('head')[0].appendChild(meta);
+    </script>
+
+    <!-- google analytics-->
+    <script>
+    (function(i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r;
+        i[r] = i[r] ||
+            function() {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date();
+        a = s.createElement(o),
+            m = s.getElementsByTagName(o)[0];
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', '', 'auto');
+    ga('send', 'pageview');
+
+    </script>
+</body>
+</html>

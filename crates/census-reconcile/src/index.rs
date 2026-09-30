@@ -14,6 +14,9 @@ mod coverage;
 #[cfg(test)]
 mod application_tests;
 
+#[cfg(test)]
+mod stage_gate_tests;
+
 use coverage::coverage_rows;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -36,6 +39,32 @@ impl IndexReport {
             .saturating_add(self.snapshots)
             .saturating_add(self.identity_applications)
     }
+}
+
+const STAGE_RECEIPT: &str = "index-stage";
+
+const STAGE_OUTPUTS: [Table; 6] = [
+    Table::SourceIdentities,
+    Table::Conflicts,
+    Table::ReviewCases,
+    Table::Coverage,
+    Table::Snapshots,
+    Table::AthleteIdentityDecisions,
+];
+
+fn stage_digest(store: &Store) -> ReportResult<String> {
+    let inputs: Vec<Table> = Table::ALL
+        .into_iter()
+        .filter(|table| !STAGE_OUTPUTS.contains(table))
+        .collect();
+    Ok(store.snapshot().tables_digest(&inputs)?)
+}
+
+fn recorded_report(_store: &Store) -> ReportResult<IndexReport> {
+    Ok(IndexReport {
+        snapshots: 1,
+        ..IndexReport::default()
+    })
 }
 
 fn stored_cases(store: &Store) -> ReportResult<HashMap<String, ReviewCase>> {
@@ -79,10 +108,20 @@ fn supersede(
 }
 
 pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<IndexReport> {
+    let digest = stage_digest(store)?;
+    let operation = format!("{STAGE_RECEIPT}:{digest}");
+    if store
+        .receipt(&operation)?
+        .is_some_and(|held| held.digest == digest)
+    {
+        store.replace(Table::Snapshots, &snapshot_row(store, phase, finished_at)?)?;
+        return recorded_report(store);
+    }
     let pass = canonical_pass(store)?;
     let identity_applications = apply::apply_decisions(store, finished_at)?;
-    let retained = census_report::workbook::retained_records(store)?;
-    let coverage = coverage_rows(store, &pass.identities)?;
+    let dataset = census_report::export::ExportDataset::load(store)?;
+    let retained = census_report::workbook::retained_records(&dataset)?;
+    let coverage = coverage_rows(&dataset, &pass.identities)?;
 
     let mut conflicts: Vec<RetainedConflict> = retained
         .conflicts
@@ -109,6 +148,7 @@ pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<Ind
     let superseded = supersede(store, &stored, &reviews)?;
 
     store.replace(Table::Snapshots, &snapshot_row(store, phase, finished_at)?)?;
+    store.write_batch().commit_once(&operation, &digest)?;
 
     Ok(IndexReport {
         source_identities: pass.identities.len(),

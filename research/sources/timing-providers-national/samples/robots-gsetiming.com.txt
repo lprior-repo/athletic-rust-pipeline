@@ -1,0 +1,36 @@
+
+# ----------
+# -- bingbot, microsoft indexer
+User-agent: Bingbot
+Disallow: /images
+Disallow: /cgi
+Crawl-delay: 10
+# ----------
+# -- twitter card
+User-agent: Twitterbot
+Disallow:
+# ----------
+# -- msnbot, microsoft indexer
+User-agent: msnbot
+Disallow: /images
+Disallow: /cgi
+Crawl-delay: 10
+# ----------
+# -- Googlebot
+User-agent: googlebot
+Disallow: /images
+Disallow: /cgi
+User-agent: googlebot-image
+Disallow: /
+# ----------
+# -- Slurp, Yahoo indexer
+User-agent: slurp
+Disallow: /images
+Disallow: /cgi
+Crawl-delay: 10
+# ----------
+# -- Default for all others
+User-agent: *
+Sitemap: https://gsetiming.com/sitemap.xml
+Disallow: /images
+Disallow: /cgi

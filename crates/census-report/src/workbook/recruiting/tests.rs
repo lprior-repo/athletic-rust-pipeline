@@ -1,5 +1,6 @@
 use super::*;
 use crate::bests;
+use crate::report::Scope;
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     normalize_name, AthleteId, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
@@ -10,6 +11,7 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
+use rust_xlsxwriter::Workbook;
 
 const DAY: &str = "2026-09-20";
 
@@ -221,6 +223,24 @@ fn personal_coach(store: &Store, school: &SchoolId) {
     store.append(Table::Coaches, &coach).unwrap();
 }
 
+fn sibling(store: &Store, school: &SchoolId) -> AthleteId {
+    let mut athlete = CanonicalAthlete::new(
+        school,
+        "Julian Aguilera",
+        GradYear::CO2027,
+        Gender::Unknown,
+        SourceIdentity::new(
+            SourceNamespace::Other("timing_feed".to_string()),
+            "julian-timing",
+        ),
+    );
+    athlete.sports = vec![Sport::OutdoorTrack];
+    athlete.evidence = evidence("wiaa_results", None);
+    let id = athlete.id.clone();
+    store.append(Table::Athletes, &athlete).unwrap();
+    id
+}
+
 fn current_tenure() -> CoachTenureEvidence {
     CoachTenureEvidence {
         tenure: CoachTenure::Current {
@@ -299,16 +319,16 @@ fn fixture() -> Fixture {
             &jump,
             &EventKind::LongJump,
             "2026-05-01",
-            Mark::DistanceMetres(CentiMetres::new(642)),
-            "wiaa_results",
-            "https://wiaa.test/results/invite",
+            Mark::DistanceMetres(CentiMetres::new(762)),
+            "athleticlive_athletes",
+            "https://athleticlive.test/athletes/999",
         ),
         (
             &state,
             &relay,
             &EventKind::Relay4x400,
             "2026-06-06",
-            Mark::TimeSeconds(CentiSeconds::new(300)),
+            Mark::TimeSeconds(CentiSeconds::new(31950)),
             "wiaa_results",
             "https://wiaa.test/results/state",
         ),
@@ -332,34 +352,26 @@ fn fixture() -> Fixture {
     coach(
         &store,
         &wi,
-        "Dana Voss",
+        "Paula Johnson",
         Some(Sport::OutdoorTrack),
         CoachRole::HeadCoach,
-        "dvoss@abbotsford.k12.wi.us",
+        "pj@abbotsford.test",
     );
     coach(
         &store,
         &wi,
-        "Kim Ruiz",
+        "Teresa Johnson",
+        Some(Sport::CrossCountry),
+        CoachRole::AssistantCoach,
+        "tj@abbotsford.test",
+    );
+    coach(
+        &store,
+        &mn,
+        "Erik Lund",
         Some(Sport::CrossCountry),
         CoachRole::HeadCoach,
-        "kruiz@abbotsford.k12.wi.us",
-    );
-    coach(
-        &store,
-        &wi,
-        "Lee Adams",
-        None,
-        CoachRole::AthleticDirector,
-        "ladams@abbotsford.k12.wi.us",
-    );
-    coach(
-        &store,
-        &wi,
-        "Pat Nolan",
-        Some(Sport::OutdoorTrack),
-        CoachRole::AssistantCoach,
-        "pnolan@abbotsford.k12.wi.us",
+        "elund@adaborup.test",
     );
 
     Fixture {
@@ -372,16 +384,17 @@ fn fixture() -> Fixture {
 }
 
 fn recruiting(store: &Store, scope: Scope, grad_year: Option<i16>) -> Recruiting {
-    let prs = bests::build(
-        store,
+    let dataset = crate::export::ExportDataset::load(store).unwrap();
+    let derivation = crate::report::Derivation::of(&dataset, scope, grad_year);
+    let prs = bests::build_from_dataset(
+        &dataset,
         &bests::Options {
             scope,
             grad_year,
             limit: None,
         },
-    )
-    .unwrap();
-    Recruiting::load(store, scope, grad_year, SchoolYear::new(2026).unwrap(), prs).unwrap()
+    );
+    Recruiting::of(&derivation, SchoolYear::new(2026).unwrap(), prs).unwrap()
 }
 
 fn written(fixture: &Fixture) -> (Xlsx<std::io::BufReader<std::fs::File>>, std::path::PathBuf) {
@@ -392,12 +405,11 @@ fn written_scope(
     fixture: &Fixture,
     scope: Scope,
 ) -> (Xlsx<std::io::BufReader<std::fs::File>>, std::path::PathBuf) {
+    let projection = recruiting(&fixture.store, scope, Some(2027));
     let path = fixture.dir.path().join("recruiting.xlsx");
-    let recruiting = recruiting(&fixture.store, scope, Some(2027));
-    let mut book = rust_xlsxwriter::Workbook::new();
-    recruiting.write_athletes(&mut book, &path).unwrap();
-    recruiting.write_prs(&mut book, &path).unwrap();
-    recruiting.write_coaches(&mut book, &path).unwrap();
+    let mut book = Workbook::new();
+    projection.write_athletes(&mut book, &path).unwrap();
+    projection.write_coaches(&mut book, &path).unwrap();
     book.save(&path).unwrap();
     (open_workbook(&path).unwrap(), path)
 }
@@ -415,10 +427,14 @@ fn row_of(range: &Range<Data>, key: &str) -> usize {
     row_where(range, |row| text(range, row, 0) == key)
 }
 
-fn row_of_event(range: &Range<Data>, athlete: &str, event: &str) -> usize {
-    row_where(range, |row| {
-        text(range, row, 0) == athlete && text(range, row, 7) == event
-    })
+fn column_of(range: &Range<Data>, header: &str) -> usize {
+    (0..range.width())
+        .find(|column| text(range, 0, *column) == header)
+        .unwrap_or_else(|| panic!("the sheet publishes the {header} column"))
+}
+
+fn column_carries(range: &Range<Data>, column: usize, value: &str) -> bool {
+    (1..range.height()).any(|row| text(range, row, column) == value)
 }
 
 fn row_where(range: &Range<Data>, matches: impl Fn(usize) -> bool) -> usize {
@@ -432,12 +448,12 @@ fn sheet(book: &mut Xlsx<std::io::BufReader<std::fs::File>>, name: &str) -> Rang
 }
 
 #[test]
-fn the_three_recruiting_sheets_are_named_after_the_objective() {
+fn the_two_recruiting_sheets_are_named_after_the_objective() {
     let fixture = fixture();
     let (book, path) = written(&fixture);
     let mut names = book.sheet_names().to_vec();
     names.sort();
-    assert_eq!(names, vec!["Athletes", "Coaches", "PRs"]);
+    assert_eq!(names, vec!["Athletes", "Coaches"]);
     assert!(path.exists());
 }
 
@@ -446,86 +462,134 @@ fn the_athletes_sheet_publishes_the_objective_columns_and_the_stored_facts() {
     let fixture = fixture();
     let (mut book, _) = written(&fixture);
     let range = sheet(&mut book, "Athletes");
-
-    assert_eq!(range.height(), 3, "header plus two cohort athletes");
-
     let row = row_of(&range, fixture.julian.as_str());
-    assert_eq!(text(&range, row, 1), "Julian Aguilera");
-    assert_eq!(text(&range, row, 2), "Boys");
-    assert_eq!(text(&range, row, 3), "2027");
-    assert_eq!(text(&range, row, 4), "11", "the newest observed grade");
-    assert_eq!(text(&range, row, 6), "WI");
-    assert_eq!(text(&range, row, 7), "Abbotsford");
-    assert_eq!(text(&range, row, 9), "Abbotsford", "the school row's city");
-    assert_eq!(
-        text(&range, row, 10),
-        "yes",
-        "TF (has outdoor track evidence)"
+    let expected = [
+        ("Name", "Julian Aguilera"),
+        ("Gender", "Boys"),
+        ("Graduation Year", "2027"),
+        ("Observed School Year", "2025-26"),
+        ("State", "WI"),
+        ("School", "Abbotsford"),
+        ("School ID", fixture.wi_school.as_str()),
+        ("School City", "Abbotsford"),
+        ("TF", "yes"),
+        ("XC", "yes"),
+        ("Indoor", ""),
+        ("Outdoor", "yes"),
+        ("Event list", "400m"),
+    ];
+    for (header, value) in expected {
+        assert_eq!(
+            text(&range, row, column_of(&range, header)),
+            value,
+            "{header}"
+        );
+    }
+}
+
+#[test]
+fn canonical_aliases_publish_one_athlete_row_and_attribute_the_members_marks() {
+    let fixture = fixture();
+    let sibling = sibling(&fixture.store, &fixture.wi_school);
+    let invite = meet(
+        &fixture.store,
+        UsJurisdiction::Wisconsin,
+        "Timing Feed Invitational",
+        "2026-05-15",
+        CompetitionLevel::Invitational,
+        Sport::OutdoorTrack,
     );
-    assert_eq!(text(&range, row, 11), "yes", "XC");
-    assert_eq!(text(&range, row, 12), "", "no indoor participation stored");
-    assert_eq!(text(&range, row, 13), "yes", "Outdoor");
-    assert_eq!(text(&range, row, 16), "", "unrecorded 100m PR is blank");
-    assert_eq!(text(&range, row, 17), "", "unrecorded 200m PR is blank");
-    assert_eq!(text(&range, row, 18), "48.55", "400m PR");
-    assert_eq!(text(&range, row, 28), "6.42", "long-jump PR");
-    assert_eq!(text(&range, row, 35), "5", "performance count");
-    assert_eq!(text(&range, row, 36), "2", "meet count");
-    assert_eq!(text(&range, row, 37), "Dana Voss", "head TF coach");
-    assert_eq!(text(&range, row, 38), "dvoss@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, row, 39), "Kim Ruiz", "head XC coach");
-    assert_eq!(text(&range, row, 40), "kruiz@abbotsford.k12.wi.us");
-    assert_eq!(
-        text(&range, row, 41),
-        "dvoss@abbotsford.k12.wi.us",
-        "head TF coach professional email"
+    let sprint = event(&fixture.store, &invite, EventKind::Track400m);
+    performance(
+        &fixture.store,
+        &PerformanceRow {
+            athlete: &sibling,
+            school: &fixture.wi_school,
+            meet: &invite,
+            event: &sprint,
+            kind: &EventKind::Track400m,
+            date: "2026-05-15",
+        },
+        Mark::TimeSeconds(CentiSeconds::new(5100)),
+        "wiaa_results",
+        "https://wiaa.test/results/timing",
     );
-    assert_eq!(text(&range, row, 42), "Lee Adams", "athletic director");
-    assert_eq!(text(&range, row, 43), "ladams@abbotsford.k12.wi.us");
-    assert_eq!(
-        text(&range, row, 44),
-        "https://abbotsford.test/athletics",
-        "school athletics URL"
+
+    let (member, canonical) = if fixture.julian.as_str() < sibling.as_str() {
+        (fixture.julian.clone(), sibling.clone())
+    } else {
+        (sibling.clone(), fixture.julian.clone())
+    };
+    let mut dataset = crate::export::ExportDataset::load(&fixture.store).unwrap();
+    dataset
+        .canonical_aliases
+        .insert(member.to_string(), canonical.to_string());
+    let derivation = crate::report::Derivation::of(&dataset, Scope::Core, Some(2027));
+    let prs = bests::build_from_dataset(
+        &dataset,
+        &bests::Options {
+            scope: Scope::Core,
+            grad_year: Some(2027),
+            limit: None,
+        },
     );
-    assert_eq!(text(&range, row, 45), "", "Public Recruiting GPA is blank");
-    assert_eq!(text(&range, row, 46), "", "GPA Source is blank");
-    let addresses = text(&range, row, 47);
-    assert_eq!(
-        addresses
-            .split("; ")
-            .collect::<std::collections::BTreeSet<_>>(),
-        std::collections::BTreeSet::from([
-            "dvoss@abbotsford.k12.wi.us",
-            "kruiz@abbotsford.k12.wi.us",
-            "ladams@abbotsford.k12.wi.us",
-            "pnolan@abbotsford.k12.wi.us",
-        ])
+    let projection = Recruiting::of(&derivation, SchoolYear::new(2026).unwrap(), prs).unwrap();
+    let path = fixture.dir.path().join("collapsed.xlsx");
+    let mut book = Workbook::new();
+    projection.write_athletes(&mut book, &path).unwrap();
+    book.save(&path).unwrap();
+
+    let mut book: Xlsx<_> = open_workbook(&path).unwrap();
+    let range = sheet(&mut book, "Athletes");
+    let id = column_of(&range, "Athlete ID");
+    assert!(
+        !column_carries(&range, id, member.as_str()),
+        "the merged member id is published through its canonical athlete"
     );
-    assert_eq!(text(&range, row, 48), "Dana Voss");
-    assert_eq!(text(&range, row, 50), "dvoss@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, row, 51), "professional_coach_email");
+    let row = row_where(&range, |row| text(&range, row, id) == canonical.as_str());
+    assert_eq!(text(&range, row, column_of(&range, "Gender")), "Boys");
     assert_eq!(
-        text(&range, row, 52),
-        "",
-        "a core-scope workbook drops the Athletic.net identity"
+        text(&range, row, column_of(&range, "Performance count")),
+        "5",
+        "the member's and the canonical athlete's performances are tallied together"
     );
-    assert_eq!(
-        text(&range, row, 53),
-        "https://wi.milesplit.com/athletes/999"
+    assert!(
+        text(&range, row, column_of(&range, "Headline PR summary")).contains("48.55"),
+        "the member's best mark is attributed to the canonical athlete"
     );
-    assert_eq!(text(&range, row, 54), "https://example.test/julian");
-    assert_eq!(text(&range, row, 55), "1");
+}
+
+#[test]
+fn the_coaches_sheet_publishes_the_school_contact_graph() {
+    let fixture = fixture();
+    let (mut book, _) = written(&fixture);
+    let range = sheet(&mut book, "Coaches");
+    let coach = column_of(&range, "Coach");
+    let row = row_where(&range, |row| text(&range, row, coach) == "Paula Johnson");
+    let expected = [
+        ("Sport", Sport::OutdoorTrack.stable_key()),
+        ("Role", CoachRole::HeadCoach.stable_key()),
+        ("Professional Email", "pj@abbotsford.test"),
+    ];
+    for (header, value) in expected {
+        assert_eq!(
+            text(&range, row, column_of(&range, header)),
+            value,
+            "{header}"
+        );
+    }
+}
+
+#[test]
+fn an_athlete_without_a_performance_is_published_as_identity_only() {
+    let fixture = fixture();
+    let (mut book, _) = written(&fixture);
+    let range = sheet(&mut book, "Athletes");
+    let row = row_of(&range, fixture.nadia.as_str());
+    assert_eq!(text(&range, row, column_of(&range, "Event list")), "");
     assert_eq!(
-        text(&range, row, 56),
-        "unverified",
-        "agreeing grades are not an identity decision"
-    );
-    assert_eq!(text(&range, row, 57), "pr");
-    assert_eq!(text(&range, row, 58), "", "no conflict");
-    assert_eq!(
-        text(&range, row, 59),
-        "review",
-        "no accepted identity decision exists"
+        text(&range, row, column_of(&range, "Headline PR summary")),
+        ""
     );
 }
 
@@ -536,141 +600,17 @@ fn the_url_columns_follow_the_evidence_scope() {
     let range = sheet(&mut book, "Athletes");
     let row = row_of(&range, fixture.julian.as_str());
     assert_eq!(
-        text(&range, row, 52),
+        text(&range, row, column_of(&range, "Athletic.net URL")),
         "https://www.athletic.net/athlete/123"
     );
     assert_eq!(
-        text(&range, row, 53),
+        text(&range, row, column_of(&range, "MileSplit URL")),
         "https://wi.milesplit.com/athletes/999"
     );
-    assert_eq!(text(&range, row, 54), "https://example.test/julian");
-    assert_eq!(text(&range, row, 55), "2", "source namespaces");
-}
-
-#[test]
-fn an_athlete_without_a_performance_is_published_as_identity_only() {
-    let fixture = fixture();
-    let (mut book, _) = written(&fixture);
-    let range = sheet(&mut book, "Athletes");
-    let row = (1..range.height())
-        .find(|row| text(&range, *row, 1) == "Nadia Berger")
-        .expect("the second cohort athlete");
-    assert_eq!(text(&range, row, 0), fixture.nadia.as_str());
-    assert_eq!(text(&range, row, 2), "Girls");
-    assert_eq!(text(&range, row, 10), "", "TF is blank (no track evidence)");
-    assert_eq!(text(&range, row, 35), "0", "no stored performance");
-    for column in 15..35 {
-        assert_eq!(text(&range, row, column), "", "no PR is blank");
-    }
-    assert_eq!(text(&range, row, 14), "", "event list is blank");
-    assert_eq!(text(&range, row, 15), "", "headline PR summary is blank");
-    assert_eq!(text(&range, row, 41), "", "no coach emails");
     assert_eq!(
-        text(&range, row, 44),
-        "https://ada-borup.test/athletics",
-        "school athletics URL"
+        text(&range, row, column_of(&range, "Other profile URLs")),
+        "https://example.test/julian"
     );
-    assert_eq!(text(&range, row, 57), "identity-only");
-    assert_eq!(
-        text(&range, row, 59),
-        "review",
-        "no grade observation agrees with the cohort, so the row asks for review"
-    );
-    assert_eq!(
-        text(&range, row, 47),
-        "",
-        "all emails is blank (no contacts)"
-    );
-    assert_eq!(text(&range, row, 48), "", "preferred contact is blank");
-    assert_eq!(text(&range, row, 51), "contact_research_unknown");
-}
-
-#[test]
-fn the_prs_sheet_retains_shared_winners_units_dates_and_provenance() {
-    let fixture = fixture();
-    let (mut book, _) = written(&fixture);
-    let range = sheet(&mut book, "PRs");
-
-    let canonical = bests::build(
-        &fixture.store,
-        &bests::Options {
-            scope: Scope::Core,
-            grad_year: Some(2027),
-            limit: None,
-        },
-    )
-    .unwrap();
-    assert_eq!(
-        range.height() - 1,
-        canonical.len(),
-        "one row per athlete/event"
-    );
-
-    let sprint = row_of_event(&range, fixture.julian.as_str(), "Track400m");
-    assert_eq!(text(&range, sprint, 1), "Julian Aguilera");
-    assert_eq!(text(&range, sprint, 2), "Boys");
-    assert_eq!(text(&range, sprint, 3), "Abbotsford");
-    assert_eq!(text(&range, sprint, 4), "WI");
-    assert_eq!(text(&range, sprint, 5), "2027");
-    assert_eq!(text(&range, sprint, 6), "Track");
-    assert_eq!(
-        text(&range, sprint, 9),
-        "48.55",
-        "the fastest of the three marks"
-    );
-    assert_eq!(text(&range, sprint, 10), "48.55");
-    assert_eq!(text(&range, sprint, 11), "s");
-    assert_eq!(text(&range, sprint, 12), "", "no wind was stored");
-    assert_eq!(text(&range, sprint, 13), "2026-05-01");
-    assert_eq!(text(&range, sprint, 14), "Abbotsford Invitational");
-    assert_eq!(text(&range, sprint, 15), "", "no place was stored");
-    assert_eq!(text(&range, sprint, 16), "https://wiaa.test/results/invite");
-    assert_eq!(
-        text(&range, sprint, 17),
-        "2",
-        "two sources report this event"
-    );
-
-    let jump = row_of_event(&range, fixture.julian.as_str(), "LongJump");
-    assert_eq!(text(&range, jump, 6), "Field");
-    assert_eq!(text(&range, jump, 9), "6.42 m");
-    assert_eq!(text(&range, jump, 10), "6.42");
-    assert_eq!(text(&range, jump, 11), "m");
-    assert_eq!(text(&range, jump, 17), "1");
-    assert_eq!(text(&range, jump, 18), "", "one report cannot conflict");
-}
-
-#[test]
-fn the_coaches_sheet_publishes_the_school_contact_graph() {
-    let fixture = fixture();
-    let (mut book, _) = written(&fixture);
-    let range = sheet(&mut book, "Coaches");
-    assert_eq!(range.height(), 5, "header plus the four stored coaches");
-
-    let head = row_where(&range, |row| text(&range, row, 5) == "Dana Voss");
-    assert_eq!(text(&range, head, 0), fixture.wi_school.as_str());
-    assert_eq!(text(&range, head, 1), "Abbotsford");
-    assert_eq!(text(&range, head, 2), "Abbotsford");
-    assert_eq!(text(&range, head, 3), "WI");
-    assert_eq!(text(&range, head, 4), "OutdoorTrack");
-    assert_eq!(text(&range, head, 6), "HeadCoach");
-    assert_eq!(text(&range, head, 7), "dvoss@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, head, 8), "");
-    assert_eq!(text(&range, head, 9), "");
-    assert_eq!(text(&range, head, 10), "Lee Adams");
-    assert_eq!(text(&range, head, 11), "ladams@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, head, 12), "https://contacts.test/schools");
-    assert_eq!(text(&range, head, 13), DAY);
-
-    let director = row_where(&range, |row| text(&range, row, 5) == "Lee Adams");
-    assert_eq!(
-        text(&range, director, 4),
-        "school_wide",
-        "an AD is not bound to a sport"
-    );
-    assert_eq!(text(&range, director, 6), "AthleticDirector");
-    assert_eq!(text(&range, director, 7), "ladams@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, director, 8), "");
 }
 
 #[test]
@@ -678,16 +618,17 @@ fn an_unrelated_programmes_personal_address_is_retained_only_in_raw_coach_histor
     let fixture = fixture();
     personal_coach(&fixture.store, &fixture.wi_school);
     let (mut book, _) = written(&fixture);
-
-    let athletes = sheet(&mut book, "Athletes");
-    let athlete_row = row_of(&athletes, fixture.julian.as_str());
-    assert!(!text(&athletes, athlete_row, 47).contains("morgan@gmail.com"));
-
-    let coaches = sheet(&mut book, "Coaches");
-    let coach_row = row_where(&coaches, |row| text(&coaches, row, 5) == "Morgan Personal");
-    assert_eq!(text(&coaches, coach_row, 7), "");
-    assert_eq!(text(&coaches, coach_row, 8), "morgan@gmail.com");
-    assert_eq!(text(&coaches, coach_row, 9), "");
+    let range = sheet(&mut book, "Coaches");
+    let coach = column_of(&range, "Coach");
+    let professional = column_of(&range, "Professional Email");
+    let personal = column_of(&range, "Personal Email");
+    assert!(
+        !column_carries(&range, professional, "morgan@gmail.com"),
+        "the personal address never becomes a professional contact"
+    );
+    let row = row_where(&range, |row| text(&range, row, coach) == "Morgan Personal");
+    assert_eq!(text(&range, row, professional), "");
+    assert_eq!(text(&range, row, personal), "morgan@gmail.com");
 }
 
 #[test]
@@ -695,23 +636,9 @@ fn the_run_audits_every_sheet_against_the_store_counts_behind_it() {
     let fixture = fixture();
     let projection = recruiting(&fixture.store, Scope::Core, Some(2027));
     let audit = projection.dataset.audit();
-    assert_eq!(
-        audit.store_athletes, 3,
-        "the merge folds the athlete's two observations into one row"
-    );
-    assert_eq!(audit.scoped_athletes, 3);
+    assert_eq!(audit.store_athletes, 3);
     assert_eq!(audit.cohort_athletes, 2);
-    assert_eq!(audit.pr_rows, 2);
-    assert_eq!(audit.coach_rows, 4);
-
-    let all_sources = recruiting(&fixture.store, Scope::AllSources, Some(2027));
-    assert_eq!(all_sources.dataset.audit().cohort_athletes, 2);
-    assert_eq!(all_sources.dataset.audit().pr_rows, 2);
-
-    let every_cohort = recruiting(&fixture.store, Scope::Core, None);
-    assert_eq!(
-        every_cohort.dataset.audit().cohort_athletes,
-        3,
-        "no cohort filter publishes every in-scope athlete"
-    );
+    assert_eq!(audit.pr_rows, 1);
+    assert_eq!(audit.coach_rows, 3);
+    assert_eq!(audit.contact_conflicts, 0);
 }

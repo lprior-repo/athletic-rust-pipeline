@@ -8,7 +8,7 @@ failure. Measurement commands emit their own reports. Run `cargo xtask --help` f
 
 | Command | Current behavior |
 |---|---|
-| `gate [-- <args>]` | Invokes `tools/gate.sh`; gate policy and lane details are in [TESTING.md](../TESTING.md) |
+| `gate [-- <args>]` | Invokes `tools/gate.sh`; gate policy and lane details live in [tools/gate.sh](../tools/gate.sh) |
 | `scan` | Production forbidden-construct and size measurements for workspace members, discovered with Cargo metadata; JSON |
 | `comments` | Lexical no-comments check over project Rust, including tests/examples/benches/fuzz; strings are data |
 | `contract` | Eight architecture checks, including scope, transports, retry ceilings, Python artifacts, admission, scan parity, front-door documents and adapter registration |
@@ -25,8 +25,8 @@ failure. Measurement commands emit their own reports. Run `cargo xtask --help` f
 | `coverage` | Serving `Report/run`, or offline all-source `report` |
 | `export` | Serving `Workbook/run`, or offline `workbook`; accepts `--out`, `--grad-year`, `--core`, `--limit` |
 | `bench [-- <args>]` | Forwards to `cargo bench -p census-service`; does not select every workspace benchmark |
-| `perf record`, `perf check`, `perf profile <group>` | Record/compare/profile configured benchmarks; [PERFORMANCE.md](../PERFORMANCE.md) owns interpretation and limits |
-| `kani [-- <harnesses>]` | Runs the tool's declared harness selection; [TESTING.md](../TESTING.md) distinguishes this inventory from all required proof kernels |
+| `perf record`, `perf check`, `perf profile <group>` | Record/compare/profile configured benchmarks; each lane's own reports own interpretation and limits |
+| `kani [-- <harnesses>]` | Runs the tool's declared harness selection; [tools/gate.sh](../tools/gate.sh) distinguishes this inventory from all required proof kernels |
 | `dump-sheet <workbook> <sheets>...` | Prints nonempty worksheet rows as `column=value` fields |
 | `new-source <name>` | Writes a source scaffold and module declaration; not a qualified or fully registered adapter |
 
@@ -75,8 +75,8 @@ are refused. The scaffold creates `mod.rs`, `parse.rs`, `map.rs` and an adapter 
 transactional rollback.
 
 The generated collector/parser/map are incomplete authoring aids. Replace them with real behavior,
-captures and assertions; complete registry/applicability/durable dispatch separately under
-[SOURCE_ADAPTER_GUIDE.md](../SOURCE_ADAPTER_GUIDE.md). Scaffolding does not run formatting, gates,
+captures and assertions; complete registry/applicability/durable dispatch separately under the
+registry's own descriptor table (`crates/census-crawl/src/registry/table/`). Scaffolding does not run formatting, gates,
 source qualification or national coverage acceptance.
 
 ## Retained search audit

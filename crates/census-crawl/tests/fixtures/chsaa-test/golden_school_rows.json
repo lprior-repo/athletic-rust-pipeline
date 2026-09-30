@@ -1,0 +1,8 @@
+[
+  {"person": "Ethan Dusto", "sport": "CrossCountry", "role": "HeadCoach", "gender": "Boys"},
+  {"person": "Eric Anderson", "sport": "CrossCountry", "role": "AssistantCoach", "gender": "Boys"},
+  {"person": "Sarah Smith", "sport": "CrossCountry", "role": "HeadCoach", "gender": "Girls"},
+  {"person": "John Doe", "sport": "Track", "role": "HeadCoach", "gender": "Boys"},
+  {"person": "Jane Doe", "sport": "Track", "role": "AssistantCoach", "gender": "Boys"},
+  {"person": "Alice Johnson", "sport": "Track", "role": "HeadCoach", "gender": "Girls"}
+]

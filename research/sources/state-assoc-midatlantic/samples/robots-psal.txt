@@ -1,0 +1,672 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head><meta http-equiv="X-UA-Compatible" content="IE=EmulateIE8" /><link rel="shortcut icon" href="images/psal_masterpage/favicon.ico" type="image/vnd.microsoft.icon" />
+      <script type="text/javascript" src="https://www.psal.org/scripts/js/google_anltcs.js"></script>
+ 
+  
+<script language='javascript' type="text/javascript">
+    var WEB_SERVICE_URL = 'https://www.psal.org/SportDisplay.svc';
+    var WEB_SERVICE_BASEURL = 'https://www.psal.org';
+    var AppBaseURI = 'https://www.psal.org/psalapps';
+    var todaysDate='9/21/2026 11:54:27 PM';
+</script>
+
+
+  <link rel="stylesheet" href="https://www.psal.org/scripts/jquery-ui-1.9.2/themes/base/minified/jquery-ui.min.css" media="screen" type="text/css"/>
+  <script type="text/javascript" src='https://www.psal.org/scripts/jquery-ui-1.9.2/jquery-1.9.1.min.js'></script>
+  <script type="text/javascript" src="https://www.psal.org/scripts/jquery-ui-1.9.2/ui/minified/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="https://www.psal.org/scripts/js/jquery.main.js"></script>
+
+  <script type="text/javascript" src="https://www.psal.org/scripts/js/Common.js"></script>
+  <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"></script>
+
+  <link rel="stylesheet" href="../css/all.css" media="screen" type="text/css"/>
+  <link rel="stylesheet" href="../css/print.css" media="print" type="text/css"/>
+  
+<title>
+
+</title></head>
+<body>
+  <div id="wrapper">
+      <form method="post" action="#" onsubmit="javascript:return WebForm_OnSubmit();" id="Form1">
+<div class="aspNetHidden">
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUKMTY1NDU2MTA1Mg9kFgJmD2QWAgIBD2QWCGYPFgIeCWlubmVyaHRtbGVkAgEPZBYCZg8PFgIeBFRleHQFBUxvZ2luZGQCAw8WAh4HVmlzaWJsZWhkAgQPFgIfAmhkZN74ZS1JUAqH0MEne1ibJxT2TmRq6RydJ49aeERLQCFw" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['Form1'];
+if (!theForm) {
+    theForm = document.Form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/WebResource.axd?d=phm_vqaf8egmJKSSqw2s1l4zVm7vfyKsQHbEdozxbLYN1K6d_etjjoZnWnPE18pZUyUfh6Ue3WNxW_9KaYFBvLKUXYNBWX_Kg9iU9tPKw601&amp;t=639190700600000000" type="text/javascript"></script>
+
+
+<script src="/ScriptResource.axd?d=z3LlBX2evw0EvdALyMivpmUhJ5aYy7-53ofXhVmCNLujb2-h4lrOCnKO95YCAY4kXc9S5rjbhGtYFeqfZugxsHa6CxlZPwlnUbkvwXDYKqRP0V-Q_ocMrdDJ6KFSBINgOdjGr16uRMtHaobbyFks_Hy2KulexmrPrkt1mnKVwQE1&amp;t=ffffffff9fe38677" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=8jpl4zErS6LwhR4u53HXFg6pT30KI2-P9jk0EjOXjC-LBVS_rkKDKC-MsE6TmFkKC5oYdYsdDLI7kwCspbHkzkgLp03Ctl2bCbzWLwauCkY-THbtBmF1FR-lYvrW30Tq0&amp;t=51e37521" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=oppHXmTV30R72ZpPPoCk_Sw6dv7wKK7QPuVwf1Um-cOo3Q4nALCm6mKqF5oJesQ7wqymxJuOJ-O2mY4MPaZUdwpSfcrglDFwdpAzZLkNYgYFQDPr0L736sJ-ojVvWekIOM7EZQWCjgJaHjOkxObXeA2&amp;t=51e37521" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+function WebForm_OnSubmit() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+return true;
+}
+//]]>
+</script>
+
+<div class="aspNetHidden">
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="AB827D4F" />
+</div>
+    <div id="header">
+        <div id='frmSearch' class="search">
+    <fieldset>
+    <div class="text">
+        <input type="text" id='txtSearch' name="q" value="Search PSAL.org" />
+        </div>
+        <input type="button" value="Search" class="submit" />
+        <input type="hidden"  name="sitesearch" style='display:none;'  value="www.psal.org"/>
+    </fieldset>
+        </div>
+      
+      <em class="entry-message">&nbsp;<span id="prsnName"></span>&nbsp;&nbsp;<a id="LogOut1_btnLogin" href="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$LogOut1$btnLogin&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, true))">Login</a><span id="spnRegister">&nbsp;<span 
+            style="font-size:9px; color:#CCCCCC;">Or</span>&nbsp;<a  href="/prsnlztn/registeruser.aspx" id="lnkHomeRegister">Register</a></span></em>
+      <div class="holder">
+        <h1 class="logo"><a href="/">PSAL</a></h1>
+        <img src="https://www.psal.org/images/PSAL/bg-logo.png" alt="image description" class="print-logo" width="296" height="34" />
+        <ul class="ad-nav">       
+          <li><a href="https://www.psal.org/profiles/profile.aspx">Profiles</a></li>
+          <li><a href="https://www.psal.org/articles/article-detail.aspx?30041">Partners</a></li>
+          <!--<li><a href="/articles/article-detail_sp.aspx?21945">About Us</a></li>-->
+		  <li><a href="https://drive.google.com/file/d/15uGBx0vuDiRgOc3DsgdbzPzQBtnbVG3b/view">About Us</a></li>
+        </ul>
+      </div>
+
+      <div class="nav">
+        <div class="bg">
+          <div class="bg-l">
+            <ul id='homeNavBar'>
+
+            
+              <li>
+                <a href="javascript:void(0);" class="opener-preferences"><span class="l">Sports</span><span class="r">&nbsp;</span></a>
+                <div class="drop">
+                  <div class="c" id='spNav'>
+                    <div class="col-1">
+                      <div class="col">
+                        <strong class="title">FALL</strong>
+                        <ul>
+						  <li><a href="https://www.psal.org/sports/sport.aspx?spCode=067&flag=All" class='lnk'>Badminton</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=007&flag=All" class='lnk'>Bowling</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=033&flag=All" class='lnk'>Cross Country</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=054&flag=All" class='lnk'>Fencing</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=005&flag=All" class='lnk'>Football</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=047&flag=All" class='lnk'>Golf</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=012&flag=All" class='lnk'>Soccer</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=013&flag=All" class='lnk'>Swimming</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=024&flag=All" class='lnk'>Tennis</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=016&flag=All" class='lnk'>Volleyball</a></li>
+                        </ul>
+                      </div>
+                      <div class="col alt">
+                        <strong class="title">WINTER</strong>
+                        <ul>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=001&flag=All" target="_self" class='lnk'>Basketball</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=009&flag=All" class='lnk'>Gymnastics</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=035&flag=All" class='lnk'>Indoor Track</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=013&flag=All" class='lnk'>Swimming</a></li>
+						  <li><a href="https://www.psal.org/sports/sport.aspx?spCode=065&flag=All" class='lnk'>Table Tennis</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=017&flag=All" class='lnk'>Wrestling</a></li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="col-2">
+                      <div class="col">
+                        <strong class="title">SPRING</strong>
+                        <ul>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=068&flag=All" class='lnk'>Badminton</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=006&flag=All" class='lnk'>Baseball</a></li>
+                          
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=056&flag=All" class='lnk'>Cricket</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=057&flag=All" class='lnk'>Double Dutch</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=047&flag=All" class='lnk'>Golf</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=054&flag=All" class='lnk'>Fencing</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=061&flag=All" class='lnk'>Flag Football</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=020&flag=All" class='lnk'>Handball</a></li>
+                        </ul>
+                      </div>
+                      <div class="col alt">
+                        <ul>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=053&flag=All" class='lnk'>Lacrosse</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=030&flag=All" class='lnk'>Outdoor Track</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=058&flag=All" class='lnk'>Rugby</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=073&flag=All" class='lnk'>Soccer</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=022&flag=All" class='lnk'>Softball</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=069&flag=All" class='lnk'>Stunt</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=014&flag=All" class='lnk'>Tennis</a></li>						 
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=016&flag=All" class='lnk'>Volleyball</a></li>
+                          <li><a href="https://www.psal.org/sports/sport.aspx?spCode=017&flag=All" class='lnk'>Wrestling</a></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+
+                            
+
+                <li><a href="javascript:void(0);"><span class="l" style="font-weight: 1900; font-size: small;">MPL</span><span class="r">&nbsp;</span></a>
+                    <div class="drop" style="width: 200px;">
+                        <div class="c">
+                            <div class="col" style="width: 200px;">
+                                <ul>
+                                    <li><a href="https://www.psal.org/sports/sport.aspx?spCode=072&flag=MPL" class='lnk'>Baseball Boys</a></li>
+                                    <li><a href="https://www.psal.org/sports/sport.aspx?spCode=049&flag=MPL" class='lnk'>Basketball Boys</a></li>
+                                    <li><a href="https://www.psal.org/sports/sport.aspx?spCode=048&flag=MPL" class='lnk'>Basketball Girls</a></li>
+                                    <li><a href="https://www.psal.org/sports/sport.aspx?spCode=070&flag=MPL" class='lnk'>Outdoor Track Coed</a></li>
+                                    <li><a href="https://www.psal.org/sports/sport.aspx?spCode=073&flag=MPL" class='lnk'>Soccer Boys</a></li>
+                                    <li><a href="https://www.psal.org/sports/sport.aspx?spCode=074&flag=MPL" class='lnk'>Soccer Girls</a></li>
+                                    <li><a href="https://www.psal.org/sports/sport.aspx?spCode=045&flag=MPL" class='lnk'>Softball Coed</a></li>
+                                    <li><a href="https://www.psal.org/sports/sport.aspx?spCode=071&flag=MPL" class='lnk'>Table Tennis Coed</a></li>
+                                    <li><a href="https://www.psal.org/sports/sport.aspx?spCode=051&flag=MPL" class='lnk'>Volleyball Girls</a></li>
+
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                <li id='mssllst'><a href="javascript:void(0);"><span class="l" style="font-weight: 1900; font-size: small;">MSBL</span><span class="r">&nbsp;</span></a>
+                    <div class="drop">
+                        <div class="c" style="height:360px">
+                            <div class="col-1" style="background:none;word-wrap: break-word;">
+                               <ul>
+                                    <li><a href="https://www.psal.org/sports/sport.aspx?spCode=001&flag=All#090" class='lnk'>Middle Schools Basketball Boys</a></li>
+                                    <li><a href="https://www.psal.org/sports/sport.aspx?spCode=001&flag=All#091" class='lnk'>Middle Schools Basketball Girls</a></li>
+                                </ul>
+                                <br /><br /><br /><br />
+                                <ul>
+                                    <li><a href="https://www.psal.org/articles/article-detail.aspx?28917" class='lnk'>Middle Schools Basketball League Information</a></li>
+
+                                </ul>
+                            </div> 
+                            <div class="col-2">							
+							  <div style='height: 16px; width: 850px; margin-bottom: 5px;'>
+                                    <input type='text' width='800px' id='msslSearch' value='Search By Name' />
+                                </div>								
+                                <ul id="mssldd" style="width: 190px; height: 330px; overflow: auto;word-wrap: break-word;">
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+
+                
+
+
+
+              <li><a href="javascript:void(0);"><span class="l">Events &amp; Standings</span><span class="r">&nbsp;</span></a>
+               <div class="drop" style="width:200px;">
+                  <div class="c">
+                      <div class="col" style="width:200px;">
+                        <ul>
+                          <li><a href='https://www.psal.org/events-and-standings/summer.aspx' class='lnk'>Summer Sports and Fitness</a></li>
+                          <li><a href='https://www.psal.org/events-and-standings/standings.aspx' class='lnk'>Current Standings</a></li>
+                          <li><a href='https://www.psal.org/sports/PlayoffBrackets.aspx' class='lnk'>Playoff Brackets</a></li>
+                          <li><a href='https://www.psal.org/events-and-standings/school-calendar.aspx' class='lnk'>School Sports Calendar</a></li>
+                          <li><a href='https://www.psal.org/events-and-standings/todays-events.aspx' class='lnk'>Today's Events</a></li>
+                          
+                        </ul>
+                    </div>
+		</div>
+		</div>
+	     </li>
+              <li><a href="javascript:void(0);"><span class="l">Health &amp; Safety</span><span class="r">&nbsp;</span></a>
+                <div class="drop" style="width:200px;">
+                  <div class="c">
+                      <div class="col" style="width:200px;">
+                        <ul>
+                          
+                          <li><a href="https://www.psal.org/articles/article-detail.aspx?30672" class='lnk'>Certifications for Coaches</a></li>
+                          <li><a href="http://doe.emergencyskills.com/index.php" class='lnk'  target="_blank">ESI</a></li>
+                          <li><a href="https://www.psal.org/articles/article-detail_sp.aspx?29967" class='lnk'>Injury and Insurance Resources</a></li>
+                          <li><a href="https://www.psal.org/articles/article-detail.aspx?30102" class='lnk'>Football Physician Information</a></li>
+                          <li><a href="https://www.psal.org/articles/article-detail.aspx?30170" class='lnk'>Access Free or Low-Cost Health Services</a></li>
+                        </ul>
+                    </div>
+		        </div>
+		    </div>
+	     </li>
+              <li><a href="javascript:void(0);"><span class="l">Resources &amp; Procedures</span><span class="r">&nbsp;</span></a>
+	         <div class="drop" style="width:210px;">
+                  <div class="c">
+                      <div class="col" style="width:210px;">
+                        <ul>
+                            <li><a href="https://www.psal.org/articles/articlecorner.aspx?pageid=993" class='lnk'>Athletic Directors Corner</a></li>
+                            <li><a href="https://www.psal.org/articles/articlecorner.aspx?pageid=995" class='lnk'>Coaches Corner</a></li>
+                            <!--<li><a href="/info/referee-fee-schedule.aspx" class='lnk'>Fee Schedule For Certified Game Officials</a></li>-->
+                            <!--<li><a href="/articles/article-detail.aspx?21581" class='lnk'>Eligibility</a></li>-->
+                            <li><a href="https://www.psal.org/articles/article-detail.aspx?29860" class='lnk'>PSAL Student-Athlete Eligibility</a></li>
+                            <li><a href="https://www.psal.org/articles/article-detail.aspx?29666 " class='lnk'>NCAA Eligibility Center</a></li>
+                            <!--<li><a href="https://www.psal.org/articles/articlecorner.aspx?pageid=992" class='lnk'>Principals Corner</a></li>-->
+                            <li><a href="https://www.psal.org/articles/article-detail_sp.aspx?21954" class='lnk'>Printable Forms</a></li>
+                            <li><a href="https://www.psal.org/articles/article-detail.aspx?30761" class='lnk'>PSAL Timekeeping and Payroll Guidance</a></li>
+                            <li><a href="https://www.psal.org/articles/articlecorner.aspx?pageid=994" class='lnk'>Referee/Officials Corner</a></li>
+		                    <li><a href="https://www.psal.org/articles/article-detail_sp.aspx?26158" class='lnk'>Rules And Regulations</a></li>
+                        </ul>
+                    </div>
+		</div>
+		</div>
+	     </li>
+	      <!--<li ><a href="https://www.fundforpublicschools.org/support-public-schools-athletics" target="_new" id="blink" class="lnk_blink"><span class="l">Donation</span><span class="r">&nbsp;</span></a></li>-->
+          <li id='schlst'><a href="javascript:void(0);"><span class="l">PSAL Program / School</span><span class="r">&nbsp;</span></a>
+                <div class="drop" style="width:346px;height:250px;">
+               <div style='height:16px; width:200px;margin-left:10px;margin-bottom:5px;'>
+               <input type='text' width='150px' id='schSearch' value='Search By Name'/></div>
+                 <ul id="schooldd" style="width:336px;height:230px;overflow:auto;">
+                 </ul>
+
+
+
+
+    		    </div>
+	       </li>
+
+            </ul>
+                    </div>
+          <div class="bg-r"><div class='modify' > </div></div>
+      </div>
+
+    </div>
+    
+    </div>
+
+
+        <script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('ctl00$ctl04', 'Form1', ['tctl00$Feedback21$UpdatePanel1','Feedback21_UpdatePanel1'], [], [], 90, 'ctl00');
+//]]>
+</script>
+
+  <div id="main">
+    
+        <div class="content-wrap">
+				<div class="block">
+					<div class="c">
+						<div class="bg">
+							<div class="l" style="height:500px;text-align:center;vertical-align:middle;font-size:14px;color:red;">
+                            <h2>Page not found</h2>
+						        We are sorry. The web address you entered may have moved or is no longer available on our site.
+                                <br />
+                                <a href="/">Click here</a> to visit our home page and look for links to the information you want to search.</div>
+							<div class="r">&nbsp;</div>
+					    </div>
+				    </div>
+					<div class="b">&nbsp;
+                        
+                    </div>
+			    </div>
+                </div>
+
+      <div id="divFeedbackOverLay" class="opacity50" style="position:Fixed; left:0px; top:0px; width:100%; height:100%; display:none;background-color:Gray; z-index:250;"></div>
+      <div style="display:none; position:fixed; top:50%; left:50%; margin:-275px 0 0 -350px; width:700px; height:570px;background-color:white; z-index:300; border:1px solid gray;" id='divFeedback'>
+      
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('#btnReset').click(function () {
+            $('#txtFname').val("");
+            $('#txtEmail').val("");
+            $('#txtTelNum').val("");
+            $('#txtTelNum1').val("");
+            $('#txtTelNum2').val("");
+            $('#txtDesciption').val("");
+            $('#rblRate input:radio').removeAttr("checked");
+            $('.radioAreaChecked').addClass("radioArea");
+            $('.radioAreaChecked').removeClass("radioAreaChecked");
+            return false;
+        });
+
+        $("#btnSubmit").click(function () {
+            $("#txtDesciption").val($('<div/>').text($("#txtDesciption").val()).html());
+        });
+    });
+</script>
+<div id="Feedback21_UpdatePanel1">
+	
+<table cellspacing="0" class="feedTable">
+    <tr style="border:1px solid orange;">
+        <td style="border-bottom-style: solid; border-bottom-width: 1px; border-bottom-color: orange;padding-left: 30px;" 
+            colspan="2">
+            <h2 style="color: #F13800">Feedback</h2></td>
+            <td style="border-bottom-style: solid; border-bottom-width: 1px; border-bottom-color: orange;text-align:right;"><a id='popUpFeedbackClose' href="javascript:void(0);" onclick="javascript:closeFeedbackDiv();">
+                <img alt="" src="/images/PSAL_MasterPage/fancy_close.png" width="25px" 
+                    height="25px"  style="cursor:pointer;"/></a></td>
+    </tr>
+    </table>
+<div id="feedbackForm">
+<table cellspacing="0" class="feedTable" style="padding-left: 30px;">
+    <tr >
+        <td class="fdbkField">
+            Name <font>*&nbsp;&nbsp; 
+            <span id="Feedback21_rfvName" style="display:none;">Required</span>
+            <span id="Feedback21_revName" style="display:none;">Must be alphabetic </span>
+            </font></td>
+        <td class="feedTdwidth">
+            &nbsp;</td>
+        <td>
+            &nbsp;</td>
+    </tr>
+    <tr >
+        <td class="fdbkField" colspan="3">
+            <span class="fieldWraper">
+            <input name="ctl00$Feedback21$txtFname" type="text" maxlength="150" id="txtFname" style="width:250px;" /></span>
+        </td>
+    </tr>
+    <tr>
+        <td class="fdbkField">
+            Email <font>*&nbsp;&nbsp;
+            <span id="Feedback21_rfvEmail" style="display:none;">Required</span>
+            <span id="Feedback21_revEmail" style="display:none;">Enter valid email address.</span>
+            </font></td>
+        <td class="feedTdwidth">
+            &nbsp;</td>
+        <td>
+            &nbsp;</td>
+    </tr>
+    <tr>
+        <td class="fdbkField" colspan="3">
+           <span class="fieldWraper"> 
+            <input name="ctl00$Feedback21$txtEmail" type="text" maxlength="200" id="txtEmail" style="width:250px;" /></span>
+        </td>
+    </tr>
+    <tr>
+        <td class="fdbkField">
+            Telephone Number</td>
+        <td class="feedTdwidth">
+            &nbsp;</td>
+        <td>
+            &nbsp;</td>
+    </tr>
+    <tr >
+        <td class="fdbkField" colspan="3">
+            <span class="fieldWraper">
+            <input name="ctl00$Feedback21$txtTelNum" type="text" maxlength="3" id="txtTelNum" style="width:45px;" /> 
+            <font>
+            <span id="Feedback21_revPhone1" style="display:none;">Must be 3 digit.</span></font>
+            - <input name="ctl00$Feedback21$txtTelNum1" type="text" maxlength="3" id="txtTelNum1" style="width:45px;" /> 
+            <font">
+            <span id="Feedback21_revPhone2" style="display:none;">Must be 3 digit.</span></font>
+                - 
+            <input name="ctl00$Feedback21$txtTelNum2" type="text" maxlength="4" id="txtTelNum2" style="width:45px;" />
+            <font>
+            <span id="Feedback21_revPhone3" style="display:none;">Must be 4 digit.</span></font>
+            </span>
+        </td>
+    </tr>
+    <tr>
+        <td class="fdbkField" colspan="3">
+            How would you rate the site ? <font>*&nbsp;&nbsp;
+            <span id="Feedback21_rfvRate" style="display:none;">Required</span></font></td>
+        
+    </tr>
+    <tr>
+        <td class="fdbkField" colspan="3">
+            <table id="rblRate" class="fieldWraper" style="height:16px;width:418px;">
+		<tr>
+			<td><input id="rblRate_0" type="radio" name="ctl00$Feedback21$rblRate" value=" Excellent" /><label for="rblRate_0"> Excellent</label></td><td><input id="rblRate_1" type="radio" name="ctl00$Feedback21$rblRate" value=" Good" /><label for="rblRate_1"> Good</label></td><td><input id="rblRate_2" type="radio" name="ctl00$Feedback21$rblRate" value=" Fair" /><label for="rblRate_2"> Fair</label></td><td><input id="rblRate_3" type="radio" name="ctl00$Feedback21$rblRate" value=" Poor" /><label for="rblRate_3"> Poor</label></td>
+		</tr>
+	</table>
+        </td>
+    </tr>
+    <tr>
+        <td class="fdbkField" colspan="3">
+            Please enter your comments and /or 
+            suggestions <font>*&nbsp;&nbsp;
+            <span id="Feedback21_rfvDescription" style="color:#CC0000;display:none;">Required</span>
+            <span id="Feedback21_revDescription" style="color:#CC0000;display:none;"> Maximum 2000 charecters.</span>
+            <span id="Feedback21_revCmnts" style="color:Red;display:none;">No special characters. You can use A-Z, a-z, 0-9 and chars ". , ' "  ? ".</span>
+            </font></td>
+    </tr>
+    <tr>
+        <td class="fdbkField" colspan="3">
+           <div style="height:130px; width:539px;" class="fieldWraper"> 
+               <textarea name="ctl00$Feedback21$txtDesciption" rows="2" cols="20" id="txtDesciption" style="height:126px;width:533px;">
+</textarea></div>
+        </td>
+    </tr>
+        <tr>
+        <td class="fdbkField" colspan="3">
+           Type the Security Code shown <font>*&nbsp;&nbsp;
+            <span id="Feedback21_rfvCaptcha" style="display:none;">Required</span></font>
+            <span id="Feedback21_lblmsg" style="color:Red;font-weight:bold;"></span>
+        
+    </tr>
+        <tr>
+        <td width="300px" colspan="3" class="fdbkField" style="padding: 4px 0px 0px 0px;">
+            <span class="fieldWraper"><input name="ctl00$Feedback21$txtimgcode" type="text" id="Feedback21_txtimgcode" style="width:150px;" /></span>
+            </td>
+    </tr>
+        <tr>
+        <td width="300px" colspan="3" style="padding: 4px 0px 0px 0px;">
+            <img id="Feedback21_Image1" src="cimage.aspx" style="height:30px;width:150px;" />
+            </td>
+    </tr>
+    <tr>
+        <td width="300px" style="padding: 10px 0px 0px 0px; pa">
+            <input type="submit" name="ctl00$Feedback21$btnReset" value="Reset" onclick="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$Feedback21$btnReset&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="btnReset" class="feedButton" style="width:80px;" />
+        </td>
+        <td class="feedTdwidth">
+                        </td>
+        <td style="width:100%;text-align:right;">
+        <input type="submit" name="ctl00$Feedback21$btnSubmit" value="Submit" onclick="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$Feedback21$btnSubmit&quot;, &quot;&quot;, true, &quot;vgFeedback&quot;, &quot;&quot;, false, false))" id="btnSubmit" class="feedButton" style="width:79px;" />&nbsp;&nbsp;&nbsp;&nbsp;
+            <input type="submit" name="ctl00$Feedback21$btnSubmit0" value="Close" onclick="javascript:closeFeedbackDiv();WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$Feedback21$btnSubmit0&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="btnSubmit0" class="feedButton" style="width:79px;" />&nbsp;&nbsp;
+        </td>
+    </tr>
+</table>
+</div>
+<div id="feedbackMsg" style="text-align: left; font-family: Arial, Helvetica, sans-serif; font-size: small; font-weight: bold; font-style: normal; color: #293955; padding-left: 30px; padding-top:200px; display:none;">
+Your feedback is very important to us. Thank you for taking the time to write to us.  
+</div>
+
+</div>
+      </div>
+  </div>
+  
+<script type="text/javascript">
+//<![CDATA[
+var Page_Validators =  new Array(document.getElementById("Feedback21_rfvName"), document.getElementById("Feedback21_revName"), document.getElementById("Feedback21_rfvEmail"), document.getElementById("Feedback21_revEmail"), document.getElementById("Feedback21_revPhone1"), document.getElementById("Feedback21_revPhone2"), document.getElementById("Feedback21_revPhone3"), document.getElementById("Feedback21_rfvRate"), document.getElementById("Feedback21_rfvDescription"), document.getElementById("Feedback21_revDescription"), document.getElementById("Feedback21_revCmnts"), document.getElementById("Feedback21_rfvCaptcha"));
+//]]>
+</script>
+
+<script type="text/javascript">
+//<![CDATA[
+var Feedback21_rfvName = document.all ? document.all["Feedback21_rfvName"] : document.getElementById("Feedback21_rfvName");
+Feedback21_rfvName.controltovalidate = "txtFname";
+Feedback21_rfvName.errormessage = "Required";
+Feedback21_rfvName.display = "Dynamic";
+Feedback21_rfvName.validationGroup = "vgFeedback";
+Feedback21_rfvName.evaluationfunction = "RequiredFieldValidatorEvaluateIsValid";
+Feedback21_rfvName.initialvalue = "";
+var Feedback21_revName = document.all ? document.all["Feedback21_revName"] : document.getElementById("Feedback21_revName");
+Feedback21_revName.controltovalidate = "txtFname";
+Feedback21_revName.errormessage = "Must be alphabetic ";
+Feedback21_revName.display = "Dynamic";
+Feedback21_revName.validationGroup = "vgFeedback";
+Feedback21_revName.evaluationfunction = "RegularExpressionValidatorEvaluateIsValid";
+Feedback21_revName.validationexpression = "^[-\'a-zA-Z\\s]+$";
+var Feedback21_rfvEmail = document.all ? document.all["Feedback21_rfvEmail"] : document.getElementById("Feedback21_rfvEmail");
+Feedback21_rfvEmail.controltovalidate = "txtEmail";
+Feedback21_rfvEmail.errormessage = "Required";
+Feedback21_rfvEmail.display = "Dynamic";
+Feedback21_rfvEmail.validationGroup = "vgFeedback";
+Feedback21_rfvEmail.evaluationfunction = "RequiredFieldValidatorEvaluateIsValid";
+Feedback21_rfvEmail.initialvalue = "";
+var Feedback21_revEmail = document.all ? document.all["Feedback21_revEmail"] : document.getElementById("Feedback21_revEmail");
+Feedback21_revEmail.controltovalidate = "txtEmail";
+Feedback21_revEmail.errormessage = "Enter valid email address.";
+Feedback21_revEmail.display = "Dynamic";
+Feedback21_revEmail.validationGroup = "vgFeedback";
+Feedback21_revEmail.evaluationfunction = "RegularExpressionValidatorEvaluateIsValid";
+Feedback21_revEmail.validationexpression = "\\w+([-+.\']\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*";
+var Feedback21_revPhone1 = document.all ? document.all["Feedback21_revPhone1"] : document.getElementById("Feedback21_revPhone1");
+Feedback21_revPhone1.controltovalidate = "txtTelNum";
+Feedback21_revPhone1.errormessage = "Must be 3 digit.";
+Feedback21_revPhone1.display = "Dynamic";
+Feedback21_revPhone1.validationGroup = "vgFeedback";
+Feedback21_revPhone1.evaluationfunction = "RegularExpressionValidatorEvaluateIsValid";
+Feedback21_revPhone1.validationexpression = "^[\\d]{3}$";
+var Feedback21_revPhone2 = document.all ? document.all["Feedback21_revPhone2"] : document.getElementById("Feedback21_revPhone2");
+Feedback21_revPhone2.controltovalidate = "txtTelNum1";
+Feedback21_revPhone2.errormessage = "Must be 3 digit.";
+Feedback21_revPhone2.display = "Dynamic";
+Feedback21_revPhone2.validationGroup = "vgFeedback";
+Feedback21_revPhone2.evaluationfunction = "RegularExpressionValidatorEvaluateIsValid";
+Feedback21_revPhone2.validationexpression = "^[\\d]{3}$";
+var Feedback21_revPhone3 = document.all ? document.all["Feedback21_revPhone3"] : document.getElementById("Feedback21_revPhone3");
+Feedback21_revPhone3.controltovalidate = "txtTelNum2";
+Feedback21_revPhone3.errormessage = "Must be 4 digit.";
+Feedback21_revPhone3.display = "Dynamic";
+Feedback21_revPhone3.validationGroup = "vgFeedback";
+Feedback21_revPhone3.evaluationfunction = "RegularExpressionValidatorEvaluateIsValid";
+Feedback21_revPhone3.validationexpression = "^[\\d]{4}$";
+var Feedback21_rfvRate = document.all ? document.all["Feedback21_rfvRate"] : document.getElementById("Feedback21_rfvRate");
+Feedback21_rfvRate.controltovalidate = "rblRate";
+Feedback21_rfvRate.errormessage = "Required";
+Feedback21_rfvRate.display = "Dynamic";
+Feedback21_rfvRate.validationGroup = "vgFeedback";
+Feedback21_rfvRate.evaluationfunction = "RequiredFieldValidatorEvaluateIsValid";
+Feedback21_rfvRate.initialvalue = "";
+var Feedback21_rfvDescription = document.all ? document.all["Feedback21_rfvDescription"] : document.getElementById("Feedback21_rfvDescription");
+Feedback21_rfvDescription.controltovalidate = "txtDesciption";
+Feedback21_rfvDescription.errormessage = "Required";
+Feedback21_rfvDescription.display = "Dynamic";
+Feedback21_rfvDescription.validationGroup = "vgFeedback";
+Feedback21_rfvDescription.evaluationfunction = "RequiredFieldValidatorEvaluateIsValid";
+Feedback21_rfvDescription.initialvalue = "";
+var Feedback21_revDescription = document.all ? document.all["Feedback21_revDescription"] : document.getElementById("Feedback21_revDescription");
+Feedback21_revDescription.controltovalidate = "txtDesciption";
+Feedback21_revDescription.errormessage = " Maximum 2000 charecters.";
+Feedback21_revDescription.display = "Dynamic";
+Feedback21_revDescription.evaluationfunction = "RegularExpressionValidatorEvaluateIsValid";
+Feedback21_revDescription.validationexpression = "^[\\s\\S]{0,2000}$";
+var Feedback21_revCmnts = document.all ? document.all["Feedback21_revCmnts"] : document.getElementById("Feedback21_revCmnts");
+Feedback21_revCmnts.controltovalidate = "txtDesciption";
+Feedback21_revCmnts.errormessage = "No special characters. You can use A-Z, a-z, 0-9 and chars \". , \' \"  ? \".";
+Feedback21_revCmnts.display = "Dynamic";
+Feedback21_revCmnts.evaluationfunction = "RegularExpressionValidatorEvaluateIsValid";
+Feedback21_revCmnts.validationexpression = "^[A-Za-z0-9,.?\'\"\\s]+$";
+var Feedback21_rfvCaptcha = document.all ? document.all["Feedback21_rfvCaptcha"] : document.getElementById("Feedback21_rfvCaptcha");
+Feedback21_rfvCaptcha.controltovalidate = "Feedback21_txtimgcode";
+Feedback21_rfvCaptcha.errormessage = "Required";
+Feedback21_rfvCaptcha.display = "Dynamic";
+Feedback21_rfvCaptcha.validationGroup = "vgFeedback";
+Feedback21_rfvCaptcha.evaluationfunction = "RequiredFieldValidatorEvaluateIsValid";
+Feedback21_rfvCaptcha.initialvalue = "";
+//]]>
+</script>
+
+
+<script type="text/javascript">
+//<![CDATA[
+
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        
+document.getElementById('Feedback21_rfvName').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_rfvName'));
+}
+
+document.getElementById('Feedback21_revName').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_revName'));
+}
+
+document.getElementById('Feedback21_rfvEmail').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_rfvEmail'));
+}
+
+document.getElementById('Feedback21_revEmail').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_revEmail'));
+}
+
+document.getElementById('Feedback21_revPhone1').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_revPhone1'));
+}
+
+document.getElementById('Feedback21_revPhone2').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_revPhone2'));
+}
+
+document.getElementById('Feedback21_revPhone3').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_revPhone3'));
+}
+
+document.getElementById('Feedback21_rfvRate').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_rfvRate'));
+}
+
+document.getElementById('Feedback21_rfvDescription').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_rfvDescription'));
+}
+
+document.getElementById('Feedback21_revDescription').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_revDescription'));
+}
+
+document.getElementById('Feedback21_revCmnts').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_revCmnts'));
+}
+
+document.getElementById('Feedback21_rfvCaptcha').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Feedback21_rfvCaptcha'));
+}
+//]]>
+</script>
+</form>
+    <div id="footer"   style="text-align: left;">
+    <a href="http://schools.nyc.gov/default.aspx" target="_blank">
+        <img src="/images/PSAL_MasterPage/doe-logo-h.png" height="19px" alt="NYC Public Schools" class="doelogo" style="vertical-align: top;" />
+    </a>
+    <ul style="display: inline-block; vertical-align: top; margin: 0; padding: 0;">
+        <li class="footer1"><a href="http://www.instagram.com/nycpsal" target="_blank"><img src="/images/PSAL_MasterPage/insta-logo-h.png" alt="Follow us on Instagram" width="20px" height="20px" class="doelogo"/></a></li>
+        <li class="footer1"><a href="http://www.twitter.com/nycpsal" target="_blank"><img src="/images/PSAL_MasterPage/twitter-logo-h.png" alt="Follow us on Twitter" width="20px" height="20px" class="doelogo"/></a></li>
+        <li><a href="http://www.threads.net/nycpsal" target="_blank"><img src="/images/PSAL_MasterPage/threads-logo-h.png" alt="Follow us on Threads" width="20px" height="20px" class="doelogo"/></a></li>
+        <li><a href="https://www.youtube.com/@nycpsal1903" target="_blank"><img src="/images/PSAL_MasterPage/youtube-logo-h.png" alt="Follow us on Youtube" width="20px" height="20px" class="doelogo"/></a></li>
+    </ul>
+    <ul style="display: inline-block; vertical-align: top; margin: 0; padding: 0;">
+        <li><a href="https://drive.google.com/file/d/15uGBx0vuDiRgOc3DsgdbzPzQBtnbVG3b/view">Contact Us</a></li>
+        <li><a href="https://www.psal.org/info/staff-login.aspx">Staff</a></li>
+        <li><a href="https://docs.google.com/spreadsheets/d/11F7f0HVBlmwpKOsiBPWg6I7Ba6GGq6z70KN61HCuVHw/edit?gid=0#gid=0">Job Opportunities</a></li>
+        <li><a href="https://mail.nycboe.net/owa/auth/logon.aspx?replaceCurrent=1&url=https%3a%2f%2fmail.nycboe.net%2fowa%2f" target="_blank">DOE Login</a></li>
+        <li><a href="javascript:void(0);" id="lnkFeedback">Feedback</a></li>
+        <li>&copy;2021 PSAL</li>
+    </ul>
+</div>
+  </div>
+</body>
+</html>

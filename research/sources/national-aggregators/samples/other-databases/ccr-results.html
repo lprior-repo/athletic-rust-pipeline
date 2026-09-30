@@ -1,0 +1,2217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <title>Meet Results</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+
+
+    <!-- Bootstrap -->
+    <link href="/static/bootstrap/css/bootstrap.min.css?bootstrap=3.3.7.1.dev1" rel="stylesheet"><link rel="stylesheet" href="/static/css/bs-compat.css?v=315532801">
+
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.css">
+<style>
+/* Hide the "Schools" column on small screens */
+@media (max-width: 576px) {
+    .table th:nth-child(4), .table td:nth-child(4) {
+        display: none;
+    }
+}
+
+/* Add padding to the table cells */
+.table th, .table td {
+    padding: 0.75rem;
+}
+
+/* Add padding to the heading and paragraph introduction */
+.page-introduction h1, .page-introduction p {
+    padding: 0.75rem;
+}
+
+/* Season selector styling */
+.season-selector {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1.5rem;
+}
+
+.stats-cards {
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+/* Week section styling */
+.week-section {
+    margin-bottom: 2rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+.week-header {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    cursor: pointer;
+}
+
+.week-header:hover {
+    background: #e9ecef;
+}
+
+.week-header h4 {
+    margin-bottom: 0.25rem;
+}
+
+.week-content {
+    padding: 0;
+}
+
+.week-toggle {
+    float: right;
+    transition: transform 0.2s;
+}
+
+.week-toggle.collapsed {
+    transform: rotate(-90deg);
+}
+
+/* Event count badge */
+.event-count {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 1rem;
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+}
+</style>
+
+<meta name="csrf-token" content="ImQ0YTA0MDQ3NjRiMmY2YWMwZTMzODQ4NTMwMTI2ZmJjMjAzNmYyOTQi.arH95g.Hw1Lgg5WwVaI_y2Rvb7szp4v-P8">
+
+<!-- Google AdSense - TEMPORARILY DISABLED -->
+<!-- 
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4830901784668100"
+     crossorigin="anonymous"></script>
+-->
+
+<!-- PWA Meta Tags -->
+<meta name="theme-color" content="#0B2E4F">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="XC Rankings">
+<meta name="description" content="Scholastic Cross Country Rankings and Results">
+<meta name="keywords" content="cross country, scholastic, rankings, results, XC">
+
+<!-- Google Search Console Verification (replace with your verification code if needed) -->
+<!-- <meta name="google-site-verification" content="YOUR_VERIFICATION_CODE_HERE" /> -->
+
+<!-- Brand Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+
+<!-- Brand Stylesheet -->
+<link rel="stylesheet" href="/static/css/brand.css?v=315532801">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="/static/manifest.json">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="/static/images/xcr-icon-192.png">
+<link rel="shortcut icon" href="/static/images/xcr-icon-192.png">
+
+<!-- PWA Icons - Multiple sizes for better compatibility -->
+<link rel="icon" type="image/png" sizes="192x192" href="/static/images/xcr-icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/static/images/xcr-icon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/static/images/xcr-icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="/static/images/xcr-icon-192.png">
+<link rel="apple-touch-icon" href="/static/images/xcr-icon-180.png">
+
+<!-- Additional iOS Meta Tags -->
+<meta name="apple-touch-fullscreen" content="yes">
+
+<!-- PWA Page Context for JavaScript -->
+<script type="application/json" id="page-context-data">{"analytics_metadata": {"is_production": true, "query_params_count": 0, "referrer_domain": "direct", "season_year": 2026, "user_agent_mobile": false}, "breadcrumb_data": {}, "page_title": "Results", "page_type": "results"}</script>
+<script>
+    // Parse page context from JSON script tag to avoid linter issues
+    window.pageContext = JSON.parse(document.getElementById('page-context-data').textContent);
+</script>
+
+<!-- FontAwesome Icons.
+     Loaded off the critical path: media="print" means the browser fetches it
+     without blocking first paint, and onload promotes it to all media. Icons
+     appear a beat after text, which is the right trade on a phone connection.
+
+     Not subsetted: 115 distinct icons are used across the solid, regular and
+     brands families, and FontAwesome's core stylesheet (69KB of the 89KB) is
+     required whichever families you pick - splitting them saves about 1KB.
+     A real reduction needs a self-hosted custom build. -->
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      media="print" onload="this.media='all'; this.onload=null;">
+<noscript>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</noscript>
+
+<!-- Microsoft Clarity for user behavior analytics -->
+<script type="text/javascript">
+    // Performance-optimized Clarity initialization
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        
+        // Configure Clarity for better screen recordings
+        c[a]('set', 'privacy', 'strict'); // Enable strict privacy mode
+        c[a]('set', 'maskTextSelector', '.clarity-mask'); // Mask elements with this class
+        
+        // Only send page type for initial context (performance optimized)
+        if (window.pageContext?.page_type) {
+            c[a]('event', 'page_type', window.pageContext.page_type);
+        }
+        
+    })(window, document, "clarity", "script", "saoykpa92i");
+    
+    // Privacy-conscious loading - respect user preferences
+    if (localStorage.getItem('privacy-analytics-disabled') === 'true') {
+        console.log('Clarity disabled by user preference');
+        window.clarity = function() { /* disabled */ };
+    }
+</script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-M9F6G3QSC0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  // Device context, attached to every event on this page.
+  //
+  // Over half of this site's traffic is mobile but nothing was reporting
+  // viewport or install state, so there was no way to tell whether a change
+  // helped phone users. These are set as config params so they ride along
+  // with page_view and every subsequent event.
+  function xcViewportBucket(w) {
+    if (w < 576) { return 'xs'; }
+    if (w < 768) { return 'sm'; }
+    if (w < 992) { return 'md'; }
+    if (w < 1200) { return 'lg'; }
+    return 'xl';
+  }
+
+  var xcStandalone = !!(
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    window.navigator.standalone
+  );
+
+  gtag('config', 'G-M9F6G3QSC0', {
+    send_page_view: true,
+    // Custom dimensions. Register these in the GA4 admin under
+    // Configure -> Custom definitions for them to appear in reports.
+    page_type: (window.pageContext && window.pageContext.page_type) || 'unknown',
+    viewport_bucket: xcViewportBucket(window.innerWidth),
+    viewport_width: window.innerWidth,
+    display_mode: xcStandalone ? 'standalone' : 'browser',
+    touch_capable: (navigator.maxTouchPoints || 0) > 0
+  });
+
+  // Track PWA installation
+  window.addEventListener('appinstalled', () => {
+    gtag('event', 'pwa_install', {
+      event_category: 'PWA',
+      event_label: 'App Installed'
+    });
+  });
+
+  // Page-type view event, fired automatically from the server-provided
+  // context. This replaces a window.xcAnalytics object that defined six
+  // tracking helpers (trackRankingsView, trackRunnerView, ...) which no
+  // template ever called - GA4 was collecting page_view and nothing else.
+  (function () {
+    var ctx = window.pageContext || {};
+    if (!ctx.page_type || ctx.page_type === 'unknown') { return; }
+    gtag('event', 'view_' + ctx.page_type, {
+      event_category: 'Content',
+      event_label: ctx.page_title || ctx.page_type,
+      page_type: ctx.page_type
+    });
+  })();
+</script>
+<!-- Global application styles (extracted from this file into static/css/app.css) -->
+<link rel="stylesheet" href="/static/css/app.css?v=315532801">
+
+<!-- Mobile corrections. Loaded last so it is the final word on small screens. -->
+<link rel="stylesheet" href="/static/css/mobile.css?v=315532801">
+
+
+<!-- Premium Users: Force hide ALL AdSense ads - TEMPORARILY DISABLED -->
+<!-- 
+
+-->
+
+  </head>
+  <body>
+    
+<!-- PWA Back Button -->
+<button id="pwaBackButton" class="pwa-back-button" title="Go Back">
+    <i class="fas fa-arrow-left"></i>
+</button>
+
+<nav class="navbar navbar-inverse navbar-fixed-top" data-clarity-region="main-navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar" data-clarity-click="mobile-menu-toggle">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/" data-clarity-click="logo-click">
+                <span class="site-wordmark site-wordmark--on-dark"><span class="wordmark-primary">Cross Country</span><span class="wordmark-accent">Ratings</span></span>
+            </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li><a href="/results" data-clarity-click="nav-results">Results</a></li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-clarity-click="nav-rankings-dropdown">Rankings <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/individuals" data-clarity-click="nav-individuals">Individuals</a></li>
+                        <li><a href="/teams" data-clarity-click="nav-teams">Teams</a></li>
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" data-clarity-click="nav-analytics-dropdown-login">Analytics <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/auth/login" data-clarity-click="nav-forecast-login" title="Login required for forecast tool">Meet Forecast 🔒</a></li>
+                        <li><a href="/auth/login" data-clarity-click="nav-growth-goals-login" title="Login required for growth goals calculator">Goal Setting 🔒</a></li>
+                    </ul>
+                </li>
+                <li><a href="/auth/login" data-clarity-click="nav-search-login" title="Login required for search tool">Search 🔒</a></li>
+                
+                
+                
+                <li><a href="/help/" data-clarity-click="nav-help">Help</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <!-- Global state filter — persists via session / user preference -->
+                <li class="navbar-state-filter">
+                    <div class="state-filter-wrapper" title="Filter all rankings by state">
+                        <i class="fas fa-map-marker-alt state-filter-icon"></i>
+                        <select id="globalStateSelect" class="state-filter-select">
+                            <option value=""  >All States</option>
+                            <option value="IA" selected>Iowa</option>
+                            <option value="NE" >Nebraska</option>
+                            <option value="MN" >Minnesota</option>
+                            <option value="ND" >North Dakota</option>
+                            <option value="SD" >South Dakota</option>
+                            <option value="IL" >Illinois</option>
+                            <option value="WI" >Wisconsin</option>
+                            <option value="MO" >Missouri</option>
+                            <option value="KS" >Kansas</option>
+                        </select>
+                    </div>
+                </li>
+                
+                    <li><a href="/auth/login" data-clarity-click="nav-login"><i class="fas fa-sign-in-alt"></i> Sign In</a></li>
+                
+            </ul>
+        </div><!--/.nav-collapse -->
+    </div>
+</nav>
+
+<!-- PWA Breadcrumb Navigation -->
+<nav class="pwa-breadcrumb" id="pwaBreadcrumb" style="display: none;">
+    <div class="container">
+        <ol id="breadcrumbList">
+            <!-- Breadcrumb items will be populated by JavaScript -->
+        </ol>
+    </div>
+</nav>
+
+<!-- Season State Banner -->
+
+<div class="season-state-banner in-season">
+    <div class="container">
+        <div class="season-banner-content">
+            <span class="season-icon">
+                
+                    <i class="fas fa-running"></i>
+                
+            </span>
+            <span class="season-text">
+                <strong>2026  Live Rankings</strong>
+                
+                    <span class="season-subtitle">Rankings update after each meet</span>
+                
+            </span>
+        </div>
+    </div>
+</div>
+
+
+<!-- PWA Install Banner -->
+<div id="pwaInstallBanner" class="pwa-install-banner">
+    <div class="banner-content">
+        <div class="banner-text">
+            <div class="banner-title">
+                <i class="fas fa-mobile-alt"></i> Install XC Rankings App
+            </div>
+            <div class="banner-subtitle">
+                Get faster access and offline support on your device
+            </div>
+        </div>
+        <div class="banner-buttons">
+            <button id="installBtn" class="btn-install">
+                <i class="fas fa-download"></i> Install
+            </button>
+            <button id="dismissBtn" class="btn-dismiss">
+                Later
+            </button>
+            <button id="closeBtn" class="btn-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- PWA Cache Status Indicator -->
+<div id="pwaCacheStatus" class="pwa-cache-status">
+    <div class="cache-spinner"></div>
+    <span id="cacheStatusText">Optimizing app for faster loading...</span>
+</div>
+
+<!-- Privacy Notice (Simple, Non-blocking) -->
+<div id="privacyNotice" class="privacy-notice">
+    <div class="privacy-content">
+        <span class="privacy-text">
+            <i class="fas fa-info-circle"></i>
+            We use analytics to improve your experience. No personal data is collected.
+        </span>
+        <button id="privacyOk" class="privacy-btn">Got it</button>
+    </div>
+</div>
+
+<!-- Privacy Controls for Clarity (Development/Testing) -->
+<div id="clarityPrivacyControls" class="privacy-controls">
+    <span>Screen Recording: </span>
+    <button id="toggleClarity" onclick="toggleClarityRecording()">Pause</button>
+    <button id="showMaskedElements" onclick="toggleMaskedElementsDisplay()">Show Masked</button>
+</div>
+
+    
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-introduction">
+                <h1>Cross Country Results</h1>
+                <p>Explore race results organized by season and week. Use the season selector to view different years, and click on week headers to expand or collapse results. Search within each week's results to find specific schools or events.</p>
+            </div>
+            
+            <!-- AdSense Banner Ad - Results Page Top - TEMPORARILY DISABLED
+            
+            <div class="container mt-3 mb-4">
+                <div class="row justify-content-center">
+                    <div class="col-12">
+                        <div class="ad-container">
+                            AdSense Responsive Banner Ad
+                            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4830901784668100"
+                                crossorigin="anonymous"></script>
+                            results-template-banner
+                            <ins class="adsbygoogle"
+                                style="display:block"
+                                data-ad-client="ca-pub-4830901784668100"
+                                data-ad-slot="2203102174"
+                                data-ad-format="auto"
+                                data-full-width-responsive="true"></ins>
+                            <script>
+                                (adsbygoogle = window.adsbygoogle || []).push({});
+                            </script>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            -->
+            
+            <!-- Season Selector -->
+            <div class="season-selector">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <label for="seasonSelector" class="form-label mb-0"><strong>Select Season:</strong></label>
+                        <select id="seasonSelector" class="form-select d-inline-block w-auto ms-2">
+                            
+                            <option value="2026" selected>
+                                2026 Season
+                            </option>
+                            
+                            <option value="2025" >
+                                2025 Season
+                            </option>
+                            
+                            <option value="2024" >
+                                2024 Season
+                            </option>
+                            
+                            <option value="2023" >
+                                2023 Season
+                            </option>
+                            
+                        </select>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <small class="text-muted">Viewing 2026 Season</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Season Transition Disclaimer -->
+            
+            
+            <!-- Events by Week -->
+            
+                
+                <div class="week-section">
+                    <div class="week-header">
+                        <h4 class="mb-0">
+                            Week 4
+                            <span class="event-count">25 events</span>
+                            <span class="week-toggle">▼</span>
+                        </h4>
+                        <small class="text-muted">
+                            Starting September 14, 2026
+                        </small>
+                    </div>
+                    <div class="week-content" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm week-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Event</th>
+                                        <th>Schools</th>
+                                        <th># Schools</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                    <tr>
+                                        <td>09/19</td>
+                                        <td><a href="/event/1112">Peoria Notre Dame Richard Spring Invitational</a></td>
+                                        <td>Ames, Arlington Heights (Hersey), Aurora (Metea Valley), Aurora (Waubonsie Valley), Aurora (West Aurora), Barrington, Bartlett, Burbank (St. Laurence), Champaign (Central), Chicago (DePaul College Prep), Chicago Heights (Bloom Twp.), Chicago (Jones), Chicago (Lake View), Chicago (Lane), Chicago (Latin), Chicago (Lincoln Park), Chicago (Marist), Chicago (Mather), Chicago (Mother McAuley), Chicago (St. Ignatius College Prep), Chicago (Whitney Young), Chicago (Wolcott), Deerfield, Dixon, Downers Grove (North), Downers Grove (South), Elgin, Elmhurst (York), El Paso (E.P.-Gridley), Fithian (Oakwood), Frankfort (Lincoln-Way East), Franklin Park-Northlake (Leyden), Geneva, Glen Ellyn (Glenbard West), Harrisburg, Herrin, Highland Park, Hinsdale (Central), Hoffman Estates (Conant), Joliet (Central), Joliet (West), Lake Forest, Lake Zurich, Lemont, Lisle, Lisle (Benet Academy), Lockport (Twp.), Mackinaw (Deer Creek-M.), Mahomet (M.-Seymour), Marion, Mason, Monticello, Mt. Prospect (Prospect), Naperville (Central), Naperville (Neuqua Valley), Naperville (North), New Lenox (Lincoln-Way Central), New Lenox (Lincoln-Way West), New Lenox (Providence Catholic), Niantic (Sangamon Valley), Niles (Northridge Prep), Niles (Notre Dame), Normal (Community West), Normal (University), Oak Park (O.P.-River Forest), O&#39;Fallon, Orland Park (Sandburg), Oswego, Oswego (East), Palatine, Palos Heights (Shepard), Palos Hills (Stagg), Pekin, Peoria (Notre Dame), Peoria (Richwoods), Piasa (Southwestern), Plainfield (Central), Pleasant Valley, Quincy, Rochester, Roselle (Lake Park), Schaumburg, South Elgin, Springfield, Springfield (Sacred Heart-Griffin), St. Charles (East), St. Charles (North), St. Joseph (S.J.-Ogden), Taylorville, Toulon (Stark County), Waterloo, Wauconda, Webster Groves, West Chicago (Wheaton Academy), Wheaton (North), Wheaton (W. Warrenville South), Williamsville, Wilmette (Loyola Academy), Wilmette (Regina Dominican), Winnetka (New Trier)</td>
+                                        <td>100</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/19</td>
+                                        <td><a href="/event/1107">21st Heartland Classic Boys</a></td>
+                                        <td>ADM, Adel, Ankeny, Ankeny Centennial, Ballard, Baxter, Dallas Center-Grimes, Des Moines, Lincoln, Des Moines, Roosevelt, Dowling Catholic, West Des Moines, Fremont, Indianola, Interstate 35, Truro, Iowa City, City High, Lawrence, Lincoln Southwest, Linn-Mar, Marion, Marshalltown, North Polk, Alleman, Norwalk, Pella, Pella Christian, Pleasant Valley, Prairie, Cedar Rapids, Red Oak, Riverside, Oakland, Sioux City, East, Southeast Polk, Treynor, Urbandale, Waukee, Waukee, Northwest, Winterset</td>
+                                        <td>32</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/19</td>
+                                        <td><a href="/event/1115">Cherokee Lighted XC Meet</a></td>
+                                        <td>Boyer Valley, Dunlap, Cherokee, Washington, Fort Dodge, Manson Northwest Webster, OABCIG, Okoboji, Sioux City, West, Spencer, Spirit Lake, Western Christian, Hull</td>
+                                        <td>10</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/18</td>
+                                        <td><a href="/event/1109">Roy Griak Invitational</a></td>
+                                        <td>ADM, Adel, Albany, Altoona, Amery, Anamosa, Andover, Annandale, Apple Valley, Blaine, Blake, Bloomer, Bloomington Jefferson, Bloomington Kennedy, Blue Valley West, Brandon Valley, Byron, Cedar Falls, Centennial, Champlin Park, Chanhassen, Chaska, Chisago Lakes, Cochrane-Fountain City, Columbia Heights, Coon Rapids, Cotter/Hope, D. C. Everest, Delano, DeLaSalle, Des Moines, Roosevelt, Dowling Catholic, West Des Moines, Duluth East, Eagan, Eau Claire North, Edina, Elk River, Farmington, Fergus Falls, Forest City, Forest Lake, Gilbert, Glen Ellyn (Glenbard South), Harrisburg, Hastings, Hayward, Heritage Christian, Hermantown, Hibbing, Hill-Murray, Hillsboro/Central Valley, Hoffman Estates (Conant), Hudson, Iowa City, Liberty, Irondale, Johnston, Kindred, Laguna Hills, Lakeville North, Lakeville South, LA/RP/H, Legacy, Little Falls, Loyola-Cleveland-St. Clair, Mankato East, Maple Grove, Marshall, Menomonie, Minneapolis Edison, Minneapolis Southwest, Minneapolis Washburn, Minnetonka, Minot, Mora, Mounds Park Academy, Mounds View, Nease, New Richmond, Newton, Northern Cass, Northfield, North Shore, Northwestern, Notre Dame, Nova Classical Academy, O&#39;Gorman, Orono, Osseo, Owatonna, Palmer Ridge, Park Center, Parnassus Preparatory School, Pine City, Pine Island, Prescott, Proctor, Providence Academy, Red Wing, Regis, Rice Lake, Richfield, River Falls, Robbinsdale Armstrong, Rochester John Marshall, Rock Ridge, Rogers, Rosemount, Roseville Area, SF Christian, SF Lincoln, Shanley, Shawnee Mission North, Simley, South St. Paul, Southwest Christian, Spring Lake Park, St. Agnes, St. Anthony Village, St. Cloud Apollo, St. Croix Lutheran, St. Croix Preparatory Academy, Stewartville, St. Francis, Stillwater Area, St. John&#39;s Prep, St. Louis Park, St. Michael-Albertville, St. Paul Academy &amp; Summit School, St. Paul Central, St. Paul Como Park, St. Paul Highland Park, St. Paul Johnson, St Paul&#39;s (Canada), St. Teresa&#39;s Academy, St. Thomas Academy, The Prairie School, Totino-Grace, Tri-Center, Neola, Trinity/Unity, Two Rivers, United Christian Academy, Valley, West Des Moines, Waconia, Wadena-Deer Creek, Watertown, Wayzata, Westonka, Westosha Central, White Bear Lake Area, Woodbury, Zimmerman</td>
+                                        <td>150</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/17</td>
+                                        <td><a href="/event/1106">2026 Iowa City Middle School XC</a></td>
+                                        <td>Cedar Rapids, Washington MS, Des Moines, Roosevelt MS, Franklin MS, Harding MS, Iowa City, Liberty MS, Iowa City, West MS, McKinley MS, Southeast, Iowa City MS, Taft, Cedar Rapids MS</td>
+                                        <td>9</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/17</td>
+                                        <td><a href="/event/1103">Central Invitational</a></td>
+                                        <td>Central, Elkader, Central, Elkader MS, Charles City, Clayton Ridge, Guttenberg, Clayton Ridge, Guttenberg MS, Dunkerton, Dunkerton MS, East Buchanan, Winthrop, East Buchanan, Winthrop MS, Kee, Lansing, Kee, Lansing MS, MFL MarMac, MFL MarMac MS, North Fayette Valley, North Fayette Valley MS, Postville, Postville MS, South Winneshiek, Calmar, South Winneshiek, Calmar MS</td>
+                                        <td>19</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/17</td>
+                                        <td><a href="/event/1104">Clear Lake Invitational</a></td>
+                                        <td>Ames, Bondurant-Farrar, Boone, Boone MS, Central Springs, Central Springs MS, Clarion-Goldfield-Dows, Clarion-Goldfield-Dows MS, Clarksville, Clarksville MS, Clear Lake, Clear Lake Classical, Clear Lake Classical MS, Clear Lake MS, Denver, Denver MS, Eagle Grove, Eagle Grove MS, Forest City, Forest City MS, Fort Dodge, Fort Dodge MS, Garner-Hayfield-Ventura, Garner-Hayfield-Ventura MS, Gilbert, Hampton-Dumont -CAL, Hampton-Dumont -CAL MS, Mason City MS, Newman Catholic, Mason City, Newman Catholic, Mason City MS, Northwood-Kensett, Northwood-Kensett MS, Saint Ansgar, Waverly-Shell Rock, Webster City, Webster City MS, West Fork, Sheffield, West Fork, Sheffield MS, West Hancock, Britt, West Hancock, Britt MS</td>
+                                        <td>40</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/17</td>
+                                        <td><a href="/event/1102">Sergeant Bluff-Luton XC Invite</a></td>
+                                        <td>Le Mars, Lewis Central, Logan-Magnolia, Missouri Valley, Sergeant Bluff-Luton, Sioux City, East, Sioux City, North, Vermillion, Wayne</td>
+                                        <td>9</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/17</td>
+                                        <td><a href="/event/1105">Timm Lamb Invitational</a></td>
+                                        <td>Burlington, Burlington MS, Carthage MS, Central Lee, Donnellson, Central Lee, Donnellson MS, Clark County, Clark County MS, Columbus Community, Columbus Junction, Columbus Community, Columbus Junction MS, Danville, Fairfield, Fairfield MS, Fort Madison, Fort Madison MS, Holy Trinity Catholic, Fort Madison, Holy Trinity Catholic, Fort Madison MS, Louisa-Muscatine, Louisa-Muscatine MS, Mediapolis, Mediapolis MS, Mount Pleasant, Mount Pleasant MS, Muscatine, Muscatine MS, New London, New London MS, Notre Dame / West Burlington, Notre Dame / West Burlington MS, Van Buren County, Van Buren County MS, WACO, Wayland, WACO, Wayland MS, Washington, Washington MS, Winfield-Mt Union, Winfield-Mt Union MS</td>
+                                        <td>36</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/16</td>
+                                        <td><a href="/event/1100">MSA West XC</a></td>
+                                        <td>Bishop Heelan Catholic, Sioux City MS, Sergeant Bluff-Luton MS, Sioux City, East MS, Sioux City, North MS, Sioux City, West MS, South Sioux City MS</td>
+                                        <td>6</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/15</td>
+                                        <td><a href="/event/1097">Osage Invitational</a></td>
+                                        <td>Central Springs, Central Springs MS, Charles City MS, Clear Lake Classical, Clear Lake Classical MS, Crestwood, Cresco, Crestwood, Cresco MS, Decorah MS, Forest City, Forest City MS, Lake Mills, Lake Mills MS, Nashua-Plainfield, Nashua-Plainfield MS, North Butler, Greene, North Butler, Greene MS, Osage, Osage MS, Riceville, Riceville MS, Rockford, Saint Ansgar, Saint Ansgar MS, West Fork, Sheffield, West Fork, Sheffield MS</td>
+                                        <td>25</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/15</td>
+                                        <td><a href="/event/1098">Chris Smith Invitational</a></td>
+                                        <td>Alta-Aurelia, Alta-Aurelia MS, Boyden-Hull/Rock Valley, Boyden-Hull/Rock Valley MS, Boyer Valley, Dunlap, Boyer Valley, Dunlap MS, East Sac County, George-Little Rock/Central Lyon, George-Little Rock/Central Lyon MS, Hartley-Melvin-Sanborn, Hartley-Melvin-Sanborn MS, Sheldon, Sheldon MS, Sioux Central, Sioux Rapids, Sioux Central, Sioux Rapids MS, South Central Calhoun, South Central Calhoun MS, South O&#39;Brien, Paullina, South O&#39;Brien, Paullina MS, West Bend-Mallard, West Bend-Mallard MS</td>
+                                        <td>21</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/15</td>
+                                        <td><a href="/event/1099">Central Lee Cross Country Invitational</a></td>
+                                        <td>Cardinal, Eldon, Central Lee, Donnellson, Hillcrest Academy, Keokuk, Louisa-Muscatine, New London, Van Buren County, Winfield-Mt Union</td>
+                                        <td>8</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/15</td>
+                                        <td><a href="/event/1087">E-Hawks XC Invitational</a></td>
+                                        <td>Algona MS, Bishop Garrigan, Algona, Bishop Garrigan, Algona MS, Emmetsburg, Emmetsburg MS, Estherville Lincoln Central, Estherville Lincoln Central MS, GTRA, GTRA MS, Harris-Lake Park, Harris-Lake Park MS, Manson Northwest Webster, Manson Northwest Webster MS, North Iowa, Buffalo Center, North Iowa, Buffalo Center MS, North Union, North Union MS, Okoboji MS, Pocahontas Area, Pocahontas Area MS, Sibley-Ocheyedan, Sibley-Ocheyedan MS, Spirit Lake MS, St. Edmond, Fort Dodge, St. Edmond, Fort Dodge MS</td>
+                                        <td>25</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/15</td>
+                                        <td><a href="/event/1095">Woodbury Central XC Meet</a></td>
+                                        <td>Akron-Westfield, Akron-Westfield MS, Hinton, Hinton MS, Lawton-Bronson, Lawton-Bronson MS, MMCRU, MMCRU MS, MVAOCOU, MVAOCOU MS, Sioux City, West, Siouxland Christian, Siouxland Christian MS, Trinity Christian, Walthill, WC-KP MS, West Lyon, Inwood, West Lyon, Inwood MS, West Monona, Onawa, West Monona, Onawa MS, Westwood, Sloan, Westwood, Sloan MS, Woodbury Central, Moville</td>
+                                        <td>23</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/15</td>
+                                        <td><a href="/event/1091">Lancer XC Invitational</a></td>
+                                        <td>Assumption, Davenport, Bettendorf, Bettendorf MS, Camanche, Camanche MS, Central DeWitt MS, Clinton, Clinton MS, Coram Deo Academy, Davenport, North, Davenport, West, Davenport XC MS, Maquoketa, Maquoketa MS, Muscatine MS, North Scott, Eldridge, North Scott, Eldridge MS, Pleasant Valley MS, Prince of Peace Catholic, Clinton, Prince of Peace Catholic, Clinton MS, Rivermont Collegiate, Bettendorf</td>
+                                        <td>21</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/15</td>
+                                        <td><a href="/event/1093">Storm Lake XC Meet</a></td>
+                                        <td>Algona, Cherokee, Washington, Cherokee, Washington MS, Denison-Schleswig, Denison-Schleswig MS, Harlan Community, Humboldt, Humboldt MS, Kuemper Catholic, Carroll, Kuemper Catholic, Carroll MS, Lemars Middle School, MOC-Floyd Valley, MOC-Floyd Valley MS, Newell-Fonda, Newell-Fonda MS, Sioux Center, Sioux Center MS, Spencer, Spencer MS, Spirit Lake, Storm Lake, Storm Lake MS, Unity Christian, Orange City, Western Christian, Hull, Western Christian, Hull MS</td>
+                                        <td>25</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/15</td>
+                                        <td><a href="/event/1088">2026 Starmont Invitational</a></td>
+                                        <td>Alburnett, Alburnett MS, Aplington-Parkersburg, Aplington-Parkersburg MS, Beckman Catholic, Dyersville, Central City MS, Columbus Catholic, Waterloo, Dike-New Hartford, Dunkerton, Dunkerton MS, East Buchanan, Winthrop, East Buchanan, Winthrop MS, Edgewood-Colesburg, Edgewood-Colesburg MS, Hudson, Hudson MS, Independence, Independence MS, Janesville, Janesville MS, Maquoketa Valley, Delhi, Maquoketa Valley, Delhi MS, New Hampton, New Hampton MS, North Fayette Valley, North Fayette Valley MS, North-Linn, Troy Mills, North-Linn, Troy Mills MS, Oelwein, Oelwein MS, Starmont, Starmont MS, Sumner-Fredericksburg, Sumner-Fredericksburg MS, Tripoli, Tripoli MS, Turkey Valley, Jackson Junction, Turkey Valley, Jackson Junction MS, Union, LaPorte City, Vinton-Shellsburg, Vinton-Shellsburg MS, Wapsie Valley, Fairbank, Waukon, Waukon MS, West Delaware, Manchester, West Delaware, Manchester MS</td>
+                                        <td>46</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/15</td>
+                                        <td><a href="/event/1096">Cedar Falls CC Invite</a></td>
+                                        <td>Ankeny Centennial, Cedar Falls, Cedar Rapids, Jefferson, Cedar Rapids, Kennedy, Cedar Rapids, Washington, Cedar Ridge Christian, Cedar Ridge Christian MS, Davenport, Central, Des Moines, Roosevelt, Dike-New Hartford MS, Dubuque, Hempstead, Epworth, Western Dubuque, Epworth, Western Dubuque MS, Grundy Center, Iowa City, West, Linn-Mar, Marion, Peet MS, St. Patrick Catholic MS, Urbandale, Valley Lutheran, Cedar Falls, Valley Lutheran, Cedar Falls MS, Waterloo Co-Op MS, Waterloo United</td>
+                                        <td>23</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/15</td>
+                                        <td><a href="/event/1089">Colo-Nesco CC Invite</a></td>
+                                        <td>Ankeny Christian Academy, Ankeny Christian Academy MS, B-G-M, Brooklyn, B-G-M, Brooklyn MS, Colfax-Mingo, Colfax-Mingo MS, Collins-Maxwell, Collins-Maxwell MS, Colo-NESCO, Colo-NESCO MS, GMG, Garwin, GMG, Garwin MS, Meskwaki MS, Meskwaki Settlement School, North Tama, Traer, North Tama, Traer MS, South Hamilton, Jewell, South Hamilton MS, Woodward Academy</td>
+                                        <td>19</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/15</td>
+                                        <td><a href="/event/1092">Oskaloosa Invite</a></td>
+                                        <td>Albia, Albia MS, Baxter, Baxter MS, Carlisle, Carlisle MS, Centerville, Centerville MS, Davis County, Bloomfield, Davis County, Bloomfield MS, Eddyville-Blakesburg-Fremont, Eddyville-Blakesburg-Fremont MS, Knoxville, Knoxville MS, Newton, Newton MS, Oskaloosa, Oskaloosa MS, Ottumwa, Ottumwa MS, Pella MS, Williamsburg, Williamsburg MS</td>
+                                        <td>23</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/14</td>
+                                        <td><a href="/event/1083">46th Mike Carr CC Invite</a></td>
+                                        <td>ADM, Adel, ADM, Adel MS, Atlantic, Ballard, Ballard MS, Belmond-Klemme, BK-CGD MS, Bondurant-Farrar MS, Dallas Center - Grimes MS, Des Moines, Roosevelt, Eagle Grove, Eagle Grove MS, Gilbert MS, Iowa Falls - Alden/AGWSR, Iowa Falls - Alden/AGWSR MS, Lynnville-Sully, Lynnville-Sully MS, Madrid, Madrid MS, Nevada, Nevada MS, Nodaway Valley, Nodaway Valley MS, North Polk, Alleman, North Polk MS, Norwalk MS, Pella Christian, Pella Christian MS, Perry MS, Roland-Story MS, Roland-Story, Story City, Van Meter, Van Meter MS, Waukee MS, Webster City, Webster City MS, Winterset MS, Woodward-Granger</td>
+                                        <td>38</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/14</td>
+                                        <td><a href="/event/1080">South Tama Invitational</a></td>
+                                        <td>BCLUW, Conrad, BCLUW, Conrad MS, East Marshall, LeGrand, East Marshall, LeGrand MS, Gladbrook-Reinbeck, Gladbrook-Reinbeck MS, GMG, Garwin, GMG, Garwin MS, Grinnell, Grinnell MS, Grundy Center MS, Meskwaki MS, Meskwaki Settlement School, North Mahaska, New Sharon, North Mahaska, New Sharon MS, North Tama, Traer, North Tama, Traer MS, South Hardin, South Hardin MS, South Tama County, Tama, South Tama County, Tama MS, West Marshall MS, West Marshall, State Center</td>
+                                        <td>23</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/14</td>
+                                        <td><a href="/event/1082">Midland XC</a></td>
+                                        <td>Anamosa MS, Calamus-Wheatland, Calamus-Wheatland MS, Easton Valley, Easton Valley MS, Marquette Catholic, Bellevue, Marquette Catholic, Bellevue MS, Midland, Wyoming, Midland, Wyoming MS, North Cedar, Stanwood, North Cedar, Stanwood MS, Northeast, Goose Lake, Northeast, Goose Lake MS</td>
+                                        <td>13</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/14</td>
+                                        <td><a href="/event/1086">West Liberty Cross Country Invitational</a></td>
+                                        <td>Durant, Durant MS, Lone Tree, Lone Tree MS, Pekin, Pekin MS, Wapello, Wapello MS, West Liberty, West Liberty MS</td>
+                                        <td>10</td>
+                                    </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="week-section">
+                    <div class="week-header">
+                        <h4 class="mb-0">
+                            Week 3
+                            <span class="event-count">28 events</span>
+                            <span class="week-toggle">▼</span>
+                        </h4>
+                        <small class="text-muted">
+                            Starting September 07, 2026
+                        </small>
+                    </div>
+                    <div class="week-content" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm week-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Event</th>
+                                        <th>Schools</th>
+                                        <th># Schools</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                    <tr>
+                                        <td>09/12</td>
+                                        <td><a href="/event/1054">Benton Invitational</a></td>
+                                        <td>Benton Community, Benton Community MS, Cedar Rapids Prep, Cedar Ridge Christian, Cedar Ridge Christian MS, Clear Creek Amana MS, Independence, Mount Vernon-Lisbon MS, Solon MS, Valley Lutheran, Cedar Falls, Valley Lutheran, Cedar Falls MS, Vinton-Shellsburg, Vinton-Shellsburg MS, Waverly-Shell Rock, Williamsburg, Williamsburg MS, Xavier, Cedar Rapids</td>
+                                        <td>18</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/12</td>
+                                        <td><a href="/event/1053">Tim Thomas XC Classic</a></td>
+                                        <td>AHSTW, Avoca, Alta-Aurelia, Alta-Aurelia MS, Ar-We-Va, Westside, Ar-We-Va, Westside MS, Bishop Garrigan, Algona, Bishop Heelan Catholic, Sioux City, Bishop Heelan Catholic, Sioux City MS, Boyer Valley, Dunlap, Boyer Valley, Dunlap MS, Carroll, Cherokee, Washington, Cherokee, Washington MS, Denison-Schleswig, East Sac County, East Sac County MS, Emmetsburg, Gehlen Catholic, LeMars, Gehlen Catholic, LeMars MS, Humboldt, IKM-Manning, IKM-Manning MS, Kuemper Catholic, Carroll, Kuemper Catholic, Carroll MS, Lawton-Bronson, Lawton-Bronson MS, Logan-Magnolia, Logan-Magnolia MS, MOC-Floyd Valley, MVAOCOU, MVAOCOU MS, Newell-Fonda, Newell-Fonda MS, OABCIG, OABCIG MS, Okoboji, Pocahontas Area, Ridge View, Ridge View MS, Riverside, Oakland, Riverside, Oakland MS, Sergeant Bluff-Luton, Sibley-Ocheyedan, Sioux Central, Sioux Rapids, Sioux Central, Sioux Rapids MS, Sioux City, East, Sioux City, North, Sioux City, North MS, Sioux City, West, Siouxland Christian, South Central Calhoun, South Central Calhoun MS, South O&#39;Brien, Paullina, Spencer, Unity Ridge Lutheran MS, WC-KP MS, West Monona, Onawa, West Monona, Onawa MS, Westwood, Sloan, Westwood, Sloan MS, Woodbine, Woodbine MS, Woodbury Central, Moville</td>
+                                        <td>63</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/12</td>
+                                        <td><a href="/event/1068">Nike Heartland Preview</a></td>
+                                        <td>Belle Fourche, Benilde-St Margaret&#39;s, Benilde St Margaret&#39;s MS, Ben Reifel MS, Brookings, Chamberlain, Chamberlain MS, Crow Creek, Crow Creek MS, Dakota Valley, Dakota Valley MS, Douglas, Edison MS, Ethan/Parkston, Fairmont, George McGovern MS, Hanson, Harrisburg, Harrisburg East MS, Harrisburg North MS, Harrisburg South MS, Hill City, Lennox, Lennox MS, Lincoln North Star, Mandan, Memorial MS, Mickelson (Brookings) MS, Minnetonka, Mitchell, Mitchell Christian, Mitchell Christian MS, Mitchell MS, Mountain Lake MS, Mount Vernon/Plankinton, Mt. Lake Area - Comfrey, Oak Grove, O&#39;Gorman, Omaha Marian, Papillion-La Vista, Parker/Marion, Parker MS, Parkston MS, Patrick Henry MS, Philip, Philip MS, Platte-Geddes, Platte Geddes MS, Rapid City Stevens, Riverside Christian, Riverside Christian MS, SF Christian, SF Jefferson, SF Roosevelt, SF Washington, Sioux Falls Christian MS, Sioux Falls Lutheran, Sioux Falls Lutheran MS, Sioux Valley, Sioux Valley MS, Spearfish, Spirit Lake, Tea Area, Tea Area MS, Tiospaye Topa, Tri-Valley, Tri-Valley MS, Vermillion, White River, Whittier MS, Worthington</td>
+                                        <td>71</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/12</td>
+                                        <td><a href="/event/1056">Luther All-American Invitational</a></td>
+                                        <td>Aquinas, Bloomington Jefferson, Burnsville, Chatfield, Columbus Community, Columbus Junction, Cotter/Hope, Decorah, Decorah MS, Dover-Eyota, Dubuque, Senior, Goodhue, Goodhue MS, Iowa City, City High, Iowa City, Liberty, Kee, Lansing, Kee, Lansing MS, La Crosse Central, Lanesboro/Fillmore Central, Lanesboro/Fillmore Central MS, LA/RP/H, LA/RP/H MS, Linn-Mar, Marion, Longfellow (La Crosse) MS, Luther HS, Marion, Mason City, Mason City MS, Minnetonka, New Hampton, New Hampton MS, Northwood-Kensett, Northwood-Kensett MS, Onalaska, Osage, Pacelli, Pekin, Postville, Postville MS, Prairie, Cedar Rapids, Regina, Iowa City, Rochester Century, Rochester Century MS, Rochester John Marshall, Rochester John Marshall MS, Rochester Mayo High School, South Winneshiek, Calmar, South Winneshiek, Calmar MS, Turkey Valley, Jackson Junction, Turkey Valley, Jackson Junction MS, Waukon, Waukon MS, Westby</td>
+                                        <td>52</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/12</td>
+                                        <td><a href="/event/1055">Monticello XC</a></td>
+                                        <td>Anamosa, Anamosa MS, Assumption, Davenport, Beckman Catholic, Dyersville, Beckman Catholic, Dyersville MS, Bellevue, Bellevue MS, Cascade, Western Dubuque, Cascade, Western Dubuque MS, Denver, Easton Valley, Easton Valley MS, Epworth, Western Dubuque, Epworth, Western Dubuque MS, Maquoketa Valley, Delhi, Maquoketa Valley, Delhi MS, Mid-Prairie, Wellman, Mid-Prairie, Wellman MS, Monticello, Monticello MS, Northeast, Goose Lake, North-Linn, Troy Mills, North-Linn, Troy Mills MS, Notre Dame / West Burlington, Notre Dame / West Burlington MS, Princeton, Springville, Springville MS, Starmont, Starmont MS, Tipton, Tipton MS</td>
+                                        <td>33</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/11</td>
+                                        <td><a href="/event/1051">Platte River Rumble-HS</a></td>
+                                        <td>Arlington, Ashland-Greenwood, Bishop Neumann, Blair, Boys Town, Conestoga, Council Bluffs, Abraham Lincoln, Council Bluffs, Thomas Jefferson, Creighton Preparatory School, Crete, Doniphan-Trumbull, Elkhorn North, Glenwood, Gretna, Gretna East, Hi-Line, Lewis Central, Lincoln East, Lincoln Lutheran, Lincoln Pius X, Lincoln Southeast, Lincoln Southwest, Millard North, Millard West, Mount Michael Benedictine, Norfolk, Norris, Omaha Burke, Omaha Central, Omaha Gross Catholic, Omaha Marian, Omaha North, Omaha Roncalli Catholic, Omaha Skutt Catholic, Omaha Westside, Omaha Westview, Platteview, Plattsmouth, Ralston, Scotus Central Catholic, Syracuse, Treynor, Waverly</td>
+                                        <td>43</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/11</td>
+                                        <td><a href="/event/1052">Fremont Twilight</a></td>
+                                        <td>Bennington, Bloomfield-Wausa, Bloomfield-Wausa MS, Buena Vista, Columbus MS, Concordia/Lifegate MS, Cornerstone Christian, Cornerstone Christian MS, Crofton, Crofton MS, Douglas County West, Douglas County West MS, Elkhorn, Elkhorn South, Fort Calhoun, Fort Calhoun MS, Fremont, Fremont MS, Glenwood, Glenwood MS, Holdrege, Holdrege MS, Liberty MS, Lincoln Standing Bear, Logan View, Logan View MS, Malcolm, Malcolm MS, Millard South, Nebraska Christian, Omaha Benson, Omaha Bryan, Omaha Central, Omaha Concordia, Omaha Duchesne Academy, Omaha Northwest, Papillion-La Vista South, Papillion MS, Pierce, Pierce MS, Sandy Creek, South Sioux City, South Sioux City MS, Stanton, Stanton MS</td>
+                                        <td>45</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/11</td>
+                                        <td><a href="/event/1078">Clinton Middle School XC</a></td>
+                                        <td>Bettendorf MS, Central DeWitt MS, Clinton MS, Davenport MS, North Scott, Eldridge MS, Pleasant Valley MS</td>
+                                        <td>6</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/10</td>
+                                        <td><a href="/event/1040">Gilbert CC Invitational</a></td>
+                                        <td>ACGC, ACGC MS, ADM, Adel, Ames MS, Ankeny Southview MS, Bondurant-Farrar, Boone, Boone MS, Carlisle, Carlisle MS, Clear Creek Amana, Des Moines Christian, Des Moines Christian MS, Earlham, Forest City, Gilbert, Gilbert MS, Madrid, Madrid MS, Nevada, North Polk, Alleman, Pella, Pella Christian, Pella Christian MS, Sioux Center, Solon, South Hamilton, Jewell, Van Meter, Van Meter MS, West Marshall MS, West Marshall, State Center, Winterset</td>
+                                        <td>32</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/10</td>
+                                        <td><a href="/event/1046">Greene County CC Invite</a></td>
+                                        <td>Carroll, Carroll MS, Denison-Schleswig, Denison-Schleswig MS, Greene County, Greene County MS, IKM-Manning, IKM-Manning MS, Missouri Valley, Missouri Valley MS, Ogden, Ogden MS, Perry, Perry MS, Roland-Story, Story City, Southeast Valley, Gowrie, Southeast Valley, Gowrie MS, West Central Valley, Stuart, West Central Valley, Stuart MS</td>
+                                        <td>19</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/10</td>
+                                        <td><a href="/event/1048">Fairfield Invitational XC Meet</a></td>
+                                        <td>Belle Plaine, Burlington, Burlington MS, Cardinal, Eldon, Cardinal, Eldon MS, Eddyville-Blakesburg-Fremont, Eddyville-Blakesburg-Fremont MS, Fairfield, Fairfield MS, Fort Madison, Fort Madison MS, Highland, Riverside, Highland, Riverside MS, Hillcrest Academy, Hillcrest Academy MS, Keokuk, Keokuk MS, Lone Tree, Lone Tree MS, Mount Pleasant, Mount Pleasant MS, New London, Notre Dame / West Burlington, Notre Dame / West Burlington MS, Oskaloosa, Oskaloosa MS, Ottumwa, Ottumwa MS, PCM, PCM MS, Van Buren County, Van Buren County MS, WACO, Wayland, WACO, Wayland MS, Wapello, Washington, Washington MS, Williamsburg, Williamsburg MS, Winfield-Mt Union, Winfield-Mt Union MS</td>
+                                        <td>42</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/10</td>
+                                        <td><a href="/event/1047">2026 Bob Scott Memorial Invitational (North Fayette Valley)</a></td>
+                                        <td>Central, Elkader, Central, Elkader MS, Charles City, Clayton Ridge, Guttenberg, Clayton Ridge, Guttenberg MS, Dike-New Hartford, Dike-New Hartford MS, Edgewood-Colesburg, Edgewood-Colesburg MS, Jesup, Jesup MS, MFL MarMac, MFL MarMac MS, Nashua-Plainfield, North Fayette Valley, North Fayette Valley MS, Oelwein, Oelwein MS, Riceville, Riceville MS, Saint Ansgar, Sumner-Fredericksburg, Sumner-Fredericksburg MS, Waukon, Waukon MS</td>
+                                        <td>25</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/10</td>
+                                        <td><a href="/event/1044">Colfax-Mingo CC Invite</a></td>
+                                        <td>B-G-M, Brooklyn, B-G-M, Brooklyn MS, Colfax-Mingo, Colfax-Mingo MS, Collins-Maxwell, Collins-Maxwell MS, Colo-NESCO, Colo-NESCO MS, Des Moines Prep, East Marshall, LeGrand, East Marshall, LeGrand MS, Grand View Christian MS, Grand View Christian School, Grinnell, Grinnell MS, H-L-V , Victor, H-L-V , Victor MS, Knoxville, Knoxville MS, Lynnville-Sully, Lynnville-Sully MS, Martensdale-St Marys, Martensdale-St Marys MS, Montezuma, Montezuma MS, Newton, Newton MS, North Mahaska, New Sharon, North Mahaska, New Sharon MS, Saydel, Saydel MS, Woodward Academy, Woodward-Granger, Woodward-Granger MS</td>
+                                        <td>34</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/10</td>
+                                        <td><a href="/event/1042">Central Decatur XC Invite</a></td>
+                                        <td>Central Decatur, Leon, Central Decatur, Leon MS, Chariton, Chariton MS, Diagonal, Diagonal MS, East Union, Afton, East Union, Afton MS, Lamoni, Lamoni MS, Melcher-Dallas, Moravia, Moravia MS, Mormon Trail, Garden Grove, Mount Ayr, Mount Ayr MS, Nodaway Valley, Nodaway Valley MS, Shenandoah, Southeast Warren, Liberty Center, Wayne, Corydon, Wayne, Corydon MS</td>
+                                        <td>22</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/10</td>
+                                        <td><a href="/event/1041">Cedar Rapids Invitational</a></td>
+                                        <td>Bettendorf, Cedar Rapids, Jefferson, Cedar Rapids, Kennedy, Cedar Rapids, Washington, Center Point-Urbana, Central DeWitt, Clinton, Davenport, Central, Davenport, North, Iowa City, West, Maquoketa, Mount Vernon-Lisbon, Muscatine, North Scott, Eldridge, Pleasant Valley, Prairie, Cedar Rapids, Wahlert, Dubuque, Waterloo United</td>
+                                        <td>18</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/10</td>
+                                        <td><a href="/event/1049">Northeast XC Invitational</a></td>
+                                        <td>Camanche, Camanche MS, Easton Valley, Easton Valley MS, Maquoketa MS, Marquette Catholic, Bellevue, Marquette Catholic, Bellevue MS, Midland, Wyoming, Midland, Wyoming MS, Northeast, Goose Lake, Northeast, Goose Lake MS, Prince of Peace Catholic, Clinton, Prince of Peace Catholic, Clinton MS</td>
+                                        <td>13</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/10</td>
+                                        <td><a href="/event/1043">53rd Bobcat CC Invitational</a></td>
+                                        <td>Ames, Ankeny, Ankeny Centennial, Cedar Falls, Dallas Center-Grimes, Dallas Center - Grimes MS, Des Moines, East, Des Moines, Hoover, Des Moines, Lincoln, Des Moines, North, Des Moines, Roosevelt, Dowling Catholic, West Des Moines, Dowling Catholic, West Des Moines MS, Dubuque, Hempstead, Dubuque, Senior, Fort Dodge, Fort Dodge MS, Indianola, Iowa City, Liberty, Iowa City, West, Johnston, Johnston MS, Marshalltown, Marshalltown MS, Norwalk, Peet MS, Pleasant Valley, Southeast Polk, Southeast Polk MS, Urbandale, Urbandale MS, Valley, West Des Moines, Valley, West Des Moines MS, Waukee, Waukee, Northwest</td>
+                                        <td>35</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/10</td>
+                                        <td><a href="/event/1075">Davis County CC Invite</a></td>
+                                        <td>Albia, Centerville, Centerville MS, Clarke, Osceola, Clarke, Osceola MS, Davis County, Bloomfield, Davis County, Bloomfield MS, English Valleys, North English, English Valleys, North English MS, Iowa Valley, Marengo, Iowa Valley, Marengo MS, Keota, Keota MS, Moulton-Udell MS, Ms_kirksville, Ms_schuyler, Putnam County, Schuyler County, Scotland County, Scotland County MS, Sigourney, Sigourney MS</td>
+                                        <td>22</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/10</td>
+                                        <td><a href="/event/1079">IC Regina MS Invitational</a></td>
+                                        <td>Cedar Rapids, Washington MS, CR Prairie MS, Des Moines, Roosevelt MS, Excelsior-Oak Ridge MS, Franklin MS, Harding MS, Iowa City, Liberty MS, Iowa City, West MS, McKinley MS, Mount Vernon-Lisbon MS, Regina, Iowa City MS, Southeast, Iowa City MS, Taft, Cedar Rapids MS, West Liberty MS</td>
+                                        <td>14</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/09</td>
+                                        <td><a href="/event/1039">MSA SYA XC</a></td>
+                                        <td>Bishop Heelan Catholic, Sioux City MS, Sergeant Bluff-Luton MS, Sioux City, East MS, Sioux City, North MS, Sioux City, West MS</td>
+                                        <td>5</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/08</td>
+                                        <td><a href="/event/1036">Clayton Ridge Cross Country</a></td>
+                                        <td>Beckman Catholic, Dyersville, Beckman Catholic, Dyersville MS, Central, Elkader, Central, Elkader MS, Clayton Ridge, Guttenberg, Clayton Ridge, Guttenberg MS, Kee, Lansing, Kee, Lansing MS, Maquoketa Valley, Delhi, Maquoketa Valley, Delhi MS, MFL MarMac, MFL MarMac MS</td>
+                                        <td>12</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/08</td>
+                                        <td><a href="/event/1031">Belmond-Klemme Invitational</a></td>
+                                        <td>BCLUW, Conrad, Belmond-Klemme, Central Springs, Clarion-Goldfield-Dows, Clear Lake Classical, Eagle Grove, Garner-Hayfield-Ventura, Hampton-Dumont -CAL, Lake Mills, Manson Northwest Webster, Newman Catholic, Mason City, North Butler, Greene, North Iowa, Buffalo Center, Northwood-Kensett, Rockford, St. Edmond, Fort Dodge, West Fork, Sheffield, West Hancock, Britt</td>
+                                        <td>18</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/08</td>
+                                        <td><a href="/event/1038">Van Buren County Warrior Invitational</a></td>
+                                        <td>Cardinal, Eldon, Cardinal, Eldon MS, Central Lee, Donnellson MS, Danville, Danville MS, Davis County, Bloomfield, Davis County, Bloomfield MS, Holy Trinity Catholic, Fort Madison MS, Keokuk, Mediapolis, Mediapolis MS, Moulton-Udell MS, New London, New London MS, Pekin, Pekin MS, Van Buren County, Van Buren County MS, Winfield-Mt Union, Winfield-Mt Union MS</td>
+                                        <td>20</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/08</td>
+                                        <td><a href="/event/1030">2026 Dick Pollitt Go-Hawk Classic (Waverly-Shell Rock)</a></td>
+                                        <td>Center Point-Urbana MS, Charles City MS, Clarksville, Clarksville MS, Colo-NESCO, Columbus Catholic, Waterloo, Crestwood, Cresco, Crestwood, Cresco MS, Denver, Denver MS, Gladbrook-Reinbeck, Gladbrook-Reinbeck MS, Grundy Center, Grundy Center MS, Hudson, Hudson MS, Independence, Independence MS, Iowa Falls - Alden/AGWSR, Iowa Falls - Alden/AGWSR MS, Janesville, Janesville MS, Marion, Mason City, Mason City MS, Nashua-Plainfield, Nashua-Plainfield MS, New Hampton, New Hampton MS, Osage, Osage MS, Riceville, Riceville MS, Tripoli, Tripoli MS, Turkey Valley, Jackson Junction, Wapsie Valley, Fairbank, Wapsie Valley, Fairbank MS, Waterloo Co-Op MS, Waukon, Waverly-Shell Rock, Waverly-Shell Rock MS, Webster City, West Delaware, Manchester</td>
+                                        <td>44</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/08</td>
+                                        <td><a href="/event/1029">Bellevue West Invite</a></td>
+                                        <td>Bellevue East, Bellevue West, Council Bluffs, Abraham Lincoln, La Vista MS, Lewis &amp; Clark Middle School, Liberty MS, Lincoln North Star, Logan Fontenelle MS, Millard South, Mission MS, Omaha Benson, Omaha Bryan, Omaha Marian, Wilson MS</td>
+                                        <td>14</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/08</td>
+                                        <td><a href="/event/1034">Sibley-Ocheyedan XC Meet</a></td>
+                                        <td>Alta-Aurelia, Boyden-Hull/Rock Valley, Boyden-Hull/Rock Valley MS, George-Little Rock/Central Lyon, George-Little Rock/Central Lyon MS, Harris-Lake Park, Harris-Lake Park MS, Hartley-Melvin-Sanborn, Hartley-Melvin-Sanborn MS, Hinton, Hinton MS, MMCRU, MMCRU MS, MVAOCOU, Okoboji, Okoboji MS, Ridge View, Sheldon, Sheldon MS, Sibley-Ocheyedan, Sibley-Ocheyedan MS, South O&#39;Brien, Paullina, South O&#39;Brien, Paullina MS, St. Mary&#39;s, Remsen MS, Trinity Christian, Western Christian, Hull, Western Christian, Hull MS, West Lyon, Inwood, West Lyon, Inwood MS, West Sioux, Hawarden, West Sioux, Hawarden MS</td>
+                                        <td>31</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/08</td>
+                                        <td><a href="/event/1035">Tipton XC</a></td>
+                                        <td>Anamosa MS, Calamus-Wheatland, Calamus-Wheatland MS, Camanche, Camanche MS, Cascade, Western Dubuque, Cascade, Western Dubuque MS, Central DeWitt MS, Clear Creek Amana MS, Columbus Community, Columbus Junction, Columbus Community, Columbus Junction MS, Durant, Durant MS, Louisa-Muscatine, Louisa-Muscatine MS, Midland, Wyoming, Midland, Wyoming MS, Mid-Prairie, Wellman MS, Muscatine MS, North Cedar, Stanwood, North Cedar, Stanwood MS, Northeast, Goose Lake, Northeast, Goose Lake MS, Regina, Iowa City, Regina, Iowa City MS, Rivermont Collegiate, Bettendorf, Solon MS, Tipton, Tipton MS, Wapello, Wapello MS, West Liberty, West Liberty MS, Wilton, Wilton MS</td>
+                                        <td>35</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/08</td>
+                                        <td><a href="/event/1032">Clarinda Invite</a></td>
+                                        <td>Atlantic, Atlantic MS, Bedford, Bedford MS, Clarinda, Clarinda MS, Craig R-III 7-12, Creston, Creston MS, East Atchison MS, Essex, Fremont-Mills, Tabor, Hamburg Charter, Harlan Community, Lenox, Nebraska City, Nebraska City MS, North Andrew, North Andrew MS, Red Oak, Riverside, Oakland, Riverside, Oakland MS, Shenandoah, Shenandoah MS, Southwest Valley, Southwest Valley MS, Stanton, Stanton MS, Tarkio</td>
+                                        <td>29</td>
+                                    </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="week-section">
+                    <div class="week-header">
+                        <h4 class="mb-0">
+                            Week 2
+                            <span class="event-count">21 events</span>
+                            <span class="week-toggle">▼</span>
+                        </h4>
+                        <small class="text-muted">
+                            Starting August 31, 2026
+                        </small>
+                    </div>
+                    <div class="week-content" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm week-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Event</th>
+                                        <th>Schools</th>
+                                        <th># Schools</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                    <tr>
+                                        <td>09/05</td>
+                                        <td><a href="/event/1012">Linn-Mar Invitational</a></td>
+                                        <td>Anamosa, Benton Community, Cedar Falls, Cedar Rapids, Jefferson, Cedar Rapids, Kennedy, Cedar Rapids, Washington, Linn-Mar, Marion, Marion, Oelwein, Southeast Polk, Waterloo United, Xavier, Cedar Rapids</td>
+                                        <td>12</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/05</td>
+                                        <td><a href="/event/1015">Spartan Invitational</a></td>
+                                        <td>Bettendorf, Davenport, Central, Davenport, West, Dubuque, Hempstead, Dubuque, Senior, Edina, Iowa City, City High, Iowa City, Liberty, Iowa City, West, Johnston, Moline, Muscatine, Naperville (North), North Scott, Eldridge, Pleasant Valley, Prairie, Cedar Rapids, Rock Island</td>
+                                        <td>17</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/05</td>
+                                        <td><a href="/event/1013">Silver Streak XC Invitational</a></td>
+                                        <td>Abingdon (A.-Avon), Cambridge, Dunlap, East Moline (United), East Peoria, Fort Madison, Galesburg, Geneseo, Kewanee (Wethersfield), Knoxville, Macomb, Metamora, Monmouth (M.-Roseville), Monmouth (United), Morton, Peoria (Notre Dame), Peoria (Richwoods), ROWVA Williamsfield, Taylor Ridge (Rockridge)</td>
+                                        <td>19</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/05</td>
+                                        <td><a href="/event/1014">Titan Classic</a></td>
+                                        <td>Creighton Preparatory School, Glenwood, Lincoln East, Lincoln High, Lincoln Northwest, Lincoln Pius X, Lincoln Southwest, Omaha Central, Omaha Marian, Papillion-La Vista South</td>
+                                        <td>10</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/05</td>
+                                        <td><a href="/event/1011">Pella - Dutch CC Invitational Girls</a></td>
+                                        <td>ADM, Adel, Baxter, Central Decatur, Leon, Chariton, Collins-Maxwell, English Valleys, North English, Fairfield, Gilbert, Hillcrest Academy, Lynnville-Sully, Mount Pleasant, North Mahaska, New Sharon, Oskaloosa, Pella, Pella Christian, Pleasantville, Valley, West Des Moines, Wayne, Corydon</td>
+                                        <td>18</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/04</td>
+                                        <td><a href="/event/1010">Augustana Twilight XC Meet</a></td>
+                                        <td>Aberdeen Central, Aberdeen Roncalli, Arlington, Baltic, Belle Fourche, Beresford, Bishop Heelan Catholic, Sioux City, Bismarck, Brandon Valley, Brookings, Canistota, Canton, Castlewood, Century, Clark/Willow Lake, Creighton Preparatory School, Crofton, Crow Creek, Custer, Dakota Valley, Deuel, Douglas, Elk Point-Jefferson, Ethan/Parkston, Fargo South, Flandreau, Freeman, Fremont, Gayville-Volin, Grand Forks Central, Grand Island, Gregory, Harrisburg, Hillsboro/Central Valley, Howard, Ipswich, Irene-Wakonda, Kimball/White Lake, Kindred, Lead-Deadwood, Le Mars, Lemmon, Lennox, Marshall, MCW/BO, Milbank, Miller, Mitchell, Mitchell Christian, MOC-Floyd Valley, Mount Michael Benedictine, Mount Vernon/Plankinton, Mullen, Niobrara/Verdigre, Norfolk, North Platte, O&#39;Gorman, Omaha Central, Omaha Duchesne Academy, Omaha Westside, Omaha Westview, Pierre T.F. Riggs, Platte-Geddes, Rapid City Central, Red River, Redwood Valley, Ridge View, Rock Bridge, SF Christian, SF Jefferson, SF Lincoln, SF Roosevelt, SF Washington, Sheyenne, Sioux City, East, Sioux City, North, Sioux City, West, Sioux Falls Lutheran, Sioux Valley, Sisseton, St. Cloud Tech, Stuart, Tea Area, Tri-Valley, Unattached, United North Central, Unity Christian, Orange City, Vermillion, Wagner, Warner, Watertown, Waverly, Wessington Springs, West Central, Woodbury, Woodbury Central, Moville, Yankton</td>
+                                        <td>97</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/04</td>
+                                        <td><a href="/event/1026">Dragon Twilight Invite</a></td>
+                                        <td>Ada-Borup-West High School, Ada-Borup-West MS, Barnesville, Barnesville MS, Bertha-Hewitt, Capstone Classical Academy, Capstone Classical Academy MS, Central Cass, Central Cass MS, Davies, Davies MS, Dilworth-Glyndon-Felton, Dilworth-Glyndon-Felton MS, Frazee High School, Frazee MS, Grafton, Grafton MS, Hatton-Northwood, Hatton-Northwood MS, Lakeview High School, Langdon Area/Munich, Langdon Area/Munich MS, Lisbon, Lisbon MS, Maple River, May-Port CG, May-Port CG MS, Minnewaska Area, Minnewaska Area MS, Minot North, Moorhead, Moorhead MS, Nevis, Nevis MS, Northern Cass, Northern Cass MS, Oak Grove, Oak Grove Lutheran MS, Ottertail Central, Ottertail Central MS, Pahrump Valley HS, Parkers Prairie High School, Parkers Prairie MS, Park Rapids Area, Park Rapids Area MS, Pierz, Pierz MS, Ramstad MS, Riverside Christian, Riverside Christian MS, Sargent Central/Lidgerwood/Oakes, Staples-Motley, Staples-Motley MS, St. Cloud Cathedral, St. Cloud Cathedral MS, Unattached MS, West Central Area, West Central Area MS</td>
+                                        <td>59</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/03</td>
+                                        <td><a href="/event/1007">58th Ames - Kirk Schmaltz CC Invite Boys</a></td>
+                                        <td>Ames, Ankeny, Ankeny Centennial, Dallas Center-Grimes, Des Moines Christian, Des Moines, Lincoln, Des Moines, North, Des Moines, Roosevelt, Indianola, Lewis Central, Marshalltown, Mason City, Mount Vernon-Lisbon, Norwalk, Red Oak, Southeast Polk, Urbandale, Van Meter, Waukee, Waukee, Northwest</td>
+                                        <td>20</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/03</td>
+                                        <td><a href="/event/1008">South Hardin XC 2026</a></td>
+                                        <td>Aplington-Parkersburg, BCLUW, Conrad, Dike-New Hartford, East Marshall, LeGrand, Gladbrook-Reinbeck, GMG, Garwin, Grundy Center, Hudson, Janesville, Jesup, Meskwaki Settlement School, South Hardin, West Marshall, State Center</td>
+                                        <td>13</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/03</td>
+                                        <td><a href="/event/1009">Keokuk Invitational</a></td>
+                                        <td>Burlington, Carthage MS, Central Lee, Donnellson, Central Lee, Donnellson MS, Clark County, Clark County MS, Fort Madison, Fort Madison MS, Holy Trinity Catholic, Fort Madison, Holy Trinity Catholic, Fort Madison MS, Keokuk, Keokuk MS, Mendon (Unity), Mendon Unity MS, Notre Dame / West Burlington, Notre Dame / West Burlington MS, Palmyra, Palmyra MS</td>
+                                        <td>18</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/03</td>
+                                        <td><a href="/event/1004">Bondurant CC Invite</a></td>
+                                        <td>Bondurant-Farrar, Boone, Carlisle, North Polk, Alleman, Winterset</td>
+                                        <td>5</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/03</td>
+                                        <td><a href="/event/1006">Iowa Great Lakes XC</a></td>
+                                        <td>Carroll, Carroll MS, Cherokee, Washington, Cherokee, Washington MS, Denison-Schleswig, Emmetsburg, Emmetsburg MS, Estherville Lincoln Central, Estherville Lincoln Central MS, Forest City, George-Little Rock/Central Lyon, George-Little Rock/Central Lyon MS, GTRA, GTRA MS, Harris-Lake Park, Harris-Lake Park MS, Hartley-Melvin-Sanborn, Hartley-Melvin-Sanborn MS, Kuemper Catholic, Carroll, Lake Mills, Lawton-Bronson, MMCRU, MMCRU MS, North Union, North Union MS, OABCIG, Okoboji, Okoboji MS, Sheldon, Sheldon MS, Sibley-Ocheyedan, Sioux Center, Sioux Center MS, Sioux Central, Sioux Rapids, South O&#39;Brien, Paullina, South O&#39;Brien, Paullina MS, Spencer, Spirit Lake, Spirit Lake MS, Storm Lake, Storm Lake MS, West Bend-Mallard, West Bend-Mallard MS</td>
+                                        <td>43</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/03</td>
+                                        <td><a href="/event/1005">West Central Valley CC Invite</a></td>
+                                        <td>CAM, Anita, Creston, Des Moines, Hoover, Greene County, Nodaway Valley, Saydel, West Central Valley, Stuart</td>
+                                        <td>7</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/01</td>
+                                        <td><a href="/event/979">2026 Oelwein Invitational</a></td>
+                                        <td>Alburnett, Beckman Catholic, Dyersville, Cascade, Western Dubuque, Cedar Ridge Christian, Center Point-Urbana, Columbus Catholic, Waterloo, Crestwood, Cresco, Decorah, Dunkerton, Edgewood-Colesburg, Maquoketa Valley, Delhi, New Hampton, North-Linn, Troy Mills, Oelwein, Sumner-Fredericksburg, Tripoli, Union, LaPorte City, Vinton-Shellsburg, Wapsie Valley, Fairbank, Waterloo United, West Delaware, Manchester</td>
+                                        <td>21</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/01</td>
+                                        <td><a href="/event/978">Newman Catholic Invitational</a></td>
+                                        <td>Bishop Garrigan, Algona, Central Springs, Clear Lake Classical, Clear Lake Classical MS, Garner-Hayfield-Ventura, Garner-Hayfield-Ventura MS, Iowa Falls - Alden/AGWSR, Newman Catholic, Mason City, Newman Catholic, Mason City MS, North Butler, Greene, North Iowa, Buffalo Center, North Iowa, Buffalo Center MS, Northwood-Kensett, Northwood-Kensett MS, Osage, Osage MS, Rockford, Rockford MS, Saint Ansgar, Saint Ansgar MS, Waverly-Shell Rock, West Fork, Sheffield, West Fork, Sheffield MS, West Hancock, Britt</td>
+                                        <td>25</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/01</td>
+                                        <td><a href="/event/992">Bruess Invitational</a></td>
+                                        <td>Albany, Beloit Memorial, Beloit Turner, Charis Classical Academy, Delavan-Darien, Dodge-Point, East Dubuque, Edgerton, Edgewood, Holy Family, Madison Country Day, Monroe, Mount Horeb, New Glarus/Monticello, Shullsburg/Belmont, St. Ambrose Academy, Stockton, Wahlert, Dubuque</td>
+                                        <td>18</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/01</td>
+                                        <td><a href="/event/991">Webster City Lynx CC Invite</a></td>
+                                        <td>Algona, Atlantic, Ballard, Belmond-Klemme, Clarion-Goldfield-Dows, Eagle Grove, Fort Dodge, Gilbert, Hampton-Dumont -CAL, Humboldt, Manson Northwest Webster, Nevada, Roland-Story, Story City, Southeast Valley, Gowrie, South Hamilton, Jewell, St. Edmond, Fort Dodge, Waverly-Shell Rock, Webster City</td>
+                                        <td>18</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/01</td>
+                                        <td><a href="/event/983">BHRV Night Hawk</a></td>
+                                        <td>Akron-Westfield, Akron-Westfield MS, Boyden-Hull/Rock Valley, Boyden-Hull/Rock Valley MS, Gehlen Catholic, LeMars, Sergeant Bluff-Luton, Sergeant Bluff-Luton MS, Trinity Christian, Unity Christian, Orange City, Unity Christian, Orange City MS, WC-KP MS, Western Christian, Hull, Western Christian, Hull MS, West Lyon, Inwood, West Lyon, Inwood MS, West Sioux, Hawarden, West Sioux, Hawarden MS, Woodbury Central, Moville</td>
+                                        <td>18</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/01</td>
+                                        <td><a href="/event/982">East Sac County CC Invite</a></td>
+                                        <td>East Sac County, MVAOCOU, Newell-Fonda, Pocahontas Area, South Central Calhoun, West Bend-Mallard</td>
+                                        <td>6</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/01</td>
+                                        <td><a href="/event/981">Dakota Valley XC Invite</a></td>
+                                        <td>Beresford, Beresford MS, Canton, Canton MS, Dakota Valley, Dakota Valley MS, Elk Point-Jefferson, Elk Point-Jefferson MS, Irene-Wakonda, Irene-Wakonda MS, Lawton-Bronson, Lawton-Bronson MS, Sioux City, West, Siouxland Christian, Siouxland Christian MS</td>
+                                        <td>15</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>09/01</td>
+                                        <td><a href="/event/980">8th Woodward-Granger Invitational</a></td>
+                                        <td>ACGC, CAM, Anita, Clarke, Osceola, Collins-Maxwell, Perry, Saydel, Woodward-Granger</td>
+                                        <td>7</td>
+                                    </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="week-section">
+                    <div class="week-header">
+                        <h4 class="mb-0">
+                            Week 1
+                            <span class="event-count">27 events</span>
+                            <span class="week-toggle">▼</span>
+                        </h4>
+                        <small class="text-muted">
+                            Starting August 24, 2026
+                        </small>
+                    </div>
+                    <div class="week-content" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm week-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Event</th>
+                                        <th>Schools</th>
+                                        <th># Schools</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                    <tr>
+                                        <td>08/29</td>
+                                        <td><a href="/event/977">Seminole Valley Classic</a></td>
+                                        <td>Alburnett, Cedar Rapids, Jefferson, Cedar Rapids, Kennedy, Cedar Rapids, Washington, Linn-Mar, Marion, Solon, Springville, Xavier, Cedar Rapids</td>
+                                        <td>8</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/29</td>
+                                        <td><a href="/event/971">Glenwood Invite</a></td>
+                                        <td>Atlantic, Clarinda, Clarinda MS, Council Bluffs, Thomas Jefferson, Creston, East Mills, East Mills MS, East Union, Afton, Essex, Glenwood, Glenwood MS, Harlan Community, Heartland Christian, Heartland Christian MS, Kirn Middle School, Kuemper Catholic, Carroll, Latter Day Saints School MS, Mary Our Queen MS, Red Oak, Riverside, Oakland, Riverside, Oakland MS, Shenandoah, Shenandoah MS, St. Albert, Council Bluffs, St. Columbkille MS, St. James/Seton MS, St Pats MS, St. Stephen the Martyr MS, St. Wenceslaus MS</td>
+                                        <td>29</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/29</td>
+                                        <td><a href="/event/973">Dragon Sunrise XC Invite</a></td>
+                                        <td>ADM, Adel, Bondurant-Farrar, Boone, Chariton, Dallas Center-Grimes, Des Moines Christian, Des Moines Prep, Des Moines, Roosevelt, Dowling Catholic, West Des Moines, Earlham, Indianola, Johnston, Martensdale-St Marys, Mason City, North Polk, Alleman, Ogden, Southeast Polk, Urbandale, Waukee, Winterset</td>
+                                        <td>20</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/29</td>
+                                        <td><a href="/event/974">2026 CR Prairie Invitational</a></td>
+                                        <td>Cedar Falls, Central Lee, Donnellson, Clear Creek Amana, CR Prairie MS, Davenport, West, Dubuque, Senior, Epworth, Western Dubuque, Fort Madison, Iowa City, City High, Linn-Mar, Marion, Marion, Monticello, Muscatine, Pella, Prairie, Cedar Rapids, Regis-LaSalle MS, West Liberty, Williamsburg</td>
+                                        <td>18</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/29</td>
+                                        <td><a href="/event/970">Anamosa August XC 2026</a></td>
+                                        <td>Anamosa, Cedar Ridge Christian, Louisa-Muscatine, Sumner-Fredericksburg, Tipton, Union, LaPorte City, Washington</td>
+                                        <td>7</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/28</td>
+                                        <td><a href="/event/968">Auburn CC Invite</a></td>
+                                        <td>Auburn, Auburn MS, Cornerstone Christian, Cornerstone Christian MS, Falls City, Falls City MS, Humboldt-Table Rock-Steinauer, Humboldt-Table Rock-Steinauer MS, Louisville, Louisville MS, Nebraska City, Nebraska City MS, Platteview, Platteview MS, Sandy Creek, Sidney, Sidney MS</td>
+                                        <td>17</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/966">2026 XC Spartan Earlybird</a></td>
+                                        <td>Baxter, B-G-M, Brooklyn, Colfax-Mingo, Collins-Maxwell, Colo-NESCO, Lynnville-Sully, Montezuma</td>
+                                        <td>7</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/962">2026 Hempstead XC</a></td>
+                                        <td>Cascade, Western Dubuque, Central DeWitt, Dubuque, Hempstead, Maquoketa, Wahlert, Dubuque</td>
+                                        <td>5</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/960">IFA/AGWSR</a></td>
+                                        <td>Aplington-Parkersburg, Belmond-Klemme, Clear Lake, Dike-New Hartford, Eagle Grove, East Marshall, LeGrand, Hampton-Dumont -CAL, Iowa Falls - Alden/AGWSR, Newman Catholic, Mason City, South Hamilton, Jewell, South Hardin</td>
+                                        <td>11</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/958">2026 Calamus-Wheatland Invitational</a></td>
+                                        <td>Bellevue, Calamus-Wheatland, Calamus-Wheatland MS, Camanche, Camanche MS, Cedar Rapids Prep, Coram Deo Academy, Durant, Durant MS, Marquette Catholic, Bellevue, Midland, Wyoming, North Cedar, Stanwood, North Cedar, Stanwood MS, Northeast, Goose Lake, Northeast, Goose Lake MS, Wilton</td>
+                                        <td>17</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/957">Albia CC Invitational</a></td>
+                                        <td>Albia, Albia MS, Cardinal, Eldon, Centerville, Centerville MS, Davis County, Bloomfield, Grand View Christian School, Kirksville, Knoxville, Melcher-Dallas, Moravia, Moravia MS, Pekin, Pekin MS, Van Buren County, Wayne, Corydon</td>
+                                        <td>16</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/956">Southeast Valley Invitational</a></td>
+                                        <td>ACGC, Ar-We-Va, Westside, East Sac County, Fort Dodge, Greene County, Madrid, Manson Northwest Webster, Newell-Fonda, OABCIG, Panorama, Panora, Perry, South Central Calhoun, Southeast Valley, Gowrie, St. Edmond, Fort Dodge, West Bend-Mallard, West Central Valley, Stuart, Woodward Academy</td>
+                                        <td>17</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/955">Spencer XC Invite</a></td>
+                                        <td>Algona, Bishop Garrigan, Algona, Boyden-Hull/Rock Valley, Emmetsburg, Estherville Lincoln Central, GTRA, Le Mars, MOC-Floyd Valley, North Union, Okoboji, Sheldon, Spencer, Spirit Lake, Storm Lake, Western Christian, Hull</td>
+                                        <td>15</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/953">Trojan Early Bird</a></td>
+                                        <td>Bettendorf, Danville, Iowa City, Liberty, Iowa City, West, Linn-Mar, Marion</td>
+                                        <td>5</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/952">Deb Hankens XC Meet</a></td>
+                                        <td>Alta-Aurelia, Cherokee, Washington, Gehlen Catholic, LeMars, Hartley-Melvin-Sanborn, MVAOCOU, Pocahontas Area, Ridge View, Sibley-Ocheyedan, South O&#39;Brien, Paullina, West Lyon, Inwood, West Monona, Onawa, Woodbury Central, Moville</td>
+                                        <td>12</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/951">2026 Charles City Invitational</a></td>
+                                        <td>Central Springs, Charles City, Clarion-Goldfield-Dows, Crestwood, Cresco, Denver, Don Bosco, Gilbertville, Forest City, Hudson, Janesville, Jesup, New Hampton, North Fayette Valley, Riceville</td>
+                                        <td>13</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/950">18th Marshalltown Early Bird XC</a></td>
+                                        <td>Belle Plaine, Carlisle, Des Moines, Roosevelt, Gladbrook-Reinbeck, Grundy Center, Marshalltown, Newton, North Mahaska, New Sharon, Ottumwa, Pella Christian, South Tama County, Tama, Waterloo United, Webster City</td>
+                                        <td>13</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/27</td>
+                                        <td><a href="/event/949">Sioux City Heelan XC Invite</a></td>
+                                        <td>Bishop Heelan Catholic, Sioux City, Council Bluffs, Abraham Lincoln, Lewis Central, Sergeant Bluff-Luton, Sioux City, East, Sioux City, North, Sioux City, West, South Sioux City, West Sioux, Hawarden, Westwood, Sloan</td>
+                                        <td>10</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/25</td>
+                                        <td><a href="/event/940">Shenandoah Early Bird XC</a></td>
+                                        <td>AHSTW, Avoca, Clarinda, Creston, East Mills, Essex, Fremont-Mills, Tabor, Harlan Community, Lenox, Shenandoah, Stanton, Treynor, Tri-Center, Neola, Underwood</td>
+                                        <td>13</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/25</td>
+                                        <td><a href="/event/943">14th Ankeny Centennial XC Invite</a></td>
+                                        <td>Ankeny, Ankeny Centennial, Dallas Center-Grimes, Des Moines, North, Norwalk, Valley, West Des Moines, Waukee, Waukee, Northwest</td>
+                                        <td>8</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/25</td>
+                                        <td><a href="/event/942">MVL Invitational</a></td>
+                                        <td>Center Point-Urbana, Mid-Prairie, Wellman, Mount Vernon-Lisbon, North Scott, Eldridge, Urbandale, Vinton-Shellsburg, West Delaware, Manchester, West Liberty</td>
+                                        <td>8</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/25</td>
+                                        <td><a href="/event/939">Davenport City Meet</a></td>
+                                        <td>Assumption, Davenport, Davenport, Central, Davenport, North, Davenport, West</td>
+                                        <td>4</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/25</td>
+                                        <td><a href="/event/937">Hinton XC Invite</a></td>
+                                        <td>Akron-Westfield, Gehlen Catholic, LeMars, Hinton, Hinton MS, Trinity Christian, West Sioux, Hawarden, West Sioux, Hawarden MS</td>
+                                        <td>7</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/25</td>
+                                        <td><a href="/event/941">2026 Edgewood-Colesburg Invitational</a></td>
+                                        <td>Alburnett, Beckman Catholic, Dyersville, Central, Elkader, Dunkerton, Edgewood-Colesburg, Kee, Lansing, Maquoketa Valley, Delhi, MFL MarMac, Postville, South Winneshiek, Calmar, Starmont, Turkey Valley, Jackson Junction, Waterloo United, Waukon</td>
+                                        <td>14</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/24</td>
+                                        <td><a href="/event/933">Knoxville Early Bird</a></td>
+                                        <td>Eddyville-Blakesburg-Fremont, Knoxville, PCM, Pekin</td>
+                                        <td>4</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/24</td>
+                                        <td><a href="/event/935">Moline Cross Country Season Opener 2026</a></td>
+                                        <td>Bettendorf, East Moline (United), Galesburg, Geneseo, Moline, Quincy, Riverdale, Rock Island, Rock Island (Alleman), Taylor Ridge (Rockridge)</td>
+                                        <td>10</td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td>08/24</td>
+                                        <td><a href="/event/934">2026 Waverly-Shell Rock Earlybird Invitational</a></td>
+                                        <td>Decorah, Waverly-Shell Rock, West Marshall, State Center</td>
+                                        <td>3</td>
+                                    </tr>
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+            
+        </div>
+    </div>
+</div>
+
+
+    
+
+
+    <script src="/static/bootstrap/jquery.min.js?bootstrap=3.3.7.1.dev1"></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js?bootstrap=3.3.7.1.dev1"></script>
+<script src="/static/js/pins.js"></script>
+<!-- <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.js"></script>
+<script>
+    $(document).ready( function () {
+        $('datatable-auto').DataTable({
+            "pageLength": 15,
+            "order": [[0, 'asc']],
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "responsive": true
+        });
+    });
+</script> -->
+
+<script>
+// Small in-page toast, reusing the existing cache-status element. Exists so
+// PWA feedback never has to reach for a blocking alert()/confirm().
+function showAppToast(message, ms) {
+    const box = document.getElementById('pwaCacheStatus');
+    const text = document.getElementById('cacheStatusText');
+    if (!box || !text) { return; }
+    const spinner = box.querySelector('.cache-spinner');
+    if (spinner) { spinner.style.display = 'none'; }
+    text.textContent = message;
+    box.classList.add('show');
+    clearTimeout(showAppToast._t);
+    showAppToast._t = setTimeout(function () {
+        box.classList.remove('show');
+    }, ms || 4000);
+}
+</script>
+
+<!-- PWA Service Worker Registration -->
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        // Show cache status indicator
+        const cacheStatus = document.getElementById('pwaCacheStatus');
+        const cacheStatusText = document.getElementById('cacheStatusText');
+        
+        // Show initial caching status
+        if (!localStorage.getItem('pwa-cached')) {
+            cacheStatus.classList.add('show');
+        }
+        
+        // Registered from the app root (see routes/system_routes.py) so the
+        // worker's scope is '/' and it can actually control page navigations.
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(function(registration) {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                
+                // Listen for service worker updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    if (newWorker) {
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    // SW updated
+                                    cacheStatusText.textContent = 'App updated! Refresh to see changes.';
+                                    setTimeout(() => {
+                                        cacheStatus.classList.remove('show');
+                                    }, 3000);
+                                } else {
+                                    // SW installed for first time
+                                    cacheStatusText.textContent = 'App ready for offline use!';
+                                    localStorage.setItem('pwa-cached', 'true');
+                                    setTimeout(() => {
+                                        cacheStatus.classList.remove('show');
+                                    }, 2000);
+                                }
+                            }
+                        });
+                    }
+                });
+                
+                // Hide status after initial load if already cached
+                if (localStorage.getItem('pwa-cached')) {
+                    setTimeout(() => {
+                        cacheStatus.classList.remove('show');
+                    }, 1000);
+                } else {
+                    // First time - show caching progress for longer
+                    setTimeout(() => {
+                        cacheStatusText.textContent = 'Almost done optimizing...';
+                        setTimeout(() => {
+                            cacheStatusText.textContent = 'App ready for faster loading!';
+                            localStorage.setItem('pwa-cached', 'true');
+                            setTimeout(() => {
+                                cacheStatus.classList.remove('show');
+                            }, 2000);
+                        }, 3000);
+                    }, 2000);
+                }
+            })
+            .catch(function(error) {
+                console.log('ServiceWorker registration failed: ', error);
+                cacheStatus.classList.remove('show');
+            });
+    });
+}
+
+// PWA Install Banner Logic
+let deferredPrompt;
+const installBanner = document.getElementById('pwaInstallBanner');
+const installBtn = document.getElementById('installBtn');
+const dismissBtn = document.getElementById('dismissBtn');
+const closeBtn = document.getElementById('closeBtn');
+
+// Check if user has dismissed banner recently
+function shouldShowBanner() {
+    const dismissed = localStorage.getItem('pwa-banner-dismissed');
+    const dismissCount = parseInt(localStorage.getItem('pwa-banner-dismiss-count') || '0');
+    
+    // Don't show if dismissed more than 3 times
+    if (dismissCount >= 3) {
+        return false;
+    }
+    
+    // Don't show if dismissed within last 24 hours
+    if (dismissed) {
+        const dismissedTime = new Date(dismissed);
+        const now = new Date();
+        const hoursSinceDismissed = (now - dismissedTime) / (1000 * 60 * 60);
+        if (hoursSinceDismissed < 24) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Show install banner
+function showInstallBanner() {
+    if (installBanner && shouldShowBanner()) {
+        installBanner.style.display = 'block';
+        
+        // Add bottom padding to body to prevent content overlap
+        document.body.style.paddingBottom = installBanner.offsetHeight + 'px';
+    }
+}
+
+// Hide install banner
+function hideInstallBanner() {
+    if (installBanner) {
+        installBanner.style.display = 'none';
+        document.body.style.paddingBottom = '0';
+    }
+}
+
+// Handle beforeinstallprompt event
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    
+    console.log('PWA install prompt available');
+    
+    // Show our custom install banner
+    showInstallBanner();
+});
+
+// Handle install button click
+if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            // Show the install prompt
+            deferredPrompt.prompt();
+            
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+            } else {
+                console.log('User dismissed the install prompt');
+            }
+            
+            // Clear the deferredPrompt for next time
+            deferredPrompt = null;
+            hideInstallBanner();
+        }
+    });
+}
+
+// Handle dismiss button click (temporary dismissal)
+if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+        localStorage.setItem('pwa-banner-dismissed', new Date().toISOString());
+        hideInstallBanner();
+    });
+}
+
+// Handle close button click (permanent dismissal after 3 times)
+if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+        const currentCount = parseInt(localStorage.getItem('pwa-banner-dismiss-count') || '0');
+        localStorage.setItem('pwa-banner-dismiss-count', (currentCount + 1).toString());
+        localStorage.setItem('pwa-banner-dismissed', new Date().toISOString());
+        hideInstallBanner();
+    });
+}
+
+// Handle successful installation
+window.addEventListener('appinstalled', (evt) => {
+    console.log('PWA was installed successfully');
+    hideInstallBanner();
+    
+    // Confirmation shown in-page. This used to be a blocking confirm()
+    // dialog, which is a poor fit for an informational message on mobile.
+    setTimeout(() => {
+        showAppToast('Installed. Cross Country Ratings is on your home screen.');
+    }, 1000);
+});
+
+// Check if already installed (Android Chrome)
+window.addEventListener('DOMContentLoaded', () => {
+    // Don't show banner if already installed
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('PWA is already installed');
+        return;
+    }
+    
+    // Check for iOS Safari
+    if (window.navigator.standalone === true) {
+        console.log('PWA is already installed on iOS');
+        return;
+    }
+    
+    // For browsers that don't support beforeinstallprompt (like iOS Safari)
+    // Show a different message or instructions
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+    
+    if (isIOS && isSafari && shouldShowBanner()) {
+        // Modify banner text for iOS Safari
+        setTimeout(() => {
+            const bannerTitle = document.querySelector('.banner-title');
+            const bannerSubtitle = document.querySelector('.banner-subtitle');
+            const installBtn = document.getElementById('installBtn');
+            
+            if (bannerTitle && bannerSubtitle && installBtn) {
+                bannerTitle.innerHTML = '<i class="fas fa-share"></i> Add to Home Screen';
+                bannerSubtitle.textContent = 'Tap the share button and select "Add to Home Screen"';
+                installBtn.textContent = 'Show Me How';
+                installBtn.onclick = () => {
+                    // Expand the banner in place rather than firing a native
+                    // alert(), which blocks the page and looks like a browser
+                    // warning rather than a helpful hint.
+                    bannerSubtitle.innerHTML =
+                        '1. Tap <i class="fas fa-share"></i> in the Safari toolbar<br>' +
+                        '2. Scroll down and tap "Add to Home Screen"<br>' +
+                        '3. Tap "Add" to confirm';
+                    installBtn.textContent = 'Got it';
+                    installBtn.onclick = hideInstallBanner;
+                };
+                showInstallBanner();
+            }
+        }, 2000);
+    }
+});
+
+// PRE-EXISTING SYNTAX ERROR, FIXED.
+// Everything from here to the matching `});` below was orphaned at the top
+// level by the `});` above, and then closed by a second `});` that had
+// nothing left to close. That unmatched brace was a hard SyntaxError, so the
+// browser discarded this entire ~26KB <script> block - service worker
+// registration, the install banner, the privacy notice, the back button, the
+// help tooltips and the state filter all silently never ran. Giving this
+// section its own listener makes the trailing `});` balance again.
+document.addEventListener('DOMContentLoaded', () => {
+
+    // Handle privacy notice
+    const privacyNotice = document.getElementById('privacyNotice');
+    const privacyBtn = document.getElementById('privacyOk');
+    
+    // Show privacy notice if not acknowledged
+    if (privacyNotice && !localStorage.getItem('privacy-acknowledged')) {
+        setTimeout(() => {
+            privacyNotice.classList.add('show');
+        }, 3000); // Show after 3 seconds
+    }
+    
+    // Handle privacy notice acknowledgment
+    if (privacyBtn) {
+        privacyBtn.addEventListener('click', () => {
+            localStorage.setItem('privacy-acknowledged', 'true');
+            privacyNotice.classList.remove('show');
+        });
+    }
+    
+    // PWA Back Button Logic
+    const pwaBackButton = document.getElementById('pwaBackButton');
+    if (!pwaBackButton) { return; }
+
+    function updateBackButtonVisibility() {
+        // Show back button if there is a history to go back to
+        if (window.history.length > 1) {
+            pwaBackButton.classList.add('show');
+        } else {
+            pwaBackButton.classList.remove('show');
+        }
+    }
+    
+    // Initial check
+    updateBackButtonVisibility();
+    
+    // Listen for popstate event to update back button visibility
+    window.addEventListener('popstate', () => {
+        updateBackButtonVisibility();
+    });
+    
+    // Handle back button click
+    pwaBackButton.addEventListener('click', () => {
+        window.history.back();
+    });
+});
+
+// PWA Navigation System
+class PWANavigation {
+    constructor() {
+        this.navigationStack = [];
+        // Get page context from Flask if available
+        this.pageContext = window.pageContext || {};
+        this.initializeNavigation();
+        this.setupEventListeners();
+    }
+    
+    initializeNavigation() {
+        // Initialize navigation stack with current page
+        this.navigationStack = [
+            {
+                url: window.location.pathname + window.location.search,
+                title: document.title,
+                timestamp: Date.now()
+            }
+        ];
+        
+        // Update back button visibility
+        this.updateBackButton();
+        this.updateBreadcrumb();
+    }
+    
+    setupEventListeners() {
+        const backButton = document.getElementById('pwaBackButton');
+        
+        // Back button click handler
+        if (backButton) {
+            backButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.goBack();
+            });
+        }
+        
+        // Handle navigation events
+        window.addEventListener('popstate', (e) => {
+            this.handlePopState(e);
+        });
+        
+        // Track page changes for navigation stack
+        let lastUrl = location.href;
+        new MutationObserver(() => {
+            const url = location.href;
+            if (url !== lastUrl) {
+                lastUrl = url;
+                this.addToNavigationStack(url, document.title);
+            }
+        }).observe(document, { subtree: true, childList: true });
+        
+        // Override link clicks to track navigation
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (link && link.href && !link.target && link.hostname === window.location.hostname) {
+                // Don't track external links, anchor links, or links with targets
+                if (!link.href.includes('#') && !link.download) {
+                    this.trackNavigation(link.href, link.textContent.trim());
+                }
+            }
+        });
+    }
+    
+    trackNavigation(url, title) {
+        // Add small delay to allow page navigation to complete
+        setTimeout(() => {
+            this.addToNavigationStack(url, title || document.title);
+        }, 100);
+    }
+    
+    addToNavigationStack(url, title) {
+        const currentPath = url.replace(window.location.origin, '');
+        const lastEntry = this.navigationStack[this.navigationStack.length - 1];
+        
+        // Don't add duplicate entries
+        if (lastEntry && lastEntry.url === currentPath) {
+            return;
+        }
+        
+        // Limit stack size to prevent memory issues
+        if (this.navigationStack.length > 20) {
+            this.navigationStack.shift();
+        }
+        
+        this.navigationStack.push({
+            url: currentPath,
+            title: title || 'Page',
+            timestamp: Date.now()
+        });
+        
+        this.updateBackButton();
+        this.updateBreadcrumb();
+    }
+    
+    goBack() {
+        if (this.canGoBack()) {
+            // Remove current page from stack
+            this.navigationStack.pop();
+            
+            if (this.navigationStack.length > 0) {
+                const previousPage = this.navigationStack[this.navigationStack.length - 1];
+                window.location.href = previousPage.url;
+            } else {
+                // Fallback to home if no navigation history
+                window.location.href = '/';
+            }
+        } else {
+            // Use browser back if available, otherwise go home
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
+        }
+    }
+    
+    canGoBack() {
+        return this.navigationStack.length > 1;
+    }
+    
+    updateBackButton() {
+        const backButton = document.getElementById('pwaBackButton');
+        if (backButton) {
+            if (this.canGoBack() || window.history.length > 1) {
+                backButton.classList.add('show');
+            } else {
+                backButton.classList.remove('show');
+            }
+        }
+    }
+    
+    updateBreadcrumb() {
+        const breadcrumb = document.getElementById('pwaBreadcrumb');
+        const breadcrumbList = document.getElementById('breadcrumbList');
+        
+        if (!breadcrumb || !breadcrumbList) return;
+        
+        // Only show breadcrumb on deeper pages
+        if (this.navigationStack.length > 1) {
+            breadcrumbList.innerHTML = '';
+            
+            // Show up to last 3 pages in breadcrumb
+            const recentPages = this.navigationStack.slice(-3);
+            
+            recentPages.forEach((page, index) => {
+                const li = document.createElement('li');
+                
+                if (index === recentPages.length - 1) {
+                    // Current page
+                    li.innerHTML = `<span class="current">${this.getPageDisplayName(page)}</span>`;
+                } else {
+                    // Previous pages
+                    li.innerHTML = `<a href="${page.url}">${this.getPageDisplayName(page)}</a>`;
+                }
+                
+                breadcrumbList.appendChild(li);
+            });
+            
+            breadcrumb.style.display = 'block';
+        } else {
+            breadcrumb.style.display = 'none';
+        }
+    }
+    
+    getPageDisplayName(page) {
+        // Extract meaningful page names from URLs and titles
+        const url = page.url;
+        const title = page.title;
+        
+        if (url === '/' || url === '') return 'Home';
+        if (url.includes('/results')) return 'Results';
+        if (url.includes('/individuals')) return 'Individual Rankings';
+        if (url.includes('/teams')) return 'Team Rankings';
+        if (url.includes('/search')) return 'Search';
+        if (url.includes('/forecast')) return 'Forecast';
+        if (url.includes('/contact')) return 'Contact';
+        if (url.includes('/school/')) return title.split(' - ')[0] || 'School';
+        if (url.includes('/runner/')) return title.split(' - ')[0] || 'Runner';
+        if (url.includes('/race/')) return 'Race Results';
+        if (url.includes('/event/')) return 'Event';
+        
+        // Fallback to title or URL
+        return title.split(' - ')[0] || url.replace(/^\//, '').replace(/\//g, ' › ');
+    }
+}
+
+// Initialize PWA Navigation when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Only initialize in standalone PWA mode or when explicitly needed
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+        new PWANavigation();
+    } else {
+        // Also initialize for mobile browsers that might benefit from back button
+        if (window.innerWidth <= 768) {
+            new PWANavigation();
+        }
+    }
+    
+    // Initialize Clarity-specific features
+    initializeClarityFeatures();
+});
+
+// Microsoft Clarity Enhancement Functions (Performance Optimized)
+function initializeClarityFeatures() {
+    // Only proceed if Clarity is available and enabled
+    if (typeof clarity === 'undefined' || window.clarity === null) return;
+    
+    // Throttled event tracking to prevent performance issues
+    let lastEventTime = 0;
+    const EVENT_THROTTLE = 100; // milliseconds
+    
+    function throttledClarityEvent(eventName, data = {}) {
+        const now = Date.now();
+        if (now - lastEventTime > EVENT_THROTTLE) {
+            clarity('event', eventName, data);
+            lastEventTime = now;
+        }
+    }
+    
+    // Track forecast usage (specific form only)
+    const forecastForm = document.querySelector('[data-clarity-region="forecast-form"]');
+    if (forecastForm) {
+        forecastForm.addEventListener('submit', function() {
+            throttledClarityEvent('forecast_created');
+        });
+    }
+    
+    // Track search usage (optimized with longer debounce)
+    const searchInputs = document.querySelectorAll('input[type="search"], input[name*="search"]');
+    if (searchInputs.length > 0) {
+        searchInputs.forEach(input => {
+            input.addEventListener('keyup', debounce(function() {
+                if (this.value.length > 3) { // Increased threshold
+                    throttledClarityEvent('search_performed');
+                }
+            }, 2000)); // Increased debounce
+        });
+    }
+    
+    // Lightweight navigation tracking (use event delegation)
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a[data-clarity-click]');
+        if (link) {
+            const action = link.getAttribute('data-clarity-click');
+            throttledClarityEvent('navigation_click', { action: action });
+        }
+    });
+    
+    // Critical form interactions only (reduced tracking)
+    const criticalForms = document.querySelectorAll('[data-clarity-region="forecast-form"], [data-clarity-region="contact-form"]');
+    criticalForms.forEach(form => {
+        form.addEventListener('focusin', debounce(function(e) {
+            if (e.target.matches('input, select, textarea')) {
+                const region = form.getAttribute('data-clarity-region');
+                throttledClarityEvent('form_focus', { region: region });
+            }
+        }, 1000), true);
+    });
+    
+    // Show privacy controls only in development (performance guard)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const controls = document.getElementById('clarityPrivacyControls');
+        if (controls) {
+            controls.classList.add('show');
+        }
+    }
+}
+
+// Utility function for debouncing
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Clarity privacy control functions
+function toggleClarityRecording() {
+    if (typeof clarity !== 'undefined') {
+        const button = document.getElementById('toggleClarity');
+        const isPaused = button.textContent === 'Resume';
+        
+        if (isPaused) {
+            clarity('resume');
+            button.textContent = 'Pause';
+            console.log('Clarity recording resumed');
+        } else {
+            clarity('pause');
+            button.textContent = 'Resume';
+            console.log('Clarity recording paused');
+        }
+    }
+}
+
+function toggleMaskedElementsDisplay() {
+    const body = document.body;
+    const button = document.getElementById('showMaskedElements');
+    const isShowing = body.classList.contains('debug-clarity');
+    
+    if (isShowing) {
+        body.classList.remove('debug-clarity');
+        button.textContent = 'Show Masked';
+    } else {
+        body.classList.add('debug-clarity');
+        button.textContent = 'Hide Masked';
+    }
+}
+
+// Enhanced Clarity error tracking (optimized)
+window.addEventListener('error', function(e) {
+    if (typeof clarity !== 'undefined' && e.filename && !e.filename.includes('extension')) {
+        // Only track actual application errors, not browser extension errors
+        clarity('event', 'javascript_error', {
+            message: e.message.substring(0, 100), // Limit message length
+            filename: e.filename.split('/').pop(), // Only filename, not full path
+            lineno: e.lineno
+        });
+    }
+});
+
+// Help Tooltip System (Mobile-friendly with fixed positioning)
+document.addEventListener('DOMContentLoaded', function() {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    
+    // Function to position tooltip above the icon
+    function positionTooltip(tooltip) {
+        const content = tooltip.querySelector('.help-tooltip-content');
+        if (!content) return;
+        
+        const rect = tooltip.getBoundingClientRect();
+        const contentWidth = content.offsetWidth;
+        const contentHeight = content.offsetHeight;
+        
+        // Position above the icon, centered
+        let left = rect.left + (rect.width / 2) - (contentWidth / 2);
+        let top = rect.top - contentHeight - 8;
+        
+        // Keep tooltip within viewport
+        const padding = 10;
+        if (left < padding) left = padding;
+        if (left + contentWidth > window.innerWidth - padding) {
+            left = window.innerWidth - contentWidth - padding;
+        }
+        if (top < padding) {
+            // If no room above, show below
+            top = rect.bottom + 8;
+        }
+        
+        content.style.left = left + 'px';
+        content.style.top = top + 'px';
+    }
+    
+    document.querySelectorAll('.help-tooltip').forEach(function(tooltip) {
+        if (isMobile) {
+            // On mobile: tap to toggle
+            tooltip.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Close other tooltips
+                document.querySelectorAll('.help-tooltip.active').forEach(function(other) {
+                    if (other !== tooltip) {
+                        other.classList.remove('active');
+                    }
+                });
+                
+                // Toggle this tooltip
+                tooltip.classList.toggle('active');
+                
+                if (tooltip.classList.contains('active')) {
+                    positionTooltip(tooltip);
+                }
+            });
+        } else {
+            // On desktop: show on hover, position dynamically
+            tooltip.addEventListener('mouseenter', function() {
+                positionTooltip(tooltip);
+            });
+            
+            // Click to navigate to help article
+            const link = tooltip.querySelector('.help-tooltip-link');
+            if (link) {
+                tooltip.addEventListener('click', function(e) {
+                    if (e.target.tagName !== 'A') {
+                        window.location.href = link.href;
+                    }
+                });
+            }
+        }
+    });
+    
+    // Close tooltips when clicking outside (mobile)
+    if (isMobile) {
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.help-tooltip')) {
+                document.querySelectorAll('.help-tooltip.active').forEach(function(tooltip) {
+                    tooltip.classList.remove('active');
+                });
+            }
+        });
+    }
+    
+    // Reposition on window resize
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            document.querySelectorAll('.help-tooltip.active, .help-tooltip:hover').forEach(function(tooltip) {
+                positionTooltip(tooltip);
+            });
+        }, 100);
+    });
+});
+
+// Lightweight performance tracking (production-optimized)
+window.addEventListener('load', function() {
+    if (typeof clarity !== 'undefined' && 'performance' in window) {
+        // Delay to avoid impacting initial page load
+        setTimeout(() => {
+            try {
+                const perfData = performance.getEntriesByType('navigation')[0];
+                if (perfData && perfData.loadEventEnd > 0) {
+                    const loadTime = Math.round(perfData.loadEventEnd - perfData.fetchStart);
+                    // Only track if load time is reasonable (not cached/invalid)
+                    if (loadTime > 100 && loadTime < 30000) {
+                        clarity('event', 'page_performance', {
+                            load_time: loadTime,
+                            page_type: window.pageContext?.page_type || 'unknown'
+                        });
+                    }
+                }
+            } catch (e) {
+                // Silently fail if performance API is not available
+            }
+        }, 3000); // Increased delay to reduce impact
+    }
+});
+</script>
+
+<!-- Premium Users: Additional JavaScript-based ad blocking - TEMPORARILY DISABLED -->
+<!-- 
+
+-->
+
+<script>
+// Global state filter — save preference via API, then reload to apply
+(function () {
+    var select = document.getElementById('globalStateSelect');
+    if (!select) return;
+
+    // On phones the state filter lives inside the collapsed navbar menu, so
+    // changing states - the single most-used control on the site - costs two
+    // taps and is invisible until you open the hamburger. Relocate the control
+    // into the always-visible navbar header instead. Moving the existing node
+    // rather than rendering a second copy keeps one #globalStateSelect in the
+    // DOM, so the change handler below needs no special casing.
+    var filterItem = select.closest('.navbar-state-filter');
+    var navHeader = document.querySelector('.navbar-header');
+    var collapseMenu = document.getElementById('navbar');
+    var mobileQuery = window.matchMedia('(max-width: 767px)');
+
+    // On a 375px-wide navbar there is no room for "North Dakota" beside the
+    // wordmark and the hamburger, so the options collapse to their state
+    // codes on phones and are restored on wider screens.
+    var stateOptions = Array.prototype.slice.call(select.options);
+    stateOptions.forEach(function (opt) { opt.dataset.fullLabel = opt.textContent; });
+
+    function setOptionLabels(isMobile) {
+        stateOptions.forEach(function (opt) {
+            opt.textContent = isMobile
+                ? (opt.value || 'All')
+                : opt.dataset.fullLabel;
+        });
+    }
+
+    function placeStateFilter(isMobile) {
+        if (!filterItem || !navHeader || !collapseMenu) { return; }
+        setOptionLabels(isMobile);
+        if (isMobile) {
+            if (filterItem.parentElement !== navHeader) {
+                navHeader.appendChild(filterItem);
+                filterItem.classList.add('state-filter-in-header');
+            }
+        } else if (filterItem.classList.contains('state-filter-in-header')) {
+            // Put it back where the desktop navbar expects it.
+            var rightNav = collapseMenu.querySelector('.navbar-right');
+            if (rightNav) { rightNav.insertBefore(filterItem, rightNav.firstChild); }
+            filterItem.classList.remove('state-filter-in-header');
+        }
+    }
+
+    placeStateFilter(mobileQuery.matches);
+    // addEventListener on the query, with the deprecated addListener as a
+    // fallback for older iOS Safari.
+    if (mobileQuery.addEventListener) {
+        mobileQuery.addEventListener('change', function (e) { placeStateFilter(e.matches); });
+    } else if (mobileQuery.addListener) {
+        mobileQuery.addListener(function (e) { placeStateFilter(e.matches); });
+    }
+    select.addEventListener('change', function () {
+        var state = this.value;
+        fetch('/api/user/state-preference', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json',
+                      'X-CSRFToken': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''},
+            credentials: 'same-origin',
+            body: JSON.stringify({state: state})
+        }).then(function (r) {
+            if (r.ok) { window.location.reload(); }
+        }).catch(function () {
+            // Fallback: reload anyway so session still gets set on next request
+            window.location.reload();
+        });
+    });
+}());
+</script>
+
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.js"></script>
+<script>
+$(document).ready(function () {
+    // Initialize DataTables for each week's table
+    $('.week-table').each(function() {
+        if ($.fn.DataTable.isDataTable(this)) {
+            $(this).DataTable().destroy();
+        }
+        $(this).DataTable({
+            "order": [[0, "desc"]],
+            "pageLength": 10,
+            "searching": true,
+            "info": false,
+            "lengthMenu": [5, 10, 25]
+        });
+    });
+    
+    // Handle season selector change
+    $('#seasonSelector').change(function() {
+        const selectedSeason = $(this).val();
+        window.location.href = '/results?season=' + selectedSeason;
+    });
+    
+    // Handle week section collapsing
+    $('.week-header').click(function() {
+        const content = $(this).next('.week-content');
+        const toggle = $(this).find('.week-toggle');
+        
+        content.slideToggle();
+        toggle.toggleClass('collapsed');
+    });
+    
+    // Expand first week by default
+    $('.week-section:first .week-content').show();
+});
+</script>
+
+  <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3ee6a7f4f321a46',t:'MTc5MDA0OTc2Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

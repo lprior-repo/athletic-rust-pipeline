@@ -1,5 +1,6 @@
 use anyhow::{bail, Result};
-use restate_sdk::ingress::{ClientError, ReqwestClient};
+use census_crawl::ingress::Ingress;
+use restate_sdk::ingress::ClientError;
 use std::time::Duration;
 use url::{Host, Url};
 
@@ -28,15 +29,15 @@ const READ_TIMEOUT: Duration = Duration::from_secs(120);
 
 const JOB_TIMEOUT: Duration = Duration::from_secs(900);
 
-pub fn client(origin: &str) -> Result<ReqwestClient> {
+pub fn client(origin: &str) -> Result<Ingress> {
     build(origin, READ_TIMEOUT)
 }
 
-pub fn job_client(origin: &str) -> Result<ReqwestClient> {
+pub fn job_client(origin: &str) -> Result<Ingress> {
     build(origin, JOB_TIMEOUT)
 }
 
-fn build(origin: &str, timeout: Duration) -> Result<ReqwestClient> {
+fn build(origin: &str, timeout: Duration) -> Result<Ingress> {
     if origin.trim().is_empty() {
         bail!(
             "--ingress must name the Restate ingress origin (the local census node is {DEFAULT_ORIGIN}): \
@@ -49,7 +50,7 @@ fn build(origin: &str, timeout: Duration) -> Result<ReqwestClient> {
             "ingress origins must be loopback HTTP origins without credentials or paths: {origin}"
         );
     }
-    Ok(ReqwestClient::new(
+    Ok(census_crawl::ingress::client(
         url.as_str().parse()?,
         http_client(timeout)?,
     )?)

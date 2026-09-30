@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
-use census_report::report;
+use census_report::export::ExportDataset;
+use census_report::report::{self, Derivation};
 use census_report::{bests, workbook};
 use census_service::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
 use census_store::Store;
@@ -37,7 +38,9 @@ pub(super) fn run_report(store: &Store, print: bool, core: bool) -> Result<()> {
     } else {
         report::Scope::AllSources
     };
-    let census = report::build_census(store, scope)?;
+    let dataset = ExportDataset::load(store)?;
+    let derivation = Derivation::of(&dataset, scope, None);
+    let census = report::build_census(&derivation, &store.out_dir());
     let (json_path, csv_path) = report::write_census(store, &census, scope)?;
     println!("wrote {}", json_path.display());
     println!("wrote {}", csv_path.display());
@@ -133,7 +136,8 @@ fn run_bests_offline(store: &Store, args: &BestsArgs, grad_year: Option<i16>) ->
         grad_year,
         limit: args.limit,
     };
-    let rows = bests::build(store, &options).context("reducing the best marks")?;
+    let dataset = ExportDataset::load(store).context("reading export dataset for best marks")?;
+    let rows = bests::build_from_dataset(&dataset, &options);
     let cohort = cohort_label(grad_year);
     let (jsonl, csv) =
         bests::write(&store.out_dir(), &rows, &cohort).context("writing the best-mark sidecars")?;

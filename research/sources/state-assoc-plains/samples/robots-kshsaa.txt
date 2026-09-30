@@ -1,0 +1,12 @@
+User-agent: *
+Crawl-delay: 30
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: *
+Disallow:
+
+User-agent: *
+Disallow: /Arbiter/
+

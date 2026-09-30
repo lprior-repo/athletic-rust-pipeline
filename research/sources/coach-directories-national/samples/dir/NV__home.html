@@ -1,0 +1,989 @@
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head><meta name='description' content='The Nevada Interscholastic Activities Association is the governing body for interscholastic athletics and activities in the U.S. state of Nevada.'/><link href="/_Styles/3010/Config.css?v=20260921c" rel="stylesheet" type="text/css" /><link href="/_Styles/Controls.css?v=20260921c" rel="stylesheet" type="text/css" /><link href="/_Styles/Dashboard.css?v=20260921c" rel="stylesheet" type="text/css" /><link href="/_Styles/TournamentCentral.css?v=20260921c" rel="stylesheet" type="text/css" /><meta charset="utf-8" /><title>
+	FusionPoint Sports - NIAA
+</title><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta id="Viewport" name="viewport" content="width=device-width, initial-scale=1, minimal-ui" /><meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" /><meta http-equiv="Cache-control" content="max-age=300" /><link id="SiteCss" rel="stylesheet" type="text/css" href="/_Styles/Site.css?v=20260921c" /><link rel="stylesheet" type="text/css" href="/_Styles/parsley.css" /><link rel="stylesheet" type="text/css" href="/_Styles/jquery-ui.css" /><link rel="stylesheet" type="text/css" href="/_Fonts/Awesome/css/fontawesome.css" /><link rel="stylesheet" type="text/css" href="/_Fonts/Awesome/css/regular.css" /><link rel="stylesheet" type="text/css" href="/_Fonts/Awesome/css/solid.css" /><link rel="stylesheet" type="text/css" href="_Fonts/Awesome/css/duotone.css" /><link href="favicon.ico" rel="shortcut icon" type="image/x-icon" />
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+
+
+    <script type="text/javascript" src="/_Scripts/Application.js"></script>
+    <script type="text/javascript" src="/_Scripts/Controls.js"></script>
+    <script type="text/javascript" src="https://cdn.fpsports.org/3rdParty/Parsley/v2.0.7/parsley.js"></script>
+    <script type="text/javascript" src="https://cdn.fpsports.org/3rdParty/JLoadImage/js/load-image.all.min.js"></script>
+    <script src="https://cdn.fpsports.org/3rdParty/slick/slick.js"></script>
+    <link rel="stylesheet" href="https://cdn.fpsports.org/3rdParty/slick/slick.css" /><link rel="stylesheet" href="https://cdn.fpsports.org/3rdParty/slick/slick-theme.css" /><link rel="icon" sizes="196x196" href="/_Images/Logos/196x196.png" /><link rel="manifest" href="/manifest.json" /><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" /><meta name="theme-color" content="#ffffff" />
+
+    <!--jstree References-->
+    <script type="text/javascript" src="https://cdn.fpsports.org/3rdParty/jsTree/V3.1/jstree.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.fpsports.org/3rdParty/jsTree/jstree.css" /><link href="_Styles/fancy.css" rel="stylesheet" />
+    <script src="https://cdn.fpsports.org/3rdParty/fancygrid/fp/fancy_v7.full.min.js"></script>
+
+    <script type="text/javascript">
+        //Prevent Links in Standalone Web Apps Opening Mobile Safari
+        if (("standalone" in window.navigator) && window.navigator.standalone) {
+            var noddy, remotes = false;
+            document.addEventListener('click', function (event) {
+                noddy = event.target;
+                while (noddy.nodeName !== "A" && noddy.nodeName !== "HTML") {
+                    noddy = noddy.parentNode;
+                }
+                if ('href' in noddy && noddy.href.indexOf('http') !== -1 && (noddy.href.indexOf(document.location.host) !== -1 || remotes)) {
+                    event.preventDefault();
+                    document.location.href = noddy.href;
+                }
+            }, false);
+        }
+
+        $(document).ready(function () {
+            Fancy.MODULESDIR = 'https://cdn.fpsports.org/3rdParty/fancygrid/modules/';
+            FancyGrid.LICENSE = ['f3e1cd90dfb49ba1b9d16d7c5abe7260'];
+
+            FixCSS();
+
+            bindToolbarMenuFunctions('SchoolMenu_');
+
+
+        });
+
+        $(window).on('load', function () { ProcessesLinkTracking(); });
+
+        $(window).on("resize", function () {
+            FixCSS();
+        });
+
+        function FixCSS() {
+            $(":root").css("--toolbarheight", ($("#ToolbarPanel").outerHeight() ?? 0) + 'px');
+            $(":root").css("--noticeheight", ($(".dsSiteNotice").outerHeight(true) ?? 0) + 'px');
+        }
+
+
+        function ProcessesLinkTracking() {
+            var Items = [];
+
+            $('.CarouselTracker:visible').each(function () {
+                var CarouselTracker = $(this);
+                Items.push({ CarouselID: $(this).attr('carouselid'), Carousel: $(this).attr('carousel'), CarouselEntryID: $(this).attr('carouselentryid'), CarouselEntry: $(this).attr('carouselentry') });
+                $(this).find('a').each(function () { $(this).on('click', function () { ProcessLinkClick(CarouselTracker.attr('carouselid'), CarouselTracker.attr('carousel'), CarouselTracker.attr('carouselentryid'), CarouselTracker.attr('carouselentry')) }); });
+            });
+
+            var dto = {
+                'Links': Items
+            };
+
+            $.ajax({
+                type: 'post',
+                contentType: 'application/json; charset-utf-8',
+                dataType: 'json',
+                url: '/Services/CoreServices.asmx/LogLinkImpression',
+                data: JSON.stringify(dto),
+                success: function (result) {
+                }
+            });
+        }
+
+        function ProcessLinkClick(CarouselID, Carousel, CarouselEntryID, CarouselEntry) {
+            var dto = {
+                'CarouselID': CarouselID,
+                'Carousel': Carousel,
+                'CarouselEntryID': CarouselEntryID,
+                'CarouselEntry': CarouselEntry,
+            };
+
+            $.ajax({
+                type: 'post',
+                contentType: 'application/json; charset-utf-8',
+                dataType: 'json',
+                url: '/Services/CoreServices.asmx/LogLinkClick',
+                data: JSON.stringify(dto),
+                success: function (result) {
+                }
+            });
+        }
+
+
+
+    </script>
+
+    <style>
+        .LegacyItem {
+            font-size: 9px;
+            color: red;
+        }
+
+        .NewItem {
+            font-size: 9px;
+            color: red;
+        }
+
+        .dsNavigationMenuHidden {
+            display: none;
+        }
+
+        #mnuTournamentCentralButton {
+            background-color: #b12e34;
+            color: white;
+        }
+
+    </style>
+
+
+
+    
+    <link id="ShellCss" rel="stylesheet" type="text/css" href="/_Styles/SiteShell.css?v=20260921c"></link>
+
+    
+
+    <link rel="canonical" href="https://niaa.fpsports.org/default.aspx" />
+
+    
+    <link href="/_Styles/Calendar.css" rel="stylesheet" />
+
+    <style>
+        .dsFormPanelNormal,
+        .dsPagePanel {
+            background-color: var(--dashboard-background-color);
+        }
+
+
+        .dashboard-content {
+            gap: 40px;
+        }
+
+            .dashboard-content h2 {
+                margin: 0;
+                padding: 15px 10px 15px 10px;
+                text-align: center;
+                font-size: 25px;
+            }
+
+            .dashboard-content .dsFlexBlockFill img {
+                width: 100%;
+            }
+
+        .slick-dotted.slick-slider {
+            margin-bottom: 0px;
+        }
+
+
+
+        .dsNewsBlockBackground {
+            background-color: var(--background-inactive-color);
+        }
+
+
+        .NewsBlockWrapperPanel {
+            display: block;
+            margin: 0 auto;
+            width: Calc(100% - 100px) !important;
+        }
+
+        .NewsBlock {
+            width: Calc(100% - 20px);
+            padding: 8px;
+        }
+
+            .NewsBlock a {
+                width: Calc(100% - 24px);
+                display: block;
+                margin: 6px;
+                padding: 6px;
+                background-color: white;
+            }
+
+                .NewsBlock a:hover {
+                    text-decoration: none;
+                }
+
+            .NewsBlock .thumbimagewrapper {
+                width: Calc(100% - 8px);
+                display: block;
+                margin: 4px;
+                background-color: black;
+            }
+
+            .NewsBlock .thumbimage {
+                width: 100%;
+                display: block;
+                aspect-ratio: auto;
+                margin: 0 auto;
+            }
+
+            .NewsBlock .article {
+                display: block;
+                margin: 4px 8px 4px 8px;
+                width: Calc(100% - 16px);
+                font-size: 12px;
+                overflow: hidden;
+            }
+
+            .NewsBlock .articletitle {
+                display: block;
+                font-size: 14px;
+                font-weight: bold;
+                margin-bottom: 10px;
+            }
+
+            .NewsBlock .articletext {
+                overflow: hidden;
+            }
+
+            .NewsBlock .articleellipsis {
+                float: right;
+                margin-right: 10px;
+                font-weight: bold;
+            }
+
+            .NewsBlock .date {
+                font-size: 12px;
+                margin: 8px 0 8px 0;
+            }
+
+
+        .CalendarWrapper h2 {
+            margin: 0;
+        }
+
+
+        #Calendar {
+            width: 100%;
+            height: 400px;
+            font-family: Avalon;
+            font-size: 12px;
+            color: black;
+            overflow: auto;
+            background-color: white;
+            list-style-type: none;
+        }
+
+
+            #Calendar li {
+                display: block;
+                margin: 10px 0 10px 0px;
+            }
+
+            #Calendar .CalendarWrapper {
+                display: flex;
+                padding: 8px;
+                background-color: #f8f8f8;
+                width: Calc(100% - 16px);
+            }
+
+            #Calendar .CalendarDateWrapper {
+                display: block;
+                padding: 0 4px 0 0;
+                width: 68px;
+                height: 68px;
+                background: #960000;
+                font-family: Lato, sans-serif;
+                font-size: 12px;
+                line-height: 1.1;
+                font-weight: 700;
+            }
+
+            #Calendar .CalendarBody {
+                display: block;
+                width: Calc(100% - 100px);
+                height: 100%;
+                font-weight: bold;
+                font-size: 13px;
+                line-height: 1.6;
+                padding: 0 4px 4px 10px;
+            }
+
+            #Calendar .CalendarMonth {
+                font-weight: Normal;
+                margin: 10px auto 0 auto;
+                display: block;
+                color: white;
+                font-size: 18px;
+                text-align: center;
+            }
+
+            #Calendar .CalendarDay {
+                font-weight: normal;
+                margin-bottom: 0;
+                display: block;
+                color: white;
+                font-size: 26px;
+                text-align: center;
+            }
+
+            #Calendar .CalendarTitle {
+                font-weight: normal;
+                display: block;
+            }
+
+            #Calendar .CalendarLocation {
+                display: block;
+                font-weight: normal;
+                font-size: 12px;
+                font-style: italic;
+            }
+
+
+        .dsSideAds {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+            .dsSideAds span {
+                flex: 1 0 20%;
+            }
+
+            .dsSideAds a img {
+                display: block;
+                width: 100%;
+            }
+
+            .dsSideAds .HighlightedEntry {
+                flex: 1 0 50% !important;
+            }
+
+        .dsSideAds2 {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+            .dsSideAds2 span {
+                flex: 1 0 40%;
+            }
+
+            .dsSideAds2 a img {
+                display: block;
+                width: 100%;
+            }
+
+            .dsSideAds2 .HighlightedEntry {
+                flex: 1 0 100% !important;
+            }
+
+        .dsSideAds3 img {
+            width: Calc(50% - 3px) !important;
+        }
+
+
+        .dsSpotlight2 img {
+            width: Calc(50% - 3px) !important;
+        }
+
+
+
+
+
+
+
+        /* ─── SPORTS GRID ─── */
+        .sports-section {
+            margin-top: 10px;
+            margin-top: 20px;
+        }
+
+        .season-tabs {
+            display: flex;
+            gap: 0;
+            /*border-bottom: 2px solid var(--primary-dark-color);*/
+            margin-bottom: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .season-tab {
+            padding: 0.6rem 1.25rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--primary-dark-color);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: color 0.2s, border-color 0.2s;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            font-family: inherit;
+        }
+
+            .season-tab.active {
+                color: red;
+                border-bottom-color: red;
+            }
+
+            .season-tab:hover:not(.active) {
+                color: var(--primary-dark-color);
+            }
+
+        .sports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .sport-chip {
+            background: white;
+            border: 1px solid lightgrey;
+            border-radius: 5px;
+            padding: 0.75rem;
+            text-align: center;
+            text-decoration: none;
+            color: var(--primary-dark-color);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            line-height: 1.3;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+            min-height: 33px;
+        }
+
+            .sport-chip:hover {
+                background: var(--primary-dark-color);
+                color: var(--primary-light-color);
+                border-color: var(--primary-dark-color);
+                transform: translateY(-1px);
+            }
+
+        .sport-icon {
+            font-size: 1.4rem;
+        }
+
+                .sport-chip-fancy {
+            background: white;
+            border: 1px solid lightgrey;
+            border-radius: 8px;
+            padding: 0;
+            text-align: center;
+            text-decoration: none;
+            color: var(--primary-dark-color);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 17px;
+            font-weight: normal;
+            line-height: 1.3;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+            min-height: 33px;
+        }
+
+            .sport-chip-fancy:hover {
+                background-color: var(--primary-light-color) !important;
+                background-image: none !important;
+                color: var(--primary-light-color);
+                border-color: var(--primary-dark-color);
+                transform: translateY(-1px);
+            }
+
+
+
+
+
+
+        @media (max-width: 900px) {
+            .dsSideAds {
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+                .dsSideAds span {
+                    flex: 1 0 40%;
+                }
+
+                .dsSideAds .HighlightedEntry {
+                    flex: 1 0 100% !important;
+                }
+
+            .dsSpotlight2 {
+                margin-top: 10px;
+                margin-bottom: 10px;
+                display: flex;
+                flex-wrap: wrap;
+                width: 100%;
+            }
+
+                .dsSpotlight2 span {
+                    flex: 1 0 100%;
+                }
+
+                .dsSpotlight2 img {
+                    width: 100% !important;
+                    display: block;
+                }
+
+            .dsSideAds3 {
+                margin-top: 10px;
+                margin-bottom: 10px;
+                display: flex;
+                flex-wrap: wrap;
+                width: 100%;
+            }
+
+                .dsSideAds3 a {
+                    flex: 1 0 100%;
+                }
+
+                .dsSideAds3 img {
+                    width: 100% !important;
+                    display: block;
+                }
+
+            .dsSideAds2 {
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+                .dsSideAds2 span {
+                    flex: 1 0 40%;
+                }
+
+                .dsSideAds2 .HighlightedEntry {
+                    flex: 1 0 100% !important;
+                }
+        }
+
+        @media (max-width: 800px) {
+            .dashboard-content {
+                gap: 20px;
+            }
+
+            #Calendar {
+                height: 300px;
+            }
+        }
+    </style>
+
+    <script>
+        function showSeason(season, btn) {
+            document.querySelectorAll('.sports-grid').forEach(t => t.style.display = 'none');
+            document.getElementById('season-' + season).style.display = 'grid';
+            document.querySelectorAll('.season-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            return false;
+        }
+    </script>
+
+    <script>
+
+        $(document).ready(function () {
+            $('.NewsBlockWrapperPanel').slick({
+                dots: false,
+                infinite: false,
+                speed: 300,
+                centerPadding: '40px',
+                slidesToShow: 3,
+                slidesToScroll: 3,
+                responsive: [
+                    {
+                        breakpoint: 1100,
+                        settings: {
+                            slidesToShow: 3,
+                            slidesToScroll: 3
+                        }
+                    },
+                    {
+                        breakpoint: 800,
+                        settings: {
+                            slidesToShow: 1,
+                            slidesToScroll: 2
+                        }
+                    },
+                    {
+                        breakpoint: 400,
+                        settings: {
+                            slidesToShow: 1,
+                            slidesToScroll: 1
+                        }
+                    }
+                ]
+
+
+            });
+        });
+
+    </script>
+
+
+</head>
+<body>
+    <iframe id="hidden-iframe" name="hidden-iframe" style="visibility: hidden; position: absolute;"></iframe>
+    <form method="post" action="./" id="MainForm">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="iPjgB4lAfgZHymfozm2hEo6r849bR9zGyz9BgjOnqSYR98ubGtVNxOeS44NewZG5ZN3HHLyYs/LKA1je97p2JIi+WmIAyz1Fnj9V4SiGBMJHn0ncfhJAsZqSScs6BtxVnAKPGuUNO+lKkN/bQ5tPF7MPGVxoicevUGVwq3yEGZJgbYSgvPmFGKPb/ixtccO+EPMdFxxSZ1Ja7jkq3XbimniCUgq5mq8VQDbccNWnYCMVXCHevgApq3Y7pAoAJvFHApt///m7VkwEKKej/SSHEhEsNju5fgrQdV4IWkttu06lN4xdV8UlRt/iR9P97DjCuLU8giF2gCwGJFh0Mn2Og4DcmaAshhK/ut/w4F0zRPfKUvqLvt2y/LKQuQKiMvDfQqfcFOiLz28F0QRCyhydF1eE74iV7yE4y5O4kgo08BLMlLZGngW+AXos7wXqS7c46kOBG84WuTNUI0Z4U69KMipt5FXhG7O6rXaMupZEvFdQeAV4iZj3N6eVeoWgunc8lmYJMiTy9S2Lkg3Df3ZcfcaAMZi+jiGawcXX0rhckB77XSmDYMFc5EEjdWL3QGL8K89M83R2xJEYAdbB+9iaag9ZgtRMFisnZ8IcSPTD3NfUyjlWNsJHcXxk/Ns70MEjXLfxKAFiExBO8QQQyBtAXuP9CvtBb0SLZ7whEtuoU1HEWpjkMAxTw+5O8RDuJ8M50e51S+82gCR3WpqQmDa4vtgZUtRoT5M//QpmNxBDbh0=" />
+
+<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="CA0B0334" />
+        <div id="dsLoader"></div>
+
+        <div id="dsNavigation" class="dsNavigationOverlay">
+	
+            <div id="dsNavigationMenu" class="dsNavigationMenu">
+                <a href="javascript:void(0)" class="dsNavigationCloseButton" onclick="closeNav()">×</a>
+                <div id="dsNavigationMenuContent" class="dsNavigationMenuContent">
+		
+                    <ul id="dsNavigationMenuUL" class="dsNavigationMenuUL dsNavigationMenuSubPanel active"><li><a id="mnuDashboard" href="\">Dashboard</a></li><li><a id="mnuSportHS" class=" dsNavigationMenuLink " href="https://niaa.fpsports.org/default.aspx#NavigationMenu_mnuSportHS"><div style="float:left;">Sport Info - High School</div><i class="fa fa-chevron-right" style="float:right;"></i><div style="clear:both;"></div></a></li><li><a id="mnuScheduleHS" href="\DashboardSchedule.aspx">Schedules</a></li><li><a id="mnuSchoolPages" href="/SchoolPages/School.aspx">School Pages</a></li><li><a id="mnuMasterSchedule" href="/MasterSchedule.aspx?TeamLevelID=5">Master Schedule</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Tournament Central</div></li><li><a id="mnuTournamentRankings" href="\SportPages\SportPageRanking.aspx?TournamentID=3">Tournament Standings</a></li><li><a id="mnuTournamentRankingDetail" href="\Custom\NIAA\NIAADetail.aspx">Standings Detail</a></li><li><a id="mnuTournamentBrackets" href="\SportPages\SportPageBrackets.aspx?TournamentID=3">Brackets</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">NIAA Members</div></li><li><a id="mnuDirectory" href="\Directory.aspx">School Directory</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Resources</div></li><li><a id="mnuSubResources_305707ec-696a-4cf5-9e61-20b6d4c4df29" href="/TenantHTML.aspx?D=Resources&amp;F=Student Registration.html">Student Registration</a></li><li><a id="mnuSubResources_Resources_Coaches" class=" dsNavigationMenuLink " href="https://niaa.fpsports.org/default.aspx#NavigationMenu_mnuSubResources_Resources_Coaches"><div style="float:left;">Coaches</div><i class="fa fa-chevron-right" style="float:right;"></i><div style="clear:both;"></div></a></li><li><a id="mnuSubResources_909c8bc3-325b-4a2b-b418-068a204b2069" href="/TenantHTML.aspx?D=Resources&amp;F=Officials.html">Officials</a></li><li><a id="mnuSubResources_Resources_AwardPrograms" class=" dsNavigationMenuLink " href="https://niaa.fpsports.org/default.aspx#NavigationMenu_mnuSubResources_Resources_AwardPrograms"><div style="float:left;">Award Programs</div><i class="fa fa-chevron-right" style="float:right;"></i><div style="clear:both;"></div></a></li><li><a id="mnuSubResources_74c8c612-018f-4a4e-9a44-b1678c67d73e" href="/TenantHTML.aspx?D=Resources&amp;F=Spirit.html">Spirit</a></li><li><a id="mnuSubResources_b506d452-5713-483e-be42-18b578ff6d1d" href="/TenantHTML.aspx?D=Resources&amp;F=Publications.html">Publications</a></li><li><a id="mnuSubResources_2fc8b0f6-60fe-494e-a529-50e365c5fbcf" href="/PublicDownloads.aspx">Forms</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Inside the NIAA</div></li><li><a id="mnuSubResources_2fe4e990-09c1-45d7-b72a-ca8fc5dec66e" href="/TenantHTML.aspx?D=Inside the NIAA&amp;F=About Us.html">About Us</a></li><li><a id="mnuSubResources_5e6a6eaf-d4db-4e98-8089-1c0b92995d5d" href="/TenantHTML.aspx?D=Inside the NIAA&amp;F=Staff.html">Staff</a></li><li><a id="mnuSubResources_ff80c3b2-4632-4dd4-bdef-e269817b6103" href="/TenantHTML.aspx?D=Inside the NIAA&amp;F=Board of Control.html">Board of Control</a></li><li><a id="mnuSubResources_InsidetheNIAA_Committees" class=" dsNavigationMenuLink " href="https://niaa.fpsports.org/default.aspx#NavigationMenu_mnuSubResources_InsidetheNIAA_Committees"><div style="float:left;">Committees</div><i class="fa fa-chevron-right" style="float:right;"></i><div style="clear:both;"></div></a></li><li><a id="mnuSubResources_9965b9af-dc87-43e4-b8be-efd40ffab6f3" href="/CarouselAll.aspx?CarouselID=9" target="_blank">Sponsors</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Account</div></li><li><a id="mnuLogin" href="Login.aspx?ReturnUrl=%2fdefault.aspx">Login</a></li><li><a id="mnuSignUp" href="SignUp.aspx?ReturnUrl=%2fdefault.aspx">Sign-Up</a></li><li><a id="mnuPasswordReset" href="\PasswordReset.aspx">Forgot Password</a></li></ul>
+                    <div style="display: none">
+                        <ul id="dsNavigationMenuHidden" class="dsNavigationMenuUL dsNavigationMenuSubPane"></ul>
+                    </div>
+                <ul id="NavigationMenu_mnuSportHS" class="dsNavigationMenuUL dsNavigationMenuSubPanel"><li><div class="dsNavigationSubMenuTitle">Sport Info - High School</div></li><li><a id="SUB_MAIN_mnuSportHS" class=" dsNavigationMenuLink " onclick="changeToMainMenu();"><i class="fa fa-arrow-left" style="float:left;"></i><div style="float:left;" class="dsNavigationMenuBackButton">MAIN MENU</div><div style="clear:both;"></div></a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Fall</div></li><li><a id="mnuSportButtonHSCross Country - Boys" href="\SportPages\SportPageInfo.aspx?TournamentID=1">Cross Country - Boys</a></li><li><a id="mnuSportButtonHSCross Country - Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=9">Cross Country - Girls</a></li><li><a id="mnuSportButtonHSGolf - Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=213">Golf - Girls</a></li><li><a id="mnuSportButtonHSFootball" href="\SportPages\SportPageInfo.aspx?TournamentID=3">Football</a></li><li><a id="mnuSportButtonHSSoccer - Boys" href="\SportPages\SportPageInfo.aspx?TournamentID=5">Soccer - Boys</a></li><li><a id="mnuSportButtonHSSoccer - Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=6">Soccer - Girls</a></li><li><a id="mnuSportButtonHSTennis - Boys" href="\SportPages\SportPageInfo.aspx?TournamentID=206">Tennis - Boys</a></li><li><a id="mnuSportButtonHSTennis - Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=207">Tennis - Girls</a></li><li><a id="mnuSportButtonHSVolleyball - Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=8">Volleyball - Girls</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Winter</div></li><li><a id="mnuSportButtonHSBasketball - Boys" href="\SportPages\SportPageInfo.aspx?TournamentID=100">Basketball - Boys</a></li><li><a id="mnuSportButtonHSBasketball - Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=101">Basketball - Girls</a></li><li><a id="mnuSportButtonHSBowling - Boys" href="\SportPages\SportPageInfo.aspx?TournamentID=211">Bowling - Boys</a></li><li><a id="mnuSportButtonHSBowling - Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=212">Bowling - Girls</a></li><li><a id="mnuSportButtonHSFlag Football -Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=1017">Flag Football -Girls</a></li><li><a id="mnuSportButtonHSWrestling - Boys" href="\SportPages\SportPageInfo.aspx?TournamentID=106">Wrestling - Boys</a></li><li><a id="mnuSportButtonHSWrestling - Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=210">Wrestling - Girls</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Spring</div></li><li><a id="mnuSportButtonHSBaseball" href="\SportPages\SportPageInfo.aspx?TournamentID=200">Baseball</a></li><li><a id="mnuSportButtonHSLacrosse - Boys" href="\SportPages\SportPageInfo.aspx?TournamentID=202">Lacrosse - Boys</a></li><li><a id="mnuSportButtonHSLacrosse - Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=203">Lacrosse - Girls</a></li><li><a id="mnuSportButtonHSOutdoor Track - Boys" href="\SportPages\SportPageInfo.aspx?TournamentID=204">Outdoor Track - Boys</a></li><li><a id="mnuSportButtonHSOutdoor Track - Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=301">Outdoor Track - Girls</a></li><li><a id="mnuSportButtonHSSoftball" href="\SportPages\SportPageInfo.aspx?TournamentID=205">Softball</a></li><li><a id="mnuSportButtonHSGolf - Boys" href="\SportPages\SportPageInfo.aspx?TournamentID=201">Golf - Boys</a></li><li><a id="mnuSportButtonHSSwimming - Boys" href="\SportPages\SportPageInfo.aspx?TournamentID=105">Swimming - Boys</a></li><li><a id="mnuSportButtonHSSwimming - Girls" href="\SportPages\SportPageInfo.aspx?TournamentID=7">Swimming - Girls</a></li><li><a id="mnuSportButtonHSVolleyball - Boys" href="\SportPages\SportPageInfo.aspx?TournamentID=208">Volleyball - Boys</a></li></ul><ul id="NavigationMenu_mnuSubResources_Resources_Coaches" class="dsNavigationMenuUL dsNavigationMenuSubPanel"><li><div class="dsNavigationSubMenuTitle">Coaches</div></li><li><a id="SUB_MAIN_mnuSubResources_Resources_Coaches" class=" dsNavigationMenuLink " onclick="changeToMainMenu();"><i class="fa fa-arrow-left" style="float:left;"></i><div style="float:left;" class="dsNavigationMenuBackButton">MAIN MENU</div><div style="clear:both;"></div></a></li><li><a id="mnuSubResources_987268eb-ec26-4aa6-b5be-d33d9511c670" href="/TenantHTML.aspx?D=Resources\Coaches&amp;F=General Information.html">General Information</a></li><li><a id="mnuSubResources_8d1a2515-771e-4c1e-b1e7-f3f526292e0a" href="/TenantHTML.aspx?D=Resources\Coaches&amp;F=Coaching Education.html">Coaching Education</a></li></ul><ul id="NavigationMenu_mnuSubResources_Resources_AwardPrograms" class="dsNavigationMenuUL dsNavigationMenuSubPanel"><li><div class="dsNavigationSubMenuTitle">Award Programs</div></li><li><a id="SUB_MAIN_mnuSubResources_Resources_AwardPrograms" class=" dsNavigationMenuLink " onclick="changeToMainMenu();"><i class="fa fa-arrow-left" style="float:left;"></i><div style="float:left;" class="dsNavigationMenuBackButton">MAIN MENU</div><div style="clear:both;"></div></a></li><li><a id="mnuSubResources_fd16214c-f9bd-48e6-9b88-1b0125de69a0" href="/TenantHTML.aspx?D=Resources\Award Programs&amp;F=Academic Team Champions.html">Academic Team Champions</a></li><li><a id="mnuSubResources_0c1cf866-4520-4c66-b46f-31bf97834d43" href="/TenantHTML.aspx?D=Resources\Award Programs&amp;F=Award of Excellence.html">Award of Excellence</a></li><li><a id="mnuSubResources_39f65f88-7f83-45c6-bc32-ae28788965fa" href="/TenantHTML.aspx?D=Resources\Award Programs&amp;F=Hall of Fame.html">Hall of Fame</a></li><li><a id="mnuSubResources_f8746882-7337-48b8-bca4-f8a1aa0b6005" href="https://www.trophiesandplaques.com/" target="_blank">Ingraham Trophies</a></li><li><a id="mnuSubResources_f52cf045-a570-49ed-aa60-5d811bc353f2" href="/TenantPDF.aspx?F=_media/TenantContent/Patty_Sheehan_-_NFHS_Hall_of_Fame.pdf">NFHS Hall of Fame</a></li><li><a id="mnuSubResources_434a6d5c-e13c-4ea3-91ac-6dfda4cd60fd" href="/TenantHTML.aspx?D=Resources\Award Programs&amp;F=Top Ten.html">Top Ten</a></li></ul><ul id="NavigationMenu_mnuSubResources_InsidetheNIAA_Committees" class="dsNavigationMenuUL dsNavigationMenuSubPanel"><li><div class="dsNavigationSubMenuTitle">Committees</div></li><li><a id="SUB_MAIN_mnuSubResources_InsidetheNIAA_Committees" class=" dsNavigationMenuLink " onclick="changeToMainMenu();"><i class="fa fa-arrow-left" style="float:left;"></i><div style="float:left;" class="dsNavigationMenuBackButton">MAIN MENU</div><div style="clear:both;"></div></a></li><li><a id="mnuSubResources_870ab405-fd78-4a47-9ce7-d269dfd4f36d" href="/TenantHTML.aspx?D=Inside the NIAA\Committees&amp;F=Membership.html">Membership</a></li><li><a id="mnuSubResources_cd3968b4-fd7e-46ef-8c9a-22ecd9116c6a" href="/TenantHTML.aspx?D=Inside the NIAA\Committees&amp;F=Realignment.html">Realignment</a></li><li><a id="mnuSubResources_5b6c5e04-d2e4-41e0-8c48-1f1484646d78" href="/TenantHTML.aspx?D=Inside the NIAA\Committees&amp;F=Rules, Regulations and Policies.html">Rules, Regulations and Policies</a></li><li><a id="mnuSubResources_063acc00-1c5f-4219-9986-dca4f05b0d1d" href="/TenantHTML.aspx?D=Inside the NIAA\Committees&amp;F=Sportsmanship.html">Sportsmanship</a></li></ul>
+	</div>
+            </div>
+        
+</div>
+
+        <div id="dsPagePanel" class="dsPagePanel">
+	
+
+            <div id="dsHeaderPanel" class="dsHeaderPanel">
+		
+                
+                <ul id="ToolbarUL" class="dsHeaderMenu">
+                    <li class="dsHeaderLeft dsNavigationMenuClosed" role="button" tabindex="0" aria-label="Open menu" onclick="openNav()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openNav();}"><i class="fa fa-bars" aria-hidden="true"></i></li>
+                    <li class="dsHeaderLeft dsNavigationMenuOpen" role="button" tabindex="0" aria-label="Close menu" onclick="closeNav()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();closeNav();}"><span style="font-size: 32px !important; font-weight: normal;" aria-hidden="true">×</span></li>
+
+                    <li id="NavBack" class="dsHeaderLeft dsHeaderNavButton">
+                        <a role="button" tabindex="0" aria-label="Back" onclick="history.back();return false;"
+                           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();history.back();}"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                    </li>
+
+                    <li id="NavRefresh" class="dsHeaderLeft dsHeaderNavButton">
+                        <a role="button" tabindex="0" aria-label="Refresh" onclick="window.location.reload();return false;"
+                           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.reload();}"><i class="fa fa-arrow-rotate-right" aria-hidden="true"></i></a>
+                    </li>
+
+                    <li id="Logo" class="dsHeaderLeft">
+                        
+                        <a href="/" id="LogoLink" onclick="changeToMainMenu();">
+                            <img id="LogoImage" class="fpLogoImage" src="/resources/_LogoSmall.png?t=3010" alt="Home" /></a>
+                        <!--<div class="dsLogoTextDatable">datable</div>-->
+                    </li>
+
+                </ul>
+                <div id="WelcomeText" class="dsWelcomeText">
+                    <a id="Signup" title="Sign-Up" class="dsHeaderButton" href="SignUp.aspx?ReturnUrl=%2fdefault.aspx">Sign-Up</a>
+                    <a id="Login" title="Login" class="dsHeaderButton" href="Login.aspx?ReturnUrl=%2fdefault.aspx">Login</a>
+                </div>
+            
+	</div>
+
+
+
+            <div class="dsMiddlePanel">
+
+                
+
+    <div class="dsSiteContent">
+
+        
+        <div id="NoticePanel" class="dsSiteNotice" role="status">
+		
+            <i class="fa fa-circle-info" aria-hidden="true"></i>
+            We are currently applying upgrades to the site. You may experience temporary display issues while the migration completes.
+        
+	</div>
+
+        
+        
+
+        
+        
+
+        
+        <main class="dsSiteContentBody">
+            
+
+    <div id="Panel1" class="dsFormPanelNormal ">
+		
+        <div id="HeaderWrapper">
+			
+        
+		</div>
+
+        <div id="BodyWrapper" class="dashboard-content">
+			
+        <div class="dsFlexBlockFill" style="margin:0;">
+				<picture><source media='(max-width: 900px)' srcset='/resources/Dashboard/Bannernarrow.jpg'><img src='/resources/Dashboard/Banner.jpg' style='vertical-align: middle;' /></picture>
+			</div><div class="dsSideAds">
+				
+			</div>
+<!-- SPORTS -->
+    <div class="sports-section dsFlexBlockFill">
+        <h2 class="section-title">Sports</h2>
+
+      <div class="season-tabs ">
+        <button class='season-tab active' onclick='showSeason("Fall", this); return false;'>Fall</button>
+<button class='season-tab ' onclick='showSeason("Winter", this); return false;'>Winter</button>
+<button class='season-tab ' onclick='showSeason("Spring", this); return false;'>Spring</button>
+
+      </div>
+
+      <div id="season-Fall" class="sports-grid" >
+<a href="/SportPages/SportPageInfo.aspx?TournamentID=1" class="sport-chip">Cross Country</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=9" class="sport-chip">Cross Country</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=3" class="sport-chip">Football</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=213" class="sport-chip">Golf</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=5" class="sport-chip">Soccer</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=6" class="sport-chip">Soccer</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=206" class="sport-chip">Tennis</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=207" class="sport-chip">Tennis</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=8" class="sport-chip">Volleyball</br>Girls</a></div>
+<div id="season-Winter" class="sports-grid" style="display:none">
+<a href="/SportPages/SportPageInfo.aspx?TournamentID=100" class="sport-chip">Basketball</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=101" class="sport-chip">Basketball</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=211" class="sport-chip">Bowling</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=212" class="sport-chip">Bowling</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=1017" class="sport-chip">Flag Football -Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=405" class="sport-chip">Skiing</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=406" class="sport-chip">Skiing</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=106" class="sport-chip">Wrestling</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=210" class="sport-chip">Wrestling</br>Girls</a></div>
+<div id="season-Spring" class="sports-grid" style="display:none">
+<a href="/SportPages/SportPageInfo.aspx?TournamentID=200" class="sport-chip">Baseball</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=201" class="sport-chip">Golf</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=202" class="sport-chip">Lacrosse</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=203" class="sport-chip">Lacrosse</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=204" class="sport-chip">Outdoor Track</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=301" class="sport-chip">Outdoor Track</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=205" class="sport-chip">Softball</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=105" class="sport-chip">Swimming</br>Boys</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=7" class="sport-chip">Swimming</br>Girls</a><a href="/SportPages/SportPageInfo.aspx?TournamentID=208" class="sport-chip">Volleyball</br>Boys</a></div>
+
+    </div>
+            <div class="dsFlexBlockFill">
+				
+
+
+<style>
+    .slick-dots {
+        bottom: -15px;
+    }
+
+        .slick-dots li.slick-active button:before {
+            color: white;
+            opacity: 1;
+        }
+
+        .slick-dots li button:before {
+            color: white;
+            opacity: .75;
+        }
+
+	.slider1 {
+		padding:20px;
+		background-color: black;
+	}
+
+ @media (max-width: 900px) {
+.slider1 {
+		padding:0px;
+}
+}
+
+</style>
+
+<script>
+    $(document).ready(function () {
+        $('.slider1').slick({
+            arrows: false,
+
+            prevArrow: '<button type="button" data-role="none" class="slick-prev">Previous</button>',
+            nextArrow: '<button type="button" data-role="none" class="slick-next">Next</button>',
+            autoplay: true,
+            autoplaySpeed: 2000,
+            speed: 1000,
+            cssEase: 'ease',
+
+            dots: true,
+            dotsClass: 'slick-dots',
+            fade: false,
+            infinite: true,
+            pauseOnHover: false,
+            pauseOnDotsHover: true
+
+
+        });
+    });
+</script>
+
+<div id="spotlight" class="slider1">
+
+<span class='CarouselTracker' CarouselID='3' Carousel='Homepage Featured' CarouselEntryID='1219' CarouselEntry='4'><div><a target='_blank' href=''><img src='\Resources\Carousel\Home Featured\Images\0000001219.png' /></a></div>
+</span>
+<span class='CarouselTracker' CarouselID='3' Carousel='Homepage Featured' CarouselEntryID='1217' CarouselEntry='3'><div><a target='_blank' href=''><img src='\Resources\Carousel\Home Featured\Images\0000001217.png' /></a></div>
+</span>
+<span class='CarouselTracker' CarouselID='3' Carousel='Homepage Featured' CarouselEntryID='1215' CarouselEntry='2'><div><a target='_blank' href=''><img src='\Resources\Carousel\Home Featured\Images\0000001215.png' /></a></div>
+</span>
+<span class='CarouselTracker' CarouselID='3' Carousel='Homepage Featured' CarouselEntryID='1213' CarouselEntry='1'><div><a target='_blank' href=''><img src='\Resources\Carousel\Home Featured\Images\0000001213.png' /></a></div>
+</span>
+
+
+</div>
+
+			</div><div class="dsFlexBlockFill">
+				
+<style>
+    #partnerbanner {
+        background-color: white;
+        padding: 10px;
+        line-height: 1;
+    }
+
+        #partnerbanner a {
+            display: block;
+            margin: 0px 20px 0px 20px;
+        }
+
+        #partnerbanner img {
+            height: 60px;
+            width: auto;
+        }
+
+    
+</style>
+
+<script>
+    $(document).ready(function () {
+
+        $('span', $('#partnerbannerads')).sort(function () { return (Math.round(Math.random()) - 0.5) }).appendTo($('#partnerbannerads'));
+
+        for (let i = 0; i < $('#partnerbannerads').children().length - 1; i += 1) {
+            $('#partnerbanner').append('<div>' + $('#partnerbannerads').children()[i].outerHTML + '</div>');
+        }
+
+
+        $('.bannerp').slick({
+            arrows: false,
+            autoplay: true,
+
+            speed: 9000, autoplay: true, autoplaySpeed: 0, cssEase: 'linear', slidesToShow: 1, slidesToScroll: 1, variableWidth: true,
+
+            dots: false,
+            infinite: true,
+            pauseOnHover: true,
+            pauseOnDotsHover: true
+
+            //slidesToShow: 3,
+            //slidesToScroll: 1,
+            //responsive: [
+            //    {
+            //        breakpoint: 1024,
+            //        settings: {
+            //            slidesToShow: 3
+            //        }
+            //    },
+            //    {
+            //        breakpoint: 600,
+            //        settings: {
+            //            slidesToShow: 2
+            //        }
+            //    },
+            //    {
+            //        breakpoint: 480,
+            //        settings: {
+            //            slidesToShow: 1
+            //        }
+            //    } ]
+
+        });
+    });
+</script>
+
+<div id="partnerbanner" class="bannerp">
+
+</div>
+
+<div id="partnerbannerads" style="display:none">
+    <span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1184' CarouselEntry='Las Vegas Raiders'><a target='_blank' href='https://www.raiders.com'><img src='\Resources\Carousel\Partner\Images\0000001184.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1163' CarouselEntry='LiUNA!872'><a target='_blank' href='https://www.local872.com/'><img src='\Resources\Carousel\Partner\Images\0000001163.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1161' CarouselEntry='hudl'><a target='_blank' href='https://www.hudl.com/solutions/high-school?utm_medium=partner&utm_source=niaa&utm_campaign=22_638_hs-ad-acq_niaa-partnership&utm_content=display_2lp_3ctw'><img src='\Resources\Carousel\Partner\Images\0000001161.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1159' CarouselEntry='Lerner&Rowe'><a target='_blank' href='https://lernerandrowe.com/'><img src='\Resources\Carousel\Partner\Images\0000001159.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1157' CarouselEntry='UFC'><a target='_blank' href='https://www.ufc.com/'><img src='\Resources\Carousel\Partner\Images\0000001157.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1174' CarouselEntry='Northwest Designs Ink'><a target='_blank' href='https://online-apparel.com/s/niaa-store/'><img src='\Resources\Carousel\Partner\Images\0000001174.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1176' CarouselEntry='MaxPreps'><a target='_blank' href='www.maxpreps.com'><img src='\Resources\Carousel\Partner\Images\0000001176.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1178' CarouselEntry='Molten'><a target='_blank' href='https://moltenusa.com/volleyball/'><img src='\Resources\Carousel\Partner\Images\0000001178.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1180' CarouselEntry='Wilson'><a target='_blank' href='https://www.wilson.com/en-us/'><img src='\Resources\Carousel\Partner\Images\0000001180.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1182' CarouselEntry='Jiffy Lube'><a target='_blank' href='https://www.jiffylube.com'><img src='\Resources\Carousel\Partner\Images\0000001182.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1186' CarouselEntry='Zero Teen Fatalities'><a target='_blank' href='https://zeroteenfatalities.com'><img src='\Resources\Carousel\Partner\Images\0000001186.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1188' CarouselEntry='Perry Weather'><a target='_blank' href='https://perryweather.com/use-cases/schools-districts/'><img src='\Resources\Carousel\Partner\Images\0000001188.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1190' CarouselEntry='Prolook'><a target='_blank' href='https://prolook.com'><img src='\Resources\Carousel\Partner\Images\0000001190.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1192' CarouselEntry='NECA IBEW 401'><a target='_blank' href='https://ibew401.com'><img src='\Resources\Carousel\Partner\Images\0000001192.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1194' CarouselEntry='Nevada Dairy Farmers'><a target='_blank' href='https://nevadamilk.com'><img src='\Resources\Carousel\Partner\Images\0000001194.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1196' CarouselEntry='Dick's Sporting Goods'><a target='_blank' href='https://www.dickssportinggoods.com/?srsltid=AfmBOop6wk07I8MMTLxyxyI7VaHMsWszCOTmzsXAXfdbQJawkswzmp4e'><img src='\Resources\Carousel\Partner\Images\0000001196.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1198' CarouselEntry='Nevada Air National Guard'><a target='_blank' href='https://www.152aw.ang.af.mil'><img src='\Resources\Carousel\Partner\Images\0000001198.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1200' CarouselEntry='Hometown Health'><a target='_blank' href='https://www.hometownhealth.com'><img src='\Resources\Carousel\Partner\Images\0000001200.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1202' CarouselEntry='Rebel Athletic'><a target='_blank' href='https://rebelathleticcheer.com'><img src='\Resources\Carousel\Partner\Images\0000001202.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1205' CarouselEntry='UNLV'><a target='_blank' href='https://www.unlv.edu/?utm_source=NIAA&utm_medium=Paid&utm_campaign=Decision_Makers_Parents&utm_content=RMIH'><img src='\Resources\Carousel\Partner\Images\0000001205.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1207' CarouselEntry='Toalepai Productions'><a target='_blank' href='https://www.virginiatoalepai.com/toalepaiproductions'><img src='\Resources\Carousel\Partner\Images\0000001207.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1209' CarouselEntry='Capriotti's'><a target='_blank' href='https://capriottis.com'><img src='\Resources\Carousel\Partner\Images\0000001209.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1211' CarouselEntry='Swift Institute'><a target='_blank' href='https://theswiftinstitute.com'><img src='\Resources\Carousel\Partner\Images\0000001211.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='2057' CarouselEntry='Alicorn Hotel Group'><a target='_blank' href='https://www.alicornhotels.com/'><img src='\Resources\Carousel\Partner\Images\0000002057.png'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='2058' CarouselEntry='NFHS Network'><a target='_blank' href='https://www.nfhsnetwork.com/channels/nevada'><img src='\Resources\Carousel\Partner\Images\0000002058.jpg'  /></a></span>
+<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='2060' CarouselEntry='USAN 811'><a target='_blank' href=''><img src='\Resources\Carousel\Partner\Images\0000002060.png'  /></a></span>
+
+</div>
+
+
+
+
+
+			</div><div class="dsFlexBlock50 CalendarWrapper cal2">
+				<h2>Calendar</h2><ul class='cal2-list'><li><div class="cal-event"><div class="cal-chip"><span class="cal-chip-month">Sep</span><span class="cal-chip-day">25</span></div><div class="cal-event-body"><span class="cal-event-name">Fall Academic State (Aktivate) (Use Spring 2026 Unweighted GPA)</span><span class="cal-event-meta">September 25, 2026</span><span class="cal-event-tags"><span class="cal-badge cal-badge-color" style="background:#b03a48">Deadline</span><span class="cal-badge cal-badge-color" style="background:#b03a48">Informational Deadlines</span></span></div></div></li><li><div class="cal-event"><div class="cal-chip"><span class="cal-chip-month">Oct</span><span class="cal-chip-day cal-chip-range">5-10</span></div><div class="cal-event-body"><span class="cal-event-name">5A/4A/3A Region B/G Tennis (Team)</span><span class="cal-event-meta">October 5-10/10/2026, 2026</span><span class="cal-event-tags"><span class="cal-badge cal-badge-color" style="background:#2f6f8f">Regional Championship</span><span class="cal-badge cal-badge-color" style="background:#1f5c8b">Master Activities</span><span class="cal-badge-plain">Tennis</span></span></div></div></li><li><div class="cal-event"><div class="cal-chip"><span class="cal-chip-month">Oct</span><span class="cal-chip-day cal-chip-range">5-8</span></div><div class="cal-event-body"><span class="cal-event-name">5A/4A/3A/2A Region Girls Golf</span><span class="cal-event-meta">October 5-10/8/2026, 2026</span><span class="cal-event-tags"><span class="cal-badge cal-badge-color" style="background:#2f6f8f">Regional Championship</span><span class="cal-badge cal-badge-color" style="background:#1f5c8b">Master Activities</span><span class="cal-badge-plain">Fall Golf</span></span></div></div></li><li><div class="cal-event"><div class="cal-chip"><span class="cal-chip-month">Oct</span><span class="cal-chip-day cal-chip-range">12-15</span></div><div class="cal-event-body"><span class="cal-event-name">2A State Girls Golf</span><span class="cal-event-meta">October 12-10/15/2026, 2026</span><span class="cal-event-tags"><span class="cal-badge cal-badge-color" style="background:#9c4a3e">State Championship</span><span class="cal-badge cal-badge-color" style="background:#1f5c8b">Master Activities</span><span class="cal-badge-plain">Fall Golf</span><span class="cal-badge-plain">Region E</span></span></div></div></li><li><div class="cal-event"><div class="cal-chip"><span class="cal-chip-month">Oct</span><span class="cal-chip-day cal-chip-range">12-15</span></div><div class="cal-event-body"><span class="cal-event-name">4A State Girls Golf</span><span class="cal-event-meta">October 12-10/15/2026, 2026</span><span class="cal-event-tags"><span class="cal-badge cal-badge-color" style="background:#9c4a3e">State Championship</span><span class="cal-badge cal-badge-color" style="background:#1f5c8b">Master Activities</span><span class="cal-badge-plain">Fall Golf</span><span class="cal-badge-plain">Region S</span></span></div></div></li><li><div class="cal-event"><div class="cal-chip"><span class="cal-chip-month">Oct</span><span class="cal-chip-day cal-chip-range">12-15</span></div><div class="cal-event-body"><span class="cal-event-name">5A/3A State Girls Golf</span><span class="cal-event-meta">October 12-10/15/2026, 2026</span><span class="cal-event-tags"><span class="cal-badge cal-badge-color" style="background:#9c4a3e">State Championship</span><span class="cal-badge cal-badge-color" style="background:#1f5c8b">Master Activities</span><span class="cal-badge-plain">Fall Golf</span><span class="cal-badge-plain">Region N</span></span></div></div></li><li><div class="cal-event"><div class="cal-chip"><span class="cal-chip-month">Oct</span><span class="cal-chip-day cal-chip-range">12-17</span></div><div class="cal-event-body"><span class="cal-event-name">5A/4A/3A Region B/G Tennis (Individuals)</span><span class="cal-event-meta">October 12-10/17/2026, 2026</span><span class="cal-event-tags"><span class="cal-badge cal-badge-color" style="background:#2f6f8f">Regional Championship</span><span class="cal-badge cal-badge-color" style="background:#1f5c8b">Master Activities</span><span class="cal-badge-plain">Tennis</span></span></div></div></li><li><div class="cal-event"><div class="cal-chip"><span class="cal-chip-month">Oct</span><span class="cal-chip-day">13</span></div><div class="cal-event-body"><span class="cal-event-name">Varsity Team Photos (FB/VB/SO)</span><span class="cal-event-meta">October 13, 2026</span><span class="cal-event-tags"><span class="cal-badge cal-badge-color" style="background:#b03a48">Deadline</span><span class="cal-badge cal-badge-color" style="background:#b03a48">Informational Deadlines</span></span></div></div></li></ul><div class='cal2-more'><a href='/Calendar.aspx'>View Full Calendar &rarr;</a></div>
+			</div><div class="dsFlexBlockFill">
+				<h2>Featured News Articles</h2><div class="NewsBlockWrapperPanel dsFlexBlockFill">
+					<span class='CarouselTracker' CarouselID='1' Carousel='News' CarouselEntryID='2042' CarouselEntry='Executive Director Search Subcommittee Meeting'><div class='NewsBlock'>
+    <a href='https://www.niaa.com/board/agendas_and_packets/Executive_Director_Search_9-3-26'>
+        <div class='thumbimagewrapper'>
+            <img class='thumbimage' src='\Resources\Carousel\News\Images\0000002042.png' />
+        </div>
+        <div class='article'>
+            <div class='date'></div>
+            <div class='articletext'>
+                <div class='articletitle'>Executive Director Search Subcommittee Meeting</div>Click the headline to view the agenda and supporting documents for our upcoming Executive Director Search Subcommittee Meeting, which will take place virtually, on September 3, 2026 at 10 AM. Details, including a link to view the meeting, can be found on page one of the agenda.
+            </div>
+        </div>
+    </a>
+</div></span>
+<span class='CarouselTracker' CarouselID='1' Carousel='News' CarouselEntryID='2043' CarouselEntry='Notice of Workshop and Public Hearing - September 22, 2026'><div class='NewsBlock'>
+    <a href='\Resources\Carousel\News\Files\0000002043.pdf'>
+        <div class='thumbimagewrapper'>
+            <img class='thumbimage' src='\Resources\Carousel\News\Images\0000002043.png' />
+        </div>
+        <div class='article'>
+            <div class='date'>August 17, 2026</div>
+            <div class='articletext'>
+                <div class='articletitle'>Notice of Workshop and Public Hearing - September 22, 2026</div>Please click the headline above to view the notice for an upcoming workshop and public hearing for the possible revision of Nevada Administrative Code.
+            </div>
+        </div>
+    </a>
+</div></span>
+<span class='CarouselTracker' CarouselID='1' Carousel='News' CarouselEntryID='2044' CarouselEntry='NIAA partners with JAMZ for the Spirit State Championship presented by Rebel Athletic'><div class='NewsBlock'>
+    <a href='\Resources\Carousel\News\Files\0000002044.pdf'>
+        <div class='thumbimagewrapper'>
+            <img class='thumbimage' src='\Resources\Carousel\News\Images\0000002044.png' />
+        </div>
+        <div class='article'>
+            <div class='date'>August 11, 2026</div>
+            <div class='articletext'>
+                <div class='articletitle'>NIAA partners with JAMZ for the Spirit State Championship presented by Rebel Athletic</div>Click the headline for the press release announcing the partnership with event production company JAMZ.
+            </div>
+        </div>
+    </a>
+</div></span>
+
+				</div>
+			</div>
+		</div>
+    <div style='clear: both;'></div>
+	</div>
+
+
+        </main>
+
+        
+        <div id="FooterPanel" class="dsSiteFooter" role="contentinfo">
+		
+            <div id="FooterLinks" class="dsSiteFooterLinks">
+
+		</div>
+            <div class="dsSiteFooterMark">
+                Powered by <span class="dsSiteFooterMarkName">FusionPoint Sports</span>
+            </div>
+        
+	</div>
+
+    </div>
+
+
+
+            </div>
+        
+</div>
+
+
+    </form>
+</body>
+</html>

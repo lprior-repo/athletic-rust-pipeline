@@ -1,0 +1,70 @@
+{
+  "1_GetMeetData": {
+    "http": 200,
+    "bytes": 16644,
+    "top_keys": [
+      "addOns",
+      "contactInfoExists",
+      "coverRsUrl",
+      "eventDivsWithResults",
+      "hasSchedule",
+      "hostIsSS",
+      "jwtMeet",
+      "meet",
+      "meetRecordSetInfo",
+      "printEntriesToken",
+      "sport",
+      "sport1",
+      "sport2",
+      "teamScores",
+      "tfDivisions",
+      "timer",
+      "xcDivisions"
+    ],
+    "jwtMeet_present_in_response": true,
+    "jwtMeet_len": 255,
+    "LiveID": null,
+    "HasResults": null,
+    "eventDivsWithResults_len": 45,
+    "tfDivisions_len": 2
+  },
+  "2_GetEventDivisionData": {
+    "http": 200,
+    "bytes": 8341,
+    "top_keys": [
+      "events",
+      "tfDivisions"
+    ],
+    "events_len": 36
+  },
+  "3_GetAllResultsData": {
+    "http": 200,
+    "bytes": 506882,
+    "top_keys": [
+      "canValidateResults",
+      "correctedResultIDs",
+      "eventDivsWithResults",
+      "eventTypes",
+      "flatEvents",
+      "groupedEventsParents",
+      "relayLegs",
+      "rounds",
+      "teams"
+    ],
+    "flatEvents_len": 49,
+    "result_rows": 758,
+    "relayLegs_len": 288,
+    "teams_len": 12,
+    "eventTypes_len": 17,
+    "rounds_len": 2
+  },
+  "request_headers": {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Referer": "https://www.athletic.net/TrackAndField/meet/634313/info",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin"
+  }
+}

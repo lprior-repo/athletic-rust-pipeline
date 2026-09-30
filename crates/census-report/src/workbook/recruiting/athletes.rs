@@ -4,9 +4,7 @@ mod rules;
 pub(crate) use rules::{HEADERS, TITLE, WIDTHS};
 
 use super::super::cells::{row, Cell};
-use super::columns::{
-    coverage_state, flag, observed_grade, observed_school_year, published, source_count,
-};
+use super::columns::{coverage_state, flag, observed_school_year, published, source_count};
 use super::contact::{self, Preferred, ScopedContacts};
 use super::dataset::Dataset;
 use super::facts::AthleteTally;
@@ -96,7 +94,6 @@ fn identity_cells(dataset: &Dataset, athlete: &CanonicalAthlete) -> Vec<Cell> {
         Cell::text(athlete.canonical_name.clone()),
         Cell::text(athlete.gender.stable_key().to_string()),
         Cell::Number(f64::from(athlete.grad_year.get())),
-        observed_grade(athlete),
         observed_school_year(athlete),
         Cell::text(dataset.school_state(school)),
         Cell::text(dataset.school_name(school)),

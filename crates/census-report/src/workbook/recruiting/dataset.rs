@@ -1,10 +1,7 @@
 use crate::bests::SharedSelection;
-use crate::report::{ReportResult, Scope};
-use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalPerformance, CanonicalSchool,
-};
-use census_store::{Store, Table};
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use crate::report::{Derivation, ReportResult, Scope};
+use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalSchool};
+use std::collections::BTreeMap;
 
 use super::contact::{contacts, SchoolContacts};
 use super::facts::{kind_index, pr_index, school_index, tally, AthleteTally};
@@ -24,8 +21,8 @@ pub(super) struct Dataset {
     pub(super) grad_year: Option<i16>,
     pub(super) school_year: census_domain::model::SchoolYear,
     pub(super) athletes: Vec<CanonicalAthlete>,
-    pub(super) identities: census_domain::model::AthleteIdentityProjection,
-    pub(super) schools: BTreeMap<String, CanonicalSchool>,
+    pub(super) identities: std::sync::Arc<census_domain::model::AthleteIdentityProjection>,
+    pub(super) schools: BTreeMap<census_domain::model::SchoolId, CanonicalSchool>,
     pub(super) coaches: Vec<CanonicalCoach>,
     pub(super) contacts: BTreeMap<String, SchoolContacts>,
     pub(super) tallies: BTreeMap<String, AthleteTally>,
@@ -35,64 +32,49 @@ pub(super) struct Dataset {
 }
 
 impl Dataset {
-    pub(super) fn from_shared(
-        scope: Scope,
-        grad_year: Option<i16>,
+    pub(super) fn of(
+        derivation: &Derivation<'_>,
         school_year: census_domain::model::SchoolYear,
-        athletes: &[CanonicalAthlete],
-        schools: &BTreeMap<String, CanonicalSchool>,
-        coaches: &[CanonicalCoach],
-        events: &[CanonicalEvent],
-        performances: &[CanonicalPerformance],
         prs: Vec<SharedSelection>,
     ) -> ReportResult<Self> {
-        let store_athletes = athletes.len();
-        let mut index = census_domain::model::AthleteIdentityIndex::default();
-        for athlete in athletes {
-            index
-                .observe(athlete)
-                .map_err(census_store::StoreError::from)?;
-        }
-        let identities = census_domain::model::AthleteIdentityProjection::default();
-        let schools_vec: Vec<CanonicalSchool> = schools.values().cloned().collect();
-        let schools = school_index(&schools_vec);
-        let contacts = contacts(coaches, school_year);
+        let athletes = derivation.athletes().to_vec();
+        let identities = derivation.dataset().identities();
+        let schools = school_index(derivation.schools());
+        let coaches = derivation.coach_observations().to_vec();
+        let events = derivation.events().to_vec();
+        let performances = derivation.performances().to_vec();
+        let contacts = contacts(&coaches, school_year);
         let contact_conflicts: usize = contacts.values().map(|facts| facts.heads.conflicts()).sum();
-        let kinds = kind_index(events);
-        let tallies = tally(athletes, performances, &kinds);
+        let kinds = kind_index(&events);
+        let tallies = tally(
+            &athletes,
+            &performances,
+            &kinds,
+            derivation.athlete_aliases(),
+        );
         let pr_index = pr_index(&prs);
         let audit = Reconciliation {
-            store_athletes,
-            scoped_athletes: athletes.len(),
+            store_athletes: derivation.dataset().athletes.len(),
+            scoped_athletes: derivation.scoped_athletes(),
             cohort_athletes: athletes.len(),
             pr_rows: prs.len(),
             coach_rows: coaches.len(),
             contact_conflicts,
         };
         Ok(Dataset {
-            scope,
-            grad_year,
+            scope: derivation.scope(),
+            grad_year: derivation.grad_year(),
             school_year,
-            athletes: athletes.to_vec(),
+            athletes,
             identities,
             schools,
-            coaches: coaches.to_vec(),
+            coaches,
             contacts,
             tallies,
             prs,
             pr_index,
             audit,
         })
-    }
-
-    pub(super) fn load(
-        store: &Store,
-        scope: Scope,
-        grad_year: Option<i16>,
-        school_year: census_domain::model::SchoolYear,
-        prs: Vec<SharedSelection>,
-    ) -> ReportResult<Self> {
-        Ok(ScopedTables::read(store, scope, grad_year)?.assemble(prs, school_year))
     }
 
     pub(super) fn audit(&self) -> Reconciliation {
@@ -103,136 +85,27 @@ impl Dataset {
         self.schools
             .get(school)
             .map(|s| s.name.clone())
-            .unwrap_or_else(|| school.to_string())
+            .unwrap_or_default()
     }
 
     pub(super) fn school_state(&self, school: &str) -> String {
         self.schools
             .get(school)
-            .map(|s| s.state.clone())
+            .and_then(|s| s.state.map(|st| st.to_string()))
             .unwrap_or_default()
     }
 
     pub(super) fn school_city(&self, school: &str) -> String {
         self.schools
             .get(school)
-            .map(|s| s.city.clone())
+            .and_then(|s| s.city.clone())
             .unwrap_or_default()
     }
 
-    pub(super) fn prs_of(&self, athlete: &str) -> impl Iterator<Item = &SharedSelection> {
-        self.pr_index
-            .get(athlete)
-            .map(|idxs| idxs.iter().map(|&i| &self.prs[i]))
-            .unwrap_or_else(|| std::iter::empty())
-    }
-}
-
-struct ScopedTables {
-    scope: Scope,
-    grad_year: Option<i16>,
-    schools: Vec<CanonicalSchool>,
-    athletes: Vec<CanonicalAthlete>,
-    identities: census_domain::model::AthleteIdentityProjection,
-    coaches: Vec<CanonicalCoach>,
-    events: Vec<CanonicalEvent>,
-    performances: Vec<CanonicalPerformance>,
-    store_athletes: usize,
-    scoped_athletes: usize,
-}
-
-impl ScopedTables {
-    fn read(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
-        let snapshot = store.snapshot();
-        let mut schools: Vec<CanonicalSchool> = snapshot.scan(Table::Schools)?;
-        let outside_schools = crate::report::exclude_out_of_scope(&mut schools, |school| school.state.into());
-        let mut school_state = crate::report::school_state_index(&schools);
-        school_state.extend(crate::report::school_state_index(&outside_schools));
-        let mut athletes: Vec<CanonicalAthlete> = snapshot.scan(Table::Athletes)?;
-        let store_athletes = athletes.len();
-        let mut index = census_domain::model::AthleteIdentityIndex::default();
-        for athlete in &athletes {
-            index
-                .observe(athlete)
-                .map_err(census_store::StoreError::from)?;
-        }
-        let identities = snapshot.project_athlete_identities(index)?;
-        athletes.retain(|a| crate::report::in_run_scope(crate::report::jurisdiction_of(&school_state, a.school.as_str())));
-        let mut events: Vec<CanonicalEvent> = snapshot.scan(Table::Events)?;
-        let mut performances: Vec<CanonicalPerformance> = snapshot.scan(Table::Performances)?;
-        if scope == Scope::Core {
-            crate::report::retain_core(&mut athletes);
-            crate::report::retain_core(&mut events);
-            crate::report::retain_core(&mut performances);
-        }
-        let scoped_athletes = athletes.len();
-        if let Some(year) = grad_year {
-            athletes.retain(|athlete| athlete.grad_year.get() == year);
-        }
-        let coaches = super::contact::coach_observations(&snapshot)?;
-        let scoped_school_ids: BTreeSet<&str> = schools.iter().map(|s| s.id.as_str()).collect();
-        let coaches: Vec<CanonicalCoach> = coaches
-            .into_iter()
-            .filter(|c| scoped_school_ids.contains(c.school.as_str()))
-            .collect();
-        Ok(Self {
-            scope,
-            grad_year,
-            schools,
-            athletes,
-            identities,
-            coaches,
-            events,
-            performances,
-            store_athletes,
-            scoped_athletes,
-        })
-    }
-
-    fn assemble(
-        self,
-        prs: Vec<SharedSelection>,
-        school_year: census_domain::model::SchoolYear,
-    ) -> Dataset {
-        let Self {
-            scope,
-            grad_year,
-            schools: schools_raw,
-            athletes,
-            identities,
-            coaches,
-            events,
-            performances,
-            store_athletes,
-            scoped_athletes,
-        } = self;
-        let schools = school_index(&schools_raw);
-        let contacts = contacts(&coaches, school_year);
-        let contact_conflicts: usize = contacts.values().map(|facts| facts.heads.conflicts()).sum();
-        let kinds = kind_index(&events);
-        let tallies = tally(&athletes, &performances, &kinds);
-        let pr_index = pr_index(&prs);
-        let audit = Reconciliation {
-            store_athletes,
-            scoped_athletes,
-            cohort_athletes: athletes.len(),
-            pr_rows: prs.len(),
-            coach_rows: coaches.len(),
-            contact_conflicts,
-        };
-        Dataset {
-            scope,
-            grad_year,
-            school_year,
-            athletes,
-            identities,
-            schools,
-            coaches,
-            contacts,
-            tallies,
-            prs,
-            pr_index,
-            audit,
+    pub(super) fn prs_of(&self, athlete: &str) -> Box<dyn Iterator<Item = &SharedSelection> + '_> {
+        match self.pr_index.get(athlete) {
+            Some(idxs) => Box::new(idxs.iter().filter_map(|&i| self.prs.get(i))),
+            None => Box::new(std::iter::empty()),
         }
     }
 }

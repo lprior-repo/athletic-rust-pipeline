@@ -144,10 +144,11 @@ fn lane(
     headless: bool,
     path: Option<&OsStr>,
 ) -> Result<BrowserSettings, BootstrapError> {
+    let profile_dir = absolute(profile_dir)?;
     Ok(BrowserSettings {
         cdp_endpoint: None,
         executable: match executable {
-            Some(executable) => executable,
+            Some(executable) => absolute(executable)?,
             None => browser_on_path(path).ok_or(BootstrapError::LaneBrowserNotOnPath {
                 program: DEFAULT_BROWSER_EXECUTABLE.to_string(),
             })?,
@@ -159,6 +160,11 @@ fn lane(
         challenge_wait: LANE_CHALLENGE_WAIT,
         headed: !headless,
     })
+}
+
+fn absolute(path: PathBuf) -> Result<PathBuf, BootstrapError> {
+    std::path::absolute(&path)
+        .map_err(|source| BootstrapError::LanePathUnresolvable { path, source })
 }
 
 fn browser_on_path(path: Option<&OsStr>) -> Option<PathBuf> {

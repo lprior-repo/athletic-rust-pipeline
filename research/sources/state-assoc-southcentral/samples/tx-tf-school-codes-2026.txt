@@ -1,0 +1,1398 @@
+School Name                  School Codes Conference District   Region
+ABBOTT HS                       ABBO          1A       26         4
+ABERNATHY HS                    ABER          2A        4         1
+ABILENE COOPER HS               ABCO          5A        4         1
+ABILENE HS                       ABIL         5A        4         1
+ABILENE WYLIE HS                ABWY          5A        4         1
+ACKERLY SANDS HS                ACSA          1A        6         1
+ADRIAN HS                        ADRI         1A        3         1
+AGUA DULCE HS                   AGDU          2A       32         4
+Alamo IDEA College Prep          ALID         3A       31         4
+ALBA ALBA-GOLDEN HS             ALBA          2A       19         3
+ALBANY HS                       ALBN          2A       10         2
+ALEDO HS                        ALED          5A        5         1
+ALICE HS                         ALIC         5A       29         4
+ALIEF ELSIK HS                   ALEL         6A       20         3
+ALIEF HASTINGS HS               ALHA          6A       20         3
+alief taylor hs                  ALTA         6A       20         3
+ALLEN HS                         ALLE         6A        6         1
+ALPINE HS                        ALPI         3A        4         1
+ALTAIR RICE HS                   ALRI         3A       25         4
+ALTO HS                         ALTO          2A       22         3
+ALVARADO HS                      ALVA         4A       12         2
+ALVIN HS                         ALVI         6A       22         3
+Alvin Iowa Colony HS            AICO          5A       20         3
+Alvin Shadow Creek HS           ALSC          6A       22         3
+ALVORD HS                       ALVO          2A       13         2
+AMARILLO CAPROCK HS             AMCA          5A        3         1
+AMARILLO HIGHLAND PARK HS       AMHP          2A        2         1
+AMARILLO HS                     AMAR          5A        3         1
+AMARILLO PALO DURO HS           AMPD          5A        3         1
+AMARILLO RIVER ROAD HS          AMRR          3A        1         1
+AMARILLO TASCOSA HS             AMTA          5A        3         1
+AMHERST HS                      AMHE          1A        5         1
+ANAHUAC HS                      ANAC          3A       22         3
+ANDERSON ANDERSON-SHIRO HS      ANSH          3A       23         3
+ANDREWS HS                      ANDR          4A        3         1
+ANGLETON HS                     ANGL          5A       20         3
+ANNA HS                         ANNA          5A        9         2
+ANSON HS                        ANSO          2A       10         2
+ANTHONY HS                      ANTH          3A        4         1
+ANTON HS                        ANTO          1A        5         1
+APPLE SPRINGS HS                APSP          1A       27         4
+AQUILLA HS                      AQUI          1A       26         4
+ARANSAS PASS HS                 ARPA          3A       29         4
+ARCHER CITY HS                   ARCI         2A        9         2
+ARGYLE HS                       ARGY          5A        6         1
+ARLINGTON BOWIE HS              ARBO          6A        8         1
+ARLINGTON HOUSTON HS            ARHO          6A        8         1
+ARLINGTON HS                     ARLI         6A        8         1
+ARLINGTON LAMAR HS                                ARLA    6A    8   1
+ARLINGTON MARTIN HS                               ARMA    6A    8   1
+arlington seguin hs                               ARSE    5A    8   1
+ARP HS                                            ARPH    3A   16   2
+ASPERMONT HS                                      ASPE    1A   15   2
+ATHENS HS                                         ATHE    4A   15   2
+ATLANTA HS                                         ATLA   3A   14   2
+AUBREY HS                                         AUBR    4A    9   2
+Austin Achieve HS                                 AANE    4A   25   4
+AUSTIN AKINS HS                                   AUAK    6A   26   4
+AUSTIN ANDERSON HS                                AUAN    5A   24   3
+AUSTIN ANN RICHARDS SCH FOR YOUNG Women Leaders   AUAR    5A   24   3
+AUSTIN BOWIE HS                                   AUBO    6A   26   4
+AUSTIN CROCKETT HS                                AUCR    5A   24   3
+Austin Eastside                                   AUEM    4A   25   4
+AUSTIN HS                                         AUST    6A   26   4
+AUSTIN JOHNSON HS                                 AUJO    4A   25   4
+AUSTIN LAKE TRAVIS HS                             AULT    6A   26   4
+Austin LASA                                       AULA    5A   24   3
+AUSTIN MCCALLUM HS                                AUMC    5A   24   3
+AUSTIN Navarro ECHS                               AUNA    5A   24   3
+Austin Northeast ECHS                             AUNE    4A   25   4
+AUSTIN TRAVIS HS                                  AUTR    4A   25   4
+Austin Vandegrift HS                              AUVA    6A   25   4
+AUSTIN WESTLAKE HS                                AUWL    6A   26   4
+AUSTWELL-TIVOLI HS                                 AUTI   1A   30   4
+AVALON HS                                         AVAL    1A   23   3
+AVERY HS                                          AVER    1A   20   3
+AVINGER HS                                         AVIN   1A   20   3
+AXTELL HS                                          AXTL   2A   17   3
+AZLE HS                                            AZLE   5A    5   1
+BAIRD HS                                           BAIR   1A   13   2
+BALLINGER HS                                       BALL   2A    8   1
+BALMORHEA HS                                      BALM    1A    9   2
+BANDERA HS                                        BAND    4A   26   4
+BANGS HS                                          BANG    2A    8   1
+BANQUETE HS                                       BANQ    3A   30   4
+BARKSDALE NUECES CANYON HS                        BANC    1A   31   4
+BARTLETT HS                                       BART    2A   27   4
+bastrop cedar creek hs                            BACC    5A   24   3
+BASTROP HS                                        BAST    5A   24   3
+BAY CITY HS                                       BACT    4A   29   4
+Baytown Goose Creek Memorial HS                   BAGC    6A   23   3
+BAYTOWN LEE HS                                    BALE    5A   19   3
+BAYTOWN STERLING HS                                BYST   5A   19   3
+Beaumont United HS                                BEUN    5A   19   3
+BEAUMONT WEST BROOK HS                            BEWB    5A   19   3
+BECKVILLE HS                                      BECK    2A   23   3
+BEEVILLE JONES HS                                 BEJO    4A   30   4
+BELLEVUE HS                             BEVE    1A   18   3
+BELLS HS                                BELS    3A   11   2
+BELLVILLE HS                            BELV    4A   22   3
+BELTON HS                                BELT   5A   16   2
+Belton New Tech High School at Waskow   BNTW    3A   19   3
+BEN BOLT-Palito Blanco HS               BENB    2A   32   4
+BENAVIDES HS                            BENA    1A   32   4
+BENJAMIN HS                             BENJ    1A   16   2
+BIG LAKE REAGAN COUNTY HS               BLRC    2A    7   1
+Big Sandy HARMONY HS                    BSHA    3A   13   2
+BIG SANDY HS                             BISA   2A   21   3
+BIG SPRING HS                            BISP   4A    5   1
+BISHOP HS                                BISH   3A   30   4
+BLACKWELL HS                            BLAC    1A   11   2
+BLANCO HS                               BLAN    3A    5   1
+BLANKET HS                               BLKT   1A   21   3
+BLOOMBURG HS                            BLOO    1A   20   3
+BLOOMING GROVE HS                       BLGR    3A   18   3
+BLOOMINGTON HS                          BLTN    2A   28   4
+BLUE RIDGE HS                           BLUE    3A   11   2
+Bluff Dale HS                           BDHS    1A   22   3
+BLUM HS                                 BLUM    1A   23   3
+BOERNE CHAMPION HS                      BOCH    5A   26   4
+BOERNE HS                               BOER    5A   26   4
+BOGATA RIVERCREST HS                    BORI    2A   16   2
+BOLING HS                                BOLI   3A   24   3
+BONHAM HS                               BONH    4A   14   2
+BOOKER HS                               BOOK    1A    1   1
+BORDEN County HS                         GAIL   1A    6   1
+BORGER HS                               BORG    4A    4   1
+BOSQUEVILLE HS                          BOSQ    2A   12   2
+BOVINA HS                               BOVI    2A    3   1
+BOWIE GOLD-BURG HS                      BOGB    1A   18   3
+BOWIE HS                                BOWI    3A    7   1
+BOYD HS                                 BOYD    3A   10   2
+BOYS RANCH HS                           BORA    1A    3   1
+BRACKETTVILLE BRACKETT HS               BRKT    2A   30   4
+BRADY HS                                BRAD    3A    5   1
+BRECKENRIDGE HS                         BREC    3A    8   1
+BREMOND HS                              BREM    2A   26   4
+BRENHAM HS                              BREN    5A   17   3
+BRIDGE CITY HS                          BRCI    4A   18   3
+Bridgeland HS                            BRID   6A   16   2
+BRIDGEPORT HS                           BRPT    4A    7   1
+BRISCOE FORT ELLIOTT HS                 BRFE    1A    1   1
+BROADDUS HS                             BROA    1A   27   4
+BROCK HS                                BROC    4A    6   1
+BRONTE HS                               BRON    1A   11   2
+BROOKELAND HS                           BRLD    1A   28   4
+BROOKESMITH HS                              BRSM    1A   25   4
+BROWNFIELD HS                               BWNF    3A    3   1
+BROWNSBORO HS                               BWNB    4A   15   2
+BROWNSVILLE HANNA HS                        BRHA    6A   32   4
+Brownsville IDEA Frontier College Prep      BRFC    3A   32   4
+Brownsville IDEA Riverview                   BRIR   3A   32   4
+Brownsville IDEA Sports Park College Prep    BIDS   3A   32   4
+Brownsville Jubilee                         BRJU    4A   32   4
+BROWNSVILLE LOPEZ HS                        BRLO    5A   32   4
+BROWNSVILLE PACE HS                         BRPA    5A   32   4
+BROWNSVILLE PORTER HS                       BRPO    5A   32   4
+BROWNSVILLE RIVERA HS                        BRRI   5A   32   4
+brownsville veterans memorial HS            BRVE    6A   32   4
+BROWNWOOD HS                                BRWD    4A    6   1
+BRUNI HS                                    BRUN    1A   32   4
+BRYAN HS                                    BRYA    6A   12   2
+bryan rudder hs                             BRRU    5A   17   3
+BRYSON HS                                   BRYS    1A   17   3
+BUCKHOLTS HS                                BUCK    1A   29   4
+BUDA HAYS HS                                BUDA    5A   25   4
+Buda Johnson HS                             BUJO    6A   29   4
+Buda Live Oak Academy                       BLOA    2A   29   4
+BUFFALO HS                                  BUFF    3A   20   3
+BULLARD HS                                  BULL    4A   17   3
+BUNA HS                                     BUNA    3A   22   3
+BURKBURNETT HS                              BURK    4A    7   1
+BURKEVILLE HS                               BKVL    1A   28   4
+Burleson Centennial HS                      BCEN    5A    8   1
+BURLESON HS                                 BURL    5A    8   1
+BURNET HS                                   BURN    4A   24   3
+BURTON HS                                   BURT    2A   26   4
+Bushland HS                                 BUSH    3A    1   1
+BYNUM HS                                    BYNU    1A   23   3
+CADDO MILLS HS                              CAMI    4A   13   2
+Caldwell HS                                 CALD    4A   22   3
+CALLISBURG HS                               CALL    3A   10   2
+CALVERT HS                                  CALV    1A   29   4
+CAMERON YOE HS                              CYOE    3A   19   3
+CAMPBELL HS                                 CAMP    1A   19   3
+CANADIAN HS                                 CANA    3A    1   1
+CANTON HS                                   CANT    4A   15   2
+CANUTILLO HS                                CANU    5A    1   1
+CANYON HS                                   CANY    4A    4   1
+CANYON RANDALL HS                           CARA    4A    4   1
+Canyon West Plains High School              CAWP    4A    4   1
+CARRIZO SPRINGS HS                          CASP    4A   27   4
+CARROLLTON CREEKVIEW HS                     CACR    5A   12   2
+carrollton ranchview hs                     CRRA    4A   10   2
+CARROLLTON SMITH HS                         CASM    5A   12   2
+CARROLLTON TURNER HS                  CATU    5A   12   2
+CARTHAGE HS                           CART    4A   16   2
+CASTROVILLE MEDINA VALLEY HS          CAMV    6A   30   4
+CAYUGA HS                             CAYU    2A   19   3
+CEDAR HILL HS                         CEHI    6A   11   2
+CEDAR PARK HS                         CEPA    5A   25   4
+cedar park vista ridge hs             CPVR    6A   25   4
+CELESTE HS                            CELE    2A   14   2
+CELINA HS                              CELI   4A    9   2
+CENTER HS                             CENT    4A   17   3
+CENTER POINT HS                       CEPO    2A   29   4
+CENTERVILLE HS                        CENV    2A   20   3
+CHANNELVIEW HS                        CHAV    6A   23   3
+CHANNING HS                           CHAN    1A    3   1
+CHARLOTTE HS                          CHAR    2A   30   4
+CHEROKEE HS                           CHER    1A   25   4
+CHESTER HS                            CHES    1A   28   4
+CHICO HS                              CHIC    2A   13   2
+CHILDRESS HS                          CHIL    3A    1   1
+CHILLICOTHE HS                        CHCO    1A   16   2
+CHILTON HS                            CLTN    2A   17   3
+CHINA SPRING HS                       CHSP    4A   23   3
+CHIRENO HS                            CHIR    2A   24   3
+CHRISTOVAL HS                         CHRI    2A    7   1
+CIBOLO steele hs                       CIST   6A   29   4
+CISCO HS                              CISC    2A   10   2
+CLARENDON HS                          CLAR    2A    2   1
+CLARKSVILLE HS                        CLKV    2A   16   2
+CLAUDE HS                             CLAU    1A    2   1
+CLEBURNE HS                           CLEB    5A    8   1
+CLEVELAND HS                          CLEV    6A   13   2
+CLEVELAND TARKINGTON HS               CLTA    4A   19   3
+CLIFTON HS                             CLIF   3A   17   3
+clint horizon hs                      CLHO    5A    2   1
+CLINT HS                              CLIN    4A    2   1
+CLINT MOUNTAIN VIEW HS                CLMV    4A    2   1
+CLUTE BRAZOSWOOD HS                   CLBW    6A   24   3
+CLYDE EULA HS                         CLEU    1A   13   2
+CLYDE HS                              CLYD    3A    6   1
+COAHOMA HS                            COAH    3A    3   1
+COLDSPRING-OAKHURST HS                COOA    3A   23   3
+COLEMAN HS                            COLE    2A    8   1
+College Station A&M Consolidated HS   CSAM    5A   17   3
+College Station HS                    CSTH    5A   17   3
+COLLEYVILLE HERITAGE HS               COHE    5A    6   1
+COLLINSVILLE HS                       COLL    2A   13   2
+COLMESNEIL HS                         COLM    2A   24   3
+COLORADO CITY COLORADO HS             COLO    2A    8   1
+COLUMBUS HS                           COLU    3A   25   4
+Comal Canyon HS                       NEBC    6A   29   4
+Comal Canyon Lake HS                  COCL    4A   26   4
+Comal Davenport HS                    CODA    4A   26   4
+Comal Pieper HS                        COPI   5A   26   4
+Comal Smithson Valley HS              SBSV    5A   26   4
+COMANCHE HS                           COMA    3A    8   1
+COMFORT HS                            COMF    3A    5   1
+COMMERCE HS                           COMM    3A   12   2
+COMO-PICKTON HS                       COMO    2A   15   2
+COMSTOCK HS                           COMS    1A   31   4
+CONROE CANEY CREEK HS                 COCC    6A   13   2
+Conroe Grand Oaks HS                  COGO    6A   13   2
+CONROE HS                             CONR    6A   13   2
+CONROE OAK RIDGE HS                   COOR    6A   13   2
+CONROE THE WOODLANDS HS               COTW    6A   13   2
+conroe woodlands college park hs      CWCP    6A   13   2
+CONVERSE JUDSON HS                    COJU    6A   29   4
+COOLIDGE HS                           COOL    1A   24   3
+COOPER HS                             COOP    2A   15   2
+COPPELL HS                            COPP    6A    5   1
+COPPERAS COVE HS                      COCO    6A   12   2
+CORPUS CHRISTI CALALLEN HS            CCCA    4A   31   4
+CORPUS CHRISTI CARROLL HS             CCCR    5A   29   4
+CORPUS CHRISTI FLOUR BLUFF HS         CCFB    5A   29   4
+CORPUS CHRISTI KING HS                 CCKI   5A   29   4
+Corpus Christi London HS              CCLO    3A   29   4
+CORPUS CHRISTI MILLER HS              CCMI    5A   29   4
+CORPUS CHRISTI MOODY HS               CCMO    5A   29   4
+CORPUS CHRISTI RAY HS                 CCRA    5A   29   4
+CORPUS CHRISTI TULOSO-MIDWAY HS       CCTM    4A   31   4
+Corpus Christi Veterans Memorial HS   CCVM    5A   29   4
+CORPUS CHRISTI WEST OSO HS            CCWO    3A   29   4
+CORRIGAN-CAMDEN HS                    COCA    2A   24   3
+CORSICANA HS                          CORS    5A   15   2
+COTTON CENTER HS                      COCE    1A    5   1
+COTULLA HS                            COTU    3A   28   4
+COVINGTON HS                           COVI   1A   23   3
+CRANDALL HS                           CRAN    5A   15   2
+CRANE HS                              CRNE    3A    3   1
+CRANFILLS GAP HS                      CRGA    1A   26   4
+CRAWFORD HS                           CRAW    2A   12   2
+CROCKETT HS                           CROC    3A   23   3
+CROSBY HS                             CROS    5A   18   3
+CROSBYTON HS                          CRTN    1A    7   1
+CROSS PLAINS HS                       CRPL    1A   21   3
+CROWELL HS                            CROW    1A   16   2
+CROWLEY HS                            CRLY    6A    3   1
+CRYSTAL CITY HS                        CRCI   3A   28   4
+CUERO HS                              CUER    4A   28   4
+Cumberland Academy HS                CUAC    4A   16   2
+Cumby HS                             CUMB    2A   15   2
+CUSHING HS                           CUSH    2A   22   3
+CY-FAIR HS                           HOCF    6A   17   3
+Cypress Creek HS                     HOCC    6A   17   3
+Cypress Falls HS                     HOFL    6A   17   3
+cypress Lakes hs                     HOLK    6A   16   2
+Cypress Park HS                      HOCP    6A   16   2
+cypress ranch hs                     HORA    6A   16   2
+cypress ridge hs                     HOCR    6A   17   3
+CYPRESS SPRINGS HS                   HOCS    6A   16   2
+cypress woods hs                     HOCW    6A   16   2
+D'HANIS HS                           DHAN    1A   31   4
+DAINGERFIELD HS                       DAIN   3A   13   2
+DAISETTA HULL-DAISETTA HS             DAIS   1A   28   4
+DALHART HS                           DALH    3A    1   1
+dallardsville big sandy hs           DABS    2A   25   4
+Dallas A+ Academy                    DAAA    3A    9   2
+DALLAS ADAMS HS                      DAAD    5A   14   2
+DALLAS ADAMSON HS                    DAAM    5A   13   2
+Dallas Carter HS                     DACA    4A   11   2
+dallas conrad hs                     DACO    4A   11   2
+dallas gateway charter academy       DAGA    3A    9   2
+DALLAS HIGHLAND PARK HS              DAHP    5A   12   2
+DALLAS HILLCREST HS                   DAHI   5A   13   2
+Dallas Hutchins HS                   DHUT    4A   11   2
+DALLAS JEFFERSON HS                   DAJE   5A   13   2
+dallas jesuit college prep            DJES   6A    7   1
+DALLAS KIMBALL HS                     DAKI   4A   11   2
+DALLAS LIFE SCHOOL OAK CLIFF         DALC    3A    9   2
+DALLAS LINCOLN HS                     DALI   4A   11   2
+DALLAS MADISON HS                    DAMA    3A    9   2
+DALLAS MOLINA HS                     DAMO    5A   13   2
+DALLAS NORTH DALLAS HS               DAND    4A   11   2
+DALLAS PINKSTON HS                    DAPI   4A   11   2
+DALLAS ROOSEVELT HS                  DARO    4A   11   2
+DALLAS SAMUELL HS                    DASA    5A   14   2
+DALLAS SEAGOVILLE HS                 DASE    5A   14   2
+DALLAS SKYLINE HS                    DASK    6A   11   2
+DALLAS SOUTH OAK CLIFF HS            DASO    5A   13   2
+DALLAS SPRUCE HS                     DASP    5A   14   2
+DALLAS SUNSET HS                     DASU    5A   13   2
+Dallas Uplift Williams Preparatory   DUWP    4A   10   2
+DALLAS WHITE HS                      DAWH    5A   13   2
+DALLAS WILSON HS                     DAWI    5A   14   2
+Danbury HS                           DANB    2A   25   4
+Darrouzett HS                        DARR    1A    1   1
+Dawson HS                            DAWS    2A   18   3
+Dayton HS                             DAYT   5A   18   3
+De Kalb HS                         DEKA    3A   14   2
+De Leon HS                         DELE    2A   11   2
+Decatur HS                         DECA    4A    7   1
+Deer Park HS                       DEER    6A   24   3
+Del Rio HS                          DERI   6A   30   4
+Del Valle HS                       DEVA    6A   26   4
+Dell City HS                       DECI    1A    9   2
+Denison HS                         DENI    5A    9   2
+Denton Braswell HS                 DEBR    6A    5   1
+Denton Guyer HS                    DEGU    6A    5   1
+Denton HS                          DENT    5A    6   1
+DENTON RYAN HS                     DERY    5A    6   1
+Denver City HS                     DECT    3A    3   1
+DeSoto HS                          DESO    6A   11   2
+Detroit HS                         DETR    2A   16   2
+Devine HS                           DEVI   4A   27   4
+Deweyville HS                      DEWE    2A   25   4
+DIANA NEW DIANA HS                 DIND    3A   13   2
+DIBOLL HS                          DIBO    3A   21   3
+DICKINSON HS                       DICK    6A   24   3
+DILLEY HS                           DILL   3A   28   4
+DIME BOX HS                         DIBX   1A   29   4
+DIMMITT HS                         DIMM    3A    2   1
+DODD CITY HS                       DODD    1A   19   3
+DONNA HS                           DONN    5A   32   4
+Donna IDEA College Prep            DICP    3A   31   4
+donna north hs                     DONO    5A   32   4
+DOUGLASS HS                        DOUG    2A   22   3
+DRIPPING SPRINGS HS                 DRIP   6A   26   4
+DUBLIN HS                          DUBL    3A    8   1
+DUMAS HS                           DUMA    4A    4   1
+DUNCANVILLE HS                     DUNC    6A   11   2
+Duncanville Village Tech HS        DUVT    3A    9   2
+Eagle Mountain HS                  EAMO    4A    7   1
+eagle pass hs                      EAPA    6A   30   4
+EAGLE PASS WINN HS                 EPWI    5A   28   4
+EARLY HS                           EARL    3A    8   1
+EARTH SPRINGLAKE HS                EASP    1A    4   1
+EAST BERNARD HS                    EABE    3A   24   3
+EASTLAND HS                        EAST    3A    8   1
+ECTOR HS                           ECTO    1A   19   3
+EDCOUCH EDCOUCH-ELSA HS            EDEL    5A   32   4
+EDDY BRUCEVILLE-EDDY HS            EDDY    2A   17   3
+Eden HS                            EDEN    1A   12   2
+EDGEWOOD HS                        EDGE    3A   15   2
+EDINBURG ECONOMEDES HS             EDEC    6A   31   4
+EDINBURG HS                        EDIN    6A   31   4
+Edinburg IDEA College Prep          EICP   3A   31   4
+Edinburg IDEA Quest College Prep   EQCP    3A   31   4
+EDINBURG NORTH HS                  EDNO    6A   31   4
+edinburg vela hs                   EDVL    5A   31   4
+EDNA HS                            EDNA    3A   25   4
+EL CAMPO HS                        ELCA    4A   29   4
+EL MATON TIDEHAVEN HS              EMTH    3A   25   4
+EL PASO AMERICAS HS                EPAM    5A    2   1
+EL PASO ANDRESS HS                 EPAN    5A    1   1
+EL PASO AUSTIN HS                  EPAU    4A    1   1
+EL PASO BEL AIR HS                 EPBA    5A    2   1
+EL PASO BOWIE HS                   EPBO    4A    1   1
+EL PASO BURGES HS                  EPBU    5A    1   1
+El Paso Chapin HS                  EPCH    5A    1   1
+EL PASO CORONADO HS                EPCO    6A    1   1
+El Paso Del Valle HS               EPDV    5A    2   1
+El Paso Eastlake HS                EPEL    6A    1   1
+EL PASO EASTWOOD HS                EPEA    6A    1   1
+EL PASO EL DORADO HS               EPED    5A    2   1
+EL PASO FRANKLIN HS                EPFR    6A    1   1
+EL PASO HANKS HS                   EPHA    5A    2   1
+El Paso Harmony Science Academy    EPHS    4A    1   1
+EL PASO HS                         ELPA    5A    1   1
+EL PASO IRVIN HS                    EPIR   4A    1   1
+EL PASO JEFFERSON HS                EPJE   5A    1   1
+EL PASO MONTWOOD HS                EPMO    6A    1   1
+EL PASO PARKLAND HS                EPPA    5A    2   1
+El Paso Pebble Hills HS            EPPH    6A    1   1
+EL PASO RIVERSIDE HS                EPRI   4A    2   1
+EL PASO SOCORRO HS                 EPSO    6A    1   1
+El Paso Young Women's Leadership   EPYW    4A    2   1
+EL PASO YSLETA HS                  EPYS    4A    2   1
+ELDORADO HS                        ELDO    2A    7   1
+ELECTRA HS                         ELEC    2A    9   2
+ELGIN HS                            ELGI   5A   23   3
+ELKHART HS                         ELKH    3A   20   3
+ELYSIAN FIELDS HS                   ELFI   2A   23   3
+ENNIS HS                           ENNI    5A   15   2
+ERA HS                             ERAH    2A   13   2
+EULESS TRINITY HS                  EUTR    6A    4   1
+EUSTACE HS                         EUST    3A   15   2
+EVADALE HS                         EVAD    2A   25   4
+EVANT HS                           EVAN    1A   26   4
+EVERMAN HS                         EVER    5A    8   1
+FABENS HS                          FABE    4A    2   1
+FAIRFIELD HS                        FAIR   3A   20   3
+FALFURRIAS HS                      FALF    3A   30   4
+FALLS CITY HS                       FALL   2A   30   4
+FARMERSVILLE HS                    FARM    4A   13   2
+FARWELL HS                         FARW    2A    3   1
+fate pioneer technology            FAPT    2A   15   2
+FAYETTEVILLE HS                                FAYE    1A   29   4
+FERRIS HS                                      FERR    4A   12   2
+FLATONIA HS                                    FLAT    2A   28   4
+FLORENCE HS                                    FLOR    3A    5   1
+FLORESVILLE HS                                  FLVI   4A   27   4
+FLOYDADA HS                                    FLOY    2A    4   1
+FOLLETT HS                                     FOLL    1A    1   1
+FORESTBURG HS                                  FORE    1A   18   3
+FORNEY HS                                     FORN     6A   10   2
+FORSAN HS                                      FORS    2A    7   1
+Fort Bend AUSTIN HS                            FBAU    6A   21   3
+Fort Bend Bush HS                              FBBU    6A   21   3
+Fort Bend CLEMENTS HS                          FBCL    6A   21   3
+Fort Bend Crawford                             FBCR    4A   21   3
+Fort Bend DULLES HS                           FBDU     6A   21   3
+Fort Bend ELKINS HS                            FBEL    6A   21   3
+Fort Bend HIGHTOWER HS                         FBHI    6A   21   3
+Fort Bend KEMPNER HS                           FBKE    5A   22   3
+fort bend marshall hs                         FBMA     5A   22   3
+fort bend ridge point HS                       FBRP    6A   21   3
+fort bend Travis hs                            FBTR    6A   21   3
+Fort Bend WILLOWRIDGE HS                       FBWI    4A   21   3
+FORT DAVIS HS                                  FTDA    1A    9   2
+FORT HANCOCK HS                                FTHA    2A    6   1
+FORT STOCKTON HS                               FTST    4A    3   1
+FORT WORTH ARLINGTON HEIGHTS HS               FWAH     5A    7   1
+Fort Worth Benbrook HS                        FWBB     4A    8   1
+FORT WORTH BOSWELL HS                         FWBO     6A    3   1
+FORT WORTH CARTER-RIVERSIDE HS                FWCR     4A    8   1
+Fort Worth Chisholm Trail HS                  FWCT     5A    5   1
+FORT WORTH DIAMOND HILL-JARVIS HS             FWDH     4A    8   1
+FORT WORTH DUNBAR HS                          FWDU     4A    8   1
+FORT WORTH EASTERN HILLS HS                   FWEH     4A    8   1
+Fort Worth Harmony School Innovation          FWHS     3A    9   2
+FORT WORTH NORTH SIDE HS                      FWNS     5A    7   1
+FORT WORTH PASCHAL HS                         FWPA     5A    7   1
+FORT WORTH POLYTECHNIC HS                     FWPO     5A    7   1
+FORT WORTH SOUTH HILLS HS                     FWSH     5A    7   1
+FORT WORTH SOUTHWEST HS                       FWSW     4A    8   1
+FORT WORTH TRIMBLE TECH HS                     FWTT    5A    7   1
+FORT WORTH WESTERN HILLS HS                   FWWH     4A    8   1
+FORT WORTH WYATT HS                           FWWY     5A    7   1
+Fort Worth Young Men's Leadership Acad        FWML     3A    9   2
+Fort Worth Young Women's Leadership Academy   FWWL     3A    9   2
+FRANKLIN HS                                    FRKL    3A   19   3
+FRANKSTON HS                                   FRKS    2A   19   3
+FREDERICKSBURG HS                              FRED    4A   26   4
+FREEPORT BRAZOSPORT HS                         FRBP    4A   29   4
+FREER HS                                       FREE    2A   32   4
+Frenship Memorial HS              FMEM    4A    5   1
+FRIENDSWOOD CLEAR BROOK HS        FRCB    6A   24   3
+FRIENDSWOOD HS                    FRSW    5A   20   3
+FRIONA HS                          FRIO   3A    2   1
+frisco centennial hs              FRCE    5A   11   2
+Frisco Emerson HS                 FREM    5A   11   2
+Frisco Heritage HS                FRHE    5A   11   2
+FRISCO HS                          FRIS   5A   11   2
+Frisco Independence HS             FRIN   5A   11   2
+Frisco Lebanon Trail HS           FRLE    5A   11   2
+frisco liberty hs                  FRLI   5A   11   2
+frisco lone star HS               FRLO    5A   12   2
+Frisco Memorial HS                FRME    5A   11   2
+Frisco Panther Creek HS           FRPC    4A    9   2
+Frisco Reedy HS                   FRRE    5A   12   2
+frisco wakeland hs                FRWA    5A   12   2
+FROST HS                          FROS    2A   18   3
+FRUITVALE HS                      FRUT    2A   19   3
+GAINESVILLE HS                    GAIN    4A    9   2
+GALENA PARK HS                    GALP    5A   21   3
+GALENA PARK NORTH SHORE HS        GPNS    6A   23   3
+GALVESTON BALL HS                 GALB    5A   20   3
+GANADO HS                         GANA    2A   28   4
+Garden City HS                    GARD    1A   11   2
+GARLAND HS                        GARL    6A    9   2
+GARLAND LAKEVIEW CENTENNIAL HS    GALC    6A    9   2
+GARLAND NAAMAN FOREST HS          GANF    6A    9   2
+GARLAND ROWLETT HS                GARO    6A    9   2
+GARLAND SACHSE HS                 GASA    6A    9   2
+Garner Preparatory Academy        GARN    1A   17   3
+GARRISON HS                       GARR    2A   23   3
+GARY HS                           GARY    2A   23   3
+GATESVILLE HS                     GATE    4A   23   3
+GEORGE WEST HS                    GEWE    3A   29   4
+Georgetown East view hs           GEEV    5A   23   3
+Georgetown Gateway College Prep   GEGA    4A   24   3
+GEORGETOWN HS                     GEGT    5A   23   3
+GERONIMO NAVARRO HS               GERO    4A   28   4
+Gholson School                    GHOL    1A   26   4
+GIDDINGS HS                       GIDD    4A   22   3
+GILMER HS                         GILM    4A   16   2
+GILMER UNION HILL HS              GIUH    1A   20   3
+GLADEWATER HS                     GLAD    3A   16   2
+GLADEWATER SABINE HS              GLSA    3A   16   2
+GLADEWATER UNION GROVE HS         GLUG    2A   21   3
+GLEN ROSE HS                      GLEN    4A    6   1
+GODLEY HS                         GODL    4A   12   2
+GOLDTHWAITE HS                    GOLD    2A   29   4
+GOLIAD HS                         GOLI    3A   26   4
+GONZALES HS                                 GONZ    4A   28   4
+GOODRICH HS                                 GOOD    1A   28   4
+GORDON HS                                   GORD    1A   13   2
+GORMAN HS                                   GORM    1A   22   3
+GRAFORD HS                                  GRAF    2A   11   2
+GRAHAM HS                                   GRAH    4A    6   1
+GRANBURY HS                                 GRAN    5A    5   1
+GRAND PRAIRIE HS                            GRPR    6A    8   1
+GRAND SALINE HS                             GRSL    3A   15   2
+GRANDFALLS GRANDFALLS-ROYALTY HS            GRRO    1A   10   2
+GRANDVIEW HS                                GRAV    3A   18   3
+GRANGER HS                                  GRAG    2A   27   4
+GRAPELAND HS                                GRAP    2A   20   3
+GRAPEVINE HS                                GRPV    5A    6   1
+Great Hearts Northern Oaks                  GHNO    3A   27   4
+GREENVILLE HS                               GREN    5A    9   2
+Greenville Pioneer Technology               GRPT    2A   15   2
+GREGORY-PORTLAND HS                         GREG    5A   29   4
+GROESBECK HS                                GROE    3A   20   3
+GROOM HS                                    GROO    1A    2   1
+GROVETON CENTERVILLE HS                     GRCE    1A   27   4
+GROVETON HS                                 GROV    2A   20   3
+GRUVER HS                                   GRUV    2A    1   1
+GUNTER HS                                   GUNT    3A   11   2
+GUSTINE HS                                  GUST    1A   21   3
+GUTHRIE HS                                  GUTH    1A    8   1
+HALE CENTER HS                              HACE    2A    3   1
+HALLETTSVILLE HS                            HALV    3A   25   4
+HALLSVILLE HS                               HALS    5A   10   2
+HALTOM CITY HALTOM HS                       HACI    6A    8   1
+HAMILTON HS                                 HAMT    2A   11   2
+HAMLIN HS                                   HAML    1A   15   2
+HAMSHIRE-FANNETT HS                         HAFA    4A   19   3
+HAPPY HS                                    HAPP    1A    4   1
+HARDIN HS                                   HARD    3A   22   3
+Hardin-Jefferson HS                          SLHJ   4A   19   3
+HARLETON HS                                 HALT    2A   21   3
+HARLINGEN HS                                HARG    6A   32   4
+HARLINGEN SOUTH HS                          HASO    5A   32   4
+Harmony School of innovation - Sugar land    SLHI   4A   21   3
+Harmony School of Innovation - Waco         HSIW    3A   17   3
+HARPER HS                                   HARP    2A   29   4
+HARROLD HS                                  HARR    1A   16   2
+HART HS                                     HART    1A    4   1
+HARTLEY HS                                  HRTY    1A    3   1
+Harts Bluff ECHS                            HBEC    2A   16   2
+HASKELL HS                                  HASK    2A   10   2
+HASKELL PAINT CREEK HS                      HAPC    1A   15   2
+HAWKINS HS                                  HAWK    2A   21   3
+HAWLEY HS                                 HAWL    2A   10   2
+HEARNE HS                                 HEAR    2A   26   4
+HEBBRONVILLE HS                           HEBB    3A   30   4
+HEDLEY HS                                 HEDL    1A    2   1
+HEMPHILL HS                               HEMH    2A   24   3
+HEMPSTEAD HS                              HEMP    3A   24   3
+HENDERSON HS                              HEND    4A   16   2
+HENRIETTA HS                              HENR    3A    7   1
+HENRIETTA MIDWAY HS                       HEMI    1A   18   3
+Hereford HS                               HERE    4A    4   1
+HERMLEIGH HS                              HERM    1A   14   2
+HICO HS                                   HICO    2A   11   2
+Hidalgo Early College HS                  HIEC    4A   32   4
+HIGH ISLAND HS                             HIIS   1A   28   4
+HILLSBORO HS                               HILL   4A   12   2
+HITCHCOCK HS                               HITC   3A   24   3
+HOLLAND HS                                HLLD    2A   27   4
+HOLLIDAY HS                                HOLI   3A    7   1
+HONDO HS                                  HOND    3A   28   4
+HONEY GROVE HS                            HOGR    2A   14   2
+HOOKS HS                                  HOOK    3A   14   2
+HOUSTON ALDINE HS                         HOAL    6A   14   2
+HOUSTON AUSTIN HS                         HOAU    5A   21   3
+HOUSTON BELLAIRE HS                       HOBE    6A   18   3
+Houston Benjamin Davis Sr hs              HOBD    6A   14   2
+HOUSTON CARNEGIE VANGUARD HS              HOCV    5A   21   3
+HOUSTON CHAVEZ HS                         HOCH    6A   18   3
+HOUSTON CLEAR LAKE HS                     HOCL    6A   24   3
+HOUSTON EISENHOWER HS                     HOEI    6A   14   2
+HOUSTON FURR HS                           HOFU    4A   20   3
+HOUSTON Heights HS                        HOHE    6A   18   3
+HOUSTON KASHMERE HS                       HOKS    4A   20   3
+HOUSTON LAMAR HS                          HOLA    6A   18   3
+HOUSTON MACARTHUR HS                      HOMA    6A   14   2
+HOUSTON MADISON HS                        HOMD    5A   21   3
+houston math science & technology hs      HOMS    6A   18   3
+HOUSTON MEMORIAL HS                       HOME    6A   17   3
+Houston Mickey Leland College Prep Acad   HOYM    4A   20   3
+HOUSTON MILBY HS                          HOMI    5A   21   3
+HOUSTON NIMITZ HS                         HONI    6A   14   2
+HOUSTON North Forest HS                   HONF    4A   20   3
+HOUSTON NORTHBROOK HS                     HONB    6A   17   3
+Houston Northside HS                      HONS    4A   20   3
+HOUSTON SCARBOROUGH HS                    HOSC    4A   20   3
+HOUSTON SHARPSTOWN HS                     HOSH    5A   21   3
+HOUSTON SPRING WOODS HS                   HOSW    5A   21   3
+HOUSTON STERLING HS                       HOST    5A   21   3
+houston strake jesuit college prep         HSJE   6A   20   3
+HOUSTON STRATFORD HS                      HSTR    6A   17   3
+HOUSTON WALTRIP HS                              HWAL     5A   21   3
+HOUSTON WASHINGTON HS                           HWAS     4A   20   3
+HOUSTON WESTBURY HS                             HOWB     5A   21   3
+HOUSTON WESTSIDE HS                             HOWS     6A   18   3
+HOUSTON WHEATLEY HS                             HOWH     4A   20   3
+HOUSTON Wisdom HS                               HOWI     6A   18   3
+HOUSTON WORTHING HS                             HOWO     4A   20   3
+HOUSTON YATES HS                                HOYA     4A   20   3
+houston Young Womens College Preparatory Acad   HYWC     4A   20   3
+HOWE HS                                         HOWE     3A   11   2
+HUBBARD HS                                      HUBB     2A   18   3
+HUCKABAY HS                                     HUCK     1A   22   3
+HUDSON HS                                       LUHU     4A   17   3
+HUFFMAN HARGRAVE HS                             HUFF     4A   19   3
+HUGHES SPRINGS HS                               HUSP     3A   13   2
+humble atascocita hs                            HUAT     6A   23   3
+HUMBLE HS                                       HUMB     6A   23   3
+HUMBLE KINGWOOD HS                               HUKI    6A   23   3
+Humble Kingwood Park HS                         HKPA     5A   18   3
+Humble Summer Creek HS                          HUSC     6A   23   3
+HUNTINGTON HS                                   HUNT     3A   21   3
+HUNTSVILLE HS                                   HUSV     5A   17   3
+HURST BELL HS                                   HUBE     6A    4   1
+HUTTO HS                                         HUTT    6A   25   4
+IDALOU HS                                        IDAL    3A    2   1
+IDEA Robindale College Prep                      IRCP    3A   32   4
+IMPERIAL BUENA VISTA HS                          IMBV    1A   10   2
+INGLESIDE HS                                     INGL    4A   30   4
+INGRAM MOORE HS                                 INMO     3A    5   1
+Inspired Vision Academy Dallas                   IVDA    3A    9   2
+IOLA HS                                          IOLA    2A   26   4
+IOWA PARK HS                                     IOPA    3A    7   1
+IRA HS                                           IRAH    1A   14   2
+IRAAN HS                                         IRAA    2A    6   1
+IREDELL HS                                       IRED    1A   22   3
+IRVING HS                                         IRVI   6A    7   1
+IRVING MACARTHUR HS                              IRMA    6A    7   1
+IRVING NIMITZ HS                                  IRNI   6A    7   1
+ITALY HS                                          ITAL   2A   18   3
+ITASCA HS                                         ITAS   2A   12   2
+IVANHOE RAYBURN HS                               IVRA    2A   14   2
+JACKSBORO HS                                     JACB    3A    7   1
+JACKSONVILLE HS                                  JACV    5A   10   2
+JARRELL HS                                       JARR    4A   24   3
+JASPER HS                                        JASP    4A   18   3
+JAYTON HS                                         JAYT   1A   15   2
+JEFFERSON HS                                      JEFF   3A   13   2
+JERSEY VILLAGE HS                                HOJV    6A   17   3
+JEWETT LEON HS                                   JEWE    2A   20   3
+JOAQUIN HS                          JOAQ    2A   23   3
+Johnson City LBJ HS                 JOHN    2A   29   4
+JONESBORO HS                        JONE    1A   26   4
+JOSHUA HS                           JOSH    5A    8   1
+JOURDANTON HS                       JOUR    3A   28   4
+JUNCTION HS                         JUNC    2A   29   4
+KARNES CITY HS                       KACI   3A   26   4
+KATY CINCO RANCH HS                 KACR    6A   19   3
+Katy Freeman HS                     KAFR    4A   21   3
+Katy Harmony School of Innovation    KHSI   4A   21   3
+KATY HS                             KATY    6A   19   3
+Katy Jordan HS                      KJOR    6A   19   3
+KATY MAYDE CREEK HS                 KAMC    6A   19   3
+katy morton ranch hs                KAMR    6A   19   3
+Katy Paetow HS                      KAPA    6A   19   3
+Katy Seven Lakes HS                 KASL    6A   19   3
+KATY TAYLOR HS                      KATA    6A   19   3
+Katy Tompkins HS                    KTOM    6A   19   3
+KAUFMAN HS                          KAUF    5A   15   2
+KEENE HS                            KEEN    3A   18   3
+KELLER CENTRAL HS                   KECE    6A    4   1
+KELLER FOSSIL RIDGE HS              KEFR    5A    5   1
+KELLER HS                            KELL   6A    4   1
+Keller timber creek hs              KETC    6A    4   1
+KEMP HS                             KEMP    4A   15   2
+KENEDY HS                           KENE    2A   31   4
+KENNARD HS                          KENN    1A   27   4
+KENNEDALE HS                        KEND    4A   12   2
+KERENS HS                           KERN    2A   18   3
+KERMIT HS                           KERM    3A    4   1
+KERRVILLE TIVY HS                   KERR    5A   26   4
+KILGORE HS                           KILG   4A   16   2
+Killeen Chaparral HS                KICH    5A   16   2
+KILLEEN ELLISON HS                   KIEL   5A   16   2
+KILLEEN HARKER HEIGHTS HS           KIHH    6A   12   2
+KILLEEN HS                           KILE   6A   12   2
+KILLEEN SHOEMAKER HS                 KISH   6A   12   2
+KINGSVILLE KING HS                   KIKI   4A   31   4
+Kirbyville HS                        KIRB   3A   22   3
+Klein Cain HS                       KLCA    6A   15   2
+KLEIN collins hs                    KLCO    6A   15   2
+KLEIN FOREST HS                     KLFO    6A   15   2
+KLEIN HS                             KLEI   6A   15   2
+KLEIN OAK HS                        KLOA    6A   15   2
+KNIPPA HS                            KNIP   1A   31   4
+KNOX CITY HS                        KNOX    1A   16   2
+KOPPERL HS                          KOPP    1A   23   3
+KOUNTZE HS                          KOUN    3A   22   3
+KRESS HS                            KRES    1A    4   1
+KRUM HS                               KRUM     4A    7   1
+kyle lehman hs                         KYLE    5A   25   4
+LA FERIA HS                            LAFE    4A   32   4
+LA GRANGE HS                          LAGR     4A   22   3
+LA JOYA HS                             LAJO    6A   31   4
+la joya juarez-lincoln hs               LJJL   5A   30   4
+la joya Palmview hs                    LJPA    5A   30   4
+LA MARQUE HS                          LAMQ     4A   29   4
+LA PORTE HS                           LAPO     5A   20   3
+LA PRYOR HS                           LAPR     2A   30   4
+LA RUE LA POYNOR HS                    LRLP    2A   19   3
+LA VERNIA HS                          LAVE     4A   28   4
+LA VILLA HS                            LAVI    2A   32   4
+LADONIA FANNINDEL HS                   LAFA    1A   19   3
+LAGO VISTA HS                         LAGO     4A   25   4
+Laird Hill LEVERETTS CHAPEL HS        LALC     1A   20   3
+Lake Belton HS                         LBEL    5A   16   2
+LAKE DALLAS HS                        LADA     4A    9   2
+LAKE WORTH HS                         LAWO     4A    7   1
+Lamar Fulshear HS                     LFUL     6A   20   3
+LAMESA HS                             LAME     3A    3   1
+LAMESA KLONDIKE HS                     LAKL    1A    6   1
+LAMPASAS HS                           LAMP     4A   24   3
+LANCASTER HS                          LANC     6A   11   2
+LANEVILLE HS                          LANE     1A   27   4
+LANGHAM CREEK HS                      HOLC     6A   16   2
+LAREDO ALEXANDER HS                    LAAL    6A   30   4
+LAREDO CIGARROA HS                     LACI    5A   30   4
+Laredo Harmony School of Excellence   LAHS     4A   31   4
+laredo johnson hs                      LAJH    6A   30   4
+LAREDO MARTIN HS                      LARM     5A   30   4
+LAREDO NIXON HS                        LANI    5A   30   4
+LAREDO UNITED HS                      LAUN     6A   30   4
+LAREDO UNITED SOUTH HS                LAUS     6A   30   4
+Lasara High School                    LASA     1A   32   4
+LATEXO HS                              LATE    2A   20   3
+LAZBUDDIE HS                          LAZB     1A    4   1
+LEAGUE CITY CLEAR CREEK HS            LCCC     6A   24   3
+League City Clear Falls hs            LCCF     6A   24   3
+league city clear springs hs          LCCS     6A   24   3
+LEAKEY HS                             LEAK     1A   31   4
+Leander Glenn HS                      LEGL     5A   25   4
+LEANDER HS                            LEAN     5A   25   4
+leander rouse hs                      LROU     5A   25   4
+LEFORS HS                             LEFO     1A    2   1
+LEGGETT HS                            LEGG     1A   28   4
+LENORAH GRADY HS                      LEGR     1A    6   1
+LEONARD HS                            LEON     3A   11   2
+LEVELLAND HS                           LEVE    4A    5   1
+LEWISVILLE FLOWER MOUND HS                       LEFM     6A    5   1
+LEWISVILLE HEBRON HS                             LEHE     6A    5   1
+LEWISVILLE HS                                     LEWI    6A    5   1
+lewisville MARCUS HS                             LEMA     6A    5   1
+LEWISVILLE THE COLONY HS                         LETC     5A   12   2
+LEXINGTON HS                                      LEXI    3A   19   3
+Liberty High School Lubbock-Cooper                LCLI    4A    5   1
+LIBERTY HILL HS                                   LIHI    5A   25   4
+Liberty Hill Legacy Ranch                        LHLR     4A   25   4
+LIBERTY HS                                        LIBE    4A   19   3
+LINDALE HS                                        LIND    4A   15   2
+LINDEN LINDEN-KILDARE HS                           LIKI   2A   21   3
+LINDSAY HS                                        LINS    2A   13   2
+LINGLEVILLE HS                                    LING    1A   22   3
+LIPAN HS                                          LIPA    2A   11   2
+LITTLE ELM HS                                     LIEL    6A    5   1
+LITTLE RIVER ACADEMY HS                           LIRA    3A   19   3
+LITTLEFIELD HS                                     LITT   3A    2   1
+LIVINGSTON HS                                      LIVI   4A   19   3
+LLANO HS                                         LLAN     3A    5   1
+LOCKHART HS                                      LOCK     5A   25   4
+LOCKNEY HS                                       LOKN     2A    3   1
+LOHN HS                                          LOHN     1A   12   2
+LOMETA HS                                        LOME     1A   25   4
+LONE OAK HS                                      LOOA     3A   12   2
+LONGVIEW CHADWICK HS                             LOCH     2A   21   3
+LONGVIEW HS                                      LONG     6A   10   2
+LONGVIEW PINE TREE HS                            LOPT     4A   16   2
+LONGVIEW SPRING HILL HS                          LOSH     4A   16   2
+LOOP HS                                          LOOP     1A    6   1
+LORAINE HS                                       LORA     1A   14   2
+LORENA HS                                        LORE     4A   23   3
+LORENZO HS                                       LORZ     1A    7   1
+LOS FRESNOS HS                                   LOFR     6A   32   4
+LOUISE HS                                         LOUI    2A   28   4
+LOVELADY HS                                      LOVE     2A   20   3
+LUBBOCK COOPER HS                                LUCO     5A    3   1
+LUBBOCK CORONADO HS                              LUCR     5A    3   1
+LUBBOCK ESTACADO HS                              LUES     4A    5   1
+LUBBOCK HS                                       LUBB     5A    3   1
+LUBBOCK MONTEREY HS                              LUMO     5A    3   1
+LUBBOCK ROOSEVELT HS                             LURO     3A    2   1
+LUBBOCK TALKINGTON SCH FOR YOUNG WOMEN Leaders   LTYW     3A    2   1
+Lucas lovejoy hs                                 LULO     5A    9   2
+LUEDERS-AVOCA HS                                 LUAV     1A   15   2
+LUFKIN HS                                        LUFK     5A   10   2
+Lufkin Pineywoods Community Academy HS           LUPC     3A   21   3
+LULING HS                                         LULI    3A   26   4
+LUMBERTON HS                                     LUMB     4A   18   3
+LYFORD HS                   LYFO   3A   32   4
+LYTLE HS                    LYTL   3A   28   4
+MABANK HS                  MABA    4A   15   2
+MADISONVILLE HS             MADI   4A   17   3
+MAGNOLIA HS                MAGN    6A   15   2
+magnolia west hs           MAWE    6A   15   2
+MALAKOFF CROSS ROADS HS    MACR    2A   19   3
+MALAKOFF HS                MALA    3A   15   2
+MANOR HS                   MANO    6A   25   4
+Manor New Tech HS          MANT    4A   25   4
+MANSFIELD HS               MANS    6A    3   1
+Mansfield Lake Ridge HS    MNLR    6A    3   1
+Mansfield Legacy HS         MALE   6A    3   1
+mansfield summit hs        MASU    5A    8   1
+mansfield timberview hs     MATI   5A    8   1
+manvel hs                  MANV    6A   22   3
+MARATHON HS                MARA    1A   10   2
+MARBLE FALLS HS            MAFA    4A   24   3
+MARFA HS                   MARF    1A    9   2
+MARION HS                   MARI   3A   27   4
+MARLIN HS                  MARL    2A   17   3
+MARSHALL HS                MARS    5A   10   2
+MART HS                    MART    2A   17   3
+MARTIN'S MILL HS            MAMI   2A   19   3
+MARTINSVILLE HS             MTSV   1A   27   4
+MASON HS                   MASO    2A   29   4
+MATADOR MOTLEY COUNTY HS   MAMC    1A    8   1
+MATHIS HS                  MATH    3A   29   4
+MAUD HS                    MAUD    2A   16   2
+MAY HS                     MAYH    1A   21   3
+MAYPEARL HS                MAYP    3A   18   3
+MCALLEN HS                 MCAL    5A   31   4
+MCALLEN MEMORIAL HS        MCME    5A   31   4
+MCALLEN ROWE HS            MCRO    5A   31   4
+McCamey HS                 MCCA    2A    6   1
+McDade HS                  MCDA    2A   27   4
+MCGREGOR HS                MCGR    3A   17   3
+mckinney boyd hs           MCBO    6A    6   1
+MCKINNEY HS                 MCKI   6A    6   1
+mckinney north hs          MCNO    5A    9   2
+MCLEAN HS                  MCLE    1A    2   1
+MCLEOD HS                  MCLD    2A   21   3
+MEADOW HS                  MEAD    1A    5   1
+MEDINA HS                   MEDI   1A   31   4
+Melissa hs                  MELI   5A    9   2
+MEMPHIS HS                 MEMP    2A    2   1
+MENARD HS                  MENA    1A   12   2
+MERCEDES HS                MERC    5A   32   4
+MERIDIAN HS                 MERI   2A   12   2
+MERIT BLAND HS                            MEBL    2A   14   2
+MERKEL HS                                 MERK    3A    6   1
+MERTZON IRION COUNTY HS                   MEIC    1A   11   2
+mesquite horn hs                          MEHN    6A   11   2
+MESQUITE HS                               MESQ    6A   11   2
+MESQUITE POTEET HS                        MEPO    5A   14   2
+MEXIA HS                                   MEXI   3A   20   3
+MIAMI HS                                  MIAM    1A    1   1
+MIDLAND GREENWOOD HS                      MIGR    4A    3   1
+MIDLAND HS                                MIDL    6A    2   1
+Midland Lee HS                             MILE   6A    2   1
+Midland Young womens leadership academy   MIYW    3A    3   1
+Midlothian Heritage HS                    MIHE    5A   15   2
+MIDLOTHIAN HS                             MILO    5A   15   2
+MILANO HS                                  MILA   2A   27   4
+Mildred HS                                COMI    2A   18   3
+MILES HS                                   MILS   2A    8   1
+MILFORD HS                                 MILF   1A   23   3
+MILLER GROVE HS                           CUMG    1A   19   3
+MILLSAP HS                                 MILL   3A    8   1
+MINEOLA HS                                MINE    3A   15   2
+MINERAL WELLS HS                          MIWE    4A    6   1
+MISSION HS                                 MISS   5A   30   4
+Mission IDEA North Mission                MINO    3A   31   4
+MISSION SHARYLAND HS                      MISH    5A   31   4
+Mission Sharyland Pioneer HS              MSHP    5A   31   4
+Mission Veterans Memorial HS              MVEM    5A   30   4
+MONAHANS HS                               MONA    4A    3   1
+MONT BELVIEU BARBERS HILL HS              MBBH    5A   19   3
+Monte Alto hs                             MOAL    3A   31   4
+MONTGOMERY HS                             MONT    5A   17   3
+Montgomery Lake Creek HS                  MOLC    5A   17   3
+Moody HS                                  MOOD    2A   17   3
+MORAN HS                                  MORA    1A   13   2
+MORGAN HS                                 MORG    1A   23   3
+MORTON HS                                 MORT    2A    5   1
+MOULTON HS                                MOUL    1A   30   4
+Mount Calm HS                             CALM    1A   24   3
+MOUNT ENTERPRISE HS                       MOEN    2A   22   3
+MOUNT PLEASANT CHAPEL HILL HS             MPCH    3A   13   2
+MOUNT PLEASANT HS                         MOPL    5A   10   2
+MOUNT VERNON HS                           MOVE    3A   12   2
+MUENSTER HS                               MUEN    2A   13   2
+MULESHOE HS                               MULE    3A    2   1
+MULLIN HS                                 MULL    1A   25   4
+Mumford HS                                MUMF    2A   26   4
+MUNDAY HS                                 MUND    1A   16   2
+NACOGDOCHES CENTRAL HEIGHTS HS            NACH    3A   21   3
+NACOGDOCHES HS                            NACO    5A   10   2
+NATALIA HS                          NATA    3A   28   4
+NAVASOTA HS                         NAVA    4A   22   3
+NAZARETH HS                         NAZA    1A    4   1
+NECHES HS                           NECH    1A   24   3
+NEDERLAND HS                        NEDR    5A   19   3
+NEEDVILLE HS                        NEED    4A   29   4
+NEVADA COMMUNITY HS                 NECO    4A   13   2
+NEW BOSTON HS                       NEBO    3A   14   2
+NEW BRAUNFELS HS                    NEBR    5A   26   4
+New Braunfels Long Creek HS         NBLC    4A   26   4
+NEW CANEY HS                        NECA    6A   13   2
+New Caney Porter HS                 NCPO    5A   18   3
+New Caney West Fork HS              NCWF    5A   18   3
+NEW DEAL HS                         NEDL    2A    4   1
+NEW HOME HS                         NEHO    2A    4   1
+NEW LONDON WEST RUSK HS             NELO    3A   16   2
+NEW SUMMERFIELD HS                  NESU    2A   22   3
+NEW WAVERLY HS                      NEWA    3A   23   3
+NEWCASTLE HS                        NEWC    1A   17   3
+NEWTON HS                           NEWT    3A   21   3
+NIXON SMILEY HS                      NIXS   3A   26   4
+NOCONA HS                           NOCO    2A    9   2
+NOCONA PRAIRIE VALLEY HS            NOPV    1A   18   3
+NORDHEIM HS                         NORD    1A   30   4
+NORMANGEE HS                        NORM    2A   20   3
+NORTH CROWLEY HS                    NCRO    6A    3   1
+North Forney HS                     NOFO    6A   10   2
+NORTH GARLAND HS                    GANG    6A    9   2
+NORTH MESQUITE HS                   MENM    5A   14   2
+NORTH RICHLAND HILLS BIRDVILLE HS   NRHB    5A    6   1
+NORTH RICHLAND HILLS RICHLAND HS    NRHR    5A    6   1
+NORTH ZULCH HS                      NOZU    1A   29   4
+northside Brandeis HS               NOBR    6A   27   4
+Northside brennan hs                NBRE    6A   28   4
+Northside CLARK HS                  NOCL    6A   27   4
+Northside Harlan HS                 NSHA    6A   28   4
+northside HEALTH CAREERS HS         NOHC    6A   28   4
+northside HOLMES HS                 NOHO    6A   28   4
+northside JAY HS                    NOJA    5A   28   4
+northside MARSHALL HS               NOMA    6A   28   4
+northside O'CONNOR HS               NOOC    6A   28   4
+Northside Sotomayor HS              NSOT    6A   28   4
+northside stevens hs                NOST    6A   28   4
+northside TAFT HS                   NOTA    6A   28   4
+northside Warren HS                 NOWA    6A   28   4
+Northwest Eaton HS                  NWEA    6A    4   1
+NORTHWEST HS                        NOWE    6A    4   1
+Northwest Nelson HS                 NONE    6A    4   1
+O'DONNELL HS                        ODON    1A    7   1
+OAKWOOD HS                              OAKW    1A   24   3
+ODEM HS                                 ODEM    3A   29   4
+Odessa Compass Academy Charter          OCAC    3A    3   1
+ODESSA HS                               ODES    6A    2   1
+ODESSA PERMIAN HS                       ODPE    6A    2   1
+OGLESBY HS                              OGLE    1A   26   4
+Olfen HS                                OLFE    1A   12   2
+OLNEY HS                                OLNE    2A    9   2
+OLTON HS                                OLTO    2A    3   1
+OMAHA PEWITT HS                         OMPE    2A   16   2
+onalaska hs                             ONAL    3A   23   3
+ORANGE GROVE HS                         ORGR    3A   30   4
+ORANGE LITTLE CYPRESS-MAURICEVILLE HS   OLCM    4A   18   3
+ORANGEFIELD HS                           ORFI   3A   22   3
+ORE CITY HS                             ORCI    2A   21   3
+OVERTON HS                              OVER    2A   22   3
+OZONA HS                                OZON    2A    7   1
+PADUCAH HS                              PADU    1A    8   1
+PAINT ROCK HS                           PARO    1A   12   2
+PALACIOS HS                             PALA    3A   25   4
+PALESTINE HS                            PALE    4A   17   3
+PALESTINE WESTWOOD HS                   PAWE    3A   20   3
+PALMER HS                               PALM    3A   18   3
+PAMPA HS                                PAMP    4A    4   1
+PANHANDLE HS                            PANH    2A    2   1
+PARADISE HS                             PARD    3A   10   2
+PARIS CHISUM HS                         PACH    3A   12   2
+PARIS HS                                 PARI   4A   14   2
+PARIS NORTH LAMAR HS                    PANL    4A   14   2
+PASADENA DOBIE HS                       PADO    6A   22   3
+PASADENA HS                             PASA    5A   18   3
+pasadena memorial hs                    PASM    6A   22   3
+PASADENA RAYBURN HS                     PARA    6A   22   3
+PASADENA SOUTH HOUSTON HS               PASH    6A   22   3
+PATTONVILLE PRAIRILAND HS               PAPR    3A   12   2
+Pawnee                                  PAWN    1A   32   4
+pearland dawson hs                      PEDA    6A   22   3
+PEARLAND HS                             PEAR    6A   22   3
+PEARSALL HS                             PERS    4A   27   4
+PEASTER HS                              PEAS    3A    8   1
+PECOS HS                                PECO    4A    3   1
+PENELOPE HS                             PENE    1A   24   3
+PERRIN-WHITT HS                         PERW    1A   17   3
+PERRYTON HS                             PERR    4A    4   1
+PETERSBURG HS                            PETE   1A    7   1
+PETROLIA HS                             PETR    2A    9   2
+PETTUS HS                                PETT   2A   31   4
+PFLUGERVILLE CONNALLY HS                PFCO    5A   23   3
+pflugerville hendrickson hs             PFHE    5A   23   3
+PFLUGERVILLE HS                     PFLU    5A   23   3
+Pflugerville Weiss HS               PFWE    5A   23   3
+Pharr IDEA College Preparatory       PICP   3A   31   4
+PHARR VALLEY VIEW HS                PHVV    4A   32   4
+PHARR-SAN JUAN-ALAMO HS              PSJA   6A   31   4
+PHARR-SAN JUAN-ALAMO MEMORIAL HS    PJAM    5A   31   4
+PHARR-SAN JUAN-ALAMO NORTH HS        PJAN   5A   31   4
+Pharr-San Juan-Alamo Southwest HS    PJAS   5A   31   4
+PILOT POINT HS                       PIPO   3A   10   2
+PITTSBURG HS                         PITT   4A   14   2
+PLAINS HS                            PLAI   2A    5   1
+PLAINVIEW HS                        PLAV    5A    3   1
+PLANO EAST HS                        PLPE   6A    6   1
+PLANO HS                            PLAN    6A    6   1
+PLANO WEST HS                       PLWE    6A    6   1
+PLEASANTON HS                        PLEA   4A   27   4
+POLLOK CENTRAL HS                   POCE    3A   21   3
+PONDER HS                           POND    3A   10   2
+POOLVILLE HS                        POOL    2A   11   2
+PORT ARANSAS HS                     PORA    2A   31   4
+port arthur Memorial hs             PAME    5A   19   3
+PORT ISABEL HS                       POIS   4A   32   4
+PORT LAVACA CALHOUN HS              POLC    4A   30   4
+PORT NECHES-GROVES HS               PONG    5A   19   3
+POST HS                             POST    2A    4   1
+POTEET HS                           POTE    3A   28   4
+POTH HS                             POTH    3A   26   4
+POTTSBORO HS                        POTT    3A   11   2
+PRAIRIE LEA HS                      PRLE    1A   30   4
+PREMONT HS                          PREM    2A   32   4
+PRESIDIO HS                         PRES    3A    4   1
+PRICE CARLISLE HS                    PRIC   2A   22   3
+PRIDDY HS                            PRID   1A   25   4
+PRINCETON HS                         PRIN   6A    6   1
+Pringle-Morse School                PRMO    1A    3   1
+PROGRESO HS                         PROG    3A   32   4
+PROSPER HS                          PROS    6A    6   1
+Prosper Richland HS                  PRRI   4A    9   2
+Prosper Rock Hill HS                 PRHI   6A    6   1
+Prosper Walnut Grove HS             PRWG    5A    9   2
+QUANAH HS                           QUAN    2A    2   1
+QUEEN CITY HS                       QUEE    3A   14   2
+QUINLAN BOLES HS                    QUBO    2A   15   2
+QUINLAN FORD HS                     QUFO    4A   13   2
+QUITMAN HS                           QUIT   3A   15   2
+RAINS HS                            EMRA    3A   12   2
+RALLS HS                             RALL   2A    4   1
+RANGER HS                           RANG    1A   13   2
+RANKIN HS                           RANK    1A   10   2
+RAYMONDVILLE HS                   RAYM     3A   32   4
+RED OAK HS                        REDO     5A   15   2
+REDWATER HS                       REDW     3A   14   2
+REFUGIO HS                         REFU    2A   31   4
+RICE HS                            RICE    3A   18   3
+RICHARDS HS                        RICD    1A   29   4
+RICHARDSON BERKNER HS              RIBE    6A    7   1
+RICHARDSON HS                      RICH    6A    7   1
+RICHARDSON LAKE HIGHLANDS HS       RILH    6A    7   1
+RICHARDSON PEARCE HS               RIPE    6A    7   1
+RICHLAND SPRINGS HS                RISP    1A   25   4
+Richmond Foster HS                 RIFO    6A   20   3
+Richmond George Ranch HS           RIGR    6A   20   3
+Richmond Randle HS                 RIRA    5A   22   3
+Richmond TOMAS HS                  RIGT    5A   22   3
+RIESEL HS                          RIES    2A   17   3
+Rio grande city Grulla HS         RGGR     4A   32   4
+RIO GRANDE CITY HS                 RGCI    5A   30   4
+RIO HONDO HS                       RIHO    3A   32   4
+RIO VISTA HS                        RIVI   2A   12   2
+RISING STAR HS                     RIST    1A   21   3
+River Oaks CASTLEBERRY HS         ROCB     4A    7   1
+RIVIERA KAUFER HS                  RIKA    2A   32   4
+ROBERT LEE HS                      RLEE    1A   11   2
+ROBINSON HS                        ROBI    4A   23   3
+ROBSTOWN HS                       ROBS     4A   31   4
+ROBY HS                           ROBY     1A   14   2
+ROCHELLE HS                       ROCL     1A   12   2
+ROCKDALE HS                       RODL     3A   19   3
+ROCKPORT-FULTON HS                 RPFU    4A   30   4
+ROCKSPRINGS HS                    ROSP     1A   31   4
+rockwall heath hs                 ROHE     6A   10   2
+ROCKWALL HS                       RKWL     6A   10   2
+ROGERS HS                         ROGE     3A   19   3
+ROMA HS                           ROMA     5A   30   4
+ROPESVILLE ROPES HS               ROPV     2A    5   1
+ROSCOE Collegiate HS              ROCO     2A    8   1
+Roscoe Highland HS                 ROHI    1A   14   2
+ROSEBUD-LOTT HS                   ROLO     2A   27   4
+ROSENBERG LAMAR CONSOLIDATED HS   ROLC     5A   22   3
+ROSENBERG TERRY HS                 ROTE    5A   22   3
+ROTAN HS                           ROTA    1A   15   2
+round rock cedar ridge hS         RRCR     6A   25   4
+ROUND ROCK HS                     RORO     6A   25   4
+ROUND ROCK MCNEIL HS              RRMC     6A   25   4
+ROUND ROCK STONY POINT HS          RRSP    6A   25   4
+ROUND ROCK WESTWOOD HS            RRWE     6A   25   4
+ROUND TOP-CARMINE HS               RTCA    1A   29   4
+ROYAL HS                          BRRO     4A   21   3
+ROYSE CITY HS                                 ROCI    6A   10   2
+RULE HS                                       RULE    1A   15   2
+RUNGE HS                                      RUNG    1A   30   4
+RUSK HS                                       RUSK    4A   17   3
+SA Great Hearts Monte Vista North             SAGH    3A   27   4
+SABINAL HS                                     SABI   2A   30   4
+SABINE PASS HS                                SAPA    2A   25   4
+SADLER S & S CONSOLIDATED HS                  SSSC    3A   11   2
+Saginaw HS                                     SAGI   5A    5   1
+SAINT JO HS                                    STJO   1A   18   3
+SALADO HS                                     SALD    4A   24   3
+SALTILLO HS                                    SALT   1A   20   3
+SAN ANGELO CENTRAL HS                         SACE    6A    2   1
+SAN ANGELO GRAPE CREEK HS                     SAGC    3A    6   1
+SAN ANGELO LAKE VIEW HS                       SALV    4A    5   1
+SAN ANTONIO ALAMO HEIGHTS HS                  SAAH    5A   26   4
+SAN ANTONIO BRACKENRIDGE HS                   SABR    5A   27   4
+SAN ANTONIO BURBANK HS                        SABU    5A   27   4
+SAN ANTONIO CHURCHILL HS                      SACH    6A   27   4
+SAN ANTONIO COLE HS                           SACO    3A   27   4
+SAN ANTONIO EAST CENTRAL HS                   SAEC    6A   29   4
+SAN ANTONIO EDISON HS                         SAED    5A   27   4
+SAN ANTONIO FOX TECHNICAL HS                   SAFT   5A   27   4
+SAN ANTONIO HARLANDALE HS                     SAHA    5A   28   4
+SAN ANTONIO HIGHLANDS HS                       SAHI   5A   27   4
+SAN ANTONIO HOUSTON HS                        SAHO    5A   27   4
+SAN ANTONIO JEFFERSON HS                       SAJE   5A   27   4
+San Antonio Johnson HS                        SAJO    6A   27   4
+SAN ANTONIO KENNEDY HS                        SAKE    4A   28   4
+SAN ANTONIO LANIER HS                         SALA    5A   27   4
+San Antonio Lee HS                            SALE    6A   27   4
+SAN ANTONIO MACARTHUR HS                      SAMR    5A   28   4
+SAN ANTONIO MADISON HS                        SAMD    6A   27   4
+SAN ANTONIO MCCOLLUM HS                       SAMC    5A   28   4
+SAN ANTONIO MEMORIAL HS                       SAME    4A   28   4
+SAN ANTONIO REAGAN HS                         SARE    6A   27   4
+SAN ANTONIO ROOSEVELT HS                      SARO    6A   27   4
+SAN ANTONIO SOUTHSIDE HS                      SASS    5A   28   4
+San Antonio Southwest CAST STEM HS            SASC    5A   28   4
+SAN ANTONIO SOUTHWEST HS                      SASW    5A   28   4
+San Antonio Southwest Legacy HS               SASL    5A   28   4
+SAN ANTONIO STACEY HS                         SAST    2A   30   4
+San Antonio Veterans Memorial HS              JUVM    5A   26   4
+San Antonio Wagner HS                         SAWG    5A   26   4
+San Antonio Young Men's Leadership            SAYM    3A   27   4
+San Antonio Young Womens Leadership Academy   SAYW    3A   27   4
+SAN AUGUSTINE HS                              SAAU    2A   24   3
+SAN BENITO HS                                 SABE    6A   32   4
+SAN DIEGO HS                                   SADI   3A   30   4
+SAN ELIZARIO HS               SAEL    4A    2   1
+SAN ISIDRO HS                  SAIS   1A   32   4
+SAN MARCOS HS                 SANM    6A   29   4
+SAN PERLITA HS                SANP    1A   32   4
+SAN SABA HS                   SANS    2A   29   4
+SANDERSON HS                  SAND    1A   10   2
+SANFORD-FRITCH HS             SAFR    2A    1   1
+SANGER HS                     SANG    4A    9   2
+SANTA ANNA HS                 SAAN    1A   21   3
+SANTA FE HS                   SAFE    5A   20   3
+Santa Gertrudis ACADEMY HS    SGAC    3A   30   4
+SANTA MARIA HS                SAMA    2A   32   4
+SANTA ROSA HS                 SARS    3A   32   4
+SANTO HS                      SANT    2A   11   2
+SARATOGA WEST HARDIN HS       SAWH    2A   25   4
+SAVOY HS                      SAVO    1A   19   3
+SCHERTZ CLEMENS HS            SCCL    6A   29   4
+SCHULENBURG HS                SCHU    2A   28   4
+SCURRY SCURRY-ROSSER HS       SCRO    3A   18   3
+SEAGRAVES HS                  SEAG    2A    5   1
+SEALY HS                      SEAL    4A   21   3
+SEGUIN HS                     SEGU    5A   27   4
+SEMINOLE HS                   SEMI    4A    3   1
+seymour hs                    SEYM    2A    9   2
+SHALLOWATER HS                SHAL    3A    2   1
+SHAMROCK HS                   SHAM    1A    2   1
+Sharpstown international hs    HINT   5A   21   3
+SHELBYVILLE HS                SHEL    2A   24   3
+sheldon king hs               HOKI    6A   23   3
+SHEPHERD HS                   SHEP    4A   19   3
+SHERMAN HS                    SHER    5A    9   2
+SHINER HS                     SHIN    2A   28   4
+SIDNEY HS                     SIDN    1A   21   3
+SIERRA BLANCA HS               SIBL   1A    9   2
+SILSBEE HS                     SILS   4A   18   3
+SILVERTON HS                   SILV   1A    4   1
+SIMMS BOWIE HS                 SIBO   2A   16   2
+SINTON HS                      SINT   4A   30   4
+SKIDMORE-TYNAN HS              SKTY   2A   31   4
+SLATON HS                      SLAT   3A    2   1
+SLIDELL HS                     SLID   2A   13   2
+SLOCUM HS                     SLOC    1A   24   3
+SMITHVILLE HS                  SMIT   4A   22   3
+SMYER HS                      SMYE    2A    5   1
+SNOOK HS                      SNOO    2A   26   4
+SNYDER HS                     SNYD    4A    5   1
+SOMERSET HS                   SOME    4A   27   4
+SOMERVILLE HS                 SOMV    2A   26   4
+SONORA HS                     SONO    2A    7   1
+SOUTH GARLAND HS                   GASG    6A    9   2
+SOUTH GRAND PRAIRIE HS             GPSG    6A    8   1
+SOUTH SAN ANTONIO HS               SOSA    5A   28   4
+SOUTHLAKE CARROLL HS               SOCA    6A    4   1
+SOUTHLAND HS                       SOUT    1A    7   1
+SPEARMAN HS                        SPEA    2A    1   1
+SPLENDORA HS                        SPLE   5A   18   3
+Spring Dekaney HS                  SPDE    6A   14   2
+SPRING HS                           SPRI   6A   14   2
+SPRING WESTFIELD HS                SPWF    6A   14   2
+SPRINGTOWN HS                      SPTN    4A    7   1
+SPUR HS                            SPUR    1A    8   1
+SPURGER HS                         SPGR    1A   28   4
+STAFFORD HS                         STAF   4A   21   3
+STAMFORD HS                        STAM    2A   10   2
+STANTON HS                         STAN    3A    3   1
+STEPHENVILLE HS                     STEP   4A    6   1
+STERLING CITY HS                    STCI   2A    7   1
+STINNETT WEST TEXAS HS             STWT    2A    1   1
+STOCKDALE HS                       STOC    3A   26   4
+STRATFORD HS                        STRA   2A    1   1
+STRAWN HS                          STRW    1A   13   2
+SUDAN HS                           SUDA    2A    3   1
+SULPHUR BLUFF HS                   SUBL    1A   20   3
+SULPHUR SPRINGS HS                 SUSP    4A   14   2
+SULPHUR SPRINGS NORTH HOPKINS HS   SSNH    2A   15   2
+SUNDOWN HS                         SUND    2A    5   1
+Sunnyvale Hs                       SUNN    4A   13   2
+SUNRAY HS                          SUNR    2A    1   1
+SWEENY HS                          SWEE    4A   29   4
+SWEETWATER HS                      SWTW    3A    6   1
+TAFT HS                             TAFT   3A   29   4
+TAHOKA HS                          TAHO    2A    4   1
+TATUM HS                            TATU   3A   16   2
+TAYLOR HS                           TAYL   4A   24   3
+TEAGUE HS                          TEAG    3A   20   3
+TEMPLE HS                          TEMP    6A   12   2
+TENAHA HS                          TENA    2A   23   3
+TERLINGUA BIG BEND HS               TEBB   1A    9   2
+TERRELL HS                          TERR   5A   15   2
+TEXARKANA LIBERTY-EYLAU HS          TELE   3A   14   2
+TEXARKANA PLEASANT GROVE HS        TEPG    4A   14   2
+TEXARKANA TEXAS HS                  TXTX   5A   10   2
+TEXAS CITY HS                       TXCI   5A   20   3
+Texas Leadership of Abilene         TLAB   2A   10   2
+Texas Leadership of San Angelo     TLCA    3A    6   1
+TEXLINE HS                          TEXL   1A    3   1
+THORNDALE HS                       THOR    2A   27   4
+THRALL HS                          THRA    3A   19   3
+THREE RIVERS HS                               THRI   2A   31   4
+Three Way School                             THWS    1A   22   3
+THROCKMORTON HS                              THRO    1A   17   3
+TILDEN MCMULLEN COUNTY HS                     TIMC   1A   32   4
+TIMPSON HS                                    TIMP   2A   23   3
+Tioga HS                                      TIOG   2A   13   2
+TOLAR HS                                      TOLA   3A    8   1
+TOM BEAN HS                                  TOBE    2A   14   2
+TOMBALL HS                                   TOMB    6A   15   2
+Tomball Memorial HS                          TOMM    6A   15   2
+TORNILLO HS                                  TORN    3A    4   1
+TRENT HS                                     TREN    1A   14   2
+TRENTON HS                                    TRET   2A   14   2
+TRINIDAD HS                                   TRIN   1A   24   3
+TRINITY HS                                    TRIT   3A   23   3
+Trinity Leadership Cedar Hill                TLCH    3A    9   2
+TROUP HS                                     TROU    3A   16   2
+TROY HS                                      TROY    3A   17   3
+TULIA HS                                      TULI   3A    1   1
+TURKEY VALLEY HS                             TUKV    1A    8   1
+TUSCOLA JIM NED HS                            TUJN   3A    6   1
+TYLER CHAPEL HILL HS                         TYCH    4A   16   2
+TYLER HS                                      TYLR   5A   10   2
+TYLER Legacy HS                               TYLE   6A   10   2
+UNIVERSAL CITY RANDOLPH HS                   UNCR    3A   27   4
+Uplift HAMPTON PREPARATORY                   UPHA    4A   10   2
+Uplift North Hills Prep HS                   UPNH    4A   10   2
+Uplift Summit International Preparatory HS    UPSI   4A   10   2
+UTOPIA HS                                    UTOP    1A   31   4
+UVALDE HS                                    UVAL    4A   27   4
+VALENTINE HS                                  VALE   1A    9   2
+VALERA PANTHER CREEK HS                      VAPC    1A   12   2
+VALLEY MILLS HS                               VAMI   2A   12   2
+VALLEY VIEW HS                                VAVI   3A   10   2
+VAN ALSTYNE HS                                VAAL   4A    9   2
+VAN HORN HS                                  VAHO    2A    6   1
+VAN HS                                       VANH    4A   15   2
+VAN VLECK HS                                 VANV    3A   24   3
+VANDERBILT INDUSTRIAL HS                      VAIN   3A   25   4
+Vanguard Academy Mozart - Alamo              AVAM    3A   31   4
+Vanguard academy Rembrandt - Pharr           VARP    3A   31   4
+Vanguard Beethoven Secondary                 VABE    3A   31   4
+Vanguard Van Gogh                            VAVG    3A   31   4
+VEGA HS                                      VEGA    2A    1   1
+VENUS HS                                     VENU    4A   12   2
+VERIBEST HS                                   VERI   1A   11   2
+VERNON HS                                    VERN    3A    7   1
+VERNON NORTHSIDE HS                          VENS    1A   16   2
+victoria east high school                     VICE   5A   22   3
+victoria west high school          VICW    5A   22   3
+VIDOR HS                           VIDO    4A   18   3
+WACO CONNALLY HS                   WACN    4A   23   3
+WACO HS                            WACO    5A   16   2
+WACO LA VEGA HS                    WALV    4A   23   3
+Waco meyer hs                      WAMY    2A   12   2
+Waco MIDWAY HS                     WAMI    6A   12   2
+WACO UNIVERSITY HS                 WAUN    5A   16   2
+WAELDER HS                         WAEL    1A   30   4
+WALL HS                            WALL    3A    6   1
+WALLER HS                          WALE    6A   16   2
+WALLIS BRAZOS HS                   WABR    3A   24   3
+WALNUT SPRINGS HS                  WASP    1A   22   3
+WARREN HS                          WARR    3A   22   3
+WASKOM HS                          WASK    2A   23   3
+WATER VALLEY HS                    WAVA    1A   11   2
+WAXAHACHIE HS                      WAXA    6A   11   2
+Waxahachie Life School             WXLS    4A   12   2
+WEATHERFORD HS                     WEAT    6A    3   1
+WEIMAR HS                          WEIM    2A   28   4
+Welch Dawson HS                    WEDA    1A    6   1
+WELLINGTON HS                      WELL    2A    2   1
+WELLMAN-UNION HS                   WEUN    1A    5   1
+WELLS HS                           WELS    1A   27   4
+weslaco east hs                    WEEA    5A   32   4
+WESLACO HS                         WESL    6A   31   4
+Weslaco IDEA Pike College Prep      PIKE   3A   32   4
+WEST COLUMBIA COLUMBIA HS          WECO    4A   29   4
+WEST HS                            WEST    3A   17   3
+WEST MESQUITE HS                   MEWM    5A   14   2
+WEST ORANGE-STARK HS               WOST    4A   18   3
+WEST SABINE HS                     PIWS    2A   24   3
+WESTBROOK HS                       WEBR    1A   14   2
+WHARTON HS                         WHAR    4A   29   4
+WHEELER HS                         WHEE    2A    2   1
+Wheeler Kelton HS                  WHKE    1A    1   1
+WHITE DEER HS                      WHDE    1A    2   1
+WHITE OAK HS                       WHOA    3A   16   2
+white settlement brewer hs         WSBR    5A    5   1
+WHITEFACE HS                       WHFA    2A    5   1
+WHITEHOUSE HS                      WHHO    5A   10   2
+WHITESBORO HS                      WHBO    3A   10   2
+WHITEWRIGHT HS                     WHWR    2A   14   2
+WHITHARRAL HS                      WHRR    1A    5   1
+WHITNEY HS                         WHIT    3A   17   3
+Wichita Falls City View HS         WFCV    3A    7   1
+Wichita Falls Legacy High School   WFLE    5A    4   1
+Wichita Falls Memorial HS          WFME    5A    4   1
+Wildorado HS                       WILD    1A    3   1
+WILLIS HS                 WILL   6A   13   2
+WILLS POINT HS            WIPO   4A   13   2
+WILSON HS                 WILS   1A    7   1
+Wimberley HS              WIMB   4A   26   4
+WINDTHORST HS             WDTH   2A    9   2
+WINK HS                   WINK   2A    6   1
+WINNIE EAST CHAMBERS HS   WIEC   3A   22   3
+WINNSBORO HS              WINN   3A   12   2
+WINONA HS                 WINO   3A   15   2
+WINTERS HS                WINT   2A    8   1
+WODEN HS                  WODE   2A   24   3
+WOLFE CITY HS             WOLC   2A   14   2
+WOLFFORTH FRENSHIP HS     WOFR   6A    2   1
+WOODSBORO HS              WDSB   2A   31   4
+WOODSON HS                WOOD   1A   17   3
+WOODVILLE HS              WODV   3A   21   3
+WORTHAM HS                WORT   2A   18   3
+WYLIE EAST HS             WYEA   6A    9   2
+WYLIE HS                  WYLE   6A    9   2
+YANTIS HS                 YANT   2A   15   2
+YOAKUM HS                 YOAK   3A   25   4
+YORKTOWN HS               YORK   2A   31   4
+ZAPATA HS                 ZAPA   4A   31   4
+ZAVALLA HS                ZAVA   1A   27   4
+ZEPHYR HS                 ZEPH   1A   25   4
+

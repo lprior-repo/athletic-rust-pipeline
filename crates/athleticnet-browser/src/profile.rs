@@ -81,3 +81,7 @@ fn validate_cdp_endpoint(url: &Url) -> Result<(), BrowserStartupError> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+#[path = "profile_tests.rs"]
+mod profile_tests;

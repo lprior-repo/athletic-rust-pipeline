@@ -15,7 +15,9 @@ use serde_json::json;
 use std::time::{Duration, Instant};
 
 use crate::corpus::build_corpus;
-use crate::phases::{append_corpus, bests_phase, census_phases, consolidate_phase, workbook_phase};
+use crate::phases::{
+    append_corpus, bests_phase, census_phases, consolidate_phase, load_phase, workbook_phase,
+};
 
 const DEFAULT_SCHOOLS: usize = 500;
 
@@ -50,10 +52,13 @@ fn main() -> Result<()> {
 
     let appended = append_corpus(&store, &corpus)?;
     let consolidated = consolidate_phase(&store, &corpus)?;
-    let (core_census, all_sources_census) = census_phases(&store, corpus.athletes.len())?;
+    let (dataset, loaded) = load_phase(&store, corpus.athletes.len())?;
+    let (core_census, all_sources_census, censuses) =
+        census_phases(&dataset, &store, corpus.athletes.len())?;
     let (bests_measured, best_rows) =
-        bests_phase(&store, corpus.athletes.len(), corpus.performances.len())?;
-    let workbook_measured = workbook_phase(&store, &dir, corpus.merged_rows())?;
+        bests_phase(&dataset, corpus.athletes.len(), corpus.performances.len())?;
+    let workbook_measured =
+        workbook_phase(&dataset, &store, &dir, corpus.merged_rows(), &censuses)?;
 
     let wall = started.elapsed().as_secs_f64();
     println!("metric=wall_seconds value={wall:.3} unit=s");
@@ -67,6 +72,7 @@ fn main() -> Result<()> {
         "appended_rows": corpus.appended_rows(),
         "append": appended,
         "consolidate": consolidated,
+        "dataset": loaded,
         "census_core": core_census,
         "census_all_sources": all_sources_census,
         "bests": bests_measured,

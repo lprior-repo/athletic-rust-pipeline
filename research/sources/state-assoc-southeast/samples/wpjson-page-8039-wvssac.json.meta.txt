@@ -1,0 +1,20 @@
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-headers: Authorization, X-WP-Nonce, Content-Disposition, Content-MD5, Content-Type
+access-control-expose-headers: X-WP-Total, X-WP-TotalPages, Link
+age: 0
+allow: GET
+alt-svc: h3=":443"; ma=2592000
+content-type: application/json; charset=UTF-8
+date: Tue, 22 Sep 2026 03:58:33 GMT
+link: <https://www.wvssac.org/school-resources/school-directory/>; rel="alternate"; type=text/html
+ratelimit-policy: 500; w=1
+strict-transport-security: max-age=31536000; includeSubDomains; preload
+v-cache: MISS
+vary: Accept-Encoding, Origin
+x-cacheable: YES:Forced
+x-content-options: nosniff
+x-content-type-options: nosniff
+x-content-type-options: nosniff
+x-robots-tag: noindex
+

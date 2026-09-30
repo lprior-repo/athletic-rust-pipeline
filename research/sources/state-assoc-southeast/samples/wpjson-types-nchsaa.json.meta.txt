@@ -1,0 +1,17 @@
+HTTP/1.1 200 OK
+Date: Tue, 22 Sep 2026 03:57:41 GMT
+Server: Apache/2.4.62 (Rocky Linux) OpenSSL/3.5.5
+X-Powered-By: PHP/8.3.33
+X-Robots-Tag: noindex
+Link: <https://www.nchsaa.org/wp-json/>; rel="https://api.w.org/"
+X-Content-Type-Options: nosniff
+Access-Control-Expose-Headers: X-WP-Total, X-WP-TotalPages, Link
+Access-Control-Allow-Headers: Authorization, X-WP-Nonce, Content-Disposition, Content-MD5, Content-Type
+Allow: GET
+Vary: Origin,Accept-Encoding
+Cache-Control: max-age=31536000
+Expires: Wed, 22 Sep 2027 03:57:41 GMT
+Referrer-Policy: no-referrer-when-downgrade
+Transfer-Encoding: chunked
+Content-Type: application/json; charset=UTF-8
+

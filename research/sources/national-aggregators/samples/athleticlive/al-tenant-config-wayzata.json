@@ -1,0 +1,92 @@
+{
+  "ga": {
+    "additionalAccountNames": ["UA-123562710-1"]
+  },
+  "gulpConfig": {
+    "dirSuffix": "wayzata"
+  },
+  "ngConfig": {
+    "aboutOneLiner": "Wayzata Results provides professional track and field results on any screen size.",
+    "contactEmail": "results@wayzataresults.com",
+    "elasticSearchIndex": "wayzata",
+    "esReportIndex": "wayzata_reports",
+    "facebookAppId": "",
+    "footerLinkConfig": {
+      "menuOne": {
+        "title": "Features",
+        "links": ["professionalResults", "mobileScoreboard", "notifications", "search"]
+      },
+      "menuTwo": {
+        "title": "Links",
+        "links": ["about", "findMeet", "wayzata"]
+      }
+    },
+    "machineName": "wayzata",
+    "providedBy": "Wayzata Results",
+    "primarySite": false,
+    "siteName": "Wayzata Results",
+    "siteTitleSuffix": "Wayzata Results",
+    "siteUrl": "https://results.wayzatatiming.com",
+    "sideMenuImageUrl": "/images/sitelogo.svg",
+    "sideMenuImageDarkModeUrl": "/images/sitelogo-whitetext.svg",
+    "footerImageUrl": "/images/sitelogo.svg",
+    "footerImageDarkModeUrl": "/images/sitelogo-whitetext.svg",
+    "tagLine": "Wayzata Results - Live Results",
+    "twitterLink": "https://twitter.com/wayzataresults",
+    "twitterUsername": "@wayzataresults"
+  },
+  "sassConfig": {
+    "primarySiteColor": "#2b60de",
+    "primarySiteColorDark": "#0037ab",
+    "primarySiteColorDarkText": "#ffffff",
+    "primarySiteColorLight": "#6f8dff",
+    "primarySiteColorLightText": "#000000",
+    "primarySiteColorText": "#ffffff",
+    "secondarySiteColor": "#ffe55c",
+    "secondarySiteColorDark": "#c9b327",
+    "secondarySiteColorDarkText": "#000000",
+    "secondarySiteColorLight": "#ffff8e",
+    "secondarySiteColorLightText": "#000000",
+    "secondarySiteColorText": "#000000",
+    "headerBackgroundColor": "#6f8dff",
+    "headerTextColor": "#000000"
+  },
+  "main": {
+    "require": {
+      "paths": {
+        "merge": [
+          {
+            "footer": "components/footer_ent"
+          }
+        ],
+        "remove": []
+      },
+      "shim": {
+        "merge": [],
+        "remove": []
+      },
+      "packages": {
+        "merge": [],
+        "remove": []
+      }
+    }
+  },
+  "app": {
+    "ravenWhitelistUrls": {
+      "merge": ["results.wayzatatiming.com"],
+      "remove": []
+    },
+    "unnamedRequires": {
+      "merge": [],
+      "remove": []
+    },
+    "namedRequires": {
+      "merge": {},
+      "remove": []
+    },
+    "appModules": {
+      "merge": [],
+      "remove": []
+    }
+  }
+}

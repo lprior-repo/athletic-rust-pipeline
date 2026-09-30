@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang='en'><head>
+<meta charset='UTF-8'>
+<title></title>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='google' content='notranslate'>
+<link rel='stylesheet' href='css/bootstrap.min.css'>
+<link rel='stylesheet' type='text/css' href='css/my_style.css'>
+<script src='js/jquery-3.4.1.min.js'></script>
+<script src='js/popper.min.js'></script>
+<script src='js/bootstrap.min.js'></script>
+<link href='https://fonts.googleapis.com/css?family=Roboto|Roboto+Condensed&display=swap' rel='stylesheet'>
+<script src='js/qualifier.js'></script>
+<script src='js/individualEventStatus.js'></script>
+<script src='js/openStats.js'></script>
+<script src='js/sorttable.js'></script>
+<script src='js/auto.js'></script>
+<script>
+function reloadPage(){
+location.reload(true);
+}
+</script>
+<script>
+$(document).ready(function(){
+$('[data-toggle=tooltip]').tooltip();
+});
+</script>
+</head>
+<nav class='navbar navbar-expand-lg navbar-dark fixed-top'>
+<a class='navbar-brand' href='index.htm'><img src='NCAA2.png'class='img-responsive logo_header'></a><p class='navbar-text text'>NCAA Outdoor Championships<br><small>Eugene, OR | June 10-13, 2026</small></p>
+<button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#collapsibleNavbar'>
+<span class='navbar-toggler-icon'></span></button>
+<div class='collapse navbar-collapse'' id='collapsibleNavbar' >
+<ul class='navbar-nav ml-auto text-right'>
+<li class='nav-item' >
+<a class='nav-link'  href='index.htm'>Event Index</a>
+</li>
+<li class='nav-item' >
+<a class='nav-link'  href=https://www.ncaatickets.com/championship/outdoor-track-and-field/champinfo>Meet Info</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link' href='athleteList.htm'>Athletes</a>
+</li>
+<li class='nav-item'>
+<a class='nav-link'href='scores.htm'>Team Scores</a>
+</li>
+</ul>
+</div>
+</nav>
+<nav aria-label='breadcrumb'>
+<ol class='breadcrumb'>
+<li class='breadcrumb-item'><a href='index.htm'>Event Index</a></li>
+<li class='breadcrumb-item'><a href=011-2_compiled.htm>Men 4x100 M Relay (Final) Summary</a></li>
+<li class='breadcrumb-item active'>Heat Data</li>
+</ol>
+</nav>
+<body>
+<br>
+<div class='container'>
+<div class='text-center'>
+<button type= 'button' class='btn btn-secondary' onclick='reloadPage();' >Refresh</button>
+<a href=011-2_compiled.htm  class='btn btn-secondary' role='button'>Summary Result</a>
+<a href=011-2_start.htm class='btn btn-secondary' role='button'>Start List</a>
+</div></div>
+<br>
+<div class='container-fluid col-md-3'>
+<ul class='pagination justify-content-center'>
+<li class='page-item disabled'><a class='page-link'>Final</a></li>
+</div>
+<br>
+<div class='container-fluid col-md-6'>
+<div class='table-responsive-sm'>
+<table class='table  table-sm  table-condensed' id='headerevent'>
+<thead class='thead-dark'>
+<tr><th>Event</th><th>Final</th><th></th><th>Status</th></tr></thead>
+<tbody><tr><td><a href = index.htm  data-toggle='tooltip' title='Event Index'>Men 4x100 M Relay</a> (Final)</td><td>1|1</td>
+<td> </td><br><td id='statusId' data-event = 011-2></td></tr>
+<tr><td>Friday&nbsp;5:02 PM</td><td></td><td></td><td></td></tr>
+</tbody></table></div>
+</div>
+<div class='container-fluid col-md-8'>
+<div class='card collapsed bg-light text-dark text-center d-md-none d-lg-none d-xl-none'  data-toggle='collapse' data-target='#collapseExample' aria-expanded='false' aria-controls='collapseExample'>
+<span class='if-collapsed'>Show Records</span>
+<span class='if-not-collapsed'>Hide Records</span>
+</div>
+<div class='collapse' id='collapseExample'>
+<div class='container-fluid'>
+<div class='table-responsive-sm'>
+<table class='table  table-sm  table-condensed' id='record'>
+<thead class='thead-dark'>
+<tr><th></th><th>Record</th><th>Relay</th><th></th><th>Date</th></tr></thead>
+<tr><td><span class = 'flag3'><small>&nbsp;MR&nbsp;</small></span></td><td>Meet</td><td>Auburn</td><td>37.75</td><td>6/10/2026</td></tr>
+<tr><td><span class = 'flag3'><small>&nbsp;CR&nbsp;</small></span></td><td>Collegiate</td><td>Auburn</td><td>37.75</td><td>6/10/2026</td></tr>
+<br>
+</tbody></table></div></div></div></div>
+<div class='container-fluid col-md-10'>
+<div class='table-responsive'>
+<table class='table  table-sm  table-striped table-condensed sortable' id='splits'>
+<caption><i>Results: Men 4x100 M Relay (Final)<br></i></caption>
+<thead class='thead-dark'>
+<tr><th class='sorttable_nosort' >Pl</th><th class='sorttable_nosort'>Ln</th><th class='sorttable_nosort'></th><th class='sorttable_nosort fixed-column'>Team</th><th class='sorttable_nosort'>Time</th></tr></thead>
+</tbody>
+<tr><td>1</td><td>5</td><td><image height = '30' width='30' src=logos/TENN.png></td><td class ='fixed-column'><b> TENNESSEE</b><sup> </sup><br><small>Tennessee&nbsp;</td>
+<td>37.98<br><span class = 'flag12'><small>&nbsp;SB&nbsp;</span></small>&nbsp;</td></tr>
+<tr><td>2</td><td>4</td><td><image height = '30' width='30' src=logos/LSU.png></td><td class ='fixed-column'><b> LSU</b><sup> </sup><br><small>LSU&nbsp;</td>
+<td>38.06<br><span class = 'flag12'><small>&nbsp;SB&nbsp;</span></small>&nbsp;</td></tr>
+<tr><td>3</td><td>9</td><td><image height = '30' width='30' src=logos/OHST.png></td><td class ='fixed-column'><b> OHIO STATE</b><sup> </sup><br><small>Ohio State&nbsp;</td>
+<td>38.44<br><span class = 'flag12'><small>&nbsp;SB&nbsp;</span></small>&nbsp;</td></tr>
+<tr><td>4</td><td>3</td><td><image height = '30' width='30' src=logos/NCAT.png></td><td class ='fixed-column'><b> N. CAROLINA A&T</b><sup> </sup><br><small>N. Carolina A&T&nbsp;</td>
+<td>38.67<br></td></tr>
+<tr><td>5</td><td>1</td><td><image height = '30' width='30' src=logos/MSST.png></td><td class ='fixed-column'><b> MISS STATE</b><sup> </sup><br><small>Miss State&nbsp;</td>
+<td>39.07<br></td></tr>
+<tr><td>DNF</td><td>2</td><td><image height = '30' width='30' src=logos/UO.png></td><td class ='fixed-column'><b> OREGON</b><sup> </sup><br><small>Oregon&nbsp;</td>
+<td>-</td></tr>
+<tr><td>DNF</td><td>6</td><td><image height = '30' width='30' src=logos/AUB.png></td><td class ='fixed-column'><b> AUBURN</b><sup> </sup><br><small>Auburn&nbsp;</td>
+<td>-</td></tr>
+<tr><td>DNF</td><td>7</td><td><image height = '30' width='30' src=logos/ARK.png></td><td class ='fixed-column'><b> ARKANSAS</b><sup> </sup><br><small>Arkansas&nbsp;</td>
+<td>-</td></tr>
+<tr><td>DNF</td><td>8</td><td><image height = '30' width='30' src=logos/UH.png></td><td class ='fixed-column'><b> HOUSTON</b><sup> </sup><br><small>Houston&nbsp;</td>
+<td>-</td></tr>
+</tbody></table></div>
+</div>
+<br>
+<br><div class='container-fluid col-md-8'>
+<div class='table-responsive-sm'>
+<table class='table  table-sm  table-striped table-hover table-condensed '  >
+<thead class='thead-dark'>
+<tr><th>Team</th><th>Athletes</th></tr></thead>
+<tbody><tr><td><b>Tennessee</b></td><td><i>Traunard Folson, Davonte Howell, T'Mars McCallum, Elijah Clark</td></i></tr>
+<tr><td><b>LSU</b></td><td><i>Jeremiah Walker, Jaiden Reid, Shakeem McKay, Joshua Caleb</td></i></tr>
+<tr><td><b>Ohio State</b></td><td><i>Dominic Calhoun, Kyler Brown, Nazzio John, Braxton Brann</td></i></tr>
+<tr><td><b>N. Carolina A&T</b></td><td><i>Lassale Hewlett, Jason Holmes, Jalen Booth-Mitchell, Nakhi Benjamin</td></i></tr>
+<tr><td><b>Miss State</b></td><td><i>Adekalu Fakorede, Kibren Moore, Gabe Scott, Sherman Hawkins</td></i></tr>
+<tr><td><b>Oregon</b></td><td><i>Kai Graves-Blanks, PJ Ize-Iyamu, Grant Valley, Jaelon Barbarin</td></i></tr>
+<tr><td><b>Auburn</b></td><td><i>Azeem Fahmi, Kanyinsola Ajayi, Austin Kresley, Tyler Davis</td></i></tr>
+<tr><td><b>Arkansas</b></td><td><i>Jamarion Stubbs, Tevijon Williams, Dapriest Hogans, Jelani Watkins</td></i></tr>
+<tr><td><b>Houston</b></td><td><i>Ryan Mulholland, Sean Aigboboh, Jaelyn Reeves-Lile, Louie Hinchliffe</td></i></tr>
+</tbody></table></div>
+</div>
+<br><br>
+<div class='container col-md-8'>
+<div class='card  bg-light text-dark text-center''>
+<div class='card-body'>Men 4x100 M Relay<br>Actual Start Time: 17:03:26  |  Updated: Wed Jun 17 23:06:45 <br><font face=calibri font size=3>auto-update: </font>
+<select id='selRe' onchange='setRe(this.options[selectedIndex].value)'>
+<option value='0' selected>Select</option>
+<option value=15>15s</option>
+<option value=60>60s</option>
+<option value=120>120s</option>
+<option value='0'>Off</option>
+</select><span>&nbsp;<font face=calibri font size=3><span id='reCounter'></span></span></body></p></div>
+</div>
+</div>
+</div>
+</html>

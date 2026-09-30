@@ -63,9 +63,42 @@ fn every_event_label_maps_to_its_kind() {
         let got = format!("{:?}", EventKind::from_source_label(label));
         assert_eq!(got, want, "label {label:?}");
     }
-    let unmapped = |l: String| EventKind::Unmapped { label: l };
+    let unmapped_label = |l: String| EventKind::Unmapped { label: l };
     let got = EventKind::from_source_label(" 3,200m ");
-    assert_eq!(got, unmapped("3,200m".into()));
+    assert_eq!(got, EventKind::Track3200m);
+    let got = EventKind::from_source_label("Flight 1 of 1");
+    assert_eq!(got, unmapped_label("Flight 1 of 1".into()));
+}
+
+const WRAPPED_LABELS: &str = "\
+Girls Results Triple Jump Finals=TripleJump;Boys Varsity Shot Put Finals=ShotPut;\
+Girls Varsity Discus Finals=Discus;Boys Results Long Jump Finals=LongJump;\
+Boys Junior Varsity Shot Put Finals=ShotPut;Boys Varsity Shot Put Preliminaries=ShotPut;\
+Boys High School Shot Put Finals=ShotPut;Girls' 300 Hurdles=Track300mHurdles;\
+Girls' Long Jump 3A=LongJump;ASICS Boys 1 Mile Finals=Track1Mile;\
+HS Boys 1600m En Route Finals=Track1600m;Mens HS Discus Finals=Discus;\
+Boys 100 Meter Dash=Track100m;5,000 Meters=Track5000m;Womens HS Shot Put Finals=ShotPut;\
+Boys Varsity 4x400 Meter Relay Finals=Relay4x400;Girls' Javelin 6A=Javelin;\
+Girls Javelin=Javelin;Boys 6A Javelin=Javelin";
+
+#[test]
+fn wrapped_event_labels_map_to_their_kind() {
+    for pair in WRAPPED_LABELS.split(';') {
+        let (label, want) = pair.split_once('=').unwrap();
+        let got = format!("{:?}", EventKind::from_source_label(label));
+        assert_eq!(got, want, "label {label:?}");
+    }
+}
+
+#[test]
+fn structural_labels_stay_unmapped() {
+    for label in ["Flight 1 of 1", "Section 2 of 4", "Compiled", "Overall"] {
+        let got = EventKind::from_source_label(label);
+        assert!(
+            matches!(got, EventKind::Unmapped { .. }),
+            "{label} unexpectedly mapped to {got:?}"
+        );
+    }
 }
 
 #[test]

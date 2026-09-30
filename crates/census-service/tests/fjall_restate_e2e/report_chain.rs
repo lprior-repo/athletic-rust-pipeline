@@ -3,7 +3,8 @@ use calamine::Reader;
 use census_domain::JurisdictionBucket;
 use census_domain::UsJurisdiction;
 use census_report::bests;
-use census_report::report::{self, Scope};
+use census_report::export::ExportDataset;
+use census_report::report::{self, Derivation, Scope};
 use census_report::workbook;
 use census_service::census;
 use census_store::Store;
@@ -25,19 +26,25 @@ fn report_bests_and_workbook_chain_over_synthetic_entities() {
     assert_eq!(count_of(&counts, "performances"), corpus.performances.len());
     assert_eq!(count_of(&counts, "coaches"), 0);
 
-    let core = report::build_census(&store, Scope::Core).unwrap();
-    let all_sources = report::build_census(&store, Scope::AllSources).unwrap();
+    let dataset = ExportDataset::load(&store).unwrap();
+    let core = report::build_census(
+        &Derivation::of(&dataset, Scope::Core, None),
+        &store.out_dir(),
+    );
+    let all_sources = report::build_census(
+        &Derivation::of(&dataset, Scope::AllSources, None),
+        &store.out_dir(),
+    );
     assert_census_counts(&core, &all_sources, &corpus);
 
-    let bests = bests::build(
-        &store,
+    let bests = bests::build_from_dataset(
+        &dataset,
         &bests::Options {
             scope: Scope::Core,
             grad_year: Some(2027),
             limit: None,
         },
-    )
-    .unwrap();
+    );
     assert_eq!(
         bests.len(),
         corpus.athletes.len(),

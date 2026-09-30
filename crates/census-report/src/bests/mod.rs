@@ -16,11 +16,11 @@ pub use key::{
 };
 pub use measure::{field_micrometres, mark_unit, Measure};
 pub use notation::{disagreement, format_time, mark_text};
-pub use reduce::build;
+pub use reduce::build_from_dataset;
 pub use selection::{Conflict, Population, SharedSelection};
 pub use write::write;
 
-pub(crate) use parents::{Parents, Referenced};
+pub(crate) use parents::Parents;
 
 #[derive(Debug, Clone)]
 pub struct Options {

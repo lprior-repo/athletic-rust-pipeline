@@ -1,0 +1,55 @@
+# Crawler policy
+#
+# robots.txt is allow-by-default: any bot not named below may already crawl the
+# whole site, so no per-bot "Allow: /" group is needed to grant access. The
+# crawlers below are intentionally permitted, listed here for reference only.
+#
+#   Search engines:  Googlebot, Bingbot, DuckDuckBot
+#   OpenAI:          OAI-SearchBot (search), GPTBot (training),
+#                    ChatGPT-User (user-initiated fetch)
+#   Anthropic:       ClaudeBot (training), Claude-User (user-initiated fetch),
+#                    Claude-SearchBot (search index)
+#   Google AI:       Google-Extended (Gemini / Vertex grounding + training)
+#   Perplexity:      PerplexityBot (index), Perplexity-User (user fetch)
+#   Apple:           Applebot (Siri / Spotlight crawl),
+#                    Applebot-Extended (Apple Intelligence training)
+#   Meta:            Meta-ExternalAgent, Meta-ExternalFetcher
+#   Other:           Amazonbot, cohere-ai, YouBot, CCBot
+#
+# Google-Extended and Applebot-Extended are not crawlers -- they only control
+# whether content may be used for AI training. Leaving them unlisted, as here,
+# leaves training permitted.
+#
+# To restrict a specific bot, add a named group -- but copy ALL rules from the
+# "*" group into it. A crawler obeys only the single most specific group that
+# matches it and ignores every other group, including "*" (RFC 9309 sec. 2.2.1),
+# so a named group holding only "Allow: /" would strip the rules below for that
+# bot while granting nothing it did not already have.
+
+# General Rules
+User-agent: *
+Disallow: /wp-admin/
+Allow: /wp-admin/admin-ajax.php
+Disallow: /wp-includes/
+Allow: /wp-includes/js/*
+Allow: /wp-includes/images/*
+Disallow: /trackback/
+Disallow: /wp-login.php
+Disallow: /wp-register.php
+Disallow: /cdn-cgi/l/email-protection
+
+# WordPress XML Sitemaps
+sitemap: https://www.ncsasports.org/sitemap_index.xml
+sitemap: https://www.ncsasports.org/post-sitemap.xml
+sitemap: https://www.ncsasports.org/page-sitemap.xml
+sitemap: https://www.ncsasports.org/staff_member-sitemap.xml
+sitemap: https://www.ncsasports.org/ranking_page-sitemap.xml
+
+# OTHER XML Sitemaps
+sitemap: https://www.ncsasports.org/titan-sitemaps/college-profile/index.xml
+sitemap: https://www.ncsasports.org/titan-sitemaps/state-college-profile/index.xml
+sitemap: https://www.ncsasports.org/titan-sitemaps/sport-profile/index.xml
+sitemap: https://www.ncsasports.org/titan-sitemaps/state-high-school-profile/index.xml
+sitemap: https://www.ncsasports.org/titan-sitemaps/city-profile/index.xml
+sitemap: https://www.ncsasports.org/titan-sitemaps/high-school-profile/index.xml
+sitemap: https://www.ncsasports.org/titan-sitemaps/country-profile/index.xml

@@ -50,6 +50,7 @@ pub(super) async fn supervise(
         .spawn(super::guard::watch_memory(
             super::DEFAULT_MEMORY_BUDGET_BYTES,
             Arc::clone(&over_budget),
+            region.stopping(),
         ))
         .map_err(count_error)?;
     tracing::info!(

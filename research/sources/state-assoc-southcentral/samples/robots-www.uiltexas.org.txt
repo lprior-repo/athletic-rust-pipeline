@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Disallow: /machform/
+Disallow: /assets/
+Disallow: /images/
+Disallow: /files/
+Disallow: /resources/
+Disallow: /js/
+Disallow: /kj/
+Disallow: /static/
+Disallow: /themes/
+Disallow: /views/
+Disallow: /uilwebadmin/
+Disallow: /site/
+Disallow: /archives/
+Disallow: /pml-submissions/

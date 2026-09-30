@@ -1,0 +1,42 @@
+har	entry	method	status	resp_bytes	content_size	ms	started_utc	post_body	url
+har1	66	GET	200	3645	3645	70	2026-09-18T18:54:42.180Z		https://www.athletic.net/api/v1/SignedInUser/GetSignedInUser
+har1	69	GET	200	1456	1456	56	2026-09-18T18:54:42.184Z		https://www.athletic.net/api/v1/SiteHeader/GetBreadcrumbs?sport=tf&athleteId=0&meetId=0&calendarId=0&divId=170770&teamId=0&seasonId=0
+har1	147	POST	200	191003	191003	611	2026-09-18T18:54:42.330Z	{"reportType":"div","mode":"list","divListId":170770,"indoor":null,"eventShort":"","gender":"m","qParams":{},"qualifyingListKey":"","version":2,"debug":""}	https://www.athletic.net/api/v1/tfRankings/GetRankings
+har1	153	POST	200	1080	1080	59	2026-09-18T18:54:42.948Z	{"recordSetId":0,"locationId":0,"teamId":0,"listId":0,"seasonId":2026,"restrict":false,"includeEvents":[{"eventId":1,"eventTypeId":0},{"eventId":2,"eventTypeId":0},{"eventId":3,"eventTypeId":0},{"eventId":4,"eventTypeId":0},{"eventId":52,"eventTypeId":0},{"eventId":60,"eventTypeId":0},{"eventId":10,"eventTypeId":0},{"eventId":11,"eventTypeId":0},{"eventId":7,"eventTypeId":0},{"eventId":50,"eventTypeId":0},{"eventId":8,"eventTypeId":0},{"eventId":39,"eventTypeId":0},{"eventId":12,"eventTypeId":0},{"eventId":13,"eventTypeId":0},{"eventId":9,"eventTypeId":0},{"eventId":16,"eventTypeId":0},{"eventId":17,"eventTypeId":0},{"eventId":18,"eventTypeId":0}]}	https://www.athletic.net/api/v1/tfRankings/GetAgesGrades
+har1	154	GET	200	78468	78468	78	2026-09-18T18:54:42.948Z		https://www.athletic.net/api/v1/tfRankings/GetNavInfo?seasonId=2026&level=4&gender=m&recordSetId=0&locationId=0&teamId=0&indoor=false
+har1	155	GET	200	34159	34159	53	2026-09-18T18:54:42.963Z		https://www.athletic.net/api/v1/public/GetStatesCountries2
+har1	340	GET	200	2	2	72	2026-09-18T18:54:43.414Z		https://www.athletic.net/api/v1/tfRankings/GetStandards?recordsetId=null&eventId=null&eventTypeId=null
+har1	342	GET	200	117	117	59	2026-09-18T18:54:44.193Z		https://www.athletic.net/api/v1/SiteFooter/GetFooterData
+har1	348	POST	200	0	88676	377	2026-09-18T18:54:45.430Z	{"reportType":"div","mode":"list","divListId":170770,"indoor":null,"eventShort":"100m","gender":"m","qParams":{"eventType":0},"qualifyingListKey":"","version":2,"debug":""}	https://www.athletic.net/api/v1/tfRankings/GetRankings
+har1	353	POST	200	1080	1080	60	2026-09-18T18:54:45.811Z	{"recordSetId":0,"locationId":0,"teamId":0,"listId":0,"seasonId":2026,"restrict":false,"includeEvents":[{"eventId":1,"eventTypeId":0}]}	https://www.athletic.net/api/v1/tfRankings/GetAgesGrades
+har1	354	GET	200	78468	78468	78	2026-09-18T18:54:45.811Z		https://www.athletic.net/api/v1/tfRankings/GetNavInfo?seasonId=2026&level=4&gender=m&recordSetId=0&locationId=0&teamId=0&indoor=false
+har1	409	GET	200	2	2	53	2026-09-18T18:54:46.020Z		https://www.athletic.net/api/v1/tfRankings/GetStandards?recordsetId=null&eventId=1&eventTypeId=0
+har1	414	POST	200	89113	89113	820	2026-09-18T18:54:53.926Z	{"reportType":"div","mode":"list","divListId":170770,"indoor":null,"eventShort":"100m","gender":"m","qParams":{"page":2},"qualifyingListKey":"","version":2,"debug":""}	https://www.athletic.net/api/v1/tfRankings/GetRankings
+har1	417	GET	200	2	2	106	2026-09-18T18:54:54.749Z		https://www.athletic.net/api/v1/tfRankings/GetStandards?recordsetId=null&eventId=1&eventTypeId=0
+har1	478	POST	200	88353	88353	809	2026-09-18T18:54:57.600Z	{"reportType":"div","mode":"list","divListId":170770,"indoor":null,"eventShort":"100m","gender":"m","qParams":{"page":3},"qualifyingListKey":"","version":2,"debug":""}	https://www.athletic.net/api/v1/tfRankings/GetRankings
+har1	481	GET	200	2	2	93	2026-09-18T18:54:58.414Z		https://www.athletic.net/api/v1/tfRankings/GetStandards?recordsetId=null&eventId=1&eventTypeId=0
+har1	539	POST	200	0	87425	901	2026-09-18T18:55:00.812Z	{"reportType":"div","mode":"list","divListId":170770,"indoor":null,"eventShort":"100m","gender":"m","qParams":{"page":4},"qualifyingListKey":"","version":2,"debug":""}	https://www.athletic.net/api/v1/tfRankings/GetRankings
+har1	542	GET	200	2	2	71	2026-09-18T18:55:01.716Z		https://www.athletic.net/api/v1/tfRankings/GetStandards?recordsetId=null&eventId=1&eventTypeId=0
+har1	587	POST	200	85782	85782	583	2026-09-18T18:55:10.636Z	{"reportType":"div","mode":"list","divListId":170770,"indoor":null,"eventShort":"100m","gender":"m","qParams":{"grades":[11],"page":2},"qualifyingListKey":"","version":2,"debug":""}	https://www.athletic.net/api/v1/tfRankings/GetRankings
+har1	590	GET	200	2	2	58	2026-09-18T18:55:11.223Z		https://www.athletic.net/api/v1/tfRankings/GetStandards?recordsetId=null&eventId=1&eventTypeId=0
+har1	622	POST	200	84294	84294	378	2026-09-18T18:55:13.729Z	{"reportType":"div","mode":"list","divListId":170770,"indoor":null,"eventShort":"100m","gender":"m","qParams":{"grades":[11],"page":10},"qualifyingListKey":"","version":2,"debug":""}	https://www.athletic.net/api/v1/tfRankings/GetRankings
+har1	625	GET	200	2	2	100	2026-09-18T18:55:14.112Z		https://www.athletic.net/api/v1/tfRankings/GetStandards?recordsetId=null&eventId=1&eventTypeId=0
+har1	656	POST	200	84101	84101	199	2026-09-18T18:55:16.934Z	{"reportType":"div","mode":"list","divListId":170770,"indoor":null,"eventShort":"100m","gender":"m","qParams":{"grades":[11],"page":14},"qualifyingListKey":"","version":2,"debug":""}	https://www.athletic.net/api/v1/tfRankings/GetRankings
+har1	660	GET	200	2	2	117	2026-09-18T18:55:17.137Z		https://www.athletic.net/api/v1/tfRankings/GetStandards?recordsetId=null&eventId=1&eventTypeId=0
+har1	704	POST	200	16709	16709	380	2026-09-18T18:55:20.366Z	{"reportType":"div","mode":"list","divListId":170770,"indoor":null,"eventShort":"100m","gender":"m","qParams":{"grades":[11],"page":17},"qualifyingListKey":"","version":2,"debug":""}	https://www.athletic.net/api/v1/tfRankings/GetRankings
+har1	707	GET	200	2	2	64	2026-09-18T18:55:20.750Z		https://www.athletic.net/api/v1/tfRankings/GetStandards?recordsetId=null&eventId=1&eventTypeId=0
+har1	718	GET	200	23613	23613	109	2026-09-18T18:55:30.915Z		https://www.athletic.net/api/v1/tfRankings/GetConvertEvents
+har1	719	GET	200	1456	1456	53	2026-09-18T18:55:40.816Z		https://www.athletic.net/api/v1/SiteHeader/GetBreadcrumbs?sport=tf&athleteId=0&meetId=0&calendarId=0&divId=170770&teamId=0&seasonId=0
+har1	720	GET	200	1546	1546	72	2026-09-18T18:55:40.817Z		https://www.athletic.net/api/v1/SignedInUser/GetUserAthletes2
+har1	721	GET	200	2	2	72	2026-09-18T18:55:40.818Z		https://www.athletic.net/api/v1/SignedInUser/GetUserTeams2
+har2	66	GET	200	3645	3645	73	2026-09-18T19:21:00.028Z		https://www.athletic.net/api/v1/SignedInUser/GetSignedInUser
+har2	127	GET	200	30344	30344	145	2026-09-18T19:21:00.062Z		https://www.athletic.net/api/v1/AthleteBio/GetAthleteBioData?athleteId=28872883&sport=tf&level=0
+har2	134	GET	200	1222	1222	86	2026-09-18T19:21:00.210Z		https://www.athletic.net/api/v1/TeamNav/Team?team=3204&sport=tf&season=2026
+har2	135	GET	200	6122	6122	115	2026-09-18T19:21:00.220Z		https://www.athletic.net/api/v1/General/GetRankings?athleteId=28872883&sport=tf&seasonId=2026&truncate=true
+har2	136	GET	200	773	773	76	2026-09-18T19:21:00.220Z		https://www.athletic.net/api/v1/AthleteBio/LogOverview?athleteId=28872883
+har2	137	GET	200	48	48	70	2026-09-18T19:21:00.221Z		https://www.athletic.net/api/v1/SocialFollow/GetFollowInformation3?type=A&linkId=28872883&useRW=false
+har2	147	GET	200	34159	34159	73	2026-09-18T19:21:00.298Z		https://www.athletic.net/api/v1/public/GetStatesCountries2
+har2	149	GET	200	1363	1363	98	2026-09-18T19:21:00.305Z		https://www.athletic.net/api/v1/TLog/GetInitialLogData2?athleteId=987411&urlTeamId=0
+har2	150	GET	200	460	460	66	2026-09-18T19:21:00.305Z		https://www.athletic.net/api/v1/TLog/GetLogUserSettings
+har2	160	GET	200	117	117	74	2026-09-18T19:21:02.039Z		https://www.athletic.net/api/v1/SiteFooter/GetFooterData
+har2	166	GET	200	1962	1962	138	2026-09-18T19:21:18.194Z		https://www.athletic.net/api/v1/SiteHeader/GetDivChildren?sport=tf&divId=170771

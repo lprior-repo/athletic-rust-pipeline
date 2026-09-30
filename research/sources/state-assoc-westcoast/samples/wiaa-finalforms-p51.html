@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- universal -->
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex,nofollow">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
+    <meta name="version" content="7.50.0">
+    <meta name="environment" content="production">
+
+    <!-- opengraph -->
+    <meta property="og:title" content="FinalForms"/>
+    <meta property="og:url" content="https://wiaa.finalforms.com"/>
+    <meta property="og:site_name" content="FinalForms"/>
+    <meta property="og:type" content="website"/>
+      <meta property="og:image" content="https://wiaa.finalforms.com/tower-favicon-black.png"/>
+    <meta property="og:description" content="FinalForms assists high school athletic departments with online collection and management of student eligibility, coaching certifications, medical information, and much more."/>
+
+    <!-- touch icons by realfavicongenerator.net -->
+    <link rel="apple-touch-icon" sizes="57x57" href="/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/apple-icon-152x152.png">
+      <link rel="icon" type="image/png" href="/tower-favicon-19x16.png"   sizes="19x16">
+      <link rel="icon" type="image/png" href="/tower-favicon-37x32.png"   sizes="37x32">
+      <link rel="icon" type="image/png" href="/tower-favicon-110x96.png"  sizes="110x96">
+      <link rel="icon" type="image/png" href="/tower-favicon-184x160.png" sizes="184x160">
+      <link rel="icon" type="image/png" href="/tower-favicon-226x196.png" sizes="226x196">
+    <meta name="msapplication-TileColor" content="#2d89ef">
+    <meta name="msapplication-TileImage" content="/mstile-144x144.png">
+
+    <!-- mobile app capable -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    
+
+    <!-- csrf tags -->
+    <meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="AxcAoFPue8SqFPK6ECnTX1ie7Eysj5nz7XS9kuJ-AvqbXjlkD3Fe-U-wg2c7s3KbWCaosysRctDy7Fr9kTS8cA" />
+
+    <!-- google fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:ital,wght@0,500;1,500&display=swap">
+
+    <!-- stylesheet -->
+    <link rel="stylesheet" href="/assets/universal-504c795e543a4bd84561d5202c71b5fa538e4eac1f129cdde704fa5dded4ad26.css" media="all" />
+
+    <!-- theme -->
+    <style type="text/css">
+      :root {
+  --link-color: #00703c;
+  --active-link-color: #00ad5d;
+}
+
+a, .link-color, footer a {
+    color: #00703c;
+}
+.nav .caret {
+    border-top-color: #00703c;
+    border-bottom-color: #00703c;
+}
+
+.navbar .nav a:hover,
+.navbar .nav a.active,
+a:hover, .hover-color, a.selected,
+.documentation a.active  {
+    color: #00ad5d;
+}
+.build-documentation a.active  {
+    color: #00ad5d;
+}
+ul.counter li.selected { border-left-color: #00ad5d; }
+
+.secondary-color {
+    color: #4e4e50;
+}
+
+.family-row .icon-color {
+    color: #00703c;
+}
+.family-row .icon-color:hover  {
+    color: #00381e;
+}
+
+.color-row {
+    background-color: #00703c;
+    color: #fff;
+}
+.color-row .icon-color:hover  {
+    opacity: 0.8;
+}
+.documentation h2 {
+    background-color: #00703c;
+}
+.build-documentation h2 {
+    background-color: #00703c;
+}
+/* collapsed navbar bar color */
+.icon-bar {
+    background-color: #00703c;
+}
+
+.admin-directory-toggle {
+    background-color: #00703c;
+}
+
+</style>
+    <!-- javascript -->
+    <script async src="https://ga.jspm.io/npm:es-module-shims@2.0.10/dist/es-module-shims.js"></script>
+    <script type="importmap" data-turbo-track="reload">{
+  "imports": {
+    "application": "/assets/application-5b65bf8a983c11b34fb5afb4a94ad48590445b74f4c86ab1488ad1efdbdda0a3.js",
+    "sentry": "/assets/sentry-2a640e39af84d34fd081af78f26b31df373a5af321a737187d30b988a66a448c.js",
+    "version_checker": "/assets/version_checker-049eae07fbcdae35a696de6f21e44f8a4412c20239547db078ed7b30e04ee68f.js",
+    "jQuery": "https://ga.jspm.io/npm:jquery@3.7.1/dist/jquery.js",
+    "jQueryModule": "/assets/jquery.module-dfdf126f04948c9f37436a3e9059aec12f642219eb41f87cf5a38ee65f70256b.js",
+    "tinymceModule": "/assets/tinymce.module-8eaa12ddd16e43e2a4fef0da60d1a6eb7fffd43d69c1c3323e6d724b207af33b.js",
+    "@hotwired/stimulus": "/assets/stimulus.min-79b8dc091ba64c737e6c3f223fa97ab9163136068f98c23ec1be557438935c6e.js",
+    "@hotwired/stimulus-loading": "/assets/stimulus-loading-6e19ae481fa626fd72c809bac934571fec37dec02106afb580dc921c0b70f5f8.js",
+    "@sentry/browser": "https://ga.jspm.io/npm:@sentry/browser@9.10.1/build/npm/esm/index.js",
+    "@sentry/core": "https://ga.jspm.io/npm:@sentry/core@9.10.1/build/esm/index.js",
+    "@sentry-internal/browser-utils": "https://ga.jspm.io/npm:@sentry-internal/browser-utils@9.10.1/build/esm/index.js",
+    "@sentry-internal/feedback": "https://ga.jspm.io/npm:@sentry-internal/feedback@9.10.1/build/npm/esm/index.js",
+    "@sentry-internal/replay": "https://ga.jspm.io/npm:@sentry-internal/replay@9.10.1/build/npm/esm/index.js",
+    "@sentry-internal/replay-canvas": "https://ga.jspm.io/npm:@sentry-internal/replay-canvas@9.10.1/build/npm/esm/index.js",
+    "@frontapp/plugin-sdk": "https://ga.jspm.io/npm:@frontapp/plugin-sdk@1.10.0/dist/index.es.js",
+    "@frontapp/ui-bridge": "https://ga.jspm.io/npm:@frontapp/ui-bridge@2.0.0-beta9/dist/bridgeTypesV2.js",
+    "cuid": "https://ga.jspm.io/npm:cuid@2.1.8/index.js",
+    "cuid/lib/fingerprint.js": "https://ga.jspm.io/npm:cuid@2.1.8/lib/fingerprint.browser.js",
+    "cuid/lib/getRandomValue.js": "https://ga.jspm.io/npm:cuid@2.1.8/lib/getRandomValue.browser.js",
+    "rxjs": "https://ga.jspm.io/npm:rxjs@6.6.7/index.js",
+    "rxjs/operators": "https://ga.jspm.io/npm:rxjs@6.6.7/operators/index.js",
+    "controllers/activity_category_controller": "/assets/controllers/activity_category_controller-f3669920483d795f8d62a80aecfe4624331203e0bf96137ad977f0e03d5c2bbb.js",
+    "controllers/activity_season_controller": "/assets/controllers/activity_season_controller-7ad1dbc8ef4e04b46c6ca5fff4ee5eb3a00bc35a00959395918d5444f2c9f5e0.js",
+    "controllers/admin_buttons_controller": "/assets/controllers/admin_buttons_controller-d624f240f5c24ca87fcf0f63008e0d1c9f59e85521f5cc0ce561cd294e18b0ca.js",
+    "controllers/application": "/assets/controllers/application-62c85e66f66d6cc1df073a0569f7c7a9045e0797df887fda1875b7119be3612e.js",
+    "controllers/attachment_filters_controller": "/assets/controllers/attachment_filters_controller-c3df89dfccd7da6a7070a346331f85fb26cc8327837079efe64a6dbc70fc06ac.js",
+    "controllers/back_office/errors_on_demand_controller": "/assets/controllers/back_office/errors_on_demand_controller-0f6f56969f56b5022e7520c1ad4ff45af9416ecb28b4264135112c54a5ab4150.js",
+    "controllers/back_office/zoom_status_controller": "/assets/controllers/back_office/zoom_status_controller-9ec76a6f99818c8d76ffa6b84648329c3d76fc061835469a706c1041eda6e70f.js",
+    "controllers/block_visibility_controller": "/assets/controllers/block_visibility_controller-91914cdfd35b428e252d037856291efa4e6976a08a9e7693d934f17b303fbeba.js",
+    "controllers/checkbox_dropdown_filter_controller": "/assets/controllers/checkbox_dropdown_filter_controller-29cfb693403a320073dfedb2b325b50e4855d30cbc0cf6ff1c3a30e688252a22.js",
+    "controllers/checkbox_group_controller": "/assets/controllers/checkbox_group_controller-ecc71254a6a7766a9b99a055e5538e43b0fe3f06c97764f89b73267afe7c5358.js",
+    "controllers/class_toggle_controller": "/assets/controllers/class_toggle_controller-74cf2481ac7d68c4f33bb8e64e7d06da89fe75a700a17b1c34ce488fa7477872.js",
+    "controllers/clearance_selector_controller": "/assets/controllers/clearance_selector_controller-76ae3ae371ffd2b78d74f2b1a41480a20ece479367e4533936811f7a66d222c6.js",
+    "controllers/clipboard_controller": "/assets/controllers/clipboard_controller-588cca0e47df9a63a28a1d313c26dbaeb1050536119d40a91ea4d8a806292ef0.js",
+    "controllers/comment_controller": "/assets/controllers/comment_controller-e44135a89f1f28c5bf2f7adac64eff77b24739649e56b8eb9bdd4d073931fa29.js",
+    "controllers/content_draft/attachment_grades_controller": "/assets/controllers/content_draft/attachment_grades_controller-eba9cf4c9eb105f003bfa001969b4594960c8ac48c3d908158104b73192e79fa.js",
+    "controllers/content_draft/drag_and_drop_controller": "/assets/controllers/content_draft/drag_and_drop_controller-e6ac83c67248a7fcdbf01306fbd9849b757c7cf0102ecf6634a728618759deb8.js",
+    "controllers/content_draft/field_select_controller": "/assets/controllers/content_draft/field_select_controller-570454a7fcf56558527167413fdc5b26b77332cac6fd55ab4e0f5b0b9512f1ad.js",
+    "controllers/content_draft/html_content_controller": "/assets/controllers/content_draft/html_content_controller-4be652e9f7e231f27572f681b130a9789c6cab2d38e6c3c07e2241ec8472b1f0.js",
+    "controllers/content_draft/select_field_options_controller": "/assets/controllers/content_draft/select_field_options_controller-645afd3c86c4ae66d3715147aa46397cb8f5a93bdd9eb925db5f06c4349d815a.js",
+    "controllers/district_opt_in_notifications_controller": "/assets/controllers/district_opt_in_notifications_controller-4a49558e06283d8af63413707af251ccf1b94f12c73f6aa9b265e3f40f5e2a96.js",
+    "controllers/fade_replace_controller": "/assets/controllers/fade_replace_controller-2ce63ef4491c1418fc27cc0549964902967e2d98ba5ace206991946af290dd5a.js",
+    "controllers/ff_to_ps_mappings_controller": "/assets/controllers/ff_to_ps_mappings_controller-61059913ebeeeb183631401f3d817ecab21989eea5ded9d2b613ff63c928ecc6.js",
+    "controllers/form_copy_name_controller": "/assets/controllers/form_copy_name_controller-db116a226af6515927fafe474d1573a03b17083157d5c74139d0d3f96e9bb9ff.js",
+    "controllers/form_unsaved_changes_controller": "/assets/controllers/form_unsaved_changes_controller-fe530fc162ee98e106a4d7812c372da74835735e7919ebb080fa063da3749a1b.js",
+    "controllers/front/simulator_controller": "/assets/controllers/front/simulator_controller-ffb8c2dbb09f6ccd98d79d7dbe98d2b1a4c4641dbbd0cf7b22e506cc89e05501.js",
+    "controllers/front_plugin_controller": "/assets/controllers/front_plugin_controller-df02e7996c7c9e2c0f6a1970d0d2e3b656ecc64ed34faf71720055fc224b73dd.js",
+    "controllers/gatekeeper_details_controller": "/assets/controllers/gatekeeper_details_controller-a29cb78d8acf1c10bc26895331c7f5aebdc2a9f70c41158685e3f63fd980d7c8.js",
+    "controllers/hide_content_controller": "/assets/controllers/hide_content_controller-8b81fb4d4d0eadded4a96897565c6aa2323487a869559b19cbb3771fa547b869.js",
+    "controllers/highlight_controller": "/assets/controllers/highlight_controller-c758a054aab0daa826faeba94623c21f66de7409df1ee455409f89921cb67968.js",
+    "controllers/import_download_controller": "/assets/controllers/import_download_controller-247aa50f4ec9b86833a10e412f540e0ee4244ce0b687e38b1003b688a64fa1cc.js",
+    "controllers": "/assets/controllers/index-11afd1e63d7ee1b894c7a52b762ecdb6cbc383586c2b014d3f604271f437c6f4.js",
+    "controllers/json_submit_controller": "/assets/controllers/json_submit_controller-2a45b5cf9c1fe04a45bfabab633b7534c004efd7350180e3a97d64baee5ab644.js",
+    "controllers/load_transition_controller": "/assets/controllers/load_transition_controller-a5603d9ee1e9828fcfab4fe4c7d08b5c50f7cf7d82f1a7a8e7b0023ade85a97a.js",
+    "controllers/loading_placeholder_controller": "/assets/controllers/loading_placeholder_controller-962fa153121639f745594ed9252d9ef142929740d28c148a04ef7a121f6693a5.js",
+    "controllers/mass_move_grades_select_controller": "/assets/controllers/mass_move_grades_select_controller-87c62e800d45c3270a390f4b5ffe352eb93b8dd04f3483f9df3ab6de757491fe.js",
+    "controllers/mfa_totp_code_controller": "/assets/controllers/mfa_totp_code_controller-caca41899fa26c24ba0e1da2e75d4459cd5dfbad6dc4833d75271f5a3fa9abf5.js",
+    "controllers/ncsa_athlete_opt_in_controller": "/assets/controllers/ncsa_athlete_opt_in_controller-4cb527283c6f96b12948a2762124db3db4f092a31acd765623674b58197532dc.js",
+    "controllers/nfhs_participation_survey_overrides_controller": "/assets/controllers/nfhs_participation_survey_overrides_controller-ab2825fa918c605ceeceeb36ae01b69ac8946d1698d6ae39349aef5e445219ab.js",
+    "controllers/nfhs_participation_survey_totals_controller": "/assets/controllers/nfhs_participation_survey_totals_controller-6f505aca37ac1dc5ed2b0e4606c50c9e333c50e9f8f51e868c70935f338924ed.js",
+    "controllers/nfhs_participation_survey_validation_controller": "/assets/controllers/nfhs_participation_survey_validation_controller-fb7fe01e22a01430aa6f032e9f4660359dc016f82c3838f0cf3431509f54e7e1.js",
+    "controllers/orderable_controller": "/assets/controllers/orderable_controller-6dd2411f71df67ecafc228164a34d854f032a3e6f0bf59d98bb9b21d976ae23d.js",
+    "controllers/partial_fetch_controller": "/assets/controllers/partial_fetch_controller-d637fa3500d34e5666728c96d8364110401794ba28a19d42c31c828f2751e70e.js",
+    "controllers/password_toggle_controller": "/assets/controllers/password_toggle_controller-a8761dc9356d7c6dff4a8bb9797cc22002518d196f0797af370876eedd0839f0.js",
+    "controllers/payfactory_controller": "/assets/controllers/payfactory_controller-5423cf1f4c2461e07672bf8265b21a76eff2d4806af84fa789f93e33dc0a3157.js",
+    "controllers/payments_controller": "/assets/controllers/payments_controller-ea9b36e3d1439c82c95af6a9100f36aeb9baf8934ee2ba75b32cdfe60f5affb8.js",
+    "controllers/printable_textarea_controller": "/assets/controllers/printable_textarea_controller-90261a8c4783697f9b19df79511c86b875e6b82249adfe1a96ab90c2a52383a5.js",
+    "controllers/ps_dependency_controller": "/assets/controllers/ps_dependency_controller-51b94dc940190c570f78799e1017ccb4e7cdd43ae629f37cc5d9c20d24359731.js",
+    "controllers/ps_formatter_controller": "/assets/controllers/ps_formatter_controller-bff6ae00de5c4b042c3e356776982326f06c2ea2d33dd6ced60d7367bdc15fe5.js",
+    "controllers/ps_value_type_controller": "/assets/controllers/ps_value_type_controller-b9f2778a297851d542ee196ad18a005812ad4a5cee106745ab7fe9e862c0110e.js",
+    "controllers/pwa_prompt_controller": "/assets/controllers/pwa_prompt_controller-8ff39b8f16576a162dbc1a92960437084150bf4706efb1fd0b50e5530cfdcb89.js",
+    "controllers/quickbooks_invoice_link_controller": "/assets/controllers/quickbooks_invoice_link_controller-6cb45edd473db797e695ee4848ef0f0068fa1e1e1d88e70c36278b6338a7b1e5.js",
+    "controllers/resize_builder_controller": "/assets/controllers/resize_builder_controller-c94acc31365017d154bc487fe32be661adea44f0e0e71de3c2ca9f1edc4cd843.js",
+    "controllers/scroll_to_controller": "/assets/controllers/scroll_to_controller-5a2d678531364c2c380f6c5f5242508720904cc97bf390a1427d507550d25506.js",
+    "controllers/scroll_to_end_controller": "/assets/controllers/scroll_to_end_controller-5dba63c2ea7102f166e82907860cc11d934545b91f446bbd83861ff9a0c466b6.js",
+    "controllers/service_partner_controller": "/assets/controllers/service_partner_controller-d0b100b65e2e95bc0eccff4964f9611eb67c81626f2e4292d09b89ae210b741c.js",
+    "controllers/sftp_setup_result_controller": "/assets/controllers/sftp_setup_result_controller-61ed28f42b7e31ce0050209d5dd4f1db61cdc4a1d9436adaa888328433a47c79.js",
+    "controllers/sftp_type_selector_controller": "/assets/controllers/sftp_type_selector_controller-1bac658a30c3f313c07a0f6496b8a3025b2d1d58d3f5da5737b962a843e54eac.js",
+    "controllers/show_content_controller": "/assets/controllers/show_content_controller-b327d27339f496c4da247e97e9c7f7c5101885dd8ba5408e00dfcd5f77bd6727.js",
+    "controllers/sport_category_controller": "/assets/controllers/sport_category_controller-f3669920483d795f8d62a80aecfe4624331203e0bf96137ad977f0e03d5c2bbb.js",
+    "controllers/sport_season_controller": "/assets/controllers/sport_season_controller-7ad1dbc8ef4e04b46c6ca5fff4ee5eb3a00bc35a00959395918d5444f2c9f5e0.js",
+    "controllers/sport_team_category_controller": "/assets/controllers/sport_team_category_controller-0bdc747c1dbf55810367fbc064722d1c4a4e54d6d3f145f3d3cef1df32cdd255.js",
+    "controllers/staff_role_form_controller": "/assets/controllers/staff_role_form_controller-7a7884823075e7a5b5484f34c1b912f1c3c15e9bae72191efa00033229276eda.js",
+    "controllers/student_delete_review_controller": "/assets/controllers/student_delete_review_controller-5b52130889b733ea27fa16400c529eaa0764b27c8d6a448c2771cee92e3611db.js",
+    "controllers/student_grade_registration_controller": "/assets/controllers/student_grade_registration_controller-a96b91096f624ee4a3a98e0f4f78ff5476646aac473aa50225980bbc63b763f5.js",
+    "controllers/student_merge_controller": "/assets/controllers/student_merge_controller-55efc141cdbafe9729256322a9e900573cdbf55072efb3f4849179d178f28257.js",
+    "controllers/template_preview_controller": "/assets/controllers/template_preview_controller-5c03a6f4ee4d0bff52ee18fbf4061565be0f38f4d521ac836c9463cc1b82c2ce.js",
+    "controllers/template_selection_controller": "/assets/controllers/template_selection_controller-99e07f273295235cd276c0e0f6b60af5460461d8578876903846e0512c1827f3.js",
+    "controllers/tinymce_controller": "/assets/controllers/tinymce_controller-0c007cef30b3b3ed3e18b1de967ae73f74718a205ad5bea4f86895e4c9662ecc.js",
+    "controllers/toast_controller": "/assets/controllers/toast_controller-32eadec49f6e16dea2ec3ac526545a1bc2c9478a7ba6375fb3f0f36e188bf31a.js",
+    "controllers/toggle_content_controller": "/assets/controllers/toggle_content_controller-8ab88061124de23bf35dcf91eba6cef0139006e4aa7da911f2975961040b8b81.js",
+    "controllers/transfer_controller": "/assets/controllers/transfer_controller-c1a22b47fb1fc82cc58485fb6003d048ed2dd80a176893da44ebb8f4da71d511.js",
+    "controllers/transfer_eligibility/initial_determination_controller": "/assets/controllers/transfer_eligibility/initial_determination_controller-2b04bc4545633316f31df9fc2f51b1abb6529a730d46e48cf7d7948196e048fc.js",
+    "controllers/transfer_eligibility/sending_school_accuracy_controller": "/assets/controllers/transfer_eligibility/sending_school_accuracy_controller-ee87a9dda27d15f718894bc35572895da4d91371370b49fd47a86ec147bbaa0b.js",
+    "controllers/trends_chart_controller": "/assets/controllers/trends_chart_controller-dbf04f3de83e812a747ec381a78b5eb315a657a386a6e0b80774a1bbc8479a3d.js",
+    "controllers/vertical_insure_controller": "/assets/controllers/vertical_insure_controller-30760152ac98f4a0b423bb30c511b72ca6591653d0ebb2a163367f092b37cd87.js",
+    "models/configuration": "/assets/models/configuration-66b5274f877eb4ba0e2359031187a5b37bb6db2271e0a9bd725462df5f4e9da4.js",
+    "models/payfactory-iframe-lib-1.1.0": "/assets/models/payfactory-iframe-lib-1.1.0-070a226eb21777b7ba0aee1cbac8e0d6e1c3166be7b94e27bdaca508cd0b0df0.js",
+    "models/payfactory_iframe_config": "/assets/models/payfactory_iframe_config-101029c63c9303397df3a57b7e13496d5c77c4c2b86148cdeb8eec55a0e9eedf.js",
+    "models/transfer_eligibility": "/assets/models/transfer_eligibility-cf9ca64a7128559183cc3fbff6e79a21db0c93253a88b2d1905ed0f87c0e0606.js",
+    "models/version_number": "/assets/models/version_number-ddd923a265964e0f35b1e28f3f0a8616327f55691ca532c622e84f6265402610.js"
+  }
+}</script>
+<link rel="modulepreload" href="/assets/application-5b65bf8a983c11b34fb5afb4a94ad48590445b74f4c86ab1488ad1efdbdda0a3.js">
+<link rel="modulepreload" href="/assets/sentry-2a640e39af84d34fd081af78f26b31df373a5af321a737187d30b988a66a448c.js">
+<link rel="modulepreload" href="/assets/version_checker-049eae07fbcdae35a696de6f21e44f8a4412c20239547db078ed7b30e04ee68f.js">
+<link rel="modulepreload" href="https://ga.jspm.io/npm:jquery@3.7.1/dist/jquery.js">
+<link rel="modulepreload" href="/assets/jquery.module-dfdf126f04948c9f37436a3e9059aec12f642219eb41f87cf5a38ee65f70256b.js">
+<link rel="modulepreload" href="/assets/tinymce.module-8eaa12ddd16e43e2a4fef0da60d1a6eb7fffd43d69c1c3323e6d724b207af33b.js">
+<link rel="modulepreload" href="/assets/stimulus.min-79b8dc091ba64c737e6c3f223fa97ab9163136068f98c23ec1be557438935c6e.js">
+<link rel="modulepreload" href="/assets/stimulus-loading-6e19ae481fa626fd72c809bac934571fec37dec02106afb580dc921c0b70f5f8.js">
+<link rel="modulepreload" href="/assets/controllers/activity_category_controller-f3669920483d795f8d62a80aecfe4624331203e0bf96137ad977f0e03d5c2bbb.js">
+<link rel="modulepreload" href="/assets/controllers/activity_season_controller-7ad1dbc8ef4e04b46c6ca5fff4ee5eb3a00bc35a00959395918d5444f2c9f5e0.js">
+<link rel="modulepreload" href="/assets/controllers/admin_buttons_controller-d624f240f5c24ca87fcf0f63008e0d1c9f59e85521f5cc0ce561cd294e18b0ca.js">
+<link rel="modulepreload" href="/assets/controllers/application-62c85e66f66d6cc1df073a0569f7c7a9045e0797df887fda1875b7119be3612e.js">
+<link rel="modulepreload" href="/assets/controllers/attachment_filters_controller-c3df89dfccd7da6a7070a346331f85fb26cc8327837079efe64a6dbc70fc06ac.js">
+<link rel="modulepreload" href="/assets/controllers/back_office/errors_on_demand_controller-0f6f56969f56b5022e7520c1ad4ff45af9416ecb28b4264135112c54a5ab4150.js">
+<link rel="modulepreload" href="/assets/controllers/back_office/zoom_status_controller-9ec76a6f99818c8d76ffa6b84648329c3d76fc061835469a706c1041eda6e70f.js">
+<link rel="modulepreload" href="/assets/controllers/block_visibility_controller-91914cdfd35b428e252d037856291efa4e6976a08a9e7693d934f17b303fbeba.js">
+<link rel="modulepreload" href="/assets/controllers/checkbox_dropdown_filter_controller-29cfb693403a320073dfedb2b325b50e4855d30cbc0cf6ff1c3a30e688252a22.js">
+<link rel="modulepreload" href="/assets/controllers/checkbox_group_controller-ecc71254a6a7766a9b99a055e5538e43b0fe3f06c97764f89b73267afe7c5358.js">
+<link rel="modulepreload" href="/assets/controllers/class_toggle_controller-74cf2481ac7d68c4f33bb8e64e7d06da89fe75a700a17b1c34ce488fa7477872.js">
+<link rel="modulepreload" href="/assets/controllers/clearance_selector_controller-76ae3ae371ffd2b78d74f2b1a41480a20ece479367e4533936811f7a66d222c6.js">
+<link rel="modulepreload" href="/assets/controllers/clipboard_controller-588cca0e47df9a63a28a1d313c26dbaeb1050536119d40a91ea4d8a806292ef0.js">
+<link rel="modulepreload" href="/assets/controllers/comment_controller-e44135a89f1f28c5bf2f7adac64eff77b24739649e56b8eb9bdd4d073931fa29.js">
+<link rel="modulepreload" href="/assets/controllers/content_draft/attachment_grades_controller-eba9cf4c9eb105f003bfa001969b4594960c8ac48c3d908158104b73192e79fa.js">
+<link rel="modulepreload" href="/assets/controllers/content_draft/drag_and_drop_controller-e6ac83c67248a7fcdbf01306fbd9849b757c7cf0102ecf6634a728618759deb8.js">
+<link rel="modulepreload" href="/assets/controllers/content_draft/field_select_controller-570454a7fcf56558527167413fdc5b26b77332cac6fd55ab4e0f5b0b9512f1ad.js">
+<link rel="modulepreload" href="/assets/controllers/content_draft/html_content_controller-4be652e9f7e231f27572f681b130a9789c6cab2d38e6c3c07e2241ec8472b1f0.js">
+<link rel="modulepreload" href="/assets/controllers/content_draft/select_field_options_controller-645afd3c86c4ae66d3715147aa46397cb8f5a93bdd9eb925db5f06c4349d815a.js">
+<link rel="modulepreload" href="/assets/controllers/district_opt_in_notifications_controller-4a49558e06283d8af63413707af251ccf1b94f12c73f6aa9b265e3f40f5e2a96.js">
+<link rel="modulepreload" href="/assets/controllers/fade_replace_controller-2ce63ef4491c1418fc27cc0549964902967e2d98ba5ace206991946af290dd5a.js">
+<link rel="modulepreload" href="/assets/controllers/ff_to_ps_mappings_controller-61059913ebeeeb183631401f3d817ecab21989eea5ded9d2b613ff63c928ecc6.js">
+<link rel="modulepreload" href="/assets/controllers/form_copy_name_controller-db116a226af6515927fafe474d1573a03b17083157d5c74139d0d3f96e9bb9ff.js">
+<link rel="modulepreload" href="/assets/controllers/form_unsaved_changes_controller-fe530fc162ee98e106a4d7812c372da74835735e7919ebb080fa063da3749a1b.js">
+<link rel="modulepreload" href="/assets/controllers/front/simulator_controller-ffb8c2dbb09f6ccd98d79d7dbe98d2b1a4c4641dbbd0cf7b22e506cc89e05501.js">
+<link rel="modulepreload" href="/assets/controllers/front_plugin_controller-df02e7996c7c9e2c0f6a1970d0d2e3b656ecc64ed34faf71720055fc224b73dd.js">
+<link rel="modulepreload" href="/assets/controllers/gatekeeper_details_controller-a29cb78d8acf1c10bc26895331c7f5aebdc2a9f70c41158685e3f63fd980d7c8.js">
+<link rel="modulepreload" href="/assets/controllers/hide_content_controller-8b81fb4d4d0eadded4a96897565c6aa2323487a869559b19cbb3771fa547b869.js">
+<link rel="modulepreload" href="/assets/controllers/highlight_controller-c758a054aab0daa826faeba94623c21f66de7409df1ee455409f89921cb67968.js">
+<link rel="modulepreload" href="/assets/controllers/import_download_controller-247aa50f4ec9b86833a10e412f540e0ee4244ce0b687e38b1003b688a64fa1cc.js">
+<link rel="modulepreload" href="/assets/controllers/index-11afd1e63d7ee1b894c7a52b762ecdb6cbc383586c2b014d3f604271f437c6f4.js">
+<link rel="modulepreload" href="/assets/controllers/json_submit_controller-2a45b5cf9c1fe04a45bfabab633b7534c004efd7350180e3a97d64baee5ab644.js">
+<link rel="modulepreload" href="/assets/controllers/load_transition_controller-a5603d9ee1e9828fcfab4fe4c7d08b5c50f7cf7d82f1a7a8e7b0023ade85a97a.js">
+<link rel="modulepreload" href="/assets/controllers/loading_placeholder_controller-962fa153121639f745594ed9252d9ef142929740d28c148a04ef7a121f6693a5.js">
+<link rel="modulepreload" href="/assets/controllers/mass_move_grades_select_controller-87c62e800d45c3270a390f4b5ffe352eb93b8dd04f3483f9df3ab6de757491fe.js">
+<link rel="modulepreload" href="/assets/controllers/mfa_totp_code_controller-caca41899fa26c24ba0e1da2e75d4459cd5dfbad6dc4833d75271f5a3fa9abf5.js">
+<link rel="modulepreload" href="/assets/controllers/ncsa_athlete_opt_in_controller-4cb527283c6f96b12948a2762124db3db4f092a31acd765623674b58197532dc.js">
+<link rel="modulepreload" href="/assets/controllers/nfhs_participation_survey_overrides_controller-ab2825fa918c605ceeceeb36ae01b69ac8946d1698d6ae39349aef5e445219ab.js">
+<link rel="modulepreload" href="/assets/controllers/nfhs_participation_survey_totals_controller-6f505aca37ac1dc5ed2b0e4606c50c9e333c50e9f8f51e868c70935f338924ed.js">
+<link rel="modulepreload" href="/assets/controllers/nfhs_participation_survey_validation_controller-fb7fe01e22a01430aa6f032e9f4660359dc016f82c3838f0cf3431509f54e7e1.js">
+<link rel="modulepreload" href="/assets/controllers/orderable_controller-6dd2411f71df67ecafc228164a34d854f032a3e6f0bf59d98bb9b21d976ae23d.js">
+<link rel="modulepreload" href="/assets/controllers/partial_fetch_controller-d637fa3500d34e5666728c96d8364110401794ba28a19d42c31c828f2751e70e.js">
+<link rel="modulepreload" href="/assets/controllers/password_toggle_controller-a8761dc9356d7c6dff4a8bb9797cc22002518d196f0797af370876eedd0839f0.js">
+<link rel="modulepreload" href="/assets/controllers/payfactory_controller-5423cf1f4c2461e07672bf8265b21a76eff2d4806af84fa789f93e33dc0a3157.js">
+<link rel="modulepreload" href="/assets/controllers/payments_controller-ea9b36e3d1439c82c95af6a9100f36aeb9baf8934ee2ba75b32cdfe60f5affb8.js">
+<link rel="modulepreload" href="/assets/controllers/printable_textarea_controller-90261a8c4783697f9b19df79511c86b875e6b82249adfe1a96ab90c2a52383a5.js">
+<link rel="modulepreload" href="/assets/controllers/ps_dependency_controller-51b94dc940190c570f78799e1017ccb4e7cdd43ae629f37cc5d9c20d24359731.js">
+<link rel="modulepreload" href="/assets/controllers/ps_formatter_controller-bff6ae00de5c4b042c3e356776982326f06c2ea2d33dd6ced60d7367bdc15fe5.js">
+<link rel="modulepreload" href="/assets/controllers/ps_value_type_controller-b9f2778a297851d542ee196ad18a005812ad4a5cee106745ab7fe9e862c0110e.js">
+<link rel="modulepreload" href="/assets/controllers/pwa_prompt_controller-8ff39b8f16576a162dbc1a92960437084150bf4706efb1fd0b50e5530cfdcb89.js">
+<link rel="modulepreload" href="/assets/controllers/quickbooks_invoice_link_controller-6cb45edd473db797e695ee4848ef0f0068fa1e1e1d88e70c36278b6338a7b1e5.js">
+<link rel="modulepreload" href="/assets/controllers/resize_builder_controller-c94acc31365017d154bc487fe32be661adea44f0e0e71de3c2ca9f1edc4cd843.js">
+<link rel="modulepreload" href="/assets/controllers/scroll_to_controller-5a2d678531364c2c380f6c5f5242508720904cc97bf390a1427d507550d25506.js">
+<link rel="modulepreload" href="/assets/controllers/scroll_to_end_controller-5dba63c2ea7102f166e82907860cc11d934545b91f446bbd83861ff9a0c466b6.js">
+<link rel="modulepreload" href="/assets/controllers/service_partner_controller-d0b100b65e2e95bc0eccff4964f9611eb67c81626f2e4292d09b89ae210b741c.js">
+<link rel="modulepreload" href="/assets/controllers/sftp_setup_result_controller-61ed28f42b7e31ce0050209d5dd4f1db61cdc4a1d9436adaa888328433a47c79.js">
+<link rel="modulepreload" href="/assets/controllers/sftp_type_selector_controller-1bac658a30c3f313c07a0f6496b8a3025b2d1d58d3f5da5737b962a843e54eac.js">
+<link rel="modulepreload" href="/assets/controllers/show_content_controller-b327d27339f496c4da247e97e9c7f7c5101885dd8ba5408e00dfcd5f77bd6727.js">
+<link rel="modulepreload" href="/assets/controllers/sport_category_controller-f3669920483d795f8d62a80aecfe4624331203e0bf96137ad977f0e03d5c2bbb.js">
+<link rel="modulepreload" href="/assets/controllers/sport_season_controller-7ad1dbc8ef4e04b46c6ca5fff4ee5eb3a00bc35a00959395918d5444f2c9f5e0.js">
+<link rel="modulepreload" href="/assets/controllers/sport_team_category_controller-0bdc747c1dbf55810367fbc064722d1c4a4e54d6d3f145f3d3cef1df32cdd255.js">
+<link rel="modulepreload" href="/assets/controllers/staff_role_form_controller-7a7884823075e7a5b5484f34c1b912f1c3c15e9bae72191efa00033229276eda.js">
+<link rel="modulepreload" href="/assets/controllers/student_delete_review_controller-5b52130889b733ea27fa16400c529eaa0764b27c8d6a448c2771cee92e3611db.js">
+<link rel="modulepreload" href="/assets/controllers/student_grade_registration_controller-a96b91096f624ee4a3a98e0f4f78ff5476646aac473aa50225980bbc63b763f5.js">
+<link rel="modulepreload" href="/assets/controllers/student_merge_controller-55efc141cdbafe9729256322a9e900573cdbf55072efb3f4849179d178f28257.js">
+<link rel="modulepreload" href="/assets/controllers/template_preview_controller-5c03a6f4ee4d0bff52ee18fbf4061565be0f38f4d521ac836c9463cc1b82c2ce.js">
+<link rel="modulepreload" href="/assets/controllers/template_selection_controller-99e07f273295235cd276c0e0f6b60af5460461d8578876903846e0512c1827f3.js">
+<link rel="modulepreload" href="/assets/controllers/tinymce_controller-0c007cef30b3b3ed3e18b1de967ae73f74718a205ad5bea4f86895e4c9662ecc.js">
+<link rel="modulepreload" href="/assets/controllers/toast_controller-32eadec49f6e16dea2ec3ac526545a1bc2c9478a7ba6375fb3f0f36e188bf31a.js">
+<link rel="modulepreload" href="/assets/controllers/toggle_content_controller-8ab88061124de23bf35dcf91eba6cef0139006e4aa7da911f2975961040b8b81.js">
+<link rel="modulepreload" href="/assets/controllers/transfer_controller-c1a22b47fb1fc82cc58485fb6003d048ed2dd80a176893da44ebb8f4da71d511.js">
+<link rel="modulepreload" href="/assets/controllers/transfer_eligibility/initial_determination_controller-2b04bc4545633316f31df9fc2f51b1abb6529a730d46e48cf7d7948196e048fc.js">
+<link rel="modulepreload" href="/assets/controllers/transfer_eligibility/sending_school_accuracy_controller-ee87a9dda27d15f718894bc35572895da4d91371370b49fd47a86ec147bbaa0b.js">
+<link rel="modulepreload" href="/assets/controllers/trends_chart_controller-dbf04f3de83e812a747ec381a78b5eb315a657a386a6e0b80774a1bbc8479a3d.js">
+<link rel="modulepreload" href="/assets/controllers/vertical_insure_controller-30760152ac98f4a0b423bb30c511b72ca6591653d0ebb2a163367f092b37cd87.js">
+<link rel="modulepreload" href="/assets/models/configuration-66b5274f877eb4ba0e2359031187a5b37bb6db2271e0a9bd725462df5f4e9da4.js">
+<link rel="modulepreload" href="/assets/models/payfactory-iframe-lib-1.1.0-070a226eb21777b7ba0aee1cbac8e0d6e1c3166be7b94e27bdaca508cd0b0df0.js">
+<link rel="modulepreload" href="/assets/models/payfactory_iframe_config-101029c63c9303397df3a57b7e13496d5c77c4c2b86148cdeb8eec55a0e9eedf.js">
+<link rel="modulepreload" href="/assets/models/transfer_eligibility-cf9ca64a7128559183cc3fbff6e79a21db0c93253a88b2d1905ed0f87c0e0606.js">
+<link rel="modulepreload" href="/assets/models/version_number-ddd923a265964e0f35b1e28f3f0a8616327f55691ca532c622e84f6265402610.js">
+<script type="module">import "application"</script>
+    <script src="https://checkout.stripe.com/checkout.js"></script>
+    <script src="/assets/finalforms-83ac63bf9eb3c12af170746eec1445cde116b19983c2dc03ac1ceb7325d40d7f.js"></script>
+    <script type="module" src="https://wiaa.finalforms.com/assets/version_checker-049eae07fbcdae35a696de6f21e44f8a4412c20239547db078ed7b30e04ee68f.js"></script>
+
+    <!--[if lt IE 10]>
+      <link rel="stylesheet" href="/assets/iepatch-0608b860d1a01f78ecfc506d5058ab983a9529b0b1e36d7647a4226b91a6815e.css" media="screen" />
+      <script src="/assets/iepatch-6da27b82403920769930b5fe87852917cdb315be7af0823424617defd960bff4.js"></script>
+    <![endif]-->
+
+    <!-- title -->
+    <title id="title" class="zoom-update">
+        FinalForms - Washington Interscholastic Activities Association
+    </title>
+  </head>
+
+  <body id="body" data-drag-and-drop="{&quot;ondragenter&quot;:&quot;\n(function() {\n  var $this = $(this);\n  \n      var $dropZones = $(\&quot;.drag-and-drop-zone\&quot;);\n      $dropZones.addClass(\&quot;drag-and-drop-zone-on\&quot;);\n    \n  return true;\n}).call(this);\n    &quot;,&quot;ondragleave&quot;:&quot;\n(function() {\n  var $this = $(this);\n  \n      var $dropZones = $(\&quot;.drag-and-drop-zone\&quot;);\n      $dropZones.removeClass(\&quot;drag-and-drop-zone-on\&quot;);\n    \n  return true;\n}).call(this);\n    &quot;}">
+    <!-- hidden elements -->
+    <div id="ajax-modal" class="modal ajax-modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header original">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <p class="modal-title h3" aria-hidden="true">Loading...</p>
+      </div>
+
+      <div class="modal-body original">
+        <div class="ajax-loader"><img alt="loading-spinner" src="/assets/universal/ajax-loader-3a5a6854306642152cae7ebc5a4aa57bb259f3cf014b46ab423efdae12c371e5.gif" /></div>
+      </div>
+
+      <div class="modal-footer original">
+        <button data-dismiss="modal" class="btn btn-default" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <!-- global wrapper -->
+    <!-- updated with every zoom request -->
+    <div id="body-wrapper" class="state-schools state-schools-index  zoom-update">
+
+      <!-- top navigation -->
+      <header>
+
+        <div class="navbar navbar-static-top" role="navigation">
+          <div class="container">
+            <!-- brand logo -->
+            <a class="navbar-brand logo" href="/">
+              <img src="https://assets.finalforms.com/production/athletic_associations/wiaa/navbar-logo-cd0d1305e7a9cf1a4d031415d1a86f4205a0dc1f.png" alt="Washington Interscholastic Activities Association Logo"></img>
+</a>
+            <p id="loader" class="navbar-text" aria-hidden="true" style="margin-left: 10px; margin-right: 0px; display: inline-block;">
+              <img class="zooming" alt="loading" style="visibility: hidden;" src="/assets/universal/ajax-loader-3a5a6854306642152cae7ebc5a4aa57bb259f3cf014b46ab423efdae12c371e5.gif" />
+            </p>
+
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#top-navbar" aria-expanded="false">
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+
+            <!-- responsive navbar -->
+              <h4 class="header-identifier" class="icon-color">
+                  Washington Interscholastic Activities Association
+              </h4>
+          </div>
+        </div>
+      </header>
+
+      <!-- flash content -->
+      <div id="flash-content" class="container">
+        <div id="flash-row" class="row">
+          <div class="col-sm-12">
+            <noscript>
+              <div class="noscript alert alert-warning">
+                JavaScript appears to be <b>disabled</b>.
+                FinalForms relies heavily on javascript and you may not be able to complete your forms or perform certain actions without enabling it.
+                If you can't complete <a href="https://www.enable-javascript.com/" target="_blank">these instructions to enable JavaScript in your web browser</a> then please try using another browser or computer.
+              </div>
+            </noscript>
+
+            
+            
+<div id="flash-container"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- content -->
+      <div id="content" class="container">
+        <div class="primary-actions">
+  <a title="View on Google Maps" class="btn btn-default" href="/state_schools/map?state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false"><span class="glyphicon glyphicon-map-marker"></span> Map Mode</a>
+  <a class="btn btn-default" href="/state_districts"><span class="glyphicon glyphicon-district"></span> Switch to Districts</a>
+</div>
+
+
+
+<h1 class="main-title" style="">
+  Washington Schools
+  <small class="main-subtitle">(752 Records)</small>
+</h1>
+
+
+
+
+
+  
+
+<form class="searchable " id="state-schools-searchable-form" data-zoom="{&quot;cancellable&quot;:false}" action="/state_schools" accept-charset="UTF-8" method="get">
+  <div class="table-responsive">
+    <table id="state-schools-searchable-table" class="table table-hover searchable  state-schools-index-searchable-table">
+        <tbody class="filters">
+          <tr class="input-row condensed">
+  <th class="reset" colspan="2">
+    <div class="search-reset-container"><a style="display: none; margin-right: 5px; " class="search-reset btn btn-danger btn-sm" href="javascript:void(0)"><span title="Reset Filters" style="font-size: 15px; line-height: 1.4em;" class="glyphicon glyphicon-ban-circle" data-notification="{&quot;tooltip&quot;:{&quot;toggle&quot;:&quot;tooltip&quot;,&quot;placement&quot;:&quot;auto top&quot;,&quot;trigger&quot;:&quot;hover&quot;,&quot;delay&quot;:true,&quot;content&quot;:&quot;Reset Filters&quot;}}"></span></a></div>
+    
+<div class="btn-group dropdown">
+  <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" title="Filter By Statuses..." type="button">
+    <span class="glyphicon glyphicon-search"></span>
+    <span class="caret"></span>
+</button>
+    <input type="hidden" name="state_schools.levels_in" id="state_schools_levels_in" class="status-filter" autocomplete="off" />
+    <input type="hidden" name="state_schools.school_category_in" id="state_schools_school_category_in" class="status-filter" autocomplete="off" />
+    <input type="hidden" name="state_schools.combine_status_eq" id="state_schools_combine_status_eq" class="status-filter" autocomplete="off" />
+    <input type="hidden" name="state_schools.nfhs_participation_survey_status_eq" id="state_schools_nfhs_participation_survey_status_eq" class="status-filter" autocomplete="off" />
+    <input type="hidden" name="state_schools.locale_in" id="state_schools_locale_in" class="status-filter" autocomplete="off" />
+
+    <ul role="menu" class="single-column dropdown-menu">
+        <li class="divider divider-labelled"><span class="divider-label">School Level</span></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="school_levels_high_school" value="high_school" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_levels_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_school_level&quot;:[&quot;school_levels_high_school&quot;,&quot;school_levels_middle_school&quot;,&quot;school_levels_intermediate_school&quot;,&quot;school_levels_elementary_school&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> High Schools</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="school_levels_middle_school" value="middle_school" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_levels_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_school_level&quot;:[&quot;school_levels_high_school&quot;,&quot;school_levels_middle_school&quot;,&quot;school_levels_intermediate_school&quot;,&quot;school_levels_elementary_school&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Middle Schools</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="school_levels_intermediate_school" value="intermediate_school" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_levels_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_school_level&quot;:[&quot;school_levels_high_school&quot;,&quot;school_levels_middle_school&quot;,&quot;school_levels_intermediate_school&quot;,&quot;school_levels_elementary_school&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Intermediate Schools</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="school_levels_elementary_school" value="elementary_school" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_levels_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_school_level&quot;:[&quot;school_levels_high_school&quot;,&quot;school_levels_middle_school&quot;,&quot;school_levels_intermediate_school&quot;,&quot;school_levels_elementary_school&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Elementary Schools</label></div></li>
+        <li class="divider divider-labelled"><span class="divider-label">School Type</span></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="school_categories_public" value="public" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_school_category_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_school_type&quot;:[&quot;school_categories_public&quot;,&quot;school_categories_charter&quot;,&quot;school_categories_magnet&quot;,&quot;school_categories_tribal&quot;,&quot;school_categories_virtual&quot;,&quot;school_categories_private&quot;,&quot;school_categories_religious&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Traditional Public</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="school_categories_charter" value="charter" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_school_category_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_school_type&quot;:[&quot;school_categories_public&quot;,&quot;school_categories_charter&quot;,&quot;school_categories_magnet&quot;,&quot;school_categories_tribal&quot;,&quot;school_categories_virtual&quot;,&quot;school_categories_private&quot;,&quot;school_categories_religious&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Charter</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="school_categories_magnet" value="magnet" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_school_category_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_school_type&quot;:[&quot;school_categories_public&quot;,&quot;school_categories_charter&quot;,&quot;school_categories_magnet&quot;,&quot;school_categories_tribal&quot;,&quot;school_categories_virtual&quot;,&quot;school_categories_private&quot;,&quot;school_categories_religious&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Magnet</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="school_categories_tribal" value="tribal" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_school_category_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_school_type&quot;:[&quot;school_categories_public&quot;,&quot;school_categories_charter&quot;,&quot;school_categories_magnet&quot;,&quot;school_categories_tribal&quot;,&quot;school_categories_virtual&quot;,&quot;school_categories_private&quot;,&quot;school_categories_religious&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Tribal</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="school_categories_virtual" value="virtual" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_school_category_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_school_type&quot;:[&quot;school_categories_public&quot;,&quot;school_categories_charter&quot;,&quot;school_categories_magnet&quot;,&quot;school_categories_tribal&quot;,&quot;school_categories_virtual&quot;,&quot;school_categories_private&quot;,&quot;school_categories_religious&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Virtual</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="school_categories_private" value="private" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_school_category_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_school_type&quot;:[&quot;school_categories_public&quot;,&quot;school_categories_charter&quot;,&quot;school_categories_magnet&quot;,&quot;school_categories_tribal&quot;,&quot;school_categories_virtual&quot;,&quot;school_categories_private&quot;,&quot;school_categories_religious&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Traditional Private</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="school_categories_religious" value="religious" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_school_category_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_school_type&quot;:[&quot;school_categories_public&quot;,&quot;school_categories_charter&quot;,&quot;school_categories_magnet&quot;,&quot;school_categories_tribal&quot;,&quot;school_categories_virtual&quot;,&quot;school_categories_private&quot;,&quot;school_categories_religious&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Religious</label></div></li>
+        <li class="divider divider-labelled"><span class="divider-label">Combine Status</span></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="combine_true" value="true" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_combine_status_eq&#39;);
+      values = [];
+      sectionFilters = {&quot;0_combine_status&quot;:[&quot;combine_true&quot;,&quot;combine_false&quot;,&quot;combine_host&quot;,&quot;combine_member&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // uncheck all other check boxes
+          if ($.inArray($this.prop(&#39;id&#39;), sectionFilterIds) !== -1 &amp;&amp; $this.prop(&#39;id&#39;) !== $sectionFilter.prop(&#39;id&#39;)) {
+            $sectionFilter.prop(&#39;checked&#39;, false);
+          }
+          // set value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> In Any</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="combine_false" value="false" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_combine_status_eq&#39;);
+      values = [];
+      sectionFilters = {&quot;0_combine_status&quot;:[&quot;combine_true&quot;,&quot;combine_false&quot;,&quot;combine_host&quot;,&quot;combine_member&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // uncheck all other check boxes
+          if ($.inArray($this.prop(&#39;id&#39;), sectionFilterIds) !== -1 &amp;&amp; $this.prop(&#39;id&#39;) !== $sectionFilter.prop(&#39;id&#39;)) {
+            $sectionFilter.prop(&#39;checked&#39;, false);
+          }
+          // set value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> In None</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="combine_host" value="host" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_combine_status_eq&#39;);
+      values = [];
+      sectionFilters = {&quot;0_combine_status&quot;:[&quot;combine_true&quot;,&quot;combine_false&quot;,&quot;combine_host&quot;,&quot;combine_member&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // uncheck all other check boxes
+          if ($.inArray($this.prop(&#39;id&#39;), sectionFilterIds) !== -1 &amp;&amp; $this.prop(&#39;id&#39;) !== $sectionFilter.prop(&#39;id&#39;)) {
+            $sectionFilter.prop(&#39;checked&#39;, false);
+          }
+          // set value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Host</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="combine_member" value="member" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_combine_status_eq&#39;);
+      values = [];
+      sectionFilters = {&quot;0_combine_status&quot;:[&quot;combine_true&quot;,&quot;combine_false&quot;,&quot;combine_host&quot;,&quot;combine_member&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // uncheck all other check boxes
+          if ($.inArray($this.prop(&#39;id&#39;), sectionFilterIds) !== -1 &amp;&amp; $this.prop(&#39;id&#39;) !== $sectionFilter.prop(&#39;id&#39;)) {
+            $sectionFilter.prop(&#39;checked&#39;, false);
+          }
+          // set value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Member</label></div></li>
+        <li class="divider divider-labelled"><span class="divider-label">Participation Survey</span></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="nfhs_participation_survey_status_submitted_2026" value="submitted-2026" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_nfhs_participation_survey_status_eq&#39;);
+      values = [];
+      sectionFilters = {&quot;0_participation_survey&quot;:[&quot;nfhs_participation_survey_status_submitted_2026&quot;,&quot;nfhs_participation_survey_status_not_submitted_2026&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // uncheck all other check boxes
+          if ($.inArray($this.prop(&#39;id&#39;), sectionFilterIds) !== -1 &amp;&amp; $this.prop(&#39;id&#39;) !== $sectionFilter.prop(&#39;id&#39;)) {
+            $sectionFilter.prop(&#39;checked&#39;, false);
+          }
+          // set value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> <span class="glyphicon glyphicon-saved"></span> Submitted</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="nfhs_participation_survey_status_not_submitted_2026" value="not_submitted-2026" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_nfhs_participation_survey_status_eq&#39;);
+      values = [];
+      sectionFilters = {&quot;0_participation_survey&quot;:[&quot;nfhs_participation_survey_status_submitted_2026&quot;,&quot;nfhs_participation_survey_status_not_submitted_2026&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // uncheck all other check boxes
+          if ($.inArray($this.prop(&#39;id&#39;), sectionFilterIds) !== -1 &amp;&amp; $this.prop(&#39;id&#39;) !== $sectionFilter.prop(&#39;id&#39;)) {
+            $sectionFilter.prop(&#39;checked&#39;, false);
+          }
+          // set value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> <span class="text-muted glyphicon glyphicon-saved"></span> Not submitted</label></div></li>
+        <li class="divider divider-labelled"><span class="divider-label">Locale Type</span></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_11" value="11" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> City, Large</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_12" value="12" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> City, Midsize</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_13" value="13" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> City, Small</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_21" value="21" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Suburb, Large</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_22" value="22" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Suburb, Midsize</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_23" value="23" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Suburb, Small</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_31" value="31" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Town, Fringe</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_32" value="32" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Town, Distant</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_33" value="33" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Town, Remote</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_41" value="41" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Rural, Fringe</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_42" value="42" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Rural, Distant</label></div></li><li style="white-space: nowrap;"><div class="checkbox"><label><input type="checkbox" id="locale_name_43" value="43" class="filter-ignore" autocomplete="off" onchange="
+(function() {
+  var $this = $(this);
+  
+      var $statusFilter, sectionFilters, values;
+      $statusFilter = $(&#39;#state_schools_locale_in&#39;);
+      values = [];
+      sectionFilters = {&quot;0_locale_type&quot;:[&quot;locale_name_11&quot;,&quot;locale_name_12&quot;,&quot;locale_name_13&quot;,&quot;locale_name_21&quot;,&quot;locale_name_22&quot;,&quot;locale_name_23&quot;,&quot;locale_name_31&quot;,&quot;locale_name_32&quot;,&quot;locale_name_33&quot;,&quot;locale_name_41&quot;,&quot;locale_name_42&quot;,&quot;locale_name_43&quot;]};
+      $.each(sectionFilters, function(section, sectionFilterIds) {
+        return $.each(sectionFilterIds, function(i, sectionFilterId) {
+          var $sectionFilter;
+          $sectionFilter = $(&#39;#&#39; + sectionFilterId);
+          // add value if checked
+          if ($sectionFilter.prop(&#39;checked&#39;)) {
+            return values.push($sectionFilter.val());
+          }
+        });
+      });
+      $statusFilter.val(values.join());
+      
+      $statusFilter.change();
+    
+  return true;
+}).call(this);
+    " /> Rural, Remote</label></div></li>
+      <li style="float: left; width: 100%;"><button type="button" class="btn btn-success search-submit"><span class="glyphicon glyphicon-search"></span> Submit Search</button></li>
+</ul></div>
+  </th>
+  <th class="name">
+    <input type="search" name="state_schools.name_or_nces_matches" id="state_schools_name_or_nces_matches" class="form-control" aria-label="By Name or NCES ID..." placeholder="By Name or NCES ID..." />
+  </th>
+  <th class="classifications" colspan="6">
+    <input type="search" name="state_schools.related_record_ids_in" id="state_schools_related_record_ids_in" value="" class="form-control select2" aria-label="School District, Classification, etc..." placeholder="School District, Classification, etc..." style="min-width: 350px;" data-select2-options="{&quot;eventJs&quot;:null,&quot;ajax&quot;:&quot;/select2/state_records/state_partitions?athletic_association_abbreviation=WIAA\u0026include_state_counties=true\u0026include_state_districts=true\u0026include_state_schools=true\u0026include_states=false\u0026use_category_id=true&quot;,&quot;minimumInputLength&quot;:2,&quot;multiple&quot;:true,&quot;preload&quot;:[]}" />
+  </th>
+</tr>
+
+        </tbody>
+
+        <tbody class="sorters">
+          <tr class="sorters">
+  <th></th>
+  <th class="students-count"><a title="Student Count" class="sorter" href="/state_schools?direction=desc&amp;page=51&amp;sort=student_count&amp;state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false"><span class="glyphicon glyphicon-student-big"></span></a></th>
+  <th class="name"><a class="sorter" href="/state_schools?direction=asc&amp;page=51&amp;sort=state_schools.full_name&amp;state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false">Name</a></th>
+    <th class="classifications">Classifications</th>
+  <th class="address"><a class="sorter" href="/state_schools?direction=asc&amp;page=51&amp;sort=state_schools.street_address&amp;state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false">Address</a></th>
+  <th class="contact_info">Contact Info</th>
+</tr>
+
+        </tbody>
+
+        <tbody class="rows">
+              <tr class="state_school" id="state_school_115953">
+  <td class="reset"></td>
+  <td class="students-count">
+    455
+  </td>
+  <td class="name">
+    
+    
+
+
+
+
+    <a title="NCES name: Zillah High School" href="/state_schools/115953">
+      <b>
+        Zillah
+      </b>
+</a>
+      <small>[9th - 12th]</small>
+
+      <br />
+      <small title="School District"><b>District: </b><a href="/state_districts/18766">Zillah School District</a></small>
+    <br />
+
+      <small title="NCES ID: Created via NCES">
+        <b>NCES ID: </b>
+        <a class="zoom-ignore text-nowrap" target="_blank" rel="noopener noreferrer" href="https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&amp;ID=531017001719">
+          531017001719
+</a></small>      &middot;
+      <small title="State ID"><b>State ID: </b>WA-39205-2240</small>
+  </td>
+
+    <td class="classifications">
+        <small title="District">
+    <b>District: </b>
+    <a href="/state_partitions/14463">5</a>
+</small>  <br />
+  <small title="League">
+    <b>League: </b>
+    <a href="/state_partitions/14486">SCAC</a>
+</small>  <br />
+
+  <small title="Classification">
+    <b>Classifications: </b>
+      <div class="btn-group">
+        <a class="dropdown-toggle" data-toggle="dropdown" href="javascript:void(0)">
+          1A<span class="caret"></span>
+          <!--small>()</small-->
+</a>        <ul role="menu" class="dropdown-menu">
+            <li><a href="/state_partitions/14479">1A</a></li>
+            <li><a href="/state_partitions/17513">1A Boys Football</a></li>
+            <li><a href="/state_partitions/17514">1A Boys Soccer</a></li>
+            <li><a href="/state_partitions/17515">1A Girls Soccer</a></li>
+            <li><a href="/state_partitions/17516">1A Boys Basketball</a></li>
+            <li><a href="/state_partitions/17517">1A Girls Basketball</a></li>
+            <li><a href="/state_partitions/17518">1A Boys Cross Country</a></li>
+            <li><a href="/state_partitions/17519">1A Girls Cross Country</a></li>
+            <li><a href="/state_partitions/17520">1A Boys Track and Field</a></li>
+            <li><a href="/state_partitions/17521">1A Girls Track and Field</a></li>
+            <li><a href="/state_partitions/17522">1A Girls Volleyball</a></li>
+            <li><a href="/state_partitions/17565">1A Boys Baseball</a></li>
+            <li><a href="/state_partitions/17566">1A Boys Tennis</a></li>
+            <li><a href="/state_partitions/17567">1A Girls Tennis</a></li>
+            <li><a href="/state_partitions/17570">1A Girls Swimming and Diving</a></li>
+            <li><a href="/state_partitions/17571">1A Boys Golf</a></li>
+            <li><a href="/state_partitions/17572">1A Girls Golf</a></li>
+            <li><a href="/state_partitions/17573">1A Girls Softball</a></li>
+            <li><a href="/state_partitions/17574">1A Boys Swimming and Diving</a></li>
+            <li><a href="/state_partitions/17575">1A Boys Wrestling</a></li>
+            <li><a href="/state_partitions/17576">1A Girls Wrestling</a></li>
+            <li><a href="/state_partitions/17628">1A Girls Cheerleading</a></li>
+</ul>        &nbsp;
+</div>    <br />
+</small>
+    </td>
+
+  <td class="address">
+    <small><a class="zoom-ignore text-normal text-nowrap" target="_blank" rel="noopener noreferrer" href="http://maps.google.com/?q=1602 2nd Ave.&lt;br /&gt;Zillah, WA 98953-9682"><span class="glyphicon glyphicon-map-marker"></span> 1602 2nd Ave.<br />Zillah, WA 98953-9682</a></small><br />
+    <small title="NCES County Name: Yakima County"><b>County: </b><a href="/state_counties/2231">Yakima County</a></small>
+  </td>
+
+  <td class="contact_info">
+    <small style="line-height: 0.9em;">
+          <a class="zoom-ignore text-nowrap" target="_blank" rel="noopener noreferrer" href="https://www.zillahleopards.com"><span class="glyphicon glyphicon-new-window"></span> https://www.zillahleopards.com</a>
+          <br />
+            <a class="zoom-ignore text-normal text-nowrap" target="_blank" rel="noopener noreferrer" href="tel:509-829-4019"><span class="glyphicon glyphicon-briefcase"></span> 509-829-4019</a>
+            <br />
+            <a class="zoom-ignore text-normal text-nowrap" target="_blank" rel="noopener noreferrer" href="/cdn-cgi/l/email-protection#492528272a2c672d2c272b262c3b093320252528213a2a212626253a67263b2e"><span class="glyphicon glyphicon-envelope"></span> <span class="__cf_email__" data-cfemail="9af6fbf4f9ffb4fefff4f8f5ffe8dae0f3f6f6fbf2e9f9f2f5f5f6e9b4f5e8fd">[email&#160;protected]</span></a>
+    </small>
+  </td>
+</tr>
+    <tr class="state_school" id="state_school_115957">
+  <td class="reset"></td>
+  <td class="students-count">
+    300
+  </td>
+  <td class="name">
+    
+    
+
+
+
+
+    <a title="NCES name: Zillah Middle School" href="/state_schools/115957">
+      <b>
+        Zillah Middle School
+      </b>
+</a>
+      <small>[6th - 8th]</small>
+
+      <br />
+      <small title="School District"><b>District: </b><a href="/state_districts/18766">Zillah School District</a></small>
+    <br />
+
+      <small title="NCES ID: Created via NCES">
+        <b>NCES ID: </b>
+        <a class="zoom-ignore text-nowrap" target="_blank" rel="noopener noreferrer" href="https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&amp;ID=531017002502">
+          531017002502
+</a></small>      &middot;
+      <small title="State ID"><b>State ID: </b>WA-39205-4481</small>
+  </td>
+
+    <td class="classifications">
+        <small title="Classification">
+    <b>Classification: </b>
+    --
+</small>  <br />
+  <small title="District">
+    <b>District: </b>
+    <a href="/state_partitions/14463">5</a>
+</small>  <br />
+  <small title="League">
+    <b>League: </b>
+    --
+</small>  <br />
+
+
+    </td>
+
+  <td class="address">
+    <small><a class="zoom-ignore text-normal text-nowrap" target="_blank" rel="noopener noreferrer" href="http://maps.google.com/?q=1301 Cutler Way&lt;br /&gt;Zillah, WA 98953-9119"><span class="glyphicon glyphicon-map-marker"></span> 1301 Cutler Way<br />Zillah, WA 98953-9119</a></small><br />
+    <small title="NCES County Name: Yakima County"><b>County: </b><a href="/state_counties/2231">Yakima County</a></small>
+  </td>
+
+  <td class="contact_info">
+    <small style="line-height: 0.9em;">
+          <a class="zoom-ignore text-nowrap" target="_blank" rel="noopener noreferrer" href="https://www.zillahleopards.com"><span class="glyphicon glyphicon-new-window"></span> https://www.zillahleopards.com</a>
+          <br />
+            <a class="zoom-ignore text-normal text-nowrap" target="_blank" rel="noopener noreferrer" href="tel:509-829-4019"><span class="glyphicon glyphicon-briefcase"></span> 509-829-4019</a>
+            <br />
+            <a class="zoom-ignore text-normal text-nowrap" target="_blank" rel="noopener noreferrer" href="/cdn-cgi/l/email-protection#f99598979a9cd79d9c979b969c8bb98390959598918a9a919696958ad7968b9e"><span class="glyphicon glyphicon-envelope"></span> <span class="__cf_email__" data-cfemail="177b767974723973727975787265576d7e7b7b767f64747f78787b6439786570">[email&#160;protected]</span></a>
+    </small>
+  </td>
+</tr>
+
+        </tbody>
+
+    </table>
+
+      <nav aria-label="Page navigation">
+  <input type="hidden" name="page" id="page" value="51" class="filter" autocomplete="off" data-search-default="1" />
+  <input type="hidden" name="limit" id="limit" value="15" class="filter" autocomplete="off" data-search-default="15" />
+
+  <ul class="pagination">
+    <li>
+      <a href="/state_schools?page=50&amp;state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false">Previous</a>
+</li>
+        <li>
+          <a href="/state_schools?page=1&amp;state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false">
+            1
+</a></li>        <li>
+          <a href="/state_schools?page=2&amp;state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false">
+            2
+</a></li>        <li class="disabled">
+          <span>...</span>
+</li>        <li>
+          <a href="/state_schools?page=48&amp;state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false">
+            48
+</a></li>        <li>
+          <a href="/state_schools?page=49&amp;state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false">
+            49
+</a></li>        <li>
+          <a href="/state_schools?page=50&amp;state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false">
+            50
+</a></li>        <li class="active">
+          <a disabled="disabled" href="/state_schools?page=51&amp;state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false">
+            51
+              <span class="sr-only">(current)</span>
+</a></li>
+    <li class="disabled">
+      <a href="/state_schools?page=51&amp;state_schools.athletic_association_member_status_in=member&amp;state_schools.is_archived_eq=false">Next</a>
+</li>  </ul>
+</nav>
+
+  </div>
+
+    <input type="text" name="sort" id="sort" class="hidden filter-blankify filter" aria-hidden="true" aria-label="Sorting Attribute" />
+    <input type="text" name="direction" id="direction" class="hidden filter-blankify filter" aria-hidden="true" aria-label="Sort Direction" />
+
+  <input type="text" name="searching" id="searching" value="true" class="hidden" aria-hidden="true" aria-label="Searching control" />
+</form>
+
+      </div>
+
+      <!-- footer -->
+      <div class="container">
+        <footer>
+          <hr />
+          <p class="pull-left">
+            &copy; Copyright. 2012-2026. BC Technologies Company. All Rights Reserved.<br />
+            FinalForms
+            &nbsp;|&nbsp;
+            7.50.0
+              &nbsp;|&nbsp;
+              <a target="_blank" href="https://s3.amazonaws.com/finalforms-documents/universal/FinalForms_TOS.pdf">Terms of Service</a>
+            &nbsp;|&nbsp;
+            <a target="_blank" href="/privacy_policy">Privacy Policy</a>
+          </p>
+          <p class="pull-right">
+            If you are experiencing any issues, click
+              <a class="btn btn-default btn-xs" href="/documentation/support">
+                <span class="glyphicon glyphicon-support"></span> Get Help
+</a>          </p>
+        </footer>
+      </div>
+    </div>
+
+    <!-- Google Places -->
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAX3JfvWh_0Zs1eL_JBDbjj1S88cGWOieg&libraries=places&callback=GoogleAddressAutocomplete.noop" >
+    </script>
+
+    <!-- Google Translate -->
+
+    <script type="text/javascript" class="zoom-eval">
+      window.finalforms = window.finalforms || {};
+      window.finalforms.environment = "production";
+      window.finalforms.database = {};
+      window.finalforms.identity = window.finalforms.identity || {};
+      window.finalforms.identity.role = "guest";
+
+        window.finalforms.identity.sentryUserId = "guest";
+
+        window.finalforms.identity.state = "WA";
+
+        window.finalforms.database = {}
+        window.finalforms.database.class_slug = "athletic_association";
+        window.finalforms.database.subdomain  = "wiaa";
+      var isAnalyticDebug = /gtm_debug/i.test(window.location.search);
+      window.finalforms.ga4 = window.finalforms.ga4 || {};
+      window.finalforms.ga4.enableDebug    = false || isAnalyticDebug;
+      window.finalforms.ga4.enableTracking = window.finalforms.ga4.enableDebug || window.location.protocol === "https:";
+      window.finalforms.ga4.events         = [];
+    </script>
+
+    <!-- Google reCAPTCHA -->
+    <script src="https://www.google.com/recaptcha/api.js?onload=googleRecaptchaBind&render=explicit" async defer></script>
+</body></html>

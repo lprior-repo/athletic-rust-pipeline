@@ -6,6 +6,88 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Whole-index-stage skip via a receipted input digest — 2026-09-29
+
+`IndexReport`'s index stage no longer recomputes its output tables when nothing it reads has
+changed. `census-store` gained `StoreSnapshot::tables_digest`, which hashes each requested table's
+name and every row's key and value in the `entities` keyspace, and `census_reconcile::index::derive`
+computes that digest over the eleven tables outside its own output set — every table except
+`source_identities`, `conflicts`, `review_cases`, `coverage`, `snapshots` and
+`athlete_identity_decisions`, which the stage writes. When a matching `index-stage:<digest>` receipt
+is held, the stage rewrites only the current pass's `Snapshots` row and returns a report stating that
+nothing was derived.
+
+Two defects surfaced in the first executions and are fixed here. `review_cases` was missing from
+that output set, so the stage's own retained cases sat inside the digested inputs and no digest could
+match twice: `index::stage_gate_tests::an_unchanged_store_skips_the_index_stage` failed with
+`left: 2, right: 0`. The skipped report also first returned stored row totals, which on the real
+corpus disagree with the pass that produced them — 3,243,879 against 3,364,515 source identities and
+333,823 against 306,029 live review rows, while `consolidate` reported 341,333 review-case rows in
+the same store — so the skipped report now returns zero for every derived count and 1 for the pass's
+own snapshot row.
+
+```text
+cargo nextest run -p census-reconcile
+Summary [   0.018s] 35 tests run: 35 passed, 0 skipped
+cargo nextest run -p census-store
+Summary [   0.958s] 106 tests run: 106 passed, 0 skipped
+cargo check --all-targets -p census-store -p census-reconcile
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.33s
+cargo clippy -p census-reconcile --lib --no-deps -- -D warnings
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.08s
+cargo clippy -p census-store --lib --no-deps -- -D warnings
+Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.19s
+cargo fmt -p census-reconcile -- --check
+(no output)
+```
+
+Measurement over the preserved class-of-2027 corpus (`/home/lewis/tmp/store-h`, a 21 GB copy of this
+campaign's store). A release build of `census-service` from this tree fails in unrelated sources
+(`census_crawl::net`, E0425/E0432/E0433), so no current service binary could be linked; two `run`
+cycles with the previously linked binary — which the failed link could not refresh, and which
+recomputed both cycles in full — took 682,228 ms and 654,000 ms of stage time with index stages of
+480,743 ms and 460,736 ms. A throwaway example in `census-reconcile` then called `index::derive`
+directly, twice in one process and again in a second process, against the same store:
+
+```text
+derive attempt 1: 262907 ms report=IndexReport { source_identities: 3364515, conflicts: 293307, reviews: 306029, coverage: 65, snapshots: 1, superseded: 0, identity_applications: 0 }
+derive attempt 2: 14594 ms report=IndexReport { source_identities: 3243879, conflicts: 293307, reviews: 333823, coverage: 65, snapshots: 1, superseded: 0, identity_applications: 0 }
+second process, both attempts: 13614 ms and 13592 ms
+final code, skip path only: 12094 ms and 12127 ms
+IndexReport { source_identities: 0, conflicts: 0, reviews: 0, coverage: 0, snapshots: 1, superseded: 0, identity_applications: 0 }
+smoke exit: 0
+```
+
+The executing and skipping attempts ran back to back on one binary and one store, so the 262,907 ms
+to 14,594 ms difference is this change's effect; the second process shows the receipt survives
+reopening, and the final run shows the shipped skip path. The example was removed after the run and
+only the tests above remain.
+
+Not established here:
+
+- The digest covers the eleven read tables' raw bytes only. Edits to the six output tables are not
+  healed until a read table changes: the unchanged-store test wipes `source_identities` and asserts
+  its rows survive the skip.
+- `athlete_identity_decisions` is written by the stage alone (`index::apply::apply_decisions`, its
+  only production caller) and derived from `review_cases` and `identity_verdicts`, both digested.
+- The digest is a full scan of those tables paid on every cycle, including working ones, before the
+  stage runs; a skip cost about 12–15 s here, which is the digest scan plus one snapshot row. A
+  writer mutating a digested table while the stage runs is outside the documented
+  single-owning-process model.
+- The stored-versus-derived count disagreement above was observed, not traced.
+- A clean checkout of `4e6981c7b` fails `cargo check --profile test -p census-store -p census-report
+  --all-targets` with and without this change (`census-store` E0599, `census-report` downstream), and
+  `cargo clippy -p census-reconcile --lib -- -D warnings` stops in `census-report` with 12 errors
+  (one a `needless_borrow` on `rows.meets`). Neither is in a file this change touches; the
+  measurement ran in the repository tree, which compiles its uncommitted store work.
+- This is a qualification cycle over a preserved corpus, not the fresh national census, and its
+  timings do not transfer to another revision, store or run identity.
+
+A peer landing on 2026-09-29 displaced the earlier uncommitted section in this ledger that held this
+campaign's baseline measurements (`4e6981c7b`, "Correct the landing record: the displaced work is
+uncommitted and exists in no commit"; `git log -S 'Index-stage recomputation'` finds that text in no
+commit). Those numbers are not restated, and every number above was measured in one session.
+
 ## DragonFly directory parse parity — 2026-09-29
 
 The prototype's directory parser and the Rust lane were executed over the same six captured

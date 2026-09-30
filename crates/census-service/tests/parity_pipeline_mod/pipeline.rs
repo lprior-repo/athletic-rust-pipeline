@@ -6,7 +6,8 @@ use anyhow::{ensure, Context, Result};
 use census_crawl::net::Fetcher;
 use census_crawl::{wiaa_results, AdapterContext, AdapterReport};
 use census_report::bests;
-use census_report::report::{self, Scope};
+use census_report::export::ExportDataset;
+use census_report::report::{self, Derivation, Scope};
 use census_report::workbook;
 use census_service::census;
 use census_store::Store;
@@ -75,8 +76,15 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
         counts
     };
 
-    let core = report::build_census(&store, Scope::Core)?;
-    let all_sources = report::build_census(&store, Scope::AllSources)?;
+    let dataset = ExportDataset::load(&store)?;
+    let core = report::build_census(
+        &Derivation::of(&dataset, Scope::Core, None),
+        &store.out_dir(),
+    );
+    let all_sources = report::build_census(
+        &Derivation::of(&dataset, Scope::AllSources, None),
+        &store.out_dir(),
+    );
     assertions::assert_scope_split(&store, &core, &all_sources)?;
     let (core_json, core_csv) = report::write_census(&store, &core, Scope::Core)?;
     let (all_json, all_csv) = report::write_census(&store, &all_sources, Scope::AllSources)?;
@@ -93,14 +101,14 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
         all_json.display()
     );
 
-    let rows = bests::build(
-        &store,
+    let rows = bests::build_from_dataset(
+        &dataset,
         &bests::Options {
             scope: Scope::Core,
             grad_year: Some(constants::COHORT),
             limit: None,
         },
-    )?;
+    );
     assertions::assert_best_reduction(&rows, &store, Scope::Core)?;
     let (bests_jsonl, bests_csv) = bests::write(&store.out_dir(), &rows, constants::COHORT_LABEL)?;
     let jsonl_text = read_file(&bests_jsonl)?;

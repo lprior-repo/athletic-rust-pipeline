@@ -195,3 +195,18 @@ fn the_row_ledger_is_a_count_the_keyspace_can_contradict() {
     assert_eq!(schools.expected, 2, "the count the store holds");
     assert_eq!(schools.actual, 1, "the rows the walk finds");
 }
+
+#[test]
+fn escaped_ids_parse_the_same_as_plain_ids() {
+    let row =
+        br#"{"id":"milesplit_result_row:athletes:1299818:Run as \"5 Alive\":0","sequence":0}"#;
+    let id = crate::keys::observation_id(row)
+        .expect("an escaped quote in the id must not fail the string parse");
+    assert_eq!(
+        id,
+        "milesplit_result_row:athletes:1299818:Run as \"5 Alive\":0"
+    );
+    let plain = crate::keys::observation_id(br#"{"id":"schools:abbotsford","sequence":0}"#)
+        .expect("a plain id still parses");
+    assert_eq!(plain, "schools:abbotsford");
+}

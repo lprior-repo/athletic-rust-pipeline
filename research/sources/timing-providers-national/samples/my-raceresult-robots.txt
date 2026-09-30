@@ -1,0 +1,16 @@
+User-Agent: * 
+Disallow: /*/certificates
+Disallow: /RREvents
+Disallow: /RRPublish
+Disallow: /RRRegStart
+Disallow: /*/*/list
+Disallow: /*/*/pdf
+Disallow: /*/*/view
+Disallow: /*/*/certificate
+Disallow: /*/*/certificate/*
+Disallow: /*/*/certificate/*/*
+Disallow: /users
+Disallow: /users/*
+
+User-agent: Yandex
+Disallow: /

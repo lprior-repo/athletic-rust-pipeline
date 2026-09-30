@@ -18,7 +18,7 @@ impl StoreBatch<'_> {
                 detail: "serializing a batched observation".to_string(),
                 source,
             })?;
-            encoded.push((observation_id(&value)?.to_string(), value));
+            encoded.push((observation_id(&value)?, value));
         }
         match self.pages.iter_mut().find(|page| page.table == table) {
             Some(page) => page.records.extend(encoded),

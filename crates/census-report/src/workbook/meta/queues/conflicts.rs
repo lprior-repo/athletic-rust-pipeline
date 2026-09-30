@@ -5,13 +5,11 @@ use crate::workbook::recruiting::{disagreements, Disagreement};
 use census_review::athlete_flags::{key as athlete_key, IdentityKey};
 
 use super::super::{school_of, subject_of, Family, QueueRow, StoreRows};
-use super::{
-    class_of_2027, queue_row, ATHLETE_IDENTITY, COHORT_EVIDENCE, CONTACT_CONFLICT, SCHOOL_IDENTITY,
-};
+use super::{queue_row, ATHLETE_IDENTITY, COHORT_EVIDENCE, CONTACT_CONFLICT, SCHOOL_IDENTITY};
 
-pub(super) fn cohort_evidence(rows: &StoreRows, names: &HashMap<&str, &str>) -> Family {
+pub(super) fn cohort_evidence(cohort: &[CanonicalAthlete], names: &HashMap<&str, &str>) -> Family {
     let mut family = Family::new(COHORT_EVIDENCE);
-    for athlete in class_of_2027(&rows.athletes) {
+    for athlete in cohort {
         let Some(detail) = cohort_conflict(athlete) else {
             continue;
         };
@@ -75,10 +73,10 @@ fn disagreement_detail(disagreement: &Disagreement) -> String {
     )
 }
 
-pub(super) fn athlete_identity(rows: &StoreRows, names: &HashMap<&str, &str>) -> Family {
+pub(super) fn athlete_identity(cohort: &[CanonicalAthlete], names: &HashMap<&str, &str>) -> Family {
     let mut family = Family::new(ATHLETE_IDENTITY);
     let mut groups: BTreeMap<IdentityKey, Vec<&CanonicalAthlete>> = BTreeMap::new();
-    for athlete in class_of_2027(&rows.athletes) {
+    for athlete in cohort {
         groups
             .entry(athlete_key(athlete))
             .or_default()

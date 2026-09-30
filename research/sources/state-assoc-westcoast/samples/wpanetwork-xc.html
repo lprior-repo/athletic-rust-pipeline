@@ -1,0 +1,102 @@
+			<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'http://www.w3.org/TR/html4/loose.dtd'>
+			<html>
+			<head>
+				<script src='//ajax.googleapis.com/ajax/libs/jquery/1.12.1/jquery.min.js' ></script>
+				<script src='https://code.jquery.com/ui/1.12.1/jquery-ui.min.js' type='text/javascript'></script>
+				<script type='text/javascript' src='https://cdn.jsdelivr.net/jquery.jssocials/1.4.0/jssocials.min.js'></script>
+			
+				<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />
+				<title>WPA Network Bracket Index</title>
+				<script type='text/Javascript' src='tournament.js?rnd=614'></script>
+				
+<script type="text/javascript" charset="UTF-8">
+/* <![CDATA[ */
+try { if (undefined == xajax.config) xajax.config = {}; } catch (e) { xajax = {}; xajax.config = {}; };
+xajax.config.requestURI = "xajax.server_tournament.php";
+xajax.config.statusMessages = false;
+xajax.config.waitCursor = true;
+xajax.config.version = "xajax 0.5";
+xajax.config.defaultMode = "asynchronous";
+xajax.config.defaultMethod = "POST";
+xajax.config.JavaScriptURI = "xajax06/";
+/* ]]> */
+</script>
+<script type="text/javascript" src="xajax06/xajax_js/xajax_core.js" charset="UTF-8"></script>
+<script type="text/javascript" charset="UTF-8">
+/* <![CDATA[ */
+window.setTimeout(
+ function() {
+  var scriptExists = false;
+  try { if (xajax.isLoaded) scriptExists = true; }
+  catch (e) {}
+  if (!scriptExists) {
+   alert("Error: the xajax Javascript component could not be included. Perhaps the URL is incorrect?\nURL: xajax06/xajax_js/xajax_core.js");
+  }
+ }, 2000);
+/* ]]> */
+</script>
+
+<script type='text/javascript' charset='UTF-8'>
+/* <![CDATA[ */
+xajax_saving_message = function() { return xajax.request( { xjxfun: 'saving_message' }, { parameters: arguments } ); };
+xajax_score_report_change_status = function() { return xajax.request( { xjxfun: 'score_report_change_status' }, { parameters: arguments } ); };
+xajax_score_report_update_button_click = function() { return xajax.request( { xjxfun: 'score_report_update_button_click' }, { parameters: arguments } ); };
+xajax_add_editor = function() { return xajax.request( { xjxfun: 'add_editor' }, { parameters: arguments } ); };
+xajax_delete_editor = function() { return xajax.request( { xjxfun: 'delete_editor' }, { parameters: arguments } ); };
+xajax_add_scorer = function() { return xajax.request( { xjxfun: 'add_scorer' }, { parameters: arguments } ); };
+xajax_delete_scorer = function() { return xajax.request( { xjxfun: 'delete_scorer' }, { parameters: arguments } ); };
+xajax_change_director = function() { return xajax.request( { xjxfun: 'change_director' }, { parameters: arguments } ); };
+xajax_NBevent_delete = function() { return xajax.request( { xjxfun: 'NBevent_delete' }, { parameters: arguments } ); };
+/* ]]> */
+</script>
+
+				<link rel='stylesheet' href='tourn.css?rnd=614' />
+				
+			</head>
+
+			<body>
+			
+			<script type="text/javascript">
+				$(document).ready(function () {
+					
+		  get_index_content();
+		
+				});
+			</script>	
+			
+				<table class='wpa_navbar' border='0' cellpadding='3' width='100%'><tr><td align='left'></td><td align='right'><a class='navbar_button' href='/wiaa/brackets/tournament.php?act=login'>Login</a></td></tr></table>
+				<div class='page_title'>  <table border='0' width='100%'>
+    <tr>
+	  <td v-align='middle' align='left' width='25%'><img style='padding:10px;' src='images/wiaa_logo_tr.png'</td>
+	  <td style='font-size:large;font-weight:bold;' width='50%'><h1 style='text-align:center;' class='page_title'>WIAA Tournament Manager</h1></td>
+	  <td v-align='middle' align='right' width='25%'><a href='http://gesa.com'><img style='padding:10px;' src='images/sponsor_logo.png'</a></td>
+	</tr>
+  </table></div>
+				<div class='main_content'>
+				  
+		<div class='index_content'>
+		  <div style='background-color:rgba(255,255,255,0.75);margin:-20px -20px 20px -20px;padding:5px;border-bottom:1px SOLID #CCCCCC;' >
+			<table width='100%'><tr><td nowrap width='100%'></td><td nowrap></td></tr></table>
+		  </div>
+			<div style='background-color:rgba(228,233,227,0.5);border:1px solid #CCCCCC;border-radius:5px;min-height:600px;min-width:400px;padding:0px;max-width:800px;margin:auto;'>
+
+				<div style='background-color:rgba(0,102,0,0.25);border-bottom:0px solid #006600;padding:5px;font-size:1.85em;font-weight:bold;'>Tournament Index</div>
+				<div style='text-align:center;padding:5px;'>
+					<select onChange="get_index_content();"  style='background-color:rgba(255,255,255,0.5);margin:20px;font-size:large;height:35px;width:300px' id='select_district' name='select_district'><option value='0'>Select Level...</option><option  value='-1'>WIAA State</option><option  value='1'>District 1</option><option  value='2'>District 2</option><option  value='3'>District 3</option><option  value='4'>District 4</option><option  value='5'>District 5</option><option  value='6'>District 6</option><option  value='7'>District 7</option><option  value='8'>District 8</option><option  value='9'>District 9</option></select><br>
+					<select onChange="get_index_content();" class='ui-select' style='background-color:rgba(255,255,255,0.5);margin:5px;font-size:large;height:35px;width:300px' id='select_year' name='select_year'><option value='0'>Select Year...</option><option  value=''></option><option  value='2007-08'>2007-08</option><option  value='2008-09'>2008-09</option><option  value='2009-10'>2009-10</option><option  value='2010-11'>2010-11</option><option  value='2011-12'>2011-12</option><option  value='2012-13'>2012-13</option><option  value='2013-14'>2013-14</option><option  value='2014-15'>2014-15</option><option  value='2015-16'>2015-16</option><option  value='2016-17'>2016-17</option><option  value='2017-18'>2017-18</option><option  value='2018-19'>2018-19</option><option  value='2019-20'>2019-20</option><option  value='2020-21'>2020-21</option><option  value='2021-22'>2021-22</option><option  value='2022-23'>2022-23</option><option  value='2023-24'>2023-24</option><option  value='2024-25'>2024-25</option><option  value='2025-26'>2025-26</option><option SELECTED value='2026-27'>2026-27</option></select><br>
+					<select onChange="get_index_content();" class='ui-select' style='background-color:rgba(255,255,255,0.5);margin:5px;font-size:large;height:35px;width:300px' id='select_sport' name='select_sport'><option value='0'>Select Sport...</option><option  value='62'>8-Man Football</option><option  value='6'>Baseball</option><option  value='23'>Bowling</option><option  value='3'>Boys Basketball</option><option  value='2'>Boys Cross Country</option><option  value='8'>Boys Golf</option><option  value='9'>Boys Soccer</option><option  value='5'>Boys Swim & Dive</option><option  value='17'>Boys Tennis</option><option  value='7'>Boys Track & Field</option><option  value='4'>Boys Wrestling</option><option  value='63'>Coed Judo</option><option  value='29'>Dance & Drill</option><option  value='15'>Fastpitch Softball</option><option  value='64'>Flag Football</option><option  value='1'>Football</option><option  value='12'>Girls Basketball</option><option  value='14'>Girls Golf</option><option  value='11'>Girls Soccer</option><option  value='13'>Girls Swim & Dive</option><option  value='18'>Girls Tennis</option><option  value='21'>Girls Wrestling</option><option  value='20'>Gymnastics</option><option  value='31'>Slowpitch Softball</option><option  value='10'>Volleyball</option></select><br>
+					<select onChange="get_index_content();"  style='background-color:rgba(255,255,255,0.5);margin:5px;font-size:large;height:35px;width:300px' id='select_class' name='select_class'><option value='0'>Select Classification...</option><option  value='4A'>Class 4A</option><option  value='3A'>Class 3A</option><option  value='2A'>Class 2A</option><option  value='1A'>Class 1A</option><option  value='2B'>Class 2B</option><option  value='1B'>Class 1B</option></select><br>
+					<div id='main_content_index' style='bwidth:100%;margin:auto;text-align:center;padding-top:20px;'></div>
+				</div>
+			</div>
+	  </div>
+	 
+				</div>
+			</body>
+			</html>		
+		<div align='center' style='color:white;'>
+		  <table width'100%'>
+		    <tr><td>Copyright rSchoolToday/VNN</td></tr>
+		  </table>
+		</div>
+		

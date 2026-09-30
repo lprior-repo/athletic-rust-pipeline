@@ -747,15 +747,15 @@ fn reduction_selects_the_faster_result_without_inventing_a_team_school() {
     store.append(Table::Performances, &slower).unwrap();
     store.append(Table::Performances, &faster).unwrap();
 
-    let selected = crate::bests::build(
-        &store,
+    let dataset = crate::export::ExportDataset::load(&store).unwrap();
+    let selected = crate::bests::build_from_dataset(
+        &dataset,
         &crate::bests::Options {
             scope: Scope::AllSources,
             grad_year: Some(2027),
             limit: None,
         },
-    )
-    .unwrap();
+    );
 
     assert_eq!(selected.len(), 1);
     assert_eq!(selected[0].performance_id, faster.id);

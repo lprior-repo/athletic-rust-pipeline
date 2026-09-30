@@ -1,0 +1,3863 @@
+
+{
+  "data": [
+        
+            [
+            
+                "1"
+                ,
+                "1"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5100"
+                ,
+                "Judah"
+                ,
+                "Allen"
+                ,
+                "<div style='text-align:center;background-color:#00A356;color:#ffffff;'>LIT</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "15:49.6"
+                ,
+                "----"
+                ,
+                "0:00.0"
+                
+            ]
+
+            ,
+            [
+            
+                "2"
+                ,
+                "2"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5105"
+                ,
+                "August"
+                ,
+                "Swenson"
+                ,
+                "<div style='text-align:center;background-color:#00A356;color:#ffffff;'>LIT</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "16:02.9"
+                ,
+                "0.45%"
+                ,
+                "0:13.0"
+                
+            ]
+
+            ,
+            [
+            
+                "3"
+                ,
+                "3"
+                ,
+                "<div style='text-align:center;' class='bg-info text-light'>Ind</div>"
+                ,
+                "5205"
+                ,
+                "Wyatt"
+                ,
+                "Betsinger"
+                ,
+                "<div style='text-align:center;background-color:#D12029;color:#ffffff;'>PRZ</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "16:03.1"
+                ,
+                "0.48%"
+                ,
+                "0:13.0"
+                
+            ]
+
+            ,
+            [
+            
+                "4"
+                ,
+                "4"
+                ,
+                "<div style='text-align:center;' class='bg-info text-light'>Ind</div>"
+                ,
+                "5070"
+                ,
+                "Quinn"
+                ,
+                "Guthrie "
+                ,
+                "<div style='text-align:center;background-color:#0D630F;color:#ffffff;'>HOL</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "16:14.9"
+                ,
+                "1.7%"
+                ,
+                "0:25.0"
+                
+            ]
+
+            ,
+            [
+            
+                "5"
+                ,
+                "5"
+                ,
+                "<div style='text-align:center;' class='bg-info text-light'>Ind</div>"
+                ,
+                "5301"
+                ,
+                "Will"
+                ,
+                "Vix"
+                ,
+                "<div style='text-align:center;background-color:#D61930;color:#ffffff;'>SJP</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "16:26.1"
+                ,
+                "2.88%"
+                ,
+                "0:36.0"
+                
+            ]
+
+            ,
+            [
+            
+                "6"
+                ,
+                "6"
+                ,
+                "<div style='text-align:center;' class='bg-info text-light'>Ind</div>"
+                ,
+                "5284"
+                ,
+                "Hunter"
+                ,
+                "Rademacher"
+                ,
+                "<div style='text-align:center;background-color:#662F93;color:#ffffff;'>SCC</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "16:36.0"
+                ,
+                "3.91%"
+                ,
+                "0:46.0"
+                
+            ]
+
+            ,
+            [
+            
+                "7"
+                ,
+                "7"
+                ,
+                "<div style='text-align:center;' class='bg-info text-light'>Ind</div>"
+                ,
+                "5221"
+                ,
+                "Weston"
+                ,
+                "Clementson"
+                ,
+                "<div style='text-align:center;background-color:#1C5F30;color:#ffffff;'>PC</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "16:38.0"
+                ,
+                "4.12%"
+                ,
+                "0:48.0"
+                
+            ]
+
+            ,
+            [
+            
+                "8"
+                ,
+                "8"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5157"
+                ,
+                "Elliott"
+                ,
+                "Otis"
+                ,
+                "<div style='text-align:center;background-color:#B40C2E;color:#ffffff;'>NN</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "16:41.1"
+                ,
+                "4.43%"
+                ,
+                "0:51.0"
+                
+            ]
+
+            ,
+            [
+            
+                "9"
+                ,
+                "9"
+                ,
+                "<div style='text-align:center;' class='bg-info text-light'>Ind</div>"
+                ,
+                "5229"
+                ,
+                "Bohdan"
+                ,
+                "Valvoda"
+                ,
+                "<div style='text-align:center;background-color:#1C5F30;color:#ffffff;'>PC</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "16:42.1"
+                ,
+                "4.54%"
+                ,
+                "0:52.0"
+                
+            ]
+
+            ,
+            [
+            
+                "10"
+                ,
+                "10"
+                ,
+                ""
+                ,
+                "5300"
+                ,
+                "Connor"
+                ,
+                "McMahon"
+                ,
+                "<div style='text-align:center;background-color:#D61930;color:#ffffff;'>SJP</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "16:53.1"
+                ,
+                "5.69%"
+                ,
+                "1:03.0"
+                
+            ]
+
+            ,
+            [
+            
+                "11"
+                ,
+                "11"
+                ,
+                ""
+                ,
+                "5273"
+                ,
+                "Carson "
+                ,
+                "Rolph"
+                ,
+                "<div style='text-align:center;background-color:#07467A;color:#F5D892;'>SCC</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "16:55.1"
+                ,
+                "5.89%"
+                ,
+                "1:05.0"
+                
+            ]
+
+            ,
+            [
+            
+                "12"
+                ,
+                "12"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5155"
+                ,
+                "Caleb"
+                ,
+                "Loar"
+                ,
+                "<div style='text-align:center;background-color:#B40C2E;color:#ffffff;'>NN</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "17:05.3"
+                ,
+                "6.96%"
+                ,
+                "1:15.0"
+                
+            ]
+
+            ,
+            [
+            
+                "13"
+                ,
+                "13"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5106"
+                ,
+                "Grayson"
+                ,
+                "Swenson"
+                ,
+                "<div style='text-align:center;background-color:#00A356;color:#ffffff;'>LIT</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "17:05.8"
+                ,
+                "7.01%"
+                ,
+                "1:16.0"
+                
+            ]
+
+            ,
+            [
+            
+                "14"
+                ,
+                "14"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5156"
+                ,
+                "Spencer"
+                ,
+                "McAlpine"
+                ,
+                "<div style='text-align:center;background-color:#B40C2E;color:#ffffff;'>NN</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "17:06.1"
+                ,
+                "7.04%"
+                ,
+                "1:16.0"
+                
+            ]
+
+            ,
+            [
+            
+                "15"
+                ,
+                "15"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5161"
+                ,
+                "Noah"
+                ,
+                "Winters"
+                ,
+                "<div style='text-align:center;background-color:#B40C2E;color:#ffffff;'>NN</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "17:06.2"
+                ,
+                "7.05%"
+                ,
+                "1:16.0"
+                
+            ]
+
+            ,
+            [
+            
+                "16"
+                ,
+                "16"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5159"
+                ,
+                "Hans"
+                ,
+                "Wiebusch"
+                ,
+                "<div style='text-align:center;background-color:#B40C2E;color:#ffffff;'>NN</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "17:10.2"
+                ,
+                "7.47%"
+                ,
+                "1:20.0"
+                
+            ]
+
+            ,
+            [
+            
+                "17"
+                ,
+                "17"
+                ,
+                ""
+                ,
+                "5299"
+                ,
+                "Lane"
+                ,
+                "McIntyre"
+                ,
+                "<div style='text-align:center;background-color:#D61930;color:#ffffff;'>SJP</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "17:13.2"
+                ,
+                "7.78%"
+                ,
+                "1:23.0"
+                
+            ]
+
+            ,
+            [
+            
+                "18"
+                ,
+                "18"
+                ,
+                ""
+                ,
+                "5255"
+                ,
+                "James"
+                ,
+                "Monson"
+                ,
+                "<div style='text-align:center;background-color:#196FB8;color:#ffffff;'>RC</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "17:15.2"
+                ,
+                "7.99%"
+                ,
+                "1:25.0"
+                
+            ]
+
+            ,
+            [
+            
+                "19"
+                ,
+                "19"
+                ,
+                ""
+                ,
+                "5227"
+                ,
+                "Walker"
+                ,
+                "Remme"
+                ,
+                "<div style='text-align:center;background-color:#1C5F30;color:#ffffff;'>PC</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "17:15.2"
+                ,
+                "7.99%"
+                ,
+                "1:25.0"
+                
+            ]
+
+            ,
+            [
+            
+                "20"
+                ,
+                "20"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5102"
+                ,
+                "Xander"
+                ,
+                "Chvatal"
+                ,
+                "<div style='text-align:center;background-color:#00A356;color:#ffffff;'>LIT</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "17:17.8"
+                ,
+                "8.26%"
+                ,
+                "1:28.0"
+                
+            ]
+
+            ,
+            [
+            
+                "21"
+                ,
+                "21"
+                ,
+                ""
+                ,
+                "5303"
+                ,
+                "Ben"
+                ,
+                "Zahasky"
+                ,
+                "<div style='text-align:center;background-color:#D61930;color:#ffffff;'>SJP</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "17:18.5"
+                ,
+                "8.34%"
+                ,
+                "1:28.0"
+                
+            ]
+
+            ,
+            [
+            
+                "22"
+                ,
+                "22"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5103"
+                ,
+                "Jaxen"
+                ,
+                "DeSmith"
+                ,
+                "<div style='text-align:center;background-color:#00A356;color:#ffffff;'>LIT</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "17:22.6"
+                ,
+                "8.76%"
+                ,
+                "1:32.0"
+                
+            ]
+
+            ,
+            [
+            
+                "23"
+                ,
+                "23"
+                ,
+                ""
+                ,
+                "5179"
+                ,
+                "Chase"
+                ,
+                "Sonderup"
+                ,
+                "<div style='text-align:center;background-color:#AA1D37;color:#cccccc;'>PAR</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "17:25.1"
+                ,
+                "9.02%"
+                ,
+                "1:35.0"
+                
+            ]
+
+            ,
+            [
+            
+                "24"
+                ,
+                "24"
+                ,
+                ""
+                ,
+                "5176"
+                ,
+                "Erik"
+                ,
+                "Larsen"
+                ,
+                "<div style='text-align:center;background-color:#AA1D37;color:#cccccc;'>PAR</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "17:25.1"
+                ,
+                "9.02%"
+                ,
+                "1:35.0"
+                
+            ]
+
+            ,
+            [
+            
+                "25"
+                ,
+                "25"
+                ,
+                ""
+                ,
+                "5295"
+                ,
+                "Adrian"
+                ,
+                "Gallagher-Mancini"
+                ,
+                "<div style='text-align:center;background-color:#D61930;color:#ffffff;'>SJP</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "17:30.1"
+                ,
+                "9.55%"
+                ,
+                "1:40.0"
+                
+            ]
+
+            ,
+            [
+            
+                "26"
+                ,
+                "26"
+                ,
+                ""
+                ,
+                "5078"
+                ,
+                "Nathan"
+                ,
+                "Young"
+                ,
+                "<div style='text-align:center;background-color:#0D630F;color:#ffffff;'>HOL</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "17:30.2"
+                ,
+                "9.56%"
+                ,
+                "1:40.0"
+                
+            ]
+
+            ,
+            [
+            
+                "27"
+                ,
+                "27"
+                ,
+                ""
+                ,
+                "5272"
+                ,
+                "Carter"
+                ,
+                "O'Fallon"
+                ,
+                "<div style='text-align:center;background-color:#07467A;color:#F5D892;'>SCC</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "17:31.1"
+                ,
+                "9.65%"
+                ,
+                "1:41.0"
+                
+            ]
+
+            ,
+            [
+            
+                "28"
+                ,
+                "28"
+                ,
+                ""
+                ,
+                "5206"
+                ,
+                "Caden"
+                ,
+                "Lucking"
+                ,
+                "<div style='text-align:center;background-color:#D12029;color:#ffffff;'>PRZ</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "17:34.4"
+                ,
+                "9.99%"
+                ,
+                "1:44.0"
+                
+            ]
+
+            ,
+            [
+            
+                "29"
+                ,
+                "29"
+                ,
+                ""
+                ,
+                "5089"
+                ,
+                "Jack"
+                ,
+                "Schurmann"
+                ,
+                "<div style='text-align:center;background-color:#1B2E4E;color:#F7BC0F;'>HLW</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "17:36.2"
+                ,
+                "10.18%"
+                ,
+                "1:46.0"
+                
+            ]
+
+            ,
+            [
+            
+                "30"
+                ,
+                "30"
+                ,
+                ""
+                ,
+                "5252"
+                ,
+                "Elijah"
+                ,
+                "Bergfalk"
+                ,
+                "<div style='text-align:center;background-color:#196FB8;color:#ffffff;'>RC</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "17:36.2"
+                ,
+                "10.18%"
+                ,
+                "1:46.0"
+                
+            ]
+
+            ,
+            [
+            
+                "31"
+                ,
+                "31"
+                ,
+                ""
+                ,
+                "5121"
+                ,
+                "Blake"
+                ,
+                "Stoeber"
+                ,
+                "<div style='text-align:center;background-color:#113928;color:#ffffff;'>ML</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "17:37.1"
+                ,
+                "10.28%"
+                ,
+                "1:47.0"
+                
+            ]
+
+            ,
+            [
+            
+                "32"
+                ,
+                "32"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5154"
+                ,
+                "Isaiah"
+                ,
+                "Gothman"
+                ,
+                "<div style='text-align:center;background-color:#B40C2E;color:#ffffff;'>NN</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "17:39.1"
+                ,
+                "10.48%"
+                ,
+                "1:49.0"
+                
+            ]
+
+            ,
+            [
+            
+                "33"
+                ,
+                "33"
+                ,
+                ""
+                ,
+                "5077"
+                ,
+                "Matthew"
+                ,
+                "Tschida"
+                ,
+                "<div style='text-align:center;background-color:#0D630F;color:#ffffff;'>HOL</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "17:45.9"
+                ,
+                "11.19%"
+                ,
+                "1:56.0"
+                
+            ]
+
+            ,
+            [
+            
+                "34"
+                ,
+                "34"
+                ,
+                ""
+                ,
+                "5224"
+                ,
+                "Noah"
+                ,
+                "McDaniel"
+                ,
+                "<div style='text-align:center;background-color:#1C5F30;color:#ffffff;'>PC</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "17:46.1"
+                ,
+                "11.21%"
+                ,
+                "1:56.0"
+                
+            ]
+
+            ,
+            [
+            
+                "35"
+                ,
+                "35"
+                ,
+                ""
+                ,
+                "5084"
+                ,
+                "Brycen"
+                ,
+                "Diers"
+                ,
+                "<div style='text-align:center;background-color:#1B2E4E;color:#F7BC0F;'>HLW</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "17:48.2"
+                ,
+                "11.43%"
+                ,
+                "1:58.0"
+                
+            ]
+
+            ,
+            [
+            
+                "36"
+                ,
+                "---"
+                ,
+                ""
+                ,
+                "5131"
+                ,
+                "Hunter"
+                ,
+                "Vaught"
+                ,
+                "<div style='text-align:center;background-color:#C20F2F;color:#cccccc;'>MLL</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "17:50.2"
+                ,
+                "11.64%"
+                ,
+                "2:00.0"
+                
+            ]
+
+            ,
+            [
+            
+                "37"
+                ,
+                "36"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5153"
+                ,
+                "Finley"
+                ,
+                "Compton"
+                ,
+                "<div style='text-align:center;background-color:#B40C2E;color:#ffffff;'>NN</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "17:51.1"
+                ,
+                "11.74%"
+                ,
+                "2:01.0"
+                
+            ]
+
+            ,
+            [
+            
+                "38"
+                ,
+                "37"
+                ,
+                ""
+                ,
+                "5274"
+                ,
+                "Liam "
+                ,
+                "Scanlon"
+                ,
+                "<div style='text-align:center;background-color:#07467A;color:#F5D892;'>SCC</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "17:51.3"
+                ,
+                "11.75%"
+                ,
+                "2:01.0"
+                
+            ]
+
+            ,
+            [
+            
+                "39"
+                ,
+                "38"
+                ,
+                ""
+                ,
+                "5208"
+                ,
+                "Daniel"
+                ,
+                "Niznik"
+                ,
+                "<div style='text-align:center;background-color:#D12029;color:#ffffff;'>PRZ</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "17:54.2"
+                ,
+                "12.06%"
+                ,
+                "2:04.0"
+                
+            ]
+
+            ,
+            [
+            
+                "40"
+                ,
+                "39"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5099"
+                ,
+                "Asher"
+                ,
+                "Allen"
+                ,
+                "<div style='text-align:center;background-color:#00A356;color:#ffffff;'>LIT</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "17:57.2"
+                ,
+                "12.37%"
+                ,
+                "2:07.0"
+                
+            ]
+
+            ,
+            [
+            
+                "41"
+                ,
+                "40"
+                ,
+                ""
+                ,
+                "5270"
+                ,
+                "Matt"
+                ,
+                "Heen"
+                ,
+                "<div style='text-align:center;background-color:#07467A;color:#F5D892;'>SCC</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "17:58.1"
+                ,
+                "12.47%"
+                ,
+                "2:08.0"
+                
+            ]
+
+            ,
+            [
+            
+                "42"
+                ,
+                "41"
+                ,
+                ""
+                ,
+                "5042"
+                ,
+                "Gavin"
+                ,
+                "Arens"
+                ,
+                "<div style='text-align:center;background-color:#022345;color:#ffffff;'>EWK</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "18:00.1"
+                ,
+                "12.67%"
+                ,
+                "2:10.0"
+                
+            ]
+
+            ,
+            [
+            
+                "43"
+                ,
+                "42"
+                ,
+                ""
+                ,
+                "5242"
+                ,
+                "Ian"
+                ,
+                "Ratke"
+                ,
+                "<div style='text-align:center;background-color:#F4AB0D;color:#530001;'>ROY</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "18:03.2"
+                ,
+                "13%"
+                ,
+                "2:13.0"
+                
+            ]
+
+            ,
+            [
+            
+                "44"
+                ,
+                "43"
+                ,
+                ""
+                ,
+                "5071"
+                ,
+                "Carter"
+                ,
+                "Kubat"
+                ,
+                "<div style='text-align:center;background-color:#0D630F;color:#ffffff;'>HOL</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:05.2"
+                ,
+                "13.21%"
+                ,
+                "2:15.0"
+                
+            ]
+
+            ,
+            [
+            
+                "45"
+                ,
+                "44"
+                ,
+                ""
+                ,
+                "5223"
+                ,
+                "Grant"
+                ,
+                "Larson"
+                ,
+                "<div style='text-align:center;background-color:#1C5F30;color:#ffffff;'>PC</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "18:06.1"
+                ,
+                "13.3%"
+                ,
+                "2:16.0"
+                
+            ]
+
+            ,
+            [
+            
+                "46"
+                ,
+                "45"
+                ,
+                ""
+                ,
+                "5172"
+                ,
+                "Parker"
+                ,
+                "Anderson"
+                ,
+                "<div style='text-align:center;background-color:#AA1D37;color:#cccccc;'>PAR</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "18:08.1"
+                ,
+                "13.51%"
+                ,
+                "2:18.0"
+                
+            ]
+
+            ,
+            [
+            
+                "47"
+                ,
+                "46"
+                ,
+                ""
+                ,
+                "5257"
+                ,
+                "Jesse"
+                ,
+                "Perell"
+                ,
+                "<div style='text-align:center;background-color:#196FB8;color:#ffffff;'>RC</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "18:10.8"
+                ,
+                "13.79%"
+                ,
+                "2:21.0"
+                
+            ]
+
+            ,
+            [
+            
+                "48"
+                ,
+                "47"
+                ,
+                ""
+                ,
+                "5211"
+                ,
+                "Henry"
+                ,
+                "Stamm"
+                ,
+                "<div style='text-align:center;background-color:#D12029;color:#ffffff;'>PRZ</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:14.1"
+                ,
+                "14.14%"
+                ,
+                "2:24.0"
+                
+            ]
+
+            ,
+            [
+            
+                "49"
+                ,
+                "48"
+                ,
+                ""
+                ,
+                "5016"
+                ,
+                "Cooper"
+                ,
+                "Overson"
+                ,
+                "<div style='text-align:center;background-color:#000000;color:#ffffff;'>ACG</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:15.1"
+                ,
+                "14.24%"
+                ,
+                "2:25.0"
+                
+            ]
+
+            ,
+            [
+            
+                "50"
+                ,
+                "49"
+                ,
+                ""
+                ,
+                "5237"
+                ,
+                "Cody"
+                ,
+                "Bieniek"
+                ,
+                "<div style='text-align:center;background-color:#F4AB0D;color:#530001;'>ROY</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "18:16.1"
+                ,
+                "14.34%"
+                ,
+                "2:26.0"
+                
+            ]
+
+            ,
+            [
+            
+                "51"
+                ,
+                "50"
+                ,
+                ""
+                ,
+                "5143"
+                ,
+                "Beck "
+                ,
+                "Stevens "
+                ,
+                "<div style='text-align:center;background-color:#0075BC;color:#ffffff;'>NLL</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:16.1"
+                ,
+                "14.34%"
+                ,
+                "2:26.0"
+                
+            ]
+
+            ,
+            [
+            
+                "52"
+                ,
+                "51"
+                ,
+                ""
+                ,
+                "5279"
+                ,
+                "Noah"
+                ,
+                "Brophy"
+                ,
+                "<div style='text-align:center;background-color:#662F93;color:#ffffff;'>SCC</div>"
+                ,
+                "8"
+                ,
+                "M"
+                ,
+                "18:18.2"
+                ,
+                "14.56%"
+                ,
+                "2:28.0"
+                
+            ]
+
+            ,
+            [
+            
+                "53"
+                ,
+                "52"
+                ,
+                ""
+                ,
+                "5177"
+                ,
+                "Emerson"
+                ,
+                "Messner"
+                ,
+                "<div style='text-align:center;background-color:#AA1D37;color:#cccccc;'>PAR</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:19.1"
+                ,
+                "14.66%"
+                ,
+                "2:29.0"
+                
+            ]
+
+            ,
+            [
+            
+                "54"
+                ,
+                "53"
+                ,
+                ""
+                ,
+                "5114"
+                ,
+                "Hayden "
+                ,
+                "Dircks"
+                ,
+                "<div style='text-align:center;background-color:#113928;color:#ffffff;'>ML</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "18:20.1"
+                ,
+                "14.76%"
+                ,
+                "2:30.0"
+                
+            ]
+
+            ,
+            [
+            
+                "55"
+                ,
+                "54"
+                ,
+                ""
+                ,
+                "5207"
+                ,
+                "Joel"
+                ,
+                "Marshik"
+                ,
+                "<div style='text-align:center;background-color:#D12029;color:#ffffff;'>PRZ</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "18:20.1"
+                ,
+                "14.76%"
+                ,
+                "2:30.0"
+                
+            ]
+
+            ,
+            [
+            
+                "56"
+                ,
+                "55"
+                ,
+                ""
+                ,
+                "5072"
+                ,
+                "Caleb"
+                ,
+                "Kurtz"
+                ,
+                "<div style='text-align:center;background-color:#0D630F;color:#ffffff;'>HOL</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:21.6"
+                ,
+                "14.92%"
+                ,
+                "2:31.0"
+                
+            ]
+
+            ,
+            [
+            
+                "57"
+                ,
+                "56"
+                ,
+                ""
+                ,
+                "5045"
+                ,
+                "Nate"
+                ,
+                "Ingram"
+                ,
+                "<div style='text-align:center;background-color:#022345;color:#ffffff;'>EWK</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:22.1"
+                ,
+                "14.97%"
+                ,
+                "2:32.0"
+                
+            ]
+
+            ,
+            [
+            
+                "58"
+                ,
+                "57"
+                ,
+                ""
+                ,
+                "5073"
+                ,
+                "Jacob"
+                ,
+                "Loehlein"
+                ,
+                "<div style='text-align:center;background-color:#0D630F;color:#ffffff;'>HOL</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "18:22.1"
+                ,
+                "14.97%"
+                ,
+                "2:32.0"
+                
+            ]
+
+            ,
+            [
+            
+                "59"
+                ,
+                "58"
+                ,
+                ""
+                ,
+                "5115"
+                ,
+                "Elijah"
+                ,
+                "Dorse"
+                ,
+                "<div style='text-align:center;background-color:#113928;color:#ffffff;'>ML</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:22.5"
+                ,
+                "15.01%"
+                ,
+                "2:32.0"
+                
+            ]
+
+            ,
+            [
+            
+                "60"
+                ,
+                "59"
+                ,
+                ""
+                ,
+                "5031"
+                ,
+                "Aiden"
+                ,
+                "Ward"
+                ,
+                "<div style='text-align:center;background-color:#174568;color:#ffffff;'>BHM</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:32.1"
+                ,
+                "16.01%"
+                ,
+                "2:42.0"
+                
+            ]
+
+            ,
+            [
+            
+                "61"
+                ,
+                "60"
+                ,
+                ""
+                ,
+                "5285"
+                ,
+                "Noah"
+                ,
+                "Rolfzen"
+                ,
+                "<div style='text-align:center;background-color:#662F93;color:#ffffff;'>SCC</div>"
+                ,
+                "8"
+                ,
+                "M"
+                ,
+                "18:32.2"
+                ,
+                "16.02%"
+                ,
+                "2:42.0"
+                
+            ]
+
+            ,
+            [
+            
+                "62"
+                ,
+                "61"
+                ,
+                ""
+                ,
+                "5283"
+                ,
+                "Abram"
+                ,
+                "Lindner"
+                ,
+                "<div style='text-align:center;background-color:#662F93;color:#ffffff;'>SCC</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "18:34.1"
+                ,
+                "16.22%"
+                ,
+                "2:44.0"
+                
+            ]
+
+            ,
+            [
+            
+                "63"
+                ,
+                "62"
+                ,
+                ""
+                ,
+                "5226"
+                ,
+                "Ray"
+                ,
+                "Ovick"
+                ,
+                "<div style='text-align:center;background-color:#1C5F30;color:#ffffff;'>PC</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "18:40.1"
+                ,
+                "16.85%"
+                ,
+                "2:50.0"
+                
+            ]
+
+            ,
+            [
+            
+                "64"
+                ,
+                "63"
+                ,
+                ""
+                ,
+                "5256"
+                ,
+                "Ivan"
+                ,
+                "Nechal"
+                ,
+                "<div style='text-align:center;background-color:#196FB8;color:#ffffff;'>RC</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "18:41.1"
+                ,
+                "16.95%"
+                ,
+                "2:51.0"
+                
+            ]
+
+            ,
+            [
+            
+                "65"
+                ,
+                "64"
+                ,
+                ""
+                ,
+                "5276"
+                ,
+                "Gaige"
+                ,
+                "Yancey"
+                ,
+                "<div style='text-align:center;background-color:#07467A;color:#F5D892;'>SCC</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "18:41.5"
+                ,
+                "16.99%"
+                ,
+                "2:51.0"
+                
+            ]
+
+            ,
+            [
+            
+                "66"
+                ,
+                "65"
+                ,
+                ""
+                ,
+                "5171"
+                ,
+                "Hudson"
+                ,
+                "Anderson"
+                ,
+                "<div style='text-align:center;background-color:#AA1D37;color:#cccccc;'>PAR</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "18:43.1"
+                ,
+                "17.16%"
+                ,
+                "2:53.0"
+                
+            ]
+
+            ,
+            [
+            
+                "67"
+                ,
+                "66"
+                ,
+                ""
+                ,
+                "5259"
+                ,
+                "Jack "
+                ,
+                "Weber"
+                ,
+                "<div style='text-align:center;background-color:#196FB8;color:#ffffff;'>RC</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:43.2"
+                ,
+                "17.17%"
+                ,
+                "2:53.0"
+                
+            ]
+
+            ,
+            [
+            
+                "68"
+                ,
+                "67"
+                ,
+                ""
+                ,
+                "5126"
+                ,
+                "Ryan"
+                ,
+                "Dane"
+                ,
+                "<div style='text-align:center;background-color:#BB1449;color:#ffffff;'>MCA</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "18:45.2"
+                ,
+                "17.38%"
+                ,
+                "2:55.0"
+                
+            ]
+
+            ,
+            [
+            
+                "69"
+                ,
+                "68"
+                ,
+                ""
+                ,
+                "5209"
+                ,
+                "Riley"
+                ,
+                "Scholl"
+                ,
+                "<div style='text-align:center;background-color:#D12029;color:#ffffff;'>PRZ</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "18:47.1"
+                ,
+                "17.58%"
+                ,
+                "2:57.0"
+                
+            ]
+
+            ,
+            [
+            
+                "70"
+                ,
+                "69"
+                ,
+                ""
+                ,
+                "5222"
+                ,
+                "Graden"
+                ,
+                "Hanson"
+                ,
+                "<div style='text-align:center;background-color:#1C5F30;color:#ffffff;'>PC</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "18:47.2"
+                ,
+                "17.59%"
+                ,
+                "2:57.0"
+                
+            ]
+
+            ,
+            [
+            
+                "71"
+                ,
+                "---"
+                ,
+                ""
+                ,
+                "5060"
+                ,
+                "Cash"
+                ,
+                "Rieken"
+                ,
+                "<div style='text-align:center;background-color:#FC0000;color:#ffffff;'>HF</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:49.1"
+                ,
+                "17.79%"
+                ,
+                "2:59.0"
+                
+            ]
+
+            ,
+            [
+            
+                "72"
+                ,
+                "70"
+                ,
+                ""
+                ,
+                "5239"
+                ,
+                "Braxton"
+                ,
+                "Boyd"
+                ,
+                "<div style='text-align:center;background-color:#F4AB0D;color:#530001;'>ROY</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "18:50.2"
+                ,
+                "17.9%"
+                ,
+                "3:00.0"
+                
+            ]
+
+            ,
+            [
+            
+                "73"
+                ,
+                "71"
+                ,
+                ""
+                ,
+                "5047"
+                ,
+                "Evan"
+                ,
+                "Molitor"
+                ,
+                "<div style='text-align:center;background-color:#022345;color:#ffffff;'>EWK</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "18:55.8"
+                ,
+                "18.49%"
+                ,
+                "3:06.0"
+                
+            ]
+
+            ,
+            [
+            
+                "74"
+                ,
+                "72"
+                ,
+                ""
+                ,
+                "5210"
+                ,
+                "Alex"
+                ,
+                "Sebasky"
+                ,
+                "<div style='text-align:center;background-color:#D12029;color:#ffffff;'>PRZ</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "18:58.2"
+                ,
+                "18.74%"
+                ,
+                "3:08.0"
+                
+            ]
+
+            ,
+            [
+            
+                "75"
+                ,
+                "73"
+                ,
+                ""
+                ,
+                "5178"
+                ,
+                "Connor"
+                ,
+                "Shuman"
+                ,
+                "<div style='text-align:center;background-color:#AA1D37;color:#cccccc;'>PAR</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "18:59.1"
+                ,
+                "18.83%"
+                ,
+                "3:09.0"
+                
+            ]
+
+            ,
+            [
+            
+                "76"
+                ,
+                "74"
+                ,
+                ""
+                ,
+                "5119"
+                ,
+                "Charlie"
+                ,
+                "Peterson"
+                ,
+                "<div style='text-align:center;background-color:#113928;color:#ffffff;'>ML</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "19:00.2"
+                ,
+                "18.94%"
+                ,
+                "3:10.0"
+                
+            ]
+
+            ,
+            [
+            
+                "77"
+                ,
+                "---"
+                ,
+                ""
+                ,
+                "5059"
+                ,
+                "Eli"
+                ,
+                "Geiger"
+                ,
+                "<div style='text-align:center;background-color:#FC0000;color:#ffffff;'>HF</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "19:07.1"
+                ,
+                "19.66%"
+                ,
+                "3:17.0"
+                
+            ]
+
+            ,
+            [
+            
+                "78"
+                ,
+                "75"
+                ,
+                ""
+                ,
+                "5280"
+                ,
+                "Samuel"
+                ,
+                "Busch"
+                ,
+                "<div style='text-align:center;background-color:#662F93;color:#ffffff;'>SCC</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "19:10.1"
+                ,
+                "19.98%"
+                ,
+                "3:20.0"
+                
+            ]
+
+            ,
+            [
+            
+                "79"
+                ,
+                "76"
+                ,
+                ""
+                ,
+                "5046"
+                ,
+                "Mason"
+                ,
+                "Lesnau"
+                ,
+                "<div style='text-align:center;background-color:#022345;color:#ffffff;'>EWK</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "19:11.9"
+                ,
+                "20.16%"
+                ,
+                "3:22.0"
+                
+            ]
+
+            ,
+            [
+            
+                "80"
+                ,
+                "77"
+                ,
+                ""
+                ,
+                "5174"
+                ,
+                "Sawyer"
+                ,
+                "Crookes"
+                ,
+                "<div style='text-align:center;background-color:#AA1D37;color:#cccccc;'>PAR</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "19:14.1"
+                ,
+                "20.39%"
+                ,
+                "3:24.0"
+                
+            ]
+
+            ,
+            [
+            
+                "81"
+                ,
+                "78"
+                ,
+                ""
+                ,
+                "5277"
+                ,
+                "Isaac"
+                ,
+                "Berges"
+                ,
+                "<div style='text-align:center;background-color:#662F93;color:#ffffff;'>SCC</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "19:14.1"
+                ,
+                "20.39%"
+                ,
+                "3:24.0"
+                
+            ]
+
+            ,
+            [
+            
+                "82"
+                ,
+                "79"
+                ,
+                ""
+                ,
+                "5074"
+                ,
+                "Cameron"
+                ,
+                "Martini"
+                ,
+                "<div style='text-align:center;background-color:#0D630F;color:#ffffff;'>HOL</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "19:18.1"
+                ,
+                "20.81%"
+                ,
+                "3:28.0"
+                
+            ]
+
+            ,
+            [
+            
+                "83"
+                ,
+                "80"
+                ,
+                ""
+                ,
+                "5238"
+                ,
+                "Grady"
+                ,
+                "Bieniek"
+                ,
+                "<div style='text-align:center;background-color:#F4AB0D;color:#530001;'>ROY</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "19:30.3"
+                ,
+                "22.08%"
+                ,
+                "3:40.0"
+                
+            ]
+
+            ,
+            [
+            
+                "84"
+                ,
+                "81"
+                ,
+                ""
+                ,
+                "5275"
+                ,
+                "Jacob "
+                ,
+                "Tomczik"
+                ,
+                "<div style='text-align:center;background-color:#07467A;color:#F5D892;'>SCC</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "19:32.7"
+                ,
+                "22.33%"
+                ,
+                "3:42.0"
+                
+            ]
+
+            ,
+            [
+            
+                "85"
+                ,
+                "82"
+                ,
+                ""
+                ,
+                "5243"
+                ,
+                "Trace"
+                ,
+                "Ratke"
+                ,
+                "<div style='text-align:center;background-color:#F4AB0D;color:#530001;'>ROY</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "19:36.1"
+                ,
+                "22.69%"
+                ,
+                "3:46.0"
+                
+            ]
+
+            ,
+            [
+            
+                "86"
+                ,
+                "83"
+                ,
+                ""
+                ,
+                "5189"
+                ,
+                "Brighton"
+                ,
+                "Frenchick"
+                ,
+                "<div style='text-align:center;background-color:#00612E;color:#ffffff;'>PAY</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "19:37.7"
+                ,
+                "22.86%"
+                ,
+                "3:47.0"
+                
+            ]
+
+            ,
+            [
+            
+                "87"
+                ,
+                "84"
+                ,
+                ""
+                ,
+                "5010"
+                ,
+                "Caden"
+                ,
+                "Degner"
+                ,
+                "<div style='text-align:center;background-color:#000000;color:#ffffff;'>ACG</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "19:43.1"
+                ,
+                "23.42%"
+                ,
+                "3:53.0"
+                
+            ]
+
+            ,
+            [
+            
+                "88"
+                ,
+                "85"
+                ,
+                ""
+                ,
+                "5124"
+                ,
+                "Kimoni"
+                ,
+                "Cainion"
+                ,
+                "<div style='text-align:center;background-color:#BB1449;color:#ffffff;'>MCA</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "19:44.3"
+                ,
+                "23.54%"
+                ,
+                "3:54.0"
+                
+            ]
+
+            ,
+            [
+            
+                "89"
+                ,
+                "86"
+                ,
+                ""
+                ,
+                "5028"
+                ,
+                "Tyler"
+                ,
+                "Maser"
+                ,
+                "<div style='text-align:center;background-color:#174568;color:#ffffff;'>BHM</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "19:46.2"
+                ,
+                "23.74%"
+                ,
+                "3:56.0"
+                
+            ]
+
+            ,
+            [
+            
+                "90"
+                ,
+                "87"
+                ,
+                ""
+                ,
+                "5302"
+                ,
+                "Jonah"
+                ,
+                "Zahaski"
+                ,
+                "<div style='text-align:center;background-color:#D61930;color:#ffffff;'>SJP</div>"
+                ,
+                "7"
+                ,
+                "M"
+                ,
+                "19:46.8"
+                ,
+                "23.81%"
+                ,
+                "3:57.0"
+                
+            ]
+
+            ,
+            [
+            
+                "91"
+                ,
+                "88"
+                ,
+                ""
+                ,
+                "5009"
+                ,
+                "Seth"
+                ,
+                "Carlson"
+                ,
+                "<div style='text-align:center;background-color:#000000;color:#ffffff;'>ACG</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "19:48.2"
+                ,
+                "23.95%"
+                ,
+                "3:58.0"
+                
+            ]
+
+            ,
+            [
+            
+                "92"
+                ,
+                "89"
+                ,
+                ""
+                ,
+                "5044"
+                ,
+                "Kellen"
+                ,
+                "Huberty"
+                ,
+                "<div style='text-align:center;background-color:#022345;color:#ffffff;'>EWK</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "19:48.2"
+                ,
+                "23.95%"
+                ,
+                "3:58.0"
+                
+            ]
+
+            ,
+            [
+            
+                "93"
+                ,
+                "90"
+                ,
+                ""
+                ,
+                "5258"
+                ,
+                "Griffin"
+                ,
+                "Reynolds"
+                ,
+                "<div style='text-align:center;background-color:#196FB8;color:#ffffff;'>RC</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "19:49.2"
+                ,
+                "24.06%"
+                ,
+                "3:59.0"
+                
+            ]
+
+            ,
+            [
+            
+                "94"
+                ,
+                "91"
+                ,
+                ""
+                ,
+                "5043"
+                ,
+                "Alex"
+                ,
+                "Fink"
+                ,
+                "<div style='text-align:center;background-color:#022345;color:#ffffff;'>EWK</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "19:54.4"
+                ,
+                "24.6%"
+                ,
+                "4:04.0"
+                
+            ]
+
+            ,
+            [
+            
+                "95"
+                ,
+                "92"
+                ,
+                ""
+                ,
+                "5118"
+                ,
+                "Oliver"
+                ,
+                "Hawkinson"
+                ,
+                "<div style='text-align:center;background-color:#113928;color:#ffffff;'>ML</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "19:55.6"
+                ,
+                "24.72%"
+                ,
+                "4:05.0"
+                
+            ]
+
+            ,
+            [
+            
+                "96"
+                ,
+                "93"
+                ,
+                ""
+                ,
+                "5271"
+                ,
+                "Kayden"
+                ,
+                "Mullings"
+                ,
+                "<div style='text-align:center;background-color:#07467A;color:#F5D892;'>SCC</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "20:05.2"
+                ,
+                "25.73%"
+                ,
+                "4:15.0"
+                
+            ]
+
+            ,
+            [
+            
+                "97"
+                ,
+                "94"
+                ,
+                ""
+                ,
+                "5196"
+                ,
+                "Nolan"
+                ,
+                "Zierden"
+                ,
+                "<div style='text-align:center;background-color:#00612E;color:#ffffff;'>PAY</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "20:08.1"
+                ,
+                "26.03%"
+                ,
+                "4:18.0"
+                
+            ]
+
+            ,
+            [
+            
+                "98"
+                ,
+                "95"
+                ,
+                "<div style='text-align:center;' class='bg-success text-light'>Tm</div>"
+                ,
+                "5104"
+                ,
+                "Isaac"
+                ,
+                "Kalkbrenner"
+                ,
+                "<div style='text-align:center;background-color:#00A356;color:#ffffff;'>LIT</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "20:14.1"
+                ,
+                "26.65%"
+                ,
+                "4:24.0"
+                
+            ]
+
+            ,
+            [
+            
+                "99"
+                ,
+                "96"
+                ,
+                ""
+                ,
+                "5192"
+                ,
+                "Abe"
+                ,
+                "Nething"
+                ,
+                "<div style='text-align:center;background-color:#00612E;color:#ffffff;'>PAY</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "20:14.2"
+                ,
+                "26.66%"
+                ,
+                "4:24.0"
+                
+            ]
+
+            ,
+            [
+            
+                "100"
+                ,
+                "97"
+                ,
+                ""
+                ,
+                "5193"
+                ,
+                "Jackson"
+                ,
+                "Stoneburner"
+                ,
+                "<div style='text-align:center;background-color:#00612E;color:#ffffff;'>PAY</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "20:17.4"
+                ,
+                "27%"
+                ,
+                "4:27.0"
+                
+            ]
+
+            ,
+            [
+            
+                "101"
+                ,
+                "98"
+                ,
+                ""
+                ,
+                "5194"
+                ,
+                "Parker"
+                ,
+                "Taufen"
+                ,
+                "<div style='text-align:center;background-color:#00612E;color:#ffffff;'>PAY</div>"
+                ,
+                "7"
+                ,
+                "M"
+                ,
+                "20:17.6"
+                ,
+                "27.02%"
+                ,
+                "4:27.0"
+                
+            ]
+
+            ,
+            [
+            
+                "102"
+                ,
+                "99"
+                ,
+                ""
+                ,
+                "5240"
+                ,
+                "Taylor"
+                ,
+                "Gleisner"
+                ,
+                "<div style='text-align:center;background-color:#F4AB0D;color:#530001;'>ROY</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "20:20.1"
+                ,
+                "27.28%"
+                ,
+                "4:30.0"
+                
+            ]
+
+            ,
+            [
+            
+                "103"
+                ,
+                "100"
+                ,
+                ""
+                ,
+                "5278"
+                ,
+                "Eli"
+                ,
+                "Brophy"
+                ,
+                "<div style='text-align:center;background-color:#662F93;color:#ffffff;'>SCC</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "20:22.2"
+                ,
+                "27.5%"
+                ,
+                "4:32.0"
+                
+            ]
+
+            ,
+            [
+            
+                "104"
+                ,
+                "101"
+                ,
+                ""
+                ,
+                "5027"
+                ,
+                "Dexter"
+                ,
+                "Floding"
+                ,
+                "<div style='text-align:center;background-color:#174568;color:#ffffff;'>BHM</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "20:24.2"
+                ,
+                "27.71%"
+                ,
+                "4:34.0"
+                
+            ]
+
+            ,
+            [
+            
+                "105"
+                ,
+                "102"
+                ,
+                ""
+                ,
+                "5241"
+                ,
+                "Dane"
+                ,
+                "Morgan"
+                ,
+                "<div style='text-align:center;background-color:#F4AB0D;color:#530001;'>ROY</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "20:26.1"
+                ,
+                "27.91%"
+                ,
+                "4:36.0"
+                
+            ]
+
+            ,
+            [
+            
+                "106"
+                ,
+                "103"
+                ,
+                ""
+                ,
+                "5254"
+                ,
+                "George"
+                ,
+                "Deedrick"
+                ,
+                "<div style='text-align:center;background-color:#196FB8;color:#ffffff;'>RC</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "20:31.9"
+                ,
+                "28.51%"
+                ,
+                "4:42.0"
+                
+            ]
+
+            ,
+            [
+            
+                "107"
+                ,
+                "104"
+                ,
+                ""
+                ,
+                "5116"
+                ,
+                "Carter"
+                ,
+                "Ertel"
+                ,
+                "<div style='text-align:center;background-color:#113928;color:#ffffff;'>ML</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "20:34.8"
+                ,
+                "28.81%"
+                ,
+                "4:45.0"
+                
+            ]
+
+            ,
+            [
+            
+                "108"
+                ,
+                "105"
+                ,
+                ""
+                ,
+                "5032"
+                ,
+                "Tycen"
+                ,
+                "Woods"
+                ,
+                "<div style='text-align:center;background-color:#174568;color:#ffffff;'>BHM</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "20:35.1"
+                ,
+                "28.84%"
+                ,
+                "4:45.0"
+                
+            ]
+
+            ,
+            [
+            
+                "109"
+                ,
+                "106"
+                ,
+                ""
+                ,
+                "5087"
+                ,
+                "Jaxon"
+                ,
+                "Knott"
+                ,
+                "<div style='text-align:center;background-color:#1B2E4E;color:#F7BC0F;'>HLW</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "20:35.2"
+                ,
+                "28.85%"
+                ,
+                "4:45.0"
+                
+            ]
+
+            ,
+            [
+            
+                "110"
+                ,
+                "107"
+                ,
+                ""
+                ,
+                "5086"
+                ,
+                "Wyatt"
+                ,
+                "Iverson"
+                ,
+                "<div style='text-align:center;background-color:#1B2E4E;color:#F7BC0F;'>HLW</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "20:49.4"
+                ,
+                "30.34%"
+                ,
+                "4:59.0"
+                
+            ]
+
+            ,
+            [
+            
+                "111"
+                ,
+                "108"
+                ,
+                ""
+                ,
+                "5015"
+                ,
+                "Micah"
+                ,
+                "Morrison"
+                ,
+                "<div style='text-align:center;background-color:#000000;color:#ffffff;'>ACG</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "20:50.1"
+                ,
+                "30.41%"
+                ,
+                "5:00.0"
+                
+            ]
+
+            ,
+            [
+            
+                "112"
+                ,
+                "109"
+                ,
+                ""
+                ,
+                "5117"
+                ,
+                "Clark "
+                ,
+                "Hawkinson"
+                ,
+                "<div style='text-align:center;background-color:#113928;color:#ffffff;'>ML</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "20:51.1"
+                ,
+                "30.51%"
+                ,
+                "5:01.0"
+                
+            ]
+
+            ,
+            [
+            
+                "113"
+                ,
+                "110"
+                ,
+                ""
+                ,
+                "5195"
+                ,
+                "Alex"
+                ,
+                "Weber"
+                ,
+                "<div style='text-align:center;background-color:#00612E;color:#ffffff;'>PAY</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "20:55.2"
+                ,
+                "30.94%"
+                ,
+                "5:05.0"
+                
+            ]
+
+            ,
+            [
+            
+                "114"
+                ,
+                "111"
+                ,
+                ""
+                ,
+                "5049"
+                ,
+                "Andray "
+                ,
+                "Stang"
+                ,
+                "<div style='text-align:center;background-color:#022345;color:#ffffff;'>EWK</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "20:59.8"
+                ,
+                "31.42%"
+                ,
+                "5:10.0"
+                
+            ]
+
+            ,
+            [
+            
+                "115"
+                ,
+                "112"
+                ,
+                ""
+                ,
+                "5088"
+                ,
+                "Martin"
+                ,
+                "Koch"
+                ,
+                "<div style='text-align:center;background-color:#1B2E4E;color:#F7BC0F;'>HLW</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "21:04.2"
+                ,
+                "31.88%"
+                ,
+                "5:14.0"
+                
+            ]
+
+            ,
+            [
+            
+                "116"
+                ,
+                "113"
+                ,
+                ""
+                ,
+                "5297"
+                ,
+                "Jude"
+                ,
+                "Jarret"
+                ,
+                "<div style='text-align:center;background-color:#D61930;color:#ffffff;'>SJP</div>"
+                ,
+                "7"
+                ,
+                "M"
+                ,
+                "21:05.1"
+                ,
+                "31.97%"
+                ,
+                "5:15.0"
+                
+            ]
+
+            ,
+            [
+            
+                "117"
+                ,
+                "114"
+                ,
+                ""
+                ,
+                "5014"
+                ,
+                "Dyllan"
+                ,
+                "Michnowski"
+                ,
+                "<div style='text-align:center;background-color:#000000;color:#ffffff;'>ACG</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "21:07.1"
+                ,
+                "32.18%"
+                ,
+                "5:17.0"
+                
+            ]
+
+            ,
+            [
+            
+                "118"
+                ,
+                "115"
+                ,
+                ""
+                ,
+                "5137"
+                ,
+                "Colton"
+                ,
+                "Johnson"
+                ,
+                "<div style='text-align:center;background-color:#0075BC;color:#ffffff;'>NLL</div>"
+                ,
+                "7"
+                ,
+                "M"
+                ,
+                "21:09.1"
+                ,
+                "32.39%"
+                ,
+                "5:19.0"
+                
+            ]
+
+            ,
+            [
+            
+                "119"
+                ,
+                "116"
+                ,
+                ""
+                ,
+                "5085"
+                ,
+                "Orin"
+                ,
+                "Eberhard"
+                ,
+                "<div style='text-align:center;background-color:#1B2E4E;color:#F7BC0F;'>HLW</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "21:22.9"
+                ,
+                "33.83%"
+                ,
+                "5:33.0"
+                
+            ]
+
+            ,
+            [
+            
+                "120"
+                ,
+                "---"
+                ,
+                ""
+                ,
+                "5130"
+                ,
+                "Cory"
+                ,
+                "Carlson"
+                ,
+                "<div style='text-align:center;background-color:#C20F2F;color:#cccccc;'>MLL</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "21:31.8"
+                ,
+                "34.76%"
+                ,
+                "5:42.0"
+                
+            ]
+
+            ,
+            [
+            
+                "121"
+                ,
+                "117"
+                ,
+                ""
+                ,
+                "5090"
+                ,
+                "Carson"
+                ,
+                "Stiles"
+                ,
+                "<div style='text-align:center;background-color:#1B2E4E;color:#F7BC0F;'>HLW</div>"
+                ,
+                "8"
+                ,
+                "M"
+                ,
+                "21:42.2"
+                ,
+                "35.84%"
+                ,
+                "5:52.0"
+                
+            ]
+
+            ,
+            [
+            
+                "122"
+                ,
+                "118"
+                ,
+                ""
+                ,
+                "5024"
+                ,
+                "Henry"
+                ,
+                "Asleson"
+                ,
+                "<div style='text-align:center;background-color:#174568;color:#ffffff;'>BHM</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "22:01.6"
+                ,
+                "37.87%"
+                ,
+                "6:11.0"
+                
+            ]
+
+            ,
+            [
+            
+                "123"
+                ,
+                "119"
+                ,
+                ""
+                ,
+                "5026"
+                ,
+                "Luke"
+                ,
+                "Fix"
+                ,
+                "<div style='text-align:center;background-color:#174568;color:#ffffff;'>BHM</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "22:14.2"
+                ,
+                "39.18%"
+                ,
+                "6:24.0"
+                
+            ]
+
+            ,
+            [
+            
+                "124"
+                ,
+                "120"
+                ,
+                ""
+                ,
+                "5128"
+                ,
+                "Caleb"
+                ,
+                "Lichty"
+                ,
+                "<div style='text-align:center;background-color:#BB1449;color:#ffffff;'>MCA</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "22:22.1"
+                ,
+                "40.01%"
+                ,
+                "6:32.0"
+                
+            ]
+
+            ,
+            [
+            
+                "125"
+                ,
+                "121"
+                ,
+                ""
+                ,
+                "5191"
+                ,
+                "Jackson"
+                ,
+                "Mead"
+                ,
+                "<div style='text-align:center;background-color:#00612E;color:#ffffff;'>PAY</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "22:25.4"
+                ,
+                "40.35%"
+                ,
+                "6:35.0"
+                
+            ]
+
+            ,
+            [
+            
+                "126"
+                ,
+                "122"
+                ,
+                ""
+                ,
+                "5011"
+                ,
+                "Gavin"
+                ,
+                "Garcia"
+                ,
+                "<div style='text-align:center;background-color:#000000;color:#ffffff;'>ACG</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "22:55.2"
+                ,
+                "43.46%"
+                ,
+                "7:05.0"
+                
+            ]
+
+            ,
+            [
+            
+                "127"
+                ,
+                "123"
+                ,
+                ""
+                ,
+                "5123"
+                ,
+                "Noah"
+                ,
+                "Abbey"
+                ,
+                "<div style='text-align:center;background-color:#BB1449;color:#ffffff;'>MCA</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "23:14.9"
+                ,
+                "45.51%"
+                ,
+                "7:25.0"
+                
+            ]
+
+            ,
+            [
+            
+                "128"
+                ,
+                "124"
+                ,
+                ""
+                ,
+                "5017"
+                ,
+                "Dylan"
+                ,
+                "Serbus"
+                ,
+                "<div style='text-align:center;background-color:#000000;color:#ffffff;'>ACG</div>"
+                ,
+                "12"
+                ,
+                "M"
+                ,
+                "23:38.2"
+                ,
+                "47.94%"
+                ,
+                "7:48.0"
+                
+            ]
+
+            ,
+            [
+            
+                "129"
+                ,
+                "125"
+                ,
+                ""
+                ,
+                "5140"
+                ,
+                "Aras "
+                ,
+                "Satkevicius"
+                ,
+                "<div style='text-align:center;background-color:#0075BC;color:#ffffff;'>NLL</div>"
+                ,
+                "10"
+                ,
+                "M"
+                ,
+                "23:45.1"
+                ,
+                "48.66%"
+                ,
+                "7:55.0"
+                
+            ]
+
+            ,
+            [
+            
+                "130"
+                ,
+                "126"
+                ,
+                ""
+                ,
+                "5141"
+                ,
+                "Azuolas"
+                ,
+                "Satkevicius"
+                ,
+                "<div style='text-align:center;background-color:#0075BC;color:#ffffff;'>NLL</div>"
+                ,
+                "9"
+                ,
+                "M"
+                ,
+                "23:46.1"
+                ,
+                "48.77%"
+                ,
+                "7:56.0"
+                
+            ]
+
+            ,
+            [
+            
+                "131"
+                ,
+                "127"
+                ,
+                ""
+                ,
+                "5139"
+                ,
+                "Walker"
+                ,
+                "McGuiness"
+                ,
+                "<div style='text-align:center;background-color:#0075BC;color:#ffffff;'>NLL</div>"
+                ,
+                "8"
+                ,
+                "M"
+                ,
+                "24:03.2"
+                ,
+                "50.55%"
+                ,
+                "8:13.0"
+                
+            ]
+
+            ,
+            [
+            
+                "132"
+                ,
+                "128"
+                ,
+                ""
+                ,
+                "5142"
+                ,
+                "Aidas"
+                ,
+                "Statkevicius"
+                ,
+                "<div style='text-align:center;background-color:#0075BC;color:#ffffff;'>NLL</div>"
+                ,
+                "7"
+                ,
+                "M"
+                ,
+                "25:17.6"
+                ,
+                "58.31%"
+                ,
+                "9:27.0"
+                
+            ]
+
+            ,
+            [
+            
+                "133"
+                ,
+                "129"
+                ,
+                ""
+                ,
+                "5125"
+                ,
+                "Canon"
+                ,
+                "Czerlanis"
+                ,
+                "<div style='text-align:center;background-color:#BB1449;color:#ffffff;'>MCA</div>"
+                ,
+                "11"
+                ,
+                "M"
+                ,
+                "25:27.2"
+                ,
+                "59.32%"
+                ,
+                "9:37.0"
+                
+            ]
+
+            
+]
+}

@@ -1,6 +1,6 @@
 use super::{ReportError, ReportResult};
+use crate::export::ExportDataset;
 use census_domain::JurisdictionBucket;
-use census_store::Store;
 use serde::Serialize;
 use std::collections::BTreeMap;
 
@@ -10,7 +10,7 @@ mod gaps;
 mod reads;
 mod state;
 
-pub(crate) use state::{jurisdiction_of, school_state_index};
+pub(crate) use state::{in_cohort, jurisdiction_of, school_state_index};
 
 pub use gaps::{CoverageGap, GapClass};
 
@@ -122,11 +122,14 @@ impl CoverageReport {
     }
 }
 
-pub fn coverage_report(store: &Store, grad_year: Option<i16>) -> ReportResult<CoverageReport> {
-    let outcome = classify::run(store, grad_year)?;
+pub fn coverage_report(
+    dataset: &ExportDataset,
+    grad_year: Option<i16>,
+) -> ReportResult<CoverageReport> {
+    let outcome = classify::run(dataset, grad_year);
     let report = CoverageReport {
         grad_year,
-        notes: coverage_notes(store, grad_year, &outcome),
+        notes: coverage_notes(dataset, grad_year, &outcome),
         jurisdictions: outcome.jurisdictions,
         gaps: outcome.gaps,
         read: outcome.read,
@@ -147,13 +150,17 @@ fn totals_text(totals: &CoverageTotals) -> String {
     )
 }
 
-fn coverage_notes(store: &Store, grad_year: Option<i16>, outcome: &Outcome) -> Vec<String> {
+fn coverage_notes(
+    dataset: &ExportDataset,
+    grad_year: Option<i16>,
+    outcome: &Outcome,
+) -> Vec<String> {
     let cohort = grad_year.map_or_else(|| "all".to_string(), |year| year.to_string());
     let mut notes = vec![format!(
         "coverage grad_year={cohort} athletes={} jurisdictions={} from {}",
         outcome.read.athletes,
         outcome.jurisdictions.len(),
-        store.root().display()
+        dataset.lineage.store_root
     )];
     if outcome.read.athletes == 0 {
         notes.push(
