@@ -712,6 +712,10 @@ async fn a_journaled_school_is_skipped_and_an_unwritten_one_is_written() {
         "the journaled school is counted as skipped"
     );
     assert_eq!(tally.schools, 1);
+    assert_eq!(
+        tally.coaches, 3,
+        "the written school's coach rows are counted, the skipped school's are not"
+    );
     assert_eq!(tally.errors, 0);
     let schools: Vec<CanonicalSchool> = store.scan(Table::Schools).expect("scan schools");
     assert_eq!(schools.len(), 1);
@@ -913,4 +917,75 @@ fn a_refreshing_context_refreshes_even_when_the_options_do_not() {
     );
     assert!(!fetch.allow_not_found);
     assert!(fetch.headers.is_empty());
+}
+
+#[tokio::test]
+async fn the_token_is_never_replayed_from_the_cache() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let cache = dir.path().join("http");
+    seed_cache(&cache, super::BUNDLE_URL, BUNDLE);
+    seed_cache(&cache, CHILDREN_URL, NH_CHILDREN);
+    let (client_id, client_secret) =
+        credentials_in_bundle(BUNDLE).expect("the derived bundle carries the pair");
+    let encoded = url::form_urlencoded::Serializer::new(String::new())
+        .extend_pairs([
+            ("client_id", client_id.as_str()),
+            ("client_secret", client_secret.as_str()),
+            ("grant_type", "client_credentials"),
+            ("scope", super::TOKEN_SCOPE),
+        ])
+        .finish();
+    let key = Fetcher::key_for("POST", super::TOKEN_URL, &encoded);
+    std::fs::write(cache.join(format!("{key}.body")), TOKEN).expect("cached token body");
+    std::fs::write(
+        cache.join(format!("{key}.meta.json")),
+        serde_json::json!({
+            "url": super::TOKEN_URL,
+            "method": "POST",
+            "status": 200,
+            "content_digest": crate::net::cache::content_digest(TOKEN.as_bytes()),
+            "bytes": TOKEN.len(),
+            "fetched_at": "2026-09-29T12:00:00Z",
+        })
+        .to_string(),
+    )
+    .expect("cached token meta");
+
+    let store = Store::open(dir.path().join("store")).expect("store");
+    let fetcher = Fetcher::new(
+        &cache,
+        None,
+        Duration::from_millis(1),
+        HashMap::new(),
+        Vec::new(),
+    )
+    .expect("fetcher")
+    .with_offline(true);
+    let observed_on = OBSERVED_ON.to_string();
+    let context = crate::AdapterContext {
+        fetcher: &fetcher,
+        store: &store,
+        refresh: false,
+        school_year: SchoolYear::new(2026).expect("2026 is a season"),
+        observed_on: observed_on.clone(),
+        recording: None,
+    };
+    let options = Options {
+        states: vec![UsJurisdiction::NewHampshire],
+        observed_on,
+        limit: Some(1),
+        refresh: false,
+    };
+    let error = super::collect(&context, &options)
+        .await
+        .expect_err("a cached token body is not replayed: the POST is issued and fails offline");
+    assert!(
+        format!("{error:?}").contains(super::TOKEN_URL),
+        "the failure is the token POST, not the cached bundle or page: {error:?}"
+    );
+    let schools: Vec<CanonicalSchool> = store.scan(Table::Schools).expect("scan schools");
+    assert!(
+        schools.is_empty(),
+        "no school is written without a freshly minted token"
+    );
 }

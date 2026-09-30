@@ -3111,7 +3111,7 @@ and fixed:
 |---|---|---|
 | the member walk buffered every page (`schools.extend`) and wrote only after paging ended, so a 64-page organisation held up to 12,800 rows before its first write | Rule 2/3: fixed loop bounds and a bounded working set | `walk` maps and journals each page's rows as it is read; the accumulator is gone, so the working set is one page and the journal advances during the walk instead of after it |
 | `Run::open(ctx, options, state, org, fetch, done, tally)` — a seven-parameter constructor | Rule 4/6 (one-page reviewability, smallest scope) and the sibling convention | `Run` is now the five-field session struct built with a struct literal, as in `coach_directories::collect`; the target travels as `walk(state, org)` / `process_school(state, org, row, url)` arguments |
-| the fetches took `refresh` from `Options` alone, so a refreshing `AdapterContext` was served from the cache | the sibling lanes build `options.refresh \|\| ctx.refresh` (chsaa, ciac, coach_directories, mshsl) | one `fetch_options(ctx, options, headers)` helper (`ctx.fetch_options()` plus the OR) used by the bundle read, the token POST and every API page |
+| the fetches took `refresh` from `Options` alone, so a refreshing `AdapterContext` was served from the cache | the sibling lanes build `options.refresh \|\| ctx.refresh` (chsaa, ciac, coach_directories, mshsl) | one `fetch_options(ctx, options, headers)` helper (`ctx.fetch_options()` plus the OR) used by the bundle read and every API page; the token POST keeps its deliberate `refresh = true`, so an expiring credential is never replayed from the cache (pinned by `the_token_is_never_replayed_from_the_cache`) |
 | the per-school coach walk recorded nothing when the 64-page bound ended it, while the member walk did | the lane's own "no truncation is silent" claim | `collect_coaches` records the bound the way the member walk does |
 | a state repeated in `--states` was walked once per repetition | Rule 2: the target list's size follows the requested set, not its spelling | `targets` skips a state it has already resolved, and the walk order stays the caller's |
 | the journal detail wrote the state through `format!("{:?}")`, making a persisted payload depend on a derived `Debug` | stable persisted shape; the sibling lane stores `state.code()` | the detail carries the two-letter code (`"NH"`), the organisation, the association id, the organisation's school id and the coach-row count |
@@ -3168,6 +3168,39 @@ claim; `Tally` keeps its 32-note cap and the per-org page bound stays `MAX_PAGES
 unverified by execution after this pass: the multi-organisation sweep (the four `--states` in one run),
 the KY/MT/WV coach pages beyond their first school, and the CLI/Restate arms the `census-report` P0
 keeps uncompiled.
+
+### Reviewer fold-in, same day (2026-09-29)
+
+`BlackHatBranchReview` returned five defects against `36cfc8a` (read-only: every claim source-cited,
+nothing executed). All five are folded into this tree:
+
+| Defect | Fold-in |
+|---|---|
+| `cli/provider/arms/mod.rs` re-exported neither `arbiter_orgs_report` nor `coach_directories_report`, so `provider.rs`'s two arms cannot resolve their names (masked by the `census-report` P0) | both names added to the `association_sources` re-export list; not compiler-verified while the P0 stands |
+| `DISPATCHED` listed `coach_directories` and `arbiter_orgs` after the meets/results slugs, so the pinned inventory test in `stages_tests.rs` would fail on two positions | both moved into the teams block, making `DISPATCHED` exactly `TEAMS_ARMS ++ MEETS_ARMS ++ RESULTS_ARMS` |
+| Appendix C's "Rust path" column named PORT-NOW queue groups for IA, MI, NJ, OK and UT as if they were Rust paths, and the NH/MT/WV row still said PORT-NOW although the lane has landed | the row separates the nine states a registered slug reaches from the five queued ones with no slug yet; KY reads `arbiter_orgs` with `ky_khsaa` still queued; the NH/MT/WV row reads `slug`; the column is retitled "Rust path or queued group" |
+| the fixture manifest spelled both filtered coach URLs with a single `&`, while the lane's code, its tests and the prototype's own run record all carry the doubled separator the prototype's base URL produces | both manifest URLs corrected, and the lane README's endpoint line with them; the prototype's own notes keep their single-`&` rendering and are outside this repository |
+| the fix table claimed the token POST used the new `fetch_options` helper, which it does not | corrected above, and the behaviour is now pinned: `the_token_is_never_replayed_from_the_cache` seeds a valid cached POST body and a cached bundle, then asserts the walk still issues the POST (offline, so the run fails naming the token URL) instead of walking from the cache |
+
+The reviewer also noted that `tally.coaches` had no unit assertion; the journal-resume test now asserts
+it. Nothing else the reviewer confirmed changed: the four `(a)`-`(d)` checks, the Farley/Holzman/DDD
+readings and the URL-parity finding stand as recorded above. The stale "OK coach rows are covered by the
+arbiter_orgs slice" line the reviewer quoted lives only in the untracked `target/port-queue.json` scratch
+artifact; the tracked sources (the applicability table, the lane README and this file) already record the
+OK candidate as refuted.
+
+Commands and results at the fold-in tip:
+
+| Command | Observed result |
+|---|---|
+| `cargo test -p census-crawl --lib` | `499 passed; 0 failed` (the arbiter lane is now 25 tests) |
+| `cargo fmt --all -- --check` | no output (clean) |
+| `cargo clippy -p census-crawl --all-targets --all-features --no-deps` | the two pre-existing `type_complexity` warnings at `arbiter/tests.rs:106,137`; no diagnostic from the fold-in |
+
+The two `census-service` corrections stay unverified by execution: that crate still cannot compile here
+because its `census-report` dependency carries the P0 recorded above. Owner commands:
+`cargo check -p census-service` (expect the P0, and no `arbiter_orgs_report` / `coach_directories_report`
+name errors once it clears) and `cargo test -p census-service the_arms_are_the_dispatched_slugs`.
 
 ## Consolidated historical evidence — imported 2026-09-27
 

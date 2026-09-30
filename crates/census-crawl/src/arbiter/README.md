@@ -25,7 +25,7 @@ not read: the lane uses the API hosts only.
   `{data:{total, rows[]}}`; a row carries `publicId`, internal `id`, `name`,
   `phoneNumber`, `enrollmentCount`, and an embedded `primaryContact` with `firstName`,
   `lastName`, `roleName`.
-- Coaches: `GET /legacy/public/{org}/coaches?filter.EntityId={publicId}&pageSize=200&pageNumber={n}`
+- Coaches: `GET /legacy/public/{org}/coaches?filter.EntityId={publicId}&&pageSize=200&pageNumber={n}`
   for one school, or without the filter for the whole organisation. A row carries `firstName`,
   `lastName`, `coachPositionName` (`Head Coach`, `Assistant Coach`, `Associate Head Coach`, …),
   `sportName` (`Cross Country, Boys`, `Track & Field - Indoor, Girls`, …), `levelName`

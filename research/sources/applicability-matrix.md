@@ -318,19 +318,21 @@ DragonFly tenants at `crates/census-crawl/src/coach_directories/mod.rs` (`REGIST
 (b) the PORT-NOW groups in the dispatch queue (`target/port-queue.json`).
 
 Fifteen rows carry a positive coach/AD route: **IA IL KS KY MI MN ND NE NJ OH OK SD TN UT WI**.
-Fourteen of them are reached:
+Nine of those states are reached by a registered Rust slug today, five more are queued as PORT-NOW
+groups with no Rust slug yet, and SD is the accepted gap described below:
 
-| Route state | Rust path |
+| Route state | Rust path or queued group |
 |---|---|
 | IL | slug `ihsa` (API per-school coach/AD + email) |
 | KS | slug `ks` (KSHSAA AD name + email) |
+| KY | slug `arbiter_orgs` (org 2507, 489 schools, 1,603 coach rows); `ky_khsaa` stays queued (PORT-NOW) |
 | MN | slug `mshsl` (6,596 coach rows in the prototype lane) |
 | OH | slug `ohsaa` (myOHSAA) |
 | WI | slug `wiaa` (`GetDirectorySchool`) |
 | ND, NE | slug `plain_names` (NDHSAA / NSAA member directories) |
 | TN | slug `coach_directories`, TSSAA tenant |
-| IA, KY, MI, NJ, OK, UT | PORT-NOW groups `ia_iahsaa`, `ky_khsaa` + `arbiter_orgs`, `mi_mhsaa` + `mi_mitca`, `nj_njsiaa`, `ok_ossaa`, `ut_uhsaa` |
-| NH, MT, WV (route marked N here, Arbiter org exists) | PORT-NOW `arbiter_orgs` |
+| IA, MI, NJ, OK, UT | queued (PORT-NOW groups `ia_iahsaa`, `mi_mhsaa` + `mi_mitca`, `nj_njsiaa`, `ok_ossaa`, `ut_uhsaa`), no Rust slug yet |
+| NH, MT, WV (route marked N here, Arbiter org exists) | slug `arbiter_orgs` (orgs 2132, 4497, 4223) |
 
 **The one uncovered row is SD, and it is an accepted gap for this wave.** The chain is now closed
 with on-disk evidence: SDHSAA publishes no directory of its own — `https://sdhsaa.com/schools` answers

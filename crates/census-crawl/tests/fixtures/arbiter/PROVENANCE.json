@@ -18,7 +18,7 @@
       "fixture": "alvirne_coaches_p1.body",
       "kind": "capture",
       "source_capture": "services.arbitersports.com__3195a42d5eb33e555f9bbd33",
-      "url": "https://services.arbitersports.com/api/v2/legacy/public/2132/coaches?filter.EntityId=450&pageSize=200&pageNumber=1",
+      "url": "https://services.arbitersports.com/api/v2/legacy/public/2132/coaches?filter.EntityId=450&&pageSize=200&pageNumber=1",
       "sha256": "8dffefbfabe6be9880a877c9921ae63056a9092c8e2cd29012214f23898b277e",
       "bytes": 5145,
       "note": "Alvirne High School (publicId 450) coach page: 28 raw rows, 2 surviving the XC/TF filters"
@@ -27,7 +27,7 @@
       "fixture": "coaches_empty.body",
       "kind": "capture",
       "source_capture": "services.arbitersports.com__dce336991e7e18241132ae21",
-      "url": "https://services.arbitersports.com/api/v2/legacy/public/2132/coaches?filter.EntityId=3116&pageSize=200&pageNumber=1",
+      "url": "https://services.arbitersports.com/api/v2/legacy/public/2132/coaches?filter.EntityId=3116&&pageSize=200&pageNumber=1",
       "sha256": "319c5c9a2fdc9509426db217b738abca9b0968c3543dfcb5782c6ad9f3107aa7",
       "bytes": 132,
       "note": "Canaan High School (publicId 3116): an empty coach page exactly as served (total 0)"

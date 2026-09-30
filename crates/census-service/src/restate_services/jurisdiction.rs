@@ -83,12 +83,12 @@ pub(super) const DISPATCHED: &[&str] = &[
     "plain_names",
     "ihsa",
     "ks",
+    "coach_directories",
+    "arbiter_orgs",
     "wiaa_results",
     "wayzata",
     "milesplit",
     "athleticnet",
-    "coach_directories",
-    "arbiter_orgs",
 ];
 
 fn report(
