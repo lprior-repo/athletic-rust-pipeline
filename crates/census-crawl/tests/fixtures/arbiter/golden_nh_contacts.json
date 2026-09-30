@@ -1,0 +1,625 @@
+[
+  {
+    "school": "Alvirne High School",
+    "person": "Justin Hufft",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Bedford High School -NH",
+    "person": "Corey Parker",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Belmont High School - NH",
+    "person": "Cayman Belyea",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Berlin Senior High School",
+    "person": "Craig Melanson",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Bishop Brady High School",
+    "person": "Aaron House",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Bishop Guertin High School",
+    "person": "Ryan Brown",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Bow High School",
+    "person": "Mike Desilets",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Campbell High School",
+    "person": "Anthony Ramos",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Canaan High School",
+    "person": "Matthew Jordan",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Coe-Brown Northwood Academy",
+    "person": "Sam Struthers",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Colebrook Academy",
+    "person": "Ryan Call",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Conant Middle High School",
+    "person": "Heather Linstad",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Concord Christian Academy",
+    "person": "Carrie Smith",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Concord High School",
+    "person": "Stephen Largy",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Contoocook Valley Regional High School",
+    "person": "Amber Brewster",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Dover High School",
+    "person": "Joshua Knight",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Epping Middle and High Schools",
+    "person": "Chris Goldsack",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Exeter High School",
+    "person": "Catherine Clermont",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Fall Mountain Reg High School",
+    "person": "Orion Binney",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Farmington High School-NH",
+    "person": "Kevin Mosher",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Franklin High School",
+    "person": "Andrew Szendre",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Gilford High School",
+    "person": "Rick Acquilano",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Goffstown High School",
+    "person": "Ryan Cowette",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Gorham High School",
+    "person": "Tess Patry",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Groveton High School",
+    "person": "Kelley Brown",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Hanover High School -NH",
+    "person": "Megan Sobel",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Hillsboro-Deering High School",
+    "person": "Joseph Gillett",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Hinsdale High School",
+    "person": "Sam Kilelee",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Hollis Brookline High School",
+    "person": "Brian Bumpus",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Holy Family Academy",
+    "person": "Cindy Lacasse",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Hopkinton High School",
+    "person": "Dan Meserve",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Inter-lakes Middle High School",
+    "person": "Sarah Dumais",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "John Stark Regional High School",
+    "person": "Rodney Brown",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Kearsarge Regional High School",
+    "person": "Taylor Lipinski",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Keene High School",
+    "person": "Michael Atkins",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Kennett High School",
+    "person": "Neal Weaver",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Kingswood Regional HS/MS",
+    "person": "Vaughn Beckwith",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Laconia High School",
+    "person": "Chad Davis",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Lebanon High School",
+    "person": "Ben Davis",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Lin-Wood High School",
+    "person": "Matthew Manning",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Lisbon Regional School",
+    "person": "Sam Natti",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Littleton High School",
+    "person": "Brock Ingalls",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Londonderry High School",
+    "person": "Jimmy Lauzon",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Manchester High School Central",
+    "person": "Christine Pariseau-Telge",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Manchester High School West",
+    "person": "Christine Pariseau-Telge",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Manchester Memorial High School",
+    "person": "Christine Pariseau-Telge",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Mascenic Regional High School",
+    "person": "John Cocozella",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Mascoma Valley Regional High School",
+    "person": "Steve Stebbins",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Merrimack High School",
+    "person": "Adam French",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Merrimack Valley High School",
+    "person": "Kenny Edwards",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Milford High School",
+    "person": "Don Gutterson",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Monadnock Regional Middle High School",
+    "person": "Shannon Topa",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Moultonborough Academy",
+    "person": "Chris Wood",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Mount Royal Academy",
+    "person": "Brandon Crummer",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Nashua High School North",
+    "person": "Lisa Gingras",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Nashua High School South",
+    "person": "Lisa Gingras",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Newfound Regional High School",
+    "person": "Jacob Tivey",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Newmarket Middle-High School",
+    "person": "Jamie Hayes",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Newport Middle/High School",
+    "person": "Jeff Miller",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Nute Middle/High School",
+    "person": "Fred Wentworth",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Oyster River High School",
+    "person": "Andy Lathrop",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Pelham High School",
+    "person": "Michael Soucy",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Pembroke Academy",
+    "person": "Fred Vezina",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Pinkerton Academy",
+    "person": "Brian O'Reilly",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Pittsburg High School",
+    "person": "Matthew Jordan",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Pittsfield Middle High School",
+    "person": "Jay Darrah",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Plymouth Regional High School",
+    "person": "Todd Austin",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Portsmouth Christian Academy",
+    "person": "Derek Summers",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Portsmouth High School",
+    "person": "Tom Kozikowski",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Profile School",
+    "person": "Dylan Robie",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Prospect Mountain High School",
+    "person": "James Christie",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Raymond High School",
+    "person": "Jeremy Gaudet",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Salem High School",
+    "person": "Brent Whittaker",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Sanborn Regional High School",
+    "person": "Ryan Browner",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Somersworth High School",
+    "person": "Peter Wotton",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Souhegan High School",
+    "person": "Kelli Braley",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Spaulding High School",
+    "person": "Sheila Colson",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "St. Thomas Aquinas High School",
+    "person": "Dave Morissette",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Stevens High School",
+    "person": "Doug Beaupre",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Sunapee Middle High School",
+    "person": "THOMAS FREDERICK",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "The Derryfield School",
+    "person": "Chris Hettler",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Timberlane Regional Middle/High School",
+    "person": "Angelo Fantasia",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Trinity High School",
+    "person": "Michael Connell",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "White Mountains Regional High School",
+    "person": "Kerry Brady",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Wilton-Lyndeborough Coop High",
+    "person": "Cam Cook",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Windham High School",
+    "person": "Jon Hall",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Winnacunnet High School",
+    "person": "Aaron Abood",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Winnisquam Regional High School",
+    "person": "Ian Snowdeal",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  },
+  {
+    "school": "Woodsville High School",
+    "person": "Lori Taylor",
+    "sport": "AthleticDirector",
+    "role": "AthleticDirector",
+    "gender": ""
+  }
+]

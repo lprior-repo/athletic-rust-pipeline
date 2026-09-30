@@ -5,9 +5,9 @@
 
 | Need | Canonical reference |
 |---|---|
-| Gate lanes, development/release semantics and required evidence | [TESTING.md](../TESTING.md) |
+| Gate lanes, development/release semantics and required evidence | [gate.sh](gate.sh), [xtask/README.md](../xtask/README.md) |
 | Developer command syntax and measurement behavior | [xtask/README.md](../xtask/README.md) |
-| Benchmark baseline/comparison procedures | [PERFORMANCE.md](../PERFORMANCE.md) |
+| Benchmark baseline/comparison procedures | [xtask measurement reference](../xtask/README.md#measurement-and-fixture-boundaries) |
 | Native fault harness setup/invocation | [durability/README.md](durability/README.md) |
 | Seventeen required faults and phase-boundary oracles | [NATIONAL-CENSUS-FAULTS.md](../docs/NATIONAL-CENSUS-FAULTS.md) |
 | Actual dated command outcomes | [VERIFICATION-EVIDENCE.md](../docs/VERIFICATION-EVIDENCE.md) |

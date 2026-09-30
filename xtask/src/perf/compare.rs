@@ -1,12 +1,9 @@
 use super::env;
-use super::{GroupMeasurement, PerfBaseline};
-use anyhow::{bail, Result};
+use super::{GroupMeasurement, PerfBaseline, Throughput};
+use anyhow::{bail, Context, Result};
 use std::collections::BTreeMap;
 
-pub fn check_environment(
-    baseline: &PerfBaseline,
-    _current_data: &BTreeMap<String, GroupMeasurement>,
-) -> Result<()> {
+pub fn check_environment(baseline: &PerfBaseline) -> Result<()> {
     let current_meta = env::build_meta()?;
 
     let mut env_warnings = Vec::new();
@@ -28,9 +25,15 @@ pub fn check_environment(
             baseline.metadata.rustc, current_meta.rustc
         ));
     }
+    if baseline.metadata.corpus_lines != current_meta.corpus_lines {
+        env_warnings.push(format!(
+            "Corpus size mismatch: baseline={} current={}",
+            baseline.metadata.corpus_lines, current_meta.corpus_lines
+        ));
+    }
 
     if !env_warnings.is_empty() {
-        println!("\nEnvironment differences detected (throughput comparison may be invalid):");
+        println!("\nEnvironment differences detected (comparison may be invalid):");
         for w in &env_warnings {
             println!("  {w}");
         }
@@ -38,7 +41,16 @@ pub fn check_environment(
             "\nbaseline sha: {}  current sha: {}",
             baseline.metadata.sha, current_meta.sha
         );
-        println!("sha is reported but not required to match");
+    }
+    Ok(())
+}
+
+pub fn validate_tolerance(tolerance: f64) -> Result<()> {
+    if !tolerance.is_finite() {
+        bail!("tolerance is not finite ({tolerance})");
+    }
+    if !(0.0..1.0).contains(&tolerance) {
+        bail!("tolerance must be in [0, 1) range ({tolerance})");
     }
     Ok(())
 }
@@ -48,114 +60,163 @@ pub fn check_throughput(
     current_data: &BTreeMap<String, GroupMeasurement>,
     tolerance: f64,
 ) -> Result<()> {
-    if current_data.is_empty() {
-        bail!("perf check: current run produced no groups; cannot compare against baseline");
+    validate_tolerance(tolerance)?;
+    if baseline.groups.is_empty() || current_data.is_empty() {
+        bail!("baseline and current must contain benchmarks");
     }
-
-    let mut max_delta: f64 = 0.0;
-    let mut failures = Vec::new();
-
-    for (group, current) in current_data {
-        let delta = check_group(&baseline.groups, group, current, tolerance);
-        if let Some(d) = delta.max_delta {
-            max_delta = max_delta.max(d);
-        }
-        if let Some(f) = delta.failure {
-            failures.push(f);
-        }
-    }
-
-    for baseline_group in baseline.groups.keys() {
-        if !current_data.contains_key(baseline_group) {
-            failures.push(format!(
-                "{baseline_group}: present in baseline but absent from current run"
-            ));
-        }
-    }
-
+    validate_ids_match(baseline, current_data)?;
+    validate_metrics(baseline, current_data)?;
+    let failures = compare_measurements(baseline, current_data, tolerance)?;
     if !failures.is_empty() {
         println!("\nperf check: {} issue(s) detected", failures.len());
-        for f in &failures {
-            println!("  {f}");
+        for failure in failures {
+            println!("  {failure}");
         }
-        bail!(
-            "perf check: regression or missing data detected (max delta {:.2}%)",
-            max_delta * 100.0
-        );
+        bail!("perf check: regression detected");
     }
-
     println!("\nperf check: no regression detected");
     Ok(())
 }
 
-fn compute_delta(
-    group: &str,
-    baseline: Option<f64>,
-    current: Option<f64>,
-) -> Result<Option<(f64, f64, f64)>, String> {
-    let (Some(old), Some(new)) = (baseline, current) else {
-        return Ok(None);
-    };
-    if !old.is_finite() {
-        return Err(format!(
-            "{group}: baseline throughput is non-finite ({old})"
-        ));
-    }
-    if !new.is_finite() {
-        return Err(format!("{group}: current throughput is non-finite ({new})"));
-    }
-    let d = (old - new) / old;
-    Ok(Some((d, old, new)))
-}
-
-fn check_group<'a>(
-    groups: &'a BTreeMap<String, GroupMeasurement>,
-    group: &str,
-    current: &'a GroupMeasurement,
+fn compare_measurements(
+    baseline: &PerfBaseline,
+    current_data: &BTreeMap<String, GroupMeasurement>,
     tolerance: f64,
-) -> GroupCheckResult {
-    println!("group: {group}");
+) -> Result<Vec<String>> {
+    let mut failures = Vec::new();
+    for (id, current) in current_data {
+        let baseline = baseline
+            .groups
+            .get(id)
+            .context("validated benchmark ID disappeared")?;
+        if let Comparison::Exceeded(delta) = check_benchmark(id, baseline, current, tolerance)? {
+            failures.push(format!("{id}: regression by {:.2}%", delta * 100.0));
+        }
+    }
+    Ok(failures)
+}
 
-    let Some(baseline) = groups.get(group) else {
-        return GroupCheckResult {
-            max_delta: None,
-            failure: Some(format!(
-                "{group}: baseline has no measurement for this group — run `perf record` first"
-            )),
-        };
-    };
-    let mut failure: Option<String> = None;
-    let delta = match compute_delta(group, baseline.throughput, current.throughput) {
-        Ok(Some((d, old, new))) => {
-            println!("  throughput: {:.2}%", d * 100.0);
-            if d > tolerance {
-                failure = Some(format!(
-                    "{group}: throughput regressed by {:.2}% ({:.0} vs {:.0} elem/s)",
-                    d * 100.0,
-                    new,
-                    old,
-                ));
-            }
-            Some((d, old, new))
-        }
-        Ok(None) => {
-            println!("  throughput: not declared in benchmark target (skip)");
-            None
-        }
-        Err(e) => {
-            failure = Some(e);
-            None
-        }
-    };
-    println!("  wall_time: {:.3}s", current.wall_time_seconds);
+fn validate_ids_match(
+    baseline: &PerfBaseline,
+    current_data: &BTreeMap<String, GroupMeasurement>,
+) -> Result<()> {
+    let mut failures = Vec::new();
 
-    GroupCheckResult {
-        max_delta: delta.map(|(d, _, _)| d),
-        failure,
+    for id in baseline.groups.keys() {
+        if !current_data.contains_key(id) {
+            failures.push(format!("missing benchmark in current: {id}"));
+        }
+    }
+
+    for id in current_data.keys() {
+        if !baseline.groups.contains_key(id) {
+            failures.push(format!("unexpected benchmark in current: {id}"));
+        }
+    }
+
+    if !failures.is_empty() {
+        for f in &failures {
+            println!("  {f}");
+        }
+        bail!("benchmark ID mismatch between baseline and current");
+    }
+
+    Ok(())
+}
+
+fn validate_metrics(
+    baseline: &PerfBaseline,
+    current_data: &BTreeMap<String, GroupMeasurement>,
+) -> Result<()> {
+    for (id, measurement) in baseline.groups.iter() {
+        validate_measurement(id, measurement, "baseline")?;
+    }
+
+    for (id, measurement) in current_data.iter() {
+        validate_measurement(id, measurement, "current")?;
+    }
+
+    Ok(())
+}
+
+fn validate_measurement(id: &str, measurement: &GroupMeasurement, source: &str) -> Result<()> {
+    if !measurement.wall_time_seconds.is_finite() {
+        bail!(
+            "{source} {id}: wall time is not finite ({})",
+            measurement.wall_time_seconds
+        );
+    }
+    if measurement.wall_time_seconds <= 0.0 {
+        bail!(
+            "{source} {id}: wall time is not positive ({})",
+            measurement.wall_time_seconds
+        );
+    }
+
+    if let Some(throughput) = measurement.throughput {
+        let throughput = throughput.value();
+        if !throughput.is_finite() {
+            bail!("{source} {id}: throughput is not finite ({throughput})");
+        }
+        if throughput <= 0.0 {
+            bail!("{source} {id}: throughput is not positive ({throughput})");
+        }
+    }
+
+    Ok(())
+}
+
+enum Comparison {
+    Accepted,
+    Exceeded(f64),
+}
+
+fn check_benchmark(
+    id: &str,
+    baseline: &GroupMeasurement,
+    current: &GroupMeasurement,
+    tolerance: f64,
+) -> Result<Comparison> {
+    match (baseline.throughput, current.throughput) {
+        (Some(Throughput::Elements(old)), Some(Throughput::Elements(new))) => {
+            Ok(compare_rate(id, "elements/s", old, new, tolerance))
+        }
+        (Some(Throughput::Bytes(old)), Some(Throughput::Bytes(new))) => {
+            Ok(compare_rate(id, "bytes/s", old, new, tolerance))
+        }
+        (Some(_), Some(_)) => bail!("{id}: throughput unit changed between elements and bytes"),
+        (None, None) => Ok(compare_timing(
+            id,
+            baseline.wall_time_seconds,
+            current.wall_time_seconds,
+            tolerance,
+        )),
+        _ => bail!("{id}: throughput presence changed"),
     }
 }
 
-struct GroupCheckResult {
-    max_delta: Option<f64>,
-    failure: Option<String>,
+fn compare_rate(id: &str, unit: &str, baseline: f64, current: f64, tolerance: f64) -> Comparison {
+    let delta = (baseline - current) / baseline;
+    println!(
+        "  {id}: baseline {baseline:.0} {unit}, current {current:.0} {unit}, delta {:.2}%",
+        delta * 100.0
+    );
+    if current < baseline * (1.0 - tolerance) {
+        Comparison::Exceeded(delta)
+    } else {
+        Comparison::Accepted
+    }
+}
+
+fn compare_timing(id: &str, baseline: f64, current: f64, tolerance: f64) -> Comparison {
+    let delta = (current - baseline) / baseline;
+    println!(
+        "  {id}: baseline {baseline:.9}s, current {current:.9}s, delta {:.2}%",
+        delta * 100.0
+    );
+    if current > baseline * (1.0 + tolerance) {
+        Comparison::Exceeded(delta)
+    } else {
+        Comparison::Accepted
+    }
 }

@@ -1,7 +1,7 @@
 # Export architecture — historical proposal record
 
 This file is not an architecture owner. The accepted decision and its binding consequences are
-[ADR-015](adr/ADR-015-export-derivation-single-home.md); current APIs are described by the crate
+[ADR-019](adr/ADR-019-export-derivation-single-home.md); current APIs are described by the crate
 reference and [ARCHITECTURE.md](../ARCHITECTURE.md). What remains here is the measurement that
 motivated the change, kept because the delivery loop cites it.
 
@@ -24,7 +24,8 @@ scan was also a second place where scope, cohort and evidence rules could drift.
 ## What replaced it
 
 One `ExportDataset::load(store)` per run, one `Derivation::of(&dataset, scope, grad_year)` per
-(scope, cohort), and consumers that take those by reference. No consumer
-applies scope, cohort, jurisdiction or core-evidence filtering itself, and no consumer scans the
-store for rows. See [ADR-015](adr/ADR-015-export-derivation-single-home.md) for the decision and
-[PERFORMANCE.md](../PERFORMANCE.md) for how the cost of a run is measured and recorded.
+(scope, cohort), and consumers that take those by reference. Consumers do not repeat derivation
+filtering, except for Coverage's documented administrative jurisdiction view; no consumer scans the
+store for rows. See [ADR-019](adr/ADR-019-export-derivation-single-home.md) for the decision and
+[xtask measurement procedures](../xtask/README.md#measurement-and-fixture-boundaries) for measurement,
+with dated results in [VERIFICATION-EVIDENCE.md](VERIFICATION-EVIDENCE.md).

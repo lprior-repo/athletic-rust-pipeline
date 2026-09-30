@@ -25,6 +25,6 @@ The application owns key design, transactional receipts, durability, bounded rea
 A live read snapshot is not a restartable backup. Single-process database ownership does not mean
 all in-process readers must stop while writes occur.
 
-[FJALL_SCHEMA.md](../../FJALL_SCHEMA.md) is the sole physical schema/API reference;
+[The table registry](../../crates/census-store/src/table.rs) owns implemented tables and keyspaces;
 [backup procedures](../FJALL_BACKUP.md) own backup/restore operations. Keyspace counts, source-line
 inventories and benchmark results are deliberately not duplicated in this decision.

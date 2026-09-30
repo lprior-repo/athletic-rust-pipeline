@@ -26,11 +26,11 @@ ExecStart=/opt/athletic-rust-pipeline/releases/%i/bin/census-serve \
   --drain-timeout 30
 Restart=on-failure
 RestartSec=5
-# The endpoint is journaled by the node, so a crash resumes at the last recorded step and the drain
-# certificate is printed on a clean SIGTERM. TimeoutStopSec must exceed --drain-timeout or systemd
-# SIGKILLs mid-drain and the certificate is lost.
+# The deadline is an async grace period. Started blocking effects must finish before the store
+# is flushed and the drain certificate is emitted; a service-manager timeout must not kill them.
 KillSignal=SIGTERM
-TimeoutStopSec=60
+TimeoutStopSec=infinity
+SendSIGKILL=no
 StandardOutput=append:/var/log/census-service/%i/serve.log
 StandardError=append:/var/log/census-service/%i/serve.err.log
 StateDirectory=census-service/%i

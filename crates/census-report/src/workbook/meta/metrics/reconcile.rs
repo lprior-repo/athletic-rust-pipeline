@@ -17,22 +17,22 @@ pub(super) fn reconciliation(
         ("Coaches", rows.coaches.len(), census.totals.coaches),
         (
             "Coaches with a published email",
-            super::counters::count_coaches_with_email(&rows.coaches),
+            super::counters::count_coaches_with_email(rows.coaches),
             census.totals.coaches_with_email,
         ),
         (
             "Class-of-2027 athletes",
-            super::counters::count_co2027(&rows.athletes),
+            super::counters::count_co2027(rows.athletes),
             census.totals.class_of_2027,
         ),
         (
             "Class-of-2027 athletes with grade evidence",
-            super::counters::count_grade_evidence(&rows.athletes),
+            super::counters::count_grade_evidence(rows.athletes),
             census.totals.class_of_2027_with_grad_year_evidence,
         ),
         (
             "Meets naming an Athletic.net id",
-            super::counters::count_athletic_net_meets(&rows.meets),
+            super::counters::count_athletic_net_meets(rows.meets),
             census.meets.with_athletic_net_id,
         ),
         (

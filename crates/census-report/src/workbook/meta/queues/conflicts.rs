@@ -50,7 +50,7 @@ fn cohort_conflict(athlete: &CanonicalAthlete) -> Option<String> {
 
 pub(super) fn contact_conflicts(rows: &StoreRows, names: &HashMap<&str, &str>) -> Family {
     let mut family = Family::new(CONTACT_CONFLICT);
-    for disagreement in disagreements(&rows.coaches, rows.school_year) {
+    for disagreement in disagreements(rows.coaches, rows.school_year) {
         let subject = subject_of(
             school_of(names, disagreement.school.as_str()).unwrap_or(disagreement.school.as_str()),
             None,

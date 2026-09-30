@@ -86,3 +86,12 @@ pub fn parse_role(label: &str) -> Option<CoachRole> {
     }
     None
 }
+
+pub fn parse_gender(raw: &str) -> Gender {
+    match raw.trim().to_lowercase().as_str() {
+        "male" | "boy" => Gender::Boys,
+        "female" | "girl" => Gender::Girls,
+        "non-binary" | "nonbinary" | "nb" | "mixed" => Gender::Mixed,
+        _ => Gender::Unknown,
+    }
+}

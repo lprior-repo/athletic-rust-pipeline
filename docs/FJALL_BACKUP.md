@@ -17,6 +17,10 @@ opens the staged copy for count validation, writes `backup.json` with file lengt
 counts, and publishes the staged generation. Nonregular objects such as symlinks are refused.
 `Store::restore` checks the manifest/files and restored counts before promoting into its destination.
 Use a new destination for a drill; never restore over a served root.
+Restore rejects a symlink backup root or manifest, and checks every intermediate component and final
+file named by the manifest before staging and again before copying. These metadata checks reject a
+static symlink escape, not a malicious concurrent path-replacement race: keep the cold backup tree
+owned and immutable throughout restore.
 
 Native Restate's durable directory is **separate** and not included. Nor are arbitrary external raw
 capture paths. Inventory every referenced evidence object and run/decision/artifact manifest before

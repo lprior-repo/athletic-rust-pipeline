@@ -21,5 +21,6 @@ not proof that two source subjects are the same person.
 
 Adapters preserve raw tokens and context; deterministic domain rules interpret them. Neither the
 current clock nor a source query filter may silently establish graduation evidence. The current
-`GradYear`, `Grade`, `SchoolYear` and `ObservedGrade` representation and its limitations are described
-in [DOMAIN.md](../../DOMAIN.md), without a second illustrative wire schema here.
+`GradYear`, `Grade`, `SchoolYear` and `ObservedGrade` are implemented in `census-domain`;
+[Architecture §9](../../ARCHITECTURE.md#9-target-data-and-publication-contracts) owns the required
+semantics, without a second illustrative wire schema here.

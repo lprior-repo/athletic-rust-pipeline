@@ -16,5 +16,5 @@ it within the run. Historical counts, receipts and seals cannot establish fresh-
 
 The preservation obligation still applies to existing stores and artifacts. This decision does not
 assert that a current legacy-import CLI exists or authorize automatic conversion on startup.
-[FJALL_SCHEMA.md](../../FJALL_SCHEMA.md) owns actual schema behavior, including explicit historical
-shapes; [backup procedures](../FJALL_BACKUP.md) own safe restore and validation.
+[The table registry](../../crates/census-store/src/table.rs) owns implemented storage;
+[backup procedures](../FJALL_BACKUP.md) own historical-shape handling and safe restore/validation.

@@ -177,10 +177,13 @@ lane_tests() {
   fi
 }
 lane_bench_presence() {
-  if [ -d benches ] || [ -d crates/census-service/benches ]; then
+  local targets
+  targets="$(cargo metadata --no-deps --format-version 1 | jq '[.packages[].targets[] | select(.kind | index("bench"))] | length')" || return 1
+  if [ "$targets" -gt 0 ]; then
     cargo bench --workspace --no-run
   else
-    printf 'no benchmark target exists yet: performance claims stay blocked until Phase 6 adds one\n'
+    printf 'no benchmark target exists: performance acceptance is blocked\n'
+    if [ "$RELEASE" = 1 ]; then return 1; fi
     return 0
   fi
 }
@@ -239,6 +242,7 @@ main() {
 
   run_lane fmt lane_fmt
   run_lane "zero code comments" cargo run -q -p xtask -- comments
+  run_lane "architecture contract" cargo run -q -p xtask -- contract
   run_lane check lane_check
   run_lane doc lane_doc
   run_lane tests lane_tests
@@ -331,6 +335,9 @@ main() {
   run_tool_lane cargo-geiger geiger lane_geiger
   run_tool_lane cargo-hack "feature powerset" lane_hack
   run_lane "bench presence" lane_bench_presence
+  if [ "$FULL" = 1 ] || [ "$RELEASE" = 1 ]; then
+    run_tool_lane cargo-kani "mandatory proof kernels" cargo run -q -p xtask -- kani
+  fi
   if [ "$FULL" = 1 ]; then
     run_lane perf lane_perf
     run_tool_lane cargo-mutants mutants lane_mutants

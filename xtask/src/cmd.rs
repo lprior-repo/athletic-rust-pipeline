@@ -75,7 +75,7 @@ impl Cmd {
         String::from_utf8(output.stdout)
             .with_context(|| format!("`{rendered}` wrote output that is not UTF-8"))
     }
-    pub fn capture(self) -> Result<(String, String)> {
+    pub fn capture(self) -> Result<(std::process::ExitStatus, String, String)> {
         let rendered = self.render();
         eprintln!("+ {rendered}");
         let output = Command::new(&self.program)
@@ -87,7 +87,7 @@ impl Cmd {
             .with_context(|| format!("`{rendered}` wrote stdout that is not UTF-8"))?;
         let stderr = String::from_utf8(output.stderr)
             .with_context(|| format!("`{rendered}` wrote stderr that is not UTF-8"))?;
-        Ok((stdout, stderr))
+        Ok((output.status, stdout, stderr))
     }
 }
 

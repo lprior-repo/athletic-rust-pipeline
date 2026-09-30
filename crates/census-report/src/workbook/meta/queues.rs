@@ -142,7 +142,7 @@ pub(super) fn conflict_families(
     vec![
         cohort_evidence(cohort, names),
         athlete_identity(cohort, names),
-        school_identity(&rows.schools),
+        school_identity(rows.schools),
         contact_conflicts(rows, names),
     ]
 }
@@ -155,8 +155,8 @@ pub(super) fn review_families(
     Ok(vec![
         cohort_unverified(cohort, names),
         identity_unverified(rows, cohort, names)?,
-        unresolved_venues(&rows.meets),
-        unresolved_schools(&rows.schools),
+        unresolved_venues(rows.meets),
+        unresolved_schools(rows.schools),
     ])
 }
 
@@ -188,7 +188,7 @@ pub fn retained_records(dataset: &crate::export::ExportDataset) -> ReportResult<
     let derivation = crate::report::Derivation::of(dataset, Scope::AllSources, None);
     let rows = StoreRows::of(&derivation, school_year)?;
     let cohort = cohort_of(dataset, Scope::AllSources);
-    let names = school_name_index(&rows.schools);
+    let names = school_name_index(rows.schools);
     Ok(RetainedRecords {
         conflicts: labelled(conflict_families(&rows, &cohort, &names)),
         reviews: labelled(review_families(&rows, &cohort, &names)?),

@@ -114,7 +114,7 @@ pub(super) fn admissions() -> Result<Check> {
     Ok(Check::violated(5, NAME, detail, failures))
 }
 
-const NON_ADAPTERS: [(&str, &str); 13] = [
+const NON_ADAPTERS: [(&str, &str); 14] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
@@ -122,6 +122,10 @@ const NON_ADAPTERS: [(&str, &str); 13] = [
     ("compiled", "parses the `Compiled` timer export family"),
     ("hytek", "parses Hy-Tek Meet Manager result files"),
     ("raceday", "parses RaceDay Scoring result exports"),
+    (
+        "row_hygiene",
+        "shared person, school, vendor and varsity admission rules; no source origin",
+    ),
     (
         "result_file",
         "the result-file domain model every vendor parser shares",
