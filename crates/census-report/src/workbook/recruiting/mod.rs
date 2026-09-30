@@ -13,6 +13,7 @@ mod contact;
 mod dataset;
 mod facts;
 mod profiles;
+mod prs;
 
 #[cfg(test)]
 mod tests;
@@ -41,6 +42,17 @@ impl Recruiting {
             athletes::TITLE,
             athletes::sheet(&self.dataset)?,
             &athletes::WIDTHS,
+            true,
+        )
+    }
+
+    pub(super) fn write_prs(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
+        write_sheet(
+            book,
+            path,
+            prs::TITLE,
+            prs::sheet(&self.dataset.prs)?,
+            &prs::WIDTHS,
             true,
         )
     }

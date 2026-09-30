@@ -198,6 +198,7 @@ pub fn collect_error(error: CrawlError) -> JobError {
         },
         CrawlError::Schema { .. }
         | CrawlError::Decode { .. }
+        | CrawlError::Canonical { .. }
         | CrawlError::Domain(..)
         | CrawlError::Arithmetic { .. }
         | CrawlError::Io { .. }

@@ -52,6 +52,16 @@ pub const KNOWN_HARNESS: &[HarnessInfo] = &[
         manifest_path: "crates/census-domain/Cargo.toml",
     },
     HarnessInfo {
+        name: "check_escaped_payload_carries_no_record_separator",
+        package: "census-domain",
+        manifest_path: "crates/census-domain/Cargo.toml",
+    },
+    HarnessInfo {
+        name: "check_escaping_is_injective",
+        package: "census-domain",
+        manifest_path: "crates/census-domain/Cargo.toml",
+    },
+    HarnessInfo {
         name: "check_published_email_printable_ascii_contract",
         package: "census-domain",
         manifest_path: "crates/census-domain/Cargo.toml",

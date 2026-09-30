@@ -6,6 +6,7 @@ use std::fmt;
 use std::marker::PhantomData;
 
 mod athlete;
+mod canonical_json;
 mod classification;
 mod coach;
 mod cohort;
@@ -31,9 +32,9 @@ mod provenance;
 mod records;
 mod review;
 mod school;
-mod serialization_digest;
 
 pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
+pub use canonical_json::{serialized_digest, CanonicalJsonError};
 pub use classification::{CanonicalTeam, CompetitionLevel, Gender, Sport};
 pub use coach::{CanonicalCoach, CoachRole};
 pub use cohort::{GradYear, Grade, ObservedGrade, SchoolYear};
@@ -50,6 +51,7 @@ pub use contact_tenure::{
 pub use event_ontology::{EventKind, SourceEventLabel};
 pub use event_performance::{CanonicalEvent, CanonicalPerformance, Mark, TimingMethod};
 pub use fixed_mark::{CentiMetres, CentiPoints, CentiSeconds};
+pub(crate) use identifiers::write_escaped;
 pub use identifiers::{
     tag, AthleteCandidateId, AthleteId, AthleteIndexId, CoachId, EventId, Id, IdTag, MeetId,
     PerformanceId, SchoolId, TeamId,
@@ -83,7 +85,6 @@ pub use review::{
     ReviewVerdictRecord, VerdictBatch,
 };
 pub use school::CanonicalSchool;
-pub use serialization_digest::serialized_digest;
 
 #[cfg(test)]
 #[path = "model_tests.rs"]

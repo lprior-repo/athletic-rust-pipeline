@@ -1,35 +1,90 @@
 use crate::hytek;
 use crate::result_file::ParsedRow;
-use census_domain::model::{EventKind, Grade, Mark};
+use census_domain::model::{EventKind, Mark};
 
-pub(super) const PLACE_START: usize = 0;
+const PLACE_START: usize = 0;
 const PLACE_WIDTH: usize = 4;
-pub(super) const NAME_START: usize = 5;
-const NAME_WIDTH: usize = 25;
-const GRADE_START: usize = 31;
+const NAME_START: usize = 5;
 const GRADE_WIDTH: usize = 2;
-const TEAM_START: usize = 34;
-const TEAM_WIDTH: usize = 40;
-pub(super) const MARK_START: usize = 75;
 const MARK_WIDTH: usize = 9;
-const HEAT_START: usize = 90;
 const HEAT_WIDTH: usize = 2;
-pub(super) const MARK_SEPARATOR: usize = 74;
-const MAX_GRADE: u8 = 12;
 
-pub(super) fn row_candidate(line: &str) -> Option<Cells<'_>> {
-    let mark = cell(line, MARK_START, MARK_WIDTH)?;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Layout {
+    Ohio,
+    NC,
+}
+
+impl Layout {
+    fn name_width(&self) -> usize {
+        match self {
+            Layout::Ohio => 25,
+            Layout::NC => 21,
+        }
+    }
+
+    fn grade_start(&self) -> usize {
+        match self {
+            Layout::Ohio => 31,
+            Layout::NC => 26,
+        }
+    }
+
+    fn team_start(&self) -> usize {
+        match self {
+            Layout::Ohio => 34,
+            Layout::NC => 29,
+        }
+    }
+
+    fn team_width(&self) -> usize {
+        match self {
+            Layout::Ohio => 40,
+            Layout::NC => 23,
+        }
+    }
+
+    fn mark_start(&self) -> usize {
+        match self {
+            Layout::Ohio => 75,
+            Layout::NC => 52,
+        }
+    }
+
+    fn heat_start(&self) -> usize {
+        match self {
+            Layout::Ohio => 90,
+            Layout::NC => 63,
+        }
+    }
+}
+
+pub(super) fn detect_layout(block: &str) -> Layout {
+    for line in block.lines() {
+        if line.trim_start().starts_with("====") {
+            return if line.trim().len() < 80 {
+                Layout::NC
+            } else {
+                Layout::Ohio
+            };
+        }
+    }
+    Layout::Ohio
+}
+
+pub(super) fn row_candidate(line: &str, layout: Layout) -> Option<Cells<'_>> {
+    let mark = cell(line, layout.mark_start(), MARK_WIDTH)?;
     if mark.trim().is_empty() {
         return None;
     }
     Some(Cells {
         place: cell(line, PLACE_START, PLACE_WIDTH),
-        name: cell(line, NAME_START, NAME_WIDTH),
-        grade: cell(line, GRADE_START, GRADE_WIDTH),
-        team: cell(line, TEAM_START, TEAM_WIDTH),
+        name: cell(line, NAME_START, layout.name_width()),
+        grade: cell(line, layout.grade_start(), GRADE_WIDTH),
+        team: cell(line, layout.team_start(), layout.team_width()),
         mark,
-        heat: cell(line, HEAT_START, HEAT_WIDTH),
-        separator: cell(line, MARK_SEPARATOR, 1),
+        heat: cell(line, layout.heat_start(), HEAT_WIDTH),
+        separator: cell(line, layout.mark_start() - 1, 1),
     })
 }
 
@@ -56,13 +111,13 @@ pub(super) fn build_row(cells: &Cells<'_>, kind: &EventKind) -> Option<ParsedRow
         .map(str::trim)
         .and_then(|value| value.parse::<u16>().ok());
     let name = cells.name.map(str::trim).unwrap_or_default();
-    if place.is_none() || name.is_empty() {
+    if name.is_empty() {
         return None;
     }
     Some(ParsedRow {
         place,
         name: name.to_string(),
-        grade: cells.grade.map(str::trim).and_then(grade_of),
+        grade: cells.grade.map(str::trim).and_then(hytek::grade_from_token),
         school: cells.team.map(str::trim).unwrap_or_default().to_string(),
         mark: mark_of(mark, kind),
         wind_mps: None,
@@ -74,11 +129,6 @@ pub(super) fn build_row(cells: &Cells<'_>, kind: &EventKind) -> Option<ParsedRow
         points: None,
         legs: Vec::new(),
     })
-}
-
-fn grade_of(value: &str) -> Option<Grade> {
-    let parsed = value.parse::<u8>().ok()?;
-    (parsed <= MAX_GRADE).then_some(parsed).and_then(Grade::new)
 }
 
 fn mark_of(value: &str, kind: &EventKind) -> Mark {

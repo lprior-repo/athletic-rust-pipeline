@@ -7,3 +7,6 @@ mod kani_publish;
 
 #[path = "id_mint.rs"]
 mod kani_id_mint;
+
+#[path = "framing.rs"]
+mod kani_framing;

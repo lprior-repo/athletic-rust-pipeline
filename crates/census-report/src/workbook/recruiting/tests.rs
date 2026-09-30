@@ -409,6 +409,7 @@ fn written_scope(
     let path = fixture.dir.path().join("recruiting.xlsx");
     let mut book = Workbook::new();
     projection.write_athletes(&mut book, &path).unwrap();
+    projection.write_prs(&mut book, &path).unwrap();
     projection.write_coaches(&mut book, &path).unwrap();
     book.save(&path).unwrap();
     (open_workbook(&path).unwrap(), path)
@@ -425,6 +426,12 @@ fn text(range: &Range<Data>, row: usize, column: usize) -> String {
 
 fn row_of(range: &Range<Data>, key: &str) -> usize {
     row_where(range, |row| text(range, row, 0) == key)
+}
+
+fn row_of_event(range: &Range<Data>, athlete: &str, event: &str) -> usize {
+    row_where(range, |row| {
+        text(range, row, 0) == athlete && text(range, row, 7) == event
+    })
 }
 
 fn column_of(range: &Range<Data>, header: &str) -> usize {
@@ -448,12 +455,12 @@ fn sheet(book: &mut Xlsx<std::io::BufReader<std::fs::File>>, name: &str) -> Rang
 }
 
 #[test]
-fn the_two_recruiting_sheets_are_named_after_the_objective() {
+fn the_three_recruiting_sheets_are_named_after_the_objective() {
     let fixture = fixture();
     let (book, path) = written(&fixture);
     let mut names = book.sheet_names().to_vec();
     names.sort();
-    assert_eq!(names, vec!["Athletes", "Coaches"]);
+    assert_eq!(names, vec!["Athletes", "Coaches", "PRs"]);
     assert!(path.exists());
 }
 
@@ -557,6 +564,79 @@ fn canonical_aliases_publish_one_athlete_row_and_attribute_the_members_marks() {
         text(&range, row, column_of(&range, "Headline PR summary")).contains("48.55"),
         "the member's best mark is attributed to the canonical athlete"
     );
+}
+
+#[test]
+fn the_prs_sheet_retains_shared_winners_units_dates_and_provenance() {
+    let fixture = fixture();
+    let (mut book, _) = written(&fixture);
+    let range = sheet(&mut book, "PRs");
+
+    let dataset = crate::export::ExportDataset::load(&fixture.store).unwrap();
+    let canonical = bests::build_from_dataset(
+        &dataset,
+        &bests::Options {
+            scope: Scope::Core,
+            grad_year: Some(2027),
+            limit: None,
+        },
+    );
+    assert_eq!(
+        range.height() - 1,
+        canonical.len(),
+        "one row per core-scope athlete/event"
+    );
+
+    let sprint = row_of_event(&range, fixture.julian.as_str(), "Track400m");
+    assert_eq!(text(&range, sprint, 1), "Julian Aguilera");
+    assert_eq!(text(&range, sprint, 2), "Boys");
+    assert_eq!(text(&range, sprint, 3), "Abbotsford");
+    assert_eq!(text(&range, sprint, 4), "WI");
+    assert_eq!(text(&range, sprint, 5), "2027");
+    assert_eq!(text(&range, sprint, 6), "Track");
+    assert_eq!(
+        text(&range, sprint, 9),
+        "48.55",
+        "the fastest of the three marks"
+    );
+    assert_eq!(text(&range, sprint, 10), "48.55");
+    assert_eq!(text(&range, sprint, 11), "s");
+    assert_eq!(text(&range, sprint, 12), "", "no wind was stored");
+    assert_eq!(text(&range, sprint, 13), "2026-05-01");
+    assert_eq!(text(&range, sprint, 14), "Abbotsford Invitational");
+    assert_eq!(text(&range, sprint, 15), "", "no place was stored");
+    assert_eq!(text(&range, sprint, 16), "https://wiaa.test/results/invite");
+    assert_eq!(
+        text(&range, sprint, 17),
+        "2",
+        "two sources report this event"
+    );
+    assert_eq!(
+        text(&range, sprint, 18),
+        "WIAA Division 3 State: 49.71 | 49.80",
+        "the losing marks stay attached to the winner"
+    );
+    assert_eq!(text(&range, sprint, 19), "outdoor");
+    assert_eq!(text(&range, sprint, 20), "na");
+    assert_eq!(text(&range, sprint, 21), "unknown");
+    assert!(text(&range, sprint, 22).starts_with("perf_"));
+    assert!(text(&range, sprint, 23).starts_with("meet_"));
+    assert_eq!(text(&range, sprint, 24), "wiaa_results:2026-05-01:time");
+
+    let (mut all, _) = written_scope(&fixture, Scope::AllSources);
+    let all_range = sheet(&mut all, "PRs");
+    assert_eq!(
+        all_range.height(),
+        range.height() + 1,
+        "the athleticlive jump PR joins the sheet only outside the core scope"
+    );
+    let jump = row_of_event(&all_range, fixture.julian.as_str(), "LongJump");
+    assert_eq!(text(&all_range, jump, 6), "Field");
+    assert_eq!(text(&all_range, jump, 9), "7.62 m");
+    assert_eq!(text(&all_range, jump, 10), "7.62");
+    assert_eq!(text(&all_range, jump, 11), "m");
+    assert_eq!(text(&all_range, jump, 17), "1");
+    assert_eq!(text(&all_range, jump, 18), "", "one report cannot conflict");
 }
 
 #[test]

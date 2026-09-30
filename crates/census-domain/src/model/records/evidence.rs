@@ -1,7 +1,7 @@
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
-use crate::model::AthleteCandidateId;
+use crate::model::{write_escaped, AthleteCandidateId};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct CaseEvidence {
@@ -62,14 +62,14 @@ impl EvidenceFact {
         match self {
             Self::Statement(text) => {
                 hasher.update(b"s\x1f");
-                hasher.update(text.as_bytes());
+                write_escaped(text.as_bytes(), |chunk| hasher.update(chunk));
             }
             Self::Members { label, ids } => {
                 hasher.update(b"m\x1f");
-                hasher.update(label.as_bytes());
+                write_escaped(label.as_bytes(), |chunk| hasher.update(chunk));
                 for id in ids {
                     hasher.update(b"\x1f");
-                    hasher.update(id.as_str().as_bytes());
+                    write_escaped(id.as_str().as_bytes(), |chunk| hasher.update(chunk));
                 }
             }
         }

@@ -17,17 +17,14 @@ mod inventory;
 mod metrics;
 pub mod queues;
 mod schools;
+mod sheets;
+mod sources;
 
-use coverage::{coverage_sheet, COVERAGE_WIDTHS};
-use inventory::{meets_sheet, MEET_WIDTHS};
-use metrics::{metrics_sheet, METRIC_WIDTHS};
-use queues::{
-    cohort_of, conflict_families, conflicts_sheet, review_families, review_sheet, CONFLICT_WIDTHS,
-    REVIEW_WIDTHS,
-};
+use metrics::metrics_sheet;
+use queues::{cohort_of, conflict_families, review_families};
+use sheets::meta_sheets;
 
 pub use queues::retained_records;
-use schools::{schools_sheet, SCHOOL_WIDTHS};
 
 type Sheet = (&'static str, Vec<Vec<Cell>>, &'static [u16], bool);
 
@@ -40,101 +37,28 @@ pub(super) struct RunFacts<'a> {
     pub(super) school_year: census_domain::model::SchoolYear,
 }
 
+fn step<T>(name: &'static str, build: impl FnOnce() -> T) -> T {
+    let started = Instant::now();
+    let value = build();
+    tracing::info!(step = name, ms = millis(started), "workbook build step");
+    value
+}
+
 pub(super) fn write_meta_sheets(
     book: &mut Workbook,
     path: &Path,
     facts: RunFacts<'_>,
 ) -> ReportResult<()> {
-    let started = Instant::now();
-    let rows = StoreRows::of(facts.population, facts.school_year)?;
+    let rows = step("meta_rows", || {
+        StoreRows::of(facts.population, facts.school_year)
+    })?;
     let cohort = cohort_of(facts.population.dataset(), facts.population.scope());
     let names = school_name_index(&rows.schools);
-    tracing::info!(
-        step = "meta_rows",
-        ms = millis(started),
-        "workbook build step"
-    );
-    let started = Instant::now();
-    let conflicts = conflict_families(&rows, &cohort, &names);
-    tracing::info!(
-        step = "conflicts",
-        ms = millis(started),
-        "workbook build step"
-    );
-    let started = Instant::now();
-    let review = review_families(&rows, &cohort, &names)?;
-    tracing::info!(step = "review", ms = millis(started), "workbook build step");
-    let started = Instant::now();
-    let metrics = metrics_sheet(&facts, &rows, &conflicts)?;
-    tracing::info!(
-        step = "metrics",
-        ms = millis(started),
-        "workbook build step"
-    );
+    let conflicts = step("conflicts", || conflict_families(&rows, &cohort, &names));
+    let review = step("review", || review_families(&rows, &cohort, &names))?;
+    let metrics = step("metrics", || metrics_sheet(&facts, &rows, &conflicts))?;
     let index = SubjectIndex::of(&rows);
-    let mut sheets: Vec<Sheet> = Vec::with_capacity(6);
-    let started = Instant::now();
-    sheets.push((
-        "Schools",
-        schools_sheet(&rows.schools)?,
-        &SCHOOL_WIDTHS,
-        true,
-    ));
-    tracing::info!(
-        sheet = "Schools",
-        ms = millis(started),
-        "workbook sheet built"
-    );
-    let started = Instant::now();
-    sheets.push(("Meets", meets_sheet(&rows.meets), &MEET_WIDTHS, true));
-    tracing::info!(
-        sheet = "Meets",
-        ms = millis(started),
-        "workbook sheet built"
-    );
-    let started = Instant::now();
-    sheets.push((
-        "Coverage",
-        coverage_sheet(facts.population.dataset())?,
-        &COVERAGE_WIDTHS,
-        true,
-    ));
-    tracing::info!(
-        sheet = "Coverage",
-        ms = millis(started),
-        "workbook sheet built"
-    );
-    let started = Instant::now();
-    sheets.push((
-        "Conflicts",
-        conflicts_sheet(&conflicts, &index),
-        &CONFLICT_WIDTHS,
-        true,
-    ));
-    tracing::info!(
-        sheet = "Conflicts",
-        ms = millis(started),
-        "workbook sheet built"
-    );
-    let started = Instant::now();
-    sheets.push((
-        "Review",
-        review_sheet(&review, &rows, &index),
-        &REVIEW_WIDTHS,
-        true,
-    ));
-    tracing::info!(
-        sheet = "Review",
-        ms = millis(started),
-        "workbook sheet built"
-    );
-    let started = Instant::now();
-    sheets.push(("Run Metrics", metrics, &METRIC_WIDTHS, false));
-    tracing::info!(
-        sheet = "Run Metrics",
-        ms = millis(started),
-        "workbook sheet built"
-    );
+    let sheets = meta_sheets(&facts, &rows, &conflicts, &review, &index, metrics)?;
     for (name, cells, widths, autofilter) in sheets {
         let count = cells.len();
         let started = Instant::now();

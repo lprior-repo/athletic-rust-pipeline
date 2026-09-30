@@ -366,6 +366,30 @@ struct Subject<'a> {
     ids_of: fn(&Store) -> BTreeSet<String>,
 }
 
+const LADDER_ROUNDS: usize = 6;
+
+const LADDER_OFFSETS_US: [u64; 8] = [200, 500, 1_000, 2_000, 4_000, 8_000, 16_000, 32_000];
+
+fn reset_attempt_database(root: &Path) {
+    let database = root.join("fjall");
+    if database.exists() {
+        std::fs::remove_dir_all(database).expect("reset the owned attempt database");
+    }
+}
+
+fn measure_clean_runtime(root: &Path, args: &[&str]) -> u64 {
+    reset_attempt_database(root);
+    let started = Instant::now();
+    let status = census_command(root)
+        .args(args)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .expect("running a clean pass to completion");
+    assert!(status.success(), "a clean pass must exit zero: {status:?}");
+    u64::try_from(started.elapsed().as_micros()).unwrap_or(5_000_000)
+}
+
 fn kill_ladder(
     scenario: &str,
     root: &Path,
@@ -374,62 +398,56 @@ fn kill_ladder(
     total_units: usize,
     clean_runtime: Duration,
 ) -> Vec<KillAttempt> {
-    let runtime_us = u64::try_from(clean_runtime.as_micros()).unwrap_or(5_000_000);
-    let mut lower = 0;
-    let mut upper = runtime_us.clamp(2, 5_000_000);
+    note(
+        scenario,
+        format!(
+            "clean runtime {clean_runtime:?} before the ladder; every round re-measures it, so a \
+             machine whose pass time drifts under load cannot leave the search behind the pass end"
+        ),
+    );
     let mut attempts = Vec::new();
-    for index in 0..32 {
-        let database = root.join("fjall");
-        if database.exists() {
-            std::fs::remove_dir_all(database).expect("reset the owned attempt database");
-        }
-        let delay_us = if index == 0 {
-            0
-        } else {
-            lower + (upper - lower) / 2
-        };
-        let attempt = attempt_kill(
-            root,
-            args,
-            Duration::from_micros(delay_us),
-            subject.phase,
-            subject.table,
-            subject.ids_of,
+    for round in 0..LADDER_ROUNDS {
+        let runtime_us = measure_clean_runtime(root, args);
+        note(
+            scenario,
+            format!("round {round}: clean runtime {runtime_us} us"),
         );
-        note(scenario, format!(
-            "kill delay={:?} exited_before_kill={} signal={:?} journal={} entities={} observations={}",
-            attempt.delay, attempt.exited_before_kill, attempt.signal,
-            attempt.journal.len(), attempt.entity_ids.len(), attempt.observations,
-        ));
-        let partial = !attempt.journal.is_empty() && attempt.journal.len() < total_units;
-        let complete = attempt.journal.len() >= total_units;
-        if partial {
-            assert!(
-                !attempt.exited_before_kill,
-                "partial work must be interrupted while running"
+        for offset_us in LADDER_OFFSETS_US {
+            reset_attempt_database(root);
+            let delay_us = runtime_us.saturating_sub(offset_us).max(1);
+            let attempt = attempt_kill(
+                root,
+                args,
+                Duration::from_micros(delay_us),
+                subject.phase,
+                subject.table,
+                subject.ids_of,
             );
-            assert_eq!(
-                attempt.signal,
-                Some(9),
-                "partial work must be interrupted by SIGKILL"
-            );
-        }
-        attempts.push(attempt);
-        if partial {
-            note(
-                scenario,
-                "partial SIGKILL landed at a durable commit boundary",
-            );
-            break;
-        }
-        if complete {
-            upper = delay_us.max(1);
-        } else {
-            lower = delay_us;
-        }
-        if upper.saturating_sub(lower) <= 1 {
-            lower = 0;
-            upper = upper.saturating_mul(2).clamp(2, 5_000_000);
+            note(scenario, format!(
+                "round {round} offset={offset_us} us kill delay={:?} exited_before_kill={} signal={:?} journal={} entities={} observations={}",
+                attempt.delay, attempt.exited_before_kill, attempt.signal,
+                attempt.journal.len(), attempt.entity_ids.len(), attempt.observations,
+            ));
+            let partial = !attempt.journal.is_empty() && attempt.journal.len() < total_units;
+            if partial {
+                assert!(
+                    !attempt.exited_before_kill,
+                    "partial work must be interrupted while running"
+                );
+                assert_eq!(
+                    attempt.signal,
+                    Some(9),
+                    "partial work must be interrupted by SIGKILL"
+                );
+            }
+            attempts.push(attempt);
+            if partial {
+                note(
+                    scenario,
+                    "partial SIGKILL landed at a durable commit boundary",
+                );
+                return attempts;
+            }
         }
     }
     attempts

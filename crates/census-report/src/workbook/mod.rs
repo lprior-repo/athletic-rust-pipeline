@@ -8,6 +8,7 @@ use std::time::Instant;
 mod cells;
 pub mod meta;
 
+mod performances;
 pub use meta::retained_records;
 mod recruiting;
 
@@ -105,6 +106,7 @@ pub fn build_from(
         core: &censuses.core,
         all_sources: &censuses.all_sources,
         recruiting: &recruiting,
+        derivation: &derivation,
         population: &population,
         school_year,
     };
@@ -117,6 +119,7 @@ struct Views<'a> {
     core: &'a Census,
     all_sources: &'a Census,
     recruiting: &'a recruiting::Recruiting,
+    derivation: &'a Derivation<'a>,
     population: &'a Derivation<'a>,
     school_year: census_domain::model::SchoolYear,
 }
@@ -145,6 +148,18 @@ fn write_objective_sheets(
     tracing::info!(
         ms = millis(started),
         "workbook build step: recruiting athletes sheet"
+    );
+    let started = Instant::now();
+    recruiting.write_prs(book, path)?;
+    tracing::info!(
+        ms = millis(started),
+        "workbook build step: recruiting prs sheet"
+    );
+    let started = Instant::now();
+    performances::write_performance_sheets(book, path, views.derivation)?;
+    tracing::info!(
+        ms = millis(started),
+        "workbook build step: performances sheets"
     );
     let started = Instant::now();
     recruiting.write_coaches(book, path)?;

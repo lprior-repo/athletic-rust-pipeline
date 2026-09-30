@@ -1,4 +1,4 @@
-use super::serialization_digest::serialized_digest;
+use super::canonical_json::serialized_digest;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use validation::{validate_claimed_digest, validate_structure};

@@ -132,11 +132,17 @@ pub(crate) fn grade_from_token(token: &str) -> Option<Grade> {
     if let Ok(year) = token.parse::<u8>() {
         return Grade::new(year);
     }
-    match token.trim_end_matches('.') {
-        "Fr" => Grade::new(9),
-        "So" => Grade::new(10),
-        "Jr" => Grade::new(11),
-        "Sr" => Grade::new(12),
-        _ => None,
-    }
+    let token = token.trim_end_matches('.');
+    let grade = if token.eq_ignore_ascii_case("Fr") {
+        9
+    } else if token.eq_ignore_ascii_case("So") {
+        10
+    } else if token.eq_ignore_ascii_case("Jr") {
+        11
+    } else if token.eq_ignore_ascii_case("Sr") {
+        12
+    } else {
+        return None;
+    };
+    Grade::new(grade)
 }

@@ -23,6 +23,8 @@ Accepted policy is not proof of implementation or successful execution.
 | [014](ADR-014-athlete-owner-identity-optional.md) | Preserve historical absent source ownership | Accepted persisted-shape contract |
 | [015](ADR-015-port-prototype-acquisition-to-rust.md) | Port prototype acquisition to Rust; captured parity fixtures are the evidence | Accepted |
 | [016](ADR-016-merge-and-identity-semantics.md) | Row hygiene ports to a shared helper; identity stays lossless, census scope filters are explicit | Accepted |
+| [017](ADR-017-domain-canonical-json.md) | The domain owns its canonical JSON encoder; digests stay byte-equal with serde_json | Accepted |
+| [018](ADR-018-identity-and-evidence-framing-escapes.md) | Identity and evidence framing escapes its delimiter bytes | Accepted |
 
 Changes record explicit supersession rather than silently rewriting prior decisions. Source-specific
 research and dated command results belong in their evidence references, not additional ADR copies.

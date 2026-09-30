@@ -191,7 +191,7 @@ fn roster_digest(
         quarantine,
         read.verdict.rejections(),
     ))
-    .map_err(|source| CrawlError::Encode {
+    .map_err(|source| CrawlError::Canonical {
         table: "milesplit_roster".to_string(),
         source,
     })

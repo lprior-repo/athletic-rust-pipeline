@@ -97,13 +97,6 @@ pub fn assert_golden_json(name: &str, json: &str) -> Result<()> {
 }
 
 pub fn digest<T: serde::Serialize>(value: &T) -> Result<String> {
-    use sha2::{Digest, Sha256};
-
-    let json = serde_json::to_string(value).context("serializing a value for its digest")?;
-    let hash = Sha256::digest(json.as_bytes());
-    let mut out = String::with_capacity(hash.len().saturating_mul(2));
-    for byte in hash {
-        out.push_str(&format!("{byte:02x}"));
-    }
-    Ok(out)
+    census_domain::model::serialized_digest(value)
+        .map_err(|error| anyhow::anyhow!("serializing a value for its digest: {error}"))
 }

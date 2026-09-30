@@ -28,6 +28,12 @@ pub enum CrawlError {
         #[source]
         source: serde_json::Error,
     },
+    #[error("row for {table} failed to canonicalize: {source}")]
+    Canonical {
+        table: String,
+        #[source]
+        source: census_domain::model::CanonicalJsonError,
+    },
     #[error(transparent)]
     Domain(#[from] census_domain::DomainError),
     #[error(transparent)]

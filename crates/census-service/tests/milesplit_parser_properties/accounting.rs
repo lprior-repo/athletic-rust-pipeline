@@ -2,6 +2,8 @@ use super::{
     parse_meet_index, parse_meet_result_files, parse_raw, NC_RAW, NC_RAW_ROWS, NC_RAW_URL,
     OH_FILE_LIST,
 };
+use census_crawl::result_file::ParsedRow;
+use census_domain::model::{CentiSeconds, Grade, Mark};
 
 fn with_row(body: &str, line: &str) -> String {
     body.replacen("</pre>", &format!("\n{line}\n</pre>"), 1)
@@ -88,4 +90,44 @@ fn every_result_file_derives_a_raw_url_the_reader_accepts() {
             "the derived URL stays under the listing page's host and meet: {raw}"
         );
     }
+}
+
+#[test]
+fn the_captures_rows_keep_their_published_fields() {
+    let page = parse_raw(NC_RAW, NC_RAW_URL).expect("the capture parses");
+    let rows: Vec<&ParsedRow> = page
+        .meet
+        .events
+        .iter()
+        .flat_map(|event| event.rows.iter())
+        .collect();
+
+    let winner = rows
+        .iter()
+        .find(|row| row.name == "FERGUSON, Michael")
+        .expect("the capture's first-place row is parsed");
+    assert_eq!(winner.place, Some(1));
+    assert_eq!(winner.school, "North Buncombe");
+    assert_eq!(winner.grade, Some(Grade::new(12).expect("12 is a grade")));
+    assert_eq!(winner.mark, Mark::TimeSeconds(CentiSeconds::new(52473)));
+
+    let eighth = rows
+        .iter()
+        .find(|row| row.name == "SURFACE, Luke")
+        .expect("the capture's single-character grade row is parsed");
+    assert_eq!(eighth.place, Some(20));
+    assert_eq!(eighth.school, "North Raleigh Christ");
+    assert_eq!(
+        eighth.grade, None,
+        "an eighth grader is outside the domain's high-school grades"
+    );
+    assert_eq!(eighth.mark, Mark::TimeSeconds(CentiSeconds::new(54250)));
+
+    let unplaced = rows
+        .iter()
+        .find(|row| row.name == "WHARTON, Elijah")
+        .expect("the capture's unplaced row is a row, not a section label");
+    assert_eq!(unplaced.place, None);
+    assert_eq!(unplaced.school, "Davidson Academy");
+    assert_eq!(unplaced.mark, Mark::Raw("DNF".to_string()));
 }

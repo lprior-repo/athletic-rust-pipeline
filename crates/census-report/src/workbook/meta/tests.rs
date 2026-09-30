@@ -13,9 +13,10 @@ use census_store::{Store, Table};
 use rust_xlsxwriter::Workbook;
 use std::path::Path;
 
-const SHEETS: [&str; 6] = [
+const SHEETS: [&str; 7] = [
     "Schools",
     "Meets",
+    "Sources",
     "Coverage",
     "Conflicts",
     "Review",
@@ -97,6 +98,7 @@ fn an_empty_store_still_writes_every_sheet_with_its_header() {
     let expectations = [
         ("Schools", "School ID"),
         ("Meets", "Meet ID"),
+        ("Sources", "Source"),
         ("Coverage", "Jurisdiction"),
         ("Conflicts", "Family"),
         ("Review", "Family"),
@@ -116,6 +118,8 @@ fn an_empty_store_still_writes_every_sheet_with_its_header() {
     assert_eq!(sheet(&path, "Meets").len(), 1);
     assert_eq!(sheet(&path, "Conflicts").len(), 1);
     assert_eq!(sheet(&path, "Review").len(), 1);
+
+    assert!(sheet(&path, "Sources").len() > 1, "registry rows");
 
     assert!(sheet(&path, "Coverage").len() > 1, "jurisdiction rows");
 }
@@ -262,6 +266,25 @@ fn the_sheets_render_the_rows_the_store_retains() {
     assert!(carries(&meets, 4, "WI"), "{meets:?}");
     assert!(carries(&meets, 0, unresolved_id.as_str()), "{meets:?}");
     assert!(carries(&meets, 4, "??"), "{meets:?}");
+
+    let sources = sheet(&path, "Sources");
+    for descriptor in census_crawl::descriptors() {
+        assert!(
+            carries(&sources, 0, descriptor.slug),
+            "missing registry row for {}",
+            descriptor.slug
+        );
+    }
+    assert!(carries(&sources, 0, "Grade-evidence source"), "{sources:?}");
+    assert!(carries(&sources, 1, "wiaa_results"), "{sources:?}");
+    assert!(
+        carries(&sources, 0, "Meet provider namespace"),
+        "{sources:?}"
+    );
+    assert!(
+        carries(&sources, 1, "timer_meet:live_results"),
+        "{sources:?}"
+    );
 
     let schools = sheet(&path, "Schools");
     assert_eq!(schools.first().map(Vec::len), Some(12), "{schools:?}");

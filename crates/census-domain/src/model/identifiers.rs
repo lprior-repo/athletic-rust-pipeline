@@ -72,10 +72,10 @@ pub struct Id<T> {
 impl<T> Id<T> {
     pub fn mint(prefix: &str, parts: &[&str]) -> Self {
         let mut hasher = Sha256::new();
-        hasher.update(prefix.as_bytes());
+        write_escaped(prefix.as_bytes(), |chunk| hasher.update(chunk));
         for part in parts {
             hasher.update([0x1f]);
-            hasher.update(part.as_bytes());
+            write_escaped(part.as_bytes(), |chunk| hasher.update(chunk));
         }
         let digest = hasher.finalize();
         let mut hex = String::with_capacity(17 + 16);
@@ -136,3 +136,19 @@ pub type AthleteCandidateId = Id<tag::AthleteCandidate>;
 pub type MeetId = Id<tag::Meet>;
 pub type EventId = Id<tag::Event>;
 pub type PerformanceId = Id<tag::Performance>;
+
+const FRAMING_DELIMITERS: [u8; 2] = [0x1e, 0x1f];
+
+pub(crate) fn write_escaped<W: FnMut(&[u8])>(bytes: &[u8], mut write: W) {
+    if !bytes.iter().any(|byte| FRAMING_DELIMITERS.contains(byte)) {
+        write(bytes);
+        return;
+    }
+    for byte in bytes {
+        match byte {
+            0x1e => write(&[0x1f, 0x01]),
+            0x1f => write(&[0x1f, 0x00]),
+            other => write(&[*other]),
+        }
+    }
+}

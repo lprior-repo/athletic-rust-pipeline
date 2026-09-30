@@ -58,10 +58,7 @@ pub(super) fn write_sheet(
 ) -> ReportResult<()> {
     let mut writer = SheetWriter::start(book, path, name, widths)?;
     let last_column = writer.write_rows(&rows)?;
-    if autofilter && !rows.is_empty() {
-        writer.autofilter(rows.len(), last_column)?;
-    }
-    writer.freeze_header()
+    writer.finish(rows.len(), last_column, autofilter)
 }
 
 pub(super) struct SheetWriter<'a> {
@@ -112,6 +109,18 @@ impl<'a> SheetWriter<'a> {
             self.write_cell(row, column, cell)?;
         }
         Ok(())
+    }
+
+    pub(super) fn finish(
+        &mut self,
+        rows: usize,
+        last_column: usize,
+        autofilter: bool,
+    ) -> ReportResult<()> {
+        if autofilter && rows > 0 {
+            self.autofilter(rows, last_column)?;
+        }
+        self.freeze_header()
     }
 
     fn write_rows(&mut self, rows: &[Vec<Cell>]) -> ReportResult<usize> {

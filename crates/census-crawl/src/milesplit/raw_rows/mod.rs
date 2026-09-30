@@ -8,7 +8,7 @@ use super::parse::meet_index::html_unescape;
 #[path = "columns.rs"]
 mod columns;
 
-use columns::{build_row, row_candidate};
+use columns::{build_row, detect_layout, row_candidate, Layout};
 
 const SKIP_PREVIEW: usize = 40;
 const NO_SECTION: &str = "row before any section header";
@@ -44,9 +44,11 @@ pub(super) struct RawBlock {
 }
 
 pub(super) fn read_block(block: &str, sport: Option<Sport>) -> CrawlResult<RawBlock> {
+    let layout = detect_layout(block);
     let mut reader = Reader {
         tags: tag_pattern()?,
         sport,
+        layout,
         sections: Vec::new(),
         skipped: Vec::new(),
         rows_parsed: 0,
@@ -60,6 +62,7 @@ pub(super) fn read_block(block: &str, sport: Option<Sport>) -> CrawlResult<RawBl
 struct Reader<'a> {
     tags: &'a Regex,
     sport: Option<Sport>,
+    layout: Layout,
     sections: Vec<RawSection>,
     skipped: Vec<String>,
     rows_parsed: usize,
@@ -68,10 +71,10 @@ struct Reader<'a> {
 impl Reader<'_> {
     fn read(&mut self, raw_line: &str) {
         let line = decode_line(raw_line, self.tags);
-        if line.trim().is_empty() || is_rule(&line) || is_header(&line) {
+        if line.trim().is_empty() || is_rule(&line) || is_header(&line, self.layout) {
             return;
         }
-        let Some(cells) = row_candidate(&line) else {
+        let Some(cells) = row_candidate(&line, self.layout) else {
             self.sections.push(section_of(&line, self.sport));
             return;
         };
@@ -117,8 +120,14 @@ fn is_rule(line: &str) -> bool {
     line.trim_start().starts_with("====")
 }
 
-fn is_header(line: &str) -> bool {
-    let Some(cells) = row_candidate(line) else {
+fn is_header(line: &str, layout: Layout) -> bool {
+    let line_trimmed = line.trim();
+    if layout == Layout::NC {
+        return line_trimmed.contains("Name")
+            && line_trimmed.contains("Team")
+            && (line_trimmed.contains("Time") || line_trimmed.contains("Mark"));
+    }
+    let Some(cells) = row_candidate(line, layout) else {
         return false;
     };
     cells.place.is_some_and(|cell| cell.trim().is_empty())

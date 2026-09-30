@@ -1,8 +1,8 @@
 use super::identity_decision::person_key;
 use super::{
-    athlete_identity_digest, AthleteCandidateId, AthleteIndexId, CanonicalAthlete, CaseEvidence,
-    EvidenceMethod, Gender, GradYear, IdentityMember, IdentityStatus, ATHLETE_IDENTITY_POLICY,
-    MEMBER_SET_LABEL,
+    athlete_identity_digest, AthleteCandidateId, AthleteIndexId, CanonicalAthlete,
+    CanonicalJsonError, CaseEvidence, EvidenceMethod, Gender, GradYear, IdentityMember,
+    IdentityStatus, ATHLETE_IDENTITY_POLICY, MEMBER_SET_LABEL,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -11,7 +11,7 @@ type PersonKey = (&'static str, u64);
 #[derive(Debug, thiserror::Error)]
 pub enum IdentityError {
     #[error("cannot encode athlete identity evidence: {0}")]
-    Evidence(#[from] serde_json::Error),
+    Evidence(#[from] CanonicalJsonError),
     #[error("identity context references missing subject {0}")]
     UnknownSubject(String),
     #[error("identity context repeats source subject {0}")]

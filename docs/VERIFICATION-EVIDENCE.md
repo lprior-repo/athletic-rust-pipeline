@@ -6,6 +6,80 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Domain-owned canonical JSON encoder; `serde_json` leaves the production tree — 2026-09-29
+
+The gate's `domain purity` lane had been red since `9e97084`: `cargo tree -p census-domain --edges
+normal` carried `serde_json`, because the persisted digest contracts (athlete identity evidence,
+identity verdict, review checkpoint over `(verdicts, cases)`, roster observation) and the
+contact-proof payload were hashed through serde_json's compact writer.
+[ADR-017](adr/ADR-017-domain-canonical-json.md) records the contract decision. The encoder now lives
+in `crates/census-domain/src/model/canonical_json/` as a domain `serde::Serializer`, `serialized_digest`
+keeps its name and lowercase-hex SHA-256 result, its error type moves to the domain's
+`CanonicalJsonError`, and `serde_json` is a dev-dependency only. Callers were migrated rather than
+left with a second encoder: `census-review`'s checkpoint digest maps a failure to
+`StoreError::Invariant`, the roster digest to the new `CrawlError::Canonical { table, source }`
+(classified Terminal), and the parity-test helper `tests/common/mod.rs::digest` calls the domain
+function instead of hashing `serde_json::to_string` itself.
+
+Byte equality is the acceptance test, and the first executions earned it. The new writer shipped
+with three real defects that the parity tests caught: sequences, maps and structs never wrote their
+`[`/`{` opener, `f32` non-finite values bypassed the `null` path, and exponent spelling diverged —
+serde_json 1.0.151 formats floats through `zmij`, not `ryu`, so `f64::MAX` rendered
+`1.7976931348623157e308` against serde_json's `1.7976931348623157e+308`. The dependency is now
+`zmij = "=1.0.23"` (the release serde_json uses) and the oracle is pinned `serde_json = "=1.0.151"`
+so it cannot drift. An independent `security-reviewer` pass found no exploitable defect, no preimage
+ambiguity, no panic/UB path and no byte divergence for the shapes the digests contain, plus four
+gaps: `serialize_i128`/`serialize_u128` were missing (serde's default rejects them where serde_json
+encoded them; no payload carries a 128-bit integer today), the production digest contracts had no
+pinned regression value, the harness compared `from_utf8_lossy` views instead of bytes and never
+asserted that serde_json refuses the same unsupported map key, and per-number `String` allocation.
+The first three are fixed and pinned; the allocation is gone (`write!` against the `io::Write`
+sink). The reviewer's fourth finding — `CaseEvidence::digest` frames facts with unpadded
+`0x1f`/`0x1e` separators, so a statement payload can impersonate a following fact — was pre-existing
+and would have moved every `ReviewCase.id` if the framing had been padded or length-prefixed, so it
+was recorded here as an open contract question rather than fixed silently.
+[ADR-018](adr/ADR-018-identity-and-evidence-framing-escapes.md) resolved it on 2026-09-30 by escaping
+the delimiter bytes, which leaves a delimiter-free payload's hash feed byte-identical; the dated
+evidence is the ADR-018 section at the top of this ledger.
+
+```text
+$ cargo test -p census-domain --lib
+test result: ok. 168 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+$ cargo run -q -p xtask -- domain-purity
+  census-domain normal tree: arrayvec, block-buffer, census-domain, cfg-if, chrono, cpufeatures, crypto-common, digest, generic-array, iana-time-zone, num-traits, proc-macro2, quote, rust_decimal, serde, serde_core, serde_derive, sha2, syn, thiserror, thiserror-impl, typenum, unicode-ident, zmij
+  no async/I-O dependency present
+$ cargo run -q -p xtask -- comments
+zero-comments policy: 939 Rust files checked, no comments
+$ tools/gate.sh
+gate: FAIL -> ratchet vet
+```
+
+`ratchet`'s eleven metrics are the pre-slice list unchanged (`clippy census_domain
+arithmetic_side_effects: 0 -> 5`, `clippy census_domain indexing_slicing: 0 -> 12`, `scan
+census-crawl.indexing: 0 -> 1`, `scan census-domain.indexing: 0 -> 6`, `functions_over_60_lines: 0
+-> 6`, six files over 300 lines in `census-crawl`/`census-service`/`xtask`/`event_ontology.rs`), and
+`grep -c canonical_json` over the clippy measurement is 0, so the new module adds no clippy debt and
+the only census-domain diagnostics remain `event_ontology.rs`'s. `vet` still fails on the
+supply-chain store deleted in `1db9157`. Every other lane passed in that run, including `tests`
+(the workspace suite), `fmt`, `check`, `doc`, `zero code comments`, `module seams`, `domain type
+integrity`, `deny`, `audit`, `machete`, `geiger`, `feature powerset` and `bench presence`.
+
+One full-suite observation, environmental: a later standalone `nextest run --workspace
+--all-features` reported 1578 passed and 1 failed —
+`census-service::restate_kill_restart::a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write`
+— which is the residual `free_port()` handoff race already diagnosed in this ledger, not the resume
+it exists to prove; the isolated re-run passed in 125.6 s with the resume trace
+(`the paused invocation inv_1037RzneRgxI0H41pIXDAbyXXTrSDz2T9Y was resumed`), and the gate's own
+`tests` lane had passed on the same tree earlier.
+
+Not established here: no live census or sealed bundle was produced, so the digest contract is
+evidenced by construction, pinned values and the parity corpora rather than by re-exported store
+artifacts; the roster and contact-proof preimages are built outside the domain
+(`Records`, `TeamRef`, contact proofs) and are covered by shape (`SourceObservation`'s internally
+tagged encoding, `Option`, nested `Vec`) plus the service-level parity tests, not by a domain-owned
+pinned digest; the domain's dev-dependency now pins the workspace's single `serde_json` resolution to
+1.0.151.
+
 ## Whole-index-stage skip via a receipted input digest — 2026-09-29
 
 `IndexReport`'s index stage no longer recomputes its output tables when nothing it reads has
@@ -3284,4 +3358,91 @@ before `git gc --prune=now`.
 - `du -sh .git` → 55 MB, was 13 GB; `git fsck --connectivity-only` exits 0 and all eight worktrees
   still resolve `HEAD`.
 - `local/` (1.1 GB) and `fuzz/corpus/` (20 MB) stay on disk, untracked.
+
+## Workbook writer restoration and size-budget repair (2026-09-29)
+
+Commit `62f838b` deleted `workbook/performances.rs`, `workbook/recruiting/prs.rs` and
+`workbook/meta/sources.rs`. The published workbook then lost the `PRs`, `Performances_*` and
+`Sources` sheets, which left `workbook_shape`, `exporter_kill_restart` and the e2e report chain red.
+`1df52a4` recorded that gap as still outstanding; this tree restores the writer.
+
+`write_objective_sheets` again emits Athletes, PRs, `Performances_<NNN>` and Coaches, then the meta
+sheets `Schools`, `Meets`, `Sources`, `Coverage`, `Conflicts`, `Review` and `Run Metrics`. The
+performance sheets partition at 1,000,000 data rows (`1_048_576` Excel rows less the header and a
+`48_575` margin), and `sheet_name` numbers them from `Performances_001`. `workbook/meta.rs` was split
+into a dispatcher plus `meta/sheets.rs` and `meta/sources.rs`, so the crate's scan returns no
+size-budget violation.
+
+Commands run on this tree:
+
+- `cargo test -p census-report` → **128 passed, 0 failed**.
+- `cargo xtask scan` → every `census-report` count is zero; `files_over_300_lines` no longer lists
+  `crates/census-report/src/workbook/meta.rs` (was 320) and `functions_over_60_lines` no longer lists
+  its dispatcher (was 65). The ratchet's failure list carries no `census-report` entry.
+- `cargo fmt -p census-report -- --check` → exits 0.
+- `(cd crates/census-service && cargo geiger --all-features --output-format Json > /dev/null)` →
+  exits 0. It first failed on `crates/census-report/benches/export_bench.rs`, a target no current
+  manifest declares: removing the stale `target/{debug,release}/{deps,incremental}` units and the
+  `target/release/.fingerprint/census-report-c3357eaf9101b513` directory left by the deleted
+  `export_bench` and `export_review_probe` targets is the remedy `tools/gate.sh` documents for a tree
+  that deleted a root package. No source file changed for it.
+- `tools/gate.sh` → `tests: PASS`, **1571 passed, 0 failed**, including
+  `census-service::exporter_kill_restart a_workbook_export_interrupted_by_sigkill_rebuilds_completely_on_restart`
+  (23.8 s) and `b_workbook_without_interrupt_exits_cleanly`, so a real export writes the restored
+  sheet set. `geiger`, `deny`, `audit`, `machete`, `feature powerset`, `bench presence`, `module
+  seams` and `domain type integrity` also pass.
+- Kill-ladder repair in `crates/census-service/tests/recovery.rs` (test-only; both ladder users
+  inherit the search, and no production code changed). The ladder bisected wall-clock kill delays
+  against one pre-measured clean runtime, and with a concurrent suite that baseline went stale:
+  every attempt at the old bracket finished before its kill (`exited_before_kill=true`, `journal=5`)
+  while the live pass took about 54 ms rather than the 109 ms the bracket assumed, so the search
+  probed past the pass end. Even uncontended, round runtimes drift (24.2 ms, 26.2 ms, 27.6 ms), which
+  is the same defect in miniature. `kill_ladder` now re-measures a clean runtime every round and
+  scans 200 µs, 500 µs, 1 ms, 2 ms, 4 ms, 8 ms, 16 ms and 32 ms before that fresh measurement, for
+  at most six rounds. Its panic was always the ladder refusing to report on an invalid measurement,
+  never an assertion about the walk failing.
+- `cargo nextest run -p census-service --test recovery -E 'test(ks_directory_walk_claims_units_the_kill_can_lose)'`
+  with `--no-capture` → **pass** repeatedly, the traces showing non-monotone jitter (at one round
+  offset 200 µs complete, 500 µs empty, 1 ms complete) and partial states landing at `journal=3`
+  and `journal=4`, with `claimed_without_rows_at_kill=0` and `missing_from_the_final_store=0`.
+- `cargo nextest run --workspace --all-features` → **1571 passed, 0 failed** in two full runs, once
+  with the sweep-era ladder and once with the per-round ladder (127.8 s and 127.2 s); both include
+  the whole recovery suite.
+
+Red in this tree for reasons outside this change. The gate verdicts across four runs were
+`FAIL -> fmt domain purity ratchet vet` (run 1), `FAIL -> tests domain purity ratchet vet` (run 2,
+the ladder miss below), and `FAIL -> domain purity ratchet vet` in runs 3 and 4 after the ladder
+repair and after the concurrent writer's revision landed; run 4 ran while a full
+`--all-features` suite executed on the same machine. `fmt`, `zero code comments`, `check`, `doc`,
+`tests`, `module seams`, `domain type integrity`, `deny`, `audit`, `machete`, `geiger`,
+`feature powerset` and `bench presence` pass in runs 3 and 4, so the three lanes below are the only
+red ones. The `fmt` lane's first-run diffs were in
+`crates/census-crawl/src/chsaa/{parse.rs,school_page.rs}` — files another writer was editing in this
+same working tree; that writer's next revision removed `school_page.rs` again and
+`cargo fmt --all -- --check` now exits 0.
+
+`domain-purity` runs `cargo tree -p census-domain --edges normal --prefix none` against the 24-name
+ban list in `xtask/src/purity.rs` and reports `FORBIDDEN dependencies present: serde_json`. The
+domain's own production code needs it: `model/serialization_digest.rs` and
+`model/identity_decision.rs` write canonical JSON for identity and verdict digests, with 15 call
+sites outside the crate. The dependency entered `crates/census-domain/Cargo.toml` in `9e97084`
+(2026-09-24), so this lane is older than the current slices. Clearing it is a contract decision:
+drop `serde_json` from the ban list, move the digest helpers to a crate allowed to use it (a
+byte-identical encoding keeps stored digests valid), or hand-write a canonical encoder that stays
+byte-equal with `serde_json::to_writer`.
+
+The
+debt ratchet reports the committed slices' growth: `census-domain` clippy `arithmetic_side_effects`
+0→5 and `indexing_slicing` 0→12, `census-crawl.indexing` 0→1, `census-domain.indexing` 0→6, six
+functions above 60 lines (`coach_directories/{collect,map,survey}.rs`,
+`restate_services/ingest.rs`, `replay/cases.rs`) and `chsaa/parse.rs` newly above 300 lines. `vet`
+fails with `You must run 'cargo vet init' (store not found at …/supply-chain)`: commit `1db9157`
+(2026-09-27) deleted that store's `audits.toml`, `config.toml` and `imports.lock` (1,991 lines), and
+earlier entries in this ledger record the lane passing against it, so the removal postdates them —
+`git checkout 1db9157^ -- supply-chain` restores it if the deletion was not deliberate.
+
+Not established here: the measurements above cover a working tree that also carries other writers'
+uncommitted slices, so the ratchet's remaining growth is not attributable from this run alone; no
+live deployment served this workbook, and the sheet set is asserted through the exporter tests and
+the offline writer, not from a sealed production bundle.
 

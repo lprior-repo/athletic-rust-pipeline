@@ -1,4 +1,4 @@
-use super::serialization_digest::serialized_digest;
+use super::canonical_json::{serialized_digest, CanonicalJsonError};
 use super::{
     AthleteCandidateId, AthleteId, CanonicalAthlete, ReviewVerdictRecord, SourceNamespace,
 };
@@ -127,10 +127,12 @@ pub fn person_key(source: &super::SourceIdentity) -> Option<PersonKey> {
         .then_some((provider, id))
 }
 
-pub fn athlete_identity_digest(athlete: &CanonicalAthlete) -> Result<String, serde_json::Error> {
+pub fn athlete_identity_digest(athlete: &CanonicalAthlete) -> Result<String, CanonicalJsonError> {
     serialized_digest(athlete)
 }
 
-pub fn identity_verdict_digest(verdict: &ReviewVerdictRecord) -> Result<String, serde_json::Error> {
+pub fn identity_verdict_digest(
+    verdict: &ReviewVerdictRecord,
+) -> Result<String, CanonicalJsonError> {
     serialized_digest(verdict)
 }
