@@ -6,6 +6,26 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## School-address vendor transport exercised offline — 2026-10-01
+
+Worktree `arh-closeout`, branch `closeout-python-port`. The Google geocode and USPS validation
+clients reach their vendors through `census_crawl::geocode::HttpTransport`; until now every test
+replayed through the in-memory stub, so the socket, header and failure paths were unexercised. The
+live-vendor half stays blocked on operator credentials, so no vendor response capture is committed
+and the clients' own tests still run on hand-written bodies.
+
+| Command | Observation |
+|---|---|
+| `cargo nextest run -p census-crawl -E 'test(transport_tests)'` | 4 passed: the recording server received `GET /maps/api/geocode/json?…&key=…` with `Authorization: Bearer …` and its 200 body came back verbatim; a vendor 500 became a failure whose detail holds neither the URL nor the credential although the request carried the key; a bound listener that never answers failed only after the 10 s request timeout; a refused connection reported without the URL or credential. |
+| `cargo clippy -p census-crawl --lib --bins --examples` with the gate's `-D clippy::*` list | Clean. |
+
+Limit: reqwest 0.13 stringifies a request timeout and a refused connection identically as
+`error sending request`, so the transport's detail text does not classify the failure;
+`http_transport_times_out_against_a_listener_that_never_answers` proves the timeout by elapsed
+time. The credential is never logged: `SecretKey`'s `Debug` is redacted and both clients pass the
+transport's detail through `SecretKey::redact`, which the crate's existing stub tests cover
+alongside these socket tests.
+
 ## PIAA live directory read, replay lane and index repair smoke — 2026-10-01
 
 Worktree `arh-closeout`, branch `closeout-python-port`, main at `087c06f6` plus this entry's
