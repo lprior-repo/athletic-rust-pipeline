@@ -6,6 +6,24 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Landed on `main` — the closeout branch fast-forwarded — 2026-10-01
+
+`origin/main` advanced `087c06f6 -> 53cfe1cb` with `git push origin closeout-python-port:main`
+(fast-forward, no force; `git fetch` then showed `origin/main` = `53cfe1cb`). That push published
+`5d958316` (the `pa_piaa` provider arm, offline replay lane and first supervised live read),
+`2e6342f3` (the school-address vendor transport exercised offline), `4de36fc1` (the anchored kill
+ladder) and `53cfe1cb` (the gate note). The destination-guard commit `087c06f6` was already on main
+and remains in the history; local `main` in the primary worktree is now two commits behind
+`origin/main` and re-syncs with `git pull --ff-only` there, whose uncommitted files do not overlap
+the landed paths.
+
+The full gate run recorded below (555 s) predates the last two commits. The lanes those commits
+touch were exercised separately on their own tree: `cargo nextest run -p census-service` reported
+520 passed of 521 with one load-correlated flake (`athletic-rust-pipeline-trs`), `--test recovery`
+passed 9 of 9 including under the gate's concurrent load, and the focused ladder test passed 20 of
+20. A `tools/gate.sh` run on the landed tip follows this commit; `vet` is expected red there for the
+pre-existing supply-chain stub owned by `athletic-rust-pipeline-6yj.6`, independent of this tree.
+
 ## Kill-ladder stability and two intermittent kill tests — 2026-10-01
 
 Worktree `arh-closeout`, branch `closeout-python-port`. Two kill-based tests failed intermittently
