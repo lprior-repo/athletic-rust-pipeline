@@ -11,7 +11,7 @@ mod arms;
 #[derive(Args, Debug)]
 pub(super) struct ProviderArgs {
     #[arg(
-        help = "Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_athletes, athleticlive_results, athleticnet, milesplit, milesplit_results, coach_contacts, coach_directories"
+        help = "Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, pa_piaa, wayzata, athleticlive, athleticlive_athletes, athleticlive_results, athleticnet, milesplit, milesplit_results, coach_contacts, coach_directories"
     )]
     name: String,
     #[arg(help = "Cap the number of schools processed (smoke runs)")]
@@ -94,6 +94,7 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         "ciac" => arms::ciac_report(&context, args, observed_on).await,
         "mpa" => arms::mpa_report(&context, args, observed_on).await,
         "riil" => arms::riil_report(&context, args, observed_on).await,
+        "pa_piaa" => arms::pa_piaa_report(&context, args, observed_on).await,
         "athleticlive" => arms::athleticlive_report(&context, args, observed_on).await,
         "athleticlive_results" => {
             arms::athleticlive_results_report(&context, args, observed_on).await
@@ -109,7 +110,7 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
             arms::coach_directories_report(&context, args, observed_on).await
         }
         other => bail!(
-            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, coach_contacts, coach_directories"
+            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, pa_piaa, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, coach_contacts, coach_directories"
         ),
     };
     super::source::print_blocked_hosts(&fetcher).await;

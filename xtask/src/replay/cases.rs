@@ -1,4 +1,5 @@
 mod coach_directories;
+mod pa_piaa;
 mod results;
 
 use crate::replay::{ensure_rows, unmapped, Capture};
@@ -17,6 +18,7 @@ pub(super) fn replay(capture: &Capture<'_>) -> Result<String> {
         "ks" => ks_directory(capture),
         "wayzata" => wayzata_schedule(capture),
         "coach_directories" => coach_directories::replay(capture),
+        "pa_piaa" => pa_piaa::replay(capture),
         "milesplit"
         | "athleticlive"
         | "athleticlive_athletes"

@@ -6,6 +6,25 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## PIAA live directory read, replay lane and index repair smoke — 2026-10-01
+
+Worktree `arh-closeout`, branch `closeout-python-port`, main at `087c06f6` plus this entry's
+commit. The `pa_piaa` adapter gained a provider arm (`census-service provider pa_piaa`), an
+offline replay case (`cargo xtask replay pa_piaa`) and its first supervised live read; the index
+repair behaviour was re-observed against a populated store. Limits: the live read covers one
+letter and one details page, not the 24-letter or statewide acquisition, and its captures date
+from 2026-09-27.
+
+| Command | Observation |
+|---|---|
+| `cargo xtask replay pa_piaa` | 10 captures, offline: `PROVENANCE.json` bytes and sha256 match for all 5 listed captures; `alpha=A` 53 schools, `alpha=B` 101; `alpha=Z` re-reads the A group (53, first `A J McMullen School`, id 12048); `details_12048.html` = `A J McMullen School` with 1 contact; the three directory goldens' `association_id` sets equal their captures' parsed ids; robots' `*` group holds 14 disallows including `/officials/directory/` and permitting `/schools/`. |
+| `census-service --store /tmp/piaa-live --authorized-host www.piaa.org provider pa_piaa --limit 1 --school-names "A J McMullen School" --observed-on 2026-10-01` | 53 schools, 2 requests, 0 errors, 1 athletic-director row with a published address: the live `alpha=A` count equals the capture. Without the operator authorization the same command is refused — the site 301s the https directory URL to `http://www.piaa.org/...` and the guard reports it as an admission bypass — so the run names the hop explicitly. |
+| `census-service --store /tmp/piaa-live index`, twice | `source_identities=54 conflicts=0 reviews=0 coverage=51 snapshots=1` from a populated store, and the second identical-input pass reports and keeps the same counts: mutable projections are rebuilt, not skipped, so the historical receipt no longer hides missing rows. |
+| `cargo nextest run -p census-reconcile` | 41 passed, including `index::stage_gate_tests::{a_changed_input_reruns_the_index_stage, receipt_does_not_hide_missing_mutable_projection_rows}`. |
+| `cargo nextest run --workspace --all-features` | 1811 passed, 3 skipped; slowest `restate_kill_restart::a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write` at 126 s. |
+| `cargo clippy -p census-service -p xtask --lib --bins --examples` with the gate's `-D clippy::*` list | Clean. |
+| `census-service store-restore --from var/backups/seal-86421165 --to /tmp/d8l-store` | Refused by name: the manifest records 16 tables where a store has 17, so the historical seal predates a schema revision. The seal is preserved and was not migrated, converted or opened for the smoke; an empty store then derivable by `index` (0 identities, 50 coverage rows) proves nothing about the repair path, which the populated store above covers. |
+
 ## Cohort and coach cutover; captured worksheet qualification — 2026-09-30–2026-10-01
 
 These are targeted accuracy repairs and offline capture qualifications, not a fresh national

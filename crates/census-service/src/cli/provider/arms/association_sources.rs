@@ -202,6 +202,25 @@ pub(crate) async fn mpa_report(
     .await?)
 }
 
+pub(crate) async fn pa_piaa_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::pa_piaa::collect(
+        context,
+        &providers::pa_piaa::Options {
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+            states: args.jurisdictions()?,
+            letters: Vec::new(),
+            details_names: args.school_names.clone(),
+        },
+    )
+    .await?)
+}
+
 pub(crate) async fn riil_report(
     context: &AdapterContext<'_>,
     args: &ProviderArgs,
