@@ -236,7 +236,7 @@ fn backup_refuses_a_symlink_in_the_store_tree_by_name() {
 #[cfg(unix)]
 #[test]
 fn backup_refuses_a_socket_in_the_store_tree() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = tempfile::tempdir_in("/tmp").unwrap();
     let root = dir.path().join("store");
     store_with(&root, &["Socketed"]);
     let socket = root.join("http").join("cache.sock");

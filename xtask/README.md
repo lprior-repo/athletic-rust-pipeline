@@ -78,6 +78,22 @@ functions after the source, hyphens as underscores — `nces_*`, `state_ed_*`, `
 state_ed`). A source whose tests are named otherwise reports an empty lane while the reader still has
 tests; fix the names rather than widening the filter.
 
+The service's `core` Criterion target measures captured parsers, archive classification, label
+normalization/resolution and store scans. The `pipeline` target measures
+`pipeline/snapshot/athlete_evidence`: 20,000 deterministic provider-owned subjects, each with a
+supported Class-of-2027 observation and a second unsupported graduation inference. Setup and exact
+evidence/confidence checks precede timing; every timed iteration reads the frozen Fjall snapshot.
+This synthetic workload measures readback, not census discovery or native recovery.
+
+Run `cargo bench -p census-service --bench core -- --noplot` and the equivalent `--bench pipeline`
+command on a quiet machine; retain Criterion units, sample/warmup settings and profiler context.
+The historical `tools/perf-baseline.json` now tags all fifteen throughput measurements `Elements`,
+as evidenced by the benchmark sources at its recorded commit. Its metadata, workload names and
+numbers are unchanged; the original untagged JSON is retained with the dated
+[verification evidence](../docs/VERIFICATION-EVIDENCE.md). The four legacy pipeline workloads
+do not match the new snapshot-readback workload. Unit-format migration does not approve a
+replacement workload or a new acceptance baseline; do not reset the baseline to conceal that gap.
+
 ## Source scaffolding
 
 Hyphens normalize to underscores; invalid identifiers, keywords and existing module/fixture paths

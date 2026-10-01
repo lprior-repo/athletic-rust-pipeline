@@ -15,14 +15,11 @@ const JOURNAL: &str = "pa_piaa_schools";
 
 #[derive(Debug, Clone, Default)]
 pub struct Options {
-    /// Letter pages to read, in order.
     pub limit: Option<usize>,
     pub refresh: bool,
     pub observed_on: String,
     pub states: Vec<UsJurisdiction>,
-    /// Letters to walk; empty means every letter the site links, in order.
     pub letters: Vec<char>,
-    /// Schools whose details page is read; empty means every school the directory lists.
     pub details_names: Vec<String>,
 }
 

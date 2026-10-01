@@ -36,7 +36,7 @@ pub(super) const DEFAULT_STORE_ROOT: &str = "var/census-service";
 #[derive(Parser, Debug)]
 #[command(
     name = "census-service",
-    about = "Independent Midwest HS TF/XC recruiting census (MileSplit discovery, no broad Athletic.net crawling)"
+    about = "Public-source-discovered Class-of-2027 TF/XC census"
 )]
 pub(super) struct Cli {
     #[arg(

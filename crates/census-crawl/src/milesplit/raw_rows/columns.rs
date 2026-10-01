@@ -84,7 +84,7 @@ pub(super) fn row_candidate(line: &str, layout: Layout) -> Option<Cells<'_>> {
         team: cell(line, layout.team_start(), layout.team_width()),
         mark,
         heat: cell(line, layout.heat_start(), HEAT_WIDTH),
-        separator: cell(line, layout.mark_start() - 1, 1),
+        separator: cell(line, layout.mark_start().saturating_sub(1), 1),
     })
 }
 

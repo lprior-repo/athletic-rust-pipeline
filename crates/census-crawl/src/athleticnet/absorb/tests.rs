@@ -31,12 +31,14 @@ fn conflicting_profile_grades_preserve_both_observations_and_sources() {
             &bio,
             scope,
             &target,
-            &source,
-            "2026-09-30",
-            &index,
-            &mut resolved,
-            &mut stats,
-            &mut accumulated,
+            AbsorbContext {
+                source: &source,
+                observed_on: "2026-09-30",
+                index: &index,
+                resolved: &mut resolved,
+                stats: &mut stats,
+                accumulated: &mut accumulated,
+            },
         );
     }
     let athlete = accumulated.athletes.values().next().expect("athlete");
@@ -80,12 +82,14 @@ fn unsupported_latest_grade_does_not_discard_earlier_supported_evidence() {
         &bio,
         Scope::TrackField,
         &target,
-        &source,
-        "2026-09-30",
-        &SchoolIndex::from_schools(&[]),
-        &mut HashMap::new(),
-        &mut Stats::default(),
-        &mut accumulated,
+        AbsorbContext {
+            source: &source,
+            observed_on: "2026-09-30",
+            index: &SchoolIndex::from_schools(&[]),
+            resolved: &mut HashMap::new(),
+            stats: &mut Stats::default(),
+            accumulated: &mut accumulated,
+        },
     );
     assert!(accumulated.athletes.is_empty());
     let (cases, rows) = accumulated.unsupported.into_parts();

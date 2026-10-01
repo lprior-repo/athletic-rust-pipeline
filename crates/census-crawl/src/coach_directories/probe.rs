@@ -170,18 +170,22 @@ pub async fn probe_one(
     let (schools, with_address, staff_ps, coaches_ps) =
         compute_sampling_metrics(&page, &sampled, staff, coaches);
 
-    ProbeRecord::new(state_key(state), ruleset.to_string()).with_fields(
-        schools,
-        with_address,
-        page.total_pages,
-        page.total_results,
-        sampled.len(),
-        staff,
-        coaches,
-        sports,
-        staff_ps,
-        coaches_ps,
-    )
+    ProbeRecord {
+        state: state_key(state),
+        ruleset: ruleset.to_string(),
+        status: "ok".to_string(),
+        error: None,
+        schools: Some(schools),
+        with_address: Some(with_address),
+        pages: Some(page.total_pages),
+        directory_total: Some(page.total_results),
+        sampled: Some(sampled.len()),
+        staff: Some(staff),
+        coaches: Some(coaches),
+        sports: Some(sports),
+        staff_per_school: Some(staff_ps),
+        coaches_per_school: Some(coaches_ps),
+    }
 }
 
 fn per_school(value: f64) -> String {
@@ -204,34 +208,6 @@ fn sports_repr(sports: Option<&IndexMap<String, usize>>) -> String {
     }
     rendered.push('}');
     rendered
-}
-
-impl ProbeRecord {
-    fn with_fields(
-        mut self,
-        schools: usize,
-        with_address: usize,
-        pages: usize,
-        directory_total: usize,
-        sampled: usize,
-        staff: usize,
-        coaches: usize,
-        sports: IndexMap<String, usize>,
-        staff_ps: f64,
-        coaches_ps: f64,
-    ) -> Self {
-        self.schools = Some(schools);
-        self.with_address = Some(with_address);
-        self.pages = Some(pages);
-        self.directory_total = Some(directory_total);
-        self.sampled = Some(sampled);
-        self.staff = Some(staff);
-        self.coaches = Some(coaches);
-        self.sports = Some(sports);
-        self.staff_per_school = Some(staff_ps);
-        self.coaches_per_school = Some(coaches_ps);
-        self
-    }
 }
 
 fn artifact_sport_key(sport: Option<Sport>) -> String {

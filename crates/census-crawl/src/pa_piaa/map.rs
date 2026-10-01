@@ -33,10 +33,6 @@ pub fn map_directory_row(
     ));
     Some((school, id))
 }
-
-/// PIAA publishes no coaches. Its details pages name a superintendent, a principal and an athletic
-/// director, and only the athletic-director post is a census role, so every contact this maps is an
-/// administrator: no sport, `Gender::Mixed`, `CoachRole::AthleticDirector`.
 pub fn map_contact_row(
     row: &ContactRow,
     school_id: &SchoolId,

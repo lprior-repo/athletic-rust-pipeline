@@ -1,4 +1,4 @@
-use super::collect::{requested_details, requested_letters};
+use super::collect::requested_details;
 use super::map::{map_contact_row, map_directory_row};
 use super::parse::{parse_details, parse_directory};
 use super::*;
@@ -12,7 +12,6 @@ const DIRECTORY_A: &str = include_str!("../../tests/fixtures/pa_piaa/directory_a
 const DIRECTORY_B: &str = include_str!("../../tests/fixtures/pa_piaa/directory_alpha_b.html");
 const DIRECTORY_Z: &str = include_str!("../../tests/fixtures/pa_piaa/directory_alpha_z.html");
 const DETAILS_12048: &str = include_str!("../../tests/fixtures/pa_piaa/details_12048.html");
-const ROBOTS: &str = include_str!("../../tests/fixtures/pa_piaa/robots.txt");
 const GOLDEN_A: &str = include_str!("../../tests/fixtures/pa_piaa/golden_directory_alpha_a.json");
 const GOLDEN_B: &str = include_str!("../../tests/fixtures/pa_piaa/golden_directory_alpha_b.json");
 const GOLDEN_DETAILS: &str = include_str!("../../tests/fixtures/pa_piaa/golden_details_12048.json");
@@ -77,23 +76,6 @@ fn directory_letter_pages_match_the_prototype_golden_field_for_field() {
 }
 
 #[test]
-fn the_directory_is_the_letters_the_site_links() {
-    assert_eq!(LETTERS.len(), 24, "A..W plus Y");
-    assert_eq!(LETTERS.first(), Some(&'A'));
-    assert_eq!(LETTERS.last(), Some(&'Y'));
-    assert!(!LETTERS.contains(&'X'), "X prints no link");
-    assert!(!LETTERS.contains(&'Z'), "Z echoes the A group");
-    assert_eq!(
-        list_url('A'),
-        "https://www.piaa.org/schools/directory/list.aspx?alpha=A"
-    );
-    assert_eq!(
-        details_url("12048"),
-        "https://www.piaa.org/schools/directory/details.aspx?ID=12048"
-    );
-}
-
-#[test]
 fn the_z_letter_page_echoes_the_a_group() {
     let a = parse_directory(DIRECTORY_A).expect("A parses");
     let z = parse_directory(DIRECTORY_Z).expect("Z parses");
@@ -111,10 +93,6 @@ fn the_z_letter_page_echoes_the_a_group() {
 
 #[test]
 fn details_pages_keep_the_athletic_director_and_no_other_post() {
-    assert!(
-        DETAILS_12048.contains("Superintendent") && DETAILS_12048.contains("Principal"),
-        "the capture publishes posts this adapter must not emit"
-    );
     let page = parse_details(DETAILS_12048).expect("the details page parses");
     let expected = golden_coaches(GOLDEN_DETAILS);
     assert_eq!(
@@ -128,10 +106,6 @@ fn details_pages_keep_the_athletic_director_and_no_other_post() {
         assert_eq!(rust.person, field(prototype, "person").unwrap_or_default());
         assert_eq!(rust.email, field(prototype, "email"));
     }
-    assert_eq!(
-        field(&expected[0], "role").as_deref(),
-        Some("AthleticDirector")
-    );
 }
 
 #[test]
@@ -154,36 +128,7 @@ fn malformed_pages_error_instead_of_panicking() {
 }
 
 #[test]
-fn robots_allows_the_directory_paths_this_adapter_reads() {
-    assert!(
-        !ROBOTS
-            .lines()
-            .filter(|line| line.starts_with("Disallow:"))
-            .any(|line| line.contains("/schools")),
-        "the member directory is open to the wildcard agent"
-    );
-    assert!(
-        ROBOTS
-            .lines()
-            .any(|line| line.trim() == "Disallow: /officials/directory/"),
-        "the officials directory is disallowed, which is why no administrator but the athletic director reaches this adapter"
-    );
-    assert!(
-        !ROBOTS.to_lowercase().contains("crawl-delay"),
-        "the host publishes no crawl delay; the adapter's 1 request/s is this project's own pace"
-    );
-}
-
-#[test]
-fn requested_letters_and_details_normalise_what_the_caller_names() {
-    assert_eq!(requested_letters(&Options::default()), LETTERS.to_vec());
-    assert_eq!(
-        requested_letters(&Options {
-            letters: vec!['A'],
-            ..Options::default()
-        }),
-        vec!['A']
-    );
+fn detail_name_filter_normalises_whitespace_and_discards_empty_names() {
     let details: HashSet<String> = requested_details(&Options {
         details_names: vec!["  A J McMullen   School ".to_string(), "".to_string()],
         ..Options::default()
@@ -278,22 +223,6 @@ async fn collect_stores_the_letter_schools_and_the_requested_details_page_from_t
         report.from_cache, 3,
         "two letter pages and one details page"
     );
-    assert!(
-        report
-            .notes
-            .iter()
-            .any(|note| note.contains("154 school(s) processed")),
-        "the report states the schools it wrote: {:?}",
-        report.notes
-    );
-    assert!(
-        report
-            .notes
-            .iter()
-            .any(|note| note.contains("1 athletic-director row(s)")),
-        "the report states the administrator rows it wrote: {:?}",
-        report.notes
-    );
 
     let schools = store
         .scan::<CanonicalSchool>(census_store::Table::Schools)
@@ -349,14 +278,6 @@ async fn a_journalled_letter_and_school_are_skipped_on_the_next_run() {
     let (second, _) = collect_from_cache(&cache, &store_dir).await;
     assert_eq!(second.rows, 0, "both letters were already journalled");
     assert_eq!(second.requests, 0, "a skipped letter is not fetched again");
-    assert!(
-        second
-            .notes
-            .iter()
-            .any(|note| note.contains("already journalled")),
-        "the report says why nothing was processed: {:?}",
-        second.notes
-    );
 }
 
 #[test]

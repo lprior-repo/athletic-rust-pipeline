@@ -6,6 +6,359 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Cohort and coach cutover; captured worksheet qualification — 2026-09-30–2026-10-01
+
+These are targeted accuracy repairs and offline capture qualifications, not a fresh national
+census, accepted identity population or NASA/release certificate. Earlier commands below retain
+their own tree boundaries. The owner requested parallel work and then main integration:
+`git merge --ff-only origin/main` advanced local main from `8b34110` to `b7f461e`, including
+the PIAA port; no durable census state was discarded and no remote push was requested.
+
+### Contracts and exercised regressions
+
+- Graduation inference is fallible. Unsupported grade/year observations retain their source
+  locator and pending review case without inventing a canonical cohort. Snapshot readers attach
+  raw grade facts only through exact primary provider ownership, not names or aliases.
+- Athletic.net profile admission retains earlier grade/source evidence rather than overwriting it.
+  The before-fix conflicting-profile regression observed only 2028 where 2027 and 2028 were
+  required. The unsupported-latest profile also retains earlier supported raw evidence without
+  creating a canonical athlete.
+- Coach eligibility and vendor-row hygiene precede deduplication. Failed summaries preserve valid
+  school facts without a completion receipt; successful contacts and receipts use the recording
+  sink together. Corrected collection has its own `coach_directories_schools_v2` receipt phase.
+- Explicit index derivation repairs mutable projections despite an existing input receipt.
+  The obsolete test assertion that a repeated pass *skips* derivation was deleted, not repinned;
+  stable provider row IDs and one snapshot per phase/day remain the observable contract.
+
+Build/test commands used
+`env RUSTC_WRAPPER= TMPDIR=/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/audit-20260930/compiler-scratch`
+after the documented `/tmp` quota failure. No cache or historical store was deleted.
+
+| Command or retained focused lane | Direct Main observation |
+|---|---|
+| Snapshot-reader focused lane (`read::view` tests) | 9 passed; retained stdout `artifact://292`. |
+| Index stage-gate focused lane (`index::stage_gate_tests`) | 3 passed: changed input, missing mutable projection repair and located unsupported case retention; retained stdout `artifact://292`. |
+| TFRRS captured unsupported-boundary lane (`tfrrs::tests::cohort`) | 2 passed; this is not the entire TFRRS suite; retained stdout `artifact://292`. |
+| `cargo test -p census-crawl --lib -- --nocapture` before PIAA integration | 544 passed. Raw stdout and scan/contract results: `var/audit-20260930/crawl-scan-contract-readback.log`. |
+| `cargo test -p census-crawl --lib -- --nocapture` after PIAA and private-context integration | 555 passed. |
+| `cargo test -p census-reconcile index -- --nocapture` after integration | 21 passed. |
+| `cargo test -p census-report unsupported_graduation_cases_are_retained_in_review_without_a_canonical_athlete -- --nocapture` | 1 passed against a complete generated workbook: pending unsupported case visible, resolved case excluded, no canonical athlete created. |
+| `cargo xtask scan` and `cargo xtask contract` before PIAA integration | 9 crates; every forbidden source metric, files-over-300 and functions-over-60 were zero; 8/8 architecture checks passed with 23 descriptors. This does not certify the later 24-descriptor tree. |
+
+One production-bound Kani harness was run, not the full proof inventory:
+
+```sh
+systemd-run --user --scope --collect -p MemoryHigh=4G -p MemoryMax=6G -p MemorySwapMax=0 cargo kani --manifest-path crates/census-domain/Cargo.toml -Z stubbing --harness check_gradyear_of_formula -j 1
+```
+
+Kani 0.67/CBMC 6.8 reported `0 of 187 failed`, `8 of 8 cover properties satisfied` and one
+successfully verified harness. The scoped grade-9–12 × school-year-1900–2100 matrix has 804
+combinations. Covers establish reachability, not additional proofs. Retained log
+`var/audit-20260930/cohort-kani.log` SHA-256:
+`acc008d9b1a93d1c836c6b7464e1414b26d70371e0c4214c369c1a855967a220`;
+inventory SHA-256:
+`1c7bd31301d7e59982a52fbacc19d6a535e8360a0682e548383218ffe6acfd49`.
+The owner requested no expansion of Kani coverage.
+
+### Real captured adapter, recording and workbook surfaces
+
+Temporary service examples exercised real public adapter/parser paths and were removed after
+successful smoke runs:
+
+```sh
+cargo run -p census-service --example audit_wiaa_smoke -- var/audit-20260930/final-qualification-readback
+cargo run -p census-service --example audit_coach_smoke -- var/audit-20260930/coach-recovery-payload-smoke
+```
+
+The first run opened a new qualification store, walked the four captured archive pages, parsed
+one retained WIAA result capture, consolidated rows and generated an actual workbook. It saw
+194 result artifacts: one parsed, 193 unavailable offline, five cache hits and zero network
+requests. The 17,337-byte result fixture contains 32 result rows and three event headings; its
+200m body is truncated. Those limits prohibit a complete-meet or national-discovery claim.
+The result capture has no byte-level `fetched_at` manifest; its evidence `observed_on` is
+2026-09-19. Directory evidence is dated 2026-09-22, not newly acquired live evidence.
+
+The coach run first observed one uncached-summary error, then seeded the actual captured summary
+and recollected with zero errors and zero network requests. Serialized recording payload
+`var/audit-20260930/coach-recovery-payload-smoke/acquired.json` was read back and committed to a
+second fresh Fjall store. It retained Nicole Biltoft as a Boys CrossCountry coach with the exact
+public summary URL; the recovered school had four coach rows. This proves adapter/recording/store
+readback, not native Restate replay, interruption or fault recovery. The first failing assertion
+used the wrong guessed surname, Kimbrough; that assertion is not evidence of the original defect.
+
+The actual built CLI then exercised the fresh stopped store:
+
+```sh
+target/debug/census-service --store var/audit-20260930/final-qualification-readback/store workbook --out var/audit-20260930/final-qualification-readback/cli-class2027-wiaa-qualification.xlsx
+target/debug/census-service --store var/audit-20260930/final-qualification-readback/store verify --workbook var/audit-20260930/final-qualification-readback/cli-class2027-wiaa-qualification.xlsx --sample-every 1
+target/debug/census-service --store var/audit-20260930/final-qualification-readback/store export-data --data var/audit-20260930/final-qualification-readback/csv --school-year 2026
+target/debug/xtask dump-sheet var/audit-20260930/final-qualification-readback/cli-class2027-wiaa-qualification.xlsx Athletes PRs Performances_001 Coverage Review Sources 'Run Metrics'
+```
+
+Generation succeeded; verification reported `OK (3 athletes sampled of 3 rows, 3 performances
+sampled of 3 rows)`. Six CSV products were emitted: 32 stored athletes, three Class-of-2027
+candidate subjects, 17 coaches, 24 schools and one meet. Both athlete/contact counts were zero;
+the directory schools and result schools did not intersect.
+
+| Candidate | 100m seconds | Round | Place | Date |
+|---|---:|---|---:|---|
+| Kingston Penn, `ath_subject_923acc2cce1bfd42` | 10.89 | finals | 7 | 2025-06-06 |
+| Kingston Penn, `ath_subject_cfb68311c8dbce29` | 10.86 | preliminaries | 8 | 2025-06-06 |
+| Kevion Dickerson, `ath_subject_ee6ee26d81d6400a` | 10.95 | preliminaries | 13 | 2025-06-06 |
+
+All three retain the WIAA result URL, row-specific source key and `unverified` identity,
+`review` status and `contact_research_unknown`. Two published names are not proof of two accepted
+people; the Penn candidates were not blindly merged. Blank profile/contact/GPA cells were preserved.
+All 20 performance columns were read back. `Run Metrics` reports `all_sources`, generated-on
+2026-10-01 and contact school year 2026–27; this date still lacks authoritative persisted run lineage.
+Registered source inventory is not acquired-source qualification.
+
+The initial complete workbook's used-range row counts, including headers and blank separator
+rows, were Athletes 4, PRs 4, Performances_001 4, Coaches 18, Schools 25, Meets 2, Sources 28,
+Coverage 113, Conflicts 3, Review 4 and Run Metrics 57. Markdown spreadsheet rendering collapses
+blank cells; the calamine-backed labelled CLI readback and later cell-reference XML readback
+preserve positions. That tool defect was reported. Initial raw CLI stdout is preserved in
+`var/audit-20260930/workbook-cli-readback.log`.
+
+| Retained artifact | SHA-256 |
+|---|---|
+| `var/audit-20260930/final-qualification-readback/cli-class2027-wiaa-qualification.xlsx` | `4f206f4eb7c5b0436ab4afcc5a3044f91f5beeb2ae0e5cfbb644f0220de97467` |
+| `var/audit-20260930/final-qualification-readback/class2027-wiaa-qualification.xlsx` | `699ea8f5e35b5bb4d91e455a42f805f86cb10e30556d824d537e2783d98dd0e5` |
+| `var/audit-20260930/final-qualification-readback/csv/recruiting-co2027.csv` | `4277351be90867491be3b4405dc73c72293811ffe7668cea153698099b03858c` |
+| `var/audit-20260930/coach-recovery-payload-smoke/acquired.json` | `0778cbcf71f69da7d872fd1166fe2230719ad01c1701e57476e8881ff9d58120` |
+
+After main integration, `cargo build -p census-service --bin census-service` succeeded and the
+same actual CLI sequence was repeated with new output
+`var/audit-20260930/final-qualification-readback/main-class2027-wiaa-qualification.xlsx` and
+`main-csv/`, followed by `dump-sheet` for all eleven sheets. Generation, exhaustive 3/3 athlete
+and 3/3 performance verification, six-product CSV export and all-sheet readback exited zero.
+Generation elapsed 0.033536 s; Linux child `wait4` peak RSS was 39,520 KiB, including launch.
+Source inventory gained the PIAA descriptor, so the Sources used range is now `A1:H29`; the
+other used-range row counts and three unresolved candidate marks remain unchanged.
+
+Main independently decoded workbook XML by cell references and header names: all twenty
+performance columns, exact name/mark/round/place/date/source values, unverified/review/contact
+states and blank contact/city cells passed. Raw outputs:
+`var/audit-20260930/main-workbook-cli-readback.log` and
+`var/audit-20260930/main-workbook-xml-readback.json`.
+Main workbook SHA-256:
+`1040ca410ab657f983a38975e7e156a441ff50b1d65da9091de96ac09729d59f`.
+The new recruiting CSV retains SHA-256
+`4277351be90867491be3b4405dc73c72293811ffe7668cea153698099b03858c`.
+
+After the final PIAA/fixture and recruiting-lint repairs, the rebuilt CLI generated
+`var/audit-20260930/final-qualification-readback/final-main-class2027-wiaa-qualification.xlsx`.
+Exhaustive verification again passed 3/3 athlete and 3/3 performance rows, and six CSV products
+were exported to `final-main-csv/`. The worksheet SHA-256 is
+`6a14f6e6b2e1f03f3030183f69b72cf4ea19d1b29586a4a43182fff97532e311`;
+the recruiting CSV is byte-identical to the earlier export. Direct `target/debug/xtask`
+readback initially failed because that executable was absent; the actual retry used
+`cargo xtask dump-sheet` for all eleven sheets and exited zero. Complete retry stdout:
+`var/audit-20260930/final-main-workbook-sheets-readback.log`. The three unresolved candidates,
+their marks and blank contacts remain the qualification output, not accepted national identities.
+
+The complete eleven-sheet readback log SHA-256 is
+`fe85d0f28afed8b50bd41a650077d46a10d2a053a4a210dfb8631ba5146bbad6`.
+After the school-export comparator's redundant borrow was removed, the actual CLI exported
+the six products again; every product was byte-identical to its pre-repair bytes. Boundary
+smoke observed no arguments exit 2, `--help` exit 0 and a missing workbook exit 1 with
+`workbook not found`, without a panic. The initial help exposed the obsolete Midwest-only
+label; the CLI declaration now states the public-source-discovered Class-of-2027 scope.
+Rebuilt no-argument/help commands retained the 2/0 statuses and displayed the corrected scope.
+These were throwaway real-process checks, not new tests pinning CLI wording. Retained results:
+`var/audit-20260930/final-cli-boundary-and-csv-parity-smoke.json`, SHA-256
+`17715289f2d808949cabad6b63ad982e5bd341e3b87343102867d7d6a12a6932`;
+`var/audit-20260930/final-cli-product-help-smoke.json`, SHA-256
+`69deaa244071687d6dfaf2a6b199222c23ed3e45ced68454bc46662635734ff8`.
+
+### Measured workload, not an optimization or baseline approval
+
+```sh
+cargo bench -p census-service --bench core -- --noplot --sample-size 10 --warm-up-time 1 --measurement-time 1
+cargo bench -p census-service --bench pipeline -- --noplot --sample-size 10 --warm-up-time 1 --measurement-time 1
+perf stat -e cycles,instructions,cache-misses,branches,branch-misses -- target/release/deps/pipeline-fa2ac87bfecd03b7 --bench --noplot --sample-size 10 --warm-up-time 1 --measurement-time 1
+```
+
+The core target measured all eleven parser/index/store groups. The new pipeline target measures
+real frozen-snapshot grade hydration for 20,000 synthetic provider-owned subjects; setup and
+exact supported/unsupported evidence and LOW confidence checks precede timing. Initial central
+estimate: 57.881 ms, 345.54K subjects/s. A same-code counter run measured 52.597 ms,
+380.25K subjects/s and whole-process user-mode counters: 16,538,446,250 cycles,
+45,014,857,538 instructions, 28,733,583 cache misses, 9,337,930,265 branches and
+15,675,705 branch misses; elapsed 2.840115534 s.
+
+`/usr/bin/time` was unavailable (exit 127). A direct subprocess run measured with Linux `wait4`
+reported exit 0, elapsed 2.871347 s and peak RSS 76,124 KiB for the whole benchmark process,
+including setup and Criterion analysis; central estimate 54.722 ms, 365.48K subjects/s.
+Raw result: `var/audit-20260930/pipeline-resource-readback.log`. Same-code Criterion reruns labelled
+one run improved and another regressed; they are variation, not evidence of an optimization.
+No allocator-count, tail-latency, comparative-layout or production-capacity claim was made.
+
+All eleven core groups' actual Criterion metadata/estimate JSON is preserved in
+`var/audit-20260930/core-criterion-readback.json`; values there explicitly use mean estimates,
+not the console's fitted central estimate. Applied Holzman references:
+`references/nasa-jpl-standards.md`, `references/latency-throughput-playbook.md` and
+`references/zero-cost-abstractions.md`. No unsafe, feature-gate or threshold waiver was requested.
+
+### Blocking acceptance limits
+
+`cargo xtask perf check --reason '2026-09-30 targeted cohort and coach admission audit'`
+failed parsing the historical untagged numeric throughput at line 11 column 21. Its old four
+pipeline groups differ from the new readback group, and the comparison contract requires equal
+group sets. Historical values/units and thresholds were not silently rewritten. Bead `6yj.7`
+tracks a typed comparable acceptance baseline.
+
+Main subsequently recovered the historical benchmark files with
+`git ls-tree -r --name-only 0be3cfa7878ccfb21a28cb3d65a5546932e6ef83` and read
+`crates/census-service/benches/core.rs` and `crates/census-service/benches/pipeline/main.rs`
+using `git show` at that exact commit. All fifteen groups explicitly use `Throughput::Elements`.
+The baseline's fifteen numeric throughputs were tagged `Elements`; metadata, group names,
+throughput values and wall times were independently compared and are exactly unchanged.
+Original bytes: `var/audit-20260930/perf-baseline-before-unit-tag-migration.json`.
+This repairs serialization only; the four legacy pipeline groups still do not qualify the new
+snapshot workload. No `perf record`, threshold reset or comparable-baseline approval occurred.
+
+The actual post-migration command
+`cargo xtask perf check --reason '2026-10-01 historical Elements unit-tag migration; no measurement or threshold reset'`
+exited 1 after 356.28 s. It loaded the typed baseline and ran both current benchmark targets,
+then reported corpus sizes 38,530 versus 55,252 and rejected the benchmark ID set:
+missing `pipeline/merge/consolidate`, `pipeline/merge/scan`, `pipeline/result_file/parse` and
+`pipeline/school_labels/resolve`; unexpected `pipeline/snapshot/athlete_evidence`.
+GNU time was absent, so this command did not obtain peak RSS. The default gate ran concurrently;
+this is acceptance-blocker evidence, not an optimization measurement. Structured observation,
+not verbatim stdout: `var/audit-20260930/perf-check-after-unit-tag-migration-observation.json`,
+SHA-256 `a444fc167871f9a928f13e79175ec53d58bb7547de314d0dfb9072c13a34b012`.
+Original baseline SHA-256:
+`aa661859b9afb98198b79242fe1afd7304ced273f8e89317d593d1f3cdbf97fb`;
+typed baseline SHA-256:
+`74dd1ee439ba1be34859c77dc28c8d498f200307b24a746607091123e9b7f9d0`.
+
+The earlier default gate ran 944 passing tests before the stale index skip assertion failed;
+831 tests were not run. It also found four crawl lint errors and timed out at 300 seconds while
+building benchmarks. Those results are not a workspace pass. Parallel worker handoffs initially
+contained unresolved names/imports and a test reading an Athletes sheet from a meta-only workbook;
+Main repaired those defects before integrated execution. No worker assertion is acceptance evidence.
+
+The first completed post-merge default gate exited 1 after 584.29 s: 1,602 passing tests, five
+failures, three skipped and 181 not run out of 1,788. It exposed four incoming PIAA comment
+violations, unchecked contact-card successor arithmetic, two oversized parsers and a
+304-line applicability data file; four legacy incomplete verification workbooks and one
+Unix-socket fixture also failed. Complete raw stdout:
+`var/audit-20260930/main-quality-gate-before-incoming-repairs.log`, SHA-256
+`f668e7846bb10a008aa7390a89db4ff9ae9627b85615a40c855b81db9eaa0144`.
+Main repaired the socket fixture with an isolated short `/tmp` directory, without mutating
+process-wide cwd or environment. Under the same long compiler `TMPDIR`,
+`cargo test -p census-store backup_refuses_a_socket_in_the_store_tree -- --nocapture`
+passed one regression; retained `var/audit-20260930/socket-backup-short-path-regression.log`.
+
+PIAA helpers initially swallowed regex initialization errors; Main restored once-per-page
+fallible initialization. The fixture worker initially emitted an untyped twenty-field tuple
+with incorrect scalar/reference types and labelled unevidenced synthetic records `core`.
+Main replaced it with borrowed fixture records and the existing public `PerformanceProjection`
+in `all_sources` scope, preserving only intentional event-cell overrides. No production
+verification rule was weakened. Incoming tests asserting constant copies, fixture text and
+report wording were removed; captured parser field parity, role/provenance, normalization and
+durable journal assertions remain.
+
+The integrated repair command chain ran `cargo fmt --all`, the seven CLI acceptance tests,
+the nine retained PIAA tests, `cargo run -p census-service --example audit_piaa_smoke`,
+`cargo xtask comments` and `cargo xtask scan`; every command exited zero. The throwaway smoke
+compared all seven directory fields against the captured golden rows: A 53, B 101 and Z 53.
+It read A J McMullen School's Harry Kaufman and `harry.kaufman@uasdraiders.org` from the actual
+contact capture, refused malformed directory/title inputs and made zero network requests.
+The example was removed afterward. Raw command chain:
+`var/audit-20260930/incoming-piaa-fixture-repair-smoke.log`, SHA-256
+`c433d0f53e17f8fe372650fd8cb8ebd667a1ee5bf8f2f39fddd3ea74821755d5`.
+The separate socket regression log SHA-256 is
+`b4b1bdfe09fd538a78ea1d19ed6969156f62e6f9c5f2a37053cc8c5597aead8b`.
+
+The next completed `tools/gate.sh` exited 1 after 560.06 s. All 1,786 executed tests passed;
+three tests were skipped: two fixture-origin/CDP browser tests and the operator store-walk
+instrument. Format, 1,061-file zero-comments, 8/8 architecture checks, all-target check, docs,
+domain integrity/purity, seams, deny, audit, machete, feature
+powerset and benchmark compilation passed. The production scan reported zero forbidden
+constructs, oversized files and functions over 60 lines. Ratchet failed on six recruiting CSV
+`unnecessary_option_map_or_else` diagnostics; locked vet remained blocked. No baseline was
+raised. Geiger exited zero but reported dependency parsing/matching limitations; that exit
+does not certify complete dependency unsafe coverage. Complete stdout:
+`var/audit-20260930/main-quality-gate-before-recruiting-lint-repair.log`, SHA-256
+`ea9f9fb5501800139ef4de1b0c927462005ce474bcb5cb06a40d98c4b2e8f332`.
+
+Main removed the six redundant recruiting CSV `Option<String>` identity closures, preserving
+the existing empty-string semantics. Focused commands following the environment prefix above:
+
+```sh
+cargo clippy -p census-report --lib --all-features -- -D warnings -D unsafe_code -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic -D clippy::panic_in_result_fn -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::indexing_slicing -D clippy::string_slice -D clippy::get_unwrap -D clippy::arithmetic_side_effects -D clippy::as_conversions -D clippy::let_underscore_must_use -D clippy::await_holding_lock
+cargo test -p census-report recruiting -- --nocapture
+cargo build -p census-service --bin census-service
+```
+
+All exited zero: strict report lint, 35 recruiting tests and CLI build. Retained stdout:
+`var/audit-20260930/recruiting-lint-repair-focused.log`, SHA-256
+`ce0936fbd35c29a352ad6c9a4e08097e151938f88ade5674b7bb17b6d5a76e37`.
+
+The subsequent default gate exited 1 after 618.19 s, with all 1,786 executed tests passing
+and three skipped. Its source diagnostic count fell from six to one:
+`census-service clippy::needless_borrow` in school-export sorting; ratchet and locked vet failed.
+Complete raw stdout: `var/audit-20260930/main-quality-gate-before-service-lint-repair.log`,
+SHA-256 `c7414f587482780e6ea3e32dcaf99b8cbd33471bc440ef1ff77b00d585adf795`.
+Main isolated the source lint, removed only the redundant comparator borrow and ran:
+
+```sh
+cargo fmt --all -- --check
+cargo clippy -p census-service --lib --bins --examples --all-features -- -D warnings -D unsafe_code -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic -D clippy::panic_in_result_fn -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::indexing_slicing -D clippy::string_slice -D clippy::get_unwrap -D clippy::arithmetic_side_effects -D clippy::as_conversions -D clippy::let_underscore_must_use -D clippy::await_holding_lock
+cargo build -p census-service --bin census-service
+```
+
+All exited zero, including after the CLI scope-label correction. No production rule, ratchet
+baseline or audit policy was relaxed. The actual export byte-parity and CLI boundary checks
+are recorded above. Test-only unused shared helpers in `parity_pipeline` remain unchanged;
+the strict implementation-style lane excludes test targets.
+
+The final default gate, with those source repairs integrated, exited 1 after 563.16 s solely
+on locked vet. All 1,786 executed tests passed; three were skipped. Source Clippy measured zero
+diagnostics, the debt ratchet passed, and all nine scanned crates had zero forbidden constructs,
+files over 300 lines and functions over 60 lines. The 789 functions above 25 logical lines are
+reported review targets, not violations of the 60-line budget. Format, zero-comments, 8/8
+architecture checks, all-target check, docs, domain integrity/purity, seams, deny, audit, machete,
+feature powerset and benchmark compilation passed. Complete raw stdout:
+`var/audit-20260930/main-quality-gate-final.log`, SHA-256
+`04b60285e2ec48a467e046f86740cfd3bb6679746cd0e651ccd25ed90d1f53d8`.
+Geiger again exited zero while reporting dependency parsing/matching failures; complete
+dependency unsafe coverage remains unverified.
+
+The skipped tests were `results_capture_costs_one_physical_post`,
+`challenge_response_revokes_the_gate_and_ends_pagination` and `walk_derived_tables`.
+The first two require a fixture origin and CDP browser; the last requires an operator-owned
+store root. None was counted as executed or as one of the 17 required native faults.
+
+Scoped defect beads `6yj.1`, `6yj.3`, `6yj.4`, `6yj.5` and `6yj.8` were closed against their
+actual constructor-boundary, coach-admission, recording/recovery, measured-readback and
+main-regression acceptance evidence. Parent assurance remains open; identity `6yj.2`,
+dependency audit `6yj.6`, comparable performance baseline `6yj.7` and extra review-wave `6yj.9`
+are not certified by those closures. Main checked the current section's local artifact
+references against existing files; subagent handoff sentences were not substituted for
+execution or independent review approval.
+
+`cargo vet --locked` failed because the header-only `imports.lock` disagrees with configured Google
+and Mozilla imports. Main then ran `cargo vet` directly: exit 255, missing
+`policy.audit-as-crates-io` classification for the modified vendored `chromiumoxide_cdp 0.9.1`;
+validation stopped before the lock was populated. No audits, owner signatures, policy exception
+or exemption was fabricated. Current blocker `6yj.6` is distinct from historical `3sb`, which
+describes a missing owner store in another worktree.
+
+Excel generation and readback work for these captured inputs. Accuracy beyond this qualification
+needs broader public captures with acquisition manifests, admissible central identity decisions
+and school-matched contact evidence. Persisted run lineage and atomic multi-artifact publication
+remain publication-fidelity work. The 17 native fault scenarios and full release/proof gates are
+not prerequisites to opening this offline worksheet, but remain mandatory national-release
+obligations; no simulated or offline replay was relabelled as native evidence.
+
+Global assurance disposition is **UNVERIFIED**, not approved. Verified local findings are
+`fixed_with_evidence`; missing dependency/baseline/identity/native acceptance are `blocker`.
+No owner-approved debt or waiver was inferred from worker output or passing local tests.
+
+
 ## Targeted projection readback and error classification — 2026-09-30
 
 This is a qualification-store repair check, not a fresh national census or release certificate.

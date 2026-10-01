@@ -185,11 +185,13 @@ fn a_repeated_pass_reuses_every_id_and_keeps_one_snapshot_a_day() {
     store.append(Table::Schools, &school).expect("school");
 
     derive(&store, "index", "2026-09-22").expect("first pass");
-    let second = derive(&store, "index", "2026-09-22").expect("second pass");
-    assert_eq!(
-        second.source_identities, 0,
-        "a repeated pass over the same store skips the stage: {second:?}"
-    );
+    let first_ids: Vec<_> = store
+        .scan::<SourceObjectIdentity>(Table::SourceIdentities)
+        .expect("first identities")
+        .into_iter()
+        .map(|identity| identity.id)
+        .collect();
+    derive(&store, "index", "2026-09-22").expect("second pass");
 
     let identities: Vec<SourceObjectIdentity> =
         store.scan(Table::SourceIdentities).expect("identities");
@@ -197,6 +199,14 @@ fn a_repeated_pass_reuses_every_id_and_keeps_one_snapshot_a_day() {
         identities.len(),
         1,
         "the second pass reuses the row id, so a read sees one identity"
+    );
+    assert_eq!(
+        identities
+            .into_iter()
+            .map(|identity| identity.id)
+            .collect::<Vec<_>>(),
+        first_ids,
+        "rederivation preserves provider identity row IDs"
     );
     let snapshots: Vec<CollectionSnapshot> = store.scan(Table::Snapshots).expect("snapshots");
     assert_eq!(snapshots.len(), 1, "one snapshot per phase per day");

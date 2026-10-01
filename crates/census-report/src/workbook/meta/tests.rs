@@ -4,8 +4,9 @@ use crate::report::{self, Scope};
 use calamine::{open_workbook, Reader, Xlsx};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CoachRole, CompetitionLevel, Evidence, Gender, GradYear,
-    Grade, ObservedGrade, ReviewVerdictRecord, SchoolYear, SourceIdentity, SourceNamespace, Sport,
-    ATHLETE_IDENTITY_FAMILY, CONTACT_CONFLICT_FAMILY,
+    Grade, ObservedGrade, ReviewCase, ReviewState, ReviewVerdictRecord, SchoolYear, SourceIdentity,
+    SourceNamespace, Sport, ATHLETE_IDENTITY_FAMILY, CONTACT_CONFLICT_FAMILY,
+    UNSUPPORTED_GRADUATION_FAMILY,
 };
 use census_domain::model::{CanonicalMeet, SourceRef};
 use census_domain::UsJurisdiction;
@@ -317,6 +318,70 @@ fn the_sheets_render_the_rows_the_store_retains() {
     assert!(
         carries(&review, 1, "WI"),
         "the athlete subject resolves its school jurisdiction: {review:?}"
+    );
+}
+#[test]
+fn unsupported_graduation_cases_are_retained_in_review_without_a_canonical_athlete() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+
+    let pending = ReviewCase::pending(
+        UNSUPPORTED_GRADUATION_FAMILY,
+        "tfrrs_in:meet:2040:row:1",
+        "Unplaced Runner",
+        "Published grade 12 in school year 2040. URL: https://example.test/results.",
+    );
+    store.append(Table::ReviewCases, &pending).unwrap();
+
+    let resolved_case = {
+        let mut case = ReviewCase::pending(
+            UNSUPPORTED_GRADUATION_FAMILY,
+            "tfrrs_in:meet:2039:row:1",
+            "Resolved Runner",
+            "This case was resolved and should not appear.",
+        );
+        case.state = ReviewState::Resolved;
+        case
+    };
+    store.append(Table::ReviewCases, &resolved_case).unwrap();
+
+    let path = crate::workbook::build(
+        &store,
+        &crate::workbook::Options {
+            out: Some(dir.path().join("unsupported-cohort.xlsx")),
+            school_year: SchoolYear::new(2026),
+            ..crate::workbook::Options::default()
+        },
+    )
+    .unwrap();
+
+    let review = sheet(&path, "Review");
+    assert!(
+        carries(&review, 0, UNSUPPORTED_GRADUATION_FAMILY),
+        "the pending unsupported graduation case is surfaced: {review:?}"
+    );
+    assert!(
+        carries(&review, 3, "Unplaced Runner"),
+        "the case subject is visible: {review:?}"
+    );
+
+    let resolved_rows = review
+        .iter()
+        .filter(|row| row.iter().any(|cell| cell == "Resolved Runner"))
+        .count();
+    assert_eq!(
+        resolved_rows, 0,
+        "a resolved case is excluded from the review queue: {review:?}"
+    );
+
+    let athletes = sheet(&path, "Athletes");
+    let unplaced_athlete_rows = athletes
+        .iter()
+        .filter(|row| row.iter().any(|cell| cell == "Unplaced Runner"))
+        .count();
+    assert_eq!(
+        unplaced_athlete_rows, 0,
+        "an unsupported graduation case does not create a canonical athlete: {athletes:?}"
     );
 }
 

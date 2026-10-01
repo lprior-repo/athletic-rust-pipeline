@@ -105,15 +105,15 @@ fn athlete_cells(athlete: &CanonicalAthlete, school: Option<&CanonicalSchool>) -
         school.map_or_else(String::new, |school| school.name.clone()),
         school
             .and_then(|school| school.city.clone())
-            .map_or_else(String::new, |city| city),
+            .unwrap_or_default(),
         athlete
             .sports
             .iter()
             .map(|sport| sport.stable_key())
             .collect::<Vec<_>>()
             .join(";"),
-        profiles.athletic_net.map_or_else(String::new, |url| url),
-        profiles.milesplit.map_or_else(String::new, |url| url),
+        profiles.athletic_net.unwrap_or_default(),
+        profiles.milesplit.unwrap_or_default(),
     ]
 }
 
@@ -122,10 +122,8 @@ fn contact_cells(
     school: Option<&CanonicalSchool>,
 ) -> ([String; 8], bool, bool) {
     let preferred = contacts.preferred();
-    let track_name = contacts.track_names().map_or_else(String::new, |name| name);
-    let track_email = contacts
-        .track_emails()
-        .map_or_else(String::new, |email| email);
+    let track_name = contacts.track_names().unwrap_or_default();
+    let track_email = contacts.track_emails().unwrap_or_default();
     let xc = contacts.cross_country();
     let director = contacts.director();
     let has_coach = !track_name.is_empty() || xc.is_some();
@@ -144,7 +142,7 @@ fn contact_cells(
             .map_or_else(String::new, str::to_owned),
         school
             .and_then(|school| school.athletics_website.clone())
-            .map_or_else(String::new, |url| url),
+            .unwrap_or_default(),
         preferred.source_url,
     ];
     (row, has_coach, has_email)

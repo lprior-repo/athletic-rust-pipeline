@@ -44,7 +44,6 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalPerformance, CentiSeconds, EventKind, Gender,
     GradYear, Id, Mark, SourceIdentity, SourceNamespace, TeamId,
 };
-use census_report::bests::mark_text;
 use rust_xlsxwriter::Workbook as Xlsx;
 
 use super::verify::{run_verify, VerifyArgs};
@@ -64,54 +63,138 @@ fn team_id(school: &str, sport: &str, gender: &str) -> TeamId {
     Id::mint("team", &[school, sport, gender])
 }
 
-fn write_test_workbook(
+struct PerformanceFixture<'a> {
+    performance: &'a CanonicalPerformance,
+    event: &'a str,
+}
+
+fn write_test_workbook_full(
     dir: &Path,
-    athletes: &[(String, String, String, String)],
-    performances: &[(String, String, String)],
+    store: &Store,
+    athletes: &[(&str, &str, &str, i16)],
+    performances: &[PerformanceFixture<'_>],
 ) -> std::path::PathBuf {
     let path = dir.join("verify-test.xlsx");
     let mut book = Xlsx::new();
+    let dataset = census_report::export::ExportDataset::load(store).expect("fixture snapshot");
+    let derivation = census_report::report::Derivation::of(
+        &dataset,
+        census_report::report::Scope::AllSources,
+        None,
+    );
+    let projection = census_report::workbook::PerformanceProjection::of(&derivation);
 
     let athletes_sheet = book.add_worksheet();
-    let _ = athletes_sheet.set_name("Athletes");
+    athletes_sheet.set_name("Athletes").expect("athletes sheet");
     let headers = ["Athlete ID", "Name", "School", "Graduation Year"];
     for (col, header) in headers.iter().enumerate() {
-        let _ = athletes_sheet.write_string(0, u16::try_from(col).unwrap_or(0), *header);
+        athletes_sheet
+            .write_string(
+                0,
+                u16::try_from(col).expect("fixture column fits u16"),
+                *header,
+            )
+            .expect("athlete header");
     }
-    for (row_idx, (aid, name, school, grad_year)) in athletes.iter().enumerate() {
-        let row = u32::try_from(row_idx).unwrap_or(0).saturating_add(1);
-        let _ = athletes_sheet.write_string(row, 0, aid);
-        let _ = athletes_sheet.write_string(row, 1, name);
-        let _ = athletes_sheet.write_string(row, 2, school);
-        let _ = athletes_sheet.write_string(row, 3, grad_year);
+    for (row_idx, &(aid, name, school, grad_year)) in athletes.iter().enumerate() {
+        let row = u32::try_from(row_idx)
+            .expect("fixture row fits u32")
+            .saturating_add(1);
+        athletes_sheet
+            .write_string(row, 0, aid)
+            .expect("athlete id");
+        athletes_sheet
+            .write_string(row, 1, name)
+            .expect("athlete name");
+        athletes_sheet.write_string(row, 2, school).expect("school");
+        athletes_sheet
+            .write_number(row, 3, f64::from(grad_year))
+            .expect("graduation year");
     }
 
     let perf_sheet = book.add_worksheet();
-    let _ = perf_sheet.set_name("Performances_001");
-    let perf_headers = ["Athlete ID", "Event", "Mark"];
+    perf_sheet
+        .set_name("Performances_001")
+        .expect("performance sheet");
+    let perf_headers = [
+        "Canonical Result ID",
+        "Athlete ID",
+        "Athlete",
+        "School",
+        "Graduation Year",
+        "Meet ID",
+        "Meet",
+        "Date",
+        "State",
+        "Sport",
+        "Event",
+        "Mark",
+        "Normalized Mark",
+        "Timing",
+        "Wind",
+        "Round",
+        "Place",
+        "Source",
+        "Source ResultID",
+        "Source URL",
+    ];
     for (col, header) in perf_headers.iter().enumerate() {
-        let _ = perf_sheet.write_string(0, u16::try_from(col).unwrap_or(0), *header);
+        perf_sheet
+            .write_string(
+                0,
+                u16::try_from(col).expect("fixture column fits u16"),
+                *header,
+            )
+            .expect("performance header");
     }
-    for (row_idx, (aid, event, mark)) in performances.iter().enumerate() {
-        let row = u32::try_from(row_idx).unwrap_or(0).saturating_add(1);
-        let _ = perf_sheet.write_string(row, 0, aid);
-        let _ = perf_sheet.write_string(row, 1, event);
-        let _ = perf_sheet.write_string(row, 2, mark);
+    for (row_idx, fixture) in performances.iter().enumerate() {
+        let row = u32::try_from(row_idx)
+            .expect("fixture row fits u32")
+            .saturating_add(1);
+        let projected = projection.row(fixture.performance);
+        for (column, value) in projected.values().into_iter().enumerate() {
+            let column = u16::try_from(column).expect("fixture column fits u16");
+            match value {
+                census_report::workbook::ProjectedValue::Text(value) => {
+                    perf_sheet
+                        .write_string(row, column, value)
+                        .expect("performance text");
+                }
+                census_report::workbook::ProjectedValue::Number(Some(value)) => {
+                    perf_sheet
+                        .write_number(row, column, value)
+                        .expect("performance number");
+                }
+                census_report::workbook::ProjectedValue::Number(None) => {}
+            }
+        }
+        let event_column = u16::try_from(
+            perf_headers
+                .iter()
+                .position(|header| *header == "Event")
+                .expect("event header"),
+        )
+        .expect("fixture column fits u16");
+        perf_sheet
+            .write_string(row, event_column, fixture.event)
+            .expect("event cell under test");
     }
-
-    let coverage = book.add_worksheet();
-    let _ = coverage.set_name("Coverage");
-    let _ = coverage.write_string(0, 0, "state");
-    let _ = coverage.write_string(1, 0, "WI");
 
     let metrics = book.add_worksheet();
-    let _ = metrics.set_name("Run Metrics");
-    let _ = metrics.write_string(0, 0, "metric");
-    let _ = metrics.write_string(0, 1, "value");
-    let _ = metrics.write_string(1, 0, "Class of 2027");
-    let _ = metrics.write_number(1, 1, 0.0);
+    metrics.set_name("Run Metrics").expect("metrics sheet");
+    metrics.write_string(0, 0, "metric").expect("metric header");
+    metrics
+        .write_string(0, 1, "value")
+        .expect("metric value header");
+    metrics
+        .write_string(1, 0, "Workbook scope")
+        .expect("scope label");
+    metrics
+        .write_string(1, 1, "all_sources")
+        .expect("scope value");
 
-    let _ = book.save(&path);
+    book.save(&path)
+        .expect("save complete verification fixture");
     path
 }
 
@@ -215,33 +298,22 @@ fn acceptance_agreement() {
     store.append(Table::Performances, &p1).expect("append perf");
     store.append(Table::Performances, &p2).expect("append perf");
 
-    let _ = write_test_workbook(
+    let _ = write_test_workbook_full(
         dir.path(),
+        &store,
         &[
-            (
-                a1.id.as_str().to_string(),
-                "Alice Runner".to_string(),
-                school_rec.name.clone(),
-                "2027".to_string(),
-            ),
-            (
-                a2.id.as_str().to_string(),
-                "Bob Sprinter".to_string(),
-                school_rec.name.clone(),
-                "2027".to_string(),
-            ),
+            (a1.id.as_str(), "Alice Runner", &school_rec.name, 2027),
+            (a2.id.as_str(), "Bob Sprinter", &school_rec.name, 2027),
         ],
         &[
-            (
-                a1.id.as_str().to_string(),
-                e1.kind.stable_key().to_string(),
-                mark_text(&p1.mark),
-            ),
-            (
-                a2.id.as_str().to_string(),
-                e2.kind.stable_key().to_string(),
-                mark_text(&p2.mark),
-            ),
+            PerformanceFixture {
+                performance: &p1,
+                event: e1.kind.stable_key().as_ref(),
+            },
+            PerformanceFixture {
+                performance: &p2,
+                event: e2.kind.stable_key().as_ref(),
+            },
         ],
     );
 
@@ -286,19 +358,14 @@ fn acceptance_event_id_where_the_store_has_a_label() {
     store.append(Table::Events, &e1).expect("append event");
     store.append(Table::Performances, &p1).expect("append perf");
 
-    let _ = write_test_workbook(
+    let _ = write_test_workbook_full(
         dir.path(),
-        &[(
-            a1.id.as_str().to_string(),
-            "Alice Runner".to_string(),
-            school_rec.name.clone(),
-            "2027".to_string(),
-        )],
-        &[(
-            a1.id.as_str().to_string(),
-            p1.event.as_str().to_string(),
-            mark_text(&p1.mark),
-        )],
+        &store,
+        &[(a1.id.as_str(), "Alice Runner", &school_rec.name, 2027)],
+        &[PerformanceFixture {
+            performance: &p1,
+            event: p1.event.as_str(),
+        }],
     );
 
     let args = VerifyArgs {
@@ -347,19 +414,14 @@ fn acceptance_empty_event_cell_with_no_store_row() {
     store.append(Table::Athletes, &a1).expect("append athlete");
     store.append(Table::Performances, &p1).expect("append perf");
 
-    let _ = write_test_workbook(
+    let _ = write_test_workbook_full(
         dir.path(),
-        &[(
-            a1.id.as_str().to_string(),
-            "Alice Runner".to_string(),
-            school_rec.name.clone(),
-            "2027".to_string(),
-        )],
-        &[(
-            a1.id.as_str().to_string(),
-            String::new(),
-            mark_text(&p1.mark),
-        )],
+        &store,
+        &[(a1.id.as_str(), "Alice Runner", &school_rec.name, 2027)],
+        &[PerformanceFixture {
+            performance: &p1,
+            event: "",
+        }],
     );
 
     let args = VerifyArgs {
@@ -389,14 +451,10 @@ fn acceptance_disagreement() {
         .expect("append school");
     store.append(Table::Athletes, &a1).expect("append athlete");
 
-    let _ = write_test_workbook(
+    let _ = write_test_workbook_full(
         dir.path(),
-        &[(
-            a1.id.as_str().to_string(),
-            "Alice Wrong".to_string(),
-            school_id.as_str().to_string(),
-            "2027".to_string(),
-        )],
+        &store,
+        &[(a1.id.as_str(), "Alice Wrong", school_id.as_str(), 2027)],
         &[],
     );
 
@@ -432,14 +490,10 @@ fn acceptance_school_id_where_the_store_has_a_name() {
         .expect("append school");
     store.append(Table::Athletes, &a1).expect("append athlete");
 
-    let _ = write_test_workbook(
+    let _ = write_test_workbook_full(
         dir.path(),
-        &[(
-            a1.id.as_str().to_string(),
-            "Alice Runner".to_string(),
-            school_id.as_str().to_string(),
-            "2027".to_string(),
-        )],
+        &store,
+        &[(a1.id.as_str(), "Alice Runner", school_id.as_str(), 2027)],
         &[],
     );
 
@@ -480,14 +534,10 @@ fn acceptance_school_id_with_no_store_row() {
         .expect("append school");
     store.append(Table::Athletes, &a1).expect("append athlete");
 
-    let _ = write_test_workbook(
+    let _ = write_test_workbook_full(
         dir.path(),
-        &[(
-            a1.id.as_str().to_string(),
-            "Ghost Runner".to_string(),
-            ghost_id.as_str().to_string(),
-            "2027".to_string(),
-        )],
+        &store,
+        &[(a1.id.as_str(), "Ghost Runner", ghost_id.as_str(), 2027)],
         &[],
     );
 
@@ -532,8 +582,8 @@ fn acceptance_missing_column() {
     let _ = metrics.set_name("Run Metrics");
     let _ = metrics.write_string(0, 0, "metric");
     let _ = metrics.write_string(0, 1, "value");
-    let _ = metrics.write_string(1, 0, "Class of 2027");
-    let _ = metrics.write_number(1, 1, 0.0);
+    let _ = metrics.write_string(1, 0, "Workbook scope");
+    let _ = metrics.write_string(1, 1, "core");
 
     let _ = book.save(&path);
 

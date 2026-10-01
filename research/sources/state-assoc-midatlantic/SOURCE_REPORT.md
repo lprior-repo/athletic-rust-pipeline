@@ -199,7 +199,7 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 2 | **Geographic coverage** | Pennsylvania statewide, organised into districts and regions. |
 | 3 | **Sports** | `/sitemap.aspx` lists 50 sports paths (`samples/piaa-sitemap.aspx.html`), including `/sports/crscountry/championships/default.aspx` and the Track & Field championship entry. |
 | 4 | **Historical depth** | Championship pages are per-season (page title dated "2026 PIAA Cross Country Championships Information and Results"). Older seasons not enumerated. |
-| 5 | **Discovery mechanism** | `/schools/directory/list.aspx?alpha=<letter>` (letters A–W and Y observed; 25 letters) + `/schools/membership/default.aspx` + `/schools/classifications/default.aspx` (`samples/piaa-sitemap.aspx.html`). |
+| 5 | **Discovery mechanism** | `/schools/directory/list.aspx?alpha=<letter>` (24 linked letters: A–W and Y) + `/schools/membership/default.aspx` + `/schools/classifications/default.aspx` (`samples/piaa-sitemap.aspx.html`). |
 | 6 | **Stable identifiers** | `alpha` directory letters; `sport=` championship keys (`?sport=crscountry`); district pages `/schools/directory/district.aspx`. |
 | 7 | **Pagination** | Alphabetical (per-letter) rather than numeric; the alpha page renders **no school anchors** in static HTML, so per-letter rows are `[INFERENCE]` client-rendered and were not counted. |
 | 8 | **Athlete fields** | None observed. |
@@ -227,6 +227,12 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
   reads one details page per school at 1 request/s under robots (`/schools/…` allowed,
   `/officials/directory/` disallowed). Evidence: `docs/VERIFICATION-EVIDENCE.md`, "PIAA member
   directory ported to Rust".
+- **Main integration (2026-10-01).** Parser helpers separate school blocks, school title and
+  contact blocks without changing captured fields. Directory regex initialization is resolved once
+  and errors propagate; malformed rows remain distinct from initialization failure. Contact-card
+  successor arithmetic is explicit. Source rationale remains here, not Rust comments; applicability
+  evidence/refusal text uses the existing prose module. This is a captured-input qualification,
+  not a live-response or statewide-acquisition claim; command results belong in the evidence ledger.
 - **Note.** Row 15's browser requirement is contradicted by the captures: the letter pages are
   server-rendered and their rows parse without a browser (`notes/pa-piaa.md`), which is what the
   adapter relies on; the divergence has not been re-tested against a live response.

@@ -72,7 +72,7 @@ pub fn write_canonical_schools(
         a.state
             .map(|j| j.code())
             .unwrap_or_default()
-            .cmp(&b.state.map(|j| j.code()).unwrap_or_default())
+            .cmp(b.state.map(|j| j.code()).unwrap_or_default())
             .then_with(|| a.name.cmp(&b.name))
     });
     let rows: Vec<Vec<String>> = sorted.into_iter().map(build_school_row).collect();

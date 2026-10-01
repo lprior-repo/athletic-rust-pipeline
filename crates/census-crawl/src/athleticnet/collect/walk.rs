@@ -1,8 +1,7 @@
 use super::{store_accumulated, RunState};
-use crate::athleticnet::absorb::absorb;
-use crate::athleticnet::parse::Bio;
+use crate::athleticnet::absorb::{absorb, AbsorbContext};
 use crate::athleticnet::{
-    Options, Scope, Target, BIO_ENDPOINT, HIGH_SCHOOL_LEVEL, PARSE_VERSION, SCOPES,
+    Bio, Options, Scope, Target, BIO_ENDPOINT, HIGH_SCHOOL_LEVEL, PARSE_VERSION, SCOPES,
 };
 use crate::{AdapterContext, CrawlResult, FLUSH_UNITS};
 use census_domain::model::SourceRef;
@@ -55,12 +54,14 @@ pub(super) async fn absorb_targets(
                 &bio,
                 scope,
                 target,
-                source,
-                &options.observed_on,
-                index,
-                &mut run.resolved,
-                &mut run.stats,
-                &mut run.accumulated,
+                AbsorbContext {
+                    source,
+                    observed_on: &options.observed_on,
+                    index,
+                    resolved: &mut run.resolved,
+                    stats: &mut run.stats,
+                    accumulated: &mut run.accumulated,
+                },
             );
             absorbed_any |= rows > 0;
             let payload = json!({

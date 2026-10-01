@@ -12,18 +12,24 @@ use census_domain::model::{
 };
 use census_domain::school_index::SchoolIndex;
 use std::collections::HashMap;
+pub(super) struct AbsorbContext<'a> {
+    pub source: &'a SourceRef,
+    pub observed_on: &'a str,
+    pub index: &'a SchoolIndex,
+    pub resolved: &'a mut HashMap<String, SchoolId>,
+    pub stats: &'a mut Stats,
+    pub accumulated: &'a mut Accumulator,
+}
 
-pub(super) fn absorb(
-    bio: &Bio,
-    scope: Scope,
-    target: &Target,
-    source: &SourceRef,
-    observed_on: &str,
-    index: &SchoolIndex,
-    resolved: &mut HashMap<String, SchoolId>,
-    stats: &mut Stats,
-    accumulated: &mut Accumulator,
-) -> u64 {
+pub(super) fn absorb(bio: &Bio, scope: Scope, target: &Target, ctx: AbsorbContext<'_>) -> u64 {
+    let AbsorbContext {
+        source,
+        observed_on,
+        index,
+        resolved,
+        stats,
+        accumulated,
+    } = ctx;
     let name = bio.athlete.name();
     let Some(gender) = gender_of(&bio.athlete.gender) else {
         stats.gender_unknown = stats.gender_unknown.saturating_add(1);
