@@ -4563,3 +4563,34 @@ invalid token are exercised only through the compiler, not by a test. Live end-t
 of `--geocode`/`--validate-postal` therefore remains open on `athletic-rust-pipeline-9p7`; the
 earlier "typed refusal" smoke in this ledger is superseded — the flags now run the phases and refuse
 only an absent credential.
+
+## Reproduce block names the Rust verbs; the Python-free scanner drops stale exclusions (2026-09-30)
+
+The zero-Python audit above left one open item: the generated census document's reproduce block
+printed `tools/run_pipeline.sh` and `python3 tools/make_census_doc.py`, neither of which exists in
+this tree, so a reader following it would run nothing. `format_sections::reproduce` now prints the
+verbs that exist, each checked against the verb's own usage:
+
+- `census-service run --store <store>`
+- `census-service census-doc --store <store> --store-out <snapshots> --research <research>`
+
+`format_sections::limits` keeps the 2026-09-20 measurement date and drops the removed tooling path.
+
+Evidence. `cargo nextest run -p census-service format_sections` -> 2 passed
+(`reproduce_block_names_the_rust_verbs`, `limits_do_not_point_at_removed_tooling`). The verb ran for
+real against the preserved `var/midwest-census` store with a throwaway research root:
+`cargo run -q -p census-service --bin census-service -- census-doc --store var/midwest-census
+--store-out var/midwest-census/out --research /tmp/census-doc-proof` reported
+`"wrote": "/tmp/census-doc-proof/synthesis/10-measured-census.md"`, and lines 162-167 of that
+document carry the new block. The preserved store was unaffected (no file under `var/midwest-census`
+newer than the run). `cargo clippy` over the touched crates' source targets with the gate's full lint
+set is clean.
+
+The contract scanner's `SKIP` no longer names `hs-address-pipeline` or `parsers`, both deleted from
+the tree by `ea81c568` and `887f8446`. `cargo xtask contract` check 4 now reports `33731 files
+outside [target, .git, var], 0 of them Python artifacts`, and the whole check stays PASS (0
+deviations).
+
+Limits. The rendered document is a throwaway readback, not a published artifact: it was written to
+`/tmp`, its research root carried no `data/`, and the metrics it printed come from the preserved
+2026-09-25 store, not a fresh run. No network was touched.

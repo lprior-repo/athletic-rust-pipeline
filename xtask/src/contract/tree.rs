@@ -10,7 +10,7 @@ use super::Check;
 use crate::paths;
 use crate::scan;
 
-const SKIP: [&str; 5] = ["target", ".git", "var", "hs-address-pipeline", "parsers"];
+const SKIP: [&str; 3] = ["target", ".git", "var"];
 
 pub(super) fn python_free() -> Result<Check> {
     const NAME: &str = "no python files";

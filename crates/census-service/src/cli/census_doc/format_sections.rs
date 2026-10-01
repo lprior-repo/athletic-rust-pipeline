@@ -190,7 +190,7 @@ pub(super) fn measured_answers(
 
 pub(super) fn limits() -> String {
     [
-        "The measurement covers what the runbooks in `tools/run_pipeline.sh` executed on 2026-09-20; it is a snapshot, not a season-long census.".to_string(),
+        "The measurement covers the run executed on 2026-09-20; it is a snapshot, not a season-long census.".to_string(),
         "Team rosters only surface athletes whose school publishes a roster on the source used; athletes on teams with no published roster are invisible to this pass.".to_string(),
         "`events` and `performances` tables are intentionally empty in this store: results acquisition stays with the production pipeline; this store carries identity, school, coach and meet facts.".to_string(),
     ]
@@ -202,10 +202,40 @@ pub(super) fn reproduce() -> String {
         "```bash".to_string(),
         "# 1. crawl + adapters + merge + census + exports (idempotent, journal-resumed)"
             .to_string(),
-        "tools/run_pipeline.sh".to_string(),
+        "census-service run --store <store>".to_string(),
         "# 2. rebuild this document from the fresh snapshots".to_string(),
-        "python3 tools/make_census_doc.py".to_string(),
+        "census-service census-doc --store <store> --store-out <snapshots> --research <research>"
+            .to_string(),
         "```".to_string(),
     ]
     .join("\n")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{limits, reproduce};
+
+    #[test]
+    fn reproduce_block_names_the_rust_verbs() {
+        let block = reproduce();
+        assert!(
+            block.contains("census-service run --store <store>"),
+            "{block}"
+        );
+        assert!(
+            block.contains(
+                "census-service census-doc --store <store> --store-out <snapshots> --research <research>"
+            ),
+            "{block}"
+        );
+        assert!(!block.contains("python"), "{block}");
+        assert!(!block.contains("run_pipeline"), "{block}");
+    }
+
+    #[test]
+    fn limits_do_not_point_at_removed_tooling() {
+        let text = limits();
+        assert!(text.contains("2026-09-20"), "{text}");
+        assert!(!text.contains("run_pipeline"), "{text}");
+    }
 }
