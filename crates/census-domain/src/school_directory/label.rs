@@ -13,6 +13,7 @@ pub enum SourceLabel {
     StateEducationAgency { state: UsJurisdiction },
     PrivateAssociation { label: AssociationLabel },
     AthleticAssociation { state: UsJurisdiction },
+    Geocoder,
 }
 
 impl SourceLabel {
@@ -23,6 +24,7 @@ impl SourceLabel {
             Self::StateEducationAgency { .. } => 2,
             Self::PrivateAssociation { .. } => 3,
             Self::AthleticAssociation { .. } => 4,
+            Self::Geocoder => 5,
         }
     }
 
@@ -35,6 +37,7 @@ impl SourceLabel {
             Self::AthleticAssociation { state } => {
                 format!("athletic-association:{}", state.code())
             }
+            Self::Geocoder => "geocoder".to_string(),
         }
     }
 }

@@ -132,16 +132,21 @@ The verb's own lane is `crates/census-service/tests/school_address_corpus.rs`, w
 two committed NCES fixture windows without a store and asserts the observed corpus (1 931 entries —
 1 557 CCD, 374 PSS — over 1 931 rows with 67 counted skips), the CCD lane digest, byte-identical
 outputs across runs, `changes: null` on a first baseline run and a 0/0/0 change set with a `not-due`
-schedule on the next month's run, the ledger's recorded month, and the four refusals: `--geocode`,
-`--validate-postal`, a baseline diff without `--now`, and an artifact of the wrong shape. The
-`--state-ed-*` and `--associations` lanes carry the same read → collapse → export path and are
-exercised by the readers' fixture lanes.
+schedule on the next month's run, the ledger's recorded month, and the four refusals: geocoding
+without `GOOGLE_MAPS_API_KEY`/`GOOGLE_API_KEY`, postal validation without `USPS_API_TOKEN`, a baseline
+diff without `--now`, and an artifact of the wrong shape. The `--state-ed-*` and `--associations`
+lanes carry the same read → collapse → export path and are exercised by the readers' fixture lanes.
 
-Outstanding, decided here but not built at the time this section was written: `census-crawl::geocode`
-(the Google geocoder and USPS validator typed clients of §4). The verb refuses `--geocode` and
-`--validate-postal` with that fact rather than importing an untyped client. Until it exists,
-`ccd`/`pss` rows carry the coordinates and ZIPs their artifacts publish, and no geocoded coordinate is
-invented. Tracked as `athletic-rust-pipeline-9p7`.
+Built after that first landing: `census-crawl::geocode` (the typed clients §4 decides) and the two
+phases that reach them. `Geocoder` joins `SourceLabel` at rank 5, so a geocoded coordinate never
+displaces a source-published one; the phases run read → collapse → optional geocode/validate → diff →
+stage, tally their verdicts in `report.phases`, stamp a filled coordinate `geocoder`, rewrite no
+published field, and refuse a phase whose credential is absent before any request is built. Evidence:
+14 client tests over the vendors' documented response shapes — request URLs, bearer header, status
+mapping, typed field mapping, and the key/token absent from every rendered outcome — plus the two
+credential refusals in the verb lane. No live vendor call has been made from this repository, so no
+committed capture exists and the phases remain unqualified for a live run. Tracked as
+`athletic-rust-pipeline-9p7`.
 
 ### Review amendments (2026-09-30)
 

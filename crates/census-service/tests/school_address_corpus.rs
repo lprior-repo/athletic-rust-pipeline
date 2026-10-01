@@ -162,19 +162,59 @@ fn school_address_diffs_against_its_baseline_and_records_the_month() {
     assert_eq!(report.schedule[1].due, "2028-01");
 }
 
+struct EnvGuard {
+    saved: Vec<(&'static str, Option<String>)>,
+}
+
+impl EnvGuard {
+    fn clear(names: &[&'static str]) -> Self {
+        let saved = names
+            .iter()
+            .map(|name| {
+                let previous = std::env::var(name).ok();
+                std::env::set_var(name, "");
+                (*name, previous)
+            })
+            .collect();
+        Self { saved }
+    }
+}
+
+impl Drop for EnvGuard {
+    fn drop(&mut self) {
+        for (name, previous) in self.saved.drain(..) {
+            match previous {
+                Some(value) => std::env::set_var(name, value),
+                None => std::env::remove_var(name),
+            }
+        }
+    }
+}
+
 #[test]
-fn school_address_refuses_the_unbuilt_geocode_phases() {
+fn school_address_refuses_geocoding_without_the_google_credential() {
     let dir = TempDir::new().expect("a temporary output directory");
+    let guard = EnvGuard::clear(&["GOOGLE_MAPS_API_KEY", "GOOGLE_API_KEY"]);
     let mut geocode = args(dir.path());
     geocode.geocode = true;
-    let error = school_address::run(&geocode).expect_err("geocoding is not built");
-    assert!(format!("{error:#}").contains("census-crawl::geocode"));
+    let error = school_address::run(&geocode).expect_err("geocoding needs a credential");
+    let message = format!("{error:#}");
+    assert!(message.contains("GOOGLE_MAPS_API_KEY"), "{message}");
     assert!(!dir.path().join("pipeline_report.json").exists());
+    drop(guard);
+}
 
+#[test]
+fn school_address_refuses_postal_validation_without_the_usps_credential() {
+    let dir = TempDir::new().expect("a temporary output directory");
+    let guard = EnvGuard::clear(&["USPS_API_TOKEN"]);
     let mut postal = args(dir.path());
     postal.validate_postal = true;
-    let error = school_address::run(&postal).expect_err("postal validation is not built");
-    assert!(format!("{error:#}").contains("census-crawl::geocode"));
+    let error = school_address::run(&postal).expect_err("postal validation needs a credential");
+    let message = format!("{error:#}");
+    assert!(message.contains("USPS_API_TOKEN"), "{message}");
+    assert!(!dir.path().join("pipeline_report.json").exists());
+    drop(guard);
 }
 
 #[test]

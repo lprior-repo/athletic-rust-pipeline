@@ -1,6 +1,7 @@
 mod export;
 mod generation;
 mod generation_error;
+mod geocode;
 mod manifest;
 mod pipeline;
 mod preflight;
@@ -11,7 +12,9 @@ mod report;
 
 pub use generation_error::GenerationError;
 pub use manifest::{verify_current, VerifiedGeneration};
-pub use report::{ChangeReport, CorpusReport, LaneReport, LedgerRow, Report, SourceDecision};
+pub use report::{
+    ChangeReport, CorpusReport, LaneReport, LedgerRow, PhaseReport, Report, SourceDecision,
+};
 
 use anyhow::{bail, Context, Result};
 use census_domain::school_directory::{ChangeSet, YearMonth};
@@ -76,13 +79,13 @@ pub struct SchoolAddressArgs {
 
     #[arg(
         long,
-        help = "Geocode addresses through the Google client (refused: `census-crawl::geocode` is not built)"
+        help = "Geocode the addresses whose entries carry none through the Google client: needs GOOGLE_MAPS_API_KEY or GOOGLE_API_KEY, stamps the filled coordinates as the `geocoder` source and rewrites nothing the artifacts already publish"
     )]
     pub geocode: bool,
 
     #[arg(
         long = "validate-postal",
-        help = "Validate ZIPs through the USPS client (refused: `census-crawl::geocode` is not built)"
+        help = "Validate the addresses that carry a ZIP through the USPS client: needs USPS_API_TOKEN and only counts the verdicts, because rewriting a published field with a weaker source would contradict its provenance"
     )]
     pub validate_postal: bool,
 }
@@ -91,12 +94,20 @@ pub fn run(args: &SchoolAddressArgs) -> Result<()> {
     let now = run_month(args)?;
     preflight::check(args)?;
     let lanes = read::lanes(args)?;
-    let corpus = pipeline::collapse(&lanes);
+    let mut corpus = pipeline::collapse(&lanes);
+    let phases = geocode::apply(args, &mut corpus)?;
     let changes = pipeline::diff(args, &corpus.entries)?;
     let (ledger, schedule) = pipeline::schedule(args, &lanes, now)?;
-    let report = build_report(&lanes, &corpus, changes.as_ref(), &schedule, now);
+    let report = build_report(&lanes, &corpus, changes.as_ref(), &schedule, phases, now);
     let outputs = publish::outputs(args, &corpus, changes.as_ref(), &ledger, report)?;
-    print::report(&lanes, &corpus, changes.as_ref(), &schedule, &outputs);
+    print::report(
+        &lanes,
+        &corpus,
+        changes.as_ref(),
+        &schedule,
+        phases,
+        &outputs,
+    );
     Ok(())
 }
 
@@ -105,6 +116,7 @@ fn build_report(
     corpus: &pipeline::Corpus,
     changes: Option<&ChangeSet>,
     schedule: &[SourceDecision],
+    phases: Option<PhaseReport>,
     now: Option<YearMonth>,
 ) -> Report {
     Report {
@@ -121,19 +133,11 @@ fn build_report(
         changes: changes.map(ChangeReport::of),
         schedule: schedule.to_vec(),
         outputs: Vec::new(),
+        phases,
     }
 }
 
 fn run_month(args: &SchoolAddressArgs) -> Result<Option<YearMonth>> {
-    if args.geocode || args.validate_postal {
-        bail!(
-            "the geocoding and postal-validation phases are not built: `census-crawl::geocode` \
-             (the Google geocoder and the USPS validator) does not exist yet, and a run that \
-             reported validated addresses without it would be inventing evidence. Read the \
-             artifacts without those flags; the coordinates and ZIPs the artifacts publish are \
-             carried through as they stand"
-        );
-    }
     let now = args
         .now
         .as_ref()

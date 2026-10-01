@@ -187,6 +187,12 @@ impl SchoolDirectoryEntry {
         self
     }
 
+    pub fn set_coordinates_from(&mut self, coordinates: Coordinates, source: SourceLabel) {
+        self.sources.insert(source.clone());
+        self.provenance.insert(EntryField::Coordinates, source);
+        self.coordinates = Some(coordinates);
+    }
+
     pub fn absorb(&mut self, other: &Self) {
         let name = self.name.take();
         self.name = self.merge(EntryField::Name, name, other.name.as_ref(), other);

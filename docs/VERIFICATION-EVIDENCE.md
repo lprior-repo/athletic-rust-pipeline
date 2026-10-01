@@ -3968,3 +3968,67 @@ accompanies this landing; it integrates a port of tooling into `main`. The one P
 ported is the Google/USPS geocoding and postal-validation phase, which the verb refuses by design
 (bead `athletic-rust-pipeline-9p7`), and rows whose state is outside the 49 census jurisdictions are
 counted as skips, not published.
+
+## Typed Google/USPS geocode clients and the verb phases — 2026-09-30
+
+Tree: a detached worktree at `74843c8` carrying **exactly** this delta (the shared `main` working copy
+was concurrently unbuildable while another cluster's `coach_directories` slice was mid-refactor, so
+every lane below ran against a tree containing no other cluster's edits). Scope: `crates/census-crawl/src/geocode/{mod,key,transport,google,usps,tests}.rs`,
+`SourceLabel::Geocoder` and `SchoolDirectoryEntry::set_coordinates_from`, the verb phase
+(`crates/census-service/src/school_address/geocode.rs`), `PhaseReport` in the report and its summary
+line, and the two credential refusals in `tests/school_address_corpus.rs`. Bead
+`athletic-rust-pipeline-9p7`; contract in [ADR-020](adr/ADR-020-school-address-corpus-port.md) §4.
+
+Commands and observed results:
+
+- `cargo test -p census-crawl --lib geocode` → **14 passed, 0 failed** (524 filtered).
+- `cargo test -p census-domain --lib school_directory` → **61 passed, 0 failed** (the port's 60 plus
+  the new `geocoded_coordinates_are_stamped_weakest_and_never_displace_a_published_source`);
+  `cargo test -p census-domain --lib geocoded_coordinates` passes alone.
+- `cargo test -p census-service --lib school_address` → 3 passed, 0 failed.
+- `cargo test -p census-service --test school_address_corpus --test school_address_publication` →
+  8 passed and 3 passed, 0 failed: the two credential refusals, byte-identical republish, and the
+  publication invariants.
+- CLI smoke on the NCES fixtures (`cargo build -p census-service --bin census-service`, then
+  `census-service school-address --ccd … --pss … --out …`): a plain run published `current` with
+  `"phases": null` in `pipeline_report.json`; with `GOOGLE_MAPS_API_KEY`, `GOOGLE_API_KEY` and
+  `USPS_API_TOKEN` unset, `--geocode` and `--validate-postal` each exited 1 *before writing the
+  output directory*, with `the geocoder needs \`GOOGLE_MAPS_API_KEY\` in the environment: …`; `--help`
+  documents both flags and their credentials.
+- `tools/gate.sh` → `FAIL -> fmt architecture contract ratchet vet`, every failing lane naming files
+  outside this delta and reproducing at `74843c8` alone: fmt diffs only in
+  `coach_directories/map.rs`; check 8's single unregistered module `arbiter` (22 registered sources,
+  17 readers including `geocode`, plus `arbiter` = the 40 crawl modules); ratchet growth of four
+  `clippy::arithmetic_side_effects` sites in `coach_directories/survey.rs` and
+  `milesplit/raw_rows/columns.rs`, four functions over the 60-line page in
+  `coach_directories/{collect,survey}.rs`, `restate_services/ingest.rs` and `replay/cases.rs`, and
+  four files over 300 lines (`map.rs`, `survey.rs`, `ingest.rs`, `cases.rs`); and no `cargo vet`
+  store. tests, check, doc, comments, strict clippy, production scan, domain integrity, domain
+  purity, module seams, deny, audit, machete, geiger, feature powerset and bench presence all
+  passed. This delta adds 0 forbidden constructs, 0 over-budget functions and 0 oversized files: the
+  first `apply_async` was 70 lines, the scan flagged it, and it was split into `geocode_phase` and
+  `validate_phase`.
+- Flake observed once under full-workspace nextest parallelism:
+  `census-service::recovery ks_directory_walk_claims_units_the_kill_can_lose` failed, then passed in
+  isolation and in the final gate run (a timing-sensitive kill ladder in code this delta does not
+  touch).
+
+Defect and regression: the first execution of `documented_usps_address_body_yields_typed_fields`
+failed with `street: None` — `Response`/`AddressEntry`/`AdditionalInfo` lacked
+`#[serde(rename_all = "camelCase")]`, so `streetAddress`, `additionalInfo`, `deliveryPoint` and
+`DPVConfirmation` never bound. Fixed in `usps.rs`; the same test now passes.
+
+Defect and regression, second: the CLI smoke's refusal read `the geocoder needs credential
+GOOGLE_MAPS_API_KEY is not set in the environment in the environment` — the missing-credential
+display nested inside the phase message. The phase now names the variable
+(`needs \`GOOGLE_MAPS_API_KEY\` in the environment: …`), observed by rerunning the smoke against the
+rebuilt binary; the corpus lane's assertion on the variable name still passes.
+
+Limits. No live Google or USPS call was made: the client tests drive a recording `Transport` whose
+bodies are the vendors' **documented** response shapes, not committed captures, so the USPS v3 field
+names and the Google status set remain unverified against the live services and no capture lane
+exists. `HttpTransport`'s socket path, TLS, timeouts and the checked `HeaderValue` refusal of an
+invalid token are exercised only through the compiler, not by a test. Live end-to-end qualification
+of `--geocode`/`--validate-postal` therefore remains open on `athletic-rust-pipeline-9p7`; the
+earlier "typed refusal" smoke in this ledger is superseded — the flags now run the phases and refuse
+only an absent credential.

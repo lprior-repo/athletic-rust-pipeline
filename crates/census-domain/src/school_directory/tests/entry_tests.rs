@@ -1,7 +1,7 @@
 use crate::school_directory::{
-    AssociationLabel, CityName, DirectoryKey, Enrollment, Grade, GradeSpan, IdentifiedKey,
-    MatchForm, NcesSchoolId, Phone, PostalAddress, PssId, SchoolDirectoryEntry, SchoolKind,
-    SchoolName, SourceLabel, StateRecordId, StreetLine, WeakKey, Website, ZipCode,
+    AssociationLabel, CityName, Coordinates, DirectoryKey, Enrollment, Grade, GradeSpan,
+    IdentifiedKey, MatchForm, NcesSchoolId, Phone, PostalAddress, PssId, SchoolDirectoryEntry,
+    SchoolKind, SchoolName, SourceLabel, StateRecordId, StreetLine, WeakKey, Website, ZipCode,
 };
 use crate::UsJurisdiction;
 
@@ -277,4 +277,47 @@ fn school_kinds_render_their_affiliation() {
     assert_eq!(SchoolKind::private().label(), "Private");
     let affiliated = SchoolKind::affiliated(AssociationLabel::parse("AHSAA").expect("label"));
     assert_eq!(affiliated.label(), "Private (AHSAA)");
+}
+
+#[test]
+fn geocoded_coordinates_are_stamped_weakest_and_never_displace_a_published_source() {
+    let geocoded = Coordinates::parse("33.4699825", "-86.9245195").expect("geocoded coordinates");
+    let published = Coordinates::parse("34.0000001", "-86.0000002").expect("published coordinates");
+    let key = || IdentifiedKey::Nces(NcesSchoolId::parse("010001000001").expect("nces id"));
+
+    let mut entry = SchoolDirectoryEntry::identified(
+        key(),
+        SourceLabel::AthleticAssociation {
+            state: UsJurisdiction::Alabama,
+        },
+        Some(name("Albertville High School")),
+    );
+    entry.set_coordinates_from(geocoded, SourceLabel::Geocoder);
+    assert_eq!(entry.coordinates(), Some(geocoded));
+    assert!(entry.sources().contains(&SourceLabel::Geocoder));
+    assert_eq!(SourceLabel::Geocoder.rank(), 5);
+    assert_eq!(SourceLabel::Geocoder.label(), "geocoder");
+    assert!(
+        SourceLabel::Geocoder.rank()
+            > SourceLabel::AthleticAssociation {
+                state: UsJurisdiction::Alabama
+            }
+            .rank()
+    );
+
+    let artifact = SchoolDirectoryEntry::identified(
+        key(),
+        SourceLabel::Ccd,
+        Some(name("Albertville High School")),
+    )
+    .with_coordinates(Some(published));
+    entry.absorb(&artifact);
+    assert_eq!(entry.coordinates(), Some(published));
+
+    let json = serde_json::to_string(&SourceLabel::Geocoder).expect("geocoder serializes");
+    assert_eq!(json, "\"Geocoder\"");
+    assert_eq!(
+        serde_json::from_str::<SourceLabel>(&json).expect("geocoder parses"),
+        SourceLabel::Geocoder
+    );
 }

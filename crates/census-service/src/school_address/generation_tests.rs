@@ -57,6 +57,7 @@ fn payload(month: &str) -> (BTreeMap<String, Vec<u8>>, Manifest) {
         changes: None,
         schedule: Vec::new(),
         outputs: Vec::new(),
+        phases: None,
     };
     files.insert(
         "pipeline_report.json".to_string(),

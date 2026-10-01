@@ -114,7 +114,7 @@ pub(super) fn admissions() -> Result<Check> {
     Ok(Check::violated(5, NAME, detail, failures))
 }
 
-const NON_ADAPTERS: [(&str, &str); 16] = [
+const NON_ADAPTERS: [(&str, &str); 17] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
@@ -123,6 +123,10 @@ const NON_ADAPTERS: [(&str, &str); 16] = [
     (
         "directory",
         "the shared school-directory reader contract (`ReadOutcome`, its skip ledger and the field mappers every directory reader builds rows with): it admits no origin of its own",
+    ),
+    (
+        "geocode",
+        "the Google geocoder and USPS address validator the corpus verb reaches when the operator supplies credentials: typed clients of external APIs, with no source origin to admit",
     ),
     ("hytek", "parses Hy-Tek Meet Manager result files"),
     (

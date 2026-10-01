@@ -11,6 +11,24 @@ pub struct Report {
     pub changes: Option<ChangeReport>,
     pub schedule: Vec<SourceDecision>,
     pub outputs: Vec<String>,
+    pub phases: Option<PhaseReport>,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PhaseReport {
+    pub geocode_requested: bool,
+    pub validation_requested: bool,
+    pub geocoded: usize,
+    pub geocode_skipped: usize,
+    pub geocode_empty: usize,
+    pub geocode_refused: usize,
+    pub geocode_unusable: usize,
+    pub geocode_transport: usize,
+    pub validated: usize,
+    pub validation_skipped: usize,
+    pub validation_rejected: usize,
+    pub validation_unparsed: usize,
+    pub validation_transport: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

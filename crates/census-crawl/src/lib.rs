@@ -69,6 +69,7 @@ pub mod coach_directories;
 pub mod compiled;
 mod context;
 pub mod directory;
+pub mod geocode;
 pub mod hytek;
 pub mod ihsa;
 pub mod ingress;
