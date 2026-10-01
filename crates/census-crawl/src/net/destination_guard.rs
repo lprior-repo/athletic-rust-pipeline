@@ -137,3 +137,6 @@ mod tests;
 
 #[cfg(test)]
 mod redirect_tests;
+
+#[cfg(test)]
+mod wiring_tests;

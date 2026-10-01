@@ -4594,3 +4594,43 @@ deviations).
 Limits. The rendered document is a throwaway readback, not a published artifact: it was written to
 `/tmp`, its research root carried no `data/`, and the metrics it printed come from the preserved
 2026-09-25 store, not a fresh run. No network was touched.
+
+## The destination guard is wired into the source fetcher (2026-10-01)
+
+Worktree `arh-closeout`, branch `closeout-python-port` (base `accc6e90`).
+
+Defect. `census-crawl/src/net/destination_guard.rs` landed with the port (`6d660a5e`, `e763fd53`),
+but no module declared it and no request path consulted it: `Fetcher::new` built its client with
+`.redirect(Policy::limited(5))`, no DNS hook and no proxy suppression. A native CLI probe could fetch
+`http://127.0.0.1:<port>/robots.txt` and its payload with exit 0.
+
+Repair. `net/mod.rs` declares `mod destination_guard;` and the `Fetcher` carries
+`destination: Arc<DestinationGuard>`; `net/client.rs` normalizes the authorized-host list once,
+builds the guard from it and installs `.no_proxy()`, `.dns_resolver(GuardedResolver)` and
+`.redirect(Policy::custom(|attempt| guard.redirect(attempt)))`, so a literal URL, every resolved
+address and every redirect hop are validated against the same list the pacing layer paces;
+`net/execute.rs::fetch` validates the URL before its cache lookup, so scheme and credential refusals
+hold whether or not a body is cached. `tokio` gains the `net` feature (the resolver resolves through
+`tokio::net::lookup_host`) and the test harness gains `io-util`.
+
+Evidence. `cargo nextest run -p census-crawl --all-features` -> 565 passed, 0 skipped;
+`cargo nextest run -p census-service --all-features` -> 522 passed, 1 skipped; `cargo fmt --all
+--check` clean; the gate's clippy lint set over the crawl crate's source targets is clean. Six new
+tests in `net/destination_guard/wiring_tests.rs` cover an unauthorized loopback literal (policy
+error, listener never contacted), `localhost` without a grant, an explicit `127.0.0.1` grant that
+admits the fixture after its `robots.txt` (server observes exactly `/robots.txt`, `/payload`), a
+same-host redirect followed while a differently-named local hop is refused with the unlisted listener
+silent, a seeded cache body that does not bypass the refusal, and `file://`/`ftp://`/credential URLs.
+`crates/census-crawl/src/milesplit/results/pages/tests.rs` grants `127.0.0.1` in its loopback
+fixture fetcher: its unreachable-page test needs a local 500, which the guard rightly stopped
+accepting implicitly.
+
+Native CLI probes against `python3 -m http.server 8971 --bind 127.0.0.1`:
+`census-service --store /tmp/kz5-smoke/store fetch http://127.0.0.1:8971/payload` -> `policy:
+non-public destination 127.0.0.1 for 127.0.0.1 is not explicitly authorized`, exit 1, listener log
+empty; the same command with `--authorized-host 127.0.0.1` -> exit 0, the listener logging
+`GET /robots.txt` then `GET /payload`.
+
+Limits. The DNS hook is exercised by a resolved `localhost` grant, not by a public name whose
+addresses change; no proxy environment variable was set during the probes, so `no_proxy` is asserted
+by construction rather than by a poisoned-environment test.

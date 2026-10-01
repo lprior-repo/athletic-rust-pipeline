@@ -32,7 +32,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
 thiserror = "2"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time", "fs", "signal"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time", "fs", "signal", "net"] }
 tracing = "0.1"
 url = { version = "2.5", features = ["serde"] }
 indexmap = { version = "2", features = ["serde"] }
@@ -42,4 +42,4 @@ anyhow = "1"
 tempfile = "3"
 # The net layer's tests drive paused-time deadlines (`tokio::time::advance`), which needs the test
 # clock the runtime only exposes behind this feature.
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "test-util"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "test-util", "io-util"] }

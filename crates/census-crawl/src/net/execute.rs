@@ -135,6 +135,7 @@ impl Fetcher {
         options: &FetchOptions,
         timeout_secs: u64,
     ) -> Result<FetchOutcome, FetchError> {
+        self.destination.validate_url(url)?;
         let extra = body
             .as_ref()
             .map(|(key, _)| key.clone())

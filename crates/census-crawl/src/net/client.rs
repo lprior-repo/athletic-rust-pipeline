@@ -1,3 +1,4 @@
+use super::destination_guard::{DestinationGuard, GuardedResolver};
 use super::{FetchError, FetchStats, Fetcher, DEFAULT_USER_AGENT, REQUEST_TIMEOUT_SECS};
 use std::collections::HashMap;
 use std::path::Path;
@@ -47,26 +48,36 @@ impl Fetcher {
             source,
         })?;
         let user_agent = user_agent.unwrap_or_else(|| DEFAULT_USER_AGENT.to_string());
+        let authorized_hosts: Vec<String> = authorized_hosts
+            .into_iter()
+            .map(|host| host.trim().to_ascii_lowercase())
+            .filter(|host| !host.is_empty())
+            .collect();
+        let destination = Arc::new(DestinationGuard::new(authorized_hosts.clone()));
+        let redirects = Arc::clone(&destination);
+        let resolver: Arc<dyn reqwest::dns::Resolve> =
+            Arc::new(GuardedResolver(Arc::clone(&destination)));
         let client = reqwest::Client::builder()
             .user_agent(user_agent)
             .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
             .connect_timeout(Duration::from_secs(15))
-            .redirect(reqwest::redirect::Policy::limited(5))
+            .no_proxy()
+            .dns_resolver(resolver)
+            .redirect(reqwest::redirect::Policy::custom(move |attempt| {
+                redirects.redirect(attempt)
+            }))
             .build()
             .map_err(|source| FetchError::Client { source })?;
         Ok(Self {
             client,
+            destination,
             cache_dir,
             default_delay,
             host_delays,
             family_delays: HashMap::new(),
             family_parallelism: super::DEFAULT_FAMILY_PARALLELISM,
             pacing: Arc::new(PacingState::new()),
-            authorized_hosts: authorized_hosts
-                .into_iter()
-                .map(|host| host.trim().to_ascii_lowercase())
-                .filter(|host| !host.is_empty())
-                .collect(),
+            authorized_hosts,
             robots: Mutex::new(HashMap::new()),
             robots_gates: Mutex::new(HashMap::new()),
             stats: Mutex::new(FetchStats::default()),

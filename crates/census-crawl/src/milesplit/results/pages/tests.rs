@@ -16,7 +16,7 @@ fn scratch() -> (tempfile::TempDir, Fetcher) {
         None,
         std::time::Duration::from_millis(1),
         HashMap::new(),
-        Vec::new(),
+        vec!["127.0.0.1".to_string()],
     )
     .expect("fetcher");
     (dir, fetcher)

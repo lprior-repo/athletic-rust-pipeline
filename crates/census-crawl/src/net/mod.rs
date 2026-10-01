@@ -5,11 +5,13 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 
 use census_domain::model::{AccessBlockKind, SourceAccessCondition};
+use destination_guard::DestinationGuard;
 
 pub mod bridge;
 
 pub(crate) mod cache;
 mod client;
+mod destination_guard;
 mod execute;
 mod latency;
 mod request;
@@ -41,6 +43,7 @@ const DEFAULT_SOURCE: &str = "unknown";
 
 pub struct Fetcher {
     client: reqwest::Client,
+    destination: Arc<DestinationGuard>,
     cache_dir: PathBuf,
     default_delay: Duration,
     host_delays: HashMap<String, Duration>,
