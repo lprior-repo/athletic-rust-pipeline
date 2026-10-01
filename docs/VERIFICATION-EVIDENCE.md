@@ -359,7 +359,7 @@ Global assurance disposition is **UNVERIFIED**, not approved. Verified local fin
 No owner-approved debt or waiver was inferred from worker output or passing local tests.
 
 
-## The in-repository Rust lexer and the vet lane's green — 2026-09-30
+## The in-repository Rust lexer and the vet lane's unvetted crates — 2026-09-30
 
 `ra-ap-rustc_lexer 0.174.0` and its `unicode-properties 0.1.4` were the last two unvetted
 dependencies the gate's `vet` lane reported, and both were reachable only from `xtask`
@@ -385,13 +385,54 @@ than a raw identifier. Identifier classification uses std's `char::is_alphanumer
 XID_Continue, which only splits exotic identifiers the verdict does not see (`a·b // c` is in the
 corpus).
 
-`cargo vet --locked` → `Vetting Succeeded (37 fully audited, 1 partially audited, 341 exempted)`: the
-exemption list is unchanged at 341 and no audit was fabricated. Limits: the parity claim is verdict
-equality over the committed corpus and this workspace's sources, not token-for-token identity, and
-no live host lane ran.
+On the branch's own tree the removal also completed its vet lane (`cargo vet --locked` →
+`Vetting Succeeded (37 fully audited, 1 partially audited, 341 exempted)`, the exemption list
+unchanged at 341, no fabricated audit). The supply-chain expansion that carried that result was not
+harvested here, so this tree's vet lane stays red under 6yj.6 — with the unvetted-crate part of that
+red now gone. Limits: the parity claim is verdict equality over the committed corpus and this
+workspace's sources, not token-for-token identity, and no live host lane ran.
 
-The full gate is green: `cargo xtask gate` → `gate: PASS (debt ratchet holds; counts above)` — all
-sixteen lanes, `vet` included, with strict clippy at 0 diagnostics and `files>300=0 fns>60=0`.
+The branch's own gate run recorded `gate: PASS (debt ratchet holds; counts above)` with strict
+clippy at 0 diagnostics and `files>300=0 fns>60=0`; the section below records what this tree's gate
+run says after the harvest.
+
+## The coach-acquisition branch harvested into main — 2026-09-30
+
+`coach-acquisition-rust` (11 commits, tip `2c57d63`) was not merged as a branch: its 47-conflict
+merge would have re-landed an arbiter port, an identity/ownership relocation and a root
+documentation set that this tree already owns in a different shape. Its unlanded work was graded
+commit by commit and the surviving slices were harvested onto this tree.
+
+Landed: the in-repository Rust lexer that replaces `ra-ap-rustc_lexer` and its `unicode-properties`
+(the zero-comments lane's tokenizer, pinned by the branch's 109-block corpus — `cargo test -p xtask
+comments::` → 9 passed, and the lane still reports no comments over 1058 files); the `coachverify`
+span scanner that replaces `scraper`, with `compute_contact_proof` re-pointed at
+`census_domain::model`, where this tree keeps contact-proof digests; and the coach-directory tests
+for the prototype's measured label table, the journalled school and the live summaries.
+
+Rejected with reasons: the branch's `GradYear::of` saturating fallback (this tree requires the
+checked construction recorded under 6yj.1 and ADR-003); its `source_date` module (this tree's
+`model::dates::valid_date` already admits ISO dates and 1900..=2100 years, with its own tests); its
+`watch_memory` refactor (this tree's `bootstrap/guard.rs` is already stop-aware); the arbiter lane,
+the `census-store` proof relocation and the root documentation set (each superseded by this tree's
+own integration and ADRs); and the `supply-chain` configuration expansion, which stays with 6yj.6
+because vault policy is an owner decision. The branch's coachverify parity test was dropped together
+with its 9694-line baseline: that baseline is a snapshot of the branch's fixture set (67 blocks
+there against 56 here) and cannot be re-captured now that `scraper` is gone. Two branch test
+expectations were pruned from the harvested crawl tests because this tree deliberately diverges:
+the JV-first team rule (a rejected row must not suppress later varsity evidence, 6yj.3) and the
+prototype row-for-row oracle (the lane's source report states the prototype's merged rows are not
+one).
+
+Commands and results: `cargo nextest run --workspace --all-features` → 1798 passed, 3 skipped (a
+first gate run of that lane reported a tests failure that did not reproduce on the same tree);
+`cargo test -p census-service --lib` → 198 passed, the 25 coachverify tests among them; `cargo test
+-p census-crawl coach_directories` → 47 passed; `cargo test -p xtask comments` → 9 passed; `cargo
+fmt --all --check` clean; the zero-comments lane clean over 1058 files. `cargo xtask gate` → every
+lane passes except `vet`, which still fails on `imports.lock is out-of-date with respect to
+configuration` under 6yj.6; removing `scraper` and `ra-ap-rustc_lexer` ended the unvetted-crate part
+of that red. Limits: the harvested file states were verified on this tree, not re-run through the
+author's own gate.
 
 ## Targeted projection readback and error classification — 2026-09-30
 
