@@ -3,7 +3,8 @@ use crate::hytek;
 use crate::result_file::ParsedRow;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalPerformance, Evidence, GradYear, Grade, ObservedGrade,
-    SchoolId, SourceAthleteObservation, SourceIdentity, SourceNamespace, Sport, TeamId, TimingMethod,
+    SchoolId, SourceAthleteObservation, SourceIdentity, SourceNamespace, Sport, TeamId,
+    TimingMethod,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;

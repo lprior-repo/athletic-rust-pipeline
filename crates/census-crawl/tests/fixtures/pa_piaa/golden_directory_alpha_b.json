@@ -1,0 +1,914 @@
+{
+  "schools": [
+    {
+      "name": "Bala Cynwyd Middle School",
+      "state": "PA",
+      "association_id": "11610",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11610",
+      "address": "510 BRYN MAWR AVE",
+      "city": "BALA CYNWYD",
+      "zip": "19004"
+    },
+    {
+      "name": "Bald Eagle Area High School",
+      "state": "PA",
+      "association_id": "11239",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11239",
+      "address": "710 S EAGLE VALLEY RD",
+      "city": "WINGATE",
+      "zip": "16823-4799"
+    },
+    {
+      "name": "Bald Eagle Area Middle School",
+      "state": "PA",
+      "association_id": "11886",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11886",
+      "address": "710 S EAGLE VALLEY RD",
+      "city": "WINGATE",
+      "zip": "16823-4799"
+    },
+    {
+      "name": "Baldwin High School",
+      "state": "PA",
+      "association_id": "11295",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11295",
+      "address": "4653 Clairton Boulevard",
+      "city": "Pittsburgh",
+      "zip": "15236"
+    },
+    {
+      "name": "Bangor Area High School",
+      "state": "PA",
+      "association_id": "11490",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11490",
+      "address": "187 Five Points Richmond Road",
+      "city": "BANGOR",
+      "zip": "18013"
+    },
+    {
+      "name": "Bangor Area Middle School",
+      "state": "PA",
+      "association_id": "12163",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12163",
+      "address": "401 Five Points Richmond Road",
+      "city": "Bangor",
+      "zip": "18013"
+    },
+    {
+      "name": "Bear Creek Community Charter School",
+      "state": "PA",
+      "association_id": "12438",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12438",
+      "address": "30 CHARTER SCHOOL WAY",
+      "city": "BEAR CREEK",
+      "zip": "18702"
+    },
+    {
+      "name": "Beaty Warren Middle School",
+      "state": "PA",
+      "association_id": "12154",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12154",
+      "address": "2 East 3RD AVE",
+      "city": "WARREN",
+      "zip": "16365"
+    },
+    {
+      "name": "Beaver Area High School",
+      "state": "PA",
+      "association_id": "11296",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11296",
+      "address": "1 GYPSY GLEN RD",
+      "city": "BEAVER",
+      "zip": "15009"
+    },
+    {
+      "name": "Beaver Area Middle School",
+      "state": "PA",
+      "association_id": "11946",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11946",
+      "address": "1 GYPSY GLEN RD",
+      "city": "BEAVER",
+      "zip": "15009"
+    },
+    {
+      "name": "Beaver County Christian High School",
+      "state": "PA",
+      "association_id": "12515",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12515",
+      "address": "510 37th Street",
+      "city": "Beaver Falls",
+      "zip": "15010"
+    },
+    {
+      "name": "Beaver Falls Area Middle School",
+      "state": "PA",
+      "association_id": "11951",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11951",
+      "address": "1601 8TH AVENUE",
+      "city": "BEAVER FALLS",
+      "zip": "15010"
+    },
+    {
+      "name": "Beaver Falls High School",
+      "state": "PA",
+      "association_id": "11301",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11301",
+      "address": "1701 8TH AVE",
+      "city": "BEAVER FALLS",
+      "zip": "15010"
+    },
+    {
+      "name": "Bedford High School",
+      "state": "PA",
+      "association_id": "11218",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11218",
+      "address": "330 E JOHN ST",
+      "city": "BEDFORD",
+      "zip": "15522"
+    },
+    {
+      "name": "Bedford Middle School",
+      "state": "PA",
+      "association_id": "11867",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11867",
+      "address": "440 E WATSON ST",
+      "city": "BEDFORD",
+      "zip": "15522"
+    },
+    {
+      "name": "Belle Vernon Area High School",
+      "state": "PA",
+      "association_id": "11297",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11297",
+      "address": "425 CREST AVE",
+      "city": "BELLE VERNON",
+      "zip": "15012"
+    },
+    {
+      "name": "Belle Vernon Area Middle School",
+      "state": "PA",
+      "association_id": "11947",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11947",
+      "address": "500 Perry Avenue",
+      "city": "BELLE VERNON",
+      "zip": "15012"
+    },
+    {
+      "name": "Bellefonte Area High School",
+      "state": "PA",
+      "association_id": "11240",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11240",
+      "address": "830 E BISHOP ST",
+      "city": "BELLEFONTE",
+      "zip": "16823"
+    },
+    {
+      "name": "Bellefonte Area Middle School",
+      "state": "PA",
+      "association_id": "11887",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11887",
+      "address": "100 N SCHOOL ST",
+      "city": "BELLEFONTE",
+      "zip": "16823"
+    },
+    {
+      "name": "Belleville Christian Junior High School",
+      "state": "PA",
+      "association_id": "13742",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13742",
+      "address": "4105 Front Mountain Rd.",
+      "city": "Belleville",
+      "zip": "17004"
+    },
+    {
+      "name": "Belleville Christian School",
+      "state": "PA",
+      "association_id": "12282",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12282",
+      "address": "4105 FRONT MOUNTAIN RD",
+      "city": "BELLEVILLE",
+      "zip": "17004"
+    },
+    {
+      "name": "Bellwood Antis High School",
+      "state": "PA",
+      "association_id": "11241",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11241",
+      "address": "300 Martin Street",
+      "city": "BELLWOOD",
+      "zip": "16617"
+    },
+    {
+      "name": "Bellwood Antis Middle School",
+      "state": "PA",
+      "association_id": "11888",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11888",
+      "address": "400 MARTIN ST",
+      "city": "BELLWOOD",
+      "zip": "16617"
+    },
+    {
+      "name": "Belmont Charter High School",
+      "state": "PA",
+      "association_id": "13603",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13603",
+      "address": "311 N19th Street, School",
+      "city": "PHILADELPHIA",
+      "zip": "19103"
+    },
+    {
+      "name": "Ben Franklin Middle School",
+      "state": "PA",
+      "association_id": "11584",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11584",
+      "address": "6041 Millcreek Rd.",
+      "city": "Levittown",
+      "zip": "19057"
+    },
+    {
+      "name": "Benjamin Franklin High School",
+      "state": "PA",
+      "association_id": "11538",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11538",
+      "address": "550 N Broad Street",
+      "city": "Philadelphia",
+      "zip": "19130"
+    },
+    {
+      "name": "Bensalem High School",
+      "state": "PA",
+      "association_id": "10982",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=10982",
+      "address": "4319 HULMEVILLE RD",
+      "city": "BENSALEM",
+      "zip": "19020"
+    },
+    {
+      "name": "Benton Area High School",
+      "state": "PA",
+      "association_id": "11177",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11177",
+      "address": "400 Park Street",
+      "city": "BENTON",
+      "zip": "17814"
+    },
+    {
+      "name": "Benton Area Middle School",
+      "state": "PA",
+      "association_id": "11823",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11823",
+      "address": "400 Park Street",
+      "city": "BENTON",
+      "zip": "17814"
+    },
+    {
+      "name": "Bentworth High School",
+      "state": "PA",
+      "association_id": "11298",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11298",
+      "address": "75 BEARCAT DR",
+      "city": "BENTLEYVILLE",
+      "zip": "15314"
+    },
+    {
+      "name": "Bentworth Middle School",
+      "state": "PA",
+      "association_id": "13520",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13520",
+      "address": "563 LINCOLN AVENUE",
+      "city": "BENTLEYVILLE",
+      "zip": "15314"
+    },
+    {
+      "name": "Berks Catholic Junior High School",
+      "state": "PA",
+      "association_id": "13581",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13581",
+      "address": "955 E. Wyomissing Blvd.",
+      "city": "Reading",
+      "zip": "19611"
+    },
+    {
+      "name": "Berks Catholic School",
+      "state": "PA",
+      "association_id": "13479",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13479",
+      "address": "955 East Wyomissing Blvd",
+      "city": "Reading",
+      "zip": "19611"
+    },
+    {
+      "name": "Berlin Brothersvalley High School",
+      "state": "PA",
+      "association_id": "11220",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11220",
+      "address": "1025 E MAIN ST",
+      "city": "BERLIN",
+      "zip": "15530"
+    },
+    {
+      "name": "Berlin Brothersvalley Middle School",
+      "state": "PA",
+      "association_id": "11868",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11868",
+      "address": "1025 E MAIN ST",
+      "city": "BERLIN",
+      "zip": "15530"
+    },
+    {
+      "name": "Bermudian Springs High School",
+      "state": "PA",
+      "association_id": "11086",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11086",
+      "address": "7335 CARLISLE PIKE",
+      "city": "YORK SPRINGS",
+      "zip": "17372"
+    },
+    {
+      "name": "Bermudian Springs Middle School",
+      "state": "PA",
+      "association_id": "11717",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11717",
+      "address": "7335 Carlisle Pike",
+      "city": "York Springs",
+      "zip": "17372"
+    },
+    {
+      "name": "Berwick Area High School",
+      "state": "PA",
+      "association_id": "11047",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11047",
+      "address": "1100 FOWLER AVENUE",
+      "city": "BERWICK",
+      "zip": "18603"
+    },
+    {
+      "name": "Berwick Area Middle School",
+      "state": "PA",
+      "association_id": "11670",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11670",
+      "address": "1100 Evergreen Drive",
+      "city": "BERWICK",
+      "zip": "18603"
+    },
+    {
+      "name": "Bethel Christian High School",
+      "state": "PA",
+      "association_id": "13705",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13705",
+      "address": "1781 W. 38th",
+      "city": "Erie",
+      "zip": "16508"
+    },
+    {
+      "name": "Bethel Christian Middle School",
+      "state": "PA",
+      "association_id": "13706",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13706",
+      "address": "1781 W. 38th",
+      "city": "Erie",
+      "zip": "16508"
+    },
+    {
+      "name": "Bethel Park High School",
+      "state": "PA",
+      "association_id": "11299",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11299",
+      "address": "309 CHURCH RD",
+      "city": "BETHEL PARK",
+      "zip": "15102"
+    },
+    {
+      "name": "Bethlehem Catholic High School",
+      "state": "PA",
+      "association_id": "12321",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12321",
+      "address": "2133 MADISON AVE",
+      "city": "BETHLEHEM",
+      "zip": "18017"
+    },
+    {
+      "name": "Bethlehem Catholic Junior High School",
+      "state": "PA",
+      "association_id": "12402",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12402",
+      "address": "2133 MADISON AVE",
+      "city": "BETHLEHEM",
+      "zip": "18017"
+    },
+    {
+      "name": "Bethlehem Center High School",
+      "state": "PA",
+      "association_id": "11300",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11300",
+      "address": "179 CRAWFORD RD",
+      "city": "FREDERICKTOWN",
+      "zip": "15333"
+    },
+    {
+      "name": "Bethlehem Christian High School",
+      "state": "PA",
+      "association_id": "13667",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13667",
+      "address": "5300 Green Pond Rd.",
+      "city": "Easton",
+      "zip": "18045"
+    },
+    {
+      "name": "Bethlehem-Center Middle School",
+      "state": "PA",
+      "association_id": "11950",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11950",
+      "address": "136 CRAWFORD RD",
+      "city": "FREDERICKTOWN",
+      "zip": "15333"
+    },
+    {
+      "name": "Beverly Hills Middle School",
+      "state": "PA",
+      "association_id": "11654",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11654",
+      "address": "1400 GARRETT ROAD",
+      "city": "UPPER DARBY",
+      "zip": "19082"
+    },
+    {
+      "name": "Big Spring High School",
+      "state": "PA",
+      "association_id": "11087",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11087",
+      "address": "100 MT ROCK RD",
+      "city": "NEWVILLE",
+      "zip": "17241"
+    },
+    {
+      "name": "Big Spring Middle School",
+      "state": "PA",
+      "association_id": "11718",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11718",
+      "address": "43 MT ROCK RD",
+      "city": "NEWVILLE",
+      "zip": "17241"
+    },
+    {
+      "name": "Biglerville High School",
+      "state": "PA",
+      "association_id": "11162",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11162",
+      "address": "161 N MAIN ST",
+      "city": "BIGLERVILLE",
+      "zip": "17307"
+    },
+    {
+      "name": "Bishop Canevin High School",
+      "state": "PA",
+      "association_id": "12287",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12287",
+      "address": "2700 MORANGE RD",
+      "city": "PITTSBURGH",
+      "zip": "15205"
+    },
+    {
+      "name": "Bishop Carroll Catholic High School",
+      "state": "PA",
+      "association_id": "12281",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12281",
+      "address": "728 BEN FRANKLIN HIGHWAY",
+      "city": "EBENSBURG",
+      "zip": "15931"
+    },
+    {
+      "name": "Bishop Carroll Catholic Junior High School",
+      "state": "PA",
+      "association_id": "12373",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12373",
+      "address": "728 BEN FRANKLIN HIGHWAY",
+      "city": "EBENSBURG",
+      "zip": "15931"
+    },
+    {
+      "name": "Bishop Guilfoyle Academy",
+      "state": "PA",
+      "association_id": "12283",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12283",
+      "address": "2400 PLEASANT VALLEY BLVD",
+      "city": "ALTOONA",
+      "zip": "16602"
+    },
+    {
+      "name": "Bishop Guilfoyle Academy Junior High",
+      "state": "PA",
+      "association_id": "12374",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12374",
+      "address": "2400 PLEASANT VALLEY BLVD",
+      "city": "ALTOONA",
+      "zip": "16602"
+    },
+    {
+      "name": "Bishop McCort Catholic High School",
+      "state": "PA",
+      "association_id": "12285",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12285",
+      "address": "25 OSBORNE ST",
+      "city": "JOHNSTOWN",
+      "zip": "15905"
+    },
+    {
+      "name": "Bishop McCort Junior High School",
+      "state": "PA",
+      "association_id": "12376",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12376",
+      "address": "25 OSBORNE ST",
+      "city": "JOHNSTOWN",
+      "zip": "15905"
+    },
+    {
+      "name": "Bishop McDevitt High School",
+      "state": "PA",
+      "association_id": "12248",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12248",
+      "address": "1 CRUSADER WAY",
+      "city": "HARRISBURG",
+      "zip": "17111"
+    },
+    {
+      "name": "Bishop McDevitt Junior High School",
+      "state": "PA",
+      "association_id": "12357",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12357",
+      "address": "1 CRUSADER WAY",
+      "city": "HARRISBURG",
+      "zip": "17111"
+    },
+    {
+      "name": "Bishop Shanahan High School",
+      "state": "PA",
+      "association_id": "12214",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12214",
+      "address": "220 Woodbine Road",
+      "city": "Downingtown",
+      "zip": "19335"
+    },
+    {
+      "name": "Black Rock Middle School",
+      "state": "PA",
+      "association_id": "13679",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13679",
+      "address": "1860 Montgomery Ave.",
+      "city": "Villanova",
+      "zip": "19085"
+    },
+    {
+      "name": "Blackhawk High School",
+      "state": "PA",
+      "association_id": "11302",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11302",
+      "address": "500 BLACKHAWK RD",
+      "city": "BEAVER FALLS",
+      "zip": "15010"
+    },
+    {
+      "name": "Blacklick Valley High School",
+      "state": "PA",
+      "association_id": "11242",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11242",
+      "address": "555 BIRCH ST",
+      "city": "NANTY GLO",
+      "zip": "15943"
+    },
+    {
+      "name": "Blacklick Valley Junior High School",
+      "state": "PA",
+      "association_id": "11889",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11889",
+      "address": "555 BIRCH ST",
+      "city": "NANTY GLO",
+      "zip": "15943"
+    },
+    {
+      "name": "Blair County Christian High School",
+      "state": "PA",
+      "association_id": "13734",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13734",
+      "address": "925 Blacks Lane",
+      "city": "Duncansville",
+      "zip": "16635"
+    },
+    {
+      "name": "Blair County Christian Middle School",
+      "state": "PA",
+      "association_id": "13735",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13735",
+      "address": "925 Blacks Lane",
+      "city": "Duncansville",
+      "zip": "16635"
+    },
+    {
+      "name": "Blockson Middle School",
+      "state": "PA",
+      "association_id": "11623",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11623",
+      "address": "1315 W MARSHALL ST",
+      "city": "NORRISTOWN",
+      "zip": "19401"
+    },
+    {
+      "name": "Bloomsburg High School",
+      "state": "PA",
+      "association_id": "11178",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11178",
+      "address": "1200 RAILROAD ST",
+      "city": "Bloomsburg",
+      "zip": "17815"
+    },
+    {
+      "name": "Bloomsburg Middle School",
+      "state": "PA",
+      "association_id": "11824",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11824",
+      "address": "1100 RAILROAD ST",
+      "city": "BLOOMSBURG",
+      "zip": "17815"
+    },
+    {
+      "name": "Blue Mountain High School",
+      "state": "PA",
+      "association_id": "11493",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11493",
+      "address": "1076 W. MARKET ST",
+      "city": "SCHUYLKILL HAVEN",
+      "zip": "17972"
+    },
+    {
+      "name": "Blue Mountain Middle School",
+      "state": "PA",
+      "association_id": "12168",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12168",
+      "address": "685 Red Dale Road",
+      "city": "ORWIGSBURG",
+      "zip": "17961"
+    },
+    {
+      "name": "Blue Ridge High School",
+      "state": "PA",
+      "association_id": "11048",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11048",
+      "address": "5150 School Road",
+      "city": "NEW MILFORD",
+      "zip": "18834"
+    },
+    {
+      "name": "Blue Ridge Middle School",
+      "state": "PA",
+      "association_id": "11671",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11671",
+      "address": "5150 School Road",
+      "city": "NEW MILFORD",
+      "zip": "18834"
+    },
+    {
+      "name": "Boiling Springs High School",
+      "state": "PA",
+      "association_id": "11152",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11152",
+      "address": "21 ACADEMY STREET",
+      "city": "BOILING SPRINGS",
+      "zip": "17007"
+    },
+    {
+      "name": "Boyertown Area Senior High School",
+      "state": "PA",
+      "association_id": "10980",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=10980",
+      "address": "120 N MONROE ST",
+      "city": "BOYERTOWN",
+      "zip": "19512"
+    },
+    {
+      "name": "Boyertown Middle School East",
+      "state": "PA",
+      "association_id": "11576",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11576",
+      "address": "2020 BIG RD",
+      "city": "GILBERTSVILLE",
+      "zip": "19525"
+    },
+    {
+      "name": "Boyertown Middle School West",
+      "state": "PA",
+      "association_id": "11577",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11577",
+      "address": "380 S MADISON ST",
+      "city": "BOYERTOWN",
+      "zip": "19512"
+    },
+    {
+      "name": "Boys Latin of Philadelphia Charter School",
+      "state": "PA",
+      "association_id": "12519",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12519",
+      "address": "5501 CEDAR AVENUE",
+      "city": "PHILADELPHIA",
+      "zip": "19143"
+    },
+    {
+      "name": "Bradford Area High School",
+      "state": "PA",
+      "association_id": "11413",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11413",
+      "address": "81 Interstate Parkway",
+      "city": "Bradford",
+      "zip": "16701"
+    },
+    {
+      "name": "Brandywine Heights Area Middle School",
+      "state": "PA",
+      "association_id": "11719",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11719",
+      "address": "200 West Weis Street",
+      "city": "Topton",
+      "zip": "19562"
+    },
+    {
+      "name": "Brandywine Heights High School",
+      "state": "PA",
+      "association_id": "11088",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11088",
+      "address": "103 Old Topton Rd",
+      "city": "Mertztown",
+      "zip": "19539"
+    },
+    {
+      "name": "Brashear High School",
+      "state": "PA",
+      "association_id": "11402",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11402",
+      "address": "590 Crane Avenue",
+      "city": "PITTSBURGH",
+      "zip": "15216"
+    },
+    {
+      "name": "Brentwood High School",
+      "state": "PA",
+      "association_id": "11303",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11303",
+      "address": "3601 BROWNSVILLE ROAD",
+      "city": "PITTSBURGH",
+      "zip": "15227"
+    },
+    {
+      "name": "Brentwood Middle School",
+      "state": "PA",
+      "association_id": "11953",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11953",
+      "address": "3601 BROWNSVILLE ROAD",
+      "city": "PITTSBURGH",
+      "zip": "15227"
+    },
+    {
+      "name": "Bristol High School",
+      "state": "PA",
+      "association_id": "10983",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=10983",
+      "address": "1801 WILSON AVE",
+      "city": "BRISTOL",
+      "zip": "19007"
+    },
+    {
+      "name": "Brockway Area High School",
+      "state": "PA",
+      "association_id": "11414",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11414",
+      "address": "100 ALEXANDER ST",
+      "city": "BROCKWAY",
+      "zip": "15824"
+    },
+    {
+      "name": "Brockway Area Junior High School",
+      "state": "PA",
+      "association_id": "12083",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12083",
+      "address": "100 ALEXANDER ST",
+      "city": "BROCKWAY",
+      "zip": "15824"
+    },
+    {
+      "name": "Brookville Area High School",
+      "state": "PA",
+      "association_id": "11415",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11415",
+      "address": "96 JENKS ST, PO Box 479",
+      "city": "BROOKVILLE",
+      "zip": "15825"
+    },
+    {
+      "name": "Brookville Junior High School",
+      "state": "PA",
+      "association_id": "12084",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12084",
+      "address": "96 JENKS ST",
+      "city": "BROOKVILLE",
+      "zip": "15825"
+    },
+    {
+      "name": "Broughal Middle School",
+      "state": "PA",
+      "association_id": "12164",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12164",
+      "address": "114 West Morton Street",
+      "city": "BETHLEHEM",
+      "zip": "18015"
+    },
+    {
+      "name": "Brownsville Area High School",
+      "state": "PA",
+      "association_id": "11304",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11304",
+      "address": "1 FALCON DRIVE",
+      "city": "BROWNSVILLE",
+      "zip": "15417"
+    },
+    {
+      "name": "Brownsville Area Middle School",
+      "state": "PA",
+      "association_id": "12062",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=12062",
+      "address": "#3 Falcon Drive",
+      "city": "BROWNSVILLE",
+      "zip": "15417"
+    },
+    {
+      "name": "Bucktail Area High School",
+      "state": "PA",
+      "association_id": "11217",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11217",
+      "address": "1300 BUCKTAIL AVE",
+      "city": "RENOVO",
+      "zip": "17764"
+    },
+    {
+      "name": "Bucktail Area Junior High School",
+      "state": "PA",
+      "association_id": "11866",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11866",
+      "address": "1300 BUCKTAIL AVE",
+      "city": "RENOVO",
+      "zip": "17764"
+    },
+    {
+      "name": "Building 21 Philadelphia",
+      "state": "PA",
+      "association_id": "13607",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=13607",
+      "address": "6501 Limekiln Pk.",
+      "city": "Philadelphia",
+      "zip": "19138"
+    },
+    {
+      "name": "Burgettstown Area High School",
+      "state": "PA",
+      "association_id": "11305",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11305",
+      "address": "104 BAVINGTON RD",
+      "city": "BURGETTSTOWN",
+      "zip": "15021"
+    },
+    {
+      "name": "Burgettstown Area Middle School",
+      "state": "PA",
+      "association_id": "11954",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11954",
+      "address": "104 BAVINGTON RD",
+      "city": "BURGETTSTOWN",
+      "zip": "15021"
+    },
+    {
+      "name": "Burrell High School",
+      "state": "PA",
+      "association_id": "11306",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11306",
+      "address": "1021 PUCKETY CHURCH RD",
+      "city": "LOWER BURRELL",
+      "zip": "15068"
+    },
+    {
+      "name": "Butler Area High School",
+      "state": "PA",
+      "association_id": "11307",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11307",
+      "address": "120 CAMPUS LN",
+      "city": "BUTLER",
+      "zip": "16001"
+    },
+    {
+      "name": "Butler Area Intermediate High School",
+      "state": "PA",
+      "association_id": "11957",
+      "detail_url": "https://www.piaa.org/schools/directory/details.aspx?ID=11957",
+      "address": "551 FAIRGROUND HILL RD",
+      "city": "BUTLER",
+      "zip": "16001"
+    }
+  ],
+  "coaches": []
+}

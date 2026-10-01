@@ -1,0 +1,48 @@
+{
+  "source": "PIAA member school directory (www.piaa.org/schools/directory/)",
+  "captured_from": "census-prototype/raw, copied byte-identical",
+  "captured_on": "2026-09-27",
+  "note": "The three letter pages and the details page are the captures notes/pa-piaa.md names, copied byte-identical and verified with sha256 and byte count. robots.txt was fetched on 2026-09-29 because the survey recorded its verdict (593 B) without keeping the body; the live file is 442 B and still disallows /officials/directory/.",
+  "fixtures": [
+    {
+      "file": "directory_alpha_a.html",
+      "url": "https://www.piaa.org/schools/directory/list.aspx?alpha=A",
+      "prototype_file": "parsers/pa_piaa.py",
+      "prototype_capture": "census-prototype/raw/www.piaa.org__bc6dac02c44f4d98618c33cf",
+      "sha256": "75cdf9cb2d0c0317aa2c61e96e0f19e59500a8bb9df87455aa9c95c966766635",
+      "bytes": 80080
+    },
+    {
+      "file": "directory_alpha_b.html",
+      "url": "https://www.piaa.org/schools/directory/list.aspx?alpha=B",
+      "prototype_file": "parsers/pa_piaa.py",
+      "prototype_capture": "census-prototype/raw/www.piaa.org__893900d6e6727f6522b40962",
+      "sha256": "1fb99b5ce0cae096d9a466a9cb6f8fa90916b6ae03c6dd123efaf77a0583135d",
+      "bytes": 96263
+    },
+    {
+      "file": "directory_alpha_z.html",
+      "url": "https://www.piaa.org/schools/directory/list.aspx?alpha=Z",
+      "prototype_file": "parsers/pa_piaa.py",
+      "prototype_capture": "census-prototype/raw/www.piaa.org__038cebe50ee6a6639b074dd5",
+      "sha256": "85da56147ebdc31bd2234a774515f0cd15c4be4e7e5b5d065904cb3378389b63",
+      "bytes": 78632
+    },
+    {
+      "file": "details_12048.html",
+      "url": "https://www.piaa.org/schools/directory/details.aspx?ID=12048",
+      "prototype_file": "parsers/pa_piaa_details.py",
+      "prototype_capture": "census-prototype/raw/www.piaa.org__19a39d28918932230f0caeb3",
+      "sha256": "5192627687cbd1b255e703dfe4354d2ae032acac31804232e5fe63423ac6723e",
+      "bytes": 62521
+    },
+    {
+      "file": "robots.txt",
+      "url": "https://www.piaa.org/robots.txt",
+      "prototype_file": null,
+      "prototype_capture": null,
+      "sha256": "3d941ddf44c7ea8304a238fe484163cb103e538929f9b1c92235cbbb45564c36",
+      "bytes": 442
+    }
+  ]
+}

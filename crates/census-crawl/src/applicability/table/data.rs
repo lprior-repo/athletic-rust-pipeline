@@ -1,7 +1,7 @@
 use super::super::Applicability;
 use census_domain::UsJurisdiction;
 
-pub(crate) const TABLE: [Applicability; 23] = [
+pub(crate) const TABLE: [Applicability; 24] = [
     Applicability {
         slug: "athleticlive",
         jurisdictions: &[
@@ -206,6 +206,12 @@ pub(crate) const TABLE: [Applicability; 23] = [
                    `professional_email == None`.",
         refusal: "North Dakota and Nebraska only: the two member directories the adapter parses. Neither publishes an \
                   address, which is why the row carries the names shape and makes no contact claim.",
+    },
+    Applicability {
+        slug: "pa_piaa",
+        jurisdictions: &[UsJurisdiction::Pennsylvania],
+        evidence: super::prose::PA_PIAA_EVIDENCE,
+        refusal: super::prose::PA_PIAA_REFUSAL,
     },
     Applicability {
         slug: "riil",

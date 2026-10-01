@@ -24,3 +24,17 @@ pub(super) const NCES_REFUSAL: &str = "Alaska and Hawaii are outside the census 
                   MP) are not census jurisdictions, so those rows are skipped with their line and field recorded. An \
                   in-scope row without a usable name or a 12-digit NCES id is skipped the same way. Nothing else is \
                   excluded: a closed or future school stays in the corpus as the file publishes it.";
+
+pub(super) const PA_PIAA_EVIDENCE: &str = "The PIAA member school directory at `www.piaa.org/schools/directory/list.aspx?alpha=<L>` renders \
+                   one `<dl class=\"schoolBlock\">` per member school (id, name, printed address line) across the 24 \
+                   linked letters (A..W and Y; X and Z print no link, and `alpha=Z` echoes the A group). Each school's \
+                   details page (`details.aspx?ID=<id>`) adds the PIAA district, school district, school type and \
+                   enrollment figures plus the superintendent, principal and athletic-director vCards. The adapter \
+                   stores the schools with their city and reads each school's details page for the \
+                   athletic-director posts, emitted as `CoachRole::AthleticDirector` rows with no sport and \
+                   `Gender::Mixed`. Captures: `alpha=A` 53 schools, `alpha=B` 101 schools, details ID=12048 one \
+                   athletic-director row with a published address.";
+
+pub(super) const PA_PIAA_REFUSAL: &str =
+    "Pennsylvania only. The PIAA directory is the state association's own publication; no other \
+                   jurisdiction in the corpus uses this host or this URL shape.";

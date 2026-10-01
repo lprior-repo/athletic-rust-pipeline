@@ -4,7 +4,7 @@ use super::{
 };
 use std::time::Duration;
 
-const PLAN_SLUGS: [&str; 23] = [
+const PLAN_SLUGS: [&str; 24] = [
     "athleticlive",
     "athleticlive_athletes",
     "athleticnet",
@@ -20,6 +20,7 @@ const PLAN_SLUGS: [&str; 23] = [
     "nces",
     "ohsaa",
     "plain_names",
+    "pa_piaa",
     "riil",
     "state_ed",
     "tfrrs",
