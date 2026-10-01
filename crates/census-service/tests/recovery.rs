@@ -446,9 +446,9 @@ fn kill_ladder(
                 );
             }
             let completed = attempt.journal.len() >= total_units;
-            if let Some(completed_us) = completed.then(|| {
-                u64::try_from(attempt.delay.as_micros()).unwrap_or(u64::MAX)
-            }) {
+            if let Some(completed_us) =
+                completed.then(|| u64::try_from(attempt.delay.as_micros()).unwrap_or(u64::MAX))
+            {
                 anchor_us = anchor_us.min(completed_us);
             }
             attempts.push(attempt);

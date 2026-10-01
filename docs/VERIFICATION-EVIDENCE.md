@@ -21,8 +21,11 @@ The full gate run recorded below (555 s) predates the last two commits. The lane
 touch were exercised separately on their own tree: `cargo nextest run -p census-service` reported
 520 passed of 521 with one load-correlated flake (`athletic-rust-pipeline-trs`), `--test recovery`
 passed 9 of 9 including under the gate's concurrent load, and the focused ladder test passed 20 of
-20. A `tools/gate.sh` run on the landed tip follows this commit; `vet` is expected red there for the
-pre-existing supply-chain stub owned by `athletic-rust-pipeline-6yj.6`, independent of this tree.
+20. The `tools/gate.sh` run on the landed tip reported `gate: FAIL -> fmt vet` (446 s): every other lane
+passed, and the recovery-harness commit `4de36fc1` was not rustfmt-clean — `cargo fmt --all --
+--check` reflowed one `then(|| ...)` closure in `crates/census-service/tests/recovery.rs`, which this
+commit formats. `vet` remains the other red, for the pre-existing supply-chain stub owned by
+`athletic-rust-pipeline-6yj.6`, independent of this tree.
 
 ## Kill-ladder stability and two intermittent kill tests — 2026-10-01
 
