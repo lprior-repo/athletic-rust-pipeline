@@ -401,6 +401,93 @@ audits. No audit exemptions or increased quality baselines were added. The separ
 native isolated fault matrix, full release proof/mutation/performance lanes and national
 source/identity acceptance are not certified by this retained-data publication.
 
+## Landed on `main` — the closeout branch fast-forwarded — 2026-10-01
+
+`origin/main` advanced `087c06f6 -> 53cfe1cb` with `git push origin closeout-python-port:main`
+(fast-forward, no force; `git fetch` then showed `origin/main` = `53cfe1cb`). That push published
+`5d958316` (the `pa_piaa` provider arm, offline replay lane and first supervised live read),
+`2e6342f3` (the school-address vendor transport exercised offline), `4de36fc1` (the anchored kill
+ladder) and `53cfe1cb` (the gate note). The destination-guard commit `087c06f6` was already on main
+and remains in the history; local `main` in the primary worktree is now two commits behind
+`origin/main` and re-syncs with `git pull --ff-only` there, whose uncommitted files do not overlap
+the landed paths.
+
+The full gate run recorded below (555 s) predates the last two commits. The lanes those commits
+touch were exercised separately on their own tree: `cargo nextest run -p census-service` reported
+520 passed of 521 with one load-correlated flake (`athletic-rust-pipeline-trs`), `--test recovery`
+passed 9 of 9 including under the gate's concurrent load, and the focused ladder test passed 20 of
+20. The `tools/gate.sh` run on the landed tip reported `gate: FAIL -> fmt vet` (446 s): every other lane
+passed, and the recovery-harness commit `4de36fc1` was not rustfmt-clean — `cargo fmt --all --
+--check` reflowed one `then(|| ...)` closure in `crates/census-service/tests/recovery.rs`, which this
+commit formats. `vet` remains the other red, for the pre-existing supply-chain stub owned by
+`athletic-rust-pipeline-6yj.6`, independent of this tree.
+
+## Kill-ladder stability and two intermittent kill tests — 2026-10-01
+
+Worktree `arh-closeout`, branch `closeout-python-port`. Two kill-based tests failed intermittently
+under parallel load while passing in quieter lanes, so each observation is recorded with its
+trigger rather than dismissed as noise.
+
+| Command | Observation |
+|---|---|
+| `cargo nextest run -p census-service -p xtask` (605 run) | 604 passed, 1 failed: `recovery::ks_directory_walk_claims_units_the_kill_can_lose`, 1 of 11 standalone runs of that test also failed and the other 10 passed in ~0.2 s. Diagnosis: each round measured a clean pass runtime and probed at `runtime - {200 us .. 32 ms}`; under load the measurement and the killed attempt disagree, so a round's probes all fell past the batch boundary and no attempt landed with `0 < journal < total`, failing the "a real mid-batch kill must have happened" precondition. Fix: the ladder keeps the smallest delay that has let a pass finish and never anchors above it, and the offsets add 50/100/300/750/1500 us. |
+| `cargo nextest run -p census-service --test recovery` after the fix | 9 passed, repeated three times, including once under the release gate's concurrent load; the focused test passed 20 of 20 standalone runs, and each measured `claimed_without_rows_at_kill=0 missing_from_the_final_store=0`. |
+| `cargo nextest run -p census-service` (521 run, gate running concurrently) | 520 passed, 1 failed: `restate_kill_restart::a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write` at 122.5 s, the same test that passed at 126.4 s in the earlier full-workspace lane. No diagnostic was captured (the run's output was tailed); `athletic-rust-pipeline-rtv` records it with the rerun instruction. |
+
+`athletic-rust-pipeline-rtv` carries both observations: one fixed here with its stability evidence,
+one still open with its trigger (a Restate endpoint killed and resumed while the machine is loaded).
+
+The same day's full gate run on this branch (`tools/gate.sh`, 555 s) passed every lane it reports
+except `vet`, with the summary `gate: FAIL -> vet`: fmt, check, doc, tests, strict clippy,
+production scan, domain type integrity, domain purity, module seams, debt ratchet, deny, audit,
+machete, geiger, feature powerset and bench presence all passed. The vet lane is not this branch's
+defect — its diff touches no Cargo.toml, Cargo.lock or supply-chain file — and `cargo vet --locked`
+reproduces the same failure on `origin/main`: `imports.lock is out-of-date with respect to
+configuration`, because `8b34110d` re-added `supply-chain/config.toml` as an 11-line stub (whose
+Google import URL also changed from `google/supply-chain` to `google/rust-crate-audits`) while
+`imports.lock` stayed header-only. `athletic-rust-pipeline-6yj.6` owns the repair and
+`coach-acquisition-rust` holds the 1378-line config plus 674-line lock to harvest; the primary
+worktree had both files modified while this run was taken, so it was left untouched.
+
+## School-address vendor transport exercised offline — 2026-10-01
+
+Worktree `arh-closeout`, branch `closeout-python-port`. The Google geocode and USPS validation
+clients reach their vendors through `census_crawl::geocode::HttpTransport`; until now every test
+replayed through the in-memory stub, so the socket, header and failure paths were unexercised. The
+live-vendor half stays blocked on operator credentials, so no vendor response capture is committed
+and the clients' own tests still run on hand-written bodies.
+
+| Command | Observation |
+|---|---|
+| `cargo nextest run -p census-crawl -E 'test(transport_tests)'` | 4 passed: the recording server received `GET /maps/api/geocode/json?…&key=…` with `Authorization: Bearer …` and its 200 body came back verbatim; a vendor 500 became a failure whose detail holds neither the URL nor the credential although the request carried the key; a bound listener that never answers failed only after the 10 s request timeout; a refused connection reported without the URL or credential. |
+| `cargo clippy -p census-crawl --lib --bins --examples` with the gate's `-D clippy::*` list | Clean. |
+
+Limit: reqwest 0.13 stringifies a request timeout and a refused connection identically as
+`error sending request`, so the transport's detail text does not classify the failure;
+`http_transport_times_out_against_a_listener_that_never_answers` proves the timeout by elapsed
+time. The credential is never logged: `SecretKey`'s `Debug` is redacted and both clients pass the
+transport's detail through `SecretKey::redact`, which the crate's existing stub tests cover
+alongside these socket tests.
+
+## PIAA live directory read, replay lane and index repair smoke — 2026-10-01
+
+Worktree `arh-closeout`, branch `closeout-python-port`, main at `087c06f6` plus this entry's
+commit. The `pa_piaa` adapter gained a provider arm (`census-service provider pa_piaa`), an
+offline replay case (`cargo xtask replay pa_piaa`) and its first supervised live read; the index
+repair behaviour was re-observed against a populated store. Limits: the live read covers one
+letter and one details page, not the 24-letter or statewide acquisition, and its captures date
+from 2026-09-27.
+
+| Command | Observation |
+|---|---|
+| `cargo xtask replay pa_piaa` | 10 captures, offline: `PROVENANCE.json` bytes and sha256 match for all 5 listed captures; `alpha=A` 53 schools, `alpha=B` 101; `alpha=Z` re-reads the A group (53, first `A J McMullen School`, id 12048); `details_12048.html` = `A J McMullen School` with 1 contact; the three directory goldens' `association_id` sets equal their captures' parsed ids; robots' `*` group holds 14 disallows including `/officials/directory/` and permitting `/schools/`. |
+| `census-service --store /tmp/piaa-live --authorized-host www.piaa.org provider pa_piaa --limit 1 --school-names "A J McMullen School" --observed-on 2026-10-01` | 53 schools, 2 requests, 0 errors, 1 athletic-director row with a published address: the live `alpha=A` count equals the capture. Without the operator authorization the same command is refused — the site 301s the https directory URL to `http://www.piaa.org/...` and the guard reports it as an admission bypass — so the run names the hop explicitly. |
+| `census-service --store /tmp/piaa-live index`, twice | `source_identities=54 conflicts=0 reviews=0 coverage=51 snapshots=1` from a populated store, and the second identical-input pass reports and keeps the same counts: mutable projections are rebuilt, not skipped, so the historical receipt no longer hides missing rows. |
+| `cargo nextest run -p census-reconcile` | 41 passed, including `index::stage_gate_tests::{a_changed_input_reruns_the_index_stage, receipt_does_not_hide_missing_mutable_projection_rows}`. |
+| `cargo nextest run --workspace --all-features` | 1811 passed, 3 skipped; slowest `restate_kill_restart::a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write` at 126 s. |
+| `cargo clippy -p census-service -p xtask --lib --bins --examples` with the gate's `-D clippy::*` list | Clean. |
+| `census-service store-restore --from var/backups/seal-86421165 --to /tmp/d8l-store` | Refused by name: the manifest records 16 tables where a store has 17, so the historical seal predates a schema revision. The seal is preserved and was not migrated, converted or opened for the smoke; an empty store then derivable by `index` (0 identities, 50 coverage rows) proves nothing about the repair path, which the populated store above covers. |
+
 ## Cohort and coach cutover; captured worksheet qualification — 2026-09-30–2026-10-01
 
 These are targeted accuracy repairs and offline capture qualifications, not a fresh national
@@ -4989,3 +5076,43 @@ deviations).
 Limits. The rendered document is a throwaway readback, not a published artifact: it was written to
 `/tmp`, its research root carried no `data/`, and the metrics it printed come from the preserved
 2026-09-25 store, not a fresh run. No network was touched.
+
+## The destination guard is wired into the source fetcher (2026-10-01)
+
+Worktree `arh-closeout`, branch `closeout-python-port` (base `accc6e90`).
+
+Defect. `census-crawl/src/net/destination_guard.rs` landed with the port (`6d660a5e`, `e763fd53`),
+but no module declared it and no request path consulted it: `Fetcher::new` built its client with
+`.redirect(Policy::limited(5))`, no DNS hook and no proxy suppression. A native CLI probe could fetch
+`http://127.0.0.1:<port>/robots.txt` and its payload with exit 0.
+
+Repair. `net/mod.rs` declares `mod destination_guard;` and the `Fetcher` carries
+`destination: Arc<DestinationGuard>`; `net/client.rs` normalizes the authorized-host list once,
+builds the guard from it and installs `.no_proxy()`, `.dns_resolver(GuardedResolver)` and
+`.redirect(Policy::custom(|attempt| guard.redirect(attempt)))`, so a literal URL, every resolved
+address and every redirect hop are validated against the same list the pacing layer paces;
+`net/execute.rs::fetch` validates the URL before its cache lookup, so scheme and credential refusals
+hold whether or not a body is cached. `tokio` gains the `net` feature (the resolver resolves through
+`tokio::net::lookup_host`) and the test harness gains `io-util`.
+
+Evidence. `cargo nextest run -p census-crawl --all-features` -> 565 passed, 0 skipped;
+`cargo nextest run -p census-service --all-features` -> 522 passed, 1 skipped; `cargo fmt --all
+--check` clean; the gate's clippy lint set over the crawl crate's source targets is clean. Six new
+tests in `net/destination_guard/wiring_tests.rs` cover an unauthorized loopback literal (policy
+error, listener never contacted), `localhost` without a grant, an explicit `127.0.0.1` grant that
+admits the fixture after its `robots.txt` (server observes exactly `/robots.txt`, `/payload`), a
+same-host redirect followed while a differently-named local hop is refused with the unlisted listener
+silent, a seeded cache body that does not bypass the refusal, and `file://`/`ftp://`/credential URLs.
+`crates/census-crawl/src/milesplit/results/pages/tests.rs` grants `127.0.0.1` in its loopback
+fixture fetcher: its unreachable-page test needs a local 500, which the guard rightly stopped
+accepting implicitly.
+
+Native CLI probes against `python3 -m http.server 8971 --bind 127.0.0.1`:
+`census-service --store /tmp/kz5-smoke/store fetch http://127.0.0.1:8971/payload` -> `policy:
+non-public destination 127.0.0.1 for 127.0.0.1 is not explicitly authorized`, exit 1, listener log
+empty; the same command with `--authorized-host 127.0.0.1` -> exit 0, the listener logging
+`GET /robots.txt` then `GET /payload`.
+
+Limits. The DNS hook is exercised by a resolved `localhost` grant, not by a public name whose
+addresses change; no proxy environment variable was set during the probes, so `no_proxy` is asserted
+by construction rather than by a poisoned-environment test.

@@ -201,7 +201,7 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 4 | **Historical depth** | Championship pages are per-season (page title dated "2026 PIAA Cross Country Championships Information and Results"). Older seasons not enumerated. |
 | 5 | **Discovery mechanism** | `/schools/directory/list.aspx?alpha=<letter>` (24 linked letters: A–W and Y) + `/schools/membership/default.aspx` + `/schools/classifications/default.aspx` (`samples/piaa-sitemap.aspx.html`). |
 | 6 | **Stable identifiers** | `alpha` directory letters; `sport=` championship keys (`?sport=crscountry`); district pages `/schools/directory/district.aspx`. |
-| 7 | **Pagination** | Alphabetical (per-letter) rather than numeric; the alpha page renders **no school anchors** in static HTML, so per-letter rows are `[INFERENCE]` client-rendered and were not counted. |
+| 7 | **Pagination** | Alphabetical (per-letter) rather than numeric; the letter pages are server-rendered — the live and captured `alpha=A` page yields 53 `schoolBlock` rows, so per-letter rows are counted, not inferred. |
 | 8 | **Athlete fields** | None observed. |
 | 9 | **Meet fields** | Championship event pages: dates/venues per sport via `/championships/default.aspx` and `/events/default.aspx?categoryCodes=…piaa_championships`. |
 | 10 | **Result fields** | None in static HTML; PIAA delegates championship coverage: `<li><a href="https://pa.milesplit.com/" target="_blank">Access District and PIAA Championships coverage from PenntrackXC.com</a></li>` (`samples/piaa-championship-details-xc.html`). |
@@ -209,7 +209,7 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
 | 12 | **Coach/contact fields** | Not public for officials — `/officials/directory/` is robots-disallowed (`samples/robots-piaa.txt`). |
 | 13 | **Public API availability** | None observed; `.axd` handlers are robots-disallowed via `Disallow: /*.axd`. |
 | 14 | **Static file availability** | Yes — PDFs under `/assets/web/…` (e.g. `2026_PIAA_Calendar.pdf`, handbook introduction) although `/assets/` is robots-disallowed for crawlers. |
-| 15 | **Browser requirement** | Yes for the school directory (client-rendered list); no for championship pages. |
+| 15 | **Browser requirement** | No for the directory letter pages and the school details pages (server-rendered `<dl class="schoolBlock">` rows and vCard contacts; the live `alpha=A` re-read on 2026-10-01 parsed 53 schools with no browser); no for championship pages. |
 | 16 | **Request cost** | Low per page; 25 requests for the full alphabetical directory. |
 | 17 | **Published rate limits** | None published (`samples/robots-piaa.txt`, 593 B: path disallows plus MJ12bot/SemrushBot bans). |
 | 18 | **Known blocks** | `/officials/directory/`, `/assets/`, `/account/`, `/admin/`, `/shop`, `/maint/` are robots-disallowed. |
@@ -235,7 +235,14 @@ results; **COACH_SOURCE** = publishes coach/AD contact data; **CONDITIONAL** = u
   not a live-response or statewide-acquisition claim; command results belong in the evidence ledger.
 - **Note.** Row 15's browser requirement is contradicted by the captures: the letter pages are
   server-rendered and their rows parse without a browser (`notes/pa-piaa.md`), which is what the
-  adapter relies on; the divergence has not been re-tested against a live response.
+  adapter relies on.
+- **Live re-read (2026-10-01).** The divergence is closed against the live source: a supervised
+  `census-service provider pa_piaa` run read `www.piaa.org` and returned the same 53 schools for
+  `alpha=A` as the captures, and the details page for ID 12048 re-read as `A J McMullen School`
+  with its athletic-director contact. The site answers the https directory URL with a 301 to the
+  same path over plain http, so the run carries the destination guard's operator authorization for
+  `www.piaa.org` (`--authorized-host www.piaa.org`); without it that hop is refused as an admission
+  bypass. Evidence: `docs/VERIFICATION-EVIDENCE.md`, "PIAA live directory read and replay lane".
 
 ---
 

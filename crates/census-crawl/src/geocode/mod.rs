@@ -3,6 +3,8 @@ mod key;
 #[cfg(test)]
 mod tests;
 mod transport;
+#[cfg(test)]
+mod transport_tests;
 mod usps;
 
 pub use google::{GeocodeOutcome, GeocodeQuery, GoogleGeocoder};
