@@ -1,8 +1,8 @@
 use super::normalize;
+use super::spans::spans;
 use census_domain::model::{ContactClaimEvidence, ContactProofField, RawContactRow};
-use scraper::{Html, Selector};
 
-const MAX_SPAN: usize = 4096;
+pub(super) const MAX_SPAN: usize = 4096;
 
 pub(super) struct PageClaims {
     pub fields: Vec<ContactClaimEvidence>,
@@ -23,8 +23,8 @@ pub(super) fn inspect(
     url: &str,
     source_sha256: &str,
     fetched_at: &str,
-) -> anyhow::Result<PageClaims> {
-    let (spans, heading) = spans(text)?;
+) -> PageClaims {
+    let (spans, heading) = spans(text);
     let context = ClaimContext {
         row,
         url,
@@ -44,7 +44,7 @@ pub(super) fn inspect(
             collect(&span, &heading, director, &context, &mut result);
         }
     }
-    Ok(result)
+    result
 }
 
 fn collect(
@@ -91,51 +91,6 @@ fn collect(
             .fields
             .push(evidence(field, email, person, span, context));
     }
-}
-
-fn spans(text: &str) -> anyhow::Result<(Vec<String>, String)> {
-    if !text.contains('<') {
-        return Ok((
-            text.lines()
-                .filter(|line| !line.trim().is_empty())
-                .map(str::to_string)
-                .collect(),
-            String::new(),
-        ));
-    }
-    let document = Html::parse_document(text);
-    let records = Selector::parse(
-        "tr, li, article, [class~='staff-card'], [class~='coach-card'], [class~='staff-member']",
-    )
-    .map_err(|error| anyhow::anyhow!("staff record selector: {error}"))?;
-    let heading = Selector::parse("title, h1")
-        .map_err(|error| anyhow::anyhow!("staff heading selector: {error}"))?;
-    let headings = document
-        .select(&heading)
-        .flat_map(|element| element.text())
-        .collect::<Vec<_>>()
-        .join(" ");
-    let records: Vec<String> = document
-        .select(&records)
-        .filter(|element| {
-            !element
-                .select(&records)
-                .any(|child| child.id() != element.id())
-        })
-        .map(|element| element.text().collect::<Vec<_>>().join(" "))
-        .collect();
-    if !records.is_empty() {
-        return Ok((records, normalize(&headings)));
-    }
-    let paragraphs = Selector::parse("p")
-        .map_err(|error| anyhow::anyhow!("staff paragraph selector: {error}"))?;
-    Ok((
-        document
-            .select(&paragraphs)
-            .map(|element| element.text().collect::<Vec<_>>().join(" "))
-            .collect(),
-        normalize(&headings),
-    ))
 }
 
 fn contains(text: &str, value: &str) -> bool {

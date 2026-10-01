@@ -18,6 +18,7 @@ pub(super) struct Open {
     pub(super) record: bool,
     pub(super) paragraph: bool,
     pub(super) heading: bool,
+    pub(super) fostered: bool,
     pub(super) text: Vec<String>,
     pub(super) inner_records: usize,
 }
@@ -59,11 +60,13 @@ impl Scan {
             }
             None => (rest, text.len()),
         };
-        if RCDATA_TAGS.contains(&name) {
-            let decoded = decode_entities(body);
-            if !decoded.is_empty() {
-                self.push_text(&decoded, None);
-            }
+        let decoded = if RCDATA_TAGS.contains(&name) {
+            decode_entities(body)
+        } else {
+            body.to_string()
+        };
+        if !decoded.is_empty() {
+            self.push_text(&decoded, None);
         }
         self.end_tag(name);
         next
@@ -94,11 +97,15 @@ impl Scan {
         if decoded.is_empty() {
             return;
         }
-        if self.table_mode().is_some() {
+        let structural = matches!(
+            self.stack.last().map(|open| open.name.as_str()),
+            Some("table" | "tbody" | "thead" | "tfoot" | "tr")
+        );
+        if structural && self.table_mode().is_some() {
             self.table_text.push_str(&decoded);
             return;
         }
-        self.push_text(&decoded, None);
+        self.push_text(&decoded, self.table_mode());
     }
 
     fn resolve_table_text(&mut self) {
@@ -106,26 +113,14 @@ impl Scan {
             return;
         }
         let text = std::mem::take(&mut self.table_text);
-        if html_space(&text) {
-            return;
-        }
-        let target = self
-            .text_target()
-            .or_else(|| self.table_mode().and_then(|index| index.checked_sub(1)));
-        self.push_text(&text, target);
+        let foster = self.table_mode().filter(|_| !html_space(&text));
+        self.push_text(&text, foster);
     }
 
-    fn text_target(&self) -> Option<usize> {
-        self.stack.iter().rposition(|open| open.record).or_else(|| {
-            self.stack
-                .iter()
-                .rposition(|open| open.paragraph || open.heading)
-        })
-    }
-
-    fn push_text(&mut self, node: &str, target: Option<usize>) {
-        if let Some(index) = target.or_else(|| self.text_target()) {
-            if let Some(open) = self.stack.get_mut(index) {
+    fn push_text(&mut self, node: &str, foster: Option<usize>) {
+        let limit = foster.unwrap_or(self.stack.len());
+        for (index, open) in self.stack.iter_mut().enumerate() {
+            if index < limit || open.fostered {
                 open.text.push(node.to_string());
             }
         }

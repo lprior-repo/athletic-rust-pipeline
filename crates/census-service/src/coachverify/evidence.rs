@@ -41,7 +41,7 @@ impl RowEvidence {
         .iter()
         .filter(|value| !value.trim().is_empty())
         .count();
-        let page = claims::inspect(text, row, url, source_sha256, fetched_at)?;
+        let page = claims::inspect(text, row, url, source_sha256, fetched_at);
         self.found |= page.found;
         self.contradicted |= page.contradicted;
         page.fields.into_iter().for_each(|claim| {
