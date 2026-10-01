@@ -6,6 +6,21 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Kill-ladder stability and two intermittent kill tests — 2026-10-01
+
+Worktree `arh-closeout`, branch `closeout-python-port`. Two kill-based tests failed intermittently
+under parallel load while passing in quieter lanes, so each observation is recorded with its
+trigger rather than dismissed as noise.
+
+| Command | Observation |
+|---|---|
+| `cargo nextest run -p census-service -p xtask` (605 run) | 604 passed, 1 failed: `recovery::ks_directory_walk_claims_units_the_kill_can_lose`, 1 of 11 standalone runs of that test also failed and the other 10 passed in ~0.2 s. Diagnosis: each round measured a clean pass runtime and probed at `runtime - {200 us .. 32 ms}`; under load the measurement and the killed attempt disagree, so a round's probes all fell past the batch boundary and no attempt landed with `0 < journal < total`, failing the "a real mid-batch kill must have happened" precondition. Fix: the ladder keeps the smallest delay that has let a pass finish and never anchors above it, and the offsets add 50/100/300/750/1500 us. |
+| `cargo nextest run -p census-service --test recovery` after the fix | 9 passed, repeated three times, including once under the release gate's concurrent load; the focused test passed 20 of 20 standalone runs, and each measured `claimed_without_rows_at_kill=0 missing_from_the_final_store=0`. |
+| `cargo nextest run -p census-service` (521 run, gate running concurrently) | 520 passed, 1 failed: `restate_kill_restart::a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write` at 122.5 s, the same test that passed at 126.4 s in the earlier full-workspace lane. No diagnostic was captured (the run's output was tailed); `athletic-rust-pipeline-rtv` records it with the rerun instruction. |
+
+`athletic-rust-pipeline-rtv` carries both observations: one fixed here with its stability evidence,
+one still open with its trigger (a Restate endpoint killed and resumed while the machine is loaded).
+
 ## School-address vendor transport exercised offline — 2026-10-01
 
 Worktree `arh-closeout`, branch `closeout-python-port`. The Google geocode and USPS validation

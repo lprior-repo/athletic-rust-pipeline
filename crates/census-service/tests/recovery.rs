@@ -366,9 +366,11 @@ struct Subject<'a> {
     ids_of: fn(&Store) -> BTreeSet<String>,
 }
 
-const LADDER_ROUNDS: usize = 6;
+const LADDER_ROUNDS: u64 = 8;
 
-const LADDER_OFFSETS_US: [u64; 8] = [200, 500, 1_000, 2_000, 4_000, 8_000, 16_000, 32_000];
+const LADDER_OFFSETS_US: [u64; 14] = [
+    50, 100, 200, 300, 500, 750, 1_000, 1_500, 2_000, 4_000, 8_000, 16_000, 24_000, 32_000,
+];
 
 fn reset_attempt_database(root: &Path) {
     let database = root.join("fjall");
@@ -401,16 +403,19 @@ fn kill_ladder(
     note(
         scenario,
         format!(
-            "clean runtime {clean_runtime:?} before the ladder; every round re-measures it, so a \
-             machine whose pass time drifts under load cannot leave the search behind the pass end"
+            "clean runtime {clean_runtime:?} before the ladder; every round re-measures it and \
+             never anchors above a delay already known to let the pass finish, so a machine whose \
+             pass time drifts under load still probes the batch boundary"
         ),
     );
+    let mut anchor_us = u64::try_from(clean_runtime.as_micros()).unwrap_or(u64::MAX);
     let mut attempts = Vec::new();
     for round in 0..LADDER_ROUNDS {
-        let runtime_us = measure_clean_runtime(root, args);
+        let measured_us = measure_clean_runtime(root, args);
+        let runtime_us = measured_us.min(anchor_us).max(1);
         note(
             scenario,
-            format!("round {round}: clean runtime {runtime_us} us"),
+            format!("round {round}: clean runtime {measured_us} us, anchor {runtime_us} us"),
         );
         for offset_us in LADDER_OFFSETS_US {
             reset_attempt_database(root);
@@ -439,6 +444,12 @@ fn kill_ladder(
                     Some(9),
                     "partial work must be interrupted by SIGKILL"
                 );
+            }
+            let completed = attempt.journal.len() >= total_units;
+            if let Some(completed_us) = completed.then(|| {
+                u64::try_from(attempt.delay.as_micros()).unwrap_or(u64::MAX)
+            }) {
+                anchor_us = anchor_us.min(completed_us);
             }
             attempts.push(attempt);
             if partial {
