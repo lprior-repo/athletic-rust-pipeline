@@ -21,6 +21,18 @@ trigger rather than dismissed as noise.
 `athletic-rust-pipeline-rtv` carries both observations: one fixed here with its stability evidence,
 one still open with its trigger (a Restate endpoint killed and resumed while the machine is loaded).
 
+The same day's full gate run on this branch (`tools/gate.sh`, 555 s) passed every lane it reports
+except `vet`, with the summary `gate: FAIL -> vet`: fmt, check, doc, tests, strict clippy,
+production scan, domain type integrity, domain purity, module seams, debt ratchet, deny, audit,
+machete, geiger, feature powerset and bench presence all passed. The vet lane is not this branch's
+defect — its diff touches no Cargo.toml, Cargo.lock or supply-chain file — and `cargo vet --locked`
+reproduces the same failure on `origin/main`: `imports.lock is out-of-date with respect to
+configuration`, because `8b34110d` re-added `supply-chain/config.toml` as an 11-line stub (whose
+Google import URL also changed from `google/supply-chain` to `google/rust-crate-audits`) while
+`imports.lock` stayed header-only. `athletic-rust-pipeline-6yj.6` owns the repair and
+`coach-acquisition-rust` holds the 1378-line config plus 674-line lock to harvest; the primary
+worktree had both files modified while this run was taken, so it was left untouched.
+
 ## School-address vendor transport exercised offline — 2026-10-01
 
 Worktree `arh-closeout`, branch `closeout-python-port`. The Google geocode and USPS validation
