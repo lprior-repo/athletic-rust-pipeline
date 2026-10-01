@@ -2,7 +2,7 @@ use super::super::{school_of, subject_of, Family, StoreRows};
 use super::{
     queue_row, COHORT_UNVERIFIED, IDENTITY_UNVERIFIED, UNRESOLVED_SCHOOL, UNRESOLVED_VENUE,
 };
-use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalSchool};
+use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalSchool, Confidence};
 use std::collections::HashMap;
 
 pub(super) fn cohort_unverified(
@@ -11,22 +11,29 @@ pub(super) fn cohort_unverified(
 ) -> Family {
     let mut family = Family::new(COHORT_UNVERIFIED);
     for athlete in cohort {
-        if !athlete.observed_grades.is_empty() {
+        if athlete.derived_cohort_confidence() == Some(Confidence::HIGH) {
             continue;
         }
         let subject = subject_of(
             &athlete.canonical_name,
             school_of(names, athlete.school.as_str()),
         );
-        family.push(queue_row(
-            athlete.id.as_str(),
-            subject,
+        let detail = if athlete.observed_grades.is_empty() {
             format!(
                 "no grade observation retained; {} evidence row(s), {} source(s)",
                 athlete.evidence.len(),
                 source_count(athlete)
-            ),
-        ));
+            )
+        } else {
+            format!(
+                "grade observations do not confirm canonical year {}; {} observation(s), {} evidence row(s), {} source(s)",
+                athlete.grad_year,
+                athlete.observed_grades.len(),
+                athlete.evidence.len(),
+                source_count(athlete)
+            )
+        };
+        family.push(queue_row(athlete.id.as_str(), subject, detail));
     }
     family
 }

@@ -62,7 +62,6 @@ impl Scan {
             record,
             paragraph,
             heading,
-            fostered,
             text: Vec::new(),
             inner_records: 0,
         });

@@ -81,7 +81,7 @@ fn join<T>(
 
 fn read_all(snapshot: &census_store::StoreSnapshot<'_>) -> ReportResult<Loaded> {
     std::thread::scope(|scope| -> ReportResult<Loaded> {
-        let athletes = scope.spawn(|| read_table::<CanonicalAthlete>(snapshot, Table::Athletes));
+        let athletes = scope.spawn(|| Ok(snapshot.athletes()?));
         let schools = scope.spawn(|| read_table::<CanonicalSchool>(snapshot, Table::Schools));
         let teams = scope.spawn(|| read_table::<CanonicalTeam>(snapshot, Table::Teams));
         let coaches = scope.spawn(|| read_table::<CanonicalCoach>(snapshot, Table::Coaches));

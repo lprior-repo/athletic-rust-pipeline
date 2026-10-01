@@ -1,6 +1,8 @@
 use super::state::{bucket_mut, in_cohort, jurisdiction_of, Bucket, BucketMap, PerfTally};
 use super::JurisdictionCoverage;
-use census_domain::model::{CanonicalAthlete, CanonicalPerformance, Gender, Mark, Sport};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalPerformance, Confidence, Gender, Mark, Sport,
+};
 use census_domain::JurisdictionBucket;
 use census_domain::UsJurisdiction;
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -41,10 +43,10 @@ fn tally(bucket: &mut Bucket, athlete: &CanonicalAthlete) {
         Gender::Girls => bump(&mut row.girls),
         Gender::Mixed | Gender::Unknown => bump(&mut row.unknown_gender),
     }
-    if athlete.observed_grades.is_empty() {
-        bump(&mut row.grad_unresolved);
-    } else {
+    if athlete.derived_cohort_confidence() == Some(Confidence::HIGH) {
         bump(&mut row.grad_verified);
+    } else {
+        bump(&mut row.grad_unresolved);
     }
     if has_conflicting_grade(athlete) {
         bump(&mut row.identity_conflicts);
@@ -120,7 +122,7 @@ fn has_conflicting_grade(athlete: &CanonicalAthlete) -> bool {
     athlete
         .observed_grades
         .iter()
-        .any(|observation| observation.grad_year() != athlete.grad_year)
+        .any(|observation| observation.grad_year() != Some(athlete.grad_year))
 }
 
 pub(super) fn tally_performances<'a>(

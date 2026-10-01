@@ -3,17 +3,62 @@ use super::*;
 #[test]
 fn graduation_follows_grade_and_school_year() {
     let of = |grade, year| GradYear::of(Grade::new(grade).unwrap(), SchoolYear::new(year).unwrap());
-    assert_eq!(of(11, 2025), GradYear::CO2027);
-    assert_eq!(of(12, 2025), GradYear::new(2026).unwrap());
-    assert_eq!(of(12, 2026), GradYear::CO2027);
-    assert_eq!(of(11, 2025).get(), 2027);
+    assert_eq!(of(11, 2025), Some(GradYear::CO2027));
+    assert_eq!(of(12, 2025), GradYear::new(2026));
+    assert_eq!(of(12, 2026), Some(GradYear::CO2027));
+    assert_eq!(of(11, 2025).map(GradYear::get), Some(2027));
     let observed = ObservedGrade {
         grade: Grade::new(9).unwrap(),
         school_year: SchoolYear::new(2026).unwrap(),
         source: SourceRef::id("milesplit_roster"),
     };
-    assert_eq!(observed.grad_year(), GradYear::new(2030).unwrap());
+    assert_eq!(observed.grad_year(), GradYear::new(2030));
     assert_eq!(observed.school_year.short(), "2026-27");
+}
+
+#[test]
+fn inferred_graduation_years_reject_unsupported_cohorts_without_clamping() {
+    for opening in SchoolYear::MIN_START_YEAR..=SchoolYear::MAX_START_YEAR {
+        for raw_grade in 9..=12 {
+            let grade = Grade::new(raw_grade).unwrap();
+            let school_year = SchoolYear::new(opening).unwrap();
+            let implied = opening + 13 - i16::from(raw_grade);
+            let expected = GradYear::new(implied);
+            let actual = GradYear::of(grade, school_year);
+            assert_eq!(actual, expected, "grade {raw_grade}, opening {opening}");
+            if let Some(year) = actual {
+                let encoded = serde_json::to_string(&year).unwrap();
+                assert_eq!(serde_json::from_str::<GradYear>(&encoded).unwrap(), year);
+            }
+        }
+    }
+}
+
+#[test]
+fn unsupported_grade_evidence_never_certifies_a_canonical_cohort() {
+    let (_, school) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Boundary High", "boundary");
+    let mut athlete = CanonicalAthlete::new(
+        &school,
+        "Boundary Runner",
+        GradYear::CO2027,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "boundary-runner"),
+    );
+    assert_eq!(athlete.derived_cohort_confidence(), None);
+    athlete.observed_grades.push(ObservedGrade {
+        grade: Grade::new(12).unwrap(),
+        school_year: SchoolYear::new(SchoolYear::MAX_START_YEAR).unwrap(),
+        source: SourceRef::id("milesplit_roster"),
+    });
+    assert_eq!(athlete.derived_cohort_confidence(), Some(Confidence::LOW));
+    athlete.observed_grades.push(ObservedGrade {
+        grade: Grade::new(12).unwrap(),
+        school_year: SchoolYear::new(2026).unwrap(),
+        source: SourceRef::id("milesplit_roster"),
+    });
+    assert_eq!(athlete.derived_cohort_confidence(), Some(Confidence::LOW));
+    athlete.observed_grades.remove(0);
+    assert_eq!(athlete.derived_cohort_confidence(), Some(Confidence::HIGH));
 }
 
 #[test]

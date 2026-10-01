@@ -4,7 +4,7 @@ use super::wire::MeetData;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CompetitionLevel, EventId, Evidence, Gender, Grade, ObservedGrade, SchoolId, SchoolYear,
-    SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    SourceAthleteObservation, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 
@@ -77,6 +77,7 @@ pub(super) struct AthleteRow<'a> {
     pub(super) gender: Gender,
     pub(super) school_year: SchoolYear,
     pub(super) sport: Sport,
+    pub(super) source_row: &'a str,
 }
 
 pub(super) fn athlete(
@@ -84,7 +85,7 @@ pub(super) fn athlete(
     source: &SourceRef,
     observed_on: &str,
     row: AthleteRow<'_>,
-) -> (AthleteId, SourceIdentity) {
+) -> Option<(AthleteId, SourceIdentity)> {
     let key = format!("{}:{}", row.provider_id, row.school.as_str());
     let observation = ObservedGrade {
         grade: row.grade,
@@ -97,6 +98,20 @@ pub(super) fn athlete(
         id: row.provider_id.to_string(),
         url: profile.clone(),
     };
+    let (grad_year, observation, identity) =
+        accumulated
+            .unsupported
+            .admit(observation, identity, |identity| {
+                SourceAthleteObservation::new(
+                    identity.namespace,
+                    identity.id,
+                    row.source_row,
+                    row.name,
+                    observed_on,
+                )
+                .with_gender(row.gender)
+                .with_profile_url(identity.url)
+            })?;
     if let Some(athlete) = accumulated.athletes.get_mut(&key) {
         if !athlete.observed_grades.contains(&observation) {
             athlete.observed_grades.push(observation);
@@ -104,16 +119,16 @@ pub(super) fn athlete(
         if !athlete.sports.contains(&row.sport) {
             athlete.sports.push(row.sport);
         }
-        return (athlete.id.clone(), identity);
+        return Some((athlete.id.clone(), identity));
     }
     let mut athlete = CanonicalAthlete::new(
         row.school,
         row.name,
-        observation.grad_year(),
+        grad_year,
         row.gender,
         identity.clone(),
     );
-    if let Some(url) = profile.clone() {
+    if let Some(url) = profile {
         athlete.public_profile_urls.push(url);
     }
     athlete.sports.push(row.sport);
@@ -123,7 +138,7 @@ pub(super) fn athlete(
         .push(Evidence::parsed(source.clone(), observed_on));
     let subject = (athlete.id.clone(), identity);
     accumulated.athletes.insert(key, athlete);
-    subject
+    Some(subject)
 }
 
 pub(super) fn store(

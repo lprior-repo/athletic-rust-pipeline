@@ -17,6 +17,7 @@ pub(in crate::athleticnet) struct MeetStats {
     pub(super) rows_no_name: u64,
     pub(super) rows_no_athlete: u64,
     pub(super) rows_no_grade: u64,
+    pub(super) rows_unsupported_cohort: u64,
     pub(super) rows_unknown_school: u64,
     pub(super) rows_unmapped_event: u64,
     pub(super) relay_rows: u64,
@@ -26,6 +27,7 @@ pub(in crate::athleticnet) struct MeetStats {
     pub(super) legs_no_name: u64,
     pub(super) legs_no_athlete: u64,
     pub(super) legs_no_grade: u64,
+    pub(super) legs_unsupported_cohort: u64,
 }
 
 impl MeetStats {
@@ -61,6 +63,9 @@ impl MeetStats {
         self.rows_no_name = self.rows_no_name.saturating_add(other.rows_no_name);
         self.rows_no_athlete = self.rows_no_athlete.saturating_add(other.rows_no_athlete);
         self.rows_no_grade = self.rows_no_grade.saturating_add(other.rows_no_grade);
+        self.rows_unsupported_cohort = self
+            .rows_unsupported_cohort
+            .saturating_add(other.rows_unsupported_cohort);
         self.rows_unknown_school = self
             .rows_unknown_school
             .saturating_add(other.rows_unknown_school);
@@ -76,6 +81,9 @@ impl MeetStats {
         self.legs_no_name = self.legs_no_name.saturating_add(other.legs_no_name);
         self.legs_no_athlete = self.legs_no_athlete.saturating_add(other.legs_no_athlete);
         self.legs_no_grade = self.legs_no_grade.saturating_add(other.legs_no_grade);
+        self.legs_unsupported_cohort = self
+            .legs_unsupported_cohort
+            .saturating_add(other.legs_unsupported_cohort);
     }
 }
 
@@ -87,10 +95,10 @@ impl std::fmt::Display for MeetStats {
              published date, {} without a season; blocks: {} read, {} without a published gender, \
              {} without a division, {} listed by no metadata document, {} whose label disagrees \
              with the declared event type; rows: {} seen, {} stored, {} without a mark token, {} \
-             without a name, {} without an athlete id, {} without a grade, {} whose team id has no \
+             without a name, {} without an athlete id, {} without a grade, {} with unsupported graduation inference, {} whose team id has no \
              entry, {} whose event label maps to no platform kind; relays: {} squad rows, {} \
              without leg membership, {} legs seen, {} stored, {} without a name, {} without an \
-             athlete id, {} without a grade",
+             athlete id, {} without a grade, {} with unsupported graduation inference",
             self.meets_pulled,
             self.meets_unplaced,
             self.meets_without_date,
@@ -106,6 +114,7 @@ impl std::fmt::Display for MeetStats {
             self.rows_no_name,
             self.rows_no_athlete,
             self.rows_no_grade,
+            self.rows_unsupported_cohort,
             self.rows_unknown_school,
             self.rows_unmapped_event,
             self.relay_rows,
@@ -114,7 +123,8 @@ impl std::fmt::Display for MeetStats {
             self.legs_stored,
             self.legs_no_name,
             self.legs_no_athlete,
-            self.legs_no_grade
+            self.legs_no_grade,
+            self.legs_unsupported_cohort
         )
     }
 }

@@ -21,7 +21,7 @@ pub use pages::{
 use report::{note_entities, note_resolution, note_result_sets, note_rows};
 use run::Run;
 
-const PHASE: &str = "milesplit_result_sets_v1";
+const PHASE: &str = "milesplit_result_sets_v2";
 const ADAPTER: &str = "milesplit_results";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -42,6 +42,7 @@ pub(super) struct Accumulator {
     pub(super) teams: HashMap<String, CanonicalTeam>,
     pub(super) athletes: HashMap<String, CanonicalAthlete>,
     pub(super) performances: HashMap<String, CanonicalPerformance>,
+    pub(super) unsupported: crate::cohort::UnsupportedCohortRows,
 }
 
 #[derive(Debug, Default)]
@@ -124,6 +125,10 @@ async fn finish(
     note_rows(report, stats);
     note_resolution(report, stats);
     note_entities(report, &counts);
+    report.note(format!(
+        "unsupported cohort observations retained: {}",
+        counts.unsupported_cohorts
+    ));
     report::note_failures(report, stats);
     Ok(())
 }
@@ -140,6 +145,7 @@ pub(super) struct EntityCounts {
     pub(super) teams: usize,
     pub(super) athletes: usize,
     pub(super) performances: usize,
+    pub(super) unsupported_cohorts: usize,
 }
 
 fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSchool>> {
@@ -167,6 +173,7 @@ fn append(
     let athletes: Vec<CanonicalAthlete> = accumulated.athletes.into_values().collect();
     let performances: Vec<CanonicalPerformance> = accumulated.performances.into_values().collect();
     let mut page = ctx.write_batch();
+    accumulated.unsupported.append_to(&mut page)?;
     page.append_many(Table::Meets, &meets)?;
     page.append_many(Table::Events, &events)?;
     page.append_many(Table::Teams, &teams)?;
@@ -182,5 +189,6 @@ fn append(
         teams: teams.len(),
         athletes: athletes.len(),
         performances: performances.len(),
+        unsupported_cohorts: accumulated.unsupported.len(),
     })
 }

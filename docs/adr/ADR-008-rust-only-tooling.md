@@ -21,9 +21,7 @@ and native lifecycle procedures live in [deployment-lifecycle.md](../deployment-
 
 ## Amendment — 2026-09-29: admitted research readers, pending Rust port
 
-Status: **resolved 2026-09-30 by [ADR-020](ADR-020-school-address-corpus-port.md)**; the readers are
-ported, the Python is deleted and the `tree.rs` skip entries are gone. The text below is the
-historical admission.
+Status: accepted, owner-authorized.
 
 The address pipeline under `hs-address-pipeline/` and the TSSAA school reader
 `parsers/tn_tssaa_school.py` are admitted to the tree as research material: they carry the discovery

@@ -43,6 +43,7 @@ pub(super) struct Accumulator {
     pub(super) athletes: HashMap<String, CanonicalAthlete>,
     pub(super) events: HashMap<String, CanonicalEvent>,
     pub(super) performances: HashMap<String, CanonicalPerformance>,
+    pub(super) unsupported: crate::cohort::UnsupportedCohortRows,
 }
 
 pub(super) fn grade_in(observed: &[ObservedGrade], school_year: SchoolYear) -> Option<Grade> {

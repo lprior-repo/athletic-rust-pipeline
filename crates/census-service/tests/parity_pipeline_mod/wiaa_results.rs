@@ -205,8 +205,10 @@ fn expected_ids_for(
                 if member.trim().is_empty() {
                     continue;
                 }
+                let Some(grad_year) = GradYear::of(grade, school_year) else {
+                    continue;
+                };
                 graded = graded.saturating_add(1);
-                let grad_year = GradYear::of(grade, school_year);
                 let round = event.round.as_deref().unwrap_or("<none>");
                 let source_key = match leg_position {
                     Some(position) => {

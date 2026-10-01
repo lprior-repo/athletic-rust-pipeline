@@ -46,6 +46,7 @@ pub const ATHLETE_IDENTITY_FAMILY: &str = "Athlete identity";
 pub const SCHOOL_IDENTITY_FAMILY: &str = "School identity";
 pub const COHORT_UNVERIFIED_FAMILY: &str = "Class-of-2027 cohort unverified";
 pub const IDENTITY_UNVERIFIED_FAMILY: &str = "Athlete identity unverified";
+pub const UNSUPPORTED_GRADUATION_FAMILY: &str = "Unsupported graduation inference";
 
 pub const COHORT_DECISION_FAMILIES: [&str; 2] =
     [COHORT_UNVERIFIED_FAMILY, IDENTITY_UNVERIFIED_FAMILY];

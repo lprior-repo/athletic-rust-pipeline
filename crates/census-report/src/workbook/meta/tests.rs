@@ -42,6 +42,7 @@ fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> std::path::PathBuf 
         },
     );
     let population = report::Derivation::of(&dataset, scope, None);
+    let recruiting = report::Derivation::of(&dataset, scope, Some(2027));
     let path = dir.join("meta.xlsx");
     let mut book = Workbook::new();
     write_meta_sheets(
@@ -49,6 +50,7 @@ fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> std::path::PathBuf 
         &path,
         RunFacts {
             population: &population,
+            recruiting: &recruiting,
             store,
             core: &core,
             all_sources: &all_sources,

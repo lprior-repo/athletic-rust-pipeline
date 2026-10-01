@@ -1,3 +1,4 @@
+mod admission;
 use super::row::{grade_for, mark_of, source_key};
 use super::state::{Absorb, AthleteFacts, ListContext, TeamFacts};
 use crate::tfrrs::parse::{
@@ -5,9 +6,8 @@ use crate::tfrrs::parse::{
     PublishedDate,
 };
 use census_domain::model::{
-    AthleteId, CanonicalPerformance, EventId, EventKind, Evidence, EvidenceMethod, Gender,
-    GradYear, Grade, Mark, MeetId, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, Sport,
-    TeamId,
+    AthleteId, CanonicalPerformance, EventId, EventKind, Evidence, EvidenceMethod, Gender, Grade,
+    Mark, MeetId, SchoolId, SchoolYear, SourceIdentity, Sport, TeamId,
 };
 
 struct RowMints {
@@ -66,15 +66,19 @@ impl<'a> Absorb<'a> {
         let Some(school) = self.school_for(context.page, &facts.team.name) else {
             return;
         };
-        self.mint_row(
-            context,
-            section,
-            row,
-            &facts,
-            (grade, school_year, gender),
-            &school,
-        );
-        self.stats.rows_absorbed = self.stats.rows_absorbed.saturating_add(1);
+        if self
+            .mint_row(
+                context,
+                section,
+                row,
+                &facts,
+                (grade, school_year, gender),
+                &school,
+            )
+            .is_some()
+        {
+            self.stats.rows_absorbed = self.stats.rows_absorbed.saturating_add(1);
+        }
     }
 
     fn count_relay(&mut self, row: &ParsedRow) -> bool {
@@ -161,14 +165,14 @@ impl<'a> Absorb<'a> {
         facts: &RowFacts<'_>,
         observed: (Grade, SchoolYear, Gender),
         school: &SchoolId,
-    ) {
+    ) -> Option<()> {
         let (grade, _, _) = observed;
         let source_key = format!(
             "{}:row:{}",
             source_key(facts.date, facts.meet, facts.athlete.id, section, row),
             facts.ordinal
         );
-        let mints = self.mint_entities(context, section, facts, observed, school, &source_key);
+        let mints = self.mint_entities(context, section, facts, observed, school, &source_key)?;
         let id = CanonicalPerformance::mint(
             &mints.athlete,
             &mints.meet,
@@ -199,6 +203,7 @@ impl<'a> Absorb<'a> {
             .performances
             .entry(id.as_str().to_string())
             .or_insert(performance);
+        Some(())
     }
 
     fn mint_entities(
@@ -209,8 +214,10 @@ impl<'a> Absorb<'a> {
         observed: (Grade, SchoolYear, Gender),
         school: &SchoolId,
         source_key: &str,
-    ) -> RowMints {
-        let (grade, school_year, gender) = observed;
+    ) -> Option<RowMints> {
+        let (_, school_year, gender) = observed;
+        let (grad_year, observation, source) =
+            admission::athlete(self, context, facts, observed, source_key)?;
         let published_route = parse_team_path(&facts.team.path);
         let team = self.team_for(
             context.page,
@@ -227,30 +234,24 @@ impl<'a> Absorb<'a> {
         let (event, kind) = self.event_for(context.page, section, &meet_id, gender);
         let (athlete_id, source_athlete) = self.athlete_for(
             context.page,
-            &AthleteFacts {
+            AthleteFacts {
                 school,
                 name: facts.name,
-                grad_year: GradYear::of(grade, school_year),
+                grad_year,
                 gender,
                 sport: facts.sport,
-                tfrrs_id: facts.athlete.id,
-                url: None,
-                source_key: source_key.to_string(),
-                observed_grade: Some(ObservedGrade {
-                    grade,
-                    school_year,
-                    source: context.page.source.clone(),
-                }),
+                source,
+                observed_grade: Some(observation),
             },
         );
-        RowMints {
+        Some(RowMints {
             team,
             meet: meet_id,
             event,
             kind,
             athlete: athlete_id,
             source_athlete,
-        }
+        })
     }
 }
 

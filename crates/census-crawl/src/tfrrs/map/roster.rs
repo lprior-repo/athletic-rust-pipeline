@@ -1,6 +1,10 @@
+use super::entity::athlete_source;
 use super::state::{Absorb, AthleteFacts, RosterContext, TeamFacts};
 use crate::tfrrs::parse::{sport_from_route, ParsedRoster, RosterAthlete, YearToken};
-use census_domain::model::{Gender, GradYear, ObservedGrade, SchoolId, SchoolYear, Sport};
+use census_domain::model::{
+    Gender, GradYear, Grade, ObservedGrade, SchoolId, SchoolYear, SourceAthleteObservation,
+    SourceIdentity, Sport,
+};
 
 #[derive(Debug, Clone, Copy)]
 struct PageSeason {
@@ -37,7 +41,7 @@ impl<'a> Absorb<'a> {
             },
         );
         for (row_index, athlete) in roster.athletes.iter().enumerate() {
-            self.absorb_roster_row(context, &school, season, athlete, row_index);
+            self.absorb_roster_row(context, &school, school_name, season, athlete, row_index);
         }
     }
 
@@ -64,10 +68,47 @@ impl<'a> Absorb<'a> {
         })
     }
 
+    fn admit_roster_athlete(
+        &mut self,
+        context: &RosterContext<'_>,
+        school_name: &str,
+        season: PageSeason,
+        athlete: &RosterAthlete,
+        row_index: usize,
+        identity: (&str, Grade),
+    ) -> Option<(GradYear, ObservedGrade, SourceIdentity)> {
+        let (name, grade) = identity;
+        let source_key = format!(
+            "{}:{}:roster:{row_index}",
+            context.team.slug,
+            season.school_year.get(),
+        );
+        let observation = ObservedGrade {
+            grade,
+            school_year: season.school_year,
+            source: context.page.source.clone(),
+        };
+        let source = athlete_source(athlete.id, &source_key);
+        self.accumulator
+            .unsupported
+            .admit(observation, source, |source| {
+                SourceAthleteObservation::new(
+                    source.namespace,
+                    source.id,
+                    source_key,
+                    name,
+                    context.page.observed_on,
+                )
+                .with_school(Some(school_name.to_string()))
+                .with_gender(season.gender)
+            })
+    }
+
     fn absorb_roster_row(
         &mut self,
         context: &RosterContext<'_>,
         school: &SchoolId,
+        school_name: &str,
         season: PageSeason,
         athlete: &RosterAthlete,
         row_index: usize,
@@ -83,26 +124,26 @@ impl<'a> Absorb<'a> {
                 self.stats.roster_rows_without_year.saturating_add(1);
             return;
         };
+        let Some((grad_year, observation, source)) = self.admit_roster_athlete(
+            context,
+            school_name,
+            season,
+            athlete,
+            row_index,
+            (name, grade),
+        ) else {
+            return;
+        };
         let _ = self.athlete_for(
             context.page,
-            &AthleteFacts {
+            AthleteFacts {
                 school,
                 name,
-                grad_year: GradYear::of(grade, season.school_year),
+                grad_year,
                 gender: season.gender,
                 sport: season.sport,
-                tfrrs_id: athlete.id,
-                url: None,
-                source_key: format!(
-                    "{}:{}:roster:{row_index}",
-                    context.team.slug,
-                    season.school_year.get()
-                ),
-                observed_grade: Some(ObservedGrade {
-                    grade,
-                    school_year: season.school_year,
-                    source: context.page.source.clone(),
-                }),
+                source,
+                observed_grade: Some(observation),
             },
         );
         self.stats.roster_rows_absorbed = self.stats.roster_rows_absorbed.saturating_add(1);

@@ -1,64 +1,30 @@
 use super::rows::PerformanceRow;
 use crate::bests::{mark_text, sport_of, Measure};
-use crate::report::Derivation;
+use crate::report::{Derivation, Scope};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     Evidence, Mark, MEET_STATE_UNRESOLVED,
 };
 use std::collections::HashMap;
 
-pub(super) struct Parents<'a> {
-    athletes: Vec<CanonicalAthlete>,
-    schools: Vec<CanonicalSchool>,
-    meets: Vec<CanonicalMeet>,
-    events: Vec<CanonicalEvent>,
-    aliases: &'a HashMap<String, String>,
-}
-
-impl<'a> Parents<'a> {
-    pub(super) fn of(derivation: &Derivation<'a>) -> Self {
-        Self {
-            athletes: derivation.athletes().to_vec(),
-            schools: derivation.schools().to_vec(),
-            meets: derivation.meets().to_vec(),
-            events: derivation.events().to_vec(),
-            aliases: derivation.athlete_aliases(),
-        }
-    }
-
-    pub(super) fn lookups(&self) -> Lookups<'_> {
-        Lookups::of(
-            &self.athletes,
-            &self.schools,
-            &self.meets,
-            &self.events,
-            self.aliases,
-        )
-    }
-}
-
-pub(super) struct Lookups<'a> {
+pub struct PerformanceProjection<'a> {
     athletes: HashMap<&'a str, &'a CanonicalAthlete>,
     schools: HashMap<&'a str, &'a CanonicalSchool>,
     meets: HashMap<&'a str, &'a CanonicalMeet>,
     events: HashMap<&'a str, &'a CanonicalEvent>,
     aliases: &'a HashMap<String, String>,
+    scope: Scope,
 }
 
-impl<'a> Lookups<'a> {
-    fn of(
-        athletes: &'a [CanonicalAthlete],
-        schools: &'a [CanonicalSchool],
-        meets: &'a [CanonicalMeet],
-        events: &'a [CanonicalEvent],
-        aliases: &'a HashMap<String, String>,
-    ) -> Self {
+impl<'a> PerformanceProjection<'a> {
+    pub fn of(derivation: &'a Derivation<'_>) -> Self {
         Self {
-            athletes: index(athletes, |row| row.id.as_str()),
-            schools: index(schools, |row| row.id.as_str()),
-            meets: index(meets, |row| row.id.as_str()),
-            events: index(events, |row| row.id.as_str()),
-            aliases,
+            athletes: index(derivation.athletes(), |row| row.id.as_str()),
+            schools: index(derivation.schools(), |row| row.id.as_str()),
+            meets: index(derivation.meets(), |row| row.id.as_str()),
+            events: index(derivation.events(), |row| row.id.as_str()),
+            aliases: derivation.athlete_aliases(),
+            scope: derivation.scope(),
         }
     }
 
@@ -73,7 +39,7 @@ impl<'a> Lookups<'a> {
         names
     }
 
-    pub(super) fn row(&self, performance: &CanonicalPerformance) -> PerformanceRow {
+    pub fn row(&self, performance: &CanonicalPerformance) -> PerformanceRow {
         let joins = self.joins(performance);
         PerformanceRow {
             id: performance.id.as_str().to_string(),
@@ -108,7 +74,7 @@ impl<'a> Lookups<'a> {
             school: athlete.and_then(|row| self.schools.get(row.school.as_str()).copied()),
             meet: self.meets.get(performance.meet.as_str()).copied(),
             event: self.events.get(performance.event.as_str()).copied(),
-            source: observed(performance),
+            source: self.scope.primary_evidence(performance),
         }
     }
 }
@@ -183,15 +149,6 @@ impl Joins<'_, '_> {
 
 fn index<'a, T>(rows: &'a [T], id: impl Fn(&'a T) -> &'a str) -> HashMap<&'a str, &'a T> {
     rows.iter().map(|row| (id(row), row)).collect()
-}
-
-fn observed(performance: &CanonicalPerformance) -> Option<&Evidence> {
-    performance.evidence.iter().min_by(|left, right| {
-        left.source
-            .id
-            .cmp(&right.source.id)
-            .then_with(|| left.source.url.cmp(&right.source.url))
-    })
 }
 
 fn normalized_mark(mark: &Mark) -> Option<f64> {

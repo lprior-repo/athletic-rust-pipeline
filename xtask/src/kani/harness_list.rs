@@ -17,21 +17,6 @@ pub const KNOWN_HARNESS: &[HarnessInfo] = &[
         manifest_path: "crates/census-domain/Cargo.toml",
     },
     HarnessInfo {
-        name: "check_gradyear_of_known_values",
-        package: "census-domain",
-        manifest_path: "crates/census-domain/Cargo.toml",
-    },
-    HarnessInfo {
-        name: "check_gradyear_of_saturating",
-        package: "census-domain",
-        manifest_path: "crates/census-domain/Cargo.toml",
-    },
-    HarnessInfo {
-        name: "check_observed_grade_grad_year",
-        package: "census-domain",
-        manifest_path: "crates/census-domain/Cargo.toml",
-    },
-    HarnessInfo {
         name: "check_id_mint_format",
         package: "census-domain",
         manifest_path: "crates/census-domain/Cargo.toml",

@@ -1,7 +1,8 @@
 use crate::tfrrs::parse::{ListPath, TeamPath, YearToken};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, Gender, GradYear, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport,
+    CanonicalTeam, Gender, GradYear, ObservedGrade, SchoolId, SchoolYear, SourceIdentity,
+    SourceRef, Sport,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -47,6 +48,7 @@ pub(in crate::tfrrs) struct Accumulator {
     pub(in crate::tfrrs) athletes: HashMap<String, CanonicalAthlete>,
     pub(in crate::tfrrs) events: HashMap<String, CanonicalEvent>,
     pub(in crate::tfrrs) performances: HashMap<String, CanonicalPerformance>,
+    pub(in crate::tfrrs) unsupported: crate::cohort::UnsupportedCohortRows,
 }
 
 pub(in crate::tfrrs) struct Absorb<'a> {
@@ -80,10 +82,8 @@ pub(super) struct AthleteFacts<'a> {
     pub(in crate::tfrrs) grad_year: GradYear,
     pub(in crate::tfrrs) gender: Gender,
     pub(in crate::tfrrs) sport: Sport,
-    pub(in crate::tfrrs) tfrrs_id: Option<u64>,
-    pub(in crate::tfrrs) url: Option<String>,
+    pub(in crate::tfrrs) source: SourceIdentity,
     pub(in crate::tfrrs) observed_grade: Option<ObservedGrade>,
-    pub(in crate::tfrrs) source_key: String,
 }
 
 pub(super) struct TeamFacts<'a> {

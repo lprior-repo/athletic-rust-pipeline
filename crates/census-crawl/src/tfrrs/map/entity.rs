@@ -54,19 +54,9 @@ impl<'a> Absorb<'a> {
     pub(super) fn athlete_for(
         &mut self,
         page: Page<'_>,
-        facts: &AthleteFacts<'_>,
+        facts: AthleteFacts<'_>,
     ) -> (AthleteId, SourceIdentity) {
-        let source = SourceIdentity {
-            namespace: if facts.tfrrs_id.is_some() {
-                SourceNamespace::TfrrsAthlete
-            } else {
-                SourceNamespace::Other("tfrrs_document_row".to_string())
-            },
-            id: facts
-                .tfrrs_id
-                .map_or_else(|| facts.source_key.clone(), |id| id.to_string()),
-            url: facts.url.clone(),
-        };
+        let source = facts.source;
         let id = CanonicalAthlete::mint(
             facts.school,
             facts.name,
@@ -94,12 +84,24 @@ impl<'a> Absorb<'a> {
         if !athlete.sports.contains(&facts.sport) {
             athlete.sports.push(facts.sport);
         }
-        if let Some(grade) = facts.observed_grade.as_ref() {
-            if !athlete.observed_grades.contains(grade) {
-                athlete.observed_grades.push(grade.clone());
+        if let Some(grade) = facts.observed_grade {
+            if !athlete.observed_grades.contains(&grade) {
+                athlete.observed_grades.push(grade);
             }
         }
-        (id.clone(), source)
+        (id, source)
+    }
+}
+
+pub(super) fn athlete_source(id: Option<u64>, source_key: &str) -> SourceIdentity {
+    SourceIdentity {
+        namespace: if id.is_some() {
+            SourceNamespace::TfrrsAthlete
+        } else {
+            SourceNamespace::Other("tfrrs_document_row".to_string())
+        },
+        id: id.map_or_else(|| source_key.to_string(), |id| id.to_string()),
+        url: None,
     }
 }
 pub(super) fn push_identity(

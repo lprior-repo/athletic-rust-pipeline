@@ -14,7 +14,7 @@ pub use manifest::{collect_manifest, ManifestOptions};
 
 use run::Run;
 
-const PHASE: &str = "athleticlive_results_v1";
+const PHASE: &str = "athleticlive_results_v2";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StandingsCapture {
@@ -101,7 +101,7 @@ fn append(
     schools: &[CanonicalSchool],
     entries: Vec<(String, serde_json::Value)>,
 ) -> CrawlResult<EntityCounts> {
-    let mut page = ctx.store.write_batch();
+    let mut page = ctx.write_batch();
     page.append_many(Table::Meets, &entities.meets)?;
     page.append_many(Table::Events, &entities.events)?;
     page.append_many(Table::Teams, &entities.teams)?;
@@ -111,6 +111,8 @@ fn append(
         &ctx.athlete_observations(&entities.athletes, schools),
     )?;
     page.append_many(Table::Performances, &entities.performances)?;
+    page.append_many(Table::ReviewCases, &entities.review_cases)?;
+    page.append_many(Table::SourceObservations, &entities.source_observations)?;
     for (path, payload) in &entries {
         page.journal_done(PHASE, path, payload)?;
     }

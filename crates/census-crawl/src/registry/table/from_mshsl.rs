@@ -4,7 +4,7 @@ use super::super::policy::{
 use super::super::SourceCapabilities as Caps;
 use super::super::{SourceDescriptor, TransportKind};
 
-pub(super) const FROM_MSHSL: [SourceDescriptor; 9] = [
+pub(super) const FROM_MSHSL: [SourceDescriptor; 10] = [
     SourceDescriptor {
         slug: "mpa",
         provider: "Maine Principals' Association school directory",
@@ -81,5 +81,16 @@ pub(super) const FROM_MSHSL: [SourceDescriptor; 9] = [
             ..Caps::NONE
         },
         admission: fetched("www.wayzataresults.com", CRAWL_DELAY_TEN_RPS),
+    },
+    SourceDescriptor {
+        slug: "arbiter_orgs",
+        provider: "Arbiter Sports organisation coach directory",
+        transport: TransportKind::StructuredApi,
+        capabilities: Caps {
+            school_evidence: true,
+            coach_directory: true,
+            ..Caps::NONE
+        },
+        admission: fetched("services.arbitersports.com", FETCHER_RPS),
     },
 ];

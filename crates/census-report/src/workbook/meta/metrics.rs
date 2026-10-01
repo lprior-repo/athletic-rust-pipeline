@@ -21,11 +21,16 @@ pub(super) fn metrics_sheet(
         Cell::text(facts.core.generated_on.clone())
     ));
     cells.push(row!("Store", Cell::text(facts.core.store_dir.clone())));
+    cells.push(row!("Workbook scope", facts.recruiting.scope().as_str()));
     cells.push(row!(
         "Contact assessment school year",
         Cell::text(facts.school_year.short())
     ));
     cells.push(row!("Census scopes published", "core + all sources"));
+    cells.push(row!(
+        "Recruiting athletes",
+        Cell::number(facts.recruiting.athletes().len())?
+    ));
     cells.push(row!(
         "Best-mark rows reduced",
         Cell::number(facts.bests.len())?

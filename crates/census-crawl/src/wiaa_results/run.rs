@@ -75,7 +75,7 @@ struct ArtifactRun {
     resolved: HashMap<String, Option<SchoolId>>,
     stats: Stats,
     accumulated: Accumulator,
-    done: HashSet<String>,
+    visited: HashSet<String>,
     pending: Vec<(String, serde_json::Value)>,
     reported_missing_tool: bool,
 }
@@ -88,7 +88,7 @@ impl ArtifactRun {
             resolved: HashMap::new(),
             stats: Stats::default(),
             accumulated: Accumulator::default(),
-            done,
+            visited: done,
             pending: Vec::new(),
             reported_missing_tool: false,
         }
@@ -141,6 +141,9 @@ async fn collect_archive(
         if !options.seasons.is_empty() && !options.seasons.contains(&artifact.year) {
             continue;
         }
+        if run.visited.contains(&artifact.url) {
+            continue;
+        }
         if options
             .limit
             .is_some_and(|limit| run.stats.artifacts_seen >= limit)
@@ -148,10 +151,8 @@ async fn collect_archive(
             break 'artifact;
         }
         run.stats.artifacts_seen = run.stats.artifacts_seen.saturating_add(1);
-        if run.done.contains(&artifact.url) {
-            continue;
-        }
         process_artifact(ctx, options, report, run, &artifact, sport).await?;
+        run.visited.insert(artifact.url);
     }
     Ok(())
 }
@@ -162,6 +163,7 @@ struct EntityCounts {
     athletes: usize,
     teams: usize,
     performances: usize,
+    unsupported_cohorts: usize,
 }
 
 fn append_entities(
@@ -175,6 +177,7 @@ fn append_entities(
     let events: Vec<CanonicalEvent> = accumulated.events.into_values().collect();
     let performances: Vec<CanonicalPerformance> = accumulated.performances.into_values().collect();
     let mut batch = ctx.write_batch();
+    accumulated.unsupported.append_to(&mut batch)?;
     batch.append_many(Table::Meets, &meets)?;
     batch.append_many(Table::Teams, &teams)?;
     batch.append_many(Table::Athletes, &athletes)?;
@@ -190,6 +193,7 @@ fn append_entities(
         athletes: athletes.len(),
         teams: teams.len(),
         performances: performances.len(),
+        unsupported_cohorts: accumulated.unsupported.len(),
     })
 }
 
@@ -231,6 +235,10 @@ fn note_entities(report: &mut AdapterReport, counts: &EntityCounts) {
     report.note(format!(
         "canonical entities: meets {} events {} athletes {} teams {} performances {}",
         counts.meets, counts.events, counts.athletes, counts.teams, counts.performances
+    ));
+    report.note(format!(
+        "unsupported cohort observations retained: {}",
+        counts.unsupported_cohorts
     ));
 }
 

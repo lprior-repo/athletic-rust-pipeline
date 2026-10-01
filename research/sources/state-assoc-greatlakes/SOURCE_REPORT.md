@@ -422,6 +422,24 @@ columns (`census-by-state.csv` `coaches` / `coaches_with_email`): IL 15,102/3,23
 2,550/2,155 · MI 6/6 · IN 0/0. Note that MI's 6 coach rows and IN's 0 are *pipeline* facts, not
 research estimates — MI's 6 arrive via the `mhsaa` host branch of the coach-CSV importer.
 
+### 7.5 WIAA retained-capture qualification limits
+
+The WIAA result collector visits a result URL once per collection, even when several archive pages
+publish the same link; accepted journal entries remain skipped on replay. This prevents duplicated
+physical fetch/parse work, not athlete identity inference.
+
+The 2026-09-30 retained-capture readback uses the partial 2025 D1 boys 100m fixture and three public
+school-directory captures. The result fixture lacks a byte-level capture timestamp; its documented
+URL observation date is not substituted for one. None of those directory schools intersects the
+result-row school labels, so this qualification establishes no result-athlete coach contact.
+
+Two published Class-of-2027 names produce three unverified candidate subjects because one athlete
+appears in preliminaries and finals without a retained publisher athlete ID. Preserve those source
+locators and require admissible identity decisions; do not merge by name/school/cohort coincidence.
+The workbook is unsealed qualification output, not a distinct-athlete or national-coverage count.
+Exact commands and readback limits belong to the dated
+[verification ledger](../../../docs/VERIFICATION-EVIDENCE.md).
+
 ## 8. Source index (paths cited as `[NN]`)
 
 `[06]` `research/midwest/06-wisconsin-wiaa.md` · `[07]` `07-wisconsin-milesplit.md` ·

@@ -14,7 +14,7 @@ pub(super) fn flush_batch(ctx: &AdapterContext<'_>, run: &mut RunState) -> Crawl
     if run.pending.is_empty() {
         return Ok(());
     }
-    let mut page = ctx.store.write_batch();
+    let mut page = ctx.write_batch();
     let batch = store_accumulated(ctx, std::mem::take(&mut run.accumulated), &mut page)?;
     run.batches.push(batch);
     for (url, payload) in run.pending.drain(..) {

@@ -10,15 +10,19 @@ mod athletes;
 mod coaches;
 mod columns;
 mod contact;
+mod csv;
 mod dataset;
 mod facts;
 mod profiles;
 mod prs;
 
 #[cfg(test)]
+mod provenance_tests;
+#[cfg(test)]
 mod tests;
 
 pub(in crate::workbook) use contact::{disagreements, Disagreement};
+pub use csv::{write_recruiting_csv, RecruitingCsvCounts};
 
 pub(super) struct Recruiting {
     dataset: Dataset,

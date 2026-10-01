@@ -1,4 +1,4 @@
-use super::join::{Lookups, Parents};
+use super::join::PerformanceProjection;
 use super::rows::{sheet_order, PerformanceRow};
 use crate::report::{io_error, Derivation, ReportError, ReportResult};
 use std::collections::HashMap;
@@ -27,8 +27,7 @@ impl PerformanceRows {
         range_rows: u64,
         max_ranges: usize,
     ) -> ReportResult<Self> {
-        let parents = Parents::of(derivation);
-        let lookups = parents.lookups();
+        let lookups = PerformanceProjection::of(derivation);
         let (names, ranks) = bucket_universe(&lookups);
         let held =
             u64::try_from(derivation.performances().len()).map_err(|_| ReportError::Invariant {
@@ -54,7 +53,9 @@ impl PerformanceRows {
     }
 }
 
-fn bucket_universe<'a>(lookups: &Lookups<'a>) -> (Vec<&'a str>, HashMap<&'a str, usize>) {
+fn bucket_universe<'a>(
+    lookups: &PerformanceProjection<'a>,
+) -> (Vec<&'a str>, HashMap<&'a str, usize>) {
     let mut names: Vec<&str> = lookups.school_names();
     names.push("");
     names.sort_unstable();
@@ -106,7 +107,7 @@ impl RangeFiles<'_> {
 
 fn spill(
     derivation: &Derivation<'_>,
-    lookups: &Lookups<'_>,
+    lookups: &PerformanceProjection<'_>,
     files: &mut RangeFiles<'_>,
 ) -> ReportResult<()> {
     for performance in derivation.performances() {

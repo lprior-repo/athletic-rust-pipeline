@@ -206,13 +206,13 @@ impl CanonicalAthlete {
         if self
             .observed_grades
             .iter()
-            .any(|observation| observation.grad_year() != self.grad_year)
+            .any(|observation| observation.grad_year() != Some(self.grad_year))
         {
             Some(Confidence::LOW)
         } else if self
             .observed_grades
             .iter()
-            .any(|observation| observation.grad_year() == self.grad_year)
+            .any(|observation| observation.grad_year() == Some(self.grad_year))
         {
             Some(Confidence::HIGH)
         } else {

@@ -216,3 +216,5 @@ fn the_published_vocabulary_reads_the_hosts_tokens() {
     assert_eq!(date.month, 3);
     assert_eq!(published_date(""), None);
 }
+
+mod cohort;

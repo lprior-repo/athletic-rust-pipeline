@@ -34,7 +34,7 @@ pub fn verify_athletes(
     col_map: &HashMap<&str, usize>,
 ) -> Result<EntityCheck, Discrepancy> {
     let athletes: Vec<CanonicalAthlete> =
-        store.scan(Table::Athletes).map_err(|source| Discrepancy {
+        store.snapshot().athletes().map_err(|source| Discrepancy {
             message: format!("reading athletes from store: {source}"),
         })?;
 

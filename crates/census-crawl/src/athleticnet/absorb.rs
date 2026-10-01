@@ -1,16 +1,18 @@
 mod rows;
 
+#[cfg(test)]
+mod tests;
+
 use super::map::{profile_url, school_for, Accumulator, Stats};
 use super::parse::{gender_of, Bio};
 use super::{Scope, Target};
 use census_domain::model::{
     AthleteId, CanonicalAthlete, Evidence, Gender, GradYear, Grade, ObservedGrade, SchoolId,
-    SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    SchoolYear, SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::school_index::SchoolIndex;
 use std::collections::HashMap;
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn absorb(
     bio: &Bio,
     scope: Scope,
@@ -28,11 +30,27 @@ pub(super) fn absorb(
         return 0;
     };
     let observed_grades = grade_observations(bio, source);
-    let Some(latest) = observed_grades.last().cloned() else {
+    let Some(latest) = observed_grades.last() else {
         stats.athletes_without_grade = stats.athletes_without_grade.saturating_add(1);
         return 0;
     };
-    let grad_year = latest.grad_year();
+    let Some(grad_year) = latest.grad_year() else {
+        for observation in observed_grades {
+            accumulated.unsupported.retain(
+                observation,
+                SourceAthleteObservation::new(
+                    SourceNamespace::athletic_net("athlete"),
+                    target.athlete_id.to_string(),
+                    format!("bio:{}:{}", target.athlete_id, scope.parameter()),
+                    &name,
+                    observed_on,
+                )
+                .with_gender(gender)
+                .with_profile_url(Some(profile_url(target.athlete_id))),
+            );
+        }
+        return 0;
+    };
 
     let Some(athlete_school) = bio.athlete.school_id else {
         stats.athletes_without_school = stats.athletes_without_school.saturating_add(1);
@@ -124,10 +142,16 @@ impl<'a> Ctx<'a> {
                 id
             }
         };
-        let observed_grades = self.observed_grades.clone();
         if let Some(athlete) = self.accumulated.athletes.get_mut(&key) {
-            athlete.observed_grades = observed_grades;
-            athlete.evidence = vec![Evidence::fetched(self.source.clone(), self.observed_on)];
+            for observation in &self.observed_grades {
+                if !athlete.observed_grades.contains(observation) {
+                    athlete.observed_grades.push(observation.clone());
+                }
+            }
+            let evidence = Evidence::fetched(self.source.clone(), self.observed_on);
+            if !athlete.evidence.contains(&evidence) {
+                athlete.evidence.push(evidence);
+            }
         }
         id
     }

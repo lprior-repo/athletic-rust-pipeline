@@ -1,148 +1,130 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use census_domain::model::{
-    AthleteCandidateId, CanonicalAthlete, CanonicalSchool, CaseEvidence, Gender, ReviewCase,
-    ReviewVerdictKind, ReviewVerdictRecord, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
+    AthleteCandidateId, CanonicalAthlete, CanonicalSchool, CaseEvidence, ReviewCase,
+    ReviewVerdictKind, ReviewVerdictRecord, SchoolId, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
     MEMBER_SET_LABEL,
 };
 use census_store::{Store, StoreResult, Table};
 
 use super::athlete_clusters::RULE_REVIEWER;
+use super::cohort_evidence::CohortEvidence;
 use crate::athlete_verdict::HardContradiction;
 use crate::families::IDENTITY_FIELD;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct Row {
-    id: String,
-    candidate_id: AthleteCandidateId,
-    name: String,
-    school: String,
-    grad_year: i16,
-    grad_evidence: BTreeSet<i16>,
-    gender: Gender,
+type SchoolNames = BTreeMap<SchoolId, String>;
+
+#[derive(Debug)]
+struct Row<'a> {
+    athlete: &'a CanonicalAthlete,
+    school: &'a str,
+    cohort: CohortEvidence<'a>,
 }
 
-impl Row {
-    fn of(row: &CanonicalAthlete, schools: &BTreeMap<String, String>) -> Self {
-        let stored = row.school.as_str();
+impl<'a> Row<'a> {
+    fn of(athlete: &'a CanonicalAthlete, schools: &'a SchoolNames) -> Self {
         Self {
-            id: row.id.as_str().to_string(),
-            candidate_id: row.id.cast(),
-            name: row.canonical_name.clone(),
+            athlete,
             school: schools
-                .get(stored)
-                .cloned()
-                .unwrap_or_else(|| stored.to_string()),
-            grad_year: row.grad_year.get(),
-            grad_evidence: row
-                .observed_grades
-                .iter()
-                .map(|observation| observation.grad_year().get())
-                .collect(),
-            gender: row.gender,
+                .get(&athlete.school)
+                .map_or(athlete.school.as_str(), String::as_str),
+            cohort: CohortEvidence::of(&athlete.observed_grades),
         }
     }
 
     fn line(&self) -> String {
         format!(
-            "{} at {} (class {}, {:?})",
-            self.name, self.school, self.grad_year, self.gender
+            "{} at {} (class {}, {:?}; {})",
+            self.athlete.canonical_name,
+            self.school,
+            self.athlete.grad_year,
+            self.athlete.gender,
+            self.cohort,
         )
     }
 
     fn agrees_with(&self, other: &Self) -> bool {
-        self.name == other.name && self.grad_year == other.grad_year && self.gender == other.gender
+        self.athlete.canonical_name == other.athlete.canonical_name
+            && self.athlete.grad_year == other.athlete.grad_year
+            && self.athlete.gender == other.athlete.gender
+            && !self.cohort.conflicts_with(&other.cohort)
     }
 }
 
 #[derive(Debug, Default)]
 pub(super) struct Observed {
-    schools: BTreeMap<String, String>,
-    pub(super) rows: BTreeMap<String, Row>,
-    objects_of: BTreeMap<(String, SourceNamespace), BTreeSet<String>>,
-    pub(super) by_object: BTreeMap<(SourceNamespace, String), BTreeSet<String>>,
+    schools: SchoolNames,
+    pub(super) rows: Vec<CanonicalAthlete>,
+}
+
+pub(super) struct Findings<'a> {
+    pub(super) objects: usize,
+    pub(super) spans: Vec<Span<'a>>,
+    pub(super) aliases: Vec<Alias<'a>>,
 }
 
 impl Observed {
     pub(super) fn read(store: &Store) -> StoreResult<Self> {
+        let snapshot = store.snapshot();
         let mut observed = Self::default();
-        store.for_each_merged::<CanonicalSchool>(Table::Schools, |school| {
-            observed
-                .schools
-                .insert(school.id.as_str().to_string(), school.name.clone());
+        snapshot.for_each_merged::<CanonicalSchool>(Table::Schools, |school| {
+            observed.schools.insert(school.id, school.name);
             Ok(())
         })?;
-        store.for_each_merged::<CanonicalAthlete>(Table::Athletes, |row| {
-            observed.absorb(&row);
-            Ok(())
-        })?;
+        observed.rows = snapshot.athletes()?;
         Ok(observed)
     }
 
-    fn absorb(&mut self, row: &CanonicalAthlete) {
-        let id = row.id.as_str().to_string();
-        for identity in row.identities() {
-            self.objects_of
-                .entry((id.clone(), identity.namespace.clone()))
-                .or_default()
-                .insert(identity.id.clone());
-            self.by_object
-                .entry((identity.namespace.clone(), identity.id.clone()))
-                .or_default()
-                .insert(id.clone());
+    pub(super) fn findings(&self) -> Findings<'_> {
+        let mut objects: BTreeMap<(&SourceNamespace, &str), BTreeMap<&str, Row<'_>>> =
+            BTreeMap::new();
+        let mut aliases = Vec::new();
+        for athlete in &self.rows {
+            let mut named: BTreeMap<&SourceNamespace, BTreeSet<&str>> = BTreeMap::new();
+            for identity in athlete.identities() {
+                objects
+                    .entry((&identity.namespace, identity.id.as_str()))
+                    .or_default()
+                    .entry(athlete.id.as_str())
+                    .or_insert_with(|| Row::of(athlete, &self.schools));
+                named
+                    .entry(&identity.namespace)
+                    .or_default()
+                    .insert(identity.id.as_str());
+            }
+            aliases.extend(named.into_iter().filter(|(_, ids)| ids.len() > 1).map(
+                |(namespace, objects)| Alias {
+                    row: Row::of(athlete, &self.schools),
+                    namespace,
+                    objects,
+                },
+            ));
         }
-        self.rows.insert(id, Row::of(row, &self.schools));
-    }
-
-    pub(super) fn spans(&self) -> Vec<Span> {
-        self.by_object
-            .iter()
-            .filter(|(_, ids)| ids.len() > 1)
-            .filter_map(|((namespace, object), ids)| self.span(namespace, object, ids))
-            .collect()
-    }
-
-    fn span(
-        &self,
-        namespace: &SourceNamespace,
-        object: &str,
-        ids: &BTreeSet<String>,
-    ) -> Option<Span> {
-        let rows: Vec<Row> = ids
-            .iter()
-            .filter_map(|id| self.rows.get(id).cloned())
+        let count = objects.len();
+        let spans = objects
+            .into_iter()
+            .filter(|(_, rows)| rows.len() > 1)
+            .map(|((namespace, object), rows)| Span {
+                namespace,
+                object,
+                rows: rows.into_values().collect(),
+            })
             .collect();
-        (rows.len() > 1).then(|| Span {
-            namespace: namespace.clone(),
-            object: object.to_string(),
-            rows,
-        })
-    }
-
-    pub(super) fn aliases(&self) -> Vec<Alias> {
-        self.objects_of
-            .iter()
-            .filter(|(_, objects)| objects.len() > 1)
-            .filter_map(|((id, namespace), objects)| {
-                Some((self.rows.get(id)?.clone(), namespace, objects))
-            })
-            .map(|(row, namespace, objects)| Alias {
-                row,
-                namespace: namespace.clone(),
-                objects: objects.iter().cloned().collect(),
-            })
-            .collect()
+        Findings {
+            objects: count,
+            spans,
+            aliases,
+        }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct Span {
-    namespace: SourceNamespace,
-    object: String,
-    rows: Vec<Row>,
+pub(super) struct Span<'a> {
+    namespace: &'a SourceNamespace,
+    object: &'a str,
+    rows: Vec<Row<'a>>,
 }
 
-impl Span {
+impl Span<'_> {
     pub(super) fn agrees(&self) -> bool {
         let mut rows = self.rows.iter();
         let Some(first) = rows.next() else {
@@ -150,22 +132,22 @@ impl Span {
         };
         rows.all(|row| first.agrees_with(row))
     }
+
     pub(super) fn hard_contradiction(&self) -> Option<HardContradiction> {
         let first = self.rows.first()?;
-        let grade_differs = self.rows.iter().skip(1).any(|row| {
-            !first.grad_evidence.is_empty()
-                && !row.grad_evidence.is_empty()
-                && first.grad_evidence != row.grad_evidence
-        });
-        if grade_differs {
-            return Some(HardContradiction::GradYearEvidenceDiffers);
-        }
-        let gender_differs = self
+        if self
             .rows
             .iter()
             .skip(1)
-            .any(|row| first.gender != row.gender);
-        gender_differs.then_some(HardContradiction::GenderDiffers)
+            .any(|row| first.cohort.conflicts_with(&row.cohort))
+        {
+            return Some(HardContradiction::GradYearEvidenceDiffers);
+        }
+        self.rows
+            .iter()
+            .skip(1)
+            .any(|row| first.athlete.gender != row.athlete.gender)
+            .then_some(HardContradiction::GenderDiffers)
     }
 
     pub(super) fn case(&self) -> Option<ReviewCase> {
@@ -176,14 +158,8 @@ impl Span {
                 "The packet carries hard contradiction `{}`; the object does not settle that they are one athlete.",
                 flag.slug()
             ),
-            (None, true) => {
-                "The rows agree on name, class and gender, so the differing school is a transfer rather than a second athlete."
-                    .to_string()
-            }
-            (None, false) => {
-                "The rows disagree on name, class or gender, so the object does not settle that they are one athlete."
-                    .to_string()
-            }
+            (None, true) => "The rows share one provider-owned athlete object and agree on name, cohort evidence and gender; this establishes identity, not a transfer chronology.".to_string(),
+            (None, false) => "The rows disagree on name, class or gender, so the object does not settle that they are one athlete.".to_string(),
         };
         let subject = first.line();
         let detail = format!(
@@ -192,18 +168,15 @@ impl Span {
             self.object,
             self.rows.len(),
             lines.join("; "),
-            reason
+            reason,
         );
-        let members: Vec<AthleteCandidateId> = self
-            .rows
-            .iter()
-            .map(|row| row.candidate_id.clone())
-            .collect();
+        let members: Vec<AthleteCandidateId> =
+            self.rows.iter().map(|row| row.athlete.id.cast()).collect();
         let evidence = CaseEvidence::of([subject.as_str(), detail.as_str()])
             .with_members(MEMBER_SET_LABEL, members.iter().cloned());
         let mut case = ReviewCase::pending_with_evidence(
             ATHLETE_IDENTITY_FAMILY,
-            first.id.as_str(),
+            first.athlete.id.as_str(),
             subject,
             detail,
             evidence,
@@ -211,6 +184,7 @@ impl Span {
         case.member_ids = members;
         Some(case)
     }
+
     pub(super) fn verdict(&self, case: &ReviewCase, observed_at: &str) -> ReviewVerdictRecord {
         ReviewVerdictRecord {
             id: case.id.clone(),
@@ -224,9 +198,7 @@ impl Span {
             confidence: 100,
             rationale: format!(
                 "{} {} is one provider object, and the {} rows it is known by agree on name, class and gender",
-                self.namespace,
-                self.object,
-                self.rows.len()
+                self.namespace, self.object, self.rows.len(),
             ),
             reviewer: RULE_REVIEWER.to_string(),
             observed_at: observed_at.to_string(),
@@ -235,29 +207,29 @@ impl Span {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct Alias {
-    row: Row,
-    namespace: SourceNamespace,
-    objects: Vec<String>,
+pub(super) struct Alias<'a> {
+    row: Row<'a>,
+    namespace: &'a SourceNamespace,
+    objects: BTreeSet<&'a str>,
 }
 
-impl Alias {
+impl Alias<'_> {
     pub(super) fn case(&self) -> Option<ReviewCase> {
         let first = self.objects.first()?;
         let detail = format!(
             "{} names {} objects of one row: {}. The provider never said they are one athlete, so which of the two the row is cannot be read off the store.",
-            self.row.line(),
-            self.objects.len(),
-            self.objects.join(", ")
+            self.row.line(), self.objects.len(), self.objects.iter().copied().collect::<Vec<_>>().join(", "),
         );
         let mut case = ReviewCase::pending(
             ATHLETE_IDENTITY_FAMILY,
-            self.row.id.as_str(),
-            format!("{} ({} {})", self.row.name, self.namespace, first),
+            self.row.athlete.id.as_str(),
+            format!(
+                "{} ({} {})",
+                self.row.athlete.canonical_name, self.namespace, first
+            ),
             detail,
         );
-        case.member_ids.push(self.row.candidate_id.clone());
+        case.member_ids.push(self.row.athlete.id.cast());
         Some(case)
     }
 }

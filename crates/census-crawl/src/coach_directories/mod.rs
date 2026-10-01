@@ -1,6 +1,10 @@
 mod collect;
 mod map;
 mod parse;
+mod probe;
+mod probe_utils;
+mod row;
+mod staff;
 mod survey;
 #[cfg(test)]
 mod survey_tests;
@@ -14,10 +18,8 @@ pub use parse::{
     parse_directory, parse_summary, DirectoryPage, DirectorySchool, SchoolSummary, StaffMember,
     SummaryAddress, SummaryTel, TeamEntry,
 };
-pub use survey::{
-    parse_state_filter, probe_one, report_json, selected_associations, survey, table_line,
-    ProbeRecord, ASSOCIATIONS, VERIFIED,
-};
+pub use probe::{probe_one, report_json, sort_records, survey, table_line, ProbeRecord};
+pub use survey::{parse_state_filter, selected_associations, ASSOCIATIONS, VERIFIED};
 
 use census_domain::UsJurisdiction;
 use std::collections::BTreeMap;

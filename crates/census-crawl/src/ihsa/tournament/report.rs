@@ -50,4 +50,8 @@ pub(super) fn narrate(
         counts.athletes,
         counts.performances
     ));
+    report.note(format!(
+        "unsupported graduation inference: {} raw grade/year observations retained for review",
+        counts.unsupported_cohorts
+    ));
 }

@@ -23,12 +23,27 @@ pub(super) fn cohort_evidence(cohort: &[CanonicalAthlete], names: &HashMap<&str,
 }
 
 fn cohort_conflict(athlete: &CanonicalAthlete) -> Option<String> {
+    let canonical = athlete.grad_year;
     let mut implied: Vec<String> = Vec::new();
     let mut observations: Vec<String> = Vec::new();
+    let mut any_disagree = false;
     for observation in &athlete.observed_grades {
-        let year = observation.grad_year().to_string();
-        if !implied.contains(&year) {
-            implied.push(year);
+        match observation.grad_year() {
+            Some(year) => {
+                let year_str = year.to_string();
+                if !implied.contains(&year_str) {
+                    implied.push(year_str);
+                }
+                if observation.grad_year() != Some(canonical) {
+                    any_disagree = true;
+                }
+            }
+            None => {
+                if !implied.contains(&"(outside supported range)".to_string()) {
+                    implied.push("(outside supported range)".to_string());
+                }
+                any_disagree = true;
+            }
         }
         observations.push(format!(
             "grade {} in {} from {}",
@@ -37,11 +52,10 @@ fn cohort_conflict(athlete: &CanonicalAthlete) -> Option<String> {
             observation.source.id
         ));
     }
-    let canonical = athlete.grad_year.to_string();
-    let disagrees = implied.len() > 1 || implied.first().is_some_and(|year| *year != canonical);
-    disagrees.then(|| {
+    any_disagree.then(|| {
         format!(
-            "canonical grad year {canonical}, observations imply {}: {}",
+            "canonical grad year {}, observations imply {}: {}",
+            canonical,
             implied.join("/"),
             observations.join("; ")
         )

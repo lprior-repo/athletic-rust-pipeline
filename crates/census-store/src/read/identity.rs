@@ -1,7 +1,7 @@
 use crate::{Store, StoreError, StoreResult, StoreSnapshot, Table};
 use census_domain::model::{
     AppliedAthleteIdentity as AppliedIdentity, AthleteIdentityIndex, AthleteIdentityProjection,
-    CanonicalAthlete, IdentityProjectionBuilder, ReviewCase, ReviewVerdictRecord,
+    IdentityProjectionBuilder, ReviewCase, ReviewVerdictRecord,
 };
 
 impl Store {
@@ -17,10 +17,9 @@ impl Store {
 impl StoreSnapshot<'_> {
     pub fn athlete_identity_index(&self) -> StoreResult<AthleteIdentityIndex> {
         let mut index = AthleteIdentityIndex::default();
-        self.for_each_merged::<CanonicalAthlete>(Table::Athletes, |athlete| {
+        for athlete in self.athletes()? {
             index.observe(&athlete)?;
-            Ok(())
-        })?;
+        }
         Ok(index)
     }
 

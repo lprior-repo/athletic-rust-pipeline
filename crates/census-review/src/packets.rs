@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use census_domain::model::{
-    CanonicalAthlete, CanonicalMeet, CanonicalSchool, RetainedConflict, ReviewCase, ReviewCaseFact,
+    CanonicalMeet, CanonicalSchool, RetainedConflict, ReviewCase, ReviewCaseFact,
     ReviewEvidenceFact, ReviewPacket, ReviewState,
 };
 
@@ -77,7 +77,7 @@ impl SubjectIndex {
             HashMap::new()
         };
         let athletes = if wants_athletes {
-            AthleteIndex::read(store.scan::<CanonicalAthlete>(Table::Athletes)?)
+            AthleteIndex::read(store.snapshot().athletes()?)
         } else {
             AthleteIndex::default()
         };

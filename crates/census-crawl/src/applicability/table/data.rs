@@ -1,7 +1,7 @@
 use super::super::Applicability;
 use census_domain::UsJurisdiction;
 
-pub(crate) const TABLE: [Applicability; 22] = [
+pub(crate) const TABLE: [Applicability; 23] = [
     Applicability {
         slug: "athleticlive",
         jurisdictions: &[
@@ -294,4 +294,5 @@ pub(crate) const TABLE: [Applicability; 22] = [
         refusal: "One association's directory: no other jurisdiction publishes on this host, and every path outside \
                   `/common` is robots-disallowed.",
     },
+    super::ARBITER,
 ];

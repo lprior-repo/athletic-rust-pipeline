@@ -1,79 +1,53 @@
-use crate::cli::export_data::{csv::write_csv, helpers::*};
-use serde_json::Value;
-use std::collections::HashMap;
+use crate::cli::export_data::csv::write_csv;
+use census_domain::model::{CanonicalCoach, CanonicalSchool};
+use std::collections::{BTreeSet, HashMap};
 
-fn coach_url(c: &Value) -> String {
-    c.get("evidence")
-        .and_then(|v| v.as_array())
-        .and_then(|evidence| {
-            evidence.iter().find_map(|e| {
-                e.get("source")
-                    .and_then(|s| s.get("url"))
-                    .and_then(|u| u.as_str())
-            })
-        })
-        .unwrap_or("")
-        .to_string()
-}
-
-fn coach_observed(c: &Value) -> String {
-    c.get("evidence")
-        .and_then(|v| v.as_array())
-        .and_then(|evidence| {
-            evidence
-                .iter()
-                .filter_map(|e| e.get("observed_on").and_then(|o| o.as_str()))
-                .max()
-        })
-        .unwrap_or("")
-        .to_string()
-}
-
-fn school_field(sch: &Value, field: &str) -> String {
-    sch.get(field)
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string()
-}
-
-fn build_coach_row(c: &Value, by_school: &HashMap<&str, &Value>) -> Vec<String> {
-    let sch = by_school
-        .get(c.get("school").and_then(|v| v.as_str()).unwrap_or(""))
-        .copied()
-        .unwrap_or(&Value::Null);
+fn build_coach_row(c: &CanonicalCoach, by_school: &HashMap<&str, &CanonicalSchool>) -> Vec<String> {
+    let school = by_school.get(c.school.as_str()).copied();
+    let (source_url, observed_on) = census_report::export::coach_source(c);
+    let evidence_src = c
+        .evidence
+        .iter()
+        .map(|e| e.source.id.as_str())
+        .collect::<BTreeSet<_>>()
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>()
+        .join(";");
 
     vec![
-        field_str(c, "id"),
-        field_str(c, "name"),
-        field_str(c, "role"),
-        field_str(c, "sport"),
-        field_str(c, "gender"),
-        field_str(c, "school"),
-        school_field(sch, "name"),
-        school_field(sch, "state"),
-        field_str(c, "professional_email"),
-        field_str(c, "personal_email"),
-        coach_url(c),
-        sources(c),
-        coach_observed(c),
+        c.id.as_str().to_string(),
+        c.name.clone(),
+        c.role.stable_key().to_string(),
+        c.sport
+            .map(|s| s.stable_key().to_string())
+            .unwrap_or_default(),
+        c.gender.stable_key().to_string(),
+        c.school.as_str().to_string(),
+        school.map(|school| school.name.clone()).unwrap_or_default(),
+        school
+            .and_then(|school| school.state)
+            .map(|state| state.code().to_owned())
+            .unwrap_or_default(),
+        c.professional_email.clone().unwrap_or_default(),
+        c.personal_email.clone().unwrap_or_default(),
+        source_url.unwrap_or_default().to_owned(),
+        evidence_src,
+        observed_on.unwrap_or_default().to_owned(),
     ]
 }
 
-fn field_str(v: &Value, key: &str) -> String {
-    v.get(key)
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string()
-}
-
 pub fn write_canonical_coaches(
-    coaches: &[Value],
-    by_school: &HashMap<&str, &Value>,
+    coaches: &[CanonicalCoach],
+    schools: &[CanonicalSchool],
     data: &std::path::Path,
 ) -> anyhow::Result<()> {
-    let coach_rows: Vec<Vec<String>> = coaches
+    let by_school: HashMap<&str, &CanonicalSchool> =
+        schools.iter().map(|s| (s.id.as_str(), s)).collect();
+
+    let rows: Vec<Vec<String>> = coaches
         .iter()
-        .map(|c| build_coach_row(c, by_school))
+        .map(|c| build_coach_row(c, &by_school))
         .collect();
 
     write_csv(
@@ -85,6 +59,7 @@ pub fn write_canonical_coaches(
             "sport",
             "gender",
             "school_id",
+            "school_name",
             "school_state",
             "professional_email",
             "personal_email",
@@ -92,7 +67,7 @@ pub fn write_canonical_coaches(
             "evidence_sources",
             "observed_on",
         ],
-        &coach_rows,
+        &rows,
     )?;
 
     Ok(())

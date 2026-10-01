@@ -3,8 +3,8 @@ use super::results::{Accumulator, Stats};
 use super::wire::ResultSetRef;
 use crate::result_file::ParsedEvent;
 use census_domain::model::{
-    CanonicalEvent, CanonicalMeet, EventId, Evidence, SchoolId, SourceEventLabel, SourceIdentity,
-    SourceNamespace, SourceRef,
+    CanonicalEvent, CanonicalMeet, CanonicalTeam, EventId, Evidence, Gender, SchoolId, SchoolYear,
+    SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport, TeamId,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -160,4 +160,36 @@ fn keep_meet(writer: &mut RowWriter<'_>, meet: CanonicalMeet) {
         .meets
         .entry(meet.id.as_str().to_string())
         .or_insert(meet);
+}
+fn team_for(
+    teams: &mut HashMap<String, CanonicalTeam>,
+    school: &SchoolId,
+    sport: Sport,
+    gender: Gender,
+    school_year: SchoolYear,
+    evidence: &Evidence,
+) -> TeamId {
+    let key = format!(
+        "{}:{sport:?}:{gender:?}:{}",
+        school.as_str(),
+        school_year.get()
+    );
+    teams
+        .entry(key)
+        .or_insert_with(|| {
+            let id = CanonicalTeam::mint(school, sport, gender, school_year);
+            CanonicalTeam {
+                id,
+                school: school.clone(),
+                sport,
+                gender,
+                school_year,
+                level: Some("high_school".to_string()),
+                source_identities: Vec::new(),
+                evidence: vec![evidence.clone()],
+                retained_conflicts: Vec::new(),
+            }
+        })
+        .id
+        .clone()
 }

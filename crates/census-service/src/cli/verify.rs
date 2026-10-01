@@ -9,6 +9,7 @@ use census_reconcile::verify::{
     self, column_index, missing_columns, sheets_matching_prefix, verify_athletes,
     verify_performances, ATHLETES_REQUIRED, PERFORMANCES_REQUIRED,
 };
+use census_report::report::Scope;
 use census_store::Store;
 
 #[derive(Debug, Args)]
@@ -154,10 +155,28 @@ fn verify_performances_sheets(
     let perf_total = perf_data.len();
     let perf_sampled = verify::sample_indices(perf_total, sample_every);
 
-    let perf_check = verify_performances(store, perf_data, &perf_sampled, &perf_col_map)
+    let scope = workbook_scope(sheets)?;
+    let perf_check = verify_performances(store, perf_data, &perf_sampled, &perf_col_map, scope)
         .map_err(|d| anyhow::anyhow!("performances verification failed: {}", d.message))?;
 
     Ok((perf_total, perf_check))
+}
+
+fn workbook_scope(sheets: &HashMap<String, Vec<Vec<String>>>) -> Result<Scope> {
+    let rows = sheets
+        .get("Run Metrics")
+        .ok_or_else(|| anyhow::anyhow!("'Run Metrics' sheet is missing"))?;
+    let (count, value) = rows
+        .iter()
+        .filter(|row| row.first().is_some_and(|name| name == "Workbook scope"))
+        .fold((0_usize, None), |(count, _), row| {
+            (count.saturating_add(1), row.get(1).map(String::as_str))
+        });
+    match (count, value) {
+        (1, Some("core")) => Ok(Scope::Core),
+        (1, Some("all_sources")) => Ok(Scope::AllSources),
+        _ => bail!("'Run Metrics' must contain one valid 'Workbook scope' value"),
+    }
 }
 
 pub fn run_verify(store: &Store, args: &VerifyArgs) -> Result<()> {

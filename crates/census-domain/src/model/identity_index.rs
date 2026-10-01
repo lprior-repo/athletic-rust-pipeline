@@ -71,7 +71,7 @@ impl IdentityFact {
                 || athlete
                     .observed_grades
                     .iter()
-                    .any(|grade| grade.grad_year() != athlete.grad_year),
+                    .any(|grade| grade.grad_year() != Some(athlete.grad_year)),
             parsed,
             source_bound: primary.is_some() && parsed,
             status: IdentityStatus::Unverified,

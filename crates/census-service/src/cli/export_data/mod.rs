@@ -1,124 +1,85 @@
 pub mod athletes;
 pub mod coaches;
 pub mod csv;
-pub mod helpers;
 pub mod meets;
-pub mod recruiting;
 pub mod schools;
 
 use anyhow::{Context, Result};
+use census_domain::model::SchoolYear;
+use census_report::export::ExportDataset;
+use census_report::report::{Derivation, Scope};
+use census_report::workbook::{write_recruiting_csv, RecruitingCsvCounts};
+use census_store::Store;
 use clap::Args;
-use std::fs;
 use std::path::PathBuf;
 
-use census_store::read::read_rows;
-
 #[derive(Debug, Args)]
-#[command(about = "Arguments for the `export-data` subcommand")]
+#[command(about = "Export canonical and recruiting CSV projections from the store")]
 pub(super) struct ExportDataArgs {
-    #[arg(
-        help = "Directory containing the consolidated `*.jsonl` snapshots (athletes, schools, coaches, meets)"
-    )]
-    #[arg(long)]
-    pub(super) store_out: PathBuf,
-
-    #[arg(help = "Directory where the CSV data products are written")]
-    #[arg(long)]
+    #[arg(long, help = "Directory where the CSV data products are written")]
     pub(super) data: PathBuf,
+    #[arg(long, help = "Academic year starting year for coach tenure assessment")]
+    pub(super) school_year: Option<i16>,
 }
 
-struct ExportTables<'a> {
-    schools: &'a [serde_json::Value],
-    athletes: &'a [serde_json::Value],
-    coaches: &'a [serde_json::Value],
-    meets: &'a [serde_json::Value],
-}
-
-struct ExportCounts {
-    co27: usize,
-    multi: usize,
-    with_coach: usize,
-    with_email: usize,
+pub(super) fn run_export_data(store: &Store, args: &ExportDataArgs) -> Result<()> {
+    let dataset = ExportDataset::load(store)?;
+    let school_year = match args.school_year {
+        Some(year) => {
+            SchoolYear::new(year).context("school year is outside the supported range")?
+        }
+        None => SchoolYear::from_date(&dataset.lineage.generated_on)
+            .context("cannot determine school year from the frozen dataset date")?,
+    };
+    let population = Derivation::of(&dataset, Scope::AllSources, None);
+    let recruiting = Derivation::of(&dataset, Scope::AllSources, Some(2027));
+    std::fs::create_dir_all(&args.data)
+        .with_context(|| format!("creating data dir {}", args.data.display()))?;
+    schools::write_canonical_schools(population.schools(), &args.data)?;
+    coaches::write_canonical_coaches(population.coaches(), population.schools(), &args.data)?;
+    meets::write_canonical_meets(population.meets(), &args.data)?;
+    let (_, multi_source) =
+        athletes::write_athletes(population.athletes(), population.schools(), &args.data)?;
+    let contacts = write_recruiting_csv(
+        &recruiting,
+        school_year,
+        &args.data.join("recruiting-co2027.csv"),
+    )?;
+    print_summary(
+        store,
+        args,
+        &population,
+        recruiting.athletes().len(),
+        multi_source,
+        contacts,
+    );
+    Ok(())
 }
 
 fn print_summary(
-    store_out: &std::path::Path,
-    data: &std::path::Path,
-    tables: &ExportTables<'_>,
-    counts: &ExportCounts,
+    store: &Store,
+    args: &ExportDataArgs,
+    population: &Derivation<'_>,
+    cohort: usize,
+    multi_source: usize,
+    contacts: RecruitingCsvCounts,
 ) {
-    let files: Vec<String> = if let Ok(entries) = fs::read_dir(data) {
-        entries
-            .filter_map(|e| e.ok())
-            .filter_map(|e| e.file_name().into_string().ok())
-            .collect()
-    } else {
-        Vec::new()
-    };
-    let mut files = files;
-    files.sort();
     println!(
         "{}",
         serde_json::json!({
-            "out_dir": store_out.to_string_lossy(),
-            "data_dir": data.to_string_lossy(),
-            "schools": tables.schools.len(),
-            "athletes": tables.athletes.len(),
-            "co2027": counts.co27,
-            "athletes_multi_source": counts.multi,
-            "coaches": tables.coaches.len(),
-            "meets": tables.meets.len(),
-            "co2027_with_school_coach": counts.with_coach,
-            "co2027_with_any_coach_email": counts.with_email,
-            "files": files,
+            "out_dir": store.out_dir(),
+            "data_dir": args.data,
+            "schools": population.schools().len(),
+            "athletes": population.athletes().len(),
+            "co2027": cohort,
+            "athletes_multi_source": multi_source,
+            "coaches": population.coaches().len(),
+            "meets": population.meets().len(),
+            "co2027_with_school_coach": contacts.with_school_coach,
+            "co2027_with_any_coach_email": contacts.with_coach_email,
+            "files": ["athleticnet-athlete-seeds.csv", "canonical-athletes-co2027.csv", "canonical-coaches.csv", "canonical-meets.csv", "canonical-schools.csv", "recruiting-co2027.csv"],
         })
     );
-}
-pub(super) fn run_export_data(args: &ExportDataArgs) -> Result<()> {
-    let store_out = &args.store_out;
-    let data = &args.data;
-
-    fs::create_dir_all(data).with_context(|| format!("creating data dir {}", data.display()))?;
-
-    let schools = read_rows::<serde_json::Value>(&store_out.join("schools.jsonl"))?;
-    let athletes = read_rows::<serde_json::Value>(&store_out.join("athletes.jsonl"))?;
-    let coaches = read_rows::<serde_json::Value>(&store_out.join("coaches.jsonl"))?;
-    let meets = read_rows::<serde_json::Value>(&store_out.join("meets.jsonl"))?;
-    let by_school: std::collections::HashMap<&str, &serde_json::Value> = schools
-        .iter()
-        .filter_map(|s| s.get("id").and_then(|id| id.as_str()).map(|id| (id, s)))
-        .collect();
-
-    schools::write_canonical_schools(&schools, data)?;
-
-    coaches::write_canonical_coaches(&coaches, &by_school, data)?;
-
-    meets::write_canonical_meets(&meets, data)?;
-
-    let (co27, multi) = athletes::write_athletes(&athletes, &by_school, data)?;
-
-    let coach_index = recruiting::build_coach_index(&coaches);
-    let (with_coach, with_email) =
-        recruiting::write_recruiting(&athletes, &coach_index, &by_school, data)?;
-
-    print_summary(
-        store_out,
-        data,
-        &ExportTables {
-            schools: &schools,
-            athletes: &athletes,
-            coaches: &coaches,
-            meets: &meets,
-        },
-        &ExportCounts {
-            co27,
-            multi,
-            with_coach,
-            with_email,
-        },
-    );
-
-    Ok(())
 }
 
 #[cfg(test)]

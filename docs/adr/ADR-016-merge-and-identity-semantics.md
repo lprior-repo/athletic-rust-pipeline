@@ -24,7 +24,8 @@ supersedes, and what it excludes — so parallel slices cannot each answer the q
    metrics layer. No entity or persisted shape changes for that.
 3. **Census scope filters are explicit and counted.** The varsity-only and junior-high rules (S12,
    S13) live at adapter emission, not in the store, and the rows they drop appear in the adapter
-   report's per-level counters.
+   report's per-level counters. Eligibility and row hygiene precede duplicate admission: a rejected
+   JV or vendor row never reserves the key of a later eligible varsity/public contact.
 4. **Artifact shape is a projection.** Fields the prototype's JSON needed (`sources[]`, `state` on a
    coach, `level`, row order) are export- or report-layer mappings over the Rust entities, not new
    store fields.

@@ -6,6 +6,53 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Targeted projection readback and error classification — 2026-09-30
+
+This is a qualification-store repair check, not a fresh national census or release certificate.
+Main stopped broad ownership restructuring after the owner's scope objection. The unused
+Store-dependent unsupported-cohort mutation scaffold was removed; it was not an integrated
+solution. Remaining cohort retention and immutable run-lineage obligations are not waived.
+
+The compiler scratch lane first failed with `Disk quota exceeded` while sccache wrote `/tmp`
+dependencies. No cache, historical store or artifact was deleted. Subsequent focused commands used
+`env RUSTC_WRAPPER= TMPDIR=/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/audit-20260930/compiler-scratch`.
+
+| Command following that environment prefix | Observed result |
+|---|---|
+| `cargo test -p census-crawl coach_directories -- --nocapture` | Initially 41 passed, 3 failed: offline/JSON acquisition failures had been relabelled `directory`/`probe`. After preserving typed errors and classifying at the boundary, 44 passed. |
+| `cargo test -p census-reconcile verify::performances -- --nocapture` | 4 passed: exact meet linkage, field tampering, duplicate unsampled IDs, unknown IDs and missing numeric values. |
+| `cargo test -p census-review --lib` | 79 passed, including unsupported-grade evidence in provider-owned clusters and model packets. |
+| `cargo test -p census-service unresolved_same_name_candidates_remain_individually_addressable -- --nocapture` | 1 passed; unresolved same-name subjects retain different CSV athlete IDs. |
+| `cargo build -p census-service --bin census-service` | Succeeded; compiler warnings were observed. This was not a strict lint or release gate. |
+| `cargo test -p census-crawl coach_directories -- --nocapture` followed by `cargo check -p census-service --bin census-service` after obsolete-builder/import cleanup | 44 passed; CLI check succeeded. |
+
+The actual built CLI was then exercised against the stopped retained qualification store:
+
+```sh
+target/debug/census-service --store var/audit-20260930/wiaa-cohort-readback-03/store workbook --out var/audit-20260930/minimal-projection-readback/class2027-wiaa-qualification.xlsx
+target/debug/census-service --store var/audit-20260930/wiaa-cohort-readback-03/store verify --workbook var/audit-20260930/minimal-projection-readback/class2027-wiaa-qualification.xlsx --sample-every 1
+target/debug/census-service --store var/audit-20260930/wiaa-cohort-readback-03/store export-data --data var/audit-20260930/minimal-projection-readback/csv --school-year 2026
+```
+
+Workbook generation succeeded. Verification reported `OK (3 athletes sampled of 3 rows,
+3 performances sampled of 3 rows)`. CSV export produced all six named products: 32 stored athletes,
+3 Class-of-2027 candidates, 17 coaches, 24 schools and one meet. Both contact counts were zero;
+no athlete-to-coach contact was established by these captures.
+
+Artifact readback showed all 20 performance columns, `Workbook scope=all_sources` and
+`Store bytes on disk=2285612`. Recruiting CSV contained three `unverified` candidates; the two
+Kingston Penn rows had distinct athlete IDs. They were not merged or accepted as distinct people.
+
+| Artifact | SHA-256 |
+|---|---|
+| `var/audit-20260930/minimal-projection-readback/class2027-wiaa-qualification.xlsx` | `4e0b3cd7b25c32931fe5dd7b8af91c9e9ab55cc02cfda6edbcd2bfef37e1d76c` |
+| `var/audit-20260930/minimal-projection-readback/csv/recruiting-co2027.csv` | `4277351be90867491be3b4405dc73c72293811ffe7668cea153698099b03858c` |
+
+Limits: this readback reused captured qualification inputs, made no new population-discovery claim,
+and did not exercise native faults, national identity acceptance, dependency provenance approval
+or same-input atomic publication. Export dates still lack authoritative persisted run lineage.
+The earlier full-workspace test result belongs to its earlier tree, not these later edits.
+
 ## Domain-owned canonical JSON encoder; `serde_json` leaves the production tree — 2026-09-29
 
 The gate's `domain purity` lane had been red since `9e97084`: `cargo tree -p census-domain --edges

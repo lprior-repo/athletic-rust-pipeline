@@ -184,8 +184,7 @@ fn write_sheets(rows: &[PerformanceRow], per_sheet: usize, path: &Path) {
 fn performance_rows(store: &Store, scope: Scope) -> ReportResult<Vec<PerformanceRow>> {
     let dataset = ExportDataset::load(store)?;
     let derivation = Derivation::of(&dataset, scope, None);
-    let parents = super::join::Parents::of(&derivation);
-    let lookups = parents.lookups();
+    let lookups = super::join::PerformanceProjection::of(&derivation);
     let mut rows: Vec<PerformanceRow> = derivation
         .performances()
         .iter()

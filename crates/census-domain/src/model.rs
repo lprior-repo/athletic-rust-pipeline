@@ -59,7 +59,7 @@ pub use identifiers::{
 pub use identity_application::{AcceptedAthleteIdentity, IdentityApplication};
 pub use identity_decision::{
     athlete_identity_digest, identity_verdict_digest, person_provider, AppliedAthleteIdentity,
-    AppliedIdentityKind, IdentityMember, ATHLETE_IDENTITY_POLICY,
+    AppliedIdentityKind, IdentityDecisionError, IdentityMember, ATHLETE_IDENTITY_POLICY,
 };
 pub use identity_index::{AthleteIdentityIndex, IdentityError};
 pub use identity_projection::{AthleteIdentityProjection, IdentityProjectionBuilder};
@@ -78,7 +78,7 @@ pub use records::{
     SourceSchoolObservation, ATHLETE_IDENTITY_FAMILY, COHORT_DECISION_FAMILIES,
     COHORT_EVIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY, CONTACT_CONFLICT_FAMILY,
     IDENTITY_UNVERIFIED_FAMILY, MEMBER_SET_LABEL, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
-    UNRESOLVED_VENUE_FAMILY,
+    UNRESOLVED_VENUE_FAMILY, UNSUPPORTED_GRADUATION_FAMILY,
 };
 pub use review::{
     ReviewCaseFact, ReviewEvidenceFact, ReviewPacket, ReviewVerdict, ReviewVerdictKind,

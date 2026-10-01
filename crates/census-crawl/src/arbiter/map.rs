@@ -92,11 +92,31 @@ fn classify_sport_gender(sport_name: &str, level_name: &str) -> Option<(Sport, G
     if lowered_sport.contains("ski") {
         return None;
     }
-    let (sport, _) = parse_sport(sport_name)?;
-    let gender = parse_gender(sport_name)
-        .or_else(|| parse_gender(level_name))
-        .unwrap_or(Gender::Mixed);
+    let (sport, sport_gender) = parse_sport(sport_name)?;
+    let gender = if sport_gender != Gender::Mixed {
+        sport_gender
+    } else {
+        gender_from_label(level_name)
+            .or_else(|| gender_from_label(sport_name))
+            .unwrap_or(Gender::Mixed)
+    };
     Some((sport, gender))
+}
+
+fn gender_from_label(label: &str) -> Option<Gender> {
+    match parse_gender(label) {
+        Gender::Unknown => {
+            let lowered = label.to_ascii_lowercase();
+            if lowered.contains("girls") || lowered.contains("women") {
+                Some(Gender::Girls)
+            } else if lowered.contains("boys") || lowered.contains("men") {
+                Some(Gender::Boys)
+            } else {
+                None
+            }
+        }
+        gender => Some(gender),
+    }
 }
 
 fn classify_role(label: &str) -> Option<CoachRole> {

@@ -16,8 +16,9 @@ pub enum IdentityDecisionError {
     MissingCaseId,
     #[error("different-person identity requires a verdict_digest")]
     MissingVerdictDigest,
+    #[error("invalid identity membership: {0}")]
+    InvalidMembership(String),
 }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AppliedIdentityKind {
@@ -63,6 +64,12 @@ fn validate_identity_membership(
             members.len()
         ));
     }
+    if kind == AppliedIdentityKind::DifferentPerson && members.len() < 2 {
+        return Some(format!(
+            "DifferentPerson identity requires at least two members, found {}",
+            members.len()
+        ));
+    }
     if kind == AppliedIdentityKind::SamePerson && canonical_id.is_none() {
         return Some("SamePerson identity requires a canonical_id".to_string());
     }
@@ -73,30 +80,6 @@ fn validate_identity_membership(
 }
 
 impl AppliedAthleteIdentity {
-    pub fn new(
-        id: &str,
-        kind: AppliedIdentityKind,
-        members: Vec<IdentityMember>,
-        canonical_id: Option<AthleteId>,
-        case_id: Option<String>,
-        verdict_digest: Option<String>,
-        observed_at: &str,
-    ) -> Self {
-        if let Some(error) = validate_identity_membership(kind, &members, canonical_id.as_ref()) {
-            debug_assert!(false, "{error}");
-        }
-        Self {
-            id: id.to_string(),
-            policy: ATHLETE_IDENTITY_POLICY,
-            kind,
-            members,
-            canonical_id,
-            case_id,
-            verdict_digest,
-            observed_at: observed_at.to_string(),
-        }
-    }
-
     pub fn new_checked(
         id: &str,
         kind: AppliedIdentityKind,
@@ -117,6 +100,9 @@ impl AppliedAthleteIdentity {
         }
         if kind == AppliedIdentityKind::DifferentPerson && verdict_digest.is_none() {
             return Err(IdentityDecisionError::MissingVerdictDigest);
+        }
+        if let Some(error) = validate_identity_membership(kind, &members, canonical_id.as_ref()) {
+            return Err(IdentityDecisionError::InvalidMembership(error));
         }
         Ok(Self {
             id: id.to_string(),

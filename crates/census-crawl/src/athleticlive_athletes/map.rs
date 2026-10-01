@@ -134,7 +134,9 @@ fn absorb_athlete(
 ) {
     let Some(grade) = row.grade else { return };
     out.rows_with_grade = out.rows_with_grade.saturating_add(1);
-    let grad_year = GradYear::of(grade, row.school_year);
+    let Some(grad_year) = GradYear::of(grade, row.school_year) else {
+        return;
+    };
     let Some(source) = source_identity(hit, &row.target.tenant, row.source.url.as_deref()) else {
         out.rows_without_subject_id = out.rows_without_subject_id.saturating_add(1);
         return;

@@ -1,11 +1,11 @@
 use super::SourceDescriptor;
 
-mod directories;
 mod from_mshsl;
 mod through_milesplit;
 
-use directories::DIRECTORIES;
 use from_mshsl::FROM_MSHSL;
+mod directories;
+use directories::DIRECTORIES;
 use through_milesplit::THROUGH_MILESPLIT;
 
 pub fn descriptors() -> impl Iterator<Item = &'static SourceDescriptor> {

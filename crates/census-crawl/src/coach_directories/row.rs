@@ -1,66 +1,193 @@
-use super::map::{Claim, CoachCounters, EmissionScope, Row};
+use super::map::{CoachCounters, EmissionScope, Row};
 use super::parse::StaffMember;
-use census_domain::model::{CoachRole, Gender, Sport};
 use crate::{row_hygiene, CrawlResult};
+use census_domain::model::{CoachRole, Gender, Sport};
 
 pub fn emit_row<'a>(
     rows: &mut Vec<Row<'a>>,
-    claims: &mut Vec<Claim>,
     counters: &mut CoachCounters,
     scope: EmissionScope,
-    member: &'a StaffMember,
-    sport: Option<Sport>,
-    gender: Gender,
-    role: CoachRole,
+    mut row: Row<'a>,
     level: Option<&str>,
 ) -> CrawlResult<()> {
-    let person = person_name(member);
-    if claims.iter().any(|c| c.person == person && c.sport == sport_family(sport)
-        && c.gender == gender && c.role == role) {
-        return Ok(());
-    }
-    claims.push(Claim {
-        person: person.clone(),
-        sport: sport_family(sport),
-        gender,
-        role,
-    });
     if scope == EmissionScope::Census {
         if !row_hygiene::is_varsity_level(level) {
-            let slot = counters.dropped_levels.entry(row_hygiene::level_label(level)).or_insert(0);
+            let slot = counters
+                .dropped_levels
+                .entry(row_hygiene::level_label(level))
+                .or_insert(0);
             *slot = slot.saturating_add(1);
             return Ok(());
         }
-        let sanitized = match row_hygiene::sanitize_person(&person)? {
-            Some(s) => s,
+        row.person = match row_hygiene::sanitize_person(&row.person)? {
+            Some(person) => person,
             None => {
                 counters.dropped_person = counters.dropped_person.saturating_add(1);
                 return Ok(());
             }
         };
-        let has_vendor = member.emails.first()
-            .map(String::as_str)
-            .and_then(super::nonempty)
-            .is_some_and(|addr| row_hygiene::is_vendor_contact(addr));
-        if has_vendor {
+        if row
+            .member
+            .emails
+            .first()
+            .is_some_and(|address| row_hygiene::is_vendor_contact(address.trim()))
+        {
             counters.dropped_vendor = counters.dropped_vendor.saturating_add(1);
             return Ok(());
         }
-        rows.push(Row { member, person: sanitized, sport, gender, role });
-    } else {
-        rows.push(Row { member, person, sport, gender, role });
+    }
+    if !rows.iter().any(|existing| {
+        existing.person == row.person
+            && sport_family(existing.sport) == sport_family(row.sport)
+            && existing.gender == row.gender
+            && existing.role == row.role
+    }) {
+        rows.push(row);
     }
     Ok(())
 }
 
-pub fn person_name(member: &StaffMember) -> String {
-    let mut parts = Vec::new();
-    for part in [member.first_name.as_deref(), member.last_name.as_deref()] {
-        if let Some(value) = part.map(str::trim).filter(|v| !v.is_empty()) {
-            parts.push(value);
+pub fn process_team_coaches<'a>(
+    team: &super::parse::TeamEntry,
+    staff: &[&'a StaffMember],
+    index: &std::collections::HashMap<&str, usize>,
+    placed: &mut std::collections::HashSet<&'a str>,
+    rows: &mut Vec<Row<'a>>,
+    counters: &mut CoachCounters,
+    scope: EmissionScope,
+) -> CrawlResult<()> {
+    let Some((sport, gender)) = super::map::team_sport(team.name.as_deref().unwrap_or_default())
+    else {
+        return Ok(());
+    };
+    for profile in &team.coach_profile_ids {
+        let Some(member) = staff_by_index(staff, index, profile) else {
+            continue;
+        };
+        placed.insert(member.id.as_str());
+        emit_row(
+            rows,
+            counters,
+            scope,
+            Row::new(
+                member,
+                Some(sport),
+                gender,
+                coach_role(member.title.as_deref().unwrap_or_default()),
+            ),
+            team.level.as_deref(),
+        )?;
+    }
+    Ok(())
+}
+
+pub fn process_unplaced_coaches<'a>(
+    staff: &[&'a StaffMember],
+    placed: &std::collections::HashSet<&'a str>,
+    rows: &mut Vec<Row<'a>>,
+    counters: &mut CoachCounters,
+    scope: EmissionScope,
+) -> CrawlResult<()> {
+    for member in staff {
+        if placed.contains(member.id.as_str()) {
+            continue;
+        }
+        let Some((sport, gender)) =
+            super::map::team_sport(member.team_name.as_deref().unwrap_or_default())
+        else {
+            continue;
+        };
+        emit_row(
+            rows,
+            counters,
+            scope,
+            Row::new(
+                member,
+                Some(sport),
+                gender,
+                coach_role(member.title.as_deref().unwrap_or_default()),
+            ),
+            member.team_level.as_deref(),
+        )?;
+    }
+    Ok(())
+}
+
+pub fn process_directors<'a>(
+    staff: &[&'a StaffMember],
+    rows: &mut Vec<Row<'a>>,
+    counters: &mut CoachCounters,
+    scope: EmissionScope,
+) -> CrawlResult<()> {
+    for member in staff {
+        if !is_director(member.title.as_deref().unwrap_or_default()) {
+            continue;
+        }
+        emit_row(
+            rows,
+            counters,
+            scope,
+            Row::new(member, None, Gender::Mixed, CoachRole::AthleticDirector),
+            None,
+        )?;
+    }
+    Ok(())
+}
+
+pub fn build_staff_index<'a>(
+    staff: &[&'a StaffMember],
+) -> std::collections::HashMap<&'a str, usize> {
+    staff
+        .iter()
+        .enumerate()
+        .filter(|(_, m)| !m.id.is_empty())
+        .map(|(i, m)| (m.id.as_str(), i))
+        .collect()
+}
+
+fn staff_by_index<'a>(
+    staff: &[&'a StaffMember],
+    index: &std::collections::HashMap<&str, usize>,
+    id: &str,
+) -> Option<&'a StaffMember> {
+    index.get(id).and_then(|pos| staff.get(*pos)).copied()
+}
+
+pub fn dedup_staff(staff: &[StaffMember]) -> Vec<&StaffMember> {
+    let mut unique = Vec::new();
+    let mut index: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+    for member in staff {
+        match index.entry(member.id.as_str()) {
+            std::collections::hash_map::Entry::Occupied(slot) => {
+                if let Some(cell) = unique.get_mut(*slot.get()) {
+                    *cell = member;
+                }
+            }
+            std::collections::hash_map::Entry::Vacant(slot) => {
+                slot.insert(unique.len());
+                unique.push(member);
+            }
         }
     }
-    parts.join(" ")
+    unique
+}
+
+pub fn person_name(member: &StaffMember) -> String {
+    let first = member
+        .first_name
+        .as_deref()
+        .map(str::trim)
+        .filter(|part| !part.is_empty());
+    let last = member
+        .last_name
+        .as_deref()
+        .map(str::trim)
+        .filter(|part| !part.is_empty());
+    match (first, last) {
+        (Some(first), Some(last)) => format!("{first} {last}"),
+        (Some(part), None) | (None, Some(part)) => part.into(),
+        (None, None) => String::new(),
+    }
 }
 
 pub fn sport_family(sport: Option<Sport>) -> &'static str {

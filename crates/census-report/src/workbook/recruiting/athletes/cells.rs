@@ -68,9 +68,9 @@ fn event_cell(prs: &[&SharedSelection], event: &str) -> Cell {
         return Cell::Empty;
     };
     let Some(second) = selected.next() else {
-        return first
-            .normalized
-            .map_or_else(|| Cell::text(first.mark_text()), Cell::Number);
+        let mut text = String::new();
+        append_qualified_mark(&mut text, first);
+        return Cell::text(text);
     };
     let mut text = String::new();
     append_qualified_mark(&mut text, first);

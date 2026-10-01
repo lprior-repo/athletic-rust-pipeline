@@ -38,6 +38,7 @@ pub(super) struct Accumulator {
     pub(super) athletes: HashMap<String, CanonicalAthlete>,
     pub(super) events: HashMap<String, CanonicalEvent>,
     pub(super) performances: HashMap<String, CanonicalPerformance>,
+    pub(super) unsupported: crate::cohort::UnsupportedCohortRows,
 }
 
 #[derive(Debug, Default, Clone)]

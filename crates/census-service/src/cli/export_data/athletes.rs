@@ -1,265 +1,203 @@
 use crate::cli::export_data::csv::write_csv;
-use crate::cli::export_data::helpers::*;
-use serde_json::Value;
+use census_domain::model::{
+    CanonicalAthlete, CanonicalSchool, GradYear, SourceIdentity, SourceNamespace,
+};
 use std::collections::{BTreeSet, HashMap};
 
-fn build_observed(a: &Value) -> String {
-    if let Some(grades) = a.get("observed_grades").and_then(|v| v.as_array()) {
-        let mut items: Vec<String> = grades
-            .iter()
-            .filter_map(|o| {
-                let grade = o
-                    .get("grade")
-                    .and_then(|g| g.as_i64())
-                    .map(|g| g.to_string())
-                    .unwrap_or_default();
-                let year = o
-                    .get("school_year")
-                    .and_then(|y| y.as_i64())
-                    .map(|y| y.to_string())
-                    .unwrap_or_default();
-                if !grade.is_empty() && !year.is_empty() {
-                    Some(format!("g{grade}@{year}"))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        items.sort();
-        items.dedup();
-        items.join(";")
-    } else {
-        String::new()
-    }
+const ATHLETE_HEADERS: [&str; 18] = [
+    "athlete_id",
+    "name",
+    "grad_year",
+    "gender",
+    "state",
+    "school_id",
+    "school_name",
+    "school_city",
+    "sports",
+    "cohort_confidence",
+    "athleticnet_athlete_id",
+    "athleticnet_url",
+    "milesplit_athlete_id",
+    "milesplit_url",
+    "profile_urls",
+    "source_namespaces",
+    "evidence_sources",
+    "observed_grades",
+];
+
+const SEED_HEADERS: [&str; 12] = [
+    "athleticnet_athlete_id",
+    "athleticnet_url",
+    "name",
+    "grad_year",
+    "gender",
+    "state",
+    "school_name",
+    "city",
+    "sports",
+    "derived_from_sources",
+    "milesplit_athlete_id",
+    "observed_on",
+];
+
+fn athletic_net(athlete: &CanonicalAthlete) -> Option<&SourceIdentity> {
+    athlete.identities().find(|identity| {
+        matches!(&identity.namespace,
+            SourceNamespace::AthleticNet { kind } | SourceNamespace::LegacyAthleticNet { kind }
+            if kind == "athlete")
+    })
 }
 
-fn build_seed_row(an_id: &str, an_url: &str, ms_id: &str, a: &Value, sch: &Value) -> Vec<String> {
-    let an_url_final = if !an_url.is_empty() {
-        an_url.to_string()
-    } else {
-        format!("https://www.athletic.net/athlete/{}/track-and-field", an_id)
-    };
-    let observed_on = a
-        .get("evidence")
-        .and_then(|v| v.as_array())
-        .and_then(|evidence| {
-            evidence
-                .iter()
-                .filter_map(|e| e.get("observed_on").and_then(|o| o.as_str()))
-                .max()
-        })
-        .unwrap_or("");
-    vec![
-        an_id.to_string(),
-        an_url_final,
-        field_str(a, "canonical_name"),
-        grad_year_str(a),
-        field_str(a, "gender"),
-        school_str(sch, "state"),
-        school_str(sch, "name"),
-        school_str(sch, "city"),
-        sports(a),
-        sources(a),
-        ms_id.to_string(),
-        observed_on.to_string(),
-    ]
+fn milesplit(athlete: &CanonicalAthlete) -> Option<&SourceIdentity> {
+    athlete
+        .identities()
+        .find(|identity| identity.namespace == SourceNamespace::MilesplitAthlete)
 }
 
-fn get_school<'a>(by_school: &'a HashMap<&str, &'a Value>, school_id: &str) -> &'a Value {
-    by_school.get(school_id).copied().unwrap_or(&Value::Null)
+fn namespaces(athlete: &CanonicalAthlete) -> BTreeSet<&SourceNamespace> {
+    athlete
+        .identities()
+        .map(|identity| &identity.namespace)
+        .collect()
 }
 
-fn write_seeds_csv(path: &std::path::Path, rows: &[Vec<String>]) -> anyhow::Result<()> {
-    write_csv(
-        path,
-        &[
-            "athleticnet_athlete_id",
-            "athleticnet_url",
-            "name",
-            "grad_year",
-            "gender",
-            "state",
-            "school_name",
-            "city",
-            "sports",
-            "derived_from_sources",
-            "milesplit_athlete_id",
-            "observed_on",
-        ],
-        rows,
-    )
-}
-
-struct AthleteProcess {
-    multi: bool,
-    is_co27: bool,
-    an_id: String,
-    an_url: String,
-    ms_id: String,
-    ms_url: String,
-    namespaces: Vec<String>,
-    observed: String,
-}
-
-fn process_athlete(a: &Value) -> AthleteProcess {
-    let idents = identities(a);
-    let namespaces: Vec<String> = idents
+fn sports(athlete: &CanonicalAthlete) -> String {
+    athlete
+        .sports
         .iter()
-        .map(|(k, _, _)| k.clone())
+        .map(|sport| sport.stable_key())
+        .collect::<Vec<_>>()
+        .join(";")
+}
+
+fn sources(athlete: &CanonicalAthlete) -> String {
+    athlete
+        .evidence
+        .iter()
+        .map(|evidence| evidence.source.id.as_str())
         .collect::<BTreeSet<_>>()
         .into_iter()
-        .collect();
-    let multi = namespaces.len() > 1;
-    let an_id = pick(a, "legacy_athletic_net", Some("athlete"));
-    let an_url = a
-        .get("public_profile_urls")
-        .and_then(|v| v.as_array())
-        .and_then(|urls| {
-            urls.iter()
-                .find_map(|u| u.as_str().filter(|s| s.contains("athletic.net/athlete/")))
-        })
-        .unwrap_or("");
-    let ms_id = pick(a, "milesplit_athlete", None);
-    let ms_url = a
-        .get("public_profile_urls")
-        .and_then(|v| v.as_array())
-        .and_then(|urls| {
-            urls.iter()
-                .find_map(|u| u.as_str().filter(|s| s.contains("milesplit.com/athletes/")))
-        })
-        .unwrap_or("");
-    let observed = build_observed(a);
-    let is_co27 = a.get("grad_year").and_then(|v| v.as_i64()) == Some(2027);
-    AthleteProcess {
-        multi,
-        is_co27,
-        an_id,
-        an_url: an_url.to_string(),
-        ms_id,
-        ms_url: ms_url.to_string(),
-        namespaces,
-        observed,
-    }
+        .collect::<Vec<_>>()
+        .join(";")
 }
 
-fn build_co2027_row(a: &Value, sch: &Value, process: AthleteProcess) -> Vec<String> {
-    let AthleteProcess {
-        an_id,
-        an_url,
-        ms_id,
-        ms_url,
-        namespaces,
-        observed,
-        ..
-    } = process;
-    let profile_urls: String =
-        if let Some(urls) = a.get("public_profile_urls").and_then(|v| v.as_array()) {
-            urls.iter()
-                .filter_map(|u| u.as_str())
-                .collect::<Vec<_>>()
-                .join(";")
-        } else {
-            String::new()
-        };
+fn namespace_labels(athlete: &CanonicalAthlete) -> String {
+    namespaces(athlete)
+        .iter()
+        .map(|namespace| namespace.to_string())
+        .collect::<Vec<_>>()
+        .join(";")
+}
+
+fn row(athlete: &CanonicalAthlete, school: Option<&CanonicalSchool>) -> Vec<String> {
+    let an = athletic_net(athlete);
+    let ms = milesplit(athlete);
     vec![
-        a.get("id")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string(),
-        field_str(a, "canonical_name"),
-        grad_year_str(a),
-        field_str(a, "gender"),
-        school_str(sch, "state"),
-        field_str(a, "school"),
-        school_str(sch, "name"),
-        school_str(sch, "city"),
-        sports(a),
-        a.get("identity_confidence")
-            .map_or(String::new(), |v| v.to_string()),
-        an_id,
-        an_url,
-        ms_id,
-        ms_url,
-        profile_urls,
-        namespaces.join(";"),
-        sources(a),
-        observed,
+        athlete.id.as_str().to_owned(),
+        athlete.canonical_name.clone(),
+        athlete.grad_year.get().to_string(),
+        athlete.gender.stable_key().to_owned(),
+        school
+            .and_then(|school| school.state)
+            .map(|state| state.code().to_owned())
+            .unwrap_or_default(),
+        athlete.school.as_str().to_owned(),
+        school.map(|school| school.name.clone()).unwrap_or_default(),
+        school
+            .and_then(|school| school.city.clone())
+            .unwrap_or_default(),
+        sports(athlete),
+        athlete
+            .derived_cohort_confidence()
+            .map(|confidence| confidence.get().to_string())
+            .unwrap_or_default(),
+        an.map(|identity| identity.id.clone()).unwrap_or_default(),
+        an.and_then(|identity| identity.url.clone())
+            .unwrap_or_default(),
+        ms.map(|identity| identity.id.clone()).unwrap_or_default(),
+        ms.and_then(|identity| identity.url.clone())
+            .unwrap_or_default(),
+        athlete.public_profile_urls.join(";"),
+        namespace_labels(athlete),
+        sources(athlete),
+        athlete
+            .observed_grades
+            .iter()
+            .map(|grade| format!("g{}@{}", grade.grade.get(), grade.school_year.get()))
+            .collect::<Vec<_>>()
+            .join(";"),
     ]
 }
 
-fn field_str(v: &Value, key: &str) -> String {
-    v.get(key)
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string()
-}
-fn grad_year_str(v: &Value) -> String {
-    v.get("grad_year")
-        .and_then(|v| v.as_i64())
-        .map(|g| g.to_string())
-        .unwrap_or_default()
-}
-fn school_str(sch: &Value, field: &str) -> String {
-    sch.get(field)
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string()
+fn seed_row(
+    athlete: &CanonicalAthlete,
+    school: Option<&CanonicalSchool>,
+    source: &SourceIdentity,
+) -> Vec<String> {
+    vec![
+        source.id.clone(),
+        source.url.clone().unwrap_or_default(),
+        athlete.canonical_name.clone(),
+        athlete.grad_year.get().to_string(),
+        athlete.gender.stable_key().to_owned(),
+        school
+            .and_then(|school| school.state)
+            .map(|state| state.code().to_owned())
+            .unwrap_or_default(),
+        school.map(|school| school.name.clone()).unwrap_or_default(),
+        school
+            .and_then(|school| school.city.clone())
+            .unwrap_or_default(),
+        sports(athlete),
+        namespace_labels(athlete),
+        milesplit(athlete)
+            .map(|identity| identity.id.clone())
+            .unwrap_or_default(),
+        athlete
+            .evidence
+            .iter()
+            .map(|evidence| evidence.observed_on.as_str())
+            .max()
+            .unwrap_or_default()
+            .to_owned(),
+    ]
 }
 
 pub fn write_athletes(
-    athletes: &[Value],
-    by_school: &HashMap<&str, &Value>,
+    athletes: &[CanonicalAthlete],
+    schools: &[CanonicalSchool],
     data: &std::path::Path,
 ) -> anyhow::Result<(usize, usize)> {
-    let header = [
-        "athlete_id",
-        "name",
-        "grad_year",
-        "gender",
-        "state",
-        "school_id",
-        "school_name",
-        "school_city",
-        "sports",
-        "identity_confidence",
-        "athleticnet_athlete_id",
-        "athleticnet_url",
-        "milesplit_athlete_id",
-        "milesplit_url",
-        "profile_urls",
-        "source_namespaces",
-        "evidence_sources",
-        "observed_grades",
-    ];
-    let co2027_path = data.join("canonical-athletes-co2027.csv");
-    let seeds_path = data.join("athleticnet-athlete-seeds.csv");
-    let mut co27 = 0usize;
-    let mut multi = 0usize;
-    let mut co2027_rows: Vec<Vec<String>> = Vec::new();
-    let mut seeds_rows: Vec<Vec<String>> = Vec::new();
-    for a in athletes {
-        let p = process_athlete(a);
-        if p.multi {
-            multi = multi.saturating_add(1);
+    let schools: HashMap<&str, &CanonicalSchool> = schools
+        .iter()
+        .map(|school| (school.id.as_str(), school))
+        .collect();
+    let mut cohort = Vec::new();
+    let mut seeds = Vec::new();
+    let mut multi_source = 0usize;
+    for athlete in athletes {
+        let school = schools.get(athlete.school.as_str()).copied();
+        if namespaces(athlete).len() > 1 {
+            multi_source = multi_source
+                .checked_add(1)
+                .ok_or_else(|| anyhow::anyhow!("multi-source count exceeds usize"))?;
         }
-        if !p.an_id.is_empty() {
-            let sch = get_school(
-                by_school,
-                a.get("school").and_then(|v| v.as_str()).unwrap_or(""),
-            );
-            seeds_rows.push(build_seed_row(&p.an_id, &p.an_url, &p.ms_id, a, sch));
+        if let Some(source) = athletic_net(athlete) {
+            seeds.push(seed_row(athlete, school, source));
         }
-        if !p.is_co27 {
-            continue;
+        if athlete.grad_year == GradYear::CO2027 {
+            cohort.push(row(athlete, school));
         }
-        co27 = co27.saturating_add(1);
-        let sch = get_school(
-            by_school,
-            a.get("school").and_then(|v| v.as_str()).unwrap_or(""),
-        );
-        co2027_rows.push(build_co2027_row(a, sch, p));
     }
-    write_csv(&co2027_path, &header, &co2027_rows)?;
-    write_seeds_csv(&seeds_path, &seeds_rows)?;
-    Ok((co27, multi))
+    write_csv(
+        &data.join("canonical-athletes-co2027.csv"),
+        &ATHLETE_HEADERS,
+        &cohort,
+    )?;
+    write_csv(
+        &data.join("athleticnet-athlete-seeds.csv"),
+        &SEED_HEADERS,
+        &seeds,
+    )?;
+    Ok((cohort.len(), multi_source))
 }

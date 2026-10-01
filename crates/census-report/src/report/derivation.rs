@@ -114,7 +114,7 @@ impl<'a> Derivation<'a> {
         &self.school_state
     }
 
-    pub(crate) fn schools(&self) -> &[CanonicalSchool] {
+    pub fn schools(&self) -> &[CanonicalSchool] {
         &self.schools
     }
 
@@ -122,7 +122,7 @@ impl<'a> Derivation<'a> {
         &self.outside_schools
     }
 
-    pub(crate) fn athletes(&self) -> &[CanonicalAthlete] {
+    pub fn athletes(&self) -> &[CanonicalAthlete] {
         &self.athletes
     }
 
@@ -134,7 +134,7 @@ impl<'a> Derivation<'a> {
         self.scoped_athletes
     }
 
-    pub(crate) fn meets(&self) -> &[CanonicalMeet] {
+    pub fn meets(&self) -> &[CanonicalMeet] {
         &self.meets
     }
 
@@ -142,7 +142,7 @@ impl<'a> Derivation<'a> {
         &self.outside_meets
     }
 
-    pub(crate) fn coaches(&self) -> &[CanonicalCoach] {
+    pub fn coaches(&self) -> &[CanonicalCoach] {
         &self.coaches
     }
 
@@ -158,7 +158,7 @@ impl<'a> Derivation<'a> {
         &self.events
     }
 
-    pub(crate) fn performances(&self) -> &[&'a CanonicalPerformance] {
+    pub fn performances(&self) -> &[&'a CanonicalPerformance] {
         &self.performances
     }
 

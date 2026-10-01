@@ -11,7 +11,7 @@ pub(super) fn store_counters(store: &Store) -> ReportResult<Vec<Vec<Cell>>> {
     cells.push(row!("Total observations", count_cell(stats.observations)));
     cells.push(row!(
         "Store bytes on disk",
-        Cell::text(stats.bytes_on_disk.to_string())
+        Cell::text(stats.store_bytes.to_string())
     ));
     Ok(cells)
 }

@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use census_domain::model::{normalize_name, CanonicalAthlete, ReviewEvidenceFact, SourceNamespace};
 
+use super::cohort_evidence::CohortEvidence;
 use super::packets::fact;
 
 pub type IdentityKey = (String, String, i16);
@@ -77,15 +78,14 @@ pub fn flags(a: &CanonicalAthlete, b: &CanonicalAthlete) -> Vec<Flag> {
             detail: format!("{} vs {}", a.grad_year, b.grad_year),
         });
     }
-    let (implied_a, implied_b) = (implied_years(a), implied_years(b));
-    if !implied_a.is_empty() && !implied_b.is_empty() && implied_a != implied_b {
+    let (implied_a, implied_b) = (
+        CohortEvidence::of(&a.observed_grades),
+        CohortEvidence::of(&b.observed_grades),
+    );
+    if implied_a.conflicts_with(&implied_b) {
         flags.push(Flag {
             kind: FlagKind::GradYearEvidenceDiffers,
-            detail: format!(
-                "grade observations imply {} vs {}",
-                years(&implied_a),
-                years(&implied_b)
-            ),
+            detail: format!("grade observations imply {implied_a} vs {implied_b}"),
         });
     }
     if a.gender != b.gender {
@@ -146,19 +146,4 @@ fn distinct_provider_objects(left: &NamespaceIds<'_>, right: &NamespaceIds<'_>) 
 
 fn ids_of(ids: &BTreeSet<&str>) -> String {
     ids.iter().copied().collect::<Vec<&str>>().join(", ")
-}
-
-fn implied_years(row: &CanonicalAthlete) -> BTreeSet<i16> {
-    row.observed_grades
-        .iter()
-        .map(|observation| observation.grad_year().get())
-        .collect()
-}
-
-fn years(years: &BTreeSet<i16>) -> String {
-    years
-        .iter()
-        .map(i16::to_string)
-        .collect::<Vec<String>>()
-        .join("/")
 }

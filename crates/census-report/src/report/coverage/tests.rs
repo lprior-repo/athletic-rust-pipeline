@@ -472,7 +472,7 @@ fn gap_classes_carry_the_count_that_produced_them() {
     assert_eq!(gap(&report, "IL", GapClass::ConflictingIdentity), Some(1));
     assert_eq!(
         gap(&report, "IL", GapClass::MissingGraduationEvidence),
-        None
+        Some(1)
     );
 
     assert_eq!(gap(&report, "MN", GapClass::MissingCoach), Some(1));

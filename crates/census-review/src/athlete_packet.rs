@@ -136,8 +136,8 @@ fn observations(row: &CanonicalAthlete) -> Vec<&ObservedGrade> {
     let mut observations: Vec<&ObservedGrade> = row.observed_grades.iter().collect();
     observations.sort_by(|a, b| {
         a.grad_year()
-            .get()
-            .cmp(&b.grad_year().get())
+            .map(|gy| gy.get())
+            .cmp(&b.grad_year().map(|gy| gy.get()))
             .then_with(|| a.grade.get().cmp(&b.grade.get()))
             .then_with(|| a.source.id.cmp(&b.source.id))
     });
@@ -145,11 +145,15 @@ fn observations(row: &CanonicalAthlete) -> Vec<&ObservedGrade> {
 }
 
 fn observation_text(observation: &ObservedGrade) -> String {
+    let grad_year_text = match observation.grad_year() {
+        Some(year) => year.to_string(),
+        None => "(outside supported cohort range)".to_string(),
+    };
     format!(
         "grade {} in {} implies {} (from {})",
         observation.grade,
         observation.school_year.short(),
-        observation.grad_year(),
+        grad_year_text,
         observation.source.id
     )
 }

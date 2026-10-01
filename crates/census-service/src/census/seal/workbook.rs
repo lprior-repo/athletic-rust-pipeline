@@ -20,7 +20,7 @@ pub const ATHLETES_SHEET: &str = "Athletes";
 pub const COVERAGE_SHEET: &str = "Coverage";
 pub const RUN_METRICS_SHEET: &str = "Run Metrics";
 
-pub const COHORT_LABEL: &str = "class of 2027";
+pub const ATHLETE_METRIC_LABEL: &str = "recruiting athletes";
 
 pub fn inspect_workbook(
     path: &Path,
@@ -39,9 +39,7 @@ pub fn inspect_workbook(
         &[ATHLETES_SHEET, COVERAGE_SHEET, RUN_METRICS_SHEET],
     ));
     let derivation = Derivation::of(dataset, scope, Some(grad_year));
-    let out = std::path::Path::new(&dataset.lineage.store_root).join("out");
-    let census = report::build_census(&derivation, &out);
-    let expected_athletes = count(census.totals.class_of_2027);
+    let expected_athletes = count(derivation.athletes().len());
     let coverage = report::coverage_report(dataset, Some(grad_year))
         .with_context(|| "reading the coverage report for workbook reconciliation")?;
     let expected_jurisdictions = count(coverage.jurisdictions.len());
@@ -96,25 +94,11 @@ fn sheet_rows(
 }
 
 pub fn labelled_count(rows: &[Vec<String>], label: &str) -> Option<u64> {
-    rows.iter().find_map(|row| {
-        let named = row.first()?.trim().to_ascii_lowercase();
-        if !named.starts_with(label) {
-            return None;
-        }
-        let mut candidates: Vec<u64> = row
-            .iter()
-            .skip(1)
-            .filter_map(|cell| {
-                let digits: String = cell.chars().filter(|ch| ch.is_ascii_digit()).collect();
-                if digits.is_empty() {
-                    None
-                } else {
-                    digits.parse::<u64>().ok()
-                }
-            })
-            .collect();
-        candidates.pop()
-    })
+    let row = rows.iter().find(|row| {
+        row.first()
+            .is_some_and(|name| name.trim().eq_ignore_ascii_case(label))
+    })?;
+    row.get(1)?.trim().parse().ok()
 }
 
 pub fn file_digest(path: &Path) -> Result<String> {

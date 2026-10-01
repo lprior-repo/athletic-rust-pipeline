@@ -44,7 +44,7 @@ fn decode_row<T>(table: Table, index: usize, row: &Value) -> Result<(), JobError
 where
     T: DeserializeOwned,
 {
-    serde_json::from_value::<T>(row.clone())
+    T::deserialize(row)
         .map(|_| ())
         .map_err(|source| JobError::Terminal {
             message: format!(

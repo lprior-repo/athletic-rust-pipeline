@@ -1,8 +1,11 @@
-use super::survey::{
-    parse_state_filter, probe_one, report_json, round_half_even, sample_rows,
-    selected_associations, table_line, ProbeRecord, ASSOCIATIONS, VERIFIED,
-};
+mod collect;
+
+use super::probe_utils::{round_half_even, sample_rows};
 use super::API_HOST;
+use super::{
+    parse_state_filter, probe_one, report_json, selected_associations, table_line, ProbeRecord,
+    ASSOCIATIONS, VERIFIED,
+};
 use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::Fetcher;
 use census_domain::UsJurisdiction;
@@ -436,7 +439,7 @@ fn the_prototype_table_lines_are_reproduced() {
     assert_eq!(expected.len(), records.len());
 
     let mut sorted = records.clone();
-    super::survey::sort_records(&mut sorted);
+    super::sort_records(&mut sorted);
     for (position, (record, want)) in sorted.iter().zip(expected).enumerate() {
         assert_eq!(table_line(record), want, "table line {position}");
     }
@@ -514,5 +517,112 @@ async fn a_summary_failure_records_only_the_failure_like_the_prototype() {
         keys,
         ["error", "ruleset", "state", "status"],
         "a failed association carries only state, ruleset, status and error, as the prototype's except branch writes"
+    );
+}
+
+#[test]
+fn rejected_jv_claim_does_not_hide_later_varsity_contact() {
+    let summary = super::parse_summary(
+        br#"{
+            "staff": [{
+                "id": "public", "firstName": "Alex", "lastName": "Rivera",
+                "title": "Head Coach", "emails": ["arivera@example.edu"]
+            }],
+            "teams": [
+                {"name": "Boys' Track, Outdoor", "level": "JV", "coachProfileIds": ["public"]},
+                {"name": "Boys' Track, Outdoor", "level": "Varsity", "coachProfileIds": ["public"]},
+                {"name": "Boys' Track, Outdoor", "level": "Varsity", "coachProfileIds": ["public"]}
+            ]
+        }"#,
+    )
+    .expect("summary");
+    let school = census_domain::model::SchoolId::mint("sch", &["admission-order"]);
+    let result = super::coach_entities(
+        &summary,
+        &school,
+        "https://example.test/school",
+        "2026-09-30",
+        super::EmissionScope::Census,
+    )
+    .expect("coaches");
+    let [coach] = result.coaches.as_slice() else {
+        panic!("expected one eligible coach, got {:?}", result.coaches);
+    };
+    assert_eq!(coach.name, "Alex Rivera");
+    assert_eq!(
+        coach.professional_email.as_deref(),
+        Some("arivera@example.edu")
+    );
+    assert_eq!(result.counters.dropped_total(), 1);
+}
+
+#[test]
+fn rejected_vendor_claim_does_not_hide_later_public_contact() {
+    let summary = super::parse_summary(
+        br#"{
+            "staff": [
+                {"id": "vendor", "firstName": "Alex", "lastName": "Rivera",
+                 "title": "Head Coach", "emails": ["arivera@dragonflyathletics.com"]},
+                {"id": "public", "firstName": "Alex", "lastName": "Rivera",
+                 "title": "Head Coach", "emails": ["arivera@example.edu"]}
+            ],
+            "teams": [
+                {"name": "Boys' Track, Outdoor", "level": "Varsity", "coachProfileIds": ["vendor"]},
+                {"name": "Boys' Track, Outdoor", "level": "Varsity", "coachProfileIds": ["public"]}
+            ]
+        }"#,
+    )
+    .expect("summary");
+    let school = census_domain::model::SchoolId::mint("sch", &["admission-order"]);
+    let result = super::coach_entities(
+        &summary,
+        &school,
+        "https://example.test/school",
+        "2026-09-30",
+        super::EmissionScope::Census,
+    )
+    .expect("coaches");
+    let [coach] = result.coaches.as_slice() else {
+        panic!("expected the public contact, got {:?}", result.coaches);
+    };
+    assert_eq!(
+        coach.professional_email.as_deref(),
+        Some("arivera@example.edu")
+    );
+    assert_eq!(result.counters.dropped_vendor, 1);
+}
+
+#[test]
+fn captured_varsity_cross_country_contact_survives_earlier_jv_team() {
+    let summary =
+        super::parse_summary(fixture("coach_directories/probe/WY/summary-SS28UB.json").as_bytes())
+            .expect("captured summary");
+    let school = census_domain::model::SchoolId::mint("sch", &["araphaho-charter"]);
+    let result = super::coach_entities(
+        &summary,
+        &school,
+        "https://example.test/schools/SS28UB/summary",
+        "2026-09-30",
+        super::EmissionScope::Census,
+    )
+    .expect("coaches");
+    let coaches: Vec<_> = result
+        .coaches
+        .iter()
+        .filter(|coach| {
+            coach.name == "Nicole Biltoft"
+                && coach.sport == Some(census_domain::model::Sport::CrossCountry)
+                && coach.gender == census_domain::model::Gender::Boys
+        })
+        .collect();
+    let [coach] = coaches.as_slice() else {
+        panic!(
+            "expected the published boys varsity cross-country coach: {:?}",
+            result.coaches
+        );
+    };
+    assert_eq!(
+        coach.evidence[0].source.url.as_deref(),
+        Some("https://example.test/schools/SS28UB/summary")
     );
 }

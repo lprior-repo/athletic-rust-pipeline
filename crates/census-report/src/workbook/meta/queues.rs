@@ -1,8 +1,8 @@
 use census_domain::model::{
-    CanonicalAthlete, GradYear, ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY,
+    CanonicalAthlete, GradYear, ReviewState, ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY,
     COHORT_EVIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY, CONTACT_CONFLICT_FAMILY,
     IDENTITY_UNVERIFIED_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
-    UNRESOLVED_VENUE_FAMILY,
+    UNRESOLVED_VENUE_FAMILY, UNSUPPORTED_GRADUATION_FAMILY,
 };
 use census_review::ReviewFamily;
 use std::collections::HashMap;
@@ -157,7 +157,22 @@ pub(super) fn review_families(
         identity_unverified(rows, cohort, names)?,
         unresolved_venues(rows.meets),
         unresolved_schools(rows.schools),
+        unsupported_graduation(rows),
     ])
+}
+
+fn unsupported_graduation(rows: &StoreRows) -> Family {
+    let mut family = Family::new(UNSUPPORTED_GRADUATION_FAMILY);
+    for case in rows.review_cases.iter().filter(|case| {
+        case.family == UNSUPPORTED_GRADUATION_FAMILY && case.state == ReviewState::Pending
+    }) {
+        family.push(queue_row(
+            &case.subject_id,
+            case.subject.clone(),
+            case.detail.clone(),
+        ));
+    }
+    family
 }
 
 pub(super) fn cohort_of(

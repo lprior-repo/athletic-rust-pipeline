@@ -6,13 +6,15 @@ use super::parse::{parse_directory, parse_summary, DirectorySchool};
 use super::{directory_page_url, summary_url, Options, MAX_DIRECTORY_PAGES, REGISTERED, SOURCE_ID};
 use crate::net::{FetchOptions, FetchOutcome, FetchStats};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
-use census_domain::model::{normalize_name, CanonicalCoach, CanonicalSchool, SourceNamespace};
+use census_domain::model::{
+    normalize_name, CanonicalCoach, CanonicalSchool, SchoolId, SourceNamespace,
+};
 use census_domain::UsJurisdiction;
 use census_store::Table;
 use serde_json::json;
 use std::collections::HashSet;
 
-const JOURNAL: &str = "coach_directories_schools";
+const JOURNAL: &str = "coach_directories_schools_v2";
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let stats_before = ctx.fetcher.stats().await;
@@ -148,39 +150,48 @@ impl<'a> Run<'a> {
         if !self.wanted.is_empty() && !self.wanted.contains(&school.normalized_name) {
             return Ok(());
         }
-        let url = summary_url(short_code.as_str());
-        let summary = match self.get(&url).await {
-            Some(outcome) => match parse_summary(&outcome.body) {
-                Ok(summary) => Some(summary),
-                Err(error) => {
-                    self.fail(format!("summary {url}: {error}"));
-                    None
-                }
-            },
-            None => None,
+        let Some(emission) = self
+            .fetch_and_process_summary(&short_code, &mut school, &school_id)
+            .await
+        else {
+            self.school_batch(&school)?.commit()?;
+            return Ok(());
         };
-        let emission = match summary.as_ref() {
-            Some(summary) => {
-                absorb_summary(
-                    &mut school,
-                    summary,
-                    &url,
-                    self.options.observed_on.as_str(),
-                );
-                coach_entities(
-                    summary,
-                    &school_id,
-                    &url,
-                    self.options.observed_on.as_str(),
-                    EmissionScope::Census,
-                )?
-            }
-            None => CoachEmission::default(),
-        };
-        self.write(&key, &school, &emission.coaches, short_code.as_str())?;
+        self.write(&key, &school, &emission.coaches, &short_code)?;
         self.counters.absorb(&emission.counters);
         self.processed = self.processed.saturating_add(1);
         Ok(())
+    }
+
+    async fn fetch_and_process_summary(
+        &mut self,
+        short_code: &str,
+        school: &mut CanonicalSchool,
+        school_id: &SchoolId,
+    ) -> Option<CoachEmission> {
+        let url = summary_url(short_code);
+        let outcome = self.get(&url).await?;
+        let summary = match parse_summary(&outcome.body) {
+            Ok(summary) => summary,
+            Err(error) => {
+                self.fail(format!("summary {url}: {error}"));
+                return None;
+            }
+        };
+        absorb_summary(school, &summary, &url, self.options.observed_on.as_str());
+        match coach_entities(
+            &summary,
+            school_id,
+            &url,
+            self.options.observed_on.as_str(),
+            EmissionScope::Census,
+        ) {
+            Ok(emission) => Some(emission),
+            Err(error) => {
+                self.fail(format!("map {url}: {error}"));
+                None
+            }
+        }
     }
 
     async fn get(&mut self, url: &str) -> Option<FetchOutcome> {
@@ -198,13 +209,10 @@ impl<'a> Run<'a> {
         self.report.note(message);
     }
 
-    fn write(
-        &mut self,
-        key: &str,
+    fn school_batch(
+        &self,
         school: &CanonicalSchool,
-        coaches: &[CanonicalCoach],
-        short_code: &str,
-    ) -> CrawlResult<()> {
+    ) -> CrawlResult<crate::recording::RowBatch<'_>> {
         let mut batch = self.ctx.write_batch();
         batch.append_many(Table::Schools, std::slice::from_ref(school))?;
         batch.append_many(
@@ -213,12 +221,21 @@ impl<'a> Run<'a> {
                 .school_observation(&SourceNamespace::association_school(SOURCE_ID), school)
                 .as_slice(),
         )?;
-        batch.commit()?;
+        Ok(batch)
+    }
+
+    fn write(
+        &mut self,
+        key: &str,
+        school: &CanonicalSchool,
+        coaches: &[CanonicalCoach],
+        short_code: &str,
+    ) -> CrawlResult<()> {
+        let mut batch = self.school_batch(school)?;
         let with_email = coaches
             .iter()
             .filter(|coach| coach.has_published_email())
             .count();
-        let mut batch = self.ctx.store.write_batch();
         batch.append_many(Table::Coaches, coaches)?;
         batch.journal_done(
             JOURNAL,

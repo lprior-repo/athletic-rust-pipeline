@@ -44,7 +44,7 @@ pub struct Options {
     pub school_names: Vec<String>,
 }
 
-const PARSE_VERSION: u32 = 6;
+const PARSE_VERSION: u32 = 7;
 
 #[derive(Debug, Default)]
 struct Accumulator {
@@ -53,6 +53,7 @@ struct Accumulator {
     teams: HashMap<String, CanonicalTeam>,
     athletes: HashMap<String, CanonicalAthlete>,
     performances: HashMap<String, CanonicalPerformance>,
+    unsupported: crate::cohort::UnsupportedCohortRows,
 }
 
 #[derive(Debug, Default)]

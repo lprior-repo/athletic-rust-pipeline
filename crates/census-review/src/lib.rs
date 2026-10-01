@@ -6,6 +6,7 @@ mod athlete_clusters;
 pub mod athlete_flags;
 mod athlete_packet;
 mod athlete_verdict;
+mod cohort_evidence;
 mod families;
 mod model;
 mod packets;

@@ -1,12 +1,13 @@
 use super::map::{Accumulator, Stats};
 use super::{read_registry, Options, Target, BIO_ENDPOINT, PARSE_VERSION, SCHOOL_KIND};
+use crate::recording::RowBatch;
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, SchoolId, SourceNamespace, SourceRef,
 };
 use census_domain::school_index::SchoolIndex;
-use census_store::{StoreBatch, Table};
+use census_store::Table;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 
@@ -52,6 +53,10 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         appended_total(&run.batches, |batch| batch.events),
         appended_total(&run.batches, |batch| batch.performances),
     ));
+    run.report.note(format!(
+        "unsupported graduation inference: {} raw grade/year observations retained for review",
+        appended_total(&run.batches, |batch| batch.unsupported_cohorts),
+    ));
     run.report.note(
         "this source is outside the core scope (`report --core`): it is a reseller of results the \
          platform also gathers from governing bodies and timers, so the core comparison stays \
@@ -76,6 +81,7 @@ pub(in crate::athleticnet) struct EntityCounts {
     pub(in crate::athleticnet) athletes: usize,
     pub(in crate::athleticnet) events: usize,
     pub(in crate::athleticnet) performances: usize,
+    pub(in crate::athleticnet) unsupported_cohorts: usize,
 }
 
 fn registry_targets(options: &Options, report: &mut AdapterReport) -> CrawlResult<Vec<Target>> {
@@ -113,7 +119,7 @@ pub(super) fn journaled_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<St
 pub(super) fn store_accumulated(
     ctx: &AdapterContext<'_>,
     accumulated: Accumulator,
-    page: &mut StoreBatch<'_>,
+    page: &mut RowBatch<'_>,
 ) -> CrawlResult<EntityCounts> {
     let schools: Vec<CanonicalSchool> = accumulated.schools.into_values().collect();
     let meets: Vec<CanonicalMeet> = accumulated.meets.into_values().collect();
@@ -135,6 +141,7 @@ pub(super) fn store_accumulated(
     )?;
     page.append_many(Table::Events, &events)?;
     page.append_many(Table::Performances, &performances)?;
+    accumulated.unsupported.append_to(page)?;
     Ok(EntityCounts {
         schools: schools.len(),
         meets: meets.len(),
@@ -142,6 +149,7 @@ pub(super) fn store_accumulated(
         athletes: athletes.len(),
         events: events.len(),
         performances: performances.len(),
+        unsupported_cohorts: accumulated.unsupported.len(),
     })
 }
 

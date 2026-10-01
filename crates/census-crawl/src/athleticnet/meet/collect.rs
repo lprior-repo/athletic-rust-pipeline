@@ -44,6 +44,10 @@ pub(in crate::athleticnet) async fn collect(
         appended_total(&run.batches, |batch| batch.events),
         appended_total(&run.batches, |batch| batch.performances),
     ));
+    run.report.note(format!(
+        "unsupported graduation inference: {} raw grade/year observations retained for review",
+        appended_total(&run.batches, |batch| batch.unsupported_cohorts),
+    ));
     run.report.note(
         "this source is outside the core scope (`report --core`): it is a reseller of results the \
          platform also gathers from governing bodies and timers, so the core comparison stays \
@@ -67,7 +71,7 @@ impl MeetRun {
         if self.pending.is_empty() {
             return Ok(());
         }
-        let mut page = ctx.store.write_batch();
+        let mut page = ctx.write_batch();
         let batch = store_accumulated(ctx, std::mem::take(&mut self.accumulated), &mut page)?;
         self.batches.push(batch);
         for (url, payload) in self.pending.drain(..) {

@@ -14,8 +14,8 @@ use rust_xlsxwriter::Workbook as Xlsx;
 use super::reached_phase;
 use super::retained_access;
 use super::workbook::{
-    file_digest, inspect_workbook, labelled_count, ATHLETES_SHEET, COHORT_LABEL, COVERAGE_SHEET,
-    RUN_METRICS_SHEET,
+    file_digest, inspect_workbook, labelled_count, ATHLETES_SHEET, ATHLETE_METRIC_LABEL,
+    COVERAGE_SHEET, RUN_METRICS_SHEET,
 };
 use crate::census::Phase;
 
@@ -116,6 +116,8 @@ fn seed_and_workbook(
         .try_into()
         .unwrap();
 
+    store.flush().expect("flushes the store");
+
     for (i, state) in scope_states.iter().enumerate() {
         let (school, _) = CanonicalSchool::new(
             *state,
@@ -151,6 +153,8 @@ fn seed_and_workbook(
         store.append(Table::Athletes, &athlete)?;
     }
 
+    store.flush().expect("flushes the store");
+
     for (i, state) in scope_states.iter().enumerate() {
         let (school, school_id) = CanonicalSchool::new(
             *state,
@@ -175,6 +179,8 @@ fn seed_and_workbook(
         store.append(Table::Meets, &meet)?;
     }
 
+    store.flush().expect("flushes the store before workbook");
+
     let path = dir.join("census-service-test.xlsx");
     let mut book = Xlsx::new();
 
@@ -191,7 +197,7 @@ fn seed_and_workbook(
     metrics.write_string(0, 1, "value")?;
     metrics.write_string(1, 0, "Athletes")?;
     if let Some(count) = cohort {
-        metrics.write_string(2, 0, "Class of 2027")?;
+        metrics.write_string(2, 0, "Recruiting athletes")?;
         metrics.write_number(2, 1, count as f64)?;
     }
 
@@ -218,7 +224,7 @@ fn simple_workbook(dir: &Path, cohort: Option<u64>, jurisdictions: u32) -> Resul
     metrics.write_string(0, 1, "value")?;
     metrics.write_string(1, 0, "Athletes")?;
     if let Some(count) = cohort {
-        metrics.write_string(2, 0, "Class of 2027")?;
+        metrics.write_string(2, 0, "Recruiting athletes")?;
         metrics.write_number(2, 1, count as f64)?;
     }
 
@@ -256,7 +262,7 @@ fn workbook_with_dupes(
     metrics.write_string(0, 1, "value")?;
     metrics.write_string(1, 0, "Athletes")?;
     if let Some(count) = cohort {
-        metrics.write_string(2, 0, "Class of 2027")?;
+        metrics.write_string(2, 0, "Recruiting athletes")?;
         metrics.write_number(2, 1, count as f64)?;
     }
 
@@ -265,12 +271,15 @@ fn workbook_with_dupes(
 }
 
 #[test]
-fn a_zero_athlete_workbook_is_refused() {
+fn a_zero_athlete_workbook_is_refused() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir().expect("a temp dir");
     let (store, path) = seed_and_workbook(dir.path(), 0, Some(0)).expect("seeds");
 
-    let check =
-        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
+    store.flush()?;
+    store.flush()?;
+    let ds = dataset(&store);
+    eprintln!("DEBUG: dataset has {} athletes", ds.athletes.len());
+    let check = inspect_workbook(&path, &ds, 2027, Scope::AllSources).expect("reads back");
 
     assert!(!check.export_verified, "zero athletes must be refused");
     assert!(
@@ -278,16 +287,20 @@ fn a_zero_athlete_workbook_is_refused() {
         "discrepancy must name the Athletes sheet: {:?}",
         check.discrepancies
     );
+    Ok(())
 }
 
 #[test]
-fn a_workbook_that_agrees_with_the_store_verifies() {
+fn a_workbook_that_agrees_with_the_store_verifies() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir().expect("a temp dir");
     let athlete_count: u32 = 5;
     let (store, path) = seed_and_workbook(dir.path(), athlete_count, Some(5)).expect("seeds");
 
-    let check =
-        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
+    store.flush()?;
+    store.flush()?;
+    let ds = dataset(&store);
+    eprintln!("DEBUG: dataset has {} athletes", ds.athletes.len());
+    let check = inspect_workbook(&path, &ds, 2027, Scope::AllSources).expect("reads back");
 
     assert_eq!(check.mapped_athletes, 5);
     assert!(
@@ -306,29 +319,38 @@ fn a_workbook_that_agrees_with_the_store_verifies() {
     assert_eq!(check.sheets, 3);
     assert_eq!(check.digests.len(), 1);
     assert_eq!(check.digests[0].len(), 64, "sha256 hex");
+    Ok(())
 }
 
 #[test]
-fn a_workbook_that_disagrees_refuses_and_names_the_number() {
+fn a_workbook_that_disagrees_refuses_and_names_the_number() -> Result<(), Box<dyn std::error::Error>>
+{
     let dir = tempfile::tempdir().expect("a temp dir");
     let (store, path) = seed_and_workbook(dir.path(), 5, Some(4)).expect("seeds");
 
-    let check =
-        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
+    store.flush()?;
+    store.flush()?;
+    let ds = dataset(&store);
+    eprintln!("DEBUG: dataset has {} athletes", ds.athletes.len());
+    let check = inspect_workbook(&path, &ds, 2027, Scope::AllSources).expect("reads back");
 
     assert!(!check.counts_reconciled);
     assert!(!check.export_verified);
     let named = &check.discrepancies[0];
     assert!(named.contains("4") && named.contains("5"), "{named}");
+    Ok(())
 }
 
 #[test]
-fn a_workbook_that_omits_the_cohort_row_refuses() {
+fn a_workbook_that_omits_the_cohort_row_refuses() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir().expect("a temp dir");
     let (store, path) = seed_and_workbook(dir.path(), 5, None).expect("seeds");
 
-    let check =
-        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
+    store.flush()?;
+    store.flush()?;
+    let ds = dataset(&store);
+    eprintln!("DEBUG: dataset has {} athletes", ds.athletes.len());
+    let check = inspect_workbook(&path, &ds, 2027, Scope::AllSources).expect("reads back");
 
     assert_eq!(check.mapped_athletes, 0);
     assert!(!check.counts_reconciled);
@@ -337,24 +359,29 @@ fn a_workbook_that_omits_the_cohort_row_refuses() {
         "a metrics sheet without the cohort is not a metric"
     );
     assert!(!check.export_verified);
+    Ok(())
 }
 
 #[test]
-fn a_coverage_sheet_short_of_jurisdictions_refuses() {
+fn a_coverage_sheet_short_of_jurisdictions_refuses() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir().expect("a temp dir");
     let (store, _) = seed_and_workbook(dir.path(), 5, Some(5)).expect("seeds");
 
     let path = simple_workbook(dir.path(), Some(5), 3).expect("writes override");
 
-    let check =
-        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
+    store.flush()?;
+    store.flush()?;
+    let ds = dataset(&store);
+    eprintln!("DEBUG: dataset has {} athletes", ds.athletes.len());
+    let check = inspect_workbook(&path, &ds, 2027, Scope::AllSources).expect("reads back");
 
     assert!(!check.coverage_reconciled);
     assert!(!check.export_verified);
+    Ok(())
 }
 
 #[test]
-fn a_workbook_missing_a_required_sheet_refuses() {
+fn a_workbook_missing_a_required_sheet_refuses() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir().expect("a temp dir");
     let store = Store::open(dir.path()).expect("open temp store");
     let path = dir.path().join("athletes-only.xlsx");
@@ -366,8 +393,11 @@ fn a_workbook_missing_a_required_sheet_refuses() {
         .expect("a header");
     book.save(&path).expect("the workbook writes");
 
-    let check =
-        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
+    store.flush()?;
+    store.flush()?;
+    let ds = dataset(&store);
+    eprintln!("DEBUG: dataset has {} athletes", ds.athletes.len());
+    let check = inspect_workbook(&path, &ds, 2027, Scope::AllSources).expect("reads back");
 
     assert_eq!(check.sheets, 1);
     assert!(!check.export_verified);
@@ -376,10 +406,11 @@ fn a_workbook_missing_a_required_sheet_refuses() {
         named.contains(COVERAGE_SHEET) && named.contains(RUN_METRICS_SHEET),
         "the refusal must name the sheets the workbook lacks: {named}"
     );
+    Ok(())
 }
 
 #[test]
-fn the_digest_moves_with_the_bytes() {
+fn the_digest_moves_with_the_bytes() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir().expect("a temp dir");
     let first = simple_workbook(dir.path(), Some(5), 3).expect("writes first");
     let same = file_digest(&first).expect("hashes");
@@ -391,17 +422,21 @@ fn the_digest_moves_with_the_bytes() {
 
     std::fs::write(&moved, b"not a workbook").expect("overwrites");
     assert_ne!(same, file_digest(&moved).expect("hashes the change"));
+    Ok(())
 }
 
 #[test]
-fn a_duplicated_coverage_jurisdiction_is_refused() {
+fn a_duplicated_coverage_jurisdiction_is_refused() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir().expect("a temp dir");
     let (store, _) = seed_and_workbook(dir.path(), 1, Some(1)).expect("seeds");
 
     let path = workbook_with_dupes(dir.path(), Some(1), 1, 3).expect("writes workbook");
 
-    let check =
-        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
+    store.flush()?;
+    store.flush()?;
+    let ds = dataset(&store);
+    eprintln!("DEBUG: dataset has {} athletes", ds.athletes.len());
+    let check = inspect_workbook(&path, &ds, 2027, Scope::AllSources).expect("reads back");
 
     assert!(!check.coverage_reconciled);
     assert!(!check.export_verified);
@@ -410,36 +445,44 @@ fn a_duplicated_coverage_jurisdiction_is_refused() {
         named.contains("duplicate"),
         "discrepancy must name duplicates: {named}"
     );
+    Ok(())
 }
 
 #[test]
-fn a_correct_workbook_still_verifies_with_unique_coverage() {
+fn a_correct_workbook_still_verifies_with_unique_coverage() -> Result<(), Box<dyn std::error::Error>>
+{
     let dir = tempfile::tempdir().expect("a temp dir");
     let (store, path) = seed_and_workbook(dir.path(), 3, Some(3)).expect("seeds");
 
-    let check =
-        inspect_workbook(&path, &dataset(&store), 2027, Scope::AllSources).expect("reads back");
+    store.flush()?;
+    store.flush()?;
+    let ds = dataset(&store);
+    eprintln!("DEBUG: dataset has {} athletes", ds.athletes.len());
+    let check = inspect_workbook(&path, &ds, 2027, Scope::AllSources).expect("reads back");
 
     assert!(check.export_verified, "correct workbook should verify");
     assert!(check.coverage_reconciled);
     assert!(check.counts_reconciled);
+    Ok(())
 }
 
 #[test]
-fn the_label_match_ignores_case_and_reads_a_grouped_number() {
+fn metric_reconciliation_reads_sheet_rows_not_the_census_or_status_columns() {
     let rows = vec![
-        vec!["Athletes".to_string(), "1,226,212".to_string()],
-        vec!["Class of 2027".to_string(), String::new()],
-        vec!["CLASS OF 2027".to_string(), "307,653".to_string()],
+        vec!["Athletes with grade evidence".into(), "99".into()],
+        vec![
+            "recruiting athletes".into(),
+            "307653".into(),
+            "307654".into(),
+            "DIFFERS".into(),
+        ],
     ];
-    assert_eq!(labelled_count(&rows, COHORT_LABEL), Some(307_653));
+    assert_eq!(labelled_count(&rows, ATHLETE_METRIC_LABEL), Some(307_653));
     assert_eq!(labelled_count(&rows, "schools"), None);
-    assert_eq!(
-        labelled_count(&rows[..2], COHORT_LABEL),
-        None,
-        "a label with no count names nothing"
-    );
-    assert_eq!(labelled_count(&[], COHORT_LABEL), None);
+    assert_eq!(labelled_count(&rows[..1], ATHLETE_METRIC_LABEL), None);
+    assert_eq!(labelled_count(&[], ATHLETE_METRIC_LABEL), None);
+    let malformed = vec![vec!["Athletes".into(), "3 broken 2".into(), "32".into()]];
+    assert_eq!(labelled_count(&malformed, ATHLETE_METRIC_LABEL), None);
 }
 
 fn stats_with(snapshots: u64, review: u64, coverage: u64, observations: u64) -> StoreStats {

@@ -22,7 +22,7 @@ const HIGH_SCHOOL_LEVEL: u32 = 4;
 
 pub const SCHOOL_KIND: &str = "school";
 
-const PARSE_VERSION: u32 = 1;
+const PARSE_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Default)]
 pub struct Options {

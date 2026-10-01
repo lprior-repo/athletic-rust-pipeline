@@ -2,7 +2,8 @@ use std::collections::{BTreeMap, HashMap};
 
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam, EventId,
-    EventKind, Evidence, Gender, SchoolId, SchoolYear, SourceRef, Sport,
+    EventKind, Evidence, Gender, ReviewCase, SchoolId, SchoolYear, SourceObservation, SourceRef,
+    Sport,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -18,6 +19,7 @@ pub struct ResultStats {
     pub rows_skipped_unresolved_school: usize,
     pub rows_skipped_below_high_school: usize,
     pub rows_skipped_no_grade: usize,
+    pub rows_skipped_unsupported_cohort: usize,
     pub rows_without_mark: usize,
     pub rows_with_athlete_id: usize,
     pub rows_with_timer_team_id: usize,
@@ -66,12 +68,13 @@ impl ResultStats {
 
     fn skipped_line(&self, prefix: &str) -> String {
         format!(
-            "{prefix}skipped: no name {}, no school label {}, unresolved school {}, below high school {}, no grade {}",
+            "{prefix}skipped: no name {}, no school label {}, unresolved school {}, below high school {}, no grade {}, unsupported cohort {}",
             self.rows_skipped_no_name,
             self.rows_skipped_no_school,
             self.rows_skipped_unresolved_school,
             self.rows_skipped_below_high_school,
-            self.rows_skipped_no_grade
+            self.rows_skipped_no_grade,
+            self.rows_skipped_unsupported_cohort,
         )
     }
 
@@ -139,6 +142,7 @@ impl ResultStats {
             .saturating_add(self.rows_skipped_unresolved_school)
             .saturating_add(self.rows_skipped_below_high_school)
             .saturating_add(self.rows_skipped_no_grade)
+            .saturating_add(self.rows_skipped_unsupported_cohort)
     }
 }
 
@@ -149,6 +153,8 @@ pub struct DocumentEntities {
     pub teams: Vec<CanonicalTeam>,
     pub athletes: Vec<CanonicalAthlete>,
     pub performances: Vec<CanonicalPerformance>,
+    pub review_cases: Vec<ReviewCase>,
+    pub source_observations: Vec<SourceObservation>,
     pub stats: ResultStats,
 }
 
@@ -159,16 +165,20 @@ pub(super) struct Accumulator {
     pub teams: BTreeMap<String, CanonicalTeam>,
     pub athletes: BTreeMap<String, CanonicalAthlete>,
     pub performances: BTreeMap<String, CanonicalPerformance>,
+    pub unsupported: crate::cohort::UnsupportedCohortRows,
 }
 
 impl Accumulator {
     pub(super) fn into_entities(self, stats: ResultStats) -> DocumentEntities {
+        let (review_cases, source_observations) = self.unsupported.into_parts();
         DocumentEntities {
             meets: self.meets.into_values().collect(),
             events: self.events.into_values().collect(),
             teams: self.teams.into_values().collect(),
             athletes: self.athletes.into_values().collect(),
             performances: self.performances.into_values().collect(),
+            review_cases,
+            source_observations,
             stats,
         }
     }

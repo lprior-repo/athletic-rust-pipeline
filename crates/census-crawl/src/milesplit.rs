@@ -29,7 +29,4 @@ pub use wire::{
 };
 
 #[cfg(test)]
-use census_domain::model::{CanonicalAthlete, Gender, GradYear, SchoolYear, Sport};
-
-#[cfg(test)]
 mod tests;

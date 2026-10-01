@@ -10,7 +10,9 @@ pub mod meta;
 
 mod performances;
 pub use meta::retained_records;
+pub use performances::{PerformanceProjection, PerformanceRow, ProjectedValue};
 mod recruiting;
+pub use recruiting::{write_recruiting_csv, RecruitingCsvCounts};
 
 #[derive(Debug, Clone)]
 pub struct Options {
@@ -174,6 +176,7 @@ fn write_objective_sheets(
         path,
         meta::RunFacts {
             population: views.population,
+            recruiting: views.derivation,
             store,
             core: views.core,
             all_sources: views.all_sources,

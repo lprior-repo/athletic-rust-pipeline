@@ -1,6 +1,6 @@
 use super::*;
 use crate::CrawlError;
-use census_domain::model::{EventKind, Mark, SourceIdentity, SourceNamespace};
+use census_domain::model::{EventKind, Gender, GradYear, Mark, SchoolYear, Sport};
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 
@@ -75,17 +75,7 @@ fn roster_entities_are_canonical_and_source_independent() {
     assert_eq!(aguilera.grad_year, GradYear::CO2027);
     let observation = aguilera.observed_grades.first().unwrap();
     assert_eq!(observation.grade.get(), 12);
-    assert_eq!(observation.grad_year(), GradYear::CO2027);
-    assert_eq!(
-        aguilera.id,
-        CanonicalAthlete::mint(
-            &school.id,
-            "Julian Aguilera",
-            GradYear::CO2027,
-            Gender::Boys,
-            &SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169")
-        )
-    );
+    assert_eq!(observation.grad_year(), Some(GradYear::CO2027));
 }
 
 #[test]

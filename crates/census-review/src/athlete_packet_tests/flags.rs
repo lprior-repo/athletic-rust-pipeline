@@ -119,3 +119,34 @@ fn rows_that_disagree_on_the_class_are_flagged_and_never_called_an_agreement() {
         "the agreement flag is read off the rows, not assumed from the pairing"
     );
 }
+
+#[test]
+fn unsupported_inference_survives_the_model_packet() {
+    let mut first = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
+    let mut second = athlete("Jordan Smith", Gender::Boys, GradYear::CO2027);
+    observed(&mut first, 11, 2025);
+    observed(&mut second, 11, 2025);
+    first.observed_grades.push(ObservedGrade {
+        grade: Grade::new(9).unwrap(),
+        school_year: SchoolYear::new(2040).unwrap(),
+        source: SourceRef::new(
+            "milesplit_roster",
+            Some("https://fixture.example/unsupported-grade".to_string()),
+        ),
+    });
+    let packet = athlete_packet(
+        &case_for(&first),
+        &first,
+        &second,
+        &[first.id.to_string(), second.id.to_string()],
+    );
+    let contradiction = packet
+        .evidence
+        .iter()
+        .find(|fact| fact.field == "flag" && fact.value.starts_with("grad_year_evidence_differs:"))
+        .unwrap();
+    assert!(contradiction.value.contains("2040"));
+    assert!(contradiction
+        .value
+        .contains("https://fixture.example/unsupported-grade"));
+}

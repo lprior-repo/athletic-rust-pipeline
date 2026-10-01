@@ -109,6 +109,46 @@ impl<'s> StoreSnapshot<'s> {
         Ok(rows)
     }
 
+    pub fn athletes(&self) -> StoreResult<Vec<CanonicalAthlete>> {
+        let mut athletes = self.scan::<CanonicalAthlete>(Table::Athletes)?;
+        let mut owners: std::collections::HashMap<
+            &census_domain::model::SourceNamespace,
+            std::collections::HashMap<&str, Vec<&mut Vec<census_domain::model::ObservedGrade>>>,
+        > = std::collections::HashMap::new();
+        for athlete in &mut athletes {
+            if let Some(source) = &athlete.source {
+                owners
+                    .entry(&source.namespace)
+                    .or_default()
+                    .entry(source.id.as_str())
+                    .or_default()
+                    .push(&mut athlete.observed_grades);
+            }
+        }
+        self.for_each_observation(Table::SourceObservations, |row| {
+            let SourceObservation::Athlete(row) = row else {
+                return Ok(());
+            };
+            let Some(grade) = row.observed_grade else {
+                return Ok(());
+            };
+            if let Some(targets) = owners
+                .get_mut(&row.namespace)
+                .and_then(|namespace| namespace.get_mut(row.source_athlete_id.as_str()))
+            {
+                let mut unmatched = targets.iter_mut().filter(|grades| !grades.contains(&grade));
+                if let Some(first) = unmatched.next() {
+                    for grades in unmatched {
+                        grades.push(grade.clone());
+                    }
+                    first.push(grade);
+                }
+            }
+            Ok(())
+        })?;
+        Ok(athletes)
+    }
+
     pub fn root(&self) -> &std::path::Path {
         self.root
     }

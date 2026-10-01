@@ -29,9 +29,8 @@ fn an_athlete_observation_keeps_what_its_source_published() {
         observation
             .observed_grade
             .as_ref()
-            .map(ObservedGrade::grad_year),
-        Some(GradYear::new(2028).expect("a class")),
-        "the class is what the source's own grade observation implies, not what this program decided"
+            .and_then(ObservedGrade::grad_year),
+        GradYear::new(2028),
     );
     assert_eq!(observation.gender, Gender::Girls);
     assert_eq!(
@@ -101,9 +100,8 @@ fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one() {
         observation
             .observed_grade
             .as_ref()
-            .map(ObservedGrade::grad_year),
+            .and_then(ObservedGrade::grad_year),
         Some(grad_year),
-        "the class the source's own grade observation implies"
     );
     assert_eq!(observation.observed_on, "2026-09-22");
     let no_match = CanonicalAthlete::new(

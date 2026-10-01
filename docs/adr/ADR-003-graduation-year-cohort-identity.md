@@ -17,6 +17,14 @@ Retain contradictory observations rather than choosing the convenient one. Disco
 without cohort proof; verified and unresolved cohort outcomes remain separate. Cohort agreement is
 not proof that two source subjects are the same person.
 
+Inference is fallible within the constrained graduation-year range. A legal grade and school year
+whose inferred graduation year falls outside that range remain raw source evidence and a located
+pending review case; they do not mint a canonical cohort or become an input-triggered panic.
+When a canonical subject already has the same primary provider namespace and ID, frozen snapshot
+reads include those raw grade observations. Advisory aliases and names do not establish ownership;
+ambiguous primary owners retain contradictions without an identity merge. Ingestion does not
+backpatch canonical rows based on the store's current contents.
+
 ## Consequences
 
 Adapters preserve raw tokens and context; deterministic domain rules interpret them. Neither the

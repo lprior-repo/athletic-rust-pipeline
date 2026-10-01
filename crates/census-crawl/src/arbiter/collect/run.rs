@@ -226,7 +226,7 @@ impl Run<'_> {
         batch.append_many(Table::Coaches, coaches)?;
         batch.journal_done(
             JOURNAL,
-            school.id().as_str(),
+            school.id.as_str(),
             &json!({
                 "org": org,
                 "state": school.state.map(UsJurisdiction::code),

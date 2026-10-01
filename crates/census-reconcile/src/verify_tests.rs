@@ -85,3 +85,27 @@ fn column_index_case_sensitive() {
     let headers = vec!["Name".to_string()];
     assert_eq!(column_index(&headers, "name"), None);
 }
+
+#[test]
+fn performance_partitions_keep_one_header_and_stable_data_order() {
+    let sheets = std::collections::HashMap::from([
+        (
+            "Performances_002".into(),
+            vec![vec!["Athlete ID".into()], vec!["second".into()]],
+        ),
+        (
+            "Performances_001".into(),
+            vec![vec!["Athlete ID".into()], vec!["first".into()]],
+        ),
+        ("Athletes".into(), vec![vec!["not a performance".into()]]),
+    ]);
+    let rows = crate::verify::sheets_matching_prefix(&sheets, "Performances_");
+    assert_eq!(
+        rows,
+        vec![
+            &["Athlete ID".to_owned()][..],
+            &["first".to_owned()][..],
+            &["second".to_owned()][..]
+        ]
+    );
+}

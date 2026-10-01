@@ -1,8 +1,9 @@
 use super::{level_of, Accumulator, ArchiveArtifact, Stats};
 use crate::result_file::{ParsedEvent, ParsedMeet};
 use census_domain::model::{
-    CanonicalEvent, CanonicalMeet, CompetitionLevel, EventId, Evidence, SchoolId, SchoolYear,
-    SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
+    CanonicalEvent, CanonicalMeet, CanonicalTeam, CompetitionLevel, EventId, Evidence, Gender,
+    SchoolId, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    TimingMethod,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -42,6 +43,7 @@ pub(super) fn absorb(read: AbsorbedMeet<'_>, mut writer: RowWriter<'_>) -> usize
             school_year,
             timing,
             event: parsed_event,
+            observed_on,
             event_id: &event_id,
         };
         for (row_index, row) in parsed_event.rows.iter().enumerate() {
@@ -68,6 +70,7 @@ struct MeetContext<'a> {
     sport: Sport,
     school_year: SchoolYear,
     timing: TimingMethod,
+    observed_on: &'a str,
     event: &'a ParsedEvent,
     event_id: &'a EventId,
 }
@@ -152,4 +155,36 @@ fn keep_meet(writer: &mut RowWriter<'_>, meet: CanonicalMeet) {
         .meets
         .entry(meet.id.as_str().to_string())
         .or_insert(meet);
+}
+fn team_for(
+    teams: &mut HashMap<String, CanonicalTeam>,
+    school: &SchoolId,
+    sport: Sport,
+    gender: Gender,
+    school_year: SchoolYear,
+    evidence: &Evidence,
+) -> census_domain::model::TeamId {
+    let key = format!(
+        "{}:{sport:?}:{gender:?}:{}",
+        school.as_str(),
+        school_year.get()
+    );
+    teams
+        .entry(key)
+        .or_insert_with(|| {
+            let id = CanonicalTeam::mint(school, sport, gender, school_year);
+            CanonicalTeam {
+                id,
+                school: school.clone(),
+                sport,
+                gender,
+                school_year,
+                level: Some("high_school".to_string()),
+                source_identities: Vec::new(),
+                evidence: vec![evidence.clone()],
+                retained_conflicts: Vec::new(),
+            }
+        })
+        .id
+        .clone()
 }

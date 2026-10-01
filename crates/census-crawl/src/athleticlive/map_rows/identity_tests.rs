@@ -67,7 +67,11 @@ fn shared_names_keep_row_owners_separate_and_reuse_only_the_same_native_owner() 
             stats: &mut stats,
             accumulator: &mut accumulator,
         };
-        owners.push(map_identity(&mut writer, &context, &school.id, &identity, row).athlete);
+        owners.push(
+            map_identity(&mut writer, &context, &school.id, &identity, row)
+                .unwrap()
+                .athlete,
+        );
     }
     assert_eq!(owners[3], owners[5]);
     assert_eq!(owners.iter().collect::<BTreeSet<_>>().len(), 5);

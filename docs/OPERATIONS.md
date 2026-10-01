@@ -80,6 +80,18 @@ An index rebuild and review application can change review-case populations. Reta
 unresolved candidates must reconcile; never choose a smaller intermediate case table to obtain a
 seal. Reusing cached bytes does not advance the actual acquisition timestamp or establish freshness.
 
+An explicit index rebuild rederives mutable projections even when its input receipt already exists.
+The receipt prevents duplicate durable input commitment, not repair of missing derived rows.
+Unsupported graduation evidence remains a pending `Unsupported graduation inference` review family;
+it appears in the workbook's global pending review queue even without a canonical athlete. It is
+not a recruiting/cohort admission and does not prove provider identities equivalent.
+
+Coach-directory collection uses the `coach_directories_schools_v2` receipt phase for corrected
+eligibility ordering. Old receipts are preserved, but do not skip the corrected parser. A failed
+summary retains valid directory facts without a completion receipt; a successful summary commits
+school facts, public coach rows and its receipt through the same row sink. Recollecting cached
+bytes changes neither acquisition freshness nor immutable Restate run identity/attempt budgets.
+
 Request pacing has two independent dials, and both default to the polite setting:
 
 - Per-source spacing. Each host (or, for a single-lane source family, the family as a whole) leaves
@@ -185,6 +197,13 @@ For the offline verifier, stop the serving owner first, then restart the same co
 before the serving seal call. Name the exact artifact instead of trusting the newest `*.xlsx`.
 Supply the actual `--season`, `--revision` and all applicable repeated `--source-object <key>` values;
 defaults or an incomplete object list are not the run's denominator.
+
+The standalone verifier requires the workbook's `Run Metrics` sheet to contain exactly one valid
+`Workbook scope` (`core` or `all_sources`). It requires all 20 performance columns, rejects empty or
+duplicate canonical result IDs across all data rows, and compares every sampled performance cell
+with the scope-aware projection of that exact stored result. `--sample-every 1` still obeys the CLI's
+5,000-sample-per-sheet ceiling. Missing scope metadata fails closed; preserve historical artifacts
+and generate a new workbook rather than editing an old one to appear verified.
 
 Current seal code checks phase/artifact prerequisites, workbook hash and selected Athletes/Coverage/
 Run Metrics data. It does **not** independently reconcile all performance cells or prove a same-input

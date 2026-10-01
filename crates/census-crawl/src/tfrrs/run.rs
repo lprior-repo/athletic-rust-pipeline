@@ -144,6 +144,7 @@ impl<'a> Run<'a> {
         let performances: Vec<CanonicalPerformance> =
             accumulated.performances.into_values().collect();
         let mut batch = ctx.write_batch();
+        accumulated.unsupported.append_to(&mut batch)?;
         batch.append_many(Table::Schools, &schools)?;
         batch.append_many(Table::Meets, &meets)?;
         batch.append_many(Table::Teams, &teams)?;
@@ -164,6 +165,7 @@ impl<'a> Run<'a> {
             athletes: athletes.len(),
             events: events.len(),
             performances: performances.len(),
+            unsupported_cohorts: accumulated.unsupported.len(),
         })
     }
 }

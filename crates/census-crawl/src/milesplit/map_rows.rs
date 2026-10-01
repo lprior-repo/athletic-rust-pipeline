@@ -1,14 +1,12 @@
-use super::{MeetContext, RowWriter};
+use super::{team_for, MeetContext, RowWriter};
 use crate::hytek;
 use crate::result_file::ParsedRow;
 use census_domain::model::{
-    AthleteId, CanonicalAthlete, CanonicalPerformance, CanonicalTeam, Evidence, Gender, GradYear,
-    Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, Sport, TeamId,
-    TimingMethod,
+    AthleteId, CanonicalAthlete, CanonicalPerformance, Evidence, GradYear, Grade, ObservedGrade,
+    SchoolId, SourceAthleteObservation, SourceIdentity, SourceNamespace, Sport, TeamId, TimingMethod,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
-use std::collections::HashMap;
 
 pub(super) fn record_row(
     writer: &mut RowWriter<'_>,
@@ -31,14 +29,17 @@ pub(super) fn record_row(
         context.school_year,
         context.evidence,
     );
-    let (athlete_id, source) = record_athlete(
+    let Some((athlete_id, source)) = record_athlete(
         writer,
         context,
         &school_id,
         &row.name,
         shape.grade,
         row_index,
-    );
+        &row.school,
+    ) else {
+        return 0;
+    };
     let athlete = AthleteSubject {
         id: athlete_id,
         source,
@@ -168,6 +169,39 @@ fn resolve_school(
         .clone()
 }
 
+fn admit_athlete(
+    writer: &mut RowWriter<'_>,
+    context: &MeetContext<'_>,
+    member_name: &str,
+    grade: Grade,
+    row_index: usize,
+    school_name: &str,
+) -> Option<(GradYear, ObservedGrade, SourceIdentity)> {
+    let source = SourceIdentity::new(
+        SourceNamespace::Other("milesplit_result_row".to_string()),
+        performance_key(context, row_index),
+    );
+    let observation = ObservedGrade {
+        grade,
+        school_year: context.school_year,
+        source: context.source.clone(),
+    };
+    writer
+        .accumulated
+        .unsupported
+        .admit(observation, source, |source| {
+            SourceAthleteObservation::new(
+                source.namespace,
+                source.id,
+                performance_key(context, row_index),
+                member_name,
+                &context.evidence.observed_on,
+            )
+            .with_school(Some(school_name.into()))
+            .with_gender(context.event.gender)
+        })
+}
+
 fn record_athlete(
     writer: &mut RowWriter<'_>,
     context: &MeetContext<'_>,
@@ -175,12 +209,10 @@ fn record_athlete(
     member_name: &str,
     grade: Grade,
     row_index: usize,
-) -> (AthleteId, SourceIdentity) {
-    let grad_year = GradYear::of(grade, context.school_year);
-    let source = SourceIdentity::new(
-        SourceNamespace::Other("milesplit_result_row".to_string()),
-        performance_key(context, row_index),
-    );
+    school_name: &str,
+) -> Option<(AthleteId, SourceIdentity)> {
+    let (grad_year, observation, source) =
+        admit_athlete(writer, context, member_name, grade, row_index, school_name)?;
     let athlete_id = CanonicalAthlete::mint(
         school_id,
         member_name,
@@ -210,11 +242,6 @@ fn record_athlete(
             entry.sports.push(sport);
         }
     }
-    let observation = ObservedGrade {
-        grade,
-        school_year: context.school_year,
-        source: context.source.clone(),
-    };
     if !entry.observed_grades.contains(&observation) {
         entry.observed_grades.push(observation);
     }
@@ -225,7 +252,7 @@ fn record_athlete(
     {
         entry.evidence.push(context.evidence.clone());
     }
-    (athlete_id, source)
+    Some((athlete_id, source))
 }
 
 fn performance_key(context: &MeetContext<'_>, row_index: usize) -> String {
@@ -242,37 +269,4 @@ fn performance_evidence(context: &MeetContext<'_>, grade: Grade, row_index: usiz
         context.school_year.get()
     ));
     evidence
-}
-
-fn team_for(
-    teams: &mut HashMap<String, CanonicalTeam>,
-    school: &SchoolId,
-    sport: Sport,
-    gender: Gender,
-    school_year: SchoolYear,
-    evidence: &Evidence,
-) -> TeamId {
-    let key = format!(
-        "{}:{sport:?}:{gender:?}:{}",
-        school.as_str(),
-        school_year.get()
-    );
-    teams
-        .entry(key)
-        .or_insert_with(|| {
-            let id = CanonicalTeam::mint(school, sport, gender, school_year);
-            CanonicalTeam {
-                id,
-                school: school.clone(),
-                sport,
-                gender,
-                school_year,
-                level: Some("high_school".to_string()),
-                source_identities: Vec::new(),
-                evidence: vec![evidence.clone()],
-                retained_conflicts: Vec::new(),
-            }
-        })
-        .id
-        .clone()
 }

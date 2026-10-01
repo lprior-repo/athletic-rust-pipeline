@@ -27,6 +27,7 @@ mod browser_session;
 mod census;
 mod ingest;
 mod ingest_post;
+mod ingest_validation;
 mod jobs;
 mod journaled;
 mod jurisdiction;

@@ -142,13 +142,12 @@ impl GradYear {
         Some(Self(year))
     }
 
-    pub fn of(grade: Grade, school_year: SchoolYear) -> Self {
-        Self(
-            school_year
-                .get()
-                .saturating_add(13)
-                .saturating_sub(i16::from(grade.get())),
-        )
+    pub fn of(grade: Grade, school_year: SchoolYear) -> Option<Self> {
+        let year = school_year
+            .get()
+            .checked_add(13)?
+            .checked_sub(i16::from(grade.get()))?;
+        Self::new(year)
     }
 }
 
@@ -166,7 +165,7 @@ pub struct ObservedGrade {
 }
 
 impl ObservedGrade {
-    pub fn grad_year(&self) -> GradYear {
+    pub fn grad_year(&self) -> Option<GradYear> {
         GradYear::of(self.grade, self.school_year)
     }
 }

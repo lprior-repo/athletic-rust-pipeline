@@ -60,13 +60,6 @@ fn stage_digest(store: &Store) -> ReportResult<String> {
     Ok(store.snapshot().tables_digest(&inputs)?)
 }
 
-fn recorded_report(_store: &Store) -> ReportResult<IndexReport> {
-    Ok(IndexReport {
-        snapshots: 1,
-        ..IndexReport::default()
-    })
-}
-
 fn stored_cases(store: &Store) -> ReportResult<HashMap<String, ReviewCase>> {
     Ok(store
         .scan::<ReviewCase>(Table::ReviewCases)?
@@ -110,13 +103,6 @@ fn supersede(
 pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<IndexReport> {
     let digest = stage_digest(store)?;
     let operation = format!("{STAGE_RECEIPT}:{digest}");
-    if store
-        .receipt(&operation)?
-        .is_some_and(|held| held.digest == digest)
-    {
-        store.replace(Table::Snapshots, &snapshot_row(store, phase, finished_at)?)?;
-        return recorded_report(store);
-    }
     let pass = canonical_pass(store)?;
     let identity_applications = apply::apply_decisions(store, finished_at)?;
     let dataset = census_report::export::ExportDataset::load(store)?;
@@ -211,7 +197,7 @@ fn canonical_pass(store: &Store) -> ReportResult<CanonicalPass> {
     absorb(&mut pass, store.scan::<CanonicalSchool>(Table::Schools)?);
     absorb(&mut pass, store.scan::<CanonicalTeam>(Table::Teams)?);
     absorb(&mut pass, store.scan::<CanonicalCoach>(Table::Coaches)?);
-    absorb(&mut pass, store.scan::<CanonicalAthlete>(Table::Athletes)?);
+    absorb(&mut pass, store.snapshot().athletes()?);
     absorb(&mut pass, store.scan::<CanonicalMeet>(Table::Meets)?);
     take_collisions(
         &mut pass,

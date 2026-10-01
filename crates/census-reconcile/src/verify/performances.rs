@@ -1,103 +1,116 @@
 use std::collections::{HashMap, HashSet};
 
-use census_domain::model::{CanonicalEvent, CanonicalPerformance};
-use census_report::bests::mark_text;
-use census_store::{Store, Table};
+use census_report::export::ExportDataset;
+use census_report::report::{Derivation, Scope};
+use census_report::workbook::{PerformanceProjection, PerformanceRow};
+use census_store::Store;
 
-use super::compare::{field, Discrepancy, EntityCheck};
+use super::columns::PERFORMANCES_REQUIRED;
+use super::compare::{Discrepancy, EntityCheck};
 
-pub fn verify_performances(
+pub fn verify_performances<T: AsRef<[String]>>(
     store: &Store,
-    rows: &[Vec<String>],
+    rows: &[T],
     sampled: &[usize],
     col_map: &HashMap<&str, usize>,
+    scope: Scope,
 ) -> Result<EntityCheck, Discrepancy> {
-    let performances: Vec<CanonicalPerformance> =
-        store
-            .scan(Table::Performances)
-            .map_err(|source| Discrepancy {
-                message: format!("reading performances from store: {source}"),
-            })?;
-    let event_labels = event_labels(store)?;
-    let lookup = performance_lookup(&performances, &event_labels);
-
-    let mut passed: usize = 0;
-
-    for &idx in sampled {
+    validate_columns(col_map)?;
+    unique_result_ids(rows, col_map)?;
+    let dataset = ExportDataset::load(store).map_err(|source| Discrepancy {
+        message: format!("reading immutable verification input: {source}"),
+    })?;
+    let derivation = Derivation::of(&dataset, scope, None);
+    let lookup: HashMap<&str, _> = derivation
+        .performances()
+        .iter()
+        .map(|performance| (performance.id.as_str(), *performance))
+        .collect();
+    let projection = PerformanceProjection::of(&derivation);
+    sampled.iter().try_for_each(|&idx| {
         let row = rows.get(idx).ok_or_else(|| Discrepancy {
-            message: "row index out of range".to_string(),
+            message: format!("performances row {idx}: sample index out of range"),
         })?;
-        check_performance_row(idx, row, &lookup, &event_labels, col_map)?;
-        passed = passed.saturating_add(1);
-    }
-
+        let row = row.as_ref();
+        let id = cell(col_map, row, "Canonical Result ID", idx)?;
+        let performance = lookup.get(id).ok_or_else(|| Discrepancy {
+            message: format!("performances row {idx}: result {id} absent from {scope:?} input"),
+        })?;
+        compare_row(idx, row, col_map, &projection.row(performance))
+    })?;
     Ok(EntityCheck {
-        passed,
+        passed: sampled.len(),
         sampled_indices: sampled.to_vec(),
     })
 }
 
-fn event_labels(store: &Store) -> Result<HashMap<String, String>, Discrepancy> {
-    let events: Vec<CanonicalEvent> = store.scan(Table::Events).map_err(|source| Discrepancy {
-        message: format!("reading events from store: {source}"),
-    })?;
-    Ok(events
-        .into_iter()
-        .map(|event| {
-            (
-                event.id.as_str().to_string(),
-                event.kind.stable_key().to_string(),
-            )
-        })
-        .collect())
-}
-
-fn performance_lookup(
-    performances: &[CanonicalPerformance],
-    event_labels: &HashMap<String, String>,
-) -> HashSet<(String, String, String)> {
-    performances
-        .iter()
-        .map(|perf| {
-            (
-                perf.athlete.as_str().to_string(),
-                event_label(perf.event.as_str(), event_labels),
-                mark_text(&perf.mark),
-            )
-        })
-        .collect()
-}
-
-fn event_label(event_id: &str, labels: &HashMap<String, String>) -> String {
-    labels.get(event_id).cloned().unwrap_or_default()
-}
-
-fn check_performance_row(
-    idx: usize,
-    row: &[String],
-    lookup: &HashSet<(String, String, String)>,
-    event_labels: &HashMap<String, String>,
-    col_map: &HashMap<&str, usize>,
-) -> Result<(), Discrepancy> {
-    let aid = field(col_map, row, "Athlete ID");
-    let event = field(col_map, row, "Event");
-    let mark = field(col_map, row, "Mark");
-
-    let key = (aid.to_string(), event.to_string(), mark.to_string());
-    if lookup.contains(&key) {
-        return Ok(());
-    }
-    if let Some(label) = event_labels.get(event) {
-        return Err(Discrepancy {
-            message: format!(
-                "performances row {idx}: id {aid} event '{event}' is the store's id for '{label}'; \
-                 the sheet prints the label"
-            ),
-        });
-    }
-    Err(Discrepancy {
-        message: format!(
-            "performances row {idx}: id {aid} event '{event}' mark '{mark}' not in store"
-        ),
+fn validate_columns(col_map: &HashMap<&str, usize>) -> Result<(), Discrepancy> {
+    PERFORMANCES_REQUIRED.iter().try_for_each(|name| {
+        if col_map.contains_key(name) {
+            Ok(())
+        } else {
+            Err(Discrepancy {
+                message: format!("performances: missing required column {name}"),
+            })
+        }
     })
 }
+
+fn unique_result_ids<T: AsRef<[String]>>(
+    rows: &[T],
+    col_map: &HashMap<&str, usize>,
+) -> Result<(), Discrepancy> {
+    rows.iter()
+        .enumerate()
+        .try_fold(HashSet::new(), |mut seen, (idx, row)| {
+            let id = cell(col_map, row.as_ref(), "Canonical Result ID", idx)?;
+            if id.is_empty() || !seen.insert(id) {
+                return Err(Discrepancy {
+                    message: format!("performances row {idx}: empty or duplicate result ID {id}"),
+                });
+            }
+            Ok(seen)
+        })
+        .map(|_| ())
+}
+
+fn compare_row(
+    idx: usize,
+    row: &[String],
+    col_map: &HashMap<&str, usize>,
+    expected: &PerformanceRow,
+) -> Result<(), Discrepancy> {
+    PERFORMANCES_REQUIRED
+        .iter()
+        .zip(expected.values())
+        .try_for_each(|(name, expected)| {
+            let actual = cell(col_map, row, name, idx)?;
+            if expected.matches(actual) {
+                Ok(())
+            } else {
+                Err(Discrepancy {
+                    message: format!(
+                        "performances row {idx}: {name} {actual:?} differs from {expected:?}"
+                    ),
+                })
+            }
+        })
+}
+
+fn cell<'a>(
+    col_map: &HashMap<&str, usize>,
+    row: &'a [String],
+    name: &str,
+    idx: usize,
+) -> Result<&'a str, Discrepancy> {
+    col_map
+        .get(name)
+        .and_then(|&column| row.get(column))
+        .map(String::as_str)
+        .ok_or_else(|| Discrepancy {
+            message: format!("performances row {idx}: missing cell for {name}"),
+        })
+}
+
+#[cfg(test)]
+mod tests;

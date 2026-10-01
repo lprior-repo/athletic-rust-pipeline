@@ -123,7 +123,7 @@ fn every_school_row_matches_the_prototype_golden_field_for_field() {
         let association_id = school
             .source_identities
             .first()
-            .map(|identity| identity.id().clone());
+            .map(|identity| identity.id.clone());
         rust.insert(
             school.name.clone(),
             (
@@ -178,7 +178,7 @@ fn every_primary_contact_becomes_an_athletic_director_row() {
         assert_eq!(coach.sport, None, "a director has no sporting side");
         assert_eq!(coach.gender, Gender::Mixed);
         assert_eq!(coach.evidence.len(), 1);
-        assert_eq!(coach.evidence[0].source.id(), super::SOURCE_ID);
+        assert_eq!(coach.evidence[0].source.id, super::SOURCE_ID);
         rust.insert((school.name.clone(), coach.name.clone()));
     }
 
@@ -463,7 +463,7 @@ fn mapped_coaches_carry_parsed_evidence_with_the_source_url() {
     assert!(!coaches.is_empty());
     for coach in &coaches {
         assert_eq!(coach.evidence.len(), 1);
-        assert_eq!(coach.evidence[0].source.id(), super::SOURCE_ID);
+        assert_eq!(coach.evidence[0].source.id, super::SOURCE_ID);
         assert_eq!(coach.evidence[0].source.url.as_deref(), Some(ALVIRNE_URL));
         assert_eq!(coach.evidence[0].observed_on, OBSERVED_ON);
     }
@@ -484,7 +484,7 @@ fn mapped_schools_carry_the_association_identity_and_evidence() {
     assert_eq!(school.association.as_deref(), Some(super::ASSOCIATION));
     assert_eq!(id, alvirne_id());
     assert_eq!(school.source_identities.len(), 1);
-    assert_eq!(school.source_identities[0].id(), "450");
+    assert_eq!(school.source_identities[0].id, "450");
     assert_eq!(school.evidence.len(), 1);
     assert_eq!(
         school.evidence[0].source.url.as_deref(),

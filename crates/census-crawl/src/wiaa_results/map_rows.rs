@@ -1,13 +1,16 @@
+#[path = "map_rows/performance.rs"]
+mod performance;
+
 use super::super::Stats;
-use super::{MeetContext, RowWriter};
+use super::{team_for, MeetContext, RowWriter};
 use crate::result_file::ParsedRow;
 use census_domain::model::{
-    AthleteId, CanonicalAthlete, CanonicalPerformance, CanonicalTeam, Evidence, Gender, GradYear,
-    Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
-    TeamId,
+    AthleteId, CanonicalAthlete, Evidence, GradYear, Grade, ObservedGrade, SchoolId,
+    SourceAthleteObservation, SourceIdentity, SourceNamespace, SourceRef, TeamId,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
+use performance::{record_performance, MemberFacts};
 use std::collections::HashMap;
 
 pub(super) fn record_row(
@@ -94,43 +97,67 @@ fn record_members(
         if member_name.trim().is_empty() {
             continue;
         }
-        athlete_rows = athlete_rows.saturating_add(1);
         let source_key = performance_key(context, row_index, leg_position);
-        let (athlete_id, source_athlete) =
-            record_athlete(writer, context, school_id, &member_name, grade, &source_key);
-        let performance_id = CanonicalPerformance::mint(
-            &athlete_id,
-            &context.meet.id,
-            &context.event.kind,
-            &context.meet.date,
+        let Some((athlete_id, source_athlete)) = record_athlete(
+            writer,
+            context,
+            school_id,
+            &member_name,
+            grade,
             &source_key,
-        );
-        let evidence = performance_evidence(context, row, leg_position);
-        writer
-            .accumulator
-            .performances
-            .entry(performance_id.as_str().to_string())
-            .or_insert_with(|| CanonicalPerformance {
-                id: performance_id,
+            &row.school,
+        ) else {
+            continue;
+        };
+        athlete_rows = athlete_rows.saturating_add(1);
+        record_performance(
+            writer,
+            context,
+            row,
+            team_id,
+            MemberFacts {
                 athlete: athlete_id,
-                team: team_id.clone(),
-                event: context.event_id.clone(),
-                meet: context.meet.id.clone(),
-                date: context.meet.date.clone(),
-                mark: row.mark.clone(),
-                wind_mps: row.wind_mps,
-                place: row.place,
-                heat: row.heat.clone(),
-                round: context.event.round.clone(),
-                timing: Some(context.timing),
-                observed_grade: Some(grade),
-                evidence: vec![evidence],
-                source_key,
-                source_athlete: Some(source_athlete),
-                retained_conflicts: Vec::new(),
-            });
+                source: source_athlete,
+                key: source_key,
+                grade,
+                leg_position,
+            },
+        );
     }
     athlete_rows
+}
+
+fn admit_athlete(
+    writer: &mut RowWriter<'_>,
+    context: &MeetContext<'_>,
+    member_name: &str,
+    grade: Grade,
+    source_key: &str,
+    school_name: &str,
+) -> Option<(GradYear, ObservedGrade, SourceIdentity)> {
+    let source = SourceIdentity::new(
+        SourceNamespace::Other("wiaa_result_row".to_string()),
+        source_key,
+    );
+    let observation = ObservedGrade {
+        grade,
+        school_year: context.school_year,
+        source: SourceRef::new("wiaa_results", Some(context.artifact.url.clone())),
+    };
+    writer
+        .accumulator
+        .unsupported
+        .admit(observation, source, |source| {
+            SourceAthleteObservation::new(
+                source.namespace,
+                source.id,
+                source_key,
+                member_name,
+                context.observed_on,
+            )
+            .with_school(Some(school_name.into()))
+            .with_gender(context.event.gender)
+        })
 }
 
 fn record_athlete(
@@ -140,12 +167,10 @@ fn record_athlete(
     member_name: &str,
     grade: Grade,
     source_key: &str,
-) -> (AthleteId, SourceIdentity) {
-    let grad_year = GradYear::of(grade, context.school_year);
-    let source = SourceIdentity::new(
-        SourceNamespace::Other("wiaa_result_row".to_string()),
-        source_key,
-    );
+    school_name: &str,
+) -> Option<(AthleteId, SourceIdentity)> {
+    let (grad_year, observation, source) =
+        admit_athlete(writer, context, member_name, grade, source_key, school_name)?;
     let athlete_id = CanonicalAthlete::mint(
         school_id,
         member_name,
@@ -171,11 +196,6 @@ fn record_athlete(
     if !entry.sports.contains(&context.sport) {
         entry.sports.push(context.sport);
     }
-    let observation = ObservedGrade {
-        grade,
-        school_year: context.school_year,
-        source: SourceRef::new("wiaa_results", Some(context.artifact.url.clone())),
-    };
     if !entry.observed_grades.contains(&observation) {
         entry.observed_grades.push(observation);
     }
@@ -186,7 +206,7 @@ fn record_athlete(
     {
         entry.evidence.push(context.evidence.clone());
     }
-    (athlete_id, source)
+    Some((athlete_id, source))
 }
 
 fn round_label(round: &Option<String>) -> &str {
@@ -237,37 +257,4 @@ fn performance_evidence(
         ));
     }
     evidence
-}
-
-fn team_for(
-    teams: &mut HashMap<String, CanonicalTeam>,
-    school: &SchoolId,
-    sport: Sport,
-    gender: Gender,
-    school_year: SchoolYear,
-    evidence: &Evidence,
-) -> census_domain::model::TeamId {
-    let key = format!(
-        "{}:{sport:?}:{gender:?}:{}",
-        school.as_str(),
-        school_year.get()
-    );
-    teams
-        .entry(key)
-        .or_insert_with(|| {
-            let id = CanonicalTeam::mint(school, sport, gender, school_year);
-            CanonicalTeam {
-                id,
-                school: school.clone(),
-                sport,
-                gender,
-                school_year,
-                level: Some("high_school".to_string()),
-                source_identities: Vec::new(),
-                evidence: vec![evidence.clone()],
-                retained_conflicts: Vec::new(),
-            }
-        })
-        .id
-        .clone()
 }

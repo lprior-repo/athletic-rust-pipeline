@@ -31,32 +31,6 @@ fn fixture(dir: &tempfile::TempDir) -> Result<Store, Box<dyn std::error::Error>>
 }
 
 #[test]
-fn an_unchanged_store_skips_the_index_stage() -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let store = fixture(&directory)?;
-
-    let first = derive(&store, "index", "2026-09-22")?;
-    assert!(first.source_identities > 0, "{first:?}");
-
-    store.replace_many::<SourceObjectIdentity>(Table::SourceIdentities, &[])?;
-    let second = derive(&store, "index", "2026-09-23")?;
-    assert_eq!(second.source_identities, 0, "the stage did not rebuild");
-    assert_eq!(second.conflicts, 0);
-    assert_eq!(second.reviews, 0, "the skip derived no review rows");
-    assert_eq!(second.coverage, 0);
-    assert_eq!(second.snapshots, 1);
-    assert_eq!(second.superseded, 0);
-    assert_eq!(second.identity_applications, 0);
-
-    let snapshots: Vec<CollectionSnapshot> = store.scan(Table::Snapshots)?;
-    assert!(
-        snapshots.iter().any(|row| row.id == "index:2026-09-23"),
-        "the skipped pass still records its snapshot row"
-    );
-    Ok(())
-}
-
-#[test]
 fn a_changed_input_reruns_the_index_stage() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = fixture(&directory)?;
@@ -73,5 +47,40 @@ fn a_changed_input_reruns_the_index_stage() -> TestResult {
         first.source_identities + 2,
         "the rebuilt rows cover both schools' athletes"
     );
+    Ok(())
+}
+
+#[test]
+fn receipt_does_not_hide_missing_mutable_projection_rows() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = fixture(&directory)?;
+    derive(&store, "index", "2026-09-22")?;
+    let expected = store.scan::<SourceObjectIdentity>(Table::SourceIdentities)?;
+    assert!(expected
+        .iter()
+        .any(|row| row.namespace == SourceNamespace::MilesplitAthlete && row.source_id == "111"));
+    store.replace_many::<SourceObjectIdentity>(Table::SourceIdentities, &[])?;
+    derive(&store, "index", "2026-09-23")?;
+    assert_eq!(
+        store.scan::<SourceObjectIdentity>(Table::SourceIdentities)?,
+        expected
+    );
+    Ok(())
+}
+
+#[test]
+fn index_preserves_located_unsupported_cohort_review_without_a_canonical_subject() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = fixture(&directory)?;
+    let case = ReviewCase::pending(
+        census_domain::model::UNSUPPORTED_GRADUATION_FAMILY,
+        "tfrrs_in:meet:2040:row:1",
+        "Unplaced Runner",
+        "Published grade 12 in school year 2040. URL: https://example.test/results. Row: 1.",
+    );
+    store.append(Table::ReviewCases, &case)?;
+    derive(&store, "index", "2026-09-30")?;
+    let cases = store.scan::<ReviewCase>(Table::ReviewCases)?;
+    assert_eq!(cases.iter().find(|row| row.id == case.id), Some(&case));
     Ok(())
 }

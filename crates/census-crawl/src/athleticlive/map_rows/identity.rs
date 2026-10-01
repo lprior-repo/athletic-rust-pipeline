@@ -4,7 +4,7 @@ use super::super::map::{ResultStats, RowContext, Writer};
 use super::{Mapped, RowIdentity};
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalTeam, Gender, GradYear, ObservedGrade, SchoolId,
-    SourceIdentity, SourceNamespace,
+    SourceAthleteObservation, SourceIdentity, SourceNamespace,
 };
 
 pub(super) fn resolve_school(
@@ -39,7 +39,7 @@ pub(super) fn map_identity(
     school_id: &SchoolId,
     identity: &RowIdentity<'_>,
     row_index: usize,
-) -> Mapped {
+) -> Option<Mapped> {
     let gender = match identity.gender {
         Gender::Unknown => context.gender,
         published => published,
@@ -49,23 +49,22 @@ pub(super) fn map_identity(
         note_team_ids(entry, context, identity, writer.stats);
         entry.id.clone()
     };
-    let (athlete, source) = record_athlete(writer, context, school_id, identity, gender, row_index);
-    Mapped {
+    let (athlete, source) =
+        record_athlete(writer, context, school_id, identity, gender, row_index)?;
+    Some(Mapped {
         athlete,
         team,
         source_athlete: source,
-    }
+    })
 }
 
-fn record_athlete(
+fn admit_athlete(
     writer: &mut Writer<'_>,
     context: &RowContext<'_>,
-    school_id: &SchoolId,
     identity: &RowIdentity<'_>,
     gender: Gender,
     row_index: usize,
-) -> (AthleteId, SourceIdentity) {
-    let grad_year = GradYear::of(identity.grade, context.school_year);
+) -> Option<(GradYear, ObservedGrade, SourceIdentity)> {
     let mut source = identity.an_athlete_id.map_or_else(
         || {
             SourceIdentity::new(
@@ -76,6 +75,43 @@ fn record_athlete(
         |id| SourceIdentity::new(SourceNamespace::athletic_net("athlete"), id.to_string()),
     );
     source.url.clone_from(&context.source.url);
+    writer.accumulator.unsupported.admit(
+        ObservedGrade {
+            grade: identity.grade,
+            school_year: context.school_year,
+            source: context.source.clone(),
+        },
+        source,
+        |source| {
+            SourceAthleteObservation::new(
+                source.namespace,
+                source.id,
+                format!("{}:{}:row:{row_index}", context.provider, context.event_key),
+                identity.name,
+                &context.evidence.observed_on,
+            )
+            .with_school(Some(identity.school_name.into()))
+            .with_gender(gender)
+        },
+    )
+}
+
+fn record_athlete(
+    writer: &mut Writer<'_>,
+    context: &RowContext<'_>,
+    school_id: &SchoolId,
+    identity: &RowIdentity<'_>,
+    gender: Gender,
+    row_index: usize,
+) -> Option<(AthleteId, SourceIdentity)> {
+    let admitted = admit_athlete(writer, context, identity, gender, row_index);
+    let Some((grad_year, observation, source)) = admitted else {
+        writer.stats.rows_skipped_unsupported_cohort = writer
+            .stats
+            .rows_skipped_unsupported_cohort
+            .saturating_add(1);
+        return None;
+    };
     let athlete_id = CanonicalAthlete::mint(school_id, identity.name, grad_year, gender, &source);
     let entry = writer
         .accumulator
@@ -94,11 +130,6 @@ fn record_athlete(
     if !entry.evidence.contains(context.evidence) {
         entry.evidence.push(context.evidence.clone());
     }
-    let observation = ObservedGrade {
-        grade: identity.grade,
-        school_year: context.school_year,
-        source: context.source.clone(),
-    };
     if !entry.observed_grades.contains(&observation) {
         entry.observed_grades.push(observation);
     }
@@ -110,7 +141,7 @@ fn record_athlete(
             entry.public_profile_urls.push(profile_url);
         }
     }
-    (athlete_id, source)
+    Some((athlete_id, source))
 }
 
 fn note_team_ids(

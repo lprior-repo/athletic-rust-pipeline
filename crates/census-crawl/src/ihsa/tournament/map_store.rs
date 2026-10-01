@@ -13,6 +13,7 @@ pub(super) struct EntityCounts {
     pub(super) athletes: usize,
     pub(super) events: usize,
     pub(super) performances: usize,
+    pub(super) unsupported_cohorts: usize,
 }
 
 impl Mapper<'_> {
@@ -27,7 +28,8 @@ impl Mapper<'_> {
         let athletes = drain(&mut self.accumulated.athletes);
         let events = drain(&mut self.accumulated.events);
         let performances = drain(&mut self.accumulated.performances);
-        let mut batch = ctx.store.write_batch();
+        let mut batch = ctx.write_batch();
+        self.accumulated.unsupported.append_to(&mut batch)?;
         batch.append_many(Table::Schools, &schools)?;
         batch.append_many(
             Table::SourceObservations,
@@ -56,6 +58,7 @@ impl Mapper<'_> {
             athletes: athletes.len(),
             events: events.len(),
             performances: performances.len(),
+            unsupported_cohorts: self.accumulated.unsupported.len(),
         })
     }
 }

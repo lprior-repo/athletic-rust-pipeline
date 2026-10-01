@@ -2,7 +2,8 @@ use super::map::{AthleteRow, EventContext, Mapper, PerformanceRow, ASSOCIATION, 
 use super::wire::TeamRef;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalPerformance, CanonicalTeam, Evidence, Gender,
-    ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, Sport, TeamId,
+    ObservedGrade, SchoolId, SchoolYear, SourceAthleteObservation, SourceIdentity, SourceNamespace,
+    Sport, TeamId,
 };
 
 impl<'a> Mapper<'a> {
@@ -51,15 +52,30 @@ impl<'a> Mapper<'a> {
             school_year: row.school_year,
             source: evidence.source.clone(),
         };
-        let identities = athlete_identities(row.net_id, row.live_id, row.entry.as_deref());
-        let grad_year = observation.grad_year();
-        let source = identities.first().cloned().map_or(
-            SourceIdentity::new(
-                SourceNamespace::Other("ihsa_result_row".to_string()),
-                row.source_key,
-            ),
+        let mut identities =
+            athlete_identities(row.net_id, row.live_id, row.entry.as_deref()).into_iter();
+        let source = identities.next().map_or_else(
+            || {
+                SourceIdentity::new(
+                    SourceNamespace::Other("ihsa_result_row".to_string()),
+                    &row.source_key,
+                )
+            },
             |source| source,
         );
+        let (grad_year, observation, source) =
+            self.accumulated
+                .unsupported
+                .admit(observation, source, |source| {
+                    SourceAthleteObservation::new(
+                        source.namespace,
+                        source.id,
+                        &row.source_key,
+                        name,
+                        self.origin.observed_on,
+                    )
+                    .with_gender(row.gender)
+                })?;
         let id = CanonicalAthlete::mint(row.school, name, grad_year, row.gender, &source);
         let key = id.as_str().to_string();
         if let Some(athlete) = self.accumulated.athletes.get_mut(&key) {
@@ -69,7 +85,7 @@ impl<'a> Mapper<'a> {
                 athlete.add_identity(identity);
             }
             push_once(&mut athlete.evidence, evidence);
-            return Some((athlete.id.clone(), source.clone()));
+            return Some((athlete.id.clone(), source));
         }
         let mut athlete =
             CanonicalAthlete::new(row.school, name, grad_year, row.gender, source.clone());

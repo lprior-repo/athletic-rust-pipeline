@@ -219,7 +219,7 @@ proptest! {
             school_year: year,
             source: SourceRef::new("wiaa_results", None),
         };
-        let agrees = observation.grad_year() == base.grad_year;
+        let agrees = observation.grad_year() == Some(base.grad_year);
         let mut incoming = base.clone();
         incoming.observed_grades = vec![observation];
 

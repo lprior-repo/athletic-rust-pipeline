@@ -21,7 +21,7 @@ use run::Run;
 
 const ADAPTER: &str = "tfrrs";
 
-const PHASE: &str = "tfrrs_pages_v1";
+const PHASE: &str = "tfrrs_pages_v2";
 
 #[derive(Debug, Clone, Default)]
 pub struct Options {

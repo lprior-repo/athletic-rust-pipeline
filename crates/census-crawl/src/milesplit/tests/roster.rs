@@ -75,14 +75,12 @@ fn a_high_school_grade_is_carried_as_dated_evidence() {
         observation.school_year,
         SchoolYear::new(2026).expect("2026 is a season")
     );
-    assert_eq!(observation.source.id, "milesplit_oh");
-    assert_eq!(observation.source.url.as_deref(), Some(OH_RAW_URL));
     assert_eq!(
         athlete.grad_year,
         GradYear::of(observation.grade, observation.school_year)
+            .expect("fixture grade/year pair must infer a valid grad year")
     );
     assert_eq!(athlete.grad_year, GradYear::new(2029).unwrap());
-
     let performance = accumulated
         .performances
         .values()

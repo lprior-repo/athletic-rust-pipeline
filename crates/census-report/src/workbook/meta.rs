@@ -1,7 +1,8 @@
 use crate::bests::SharedSelection;
 use crate::report::{Census, Derivation, ReportResult};
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, ReviewVerdictRecord,
+    CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, ReviewCase,
+    ReviewVerdictRecord,
 };
 use census_domain::UsJurisdiction;
 use rust_xlsxwriter::Workbook;
@@ -30,6 +31,7 @@ type Sheet = (&'static str, Vec<Vec<Cell>>, &'static [u16], bool);
 
 pub(super) struct RunFacts<'a> {
     pub(super) population: &'a Derivation<'a>,
+    pub(super) recruiting: &'a Derivation<'a>,
     pub(super) store: &'a census_store::Store,
     pub(super) core: &'a Census,
     pub(super) all_sources: &'a Census,
@@ -81,6 +83,7 @@ struct StoreRows<'d> {
     school_year: census_domain::model::SchoolYear,
     coaches: &'d [CanonicalCoach],
     verdicts: &'d [ReviewVerdictRecord],
+    review_cases: &'d [ReviewCase],
 }
 impl<'d> StoreRows<'d> {
     fn of(
@@ -95,6 +98,7 @@ impl<'d> StoreRows<'d> {
             school_year,
             coaches: derivation.coaches(),
             verdicts: &derivation.dataset().verdicts,
+            review_cases: &derivation.dataset().review_cases,
         })
     }
 }

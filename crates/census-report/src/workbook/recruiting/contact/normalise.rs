@@ -9,6 +9,7 @@ pub(in crate::workbook::recruiting) struct Named {
     pub(in crate::workbook::recruiting) personal_email: Option<String>,
     pub(in crate::workbook::recruiting) side: Gender,
     pub(in crate::workbook::recruiting) sport: Option<Sport>,
+    source: Option<(String, String)>,
 }
 
 impl Named {
@@ -22,6 +23,7 @@ impl Named {
             personal_email: nonempty(&coach.personal_email).map(str::to_owned),
             sport: coach.sport,
             side: coach.gender,
+            source: provenance(coach),
         })
     }
 
@@ -42,6 +44,14 @@ impl Named {
         }
         if self.personal_email.is_none() {
             self.personal_email = nonempty(&coach.personal_email).map(str::to_owned);
+        }
+        let source = provenance(coach);
+        if source.as_ref().is_some_and(|next| {
+            self.source
+                .as_ref()
+                .is_none_or(|current| (&next.1, &next.0) > (&current.1, &current.0))
+        }) {
+            self.source = source;
         }
         true
     }
@@ -70,12 +80,18 @@ fn differs(left: Option<&str>, right: Option<&str>) -> bool {
     matches!((left, right), (Some(left), Some(right)) if left != right)
 }
 
+fn provenance(coach: &CanonicalCoach) -> Option<(String, String)> {
+    let (url, observed_on) = crate::export::coach_source(coach);
+    url.map(|url| (url.to_owned(), observed_on.unwrap_or_default().to_owned()))
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::workbook::recruiting) struct Preferred {
     pub(in crate::workbook::recruiting) name: String,
     pub(in crate::workbook::recruiting) role: String,
     pub(in crate::workbook::recruiting) email: String,
     pub(in crate::workbook::recruiting) state: ContactState,
+    pub(in crate::workbook::recruiting) source_url: String,
 }
 
 impl Preferred {
@@ -85,6 +101,11 @@ impl Preferred {
             role: role_label(slot, contact.side),
             email: contact.address().unwrap_or_default().to_owned(),
             state: contact.state(slot),
+            source_url: contact
+                .source
+                .as_ref()
+                .map(|source| source.0.clone())
+                .unwrap_or_default(),
         }
     }
 
@@ -94,6 +115,7 @@ impl Preferred {
             role: String::new(),
             email: String::new(),
             state,
+            source_url: String::new(),
         }
     }
 }

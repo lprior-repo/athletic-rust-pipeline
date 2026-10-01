@@ -230,3 +230,34 @@ fn a_later_pass_on_the_same_date_applies_its_own_payload() {
         .count();
     assert_eq!(resolved, 2, "both decided cases are resolved in the store");
 }
+
+#[test]
+fn unsupported_grade_observation_blocks_shared_provider_acceptance() {
+    let lakeland = school("Lakeland");
+    let west = school("Madison West");
+    let mut first = athlete(&lakeland.id, "Jordan Smith", Gender::Boys, "14399169");
+    let mut second = athlete(&west.id, "Jordan Smith", Gender::Boys, "14399169");
+    grade(&mut first, 11, 2025);
+    grade(&mut second, 11, 2025);
+    first.observed_grades.push(ObservedGrade {
+        grade: Grade::new(9).unwrap(),
+        school_year: SchoolYear::new(2040).unwrap(),
+        source: SourceRef::new(
+            "milesplit_roster",
+            Some("https://fixture.example/unsupported-grade".to_string()),
+        ),
+    });
+    let (_dir, store) = store_of(&[lakeland, west], &[first, second]);
+
+    let report = reconcile_athletes(&store, "2026-09-30", false).unwrap();
+
+    assert_eq!((report.pending, report.decided), (1, 0));
+    assert!(verdicts(&store).is_empty());
+    let filed = cases(&store);
+    let case = filed.first().unwrap();
+    assert_eq!(case.state, ReviewState::Pending);
+    assert!(case.detail.contains("2040"));
+    assert!(case
+        .detail
+        .contains("https://fixture.example/unsupported-grade"));
+}

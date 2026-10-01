@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 
 pub(super) const PHASE: &str = "ihsa_tournament";
-const PARSER: u64 = 1;
+const PARSER: u64 = 2;
 const MEET_KEY: &str = "meet";
 const QUALIFIERS_KEY: &str = "qualifiers";
 

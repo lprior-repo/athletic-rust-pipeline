@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use super::{
-    count, labelled_count, sheet_rows, ATHLETES_SHEET, COHORT_LABEL, COVERAGE_SHEET,
+    count, labelled_count, sheet_rows, ATHLETES_SHEET, ATHLETE_METRIC_LABEL, COVERAGE_SHEET,
     RUN_METRICS_SHEET,
 };
 
@@ -92,10 +92,10 @@ pub(super) fn reconcile_run_metrics(
     expected_athletes: u64,
 ) -> super::Result<RunMetricsReconcile> {
     let run_metrics = sheet_rows(book, RUN_METRICS_SHEET)?.unwrap_or_default();
-    let mapped_athletes = labelled_count(&run_metrics, COHORT_LABEL).unwrap_or(0);
+    let mapped_athletes = labelled_count(&run_metrics, ATHLETE_METRIC_LABEL).unwrap_or(0);
     if mapped_athletes == 0 {
         discrepancies.push(format!(
-            "{RUN_METRICS_SHEET} does not name the cohort: no {COHORT_LABEL} row"
+            "{RUN_METRICS_SHEET} does not name the athlete count: no valid {ATHLETE_METRIC_LABEL} row"
         ));
     } else if mapped_athletes != expected_athletes {
         discrepancies.push(format!(

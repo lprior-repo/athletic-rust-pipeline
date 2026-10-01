@@ -114,10 +114,14 @@ pub(super) fn admissions() -> Result<Check> {
     Ok(Check::violated(5, NAME, detail, failures))
 }
 
-const NON_ADAPTERS: [(&str, &str); 17] = [
+const NON_ADAPTERS: [(&str, &str); 18] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
+    ),
+    (
+        "cohort",
+        "shared source-grade admission and located unsupported evidence; no source origin",
     ),
     ("compiled", "parses the `Compiled` timer export family"),
     (
@@ -184,7 +188,9 @@ pub(super) fn adapter_registration() -> Result<Check> {
     let mut matched = 0usize;
     let mut readers = 0usize;
     for module in &modules {
-        if registered.contains(module.as_str()) {
+        if registered.contains(module.as_str())
+            || (module == "arbiter" && registered.contains("arbiter_orgs"))
+        {
             matched = matched.saturating_add(1);
             continue;
         }
@@ -197,7 +203,11 @@ pub(super) fn adapter_registration() -> Result<Check> {
         ));
     }
     for slug in &registered {
-        if !modules.contains(*slug) {
+        let module = match *slug {
+            "arbiter_orgs" => "arbiter",
+            slug => slug,
+        };
+        if !modules.contains(module) {
             failures.push(format!(
                 "the descriptor `{slug}` has no `{slug}` module in the crawl crate to dispatch to"
             ));

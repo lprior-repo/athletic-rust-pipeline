@@ -35,7 +35,7 @@ impl ReconcileReport {
 }
 
 fn file_alias_cases(
-    aliases: &[Alias],
+    aliases: &[Alias<'_>],
     standing: &BTreeSet<String>,
     report: &mut ReconcileReport,
     cases: &mut Vec<ReviewCase>,
@@ -61,16 +61,16 @@ pub fn reconcile_athletes(
 ) -> StoreResult<ReconcileReport> {
     let observed = Observed::read(store)?;
     let standing = standing_cases(store)?;
-    let aliases = observed.aliases();
+    let findings = observed.findings();
     let mut report = ReconcileReport {
         rows: observed.rows.len(),
-        objects: observed.by_object.len(),
-        aliases: aliases.len(),
+        objects: findings.objects,
+        aliases: findings.aliases.len(),
         ..ReconcileReport::default()
     };
     let mut cases: Vec<ReviewCase> = Vec::new();
     let mut verdicts: Vec<ReviewVerdictRecord> = Vec::new();
-    for span in observed.spans() {
+    for span in findings.spans {
         let Some(case) = span.case() else {
             continue;
         };
@@ -93,7 +93,7 @@ pub fn reconcile_athletes(
         }
         report.filed = report.filed.saturating_add(1);
     }
-    file_alias_cases(&aliases, &standing, &mut report, &mut cases);
+    file_alias_cases(&findings.aliases, &standing, &mut report, &mut cases);
     if !dry_run && (!cases.is_empty() || !verdicts.is_empty()) {
         let mut batch = store.write_batch();
         batch.replace_many(Table::ReviewCases, &cases)?;

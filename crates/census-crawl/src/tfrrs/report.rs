@@ -10,6 +10,7 @@ pub(super) struct EntityCounts {
     pub(super) athletes: usize,
     pub(super) events: usize,
     pub(super) performances: usize,
+    pub(super) unsupported_cohorts: usize,
 }
 
 const WORST_FAILURES: usize = 20;
@@ -84,6 +85,10 @@ pub(super) fn note_entities(report: &mut AdapterReport, counts: &EntityCounts) {
         counts.athletes,
         counts.events,
         counts.performances
+    ));
+    report.note(format!(
+        "unsupported graduation inference: {} raw grade/year observations retained for review",
+        counts.unsupported_cohorts
     ));
 }
 

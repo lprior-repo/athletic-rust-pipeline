@@ -8,7 +8,8 @@ mod join;
 mod rows;
 mod spill;
 
-use rows::PerformanceRow;
+pub use join::PerformanceProjection;
+pub use rows::{PerformanceRow, ProjectedValue};
 use spill::PerformanceRows;
 
 const EXCEL_ROWS_PER_SHEET: usize = 1_048_576;

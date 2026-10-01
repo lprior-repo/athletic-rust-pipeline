@@ -63,6 +63,23 @@ bundle or full record-level reconciliation. The required output and oracle are i
 [the delivery plan](../../docs/NATIONAL-CENSUS-PLAN.md). A successful command only establishes the
 behavior actually observed and verified.
 
+## CSV projections
+
+With the store stopped, `census-service --store <root> export-data --data <directory>
+--school-year 2026` loads one immutable export dataset and writes the six named CSV products.
+Canonical schools, meets and coaches use the full all-sources population; the canonical athlete
+and recruiting files select Class of 2027. Athletic.net seed rows retain published provider
+identities, not inferred profile URLs.
+
+`recruiting-co2027.csv` includes `athlete_id`, so unresolved same-name candidates remain individually
+addressable rather than becoming indistinguishable CSV rows.
+
+Recruiting contacts use the workbook's gender, sport and tenure rules. `identity_status` is the
+durable decision status, separate from cohort confidence; unverified candidates are not accepted
+distinct athletes. A dated coach source URL and observed date come from the same evidence record;
+an identity-only URL fallback has no asserted observation date. A successful CSV export or workbook
+verification does not establish national completeness.
+
 ## Development and evidence
 
 Source qualification belongs in [xtask](../../xtask/README.md) and the registry's descriptor table,

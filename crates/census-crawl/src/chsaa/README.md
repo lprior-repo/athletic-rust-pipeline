@@ -12,10 +12,7 @@ Adapter for the Colorado High School Activities Association, ported from the pro
   escaped marker `[{\"schoolCode\"` and unescapes before decoding.
 - School page: `GET https://chsaanow.com/schools/<slug>/` carries the school's activities, each with
   its coach `positions[]` and their `title`. The page's title element names the school, which every
-  row inherits. Activities are located by the `{"activityName":` marker and each one is consumed to
-  the end offset serde reports for it, so two markers with no bytes between them yield two
-  activities; no fixed-length advance is ever applied to a marker.
-  `chsaa::tests::adjacent_short_activity_objects_are_both_retained` pins that boundary.
+  row inherits.
 
 ## Mapping
 

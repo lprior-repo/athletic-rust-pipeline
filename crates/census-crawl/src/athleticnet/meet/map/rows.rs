@@ -52,8 +52,19 @@ impl MeetCtx<'_> {
             self.counts.rows_no_mark = self.counts.rows_no_mark.saturating_add(1);
             return;
         };
-        let (athlete_id, source_athlete) =
-            self.athlete_of(provider_id, &school, &name, grade, block.gender);
+        let source_key = format!("athleticnet:{provider_id}-{}", row.result_id);
+        let Some((athlete_id, source_athlete)) = self.athlete_of(
+            provider_id,
+            &school,
+            &name,
+            grade,
+            block.gender,
+            &source_key,
+        ) else {
+            self.counts.rows_unsupported_cohort =
+                self.counts.rows_unsupported_cohort.saturating_add(1);
+            return;
+        };
         let entry = Entry {
             school: &school,
             athlete: &athlete_id,
@@ -62,7 +73,7 @@ impl MeetCtx<'_> {
             auto,
             place: row.place.as_deref(),
             grade,
-            source_key: format!("athleticnet:{provider_id}-{}", row.result_id),
+            source_key,
             leg: None,
         };
         self.store_row(block, entry);
@@ -132,8 +143,14 @@ impl MeetCtx<'_> {
             self.counts.legs_no_grade = self.counts.legs_no_grade.saturating_add(1);
             return;
         };
-        let (athlete_id, source_athlete) =
-            self.athlete_of(provider_id, school, name, grade, block.gender);
+        let source_key = format!("athleticnet:{provider_id}-{}:leg{position}", row.result_id);
+        let Some((athlete_id, source_athlete)) =
+            self.athlete_of(provider_id, school, name, grade, block.gender, &source_key)
+        else {
+            self.counts.legs_unsupported_cohort =
+                self.counts.legs_unsupported_cohort.saturating_add(1);
+            return;
+        };
         let entry = Entry {
             school,
             athlete: &athlete_id,
@@ -142,7 +159,7 @@ impl MeetCtx<'_> {
             auto,
             place: row.place.as_deref(),
             grade,
-            source_key: format!("athleticnet:{provider_id}-{}:leg{position}", row.result_id),
+            source_key,
             leg: Some(position),
         };
         self.store_row(block, entry);
@@ -174,7 +191,8 @@ impl MeetCtx<'_> {
         name: &str,
         grade: Grade,
         gender: Gender,
-    ) -> (AthleteId, SourceIdentity) {
+        source_row: &str,
+    ) -> Option<(AthleteId, SourceIdentity)> {
         athlete(
             self.accumulated,
             self.source,
@@ -187,6 +205,7 @@ impl MeetCtx<'_> {
                 gender,
                 school_year: self.school_year,
                 sport: self.sport,
+                source_row,
             },
         )
     }

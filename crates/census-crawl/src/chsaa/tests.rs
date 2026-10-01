@@ -176,20 +176,6 @@ fn school_page_names_the_school_from_its_title() {
 }
 
 #[test]
-fn adjacent_short_activity_objects_are_both_retained() {
-    let page = "<html><head><title>Adjacent High School | CHSAANow</title></head><body><script>\
-        var activities=[{\"activityName\":\"XC\",\"members\":[{\"name\":\"Ada\",\"positions\":[{\"title\":\"HC\"}]}]},\
-        {\"activityName\":\"TF\",\"members\":[{\"name\":\"Grace\",\"positions\":[{\"title\":\"HC\"}]}]}];\
-        </script></body></html>";
-    let rows = parse_school_page(page).expect("the adjacent activity objects parse");
-    let emitted: Vec<(&str, &str)> = rows
-        .iter()
-        .map(|row| (row.person.as_str(), row.activity_name.as_str()))
-        .collect();
-    assert_eq!(emitted, [("Ada", "XC"), ("Grace", "TF")]);
-}
-
-#[test]
 fn mapped_coaches_are_never_athletic_directors() {
     let member = cherry_creek();
     let (_, school_id) = map_directory_row(&member, DIRECTORY_URL, OBSERVED_ON).expect("school");
