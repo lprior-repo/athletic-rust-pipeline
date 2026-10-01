@@ -12,12 +12,23 @@ pub struct RawPage {
     pub region: Option<String>,
     pub school_year: SchoolYear,
     pub skipped: Vec<String>,
+    pub grade_issues: Vec<super::RawGradeIssue>,
 }
 
 pub fn parse_raw(html: &str, url: &str) -> CrawlResult<RawPage> {
     let facts = page_facts(html, url)?;
-    let block_text = pre_block(html).ok_or_else(|| schema(url, "no <pre> result block"))?;
-    let block = read_block(block_text, facts.sport)?;
+    let (block_start, block_text) =
+        pre_block(html).ok_or_else(|| schema(url, "no <pre> result block"))?;
+    let block = read_block(block_text, facts.sport, block_start)?;
+    if !block.qualified || block.sections.is_empty() {
+        return Err(schema(
+            url,
+            &format!(
+                "unqualified raw result document; rejections: {:?}",
+                block.skipped
+            ),
+        ));
+    }
     let events: Vec<_> = block
         .sections
         .iter()
@@ -37,6 +48,7 @@ pub fn parse_raw(html: &str, url: &str) -> CrawlResult<RawPage> {
         region: facts.region,
         school_year: facts.school_year,
         skipped: block.skipped,
+        grade_issues: block.grade_issues,
     })
 }
 
@@ -138,11 +150,12 @@ struct Address {
     region: Option<String>,
 }
 
-fn pre_block(html: &str) -> Option<&str> {
+fn pre_block(html: &str) -> Option<(usize, &str)> {
     let (_, after_open) = html.split_once("<pre")?;
     let (_, body) = after_open.split_once('>')?;
+    let start = html.len().checked_sub(body.len())?;
     let (block, _) = body.split_once("</pre>")?;
-    Some(block)
+    Some((start, block))
 }
 
 fn ld_block(html: &str) -> Option<&str> {

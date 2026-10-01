@@ -13,6 +13,8 @@ pub use meta::retained_records;
 pub use performances::{PerformanceProjection, PerformanceRow, ProjectedValue};
 mod recruiting;
 pub use recruiting::{write_recruiting_csv, RecruitingCsvCounts};
+pub mod publication;
+pub mod verify;
 
 #[derive(Debug, Clone)]
 pub struct Options {
@@ -65,6 +67,18 @@ pub fn build_from(
     options: &Options,
     censuses: &Censuses,
 ) -> ReportResult<PathBuf> {
+    let stage = publication::Stage::begin(dataset, store, options)?;
+    stage.publish(dataset, options, |directory| {
+        write_artifacts(directory, dataset, options, censuses)
+    })
+}
+
+fn write_artifacts(
+    directory: &Path,
+    dataset: &crate::export::ExportDataset,
+    options: &Options,
+    censuses: &Censuses,
+) -> ReportResult<()> {
     let generated_on = &dataset.lineage.generated_on;
     let school_year = options
         .school_year
@@ -91,13 +105,9 @@ pub fn build_from(
         .grad_year
         .map(|year| format!("co{year}"))
         .unwrap_or_else(|| "all".to_string());
-    bests::write(&store.out_dir(), &bests, &cohort)?;
-
-    let path = options.out.clone().unwrap_or_else(|| {
-        store
-            .out_dir()
-            .join(format!("census-service-{generated_on}.xlsx"))
-    });
+    bests::write(directory, &bests, &cohort)?;
+    dataset.save_frozen(&directory.join("frozen-input.json"))?;
+    let path = directory.join("workbook.xlsx");
 
     let derivation = Derivation::of(dataset, options.scope, options.grad_year);
     let started = Instant::now();
@@ -112,8 +122,16 @@ pub fn build_from(
         population: &population,
         school_year,
     };
-    write_workbook(&path, store, views)?;
-    Ok(path)
+    write_workbook(&path, views)?;
+    publication::write_sidecars(
+        directory,
+        dataset,
+        options,
+        censuses,
+        &derivation,
+        school_year,
+    )?;
+    Ok(())
 }
 
 #[derive(Clone, Copy)]
@@ -126,24 +144,19 @@ struct Views<'a> {
     school_year: census_domain::model::SchoolYear,
 }
 
-fn write_workbook(path: &Path, store: &Store, views: Views<'_>) -> ReportResult<()> {
+fn write_workbook(path: &Path, views: Views<'_>) -> ReportResult<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|source| io_error(parent, source))?;
     }
     let mut book = Workbook::new();
-    write_objective_sheets(&mut book, path, store, views)?;
+    write_objective_sheets(&mut book, path, views)?;
     let started = Instant::now();
     book.save(path).map_err(|source| xlsx_error(path, source))?;
     tracing::info!(ms = millis(started), "workbook build step: save");
     Ok(())
 }
 
-fn write_objective_sheets(
-    book: &mut Workbook,
-    path: &Path,
-    store: &Store,
-    views: Views<'_>,
-) -> ReportResult<()> {
+fn write_objective_sheets(book: &mut Workbook, path: &Path, views: Views<'_>) -> ReportResult<()> {
     let recruiting = views.recruiting;
     let started = Instant::now();
     recruiting.write_athletes(book, path)?;
@@ -177,7 +190,6 @@ fn write_objective_sheets(
         meta::RunFacts {
             population: views.population,
             recruiting: views.derivation,
-            store,
             core: views.core,
             all_sources: views.all_sources,
             bests: recruiting.selected_prs(),

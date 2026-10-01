@@ -9,11 +9,11 @@ use dataset::Dataset;
 mod athletes;
 mod coaches;
 mod columns;
-mod contact;
+pub(in crate::workbook) mod contact;
 mod csv;
 mod dataset;
 mod facts;
-mod profiles;
+pub(in crate::workbook) mod profiles;
 mod prs;
 
 #[cfg(test)]

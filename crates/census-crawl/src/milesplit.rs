@@ -3,6 +3,7 @@ mod map;
 mod normalize;
 mod parse;
 mod raw;
+mod raw_issue;
 mod raw_rows;
 mod results;
 mod roster;
@@ -16,13 +17,14 @@ pub use parse::{
     has_next_page, parse_meet_index, parse_meet_result_files, parse_roster, parse_team_index,
 };
 pub use raw::{parse_raw, RawPage};
+pub use raw_issue::{RawGradeIssue, RawGradeIssueKind};
 pub use results::{
     collect as collect_result_sets, is_results_page, read_meet_pages, ListedResultFile, MeetPage,
     MeetPages, ResultSetOptions, ResultSetRequest, MISMATCH_LIMIT,
 };
 pub use roster::{
-    RosterOutcome, RosterQuarantine, RosterRejection, RosterRejectionKind, RosterRowLocator,
-    RosterVerdict,
+    RosterOutcome, RosterQuarantine, RosterRejection, RosterRejectionKind, RosterVerdict,
+    SourceRowLocator,
 };
 pub use wire::{
     MeetRef, MeetResultFile, ResultSetRef, Roster, RosterAthlete, Season, Site, TeamRef,

@@ -23,24 +23,18 @@ prefix matching: `Boys'`/`Boy's` → Boys, `Girls'`/`Girl's` → Girls, one
 `Unified ` or `Mixed ` prefix stripped (gender stays unset, and a second
 genderless prefix leaves no sport — the prototype breaks after the first match).
 Role from title: "head coach" → HeadCoach, "assistant coach" → AssistantCoach,
-otherwise Coach.
+otherwise Unknown. A published team assignment does not invent a head/assistant role.
 Directors (title contains "athletic director") become AthleticDirector rows with
 no sport or gender.
 
-Three passes over the staff index: team `coachProfileIds` first, then unplaced
-staff with a `teamName`, then directors. The claim key is
-`(person, sport family, role, gender)` with the person joined from the trimmed
-`firstName`/`lastName` parts (the prototype joins the parts untrimmed, so a padded
-name would key differently; no captured summary pads one), and the sport
-family collapsing indoor and outdoor Track into
-`Track` while Cross Country stays its own family: a person listed for both an
-indoor and an outdoor team of one role and gender emits a single row, and the
-first occurrence's concrete sport is the one recorded. First occurrence wins and
-the claim is taken before any drop rule, exactly as the prototype's parser
-de-duplicates. `amrId` is not part of the key: it becomes the row's
-`SourceIdentity` under `association_school`, composed with the sport family, role
-and gender so two rows of one person stay distinguishable. Contact extraction
-uses `emails[0]`, `tel[0].num`, and `amrId`.
+Three passes: team `coachProfileIds` first, then unplaced staff with a `teamName`, then directors.
+All published records for an ID reach admission; no earlier eligible record is overwritten before
+the level/name/vendor filters. Reverse publication order gives the latest **admissible** record
+precedence within each sport/role/gender context. Admitted known-ID contexts deduplicate by that
+provider ID; missing IDs retain separate published members rather than inferring identity by name.
+A rejected row does not reserve an admitted context or mark the member placed. `amrId` becomes
+the row's `SourceIdentity` under `association_school`, composed with sport family, role and gender.
+Contact extraction uses `emails[0]`, `tel[0].num`, and `amrId`.
 
 ## Census scope at emission
 
@@ -49,17 +43,12 @@ school labels collapse every whitespace run (including NBSP), a person label
 loses a trailing post and is dropped when nothing but a post, a non-coach lead or
 a `Dean` lead remains, and a school name matching `\btest\s+school\b` or a coach
 address ending `@dragonflyathletics.com` is dropped as a vendor fixture. The
-level scope runs first, after the claim, then the name hygiene and the vendor
-drop — the prototype's order, whose level filter runs at merge before either
-hygiene rule, so a non-varsity row is always counted as a level drop. Because the
-claim precedes those rules, the row that decides a key is the first one published
-for it: a school that lists a junior-varsity team before the varsity team of the
-same person, sport family, role and gender keeps the junior-varsity row and drops
-it by level, and the later varsity row never replaces it. A later sub-varsity row
-whose key is already claimed is absorbed silently and is not counted. Probe scope
-runs neither hygiene nor the level scope, so a nameless row the prototype's probe
-counts is kept there and dropped only on the census path. `collect` reports the
-dropped rows in its notes: per-level, vendor, person and directory-row counts.
+level scope runs first, then name hygiene and the vendor drop, before admitted
+row de-duplication. Rejected contexts have a separate diagnostic ledger keyed
+by staff member, sport, gender, role and normalized level; repeat rejections
+count once per context without hiding a later eligible row. Probe scope runs
+neither hygiene nor level filtering. `collect` reports the dropped rows in its
+notes: per-level, vendor, person and directory-row counts.
 
 ## Parity with the prototype
 
@@ -69,12 +58,7 @@ captured bodies:
 * `research/sources/coach-directories-national/dragonfly-directory-parity.md` —
   3,693 directory rows, 0 field divergences, the NC/AK/WY pages pinned by
   `golden_directory_rows.json`.
-* `research/sources/coach-directories-national/dragonfly-summary-parity.md` —
-  18 summaries, 48 kept rows, 0 row/field divergences after the prototype's
-  gender collapse, 15 sub-varsity drops, pinned by `golden_summary_rows.json`.
-  That comparison found the claim-order defect described above; the exact row set
-  for the affected school is pinned by
-  `tests::a_live_coach_row_is_decided_by_the_first_team_that_publishes_the_key`.
+* `research/sources/coach-directories-national/dragonfly-summary-parity.md` records the historical 18-summary prototype comparison. `golden_summary_rows.json` preserves that evidence, not the current admission contract. The captured WY SS28UB regression, `tests::summary_parity::captured_summary_keeps_four_varsity_contexts_and_counts_four_jv_rejections`, checks all four varsity sport/gender contexts and all four distinct JV rejections. Prototype claim-before-filter behavior is deliberately not retained.
 
 ## Survey (qualification probe)
 

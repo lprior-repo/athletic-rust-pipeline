@@ -4,7 +4,7 @@ use crate::recording::RowBatch;
 use crate::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, SchoolId, SourceNamespace, SourceRef,
+    CanonicalTeam, SchoolId, SourceNamespace,
 };
 use census_domain::school_index::SchoolIndex;
 use census_store::Table;
@@ -15,6 +15,9 @@ mod walk;
 
 use walk::{absorb_targets, flush_batch};
 
+pub(super) const PROFILE_PARSE_VERSION: u32 = 3;
+pub(super) const PROFILE_ATTEMPT_PHASE: &str = "athleticnet_profile_attempts_v3";
+
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     if !options.meets.is_empty() {
         return super::meet::collect_meets(ctx, options).await;
@@ -24,7 +27,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
     let targets = registry_targets(options, &mut report)?;
     let index = consolidated_index(ctx)?;
-    let source = SourceRef::new("athleticnet", Some(BIO_ENDPOINT.to_string()));
     let done = journaled_urls(ctx)?;
     let mut run = RunState {
         resolved: HashMap::new(),
@@ -34,7 +36,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         batches: Vec::new(),
         report,
     };
-    absorb_targets(ctx, options, &targets, &source, &index, &done, &mut run).await?;
+    absorb_targets(ctx, options, &targets, &index, &done, &mut run).await?;
     flush_batch(ctx, &mut run)?;
 
     let (requests_after, cache_after) = stats_of(ctx).await;
@@ -106,11 +108,31 @@ pub(in crate::athleticnet) fn appended_total(
 
 pub(super) fn journaled_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
     let payloads = ctx.store.journal_payloads("athleticnet")?;
-    let version = u64::from(PARSE_VERSION);
+    let profile_attempts = ctx.store.journal_payloads(PROFILE_ATTEMPT_PHASE)?;
+    let profiles: HashSet<_> = profile_attempts
+        .into_iter()
+        .filter(|entry| {
+            entry.get("parser").and_then(Value::as_u64) == Some(u64::from(PROFILE_PARSE_VERSION))
+                && entry.get("parsed").and_then(Value::as_bool) == Some(true)
+        })
+        .filter_map(|entry| entry.get("url").and_then(Value::as_str).map(str::to_string))
+        .collect();
     let done = payloads
         .into_iter()
-        .filter(|entry| entry.get("parser").and_then(Value::as_u64) == Some(version))
+        .filter(|entry| {
+            let version = match entry.get("url").and_then(Value::as_str) {
+                Some(url) if url.starts_with(BIO_ENDPOINT) => PROFILE_PARSE_VERSION,
+                _ => PARSE_VERSION,
+            };
+            entry.get("parser").and_then(Value::as_u64) == Some(u64::from(version))
+        })
         .filter(|entry| entry.get("parsed").and_then(Value::as_bool) == Some(true))
+        .filter(|entry| {
+            entry
+                .get("url")
+                .and_then(Value::as_str)
+                .is_some_and(|url| !url.starts_with(BIO_ENDPOINT) || profiles.contains(url))
+        })
         .filter_map(|entry| entry.get("url").and_then(Value::as_str).map(str::to_string))
         .collect();
     Ok(done)
@@ -142,6 +164,8 @@ pub(super) fn store_accumulated(
     page.append_many(Table::Events, &events)?;
     page.append_many(Table::Performances, &performances)?;
     accumulated.unsupported.append_to(page)?;
+    page.append_many(Table::SourceObservations, &accumulated.profile_observations)?;
+    page.append_many(Table::ReviewCases, &accumulated.profile_reviews)?;
     Ok(EntityCounts {
         schools: schools.len(),
         meets: meets.len(),

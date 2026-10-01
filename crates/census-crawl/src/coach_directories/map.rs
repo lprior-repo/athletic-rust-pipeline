@@ -6,7 +6,7 @@ use census_domain::model::{
     SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DirectoryAdmission {
@@ -143,24 +143,15 @@ pub fn coach_entities(
     observed_on: &str,
     scope: EmissionScope,
 ) -> CrawlResult<CoachEmission> {
-    let mut counters = CoachCounters::default();
-    let staff = super::row::dedup_staff(&summary.staff);
-    let index = super::row::build_staff_index(&staff);
-    let mut placed = HashSet::new();
-    let mut rows = Vec::new();
+    let staff = &summary.staff;
+    let index = super::row::build_staff_index(staff);
+    let mut book = super::row::AdmissionBook::new(scope);
     for team in &summary.teams {
-        super::row::process_team_coaches(
-            team,
-            &staff,
-            &index,
-            &mut placed,
-            &mut rows,
-            &mut counters,
-            scope,
-        )?;
+        super::row::process_team_coaches(team, &index, &mut book)?;
     }
-    super::row::process_unplaced_coaches(&staff, &placed, &mut rows, &mut counters, scope)?;
-    super::row::process_directors(&staff, &mut rows, &mut counters, scope)?;
+    super::row::process_unplaced_coaches(staff, &mut book)?;
+    super::row::process_directors(staff, &mut book)?;
+    let (rows, counters) = book.finish();
     let coaches = rows
         .into_iter()
         .map(|row| super::staff::build_coach(row, school_id, source_url, observed_on))

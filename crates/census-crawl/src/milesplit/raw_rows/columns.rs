@@ -2,137 +2,234 @@ use crate::hytek;
 use crate::result_file::ParsedRow;
 use census_domain::model::{EventKind, Mark};
 
-const PLACE_START: usize = 0;
-const PLACE_WIDTH: usize = 4;
-const NAME_START: usize = 5;
-const GRADE_WIDTH: usize = 2;
-const MARK_WIDTH: usize = 9;
-const HEAT_WIDTH: usize = 2;
+const BOUNDS: usize = 5;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Layout {
-    Ohio,
-    NC,
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Columns {
+    name: usize,
+    grade: Option<usize>,
+    team: usize,
+    mark: MarkColumn,
 }
 
-impl Layout {
-    fn name_width(&self) -> usize {
-        match self {
-            Layout::Ohio => 25,
-            Layout::NC => 21,
-        }
-    }
+#[derive(Debug, Clone, Copy)]
+struct MarkColumn {
+    start: usize,
+    end: usize,
+}
 
-    fn grade_start(&self) -> usize {
-        match self {
-            Layout::Ohio => 31,
-            Layout::NC => 26,
-        }
-    }
-
-    fn team_start(&self) -> usize {
-        match self {
-            Layout::Ohio => 34,
-            Layout::NC => 29,
-        }
-    }
-
-    fn team_width(&self) -> usize {
-        match self {
-            Layout::Ohio => 40,
-            Layout::NC => 23,
-        }
-    }
-
-    fn mark_start(&self) -> usize {
-        match self {
-            Layout::Ohio => 75,
-            Layout::NC => 52,
-        }
-    }
-
-    fn heat_start(&self) -> usize {
-        match self {
-            Layout::Ohio => 90,
-            Layout::NC => 63,
-        }
+impl MarkColumn {
+    fn from_label(label: (usize, usize)) -> Option<Self> {
+        let (label_start, label_end) = label;
+        let width = label_end.checked_sub(label_start)?;
+        Some(Self {
+            start: label_start.saturating_sub(width.saturating_add(1)),
+            end: label_end,
+        })
     }
 }
 
-pub(super) fn detect_layout(block: &str) -> Layout {
-    for line in block.lines() {
-        if line.trim_start().starts_with("====") {
-            return if line.trim().len() < 80 {
-                Layout::NC
-            } else {
-                Layout::Ohio
-            };
-        }
-    }
-    Layout::Ohio
-}
-
-pub(super) fn row_candidate(line: &str, layout: Layout) -> Option<Cells<'_>> {
-    let mark = cell(line, layout.mark_start(), MARK_WIDTH)?;
-    if mark.trim().is_empty() {
+pub(super) fn header_columns(line: &str) -> Option<Columns> {
+    let first = line.split_whitespace().next()?;
+    if !["Pl", "Place", "Name", "Athlete"]
+        .iter()
+        .any(|label| first.eq_ignore_ascii_case(label))
+    {
         return None;
     }
-    Some(Cells {
-        place: cell(line, PLACE_START, PLACE_WIDTH),
-        name: cell(line, NAME_START, layout.name_width()),
-        grade: cell(line, layout.grade_start(), GRADE_WIDTH),
-        team: cell(line, layout.team_start(), layout.team_width()),
-        mark,
-        heat: cell(line, layout.heat_start(), HEAT_WIDTH),
-        separator: cell(line, layout.mark_start().saturating_sub(1), 1),
-    })
+    let mut labels = HeaderLabels::default();
+    let mut start = None;
+    for (column, (byte, ch)) in line.char_indices().enumerate() {
+        if ch.is_whitespace() {
+            if let Some((begin, offset)) = start.take() {
+                labels.read(line.get(begin..byte)?, offset);
+            }
+        } else if start.is_none() {
+            start = Some((byte, column));
+        }
+    }
+    if let Some((begin, offset)) = start {
+        labels.read(line.get(begin..)?, offset);
+    }
+    let columns = Columns {
+        name: labels.name?,
+        grade: labels.grade,
+        team: labels.team?,
+        mark: MarkColumn::from_label(labels.mark?)?,
+    };
+    (columns.name < columns.team
+        && columns.team < columns.mark.start
+        && columns
+            .grade
+            .is_none_or(|offset| columns.name < offset && offset < columns.team))
+    .then_some(columns)
+}
+
+#[derive(Default)]
+struct HeaderLabels {
+    name: Option<usize>,
+    grade: Option<usize>,
+    team: Option<usize>,
+    mark: Option<(usize, usize)>,
+}
+
+impl HeaderLabels {
+    fn read(&mut self, label: &str, offset: usize) {
+        if label.eq_ignore_ascii_case("Name") || label.eq_ignore_ascii_case("Athlete") {
+            self.name = Some(offset);
+        } else if label.eq_ignore_ascii_case("Yr") || label.eq_ignore_ascii_case("Grade") {
+            self.grade = Some(offset);
+        } else if label.eq_ignore_ascii_case("Team") || label.eq_ignore_ascii_case("School") {
+            self.team = Some(offset);
+        } else if label.eq_ignore_ascii_case("Time") || label.eq_ignore_ascii_case("Mark") {
+            self.mark = Some((offset, offset.saturating_add(label.chars().count())));
+        }
+    }
 }
 
 pub(super) struct Cells<'a> {
-    pub(super) place: Option<&'a str>,
-    pub(super) name: Option<&'a str>,
-    grade: Option<&'a str>,
-    team: Option<&'a str>,
-    mark: &'a str,
+    place: &'a str,
+    name: &'a str,
+    pub(super) grade: &'a str,
+    team: &'a str,
+    mark: Option<&'a str>,
     heat: Option<&'a str>,
-    separator: Option<&'a str>,
+    overflowed: bool,
 }
 
-pub(super) fn build_row(cells: &Cells<'_>, kind: &EventKind) -> Option<ParsedRow> {
-    let separator_blank = cells
-        .separator
-        .is_none_or(|column| column.trim().is_empty());
-    let mark = cells.mark.trim();
-    if !separator_blank || !mark.starts_with(|ch: char| ch.is_ascii_alphanumeric()) {
+pub(super) fn row_cells(line: &str, columns: Columns) -> Cells<'_> {
+    let grade_end = columns.grade.unwrap_or(columns.team);
+    let ends = [
+        columns.name,
+        grade_end,
+        columns.team,
+        columns.mark.start,
+        columns.mark.end,
+    ];
+    let [name, grade, team, mark_start, mark_end] = boundary_bytes(line, ends);
+    let token = mark_token(line, mark_end);
+    let team_end = token.map_or(mark_start, |(start, _)| start.min(mark_start).max(team));
+    let mark = token.and_then(|(_, token)| mark_shaped(token).then_some(token));
+    let tail = line.get(mark_end..).unwrap_or_default();
+    Cells {
+        place: line.get(..name).unwrap_or_default().trim(),
+        name: line.get(name..grade).unwrap_or_default().trim(),
+        grade: line.get(grade..team).unwrap_or_default().trim(),
+        team: line.get(team..team_end).unwrap_or_default().trim(),
+        heat: mark.and_then(|_| heat_token(tail)),
+        overflowed: layout_overflows(line, mark_start, mark_end, token),
+        mark,
+    }
+}
+
+fn boundary_bytes(line: &str, ends: [usize; BOUNDS]) -> [usize; BOUNDS] {
+    if line.is_ascii() {
+        return ends.map(|offset| offset.min(line.len()));
+    }
+    let limit = ends.last().copied().unwrap_or(usize::MAX);
+    let mut bytes = [line.len(); BOUNDS];
+    for (column, (byte, _)) in line.char_indices().enumerate() {
+        for (end, boundary) in ends.iter().zip(bytes.iter_mut()) {
+            if column == *end {
+                *boundary = byte;
+            }
+        }
+        if column >= limit {
+            break;
+        }
+    }
+    bytes
+}
+
+fn mark_token(line: &str, mark_end: usize) -> Option<(usize, &str)> {
+    let head = line.get(..mark_end)?;
+    if head.chars().next_back()?.is_whitespace() {
         return None;
     }
-    let place = cells
-        .place
-        .map(str::trim)
-        .and_then(|value| value.parse::<u16>().ok());
-    let name = cells.name.map(str::trim).unwrap_or_default();
-    if name.is_empty() {
-        return None;
+    let start = head
+        .char_indices()
+        .rev()
+        .find_map(|(byte, ch)| {
+            ch.is_whitespace()
+                .then_some(byte.saturating_add(ch.len_utf8()))
+        })
+        .unwrap_or(0);
+    line.get(start..mark_end).map(|token| (start, token))
+}
+
+fn layout_overflows(
+    line: &str,
+    mark_start: usize,
+    mark_end: usize,
+    token: Option<(usize, &str)>,
+) -> bool {
+    let trailing = line
+        .get(mark_end..)
+        .and_then(|tail| tail.chars().next())
+        .is_some_and(|ch| !ch.is_whitespace());
+    let scattered = line
+        .get(mark_start..mark_end)
+        .unwrap_or_default()
+        .split_whitespace()
+        .nth(1)
+        .is_some();
+    let covered = token.is_some_and(|(start, _)| start < mark_start);
+    let touching = line
+        .get(..mark_start)
+        .and_then(|head| head.chars().next_back())
+        .is_some_and(|ch| !ch.is_whitespace());
+    trailing || scattered || (touching && !covered)
+}
+
+fn heat_token(tail: &str) -> Option<&str> {
+    tail.split_whitespace()
+        .next()
+        .filter(|token| !token.starts_with('('))
+}
+
+fn mark_shaped(token: &str) -> bool {
+    if token.eq_ignore_ascii_case("NT")
+        || hytek::NO_MARK
+            .iter()
+            .any(|value| token.eq_ignore_ascii_case(value))
+    {
+        return true;
     }
-    Some(ParsedRow {
+    let numeric = token.trim_start_matches(['J', 'j']);
+    numeric.starts_with(|ch: char| ch.is_ascii_digit()) && numeric.contains([':', '.', '-', '\''])
+}
+
+pub(super) fn build_row(cells: &Cells<'_>, kind: &EventKind) -> Result<ParsedRow, &'static str> {
+    if cells.overflowed {
+        return Err("row did not fit the column map");
+    }
+    if cells.name.is_empty() {
+        return Err("missing name");
+    }
+    let mark = cells.mark.ok_or("missing or malformed mark")?;
+    let place = match cells.place {
+        "" | "--" => None,
+        value => Some(value.parse::<u16>().map_err(|_| "invalid place")?),
+    };
+    Ok(ParsedRow {
         place,
-        name: name.to_string(),
-        grade: cells.grade.map(str::trim).and_then(hytek::grade_from_token),
-        school: cells.team.map(str::trim).unwrap_or_default().to_string(),
+        name: cells.name.to_string(),
+        grade: hytek::grade_from_token(cells.grade),
+        school: cells.team.to_string(),
         mark: mark_of(mark, kind),
         wind_mps: None,
-        heat: cells
-            .heat
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
-            .map(str::to_string),
+        heat: cells.heat.map(str::to_string),
         points: None,
         legs: Vec::new(),
     })
 }
 
 fn mark_of(value: &str, kind: &EventKind) -> Mark {
-    if hytek::NO_MARK.contains(&value.to_ascii_uppercase().as_str()) {
+    if value.eq_ignore_ascii_case("NT")
+        || hytek::NO_MARK
+            .iter()
+            .any(|mark| value.eq_ignore_ascii_case(mark))
+    {
         return Mark::Raw(value.to_string());
     }
     let field = || hytek::parse_field_mark(value);
@@ -143,14 +240,4 @@ fn mark_of(value: &str, kind: &EventKind) -> Mark {
         time().or_else(field)
     };
     parsed.unwrap_or_else(|| Mark::Raw(value.to_string()))
-}
-
-fn cell(line: &str, start: usize, width: usize) -> Option<&str> {
-    if width == 0 {
-        return None;
-    }
-    let mut offsets = line.char_indices().map(|(index, _)| index);
-    let begin = offsets.nth(start)?;
-    let end = offsets.nth(width.saturating_sub(1)).unwrap_or(line.len());
-    line.get(begin..end)
 }

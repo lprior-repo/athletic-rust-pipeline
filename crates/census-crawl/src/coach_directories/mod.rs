@@ -100,3 +100,7 @@ pub(crate) fn nonempty(value: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/admission_regressions.rs"]
+mod admission_regressions;

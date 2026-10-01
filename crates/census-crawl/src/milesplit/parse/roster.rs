@@ -2,7 +2,7 @@ use census_domain::model::{flip_last_first, Gender, GradYear};
 use regex::Regex;
 
 use super::super::roster::{
-    RosterQuarantine, RosterRejection, RosterRejectionKind, RosterRowLocator, RosterVerdict,
+    RosterQuarantine, RosterRejection, RosterRejectionKind, RosterVerdict, SourceRowLocator,
 };
 use super::super::wire::{Roster, RosterAthlete, TeamRef};
 use super::{
@@ -25,7 +25,7 @@ pub fn parse_roster(html: &str, team: TeamRef) -> CrawlResult<RosterVerdict> {
             let row = row.get(1).ok_or_else(|| CrawlError::Invariant {
                 detail: "roster row expression omitted its required capture".to_string(),
             })?;
-            let locator = RosterRowLocator {
+            let locator = SourceRowLocator {
                 ordinal: u32::try_from(ordinal).map_err(|_| CrawlError::Arithmetic {
                     detail: "roster row ordinal exceeds u32".to_string(),
                 })?,
@@ -65,7 +65,7 @@ struct Fields<'a> {
 }
 
 impl Fields<'_> {
-    fn athlete(&self, html: &str, row: RosterRowLocator) -> Result<RosterAthlete, RosterRejection> {
+    fn athlete(&self, html: &str, row: SourceRowLocator) -> Result<RosterAthlete, RosterRejection> {
         let athlete = self.link.captures(html);
         let id = athlete.as_ref().and_then(|link| link.get(2));
         let reject = |kind| RosterRejection {

@@ -9,7 +9,6 @@ pub(super) fn build_coach(
     source_url: &str,
     observed_on: &str,
 ) -> CanonicalCoach {
-    let source_key = identity_key(&row);
     let mut coach = CanonicalCoach::new(school_id, row.person, row.sport, row.gender, row.role);
     if let Some(email) = row.member.emails.first() {
         if let Some(address) = super::nonempty(email) {
@@ -25,27 +24,18 @@ pub(super) fn build_coach(
     {
         coach.phone = Some(number);
     }
-    coach.source_identities.push(
-        SourceIdentity::new(
-            SourceNamespace::association_school(super::SOURCE_ID),
-            source_key,
-        )
-        .with_url(source_url.to_string()),
-    );
+    if let Some(source_key) = row.member.amr_id.as_deref().and_then(super::nonempty) {
+        coach.source_identities.push(
+            SourceIdentity::new(
+                SourceNamespace::association_school(super::SOURCE_ID),
+                source_key,
+            )
+            .with_url(source_url.to_string()),
+        );
+    }
     coach.evidence.push(Evidence::parsed(
         SourceRef::new(super::SOURCE_ID, Some(source_url.to_string())),
         observed_on,
     ));
     coach
-}
-
-fn identity_key(row: &Row<'_>) -> String {
-    let code = row
-        .member
-        .amr_id
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map_or(row.person.as_str(), |value| value);
-    code.to_string()
 }

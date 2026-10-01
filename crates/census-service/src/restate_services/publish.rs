@@ -232,13 +232,14 @@ impl Workbook {
             scope: resolve_scope(request.scope.as_deref())?,
             school_year: None,
         };
+        let job = format!("workbook:{}", ctx.key());
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
-                blocking(region, move || build_workbook(&store, &options))
+                blocking(region, move || build_workbook(&store, &options, &job))
                     .await
                     .map(Json)
                     .map_err(job_error)

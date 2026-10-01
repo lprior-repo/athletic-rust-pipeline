@@ -150,7 +150,7 @@ fn run_bests_offline(store: &Store, args: &BestsArgs, grad_year: Option<i16>) ->
 #[derive(Args, Debug)]
 pub(super) struct WorkbookArgs {
     #[arg(
-        help = "Where to write the `.xlsx` (defaults to `<store>/out/census-service-<generated-on>.xlsx`)"
+        help = "Publication root directory (defaults to <store>/out/publication); atomically publishes a complete manifested generation"
     )]
     #[arg(long)]
     out: Option<PathBuf>,

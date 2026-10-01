@@ -140,6 +140,29 @@ fn one_id_from_two_natural_keys_keeps_the_row_and_retains_the_collision() {
 }
 
 #[test]
+fn merging_a_repeated_subject_preserves_incoming_conflicts_once() {
+    let identity = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "111");
+    let mut kept = CanonicalAthlete::new(
+        &school(),
+        "Julian Aguilera",
+        GradYear::CO2027,
+        Gender::Boys,
+        identity,
+    );
+    let conflict = census_domain::model::RetainedConflict::new(
+        CANONICAL_ID_COLLISION_FAMILY,
+        kept.id.as_str(),
+        "Julian Aguilera",
+        "A retained incompatible source subject",
+    );
+    let mut incoming = kept.clone();
+    incoming.retained_conflicts.push(conflict.clone());
+    kept.merge(incoming.clone());
+    kept.merge(incoming);
+    assert_eq!(kept.retained_conflicts, vec![conflict]);
+}
+
+#[test]
 fn published_mailboxes_route_by_domain_not_arrival_field() {
     let mut coach = CanonicalCoach::new(
         &school(),

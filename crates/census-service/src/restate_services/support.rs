@@ -41,7 +41,9 @@ impl From<ReportError> for JobError {
         let message = error.to_string();
         match error {
             ReportError::Store(source) => Self::from(source),
-            ReportError::Invariant { .. } => Self::Terminal { message },
+            ReportError::Invariant { .. } | ReportError::Cleanup { .. } => {
+                Self::Terminal { message }
+            }
             _ => Self::Transient { message },
         }
     }

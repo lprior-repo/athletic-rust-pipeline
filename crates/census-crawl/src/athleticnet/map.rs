@@ -3,8 +3,8 @@ use super::SCHOOL_KIND;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventId, EventKind, Evidence, Gender, Grade,
-    Mark, ObservedGrade, SchoolId, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace,
-    SourceRef, Sport, TeamId, TimingMethod,
+    Mark, ObservedGrade, ReviewCase, SchoolId, SchoolYear, SourceEventLabel, SourceIdentity,
+    SourceNamespace, SourceObservation, SourceRef, Sport, TeamId, TimingMethod,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -44,6 +44,8 @@ pub(super) struct Accumulator {
     pub(super) events: HashMap<String, CanonicalEvent>,
     pub(super) performances: HashMap<String, CanonicalPerformance>,
     pub(super) unsupported: crate::cohort::UnsupportedCohortRows,
+    pub(super) profile_observations: Vec<SourceObservation>,
+    pub(super) profile_reviews: Vec<ReviewCase>,
 }
 
 pub(super) fn grade_in(observed: &[ObservedGrade], school_year: SchoolYear) -> Option<Grade> {
@@ -234,11 +236,12 @@ fn ensure_event(
     accumulated
         .events
         .entry(format!(
-            "{}:{:?}:{:?}:{}",
+            "{}:{:?}:{:?}:{}:{}",
             input.meet.id.as_str(),
             input.kind,
             input.gender,
-            input.division.clone().unwrap_or_default()
+            input.division.clone().unwrap_or_default(),
+            input.round.clone().unwrap_or_default()
         ))
         .or_insert_with(|| {
             let mut event = CanonicalEvent::new(

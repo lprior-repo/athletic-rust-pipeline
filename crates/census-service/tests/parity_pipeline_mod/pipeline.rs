@@ -14,8 +14,6 @@ use census_store::Store;
 
 use super::constants;
 use super::fixtures::Corpus;
-use super::utils::read_file;
-use super::workbook::Workbook;
 use super::{assertions, fixtures};
 
 pub fn report_projection(report: &AdapterReport) -> serde_json::Value {
@@ -32,13 +30,8 @@ pub fn report_projection(report: &AdapterReport) -> serde_json::Value {
 
 pub struct Run {
     pub counts: Vec<(String, usize)>,
-    pub report_text: String,
-    pub census_by_state_core: String,
-    pub census_by_state_all_sources: String,
-    pub bests_jsonl: String,
-    pub bests_csv: String,
     pub results_report: AdapterReport,
-    pub workbook: Workbook,
+    pub publication: workbook::publication::VerifiedPublication,
 }
 
 pub async fn run_pipeline(root: &Path) -> Result<Run> {
@@ -86,20 +79,6 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
         &store.out_dir(),
     );
     assertions::assert_scope_split(&store, &core, &all_sources)?;
-    let (core_json, core_csv) = report::write_census(&store, &core, Scope::Core)?;
-    let (all_json, all_csv) = report::write_census(&store, &all_sources, Scope::AllSources)?;
-    let core_text = read_file(&core_json)?;
-    let all_text = read_file(&all_json)?;
-    ensure!(
-        core_text == serde_json::to_string_pretty(&core)?,
-        "{} is not the census that was handed to it",
-        core_json.display()
-    );
-    ensure!(
-        all_text == serde_json::to_string_pretty(&all_sources)?,
-        "{} is not the census that was handed to it",
-        all_json.display()
-    );
 
     let rows = bests::build_from_dataset(
         &dataset,
@@ -110,41 +89,24 @@ pub async fn run_pipeline(root: &Path) -> Result<Run> {
         },
     );
     assertions::assert_best_reduction(&rows, &store, Scope::Core)?;
-    let (bests_jsonl, bests_csv) = bests::write(&store.out_dir(), &rows, constants::COHORT_LABEL)?;
-    let jsonl_text = read_file(&bests_jsonl)?;
-    let csv_text = read_file(&bests_csv)?;
 
-    let workbook_path = root.join("parity-co2027.xlsx");
+    let publication_root = root.join("publication");
     let written = workbook::build(
         &store,
         &workbook::Options {
             grad_year: Some(constants::COHORT),
-            out: Some(workbook_path.clone()),
+            out: Some(publication_root),
             limit: None,
             scope: Scope::Core,
             school_year: Some(constants::SCHOOL_YEAR),
         },
     )?;
-    ensure!(
-        written == workbook_path,
-        "the workbook was written to {} instead of {}",
-        written.display(),
-        workbook_path.display()
-    );
-    ensure!(
-        read_file(&bests_jsonl)? == jsonl_text && read_file(&bests_csv)? == csv_text,
-        "the workbook rewrote the best-mark sidecars with different bytes"
-    );
+    let publication = workbook::publication::verify_published(&written)?;
 
     Ok(Run {
         counts,
-        report_text: format!("{core_text}\n{all_text}"),
-        census_by_state_core: read_file(&core_csv)?,
-        census_by_state_all_sources: read_file(&all_csv)?,
-        bests_jsonl: jsonl_text,
-        bests_csv: csv_text,
         results_report,
-        workbook: Workbook::read(&workbook_path, root)?,
+        publication,
     })
 }
 

@@ -4,11 +4,16 @@ use census_domain::model::{
     CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, ReviewCase, ReviewVerdictRecord, SchoolId, SourceAccessCondition, TeamId,
 };
-use census_store::clock::{Clock, SystemClock};
 use census_store::{Store, Table};
+use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
+mod frozen;
+
+pub(crate) const MAX_FROZEN_INPUT_BYTES: u64 = 8 * 1024 * 1024 * 1024;
+
+#[derive(Serialize)]
 pub struct ExportDataset {
     pub athletes: Vec<CanonicalAthlete>,
     pub schools: BTreeMap<SchoolId, CanonicalSchool>,
@@ -22,20 +27,34 @@ pub struct ExportDataset {
     pub source_access: Vec<SourceAccessCondition>,
     pub verdicts: Vec<ReviewVerdictRecord>,
     pub identity_decisions: Vec<AppliedAthleteIdentity>,
+    #[serde(skip)]
     pub canonical_aliases: HashMap<String, String>,
+    #[serde(skip)]
     pub lineage: DatasetLineage,
+    #[serde(skip)]
     identity_projection: Arc<AthleteIdentityProjection>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DatasetLineage {
     pub store_root: String,
     pub generated_on: String,
+    pub store_identity: String,
+    pub export_job: Option<String>,
+    pub input_generation: String,
+    pub input_digest: String,
+    pub source_digest: String,
+    pub snapshot_sequence: u64,
+    pub schema_revision: u32,
+    pub policy_revision: u32,
 }
 
+#[derive(Deserialize)]
 struct Loaded {
     athletes: Vec<CanonicalAthlete>,
+    #[serde(deserialize_with = "frozen::map_values")]
     schools: Vec<CanonicalSchool>,
+    #[serde(deserialize_with = "frozen::map_values")]
     teams: Vec<CanonicalTeam>,
     coaches: Vec<CanonicalCoach>,
     coach_observations: Vec<CanonicalCoach>,
@@ -163,9 +182,29 @@ impl ExportDataset {
     pub fn load(store: &Store) -> ReportResult<Self> {
         let snapshot = store.snapshot();
         let loaded = read_all(&snapshot)?;
+        Self::from_loaded(loaded, frozen::lineage(store, &snapshot)?)
+    }
+
+    pub fn for_job(store: &Store, job: &str) -> ReportResult<Self> {
+        frozen::job::capture(store, job)
+    }
+
+    pub fn ensure_store(&self, store: &Store) -> ReportResult<()> {
+        frozen::job::ensure_store(self, store)
+    }
+
+    pub fn ensure_current(&self, store: &Store) -> ReportResult<()> {
+        frozen::ensure_current(self, store)
+    }
+
+    pub fn ensure_snapshot(&self, snapshot: &census_store::StoreSnapshot<'_>) -> ReportResult<()> {
+        frozen::ensure_snapshot(self, snapshot)
+    }
+
+    fn from_loaded(loaded: Loaded, lineage: DatasetLineage) -> ReportResult<Self> {
         let identity_projection = projection_of(&loaded)?;
         let canonical_aliases = aliases_of(&loaded.athletes, &identity_projection);
-        Ok(Self {
+        let mut dataset = Self {
             athletes: loaded.athletes,
             canonical_aliases,
             schools: loaded
@@ -187,12 +226,23 @@ impl ExportDataset {
             source_access: loaded.source_access,
             verdicts: loaded.verdicts,
             identity_decisions: loaded.identity_decisions,
-            lineage: DatasetLineage {
-                store_root: store.root().display().to_string(),
-                generated_on: SystemClock.today(),
-            },
+            lineage,
             identity_projection,
-        })
+        };
+        frozen::bind(&mut dataset)?;
+        Ok(dataset)
+    }
+
+    pub fn save_frozen(&self, path: &std::path::Path) -> ReportResult<()> {
+        frozen::save(self, path)
+    }
+
+    pub fn reopen_frozen(path: &std::path::Path) -> ReportResult<Self> {
+        frozen::reopen(path)
+    }
+
+    pub(crate) fn archive_digest(&self) -> ReportResult<String> {
+        frozen::archive_digest(self)
     }
 
     pub fn identities(&self) -> Arc<AthleteIdentityProjection> {

@@ -134,7 +134,7 @@ pub(super) const IDENTITY_UNVERIFIED: &str = IDENTITY_UNVERIFIED_FAMILY;
 pub(super) const UNRESOLVED_VENUE: &str = UNRESOLVED_VENUE_FAMILY;
 pub(super) const UNRESOLVED_SCHOOL: &str = UNRESOLVED_SCHOOL_FAMILY;
 
-pub(super) fn conflict_families(
+pub(in crate::workbook) fn conflict_families(
     rows: &StoreRows,
     cohort: &[CanonicalAthlete],
     names: &HashMap<&str, &str>,
@@ -147,7 +147,7 @@ pub(super) fn conflict_families(
     ]
 }
 
-pub(super) fn review_families(
+pub(in crate::workbook) fn review_families(
     rows: &StoreRows,
     cohort: &[CanonicalAthlete],
     names: &HashMap<&str, &str>,
@@ -175,7 +175,7 @@ fn unsupported_graduation(rows: &StoreRows) -> Family {
     family
 }
 
-pub(super) fn cohort_of(
+pub(in crate::workbook) fn cohort_of(
     dataset: &crate::export::ExportDataset,
     scope: Scope,
 ) -> Vec<CanonicalAthlete> {

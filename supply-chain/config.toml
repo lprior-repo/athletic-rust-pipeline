@@ -9,3 +9,7 @@ url = "https://raw.githubusercontent.com/google/rust-crate-audits/main/audits.to
 
 [imports.mozilla]
 url = "https://raw.githubusercontent.com/mozilla/supply-chain/main/audits.toml"
+
+[policy.chromiumoxide_cdp]
+audit-as-crates-io = true
+notes = "Owner-approved third-party classification. Imported audits cover published chromiumoxide_cdp 0.9.1 only, not this modified path dependency. The retained local delta makes ClientSecurityState.private_network_request_policy optional for Chromium 151, removes unused chromiumoxide_pdl dependencies and removes upstream explanatory comments. Local-delta review and exact fork digests remain separate evidence; no first-party bypass or audit exemption."

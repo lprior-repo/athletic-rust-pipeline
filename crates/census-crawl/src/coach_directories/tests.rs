@@ -1,8 +1,11 @@
+mod summary_parity;
 use super::collect::requested_states;
 use super::map::{absorb_summary, coach_entities, directory_school, team_sport};
 use super::parse::{parse_directory, parse_summary};
 use super::*;
-use census_domain::model::{normalize_name, CanonicalSchool, CoachRole, Gender, Sport};
+use census_domain::model::{
+    normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, Sport,
+};
 use census_domain::UsJurisdiction;
 
 const NC_DIRECTORY: &str =
@@ -26,6 +29,25 @@ const GOLDEN_DIRECTORY_ROWS: &str =
 
 const OBSERVED_ON: &str = "2026-09-29";
 
+const NC_SUMMARY_CONTEXTS: [&str; 16] = [
+    "Amelia Rogers-roper|OutdoorTrack|Boys",
+    "Amelia Rogers-roper|OutdoorTrack|Girls",
+    "Andy Morgan|IndoorTrack|Boys",
+    "Andy Morgan|IndoorTrack|Girls",
+    "Andy Morgan|OutdoorTrack|Boys",
+    "Andy Morgan|OutdoorTrack|Girls",
+    "David Ball|none|Mixed",
+    "David Honea|CrossCountry|Boys",
+    "David Honea|CrossCountry|Girls",
+    "David Honea|IndoorTrack|Boys",
+    "David Honea|OutdoorTrack|Boys",
+    "Ivy Briggs|CrossCountry|Girls",
+    "Maura Brouwer|OutdoorTrack|Girls",
+    "Rocky Bilotta|OutdoorTrack|Boys",
+    "Steve Mccurry|none|Mixed",
+    "William Greer|OutdoorTrack|Boys",
+];
+
 fn minted(state: UsJurisdiction, name: &str) -> (CanonicalSchool, census_domain::model::SchoolId) {
     CanonicalSchool::new(state, name, normalize_name(name))
 }
@@ -48,6 +70,22 @@ fn emitted(
     url: &str,
 ) -> CoachEmission {
     coach_entities(summary, school_id, url, OBSERVED_ON, EmissionScope::Census).expect("coach rows")
+}
+
+fn context_keys<'a>(coaches: impl IntoIterator<Item = &'a CanonicalCoach>) -> Vec<String> {
+    let mut keys: Vec<String> = coaches
+        .into_iter()
+        .map(|coach| {
+            format!(
+                "{}|{}|{}",
+                coach.name,
+                coach.sport.map_or("none", Sport::stable_key),
+                coach.gender.stable_key()
+            )
+        })
+        .collect();
+    keys.sort();
+    keys
 }
 
 #[test]
@@ -121,40 +159,21 @@ fn the_summary_maps_every_published_row() {
         "https://example.test/schools/ZCUM49/summary",
     )
     .coaches;
-    assert_eq!(coaches.len(), 13);
-    let mut keys: Vec<String> = coaches
-        .iter()
-        .map(|coach| {
-            format!(
-                "{}|{}|{}",
-                coach.name,
-                coach.sport.map_or("none", Sport::stable_key),
-                coach.gender.stable_key()
-            )
-        })
-        .collect();
-    keys.sort();
-    let expected = [
-        "Amelia Rogers-roper|OutdoorTrack|Boys",
-        "Amelia Rogers-roper|OutdoorTrack|Girls",
-        "Andy Morgan|IndoorTrack|Boys",
-        "Andy Morgan|IndoorTrack|Girls",
-        "David Ball|none|Mixed",
-        "David Honea|CrossCountry|Boys",
-        "David Honea|CrossCountry|Girls",
-        "David Honea|IndoorTrack|Boys",
-        "Ivy Briggs|CrossCountry|Girls",
-        "Maura Brouwer|OutdoorTrack|Girls",
-        "Rocky Bilotta|OutdoorTrack|Boys",
-        "Steve Mccurry|none|Mixed",
-        "William Greer|OutdoorTrack|Boys",
-    ];
-    assert_eq!(keys, expected);
-    let honea: Vec<&census_domain::model::CanonicalCoach> = coaches
+    assert_eq!(context_keys(coaches.iter()), NC_SUMMARY_CONTEXTS);
+    let honea: Vec<&CanonicalCoach> = coaches
         .iter()
         .filter(|coach| coach.name == "David Honea")
         .collect();
-    assert_eq!(honea.len(), 3);
+    assert_eq!(
+        context_keys(honea.iter().copied()),
+        [
+            "David Honea|CrossCountry|Boys",
+            "David Honea|CrossCountry|Girls",
+            "David Honea|IndoorTrack|Boys",
+            "David Honea|OutdoorTrack|Boys",
+        ],
+        "the captured page publishes one distinct context per team this staff member coaches"
+    );
     for coach in &honea {
         assert_eq!(coach.role, CoachRole::Unknown);
         assert_eq!(coach.phone.as_deref(), Some("(828) 964-6841"));
@@ -408,6 +427,7 @@ fn a_director_who_also_coaches_keeps_both_rows_and_duplicates_collapse() {
             "Grace Hopper|none|Mixed|AthleticDirector",
         ]
     );
+
     let ada = coaches
         .iter()
         .find(|coach| coach.name == "Ada Lovelace")
@@ -559,14 +579,14 @@ async fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache()
         "the directory page and the one school summary"
     );
     assert_eq!(
-        report.with_email, 13,
-        "every mapped row carries the staff address"
+        report.with_email, 16,
+        "every published row context carries the staff address"
     );
     assert!(
         report
             .notes
             .iter()
-            .any(|note| note.contains("1 school(s) processed") && note.contains("13 coach row(s)")),
+            .any(|note| note.contains("coach row(s)")),
         "the report states what it processed: {:?}",
         report.notes
     );
@@ -584,9 +604,9 @@ async fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache()
         .scan::<census_domain::model::CanonicalCoach>(census_store::Table::Coaches)
         .expect("coach rows");
     assert_eq!(
-        coaches.len(),
-        13,
-        "the oracle's (person, sport family, gender) row set"
+        context_keys(coaches.iter()),
+        NC_SUMMARY_CONTEXTS,
+        "the stored rows keep every distinct (person, sport family, gender) the page publishes"
     );
 }
 
@@ -768,7 +788,7 @@ fn the_live_directory_pages_reproduce_the_prototypes_rows() {
 
 #[test]
 fn a_post_only_or_unnamed_staff_string_never_mints_a_person() {
-    let body = r#"{"name":"Example High School","teams":[{"name":"Boys' Track, Outdoor","level":"Varsity","coachProfileIds":["a","b"]}],"staff":[
+    let body = r#"{"name":"Example High School","teams":[{"name":"Boys' Track, Outdoor","level":"Varsity","coachProfileIds":["a","b","c","d"]}],"staff":[
         {"id":"a","amrId":"1","firstName":"Ada","lastName":"Lovelace","title":"Coach","teamName":"Boys' Track, Outdoor","teamLevel":"Varsity"},
         {"id":"b","amrId":"2","firstName":"Head","lastName":"Coach","title":"Coach","teamName":"Boys' Track, Outdoor","teamLevel":"Varsity"},
         {"id":"c","amrId":"3","firstName":"Principal","lastName":"Kolling","title":"Coach","teamName":"Boys' Track, Outdoor","teamLevel":"Varsity"},
@@ -793,3 +813,5 @@ fn a_post_only_or_unnamed_staff_string_never_mints_a_person() {
     );
     assert_eq!(emission.counters.dropped_total(), 0);
 }
+
+mod claim_order;

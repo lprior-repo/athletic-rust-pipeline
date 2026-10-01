@@ -11,7 +11,7 @@ bodies, executed on both sides.
 * **Inputs:** all 18 captured summaries under `crates/census-crawl/tests/fixtures/coach_directories`
   (16 probe page-1 summaries for AK/AL/GA/WY, plus the NC and IN staff summaries).
 
-## Result
+## Historical result — 2026-09-29
 
 | Measure | Prototype | Rust | Difference |
 |---|---|---|---|
@@ -27,28 +27,13 @@ The prototype's merge key excludes gender (S10), so its 48 kept rows are the Rus
 collapsed by `(person, sport, role)` first-wins. With that collapse applied the row *sets* are
 identical; the comparison is on sets because row order is not artifact-comparable (S20).
 
-The harness caught one real defect in the port, which is the reason this comparison exists:
-the Rust lane originally filtered by level **before** de-duplicating, so a school that lists its
-junior-varsity team before its varsity team kept the varsity row. The prototype's parser claims
-the key on the first published row and filters afterwards, so the junior-varsity row is the one
-that is dropped and the varsity row never replaces it. Affected fixture:
-`probe/WY/summary-SS28UB.json` (boys cross country lists JV before Varsity; the prototype keeps 2
-rows, the port kept 3). The port now claims the key on the raw row before hygiene and the level
-filter, and `coach_directories::tests::a_live_coach_row_is_decided_by_the_first_team_that_publishes_the_key`
-pins the exact row set, the `JV` count and the total.
+This comparison used the prototype's claim-before-filter behavior. It is historical evidence, not current census acceptance. The Rust census path now admits only after level, person and vendor checks; a rejected context cannot suppress a later eligible row. In the captured WY SS28UB summary, the current contract retains Nicole Biltoft in boys/girls cross country and boys/girls outdoor track and counts four distinct JV rejections. The earlier claim-before-filter port retained only three contexts and counted one JV rejection.
 
 ## Retained artifacts
 
-* `golden_summary_rows.json` — the prototype's merged rows for all 18 fixtures, produced by running
-  `parsers/dragonfly_school.py:parse` + the varsity filter + `run.merge_state`, keyed by
-  fixture-relative path, carrying `school` (name, city), `school_unslotted` (the fields Rust has no
-  slot for), `coaches` and `dropped_counts`.
-* `PROVENANCE.json` — 18 appended entries with the summary URL, prototype cache file name, sha256
-  and byte count; every fixture resolved to a live prototype cache capture.
-* `coach_directories::tests::the_live_summary_pages_reproduce_the_prototypes_rows` — asserts the
-  golden row set, the varsity drop counts, and school name/city for all 18 fixtures (48 rows, 15
-  drops). The test projects the Rust rows into the prototype's vocabulary; the projection lives in
-  the test, not in production code, because it is an artifact-shape mapping, not a domain rule.
+* `golden_summary_rows.json` — the prototype's merged rows for all 18 fixtures, produced by running `parsers/dragonfly_school.py:parse` + the varsity filter + `run.merge_state`, keyed by fixture-relative path, carrying `school` (name, city), `school_unslotted` (the fields Rust has no slot for), `coaches` and `dropped_counts`. This file is historical evidence of the prototype's first-published-claim parity; it is not read by the Rust test suite and its row counts (48 rows, 15 drops) reflect the prototype's gender-blind merge key, not the Rust lane's current output.
+* `PROVENANCE.json` — 18 appended entries with the summary URL, prototype cache file name, sha256 and byte count; every fixture resolved to a live prototype cache capture.
+* The current WY SS28UB acceptance is pinned by `coach_directories::tests::summary_parity::captured_summary_keeps_four_varsity_contexts_and_counts_four_jv_rejections`, including the complete admitted context set and rejection counters. The narrower `survey_tests::captured_varsity_cross_country_contact_survives_earlier_jv_team` checks the earlier-JV/later-varsity transition and retained source URL.
 
 ## Field mapping
 
@@ -68,9 +53,9 @@ pins the exact row set, the `JV` count and the total.
 ## Divergences recorded
 
 1. **Gender participates in Rust coach identity (S10).** Deliberate supersede: the prototype's
-   merge key drops gender and keeps the first-seen value. Rust keeps one row per gender; the
-   metrics projection must collapse as the prototype did (48 rows). Measured: 13 extra Rust rows
-   over these captures, all gender-split pairs.
+   merge key drops gender and keeps the first-seen value. Rust keeps one row per gender.
+   The historical comparison collapsed those rows to measure prototype parity;
+   production census metrics retain the gender-aware contexts.
 2. **`Sport::IndoorTrack`/`OutdoorTrack` vs `"Track"` (S16).** Rust keeps the venue; the prototype
    collapses the family at parse time. The parity projection maps both to `Track`.
 3. **`CoachRole::Unknown` vs the literal `"Coach"`.** Raw `role` in the source is usually absent;
@@ -81,10 +66,9 @@ pins the exact row set, the `JV` count and the total.
    the bare `amrId`, which repeats across those rows. The `amrId` is recoverable as the prefix
    (0 prefix mismatches over 48 rows).
 5. **School address, ZIP and phone are parsed but not stored.** `SummaryAddress::address1`/`zip` and
-   `SummaryTel::num` reach the lane and are asserted by the golden test, but `CanonicalSchool` has
-   no slot for them at this revision; the prototype's school row carries all three (plus
-   `with_address`/`with_zip` in its per-state summary, S25). Blocked on the model change that owns
-   those fields.
+   `SummaryTel::num` reach the parser, but `CanonicalSchool` has no slot for these
+   fields at this revision. The historical prototype artifact retains them;
+   the current census does not claim to export them.
 6. **`association_id` (platform org id, `payload.id`) is not stored on the school.** Rust keys the
    school's `association_school` identity on the directory row's short code (S05 lane); the
    summary's org id only builds detail URLs. The prototype's school row carries both.

@@ -1,0 +1,66 @@
+use census_domain::model::{CanonicalSchool, MEET_STATE_UNRESOLVED};
+use census_domain::UsJurisdiction;
+
+use crate::report::ReportResult;
+
+use super::{header, Expect, Sheet};
+
+const HEADERS: [&str; 12] = [
+    "School ID",
+    "School",
+    "State",
+    "City",
+    "Association",
+    "Class",
+    "Enrollment",
+    "Athletics site",
+    "School site",
+    "Aliases",
+    "Sources",
+    "Conflicts",
+];
+
+pub(super) fn expected(schools: &[CanonicalSchool]) -> ReportResult<Sheet> {
+    let mut rows = vec![header(&HEADERS)];
+    let mut sorted: Vec<&CanonicalSchool> = schools.iter().collect();
+    sorted.sort_by(|left, right| {
+        state_code(left)
+            .cmp(state_code(right))
+            .then_with(|| left.name.cmp(&right.name))
+            .then_with(|| left.id.as_str().cmp(right.id.as_str()))
+    });
+    for school in sorted {
+        rows.push(row(school)?);
+    }
+    Ok(("Schools", rows))
+}
+
+fn row(school: &CanonicalSchool) -> ReportResult<Vec<Expect>> {
+    Ok(vec![
+        Expect::text(school.id.as_str()),
+        Expect::text(school.name.as_str()),
+        Expect::text(state_code(school)),
+        Expect::text(school.city.as_deref().unwrap_or_default()),
+        Expect::text(school.association.as_deref().unwrap_or_default()),
+        Expect::text(school.classification.as_deref().unwrap_or_default()),
+        enrollment(school),
+        Expect::text(school.athletics_website.as_deref().unwrap_or_default()),
+        Expect::text(school.school_website.as_deref().unwrap_or_default()),
+        Expect::text(school.aliases.join(" | ")),
+        Expect::count(school.source_identities.len())?,
+        Expect::count(school.retained_conflicts.len())?,
+    ])
+}
+
+fn enrollment(school: &CanonicalSchool) -> Expect {
+    match school.enrollment {
+        Some(value) => Expect::Number(f64::from(value)),
+        None => Expect::Empty,
+    }
+}
+
+fn state_code(school: &CanonicalSchool) -> &'static str {
+    school
+        .state
+        .map_or(MEET_STATE_UNRESOLVED, UsJurisdiction::code)
+}

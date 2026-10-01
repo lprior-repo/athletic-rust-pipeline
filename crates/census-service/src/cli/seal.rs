@@ -15,7 +15,7 @@ use census_service::ingress;
 #[derive(Debug, Args)]
 #[command(
     about = "`census-service seal`",
-    long_about = "`census-service seal`\n\nThe export phase reads the workbook's own meta sheets: `Coverage` must carry every jurisdiction the classifier produced, and `Run Metrics` must name the cohort the store counted. A workbook that disagrees with the store refuses the seal and says which number disagreed."
+    long_about = "`census-service seal`\n\nCertifies a complete manifested publication against its durable frozen input and the current store's source evidence. Every workbook record, metadata sheet and bundle artifact must verify; stale, limited, foreign or altered generations refuse the seal."
 )]
 pub(super) struct SealArgs {
     #[arg(help = "Graduation year of the cohort being certified")]
@@ -24,7 +24,9 @@ pub(super) struct SealArgs {
     #[arg(help = "Certify the core scope instead of every approved source")]
     #[arg(long)]
     core: bool,
-    #[arg(help = "The workbook to certify. Defaults to the newest `out/*.xlsx`")]
+    #[arg(
+        help = "Manifested workbook to certify. Defaults to out/publication/current/workbook.xlsx"
+    )]
     #[arg(long)]
     workbook: Option<PathBuf>,
     #[arg(

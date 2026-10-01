@@ -232,29 +232,34 @@ async fn a_workbook_export_interrupted_by_sigkill_rebuilds_completely_on_restart
         corpus.append(&store);
     }
 
-    let output_path = tmpdir.path().join("out.xlsx");
+    let output_path = tmpdir.path().join("publication");
     let mut child = spawn_workbook(&data_dir, &output_path);
 
     let deadline = Instant::now() + Duration::from_secs(120);
     let mut killed = false;
     while Instant::now() < deadline {
         std::thread::sleep(Duration::from_millis(200));
-        if output_path.exists() {
-            if let Ok(meta) = std::fs::metadata(&output_path) {
-                if meta.len() > 0 {
-                    child.kill_and_reap();
-                    killed = true;
-                    break;
-                }
+        if let Ok(entries) = std::fs::read_dir(&output_path) {
+            let rendering = entries.filter_map(Result::ok).any(|entry| {
+                entry.file_name().to_string_lossy().starts_with(".staging.")
+                    && entry.path().join("frozen-input.json").is_file()
+            });
+            if rendering {
+                child.kill_and_reap();
+                killed = true;
+                break;
             }
         }
     }
     assert!(
         killed,
-        "workbook output never appeared with non-zero bytes before deadline"
+        "an uncommitted frozen input never appeared before deadline"
     );
 
-    let orig_len = std::fs::metadata(&output_path).expect("stat output").len();
+    assert!(
+        !output_path.join("current").exists(),
+        "interrupted generation must not become public"
+    );
 
     {
         let s = Store::open(&data_dir).expect("reopen store");
@@ -265,40 +270,31 @@ async fn a_workbook_export_interrupted_by_sigkill_rebuilds_completely_on_restart
     let st = restart.child.wait().expect("wait restart");
     assert!(st.success(), "restarted workbook must exit 0, got {:?}", st);
 
-    assert!(output_path.exists(), "output must exist after restart");
-    let final_meta = std::fs::metadata(&output_path).expect("stat final");
-    assert!(
-        final_meta.len() > orig_len,
-        "restarted workbook larger than interrupted: {} vs {}",
-        final_meta.len(),
-        orig_len
+    let published = census_report::workbook::publication::current_workbook(&output_path)
+        .expect("restart publishes a complete generation");
+    assert_eq!(
+        xlsx_rows(&published, "Athletes"),
+        Some(corpus.athletes.len() + 1)
     );
-
-    assert!(
-        xlsx_rows(&output_path, "Athletes").is_some(),
-        "must have Athletes sheet"
+    let expected_ids: HashSet<_> = corpus
+        .athletes
+        .iter()
+        .map(|athlete| athlete.id.to_string())
+        .collect();
+    assert_eq!(
+        unique_athlete_ids(&published).expect("published athlete IDs"),
+        expected_ids
     );
-    let athletes_rows = xlsx_rows(&output_path, "Athletes").expect("Athletes rows");
-    assert!(
-        athletes_rows > 200,
-        "Athletes sheet must have data rows, found {athletes_rows}"
-    );
-
-    let unique = unique_athlete_ids(&output_path).expect("unique IDs");
-    assert!(
-        unique.len() >= 200,
-        ">=200 unique athlete IDs, found {}",
-        unique.len()
-    );
-
-    verify_cli(&data_dir, &output_path);
+    verify_cli(&data_dir, &published);
 
     let store_after = Store::open(&data_dir).expect("reopen store after restart");
     let stats = store_after.stats().expect("final stats");
     assert_eq!(
-        stats.observations, expected as u64,
+        stats.observations,
+        u64::try_from(expected).expect("fixture count fits u64"),
         "store must hold all observations: expected={}, found={}",
-        expected, stats.observations
+        expected,
+        stats.observations
     );
 }
 
@@ -313,17 +309,15 @@ async fn b_workbook_without_interrupt_exits_cleanly() {
         let store = Store::open(&data_dir).expect("open");
         corpus.append(&store);
     }
-    let output_path = tmpdir.path().join("clean.xlsx");
+    let output_path = tmpdir.path().join("publication");
     let mut child = spawn_workbook(&data_dir, &output_path);
     let status = child.child.wait().expect("wait clean");
     assert!(status.success(), "must exit 0, got {:?}", status);
-    assert!(output_path.exists(), "output must exist");
-    let len = std::fs::metadata(&output_path).expect("stat").len();
-    assert!(len > 0, "output must have non-zero size: {len}");
-
-    assert!(
-        xlsx_rows(&output_path, "Athletes").is_some(),
-        "must have Athletes sheet"
+    let published = census_report::workbook::publication::current_workbook(&output_path)
+        .expect("clean export publishes a complete generation");
+    assert_eq!(
+        xlsx_rows(&published, "Athletes"),
+        Some(corpus.athletes.len() + 1)
     );
-    verify_cli(&data_dir, &output_path);
+    verify_cli(&data_dir, &published);
 }

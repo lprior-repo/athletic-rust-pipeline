@@ -171,3 +171,99 @@ fn the_results_index_url_is_the_published_query_shape() {
     );
     assert_eq!(Season::ALL.map(Season::code), ["cc", "indoor", "outdoor"]);
 }
+
+#[test]
+fn captured_nc_wrapped_round_keeps_its_event_and_finisher() {
+    let block = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../research/sources/milesplit-national/samples/raw-nc-684812-rs1283641.txt"
+    ));
+    let html = format!(
+        "<script type=\"application/ld+json\">{{\"name\":\"PR Running Camp\",\"startDate\":\"2025-03-08\",\"sport\":\"Track\"}}</script><pre>{block}</pre>"
+    );
+    let page = parse_raw(
+        &html,
+        "https://nc.milesplit.com/meets/684812/results/1283641/raw",
+    )
+    .expect("captured qualified block");
+    let event = page
+        .meet
+        .events
+        .iter()
+        .find(|event| event.rows.iter().any(|row| row.name == "FERGUSON, Michael"))
+        .expect("published finisher retained");
+    assert_eq!(event.kind, EventKind::from_source_label("3200M"));
+    assert_eq!(event.gender, Gender::Boys);
+    assert_eq!(event.round.as_deref(), Some("Finals"));
+    assert_eq!(page.meet.events.len(), 1);
+    assert_eq!(event.label, "PR Running Camp Boys 3200M Finals");
+    assert_eq!(event.rows.len(), 214);
+    for (name, school, grade, mark) in [
+        ("WHARTON, Elijah", "Davidson Academy", 11, "DNF"),
+        ("WILLCOX, Jack", "Heathwood Hall", 11, "DNF"),
+        ("JENKINS, Grady", "Texas", 12, "NT"),
+        ("TEMPLETON, John", "Forsyth Country Day", 12, "NT"),
+    ] {
+        let status_row = event
+            .rows
+            .iter()
+            .find(|row| row.name == name)
+            .expect("published status row");
+        assert_eq!(status_row.place, None);
+        assert_eq!(status_row.school, school);
+        assert_eq!(status_row.grade.map(|grade| grade.get()), Some(grade));
+        assert_eq!(status_row.mark, Mark::Raw(mark.to_string()));
+        assert_eq!(status_row.heat.as_deref(), Some("7"));
+    }
+    let row = event
+        .rows
+        .iter()
+        .find(|row| row.name == "FERGUSON, Michael")
+        .expect("published finisher");
+    assert_eq!(row.school, "North Buncombe");
+    assert_eq!(row.grade.map(|grade| grade.get()), Some(12));
+    assert_eq!(
+        row.mark,
+        crate::hytek::parse_time("8:44.73")
+            .map(Mark::TimeSeconds)
+            .expect("published mark")
+    );
+    assert_eq!(row.heat.as_deref(), Some("8"));
+    assert!(
+        page.skipped.is_empty(),
+        "located grade tokens are not whole-row rejections: {:?}",
+        page.skipped
+    );
+    assert!(
+        !page.grade_issues.is_empty(),
+        "the capture publishes eighth graders"
+    );
+    assert!(
+        page.grade_issues.iter().all(|issue| {
+            issue.kind == RawGradeIssueKind::OutsideHighSchool && issue.raw_token == "8"
+        }),
+        "{:?}",
+        page.grade_issues
+    );
+    let located = page
+        .grade_issues
+        .iter()
+        .find(|issue| issue.raw_token == "8")
+        .expect("the capture's eighth-grade row");
+    let start = located.row.byte_offset;
+    let end = start.saturating_add(located.row.byte_length);
+    let published = html
+        .get(start..end)
+        .expect("the locator resolves the captured HTML bytes");
+    assert!(
+        published.contains("SURFACE, Luke"),
+        "published: {published:?}"
+    );
+    let eighth = event
+        .rows
+        .iter()
+        .find(|row| row.name == "SURFACE, Luke")
+        .expect("an eighth grader is a published row");
+    assert_eq!(eighth.grade, None);
+    assert_eq!(eighth.school, "North Raleigh Christ");
+}

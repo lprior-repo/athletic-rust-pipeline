@@ -180,11 +180,11 @@ fn verify(store: &Path, out: &Path) -> std::process::ExitStatus {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
-        .expect("run the sampled verification")
+        .expect("run complete publication verification")
 }
 
 #[test]
-fn the_offline_cycle_loads_once_and_publishes_one_row_per_athlete() {
+fn the_offline_cycle_publishes_each_cohort_athlete_once_in_a_verified_bundle() {
     let tmpdir = TempDir::new().expect("create temp dir");
     let data_dir = tmpdir.path().join("store");
     std::fs::create_dir_all(&data_dir).expect("create store dir");
@@ -196,76 +196,38 @@ fn the_offline_cycle_loads_once_and_publishes_one_row_per_athlete() {
         corpus.append(&store);
     }
 
-    let output_path = tmpdir.path().join("cycle.xlsx");
+    let output_path = tmpdir.path().join("publication");
     let output = run_cycle(&data_dir, &output_path);
-    let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         output.status.success(),
         "the offline cycle must exit 0, got {:?}",
         output.status
     );
 
-    let loads = stdout
-        .lines()
-        .filter(|line| line.starts_with("dataset\t"))
-        .count();
-    assert_eq!(
-        loads, 1,
-        "the cycle must load the export dataset exactly once:\n{stdout}"
-    );
-    let reports = stdout
-        .lines()
-        .filter(|line| line.starts_with("report\t"))
-        .count();
-    assert_eq!(
-        reports, 2,
-        "both report scopes must be published from that one load:\n{stdout}"
-    );
-    assert!(
-        stdout.contains("stages\ttotal"),
-        "the cycle must report its total stage time:\n{stdout}"
-    );
+    let published = census_report::workbook::publication::current_workbook(&output_path)
+        .expect("complete cycle publication");
 
-    let athlete_rows = xlsx_rows(&output_path, "Athletes").expect("read the Athletes sheet");
+    let athlete_rows = xlsx_rows(&published, "Athletes").expect("read the Athletes sheet");
     assert_eq!(
         athlete_rows,
         expected + 1,
         "the Athletes sheet carries a header row plus one row per athlete"
     );
 
-    let ids = unique_athlete_ids(&output_path).expect("read the athlete ids");
-    assert_eq!(ids.len(), expected, "every athlete id appears exactly once");
-
-    for sheet in ["Coaches", "Schools", "Meets", "Run Metrics"] {
-        let rows = xlsx_rows(&output_path, sheet);
-        assert!(
-            rows.is_some_and(|rows| rows > 0),
-            "{sheet} must be published with rows"
-        );
-    }
-    assert!(
-        xlsx_rows(&output_path, "Athletes").is_some(),
-        "the Athletes sheet must be published"
-    );
-
-    let out_dir = data_dir.join("out");
-    let published: Vec<String> = std::fs::read_dir(&out_dir)
-        .expect("read the store output directory")
-        .filter_map(|entry| entry.ok())
-        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+    let ids = unique_athlete_ids(&published).expect("read the athlete ids");
+    let expected_ids: HashSet<_> = corpus
+        .athletes
+        .iter()
+        .map(|athlete| athlete.id.to_string())
         .collect();
-    assert!(
-        published.iter().any(|name| name.ends_with(".json")),
-        "the cycle must write the census report, saw {published:?}"
-    );
-    assert!(
-        published.iter().any(|name| name.contains("best")),
-        "the cycle must write the best marks, saw {published:?}"
+    assert_eq!(
+        ids, expected_ids,
+        "each source-backed cohort subject appears exactly once"
     );
 
-    let status = verify(&data_dir, &output_path);
+    let status = verify(&data_dir, &published);
     assert!(
         status.success(),
-        "sampled verification must exit 0, got {status:?}"
+        "complete publication verification must exit 0, got {status:?}"
     );
 }

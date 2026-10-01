@@ -64,7 +64,9 @@ pub(super) enum Command {
     Workbook(WorkbookArgs),
     #[command(about = "Seal the census: assemble §70's evidence, then complete or refuse by name")]
     Seal(SealArgs),
-    #[command(about = "Verify workbook data rows against the store")]
+    #[command(
+        about = "Verify the complete frozen workbook and sidecar generation without opening the store"
+    )]
     Verify(VerifyArgs),
     #[command(
         about = "Run the whole cycle in one command: gather the authorized registry, consolidate, publish both census scopes, reduce best marks, and write the workbook"

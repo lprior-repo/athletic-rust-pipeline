@@ -44,15 +44,16 @@ in-process offline execution and cannot be combined with `--ingress`.
 ```sh
 cargo xtask census-status
 cargo xtask coverage --ingress http://127.0.0.1:18095/
-cargo xtask export --ingress --out out/census.xlsx --grad-year 2027
+cargo xtask export --ingress --out out/publication --grad-year 2027
 cargo xtask census-status --store var/census-service
 ```
 
 The last form requires the serving store owner to be stopped. A second-process Fjall lock error is
 correct; do not bypass it. Serving status is the handler's count view, whereas offline status builds
 a Core report; do not claim identical semantic populations merely because labels match. Export
-reads existing evidence and does not acquire missing history. See [operations](../docs/OPERATIONS.md)
-for lifecycle and current publication limitations.
+reads existing evidence and does not acquire missing history. `--out` names a publication directory;
+the XLSX is `<publication>/current/workbook.xlsx`. See [operations](../docs/OPERATIONS.md) for
+lifecycle, complete frozen-bundle verification and current certification limits.
 
 ## Measurement and fixture boundaries
 

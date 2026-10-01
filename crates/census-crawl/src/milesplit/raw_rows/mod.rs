@@ -3,16 +3,19 @@ use crate::{CrawlError, CrawlResult};
 use census_domain::model::{EventKind, Gender, Sport};
 use regex::Regex;
 
-use super::parse::meet_index::html_unescape;
+use super::{RawGradeIssue, RawGradeIssueKind, SourceRowLocator};
 
-#[path = "columns.rs"]
 mod columns;
+#[cfg(test)]
+mod edge_tests;
+mod entities;
+mod labels;
+#[cfg(test)]
+mod tests;
 
-use columns::{build_row, detect_layout, row_candidate, Layout};
-
-const SKIP_PREVIEW: usize = 40;
-const NO_SECTION: &str = "row before any section header";
-const DID_NOT_FIT: &str = "row did not fit the column map";
+use columns::{build_row, header_columns, row_cells, Columns};
+use entities::html_unescape;
+use labels::{event_label, round_label, section_of};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct RawSection {
@@ -20,6 +23,7 @@ pub(super) struct RawSection {
     pub(super) kind: EventKind,
     pub(super) gender: Gender,
     pub(super) division: Option<String>,
+    pub(super) round: Option<String>,
     pub(super) rows: Vec<ParsedRow>,
 }
 
@@ -30,9 +34,20 @@ impl RawSection {
             kind: self.kind.clone(),
             gender: self.gender,
             division: self.division.clone(),
-            round: None,
+            round: self.round.clone(),
             rows: self.rows.clone(),
         }
+    }
+
+    fn extend_round(&mut self, round: &str) {
+        if let Some(previous) = self.round.as_deref() {
+            if let Some(base) = self.label.strip_suffix(previous) {
+                self.label.truncate(base.trim_end().len());
+            }
+        }
+        self.round = Some(round.to_string());
+        self.label.push(' ');
+        self.label.push_str(round);
     }
 }
 
@@ -41,56 +56,135 @@ pub(super) struct RawBlock {
     pub(super) sections: Vec<RawSection>,
     pub(super) rows_parsed: usize,
     pub(super) skipped: Vec<String>,
+    pub(super) grade_issues: Vec<RawGradeIssue>,
+    pub(super) qualified: bool,
 }
 
-pub(super) fn read_block(block: &str, sport: Option<Sport>) -> CrawlResult<RawBlock> {
-    let layout = detect_layout(block);
+pub(super) fn read_block(
+    block: &str,
+    sport: Option<Sport>,
+    base_offset: usize,
+) -> CrawlResult<RawBlock> {
     let mut reader = Reader {
         tags: tag_pattern()?,
         sport,
-        layout,
+        columns: None,
         sections: Vec::new(),
         skipped: Vec::new(),
+        grade_issues: Vec::new(),
         rows_parsed: 0,
+        qualified: false,
     };
-    for raw_line in block.split('\n') {
-        reader.read(raw_line);
+    let mut offset = base_offset;
+    for (index, raw_line) in block.split_inclusive('\n').enumerate() {
+        let line = raw_line.strip_suffix('\n').unwrap_or(raw_line);
+        let line = line.strip_suffix('\r').unwrap_or(line);
+        let ordinal = u32::try_from(index)
+            .ok()
+            .and_then(|value| value.checked_add(1))
+            .ok_or_else(locator_overflow)?;
+        reader.read(line, ordinal, offset);
+        offset = offset
+            .checked_add(raw_line.len())
+            .ok_or_else(locator_overflow)?;
     }
     Ok(reader.finish())
+}
+
+fn locator_overflow() -> CrawlError {
+    CrawlError::Schema {
+        url: "MileSplit raw results".to_string(),
+        detail: "result row locator exceeds the supported range".to_string(),
+    }
 }
 
 struct Reader<'a> {
     tags: &'a Regex,
     sport: Option<Sport>,
-    layout: Layout,
+    columns: Option<Columns>,
     sections: Vec<RawSection>,
     skipped: Vec<String>,
+    grade_issues: Vec<RawGradeIssue>,
     rows_parsed: usize,
+    qualified: bool,
 }
 
 impl Reader<'_> {
-    fn read(&mut self, raw_line: &str) {
+    fn read(&mut self, raw_line: &str, ordinal: u32, offset: usize) {
         let line = decode_line(raw_line, self.tags);
-        if line.trim().is_empty() || is_rule(&line) || is_header(&line, self.layout) {
+        if line.trim().is_empty() || line.trim_start().starts_with("====") {
             return;
         }
-        let Some(cells) = row_candidate(&line, self.layout) else {
+        if let Some(columns) = header_columns(&line) {
+            self.columns = Some(columns);
+            self.qualified = true;
+            return;
+        }
+        if self.read_round(&line) {
+            return;
+        }
+        if event_label(&line, self.sport) {
             self.sections.push(section_of(&line, self.sport));
+            self.columns = None;
             return;
-        };
-        let Some(kind) = self.sections.last().map(|section| section.kind.clone()) else {
-            self.skipped.push(describe_skip(&line, NO_SECTION));
-            return;
-        };
-        match build_row(&cells, &kind) {
-            Some(row) => {
-                self.rows_parsed = self.rows_parsed.saturating_add(1);
-                if let Some(section) = self.sections.last_mut() {
-                    section.rows.push(row);
-                }
-            }
-            None => self.skipped.push(describe_skip(&line, DID_NOT_FIT)),
         }
+        let Some(columns) = self.columns else {
+            self.skipped.push(describe_skip(
+                raw_line,
+                ordinal,
+                offset,
+                "no qualified column header",
+            ));
+            return;
+        };
+        let Some(section) = self.sections.last_mut() else {
+            self.skipped.push(describe_skip(
+                raw_line,
+                ordinal,
+                offset,
+                "row before any section header",
+            ));
+            return;
+        };
+        let cells = row_cells(&line, columns);
+        match build_row(&cells, &section.kind) {
+            Ok(row) => {
+                if row.grade.is_none() {
+                    if let Some(issue) = grade_issue(cells.grade, ordinal, offset, raw_line) {
+                        self.grade_issues.push(issue);
+                    }
+                }
+                section.rows.push(row);
+                self.rows_parsed = self.rows_parsed.saturating_add(1);
+            }
+            Err(reason) => self
+                .skipped
+                .push(describe_skip(raw_line, ordinal, offset, reason)),
+        }
+    }
+
+    fn read_round(&mut self, line: &str) -> bool {
+        let Some(round) = round_label(line) else {
+            return false;
+        };
+        let Some(section) = self.sections.last_mut() else {
+            return false;
+        };
+        if section.rows.is_empty() {
+            section.extend_round(round);
+        } else {
+            let mut next = RawSection {
+                label: section.label.clone(),
+                kind: section.kind.clone(),
+                gender: section.gender,
+                division: section.division.clone(),
+                round: section.round.clone(),
+                rows: Vec::new(),
+            };
+            next.extend_round(round);
+            self.sections.push(next);
+        }
+        true
     }
 
     fn finish(self) -> RawBlock {
@@ -98,7 +192,36 @@ impl Reader<'_> {
             sections: self.sections,
             rows_parsed: self.rows_parsed,
             skipped: self.skipped,
+            grade_issues: self.grade_issues,
+            qualified: self.qualified,
         }
+    }
+}
+
+fn grade_issue(grade: &str, ordinal: u32, offset: usize, raw_line: &str) -> Option<RawGradeIssue> {
+    let token = grade.trim();
+    if token.is_empty() || token == "-" {
+        return None;
+    }
+    let kind = match outside_high_school(token) {
+        true => RawGradeIssueKind::OutsideHighSchool,
+        false => RawGradeIssueKind::Unrecognized,
+    };
+    Some(RawGradeIssue {
+        row: SourceRowLocator {
+            ordinal,
+            byte_offset: offset,
+            byte_length: raw_line.len(),
+        },
+        raw_token: token.to_string(),
+        kind,
+    })
+}
+
+fn outside_high_school(token: &str) -> bool {
+    match token.parse::<u8>() {
+        Ok(grade) => (1..=8).contains(&grade) || (13..=16).contains(&grade),
+        Err(_) => false,
     }
 }
 
@@ -116,72 +239,9 @@ fn decode_line(raw_line: &str, tags: &Regex) -> String {
     html_unescape(tags.replace_all(without_cr, "").as_ref())
 }
 
-fn is_rule(line: &str) -> bool {
-    line.trim_start().starts_with("====")
-}
-
-fn is_header(line: &str, layout: Layout) -> bool {
-    let line_trimmed = line.trim();
-    if layout == Layout::NC {
-        return line_trimmed.contains("Name")
-            && line_trimmed.contains("Team")
-            && (line_trimmed.contains("Time") || line_trimmed.contains("Mark"));
-    }
-    let Some(cells) = row_candidate(line, layout) else {
-        return false;
-    };
-    cells.place.is_some_and(|cell| cell.trim().is_empty())
-        && cells.name.is_some_and(|cell| cell.trim() == "Athlete")
-}
-
-fn section_of(line: &str, sport: Option<Sport>) -> RawSection {
-    let label = line.trim().to_string();
-    let (gender, division) = split_prefix(&label);
-    let kind = event_kind(&label, sport);
-    RawSection {
-        label,
-        kind,
-        gender,
-        division,
-        rows: Vec::new(),
-    }
-}
-
-fn event_kind(label: &str, sport: Option<Sport>) -> EventKind {
-    if sport == Some(Sport::CrossCountry) {
-        return EventKind::CrossCountry;
-    }
-    let mut rest = label.trim();
-    loop {
-        let kind = EventKind::from_source_label(rest);
-        if !matches!(kind, EventKind::Unmapped { .. }) {
-            return kind;
-        }
-        match rest.split_once(' ') {
-            Some((_, tail)) => rest = tail,
-            None => return EventKind::from_source_label(label),
-        }
-    }
-}
-
-fn split_prefix(label: &str) -> (Gender, Option<String>) {
-    let mut tokens = label.split_whitespace();
-    let Some(first) = tokens.next() else {
-        return (Gender::Unknown, None);
-    };
-    let gender = match first.to_ascii_lowercase().as_str() {
-        "boys" | "boy" | "mens" | "men" | "male" => Gender::Boys,
-        "girls" | "girl" | "womens" | "women" | "female" => Gender::Girls,
-        _ => return (Gender::Unknown, None),
-    };
-    let level = tokens
-        .take_while(|token| !token.starts_with(|ch: char| ch.is_numeric()))
-        .collect::<Vec<&str>>()
-        .join(" ");
-    (gender, (!level.is_empty()).then_some(level))
-}
-
-fn describe_skip(line: &str, reason: &str) -> String {
-    let head: String = line.chars().take(SKIP_PREVIEW).collect();
-    format!("{reason}: {head:?}")
+fn describe_skip(raw_line: &str, ordinal: u32, offset: usize, reason: &str) -> String {
+    format!(
+        "pre line={ordinal} byte_offset={offset} byte_length={}: {reason}; raw={raw_line:?}",
+        raw_line.len()
+    )
 }

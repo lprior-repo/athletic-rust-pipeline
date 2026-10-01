@@ -25,7 +25,11 @@ impl Entity for CanonicalSchool {
     }
 
     fn merge(&mut self, other: Self) {
-        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+        let found = collision(self.id.as_str(), self, &other);
+        for conflict in other.retained_conflicts {
+            record(&mut self.retained_conflicts, conflict);
+        }
+        if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
         }
@@ -63,7 +67,11 @@ impl Entity for CanonicalTeam {
     }
 
     fn merge(&mut self, other: Self) {
-        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+        let found = collision(self.id.as_str(), self, &other);
+        for conflict in other.retained_conflicts {
+            record(&mut self.retained_conflicts, conflict);
+        }
+        if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
         }
@@ -81,7 +89,11 @@ impl Entity for CanonicalCoach {
     }
 
     fn merge(&mut self, other: Self) {
-        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+        let found = collision(self.id.as_str(), self, &other);
+        for conflict in other.retained_conflicts {
+            record(&mut self.retained_conflicts, conflict);
+        }
+        if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
         }
@@ -116,7 +128,11 @@ impl Entity for CanonicalAthlete {
     }
 
     fn merge(&mut self, other: Self) {
-        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+        let found = collision(self.id.as_str(), self, &other);
+        for conflict in other.retained_conflicts {
+            record(&mut self.retained_conflicts, conflict);
+        }
+        if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
         }
@@ -144,7 +160,11 @@ impl Entity for CanonicalMeet {
     }
 
     fn merge(&mut self, other: Self) {
-        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+        let found = collision(self.id.as_str(), self, &other);
+        for conflict in other.retained_conflicts {
+            record(&mut self.retained_conflicts, conflict);
+        }
+        if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
         }
@@ -170,7 +190,11 @@ impl Entity for CanonicalEvent {
     }
 
     fn merge(&mut self, other: Self) {
-        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+        let found = collision(self.id.as_str(), self, &other);
+        for conflict in other.retained_conflicts {
+            record(&mut self.retained_conflicts, conflict);
+        }
+        if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
         }
@@ -185,7 +209,11 @@ impl Entity for CanonicalPerformance {
     }
 
     fn merge(&mut self, other: Self) {
-        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+        let found = collision(self.id.as_str(), self, &other);
+        for conflict in other.retained_conflicts {
+            record(&mut self.retained_conflicts, conflict);
+        }
+        if let Some(conflict) = found {
             record(&mut self.retained_conflicts, conflict);
             return;
         }

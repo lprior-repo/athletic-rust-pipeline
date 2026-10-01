@@ -1,13 +1,13 @@
 use census_domain::model::CanonicalAthlete;
 
 #[derive(Default)]
-pub(super) struct Profiles {
-    pub(super) athletic_net: Option<String>,
-    pub(super) milesplit: Option<String>,
+pub(in crate::workbook) struct Profiles {
+    pub(in crate::workbook) athletic_net: Option<String>,
+    pub(in crate::workbook) milesplit: Option<String>,
     pub(super) other: Vec<String>,
 }
 
-pub(super) fn profiles_of(athlete: &CanonicalAthlete) -> Profiles {
+pub(in crate::workbook) fn profiles_of(athlete: &CanonicalAthlete) -> Profiles {
     let mut profiles = Profiles::default();
     let mut seen: Vec<String> = Vec::new();
     let candidates = athlete.public_profile_urls.iter().cloned().chain(

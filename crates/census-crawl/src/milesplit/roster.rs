@@ -4,7 +4,7 @@ use super::wire::Roster;
 use crate::net::FetchOutcome;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RosterRowLocator {
+pub struct SourceRowLocator {
     pub ordinal: u32,
     pub byte_offset: usize,
     pub byte_length: usize,
@@ -30,7 +30,7 @@ pub enum RosterRejectionKind {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RosterRejection {
-    pub row: RosterRowLocator,
+    pub row: SourceRowLocator,
     pub athlete_id: Option<String>,
     pub kind: RosterRejectionKind,
 }

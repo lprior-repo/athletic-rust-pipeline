@@ -177,44 +177,46 @@ failure, deployment and durable key before operator cancellation; do not mass-ki
 
 ## Export, verification and sealing
 
-Until a recoverable shared input generation exists, stop acquisition before projection and keep it
-stopped through independent readback/seal. Quiescence is an operational precaution, not atomic bundle
-publication. Rebuild derived state before materializing its snapshots: `index` precedes `consolidate`,
-then report/bests/workbook. Review decisions, if required, must be applied before the final generation.
-Use actual CLI help for the chosen serving/offline route; do not mix stores or run revisions.
-An explicit `index` invocation always re-derives mutable projections. Old input receipts do not
-certify that those outputs still exist or reflect current rules; historical receipts are retained
-but no longer skip this pass. This repair does not make the separately replaced tables one atomic
-publication generation.
+Workbook publication captures one bounded, immutable input generation for its logical job.
+Workbook, censuses, best-results, recruiting and audit products derive from that input, not
+independent live-store reads. Review decisions must be applied before capture. Retrying the same
+job reuses its archived input; source advancement refuses that input rather than silently
+recapturing it. A changed input requires a new logical export, for example a new publication root.
+Returning an existing capture also synchronizes its archive directory, so retry success cannot
+skip a previously failed directory-durability step.
+An explicit offline `index` still re-derives mutable projections; those separately replaced tables
+are not the workbook's publication boundary and are not a prerequisite for retained-data export.
+
+`--out` names a publication **directory**, not an XLSX file. A writer holds its publication lock,
+renders into owned staging, hashes the exact artifact inventory, independently reconciles every
+workbook cell and sidecar record, and checks the source fence while switching `current` atomically.
+Completed generations live under `generations/<generation-digest>/`; failed staging and temporary
+pointers are removed without deleting completed or historical generations. Frozen inputs and
+individual artifacts are capped at 8 GiB; the complete artifact inventory is capped at 16 GiB.
 
 ```sh
-cargo xtask export --ingress --out out/census.xlsx --grad-year 2027
-census-service --store <stopped-store> verify --workbook <exact-workbook>
-census-service seal --ingress http://127.0.0.1:18095/ --workbook <exact-workbook> --write
+census-service workbook --ingress http://127.0.0.1:18095/ --out <publication-root> --grad-year 2027
+census-service verify --workbook <publication-root>/current/workbook.xlsx
+census-service seal --ingress http://127.0.0.1:18095/ --workbook <publication-root>/current/workbook.xlsx --write
 ```
 
-For the offline verifier, stop the serving owner first, then restart the same compatible deployment
-before the serving seal call. Name the exact artifact instead of trusting the newest `*.xlsx`.
-Supply the actual `--season`, `--revision` and all applicable repeated `--source-object <key>` values;
-defaults or an incomplete object list are not the run's denominator.
+Standalone `verify` reopens the immutable bundle's frozen input, verifies lineage, hashes and exact
+inventory, and compares every workbook row/cell and JSON/JSONL/CSV sidecar record. It does not open
+the serving store, sample, stride or impose the former 5,000-sample ceiling. It can therefore run
+beside the store owner. Historical loose workbooks without a complete manifest are not certified;
+preserve them and publish a new generation instead of editing old evidence.
 
-The standalone verifier requires the workbook's `Run Metrics` sheet to contain exactly one valid
-`Workbook scope` (`core` or `all_sources`). It requires all 20 performance columns, rejects empty or
-duplicate canonical result IDs across all data rows, and compares every sampled performance cell
-with the scope-aware projection of that exact stored result. `--sample-every 1` still obeys the CLI's
-5,000-sample-per-sheet ceiling. Missing scope metadata fails closed; preserve historical artifacts
-and generate a new workbook rather than editing an old one to appear verified.
+Seal uses the same complete bundle oracle, refuses limited/non-Class-of-2027 or stale-source
+publications, and fences the live source before atomically recording `out/seal.json`. Supply the
+actual `--season`, `--revision` and all applicable repeated `--source-object <key>` values: defaults
+or an incomplete object list are not the run's denominator. Current open-work heuristics remain
+narrower than the complete source-obligation contract. Missing offline measurements remain unknown
+and must refuse rather than default to zero. Full bundle readback is not national coverage,
+fresh-source qualification or all-native-fault certification.
 
-Current seal code checks phase/artifact prerequisites, workbook hash and selected Athletes/Coverage/
-Run Metrics data. It does **not** independently reconcile all performance cells or prove a same-input
-atomic workbook/sidecar bundle. Current open-work heuristics are narrower than the complete source
-obligation contract. Offline missing jurisdiction/source-object measurements remain unknown and
-must refuse, not default to zero. A separate verifier's pass proves only its exercised checks.
-
-`--write` records `out/seal.json`. If an old seal shape cannot decode, preserve it and diagnose an
-explicit version/migration decision; do not edit away required evidence or quietly ignore it. Old
-seals do not certify changed evidence. The complete publication oracle and acceptance requirements
-live in [the active plan](NATIONAL-CENSUS-PLAN.md), not in a command's exit status alone.
+If an old seal shape cannot decode, preserve it and diagnose an explicit version/migration
+decision; do not edit away evidence or quietly ignore it. Old seals do not certify changed input.
+Acceptance requirements live in [the active plan](NATIONAL-CENSUS-PLAN.md), not exit status alone.
 
 ## Backup, deployment and release
 

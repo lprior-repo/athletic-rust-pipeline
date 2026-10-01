@@ -32,29 +32,48 @@ const HEADER: [&str; 24] = [
 
 #[derive(serde::Serialize)]
 pub(crate) struct Row<'a> {
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     athlete_id: &'a str,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     name: &'a str,
+    #[serde(serialize_with = "crate::csv_safety::serialize_optional_text")]
     school: Option<&'a str>,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     state: &'static str,
     grad_year: i16,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     gender: &'a str,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     sport: &'a str,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     event: std::borrow::Cow<'a, str>,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     surface: &'a str,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     wind_class: &'a str,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     timing_class: &'a str,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     best_mark: String,
     best_value: i64,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     measure: &'a str,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     date: &'a str,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     meet: &'a str,
     place: Option<u16>,
     wind_mps: Option<f64>,
+    #[serde(serialize_with = "crate::csv_safety::serialize_optional_text")]
     timing: Option<&'a str>,
     marks_in_event: usize,
+    #[serde(serialize_with = "crate::csv_safety::serialize_optional_text")]
     profile_url: Option<&'a str>,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     performance_id: &'a str,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     source_athlete: &'a str,
+    #[serde(serialize_with = "crate::csv_safety::serialize_text")]
     source_key: &'a str,
 }
 
@@ -128,3 +147,6 @@ fn write_csv_body(temporary: &Path, rows: &[SharedSelection]) -> StoreResult<()>
         source,
     })
 }
+
+#[cfg(test)]
+mod tests;

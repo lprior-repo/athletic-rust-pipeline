@@ -3,9 +3,9 @@ use census_domain::model::{CanonicalCoach, Gender, Sport};
 use super::{ContactState, Slot};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(in crate::workbook::recruiting) struct Named {
-    pub(in crate::workbook::recruiting) name: String,
-    pub(in crate::workbook::recruiting) email: Option<String>,
+pub(in crate::workbook) struct Named {
+    pub(in crate::workbook) name: String,
+    pub(in crate::workbook) email: Option<String>,
     pub(in crate::workbook::recruiting) personal_email: Option<String>,
     pub(in crate::workbook::recruiting) side: Gender,
     pub(in crate::workbook::recruiting) sport: Option<Sport>,
@@ -56,7 +56,7 @@ impl Named {
         true
     }
 
-    pub(in crate::workbook::recruiting) fn address(&self) -> Option<&str> {
+    pub(in crate::workbook) fn address(&self) -> Option<&str> {
         self.email.as_deref().or(self.personal_email.as_deref())
     }
 
@@ -86,12 +86,12 @@ fn provenance(coach: &CanonicalCoach) -> Option<(String, String)> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(in crate::workbook::recruiting) struct Preferred {
-    pub(in crate::workbook::recruiting) name: String,
-    pub(in crate::workbook::recruiting) role: String,
-    pub(in crate::workbook::recruiting) email: String,
-    pub(in crate::workbook::recruiting) state: ContactState,
-    pub(in crate::workbook::recruiting) source_url: String,
+pub(in crate::workbook) struct Preferred {
+    pub(in crate::workbook) name: String,
+    pub(in crate::workbook) role: String,
+    pub(in crate::workbook) email: String,
+    pub(in crate::workbook) state: ContactState,
+    pub(in crate::workbook) source_url: String,
 }
 
 impl Preferred {

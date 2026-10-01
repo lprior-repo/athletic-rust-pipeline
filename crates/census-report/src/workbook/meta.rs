@@ -15,7 +15,7 @@ use std::time::Instant;
 
 mod coverage;
 mod inventory;
-mod metrics;
+pub(in crate::workbook) mod metrics;
 pub mod queues;
 mod schools;
 mod sheets;
@@ -32,7 +32,6 @@ type Sheet = (&'static str, Vec<Vec<Cell>>, &'static [u16], bool);
 pub(super) struct RunFacts<'a> {
     pub(super) population: &'a Derivation<'a>,
     pub(super) recruiting: &'a Derivation<'a>,
-    pub(super) store: &'a census_store::Store,
     pub(super) core: &'a Census,
     pub(super) all_sources: &'a Census,
     pub(super) bests: &'a [SharedSelection],
@@ -75,7 +74,7 @@ pub(super) fn write_meta_sheets(
     Ok(())
 }
 
-struct StoreRows<'d> {
+pub(in crate::workbook) struct StoreRows<'d> {
     schools: &'d [CanonicalSchool],
     meets: &'d [CanonicalMeet],
     athletes: &'d [CanonicalAthlete],
@@ -86,7 +85,7 @@ struct StoreRows<'d> {
     review_cases: &'d [ReviewCase],
 }
 impl<'d> StoreRows<'d> {
-    fn of(
+    pub(in crate::workbook) fn of(
         derivation: &'d Derivation<'_>,
         school_year: census_domain::model::SchoolYear,
     ) -> ReportResult<Self> {
@@ -180,10 +179,10 @@ pub struct QueueRow {
     pub detail: String,
 }
 
-struct Family {
-    label: &'static str,
-    findings: usize,
-    rows: Vec<QueueRow>,
+pub(in crate::workbook) struct Family {
+    pub(in crate::workbook) label: &'static str,
+    pub(in crate::workbook) findings: usize,
+    pub(in crate::workbook) rows: Vec<QueueRow>,
 }
 
 impl Family {
@@ -206,7 +205,7 @@ impl Family {
     }
 }
 
-fn school_name_index(schools: &[CanonicalSchool]) -> HashMap<&str, &str> {
+pub(in crate::workbook) fn school_name_index(schools: &[CanonicalSchool]) -> HashMap<&str, &str> {
     schools
         .iter()
         .map(|school| (school.id.as_str(), school.name.as_str()))
@@ -224,7 +223,9 @@ fn subject_of(name: &str, school: Option<&str>) -> String {
     }
 }
 
-fn sorted_counts(counts: &BTreeMap<String, usize>) -> Vec<(&String, &usize)> {
+pub(in crate::workbook) fn sorted_counts(
+    counts: &BTreeMap<String, usize>,
+) -> Vec<(&String, &usize)> {
     let mut ordered: Vec<(&String, &usize)> = counts.iter().collect();
     ordered.sort_by(|left, right| right.1.cmp(left.1).then_with(|| left.0.cmp(right.0)));
     ordered

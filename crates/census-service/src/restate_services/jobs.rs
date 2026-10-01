@@ -86,8 +86,11 @@ pub(super) fn build_bests(store: &Store, options: &bests::Options) -> ReportResu
 pub(super) fn build_workbook(
     store: &Store,
     options: &workbook::Options,
+    job: &str,
 ) -> ReportResult<WorkbookReply> {
-    let path = workbook::build(store, options)?;
+    let dataset = ExportDataset::for_job(store, job)?;
+    let censuses = workbook::Censuses::of(&dataset, &store.out_dir());
+    let path = workbook::build_from(&dataset, store, options, &censuses)?;
     Ok(WorkbookReply {
         path: path.display().to_string(),
         grad_year: options.grad_year,

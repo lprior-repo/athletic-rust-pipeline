@@ -132,6 +132,20 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
     event.evidence.push(observation());
     store.append(Table::Events, &event).unwrap();
 
+    let season = SchoolYear::new(2026).expect("2026 is a season");
+    let team = CanonicalTeam {
+        id: CanonicalTeam::mint(&school_id, Sport::OutdoorTrack, Gender::Boys, season),
+        school: school_id.clone(),
+        sport: Sport::OutdoorTrack,
+        gender: Gender::Boys,
+        school_year: season,
+        level: None,
+        source_identities: Vec::new(),
+        evidence: vec![observation()],
+        retained_conflicts: Vec::new(),
+    };
+    store.append(Table::Teams, &team).unwrap();
+
     let source_key = format!("test:{}:{}", fixture.athlete, fixture.date);
     let performance = CanonicalPerformance {
         id: CanonicalPerformance::mint(
@@ -142,12 +156,7 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
             &source_key,
         ),
         athlete: athlete.id.clone(),
-        team: CanonicalTeam::mint(
-            &school_id,
-            Sport::OutdoorTrack,
-            Gender::Boys,
-            SchoolYear::new(2026).expect("2026 is a season"),
-        ),
+        team: team.id.clone(),
         event: event_id,
         meet: meet_id,
         date: fixture.date.to_string(),
@@ -522,6 +531,7 @@ fn a_performance_the_store_cannot_join_is_still_written() {
     assert_eq!(row.meet, "");
     assert_eq!(row.state, None);
     assert_eq!(row.event, "");
+    assert_eq!(row.school, "");
     assert_eq!(row.normalized, Some(120.5));
 
     let path = dir.path().join("book.xlsx");
@@ -558,3 +568,5 @@ fn the_frozen_entry_point_writes_the_partitioned_sheets() {
         .collect();
     assert_eq!(printed, header);
 }
+
+mod affiliation;

@@ -37,21 +37,13 @@ pub(super) fn workbook_path(store: &Store, named: Option<&Path>) -> Result<Optio
         }
         return Ok(Some(path.to_path_buf()));
     }
-    let out = store.out_dir();
-    let mut newest: Option<(std::time::SystemTime, PathBuf)> = None;
-    for entry in std::fs::read_dir(&out).with_context(|| format!("reading {}", out.display()))? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.extension().is_none_or(|ext| ext != "xlsx") {
-            continue;
-        }
-        let modified = entry
-            .metadata()
-            .and_then(|meta| meta.modified())
-            .unwrap_or(std::time::UNIX_EPOCH);
-        if newest.as_ref().is_none_or(|(seen, _)| modified > *seen) {
-            newest = Some((modified, path));
-        }
+    let root = store.out_dir().join("publication");
+    let pointer = root.join("current");
+    match std::fs::symlink_metadata(&pointer) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error).with_context(|| format!("reading {}", pointer.display())),
+        Ok(_) => census_report::workbook::publication::current_workbook(&root)
+            .map(Some)
+            .context("resolving the published generation"),
     }
-    Ok(newest.map(|(_, path)| path))
 }

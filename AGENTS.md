@@ -112,8 +112,14 @@ specific evidence collection, not repeated architecture audits.
 
 **Hard agent policy:** never spawn `luna-*` or the unnamed/default `task` worker (its default model
 is forbidden). Always name an allowed agent explicitly: `gpu5090-coder`, `gpu3090-coder`,
-`deepseek-flash`, `scout`, `reviewer`, `security-reviewer` or `sonic`. Workers may not edit outside
-ownership, change interfaces silently or reactivate finished peers.
+`deepseek-flash`, `scout`, `reviewer`, `security-reviewer`, `sonic` or `sol-reviewer`. Workers may not edit
+outside ownership, change interfaces silently or reactivate finished peers.
+
+The owner has authorized `sol-reviewer` for SOL-only delivery. Its repository definition is
+`.agents/sol-reviewer.md`; OMP discovers the existing definition in the ancestor `.omp/agents/`.
+Use its explicit `openai-codex/gpt-6.1-sol:high` selection for requested SOL-only work; do not launch
+the older Luna, Qwen or DeepSeek selections as substitutes. Caller-assigned file ownership and the
+no-build/no-test rule during concurrent edits still apply.
 
 ## Delivery loop
 

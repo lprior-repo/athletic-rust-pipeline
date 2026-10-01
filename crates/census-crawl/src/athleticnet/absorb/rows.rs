@@ -1,4 +1,4 @@
-use super::Ctx;
+use super::{Ctx, ProfileRows, Scope};
 use crate::athleticnet::map::{grade_in, meet_for, store_performance, PerformanceInput};
 use crate::athleticnet::parse::{parse_mark, round_of, timing_of, Bio, TfRow, XcRow};
 use census_domain::model::{
@@ -29,10 +29,24 @@ impl<'a> Ctx<'a> {
             .map(|event| (event.id, event.label.as_str()))
             .collect();
         let mut rows = 0u64;
-        for row in bio.results_tf.iter().flatten() {
+        for (position, row) in bio.results_tf.iter().flatten().enumerate() {
             if let Some(resolved) = self.resolve_tf_row(bio, row, &labels) {
                 self.store_tf_row(row, &resolved, athlete_id, gender);
                 rows = rows.saturating_add(1);
+            } else {
+                ProfileRows {
+                    bio,
+                    scope: Scope::TrackField,
+                    source: self.source,
+                    observed_on: self.observed_on,
+                }
+                .reject_result(
+                    self.accumulated,
+                    position,
+                    row.id,
+                    &row.result,
+                    row.school_id,
+                );
             }
         }
         rows
@@ -40,10 +54,24 @@ impl<'a> Ctx<'a> {
 
     pub(super) fn cross_rows(&mut self, bio: &Bio, athlete_id: &AthleteId, gender: Gender) -> u64 {
         let mut rows = 0u64;
-        for row in bio.results_xc.iter().flatten() {
+        for (position, row) in bio.results_xc.iter().flatten().enumerate() {
             if let Some(resolved) = self.resolve_xc_row(bio, row) {
                 self.store_xc_row(row, &resolved, athlete_id, gender);
                 rows = rows.saturating_add(1);
+            } else {
+                ProfileRows {
+                    bio,
+                    scope: Scope::CrossCountry,
+                    source: self.source,
+                    observed_on: self.observed_on,
+                }
+                .reject_result(
+                    self.accumulated,
+                    position,
+                    row.id,
+                    &row.result,
+                    row.school_id,
+                );
             }
         }
         rows

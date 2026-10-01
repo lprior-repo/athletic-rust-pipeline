@@ -30,6 +30,11 @@ pub enum ReportError {
     },
     #[error("{detail}")]
     Invariant { detail: String },
+    #[error("publication failed: {operation}; temporary cleanup also failed: {cleanup}")]
+    Cleanup {
+        operation: Box<ReportError>,
+        cleanup: Box<ReportError>,
+    },
 }
 
 pub type ReportResult<T, E = ReportError> = std::result::Result<T, E>;

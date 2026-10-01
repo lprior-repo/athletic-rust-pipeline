@@ -30,3 +30,31 @@ fn escaped_entities_decode_in_labels() {
     assert_eq!(html_unescape("100 &lt; 200"), "100 < 200");
     assert_eq!(html_unescape("bad &#zzz; entity"), "bad &#zzz; entity");
 }
+
+#[test]
+fn numeric_references_decode_decimal_and_hex_forms() {
+    for (encoded, decoded) in [
+        ("Girls&#39; Javelin", "Girls' Javelin"),
+        ("O&#039;Connell, Kenzie", "O'Connell, Kenzie"),
+        ("18&#176; and rising", "18\u{b0} and rising"),
+        ("200m&#x2014;final", "200m\u{2014}final"),
+        ("R&amp;D &#38; Sons", "R&D & Sons"),
+    ] {
+        assert_eq!(html_unescape(encoded), decoded, "encoded {encoded:?}");
+    }
+}
+
+#[test]
+fn malformed_references_stay_verbatim() {
+    for encoded in [
+        "&#;",
+        "&#zzz;",
+        "&#1114112;",
+        "&#xD800;",
+        "&#123456789;",
+        "&#x",
+        "Fish & Chips",
+    ] {
+        assert_eq!(html_unescape(encoded), encoded, "encoded {encoded:?}");
+    }
+}

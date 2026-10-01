@@ -58,10 +58,12 @@ can alter robots handling; its presence is not permission to bypass access polic
 work around denial or challenges. Identity/review, cohort, contacts and PR semantics live in
 [ARCHITECTURE.md](../../ARCHITECTURE.md) §§8–9, not command-specific variants.
 
-Current workbook generation and seal checks are not proof of a recoverable same-snapshot atomic
-bundle or full record-level reconciliation. The required output and oracle are in
-[the delivery plan](../../docs/NATIONAL-CENSUS-PLAN.md). A successful command only establishes the
-behavior actually observed and verified.
+Workbook publication now captures a recoverable immutable input, verifies the complete
+workbook/sidecar bundle and atomically switches its generation pointer. Standalone verification
+does not open the live store; seal uses the same full-record oracle with a source fence.
+See [OPERATIONS.md](../../docs/OPERATIONS.md) for publication-directory commands and bounds.
+This does not certify national source coverage, unresolved identities or all native fault lanes;
+those requirements remain in [the delivery plan](../../docs/NATIONAL-CENSUS-PLAN.md).
 
 ## CSV projections
 

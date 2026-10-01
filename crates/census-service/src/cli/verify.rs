@@ -1,212 +1,30 @@
-use std::collections::HashMap;
-use std::path::PathBuf;
-
-use anyhow::{bail, Context, Result};
-use calamine::Reader;
+use anyhow::{Context, Result};
+use census_report::workbook::publication::{current_workbook, verify_published};
 use clap::Args;
-
-use census_reconcile::verify::{
-    self, column_index, missing_columns, sheets_matching_prefix, verify_athletes,
-    verify_performances, ATHLETES_REQUIRED, PERFORMANCES_REQUIRED,
-};
-use census_report::report::Scope;
-use census_store::Store;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Args)]
 #[command(
-    about = "Sampled row-level check of the published Athletes and Performances sheets against the store"
+    about = "Verify the complete published workbook against its durable frozen input and generation manifest"
 )]
 pub struct VerifyArgs {
-    #[arg(help = "The workbook to verify. Defaults to the newest `out/*.xlsx`")]
-    #[arg(long)]
-    pub workbook: Option<PathBuf>,
-
     #[arg(
-        help = "Sampling stride: check every k-th data row. Larger values check fewer rows. At most 5 000 samples per sheet regardless of k"
+        long,
+        help = "Manifested generation workbook. Defaults to out/publication/current/workbook.xlsx"
     )]
-    #[arg(long, default_value_t = 10)]
-    pub sample_every: usize,
+    pub workbook: Option<PathBuf>,
 }
 
-fn find_workbook(store: &Store, _args: &VerifyArgs) -> Result<PathBuf> {
-    let out_dir = store.out_dir();
-    let mut candidates: Vec<PathBuf> = Vec::new();
-
-    for entry in std::fs::read_dir(&out_dir)
-        .with_context(|| format!("reading output directory {}", out_dir.display()))?
-    {
-        let entry = entry.with_context(|| format!("listing entry in {}", out_dir.display()))?;
-        let path = entry.path();
-        if path.extension().is_some_and(|ext| ext == "xlsx") {
-            candidates.push(path);
-        }
-    }
-
-    candidates.sort_by(|a, b| {
-        let a_time = a.metadata().ok().and_then(|m| m.modified().ok());
-        let b_time = b.metadata().ok().and_then(|m| m.modified().ok());
-        b_time.cmp(&a_time)
-    });
-
-    candidates
-        .first()
-        .cloned()
-        .ok_or_else(|| anyhow::anyhow!("no .xlsx workbook found in {}", out_dir.display()))
-}
-
-fn read_workbook_sheets(path: &std::path::Path) -> Result<HashMap<String, Vec<Vec<String>>>> {
-    let mut book = calamine::open_workbook_auto(path)
-        .with_context(|| format!("opening {}", path.display()))?;
-
-    let mut sheets = HashMap::new();
-    for sheet_name in book.sheet_names() {
-        let range = book
-            .worksheet_range(&sheet_name)
-            .with_context(|| format!("reading sheet {sheet_name}"))?;
-
-        let rows: Vec<Vec<String>> = range
-            .rows()
-            .map(|row| {
-                row.iter()
-                    .map(|cell| match cell {
-                        calamine::Data::String(text) => text.clone(),
-                        calamine::Data::Empty => String::new(),
-                        other => other.to_string(),
-                    })
-                    .collect()
-            })
-            .collect();
-
-        sheets.insert(sheet_name.to_string(), rows);
-    }
-
-    Ok(sheets)
-}
-
-fn verify_athletes_sheet(
-    sheets: &HashMap<String, Vec<Vec<String>>>,
-    store: &Store,
-    sample_every: usize,
-) -> Result<(usize, census_reconcile::verify::EntityCheck)> {
-    if !sheets.contains_key("Athletes") {
-        bail!("workbook has no 'Athletes' sheet");
-    }
-
-    let athletes_rows = sheets
-        .get("Athletes")
-        .ok_or_else(|| anyhow::anyhow!("'Athletes' sheet is missing"))?;
-
-    let athletes_headers = athletes_rows
-        .first()
-        .ok_or_else(|| anyhow::anyhow!("'Athletes' sheet has no header row"))?;
-
-    let athletes_missing = missing_columns(athletes_headers, ATHLETES_REQUIRED);
-    if !athletes_missing.is_empty() {
-        bail!(
-            "'Athletes' sheet missing required columns: {}",
-            athletes_missing.join(", ")
-        );
-    }
-
-    let athletes_col_map: HashMap<&str, usize> = ATHLETES_REQUIRED
-        .iter()
-        .filter_map(|&name| column_index(athletes_headers, name).map(|i| (name, i)))
-        .collect();
-
-    let athletes_data = athletes_rows
-        .get(1..)
-        .ok_or_else(|| anyhow::anyhow!("'Athletes' sheet has no header row"))?;
-    let athletes_total = athletes_data.len();
-    let athletes_sampled = verify::sample_indices(athletes_total, sample_every);
-
-    let athletes_check =
-        verify_athletes(store, athletes_data, &athletes_sampled, &athletes_col_map)
-            .map_err(|d| anyhow::anyhow!("athletes verification failed: {}", d.message))?;
-
-    Ok((athletes_total, athletes_check))
-}
-
-fn verify_performances_sheets(
-    sheets: &HashMap<String, Vec<Vec<String>>>,
-    store: &Store,
-    sample_every: usize,
-) -> Result<(usize, census_reconcile::verify::EntityCheck)> {
-    let perf_rows = sheets_matching_prefix(sheets, "Performances_");
-    let perf_headers = perf_rows
-        .first()
-        .ok_or_else(|| anyhow::anyhow!("Performances sheet has no header row"))?;
-
-    let perf_missing = missing_columns(perf_headers, PERFORMANCES_REQUIRED);
-    if !perf_missing.is_empty() {
-        bail!(
-            "'Performances' sheet missing required columns: {}",
-            perf_missing.join(", ")
-        );
-    }
-
-    let perf_col_map: HashMap<&str, usize> = PERFORMANCES_REQUIRED
-        .iter()
-        .filter_map(|&name| column_index(perf_headers, name).map(|i| (name, i)))
-        .collect();
-
-    let perf_data = perf_rows
-        .get(1..)
-        .ok_or_else(|| anyhow::anyhow!("Performances sheet has no header row"))?;
-    let perf_total = perf_data.len();
-    let perf_sampled = verify::sample_indices(perf_total, sample_every);
-
-    let scope = workbook_scope(sheets)?;
-    let perf_check = verify_performances(store, perf_data, &perf_sampled, &perf_col_map, scope)
-        .map_err(|d| anyhow::anyhow!("performances verification failed: {}", d.message))?;
-
-    Ok((perf_total, perf_check))
-}
-
-fn workbook_scope(sheets: &HashMap<String, Vec<Vec<String>>>) -> Result<Scope> {
-    let rows = sheets
-        .get("Run Metrics")
-        .ok_or_else(|| anyhow::anyhow!("'Run Metrics' sheet is missing"))?;
-    let (count, value) = rows
-        .iter()
-        .filter(|row| row.first().is_some_and(|name| name == "Workbook scope"))
-        .fold((0_usize, None), |(count, _), row| {
-            (count.saturating_add(1), row.get(1).map(String::as_str))
-        });
-    match (count, value) {
-        (1, Some("core")) => Ok(Scope::Core),
-        (1, Some("all_sources")) => Ok(Scope::AllSources),
-        _ => bail!("'Run Metrics' must contain one valid 'Workbook scope' value"),
-    }
-}
-
-pub fn run_verify(store: &Store, args: &VerifyArgs) -> Result<()> {
-    let workbook_path = match &args.workbook {
+pub fn run_verify(store_root: &Path, args: &VerifyArgs) -> Result<()> {
+    let path = match &args.workbook {
         Some(path) => path.clone(),
-        None => find_workbook(store, args)?,
+        None => current_workbook(&store_root.join("out/publication"))
+            .context("resolving the published generation")?,
     };
-
-    if !workbook_path.exists() {
-        bail!("workbook not found: {}", workbook_path.display());
-    }
-
-    let sheets = read_workbook_sheets(&workbook_path)?;
-
-    let (athletes_total, athletes_check) =
-        verify_athletes_sheet(&sheets, store, args.sample_every)?;
-    let (perf_total, perf_check) = verify_performances_sheets(&sheets, store, args.sample_every)?;
-
-    let ok = athletes_check.passed == athletes_check.sampled_indices.len()
-        && perf_check.passed == perf_check.sampled_indices.len();
-
-    if ok {
-        println!(
-            "verify: OK ({} athletes sampled of {} rows, {} performances sampled of {} rows)",
-            athletes_check.passed, athletes_total, perf_check.passed, perf_total
-        );
-    } else {
-        println!("verify: FAILED");
-        bail!("verification failed");
-    }
-
+    verify_published(&path).context("verifying the complete frozen publication")?;
+    println!(
+        "verify: OK (complete frozen generation)\t{}",
+        path.display()
+    );
     Ok(())
 }

@@ -52,7 +52,6 @@ fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> std::path::PathBuf 
         RunFacts {
             population: &population,
             recruiting: &recruiting,
-            store,
             core: &core,
             all_sources: &all_sources,
             bests: &bests,

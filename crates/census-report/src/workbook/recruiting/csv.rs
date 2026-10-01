@@ -5,6 +5,7 @@ use census_domain::model::{CanonicalAthlete, CanonicalSchool, SchoolYear};
 
 use super::contact::{contacts, scoped, ScopedContacts};
 use super::profiles::profiles_of;
+use crate::csv_safety::protect_owned;
 use crate::report::{Derivation, ReportError, ReportResult};
 
 const HEADERS: [&str; 20] = [
@@ -66,9 +67,7 @@ pub fn write_recruiting_csv(
             &contact,
             status.as_str(),
         );
-        writer
-            .write_record(row)
-            .map_err(|error| csv_error(path, error))?;
+        write_row(&mut writer, row, path)?;
         counts.with_school_coach = increment(counts.with_school_coach, has_coach)?;
         counts.with_coach_email = increment(counts.with_coach_email, has_email)?;
     }
@@ -76,6 +75,22 @@ pub fn write_recruiting_csv(
         .flush()
         .map_err(|source| crate::report::io_error(path, source))?;
     Ok(counts)
+}
+
+fn write_row<W: std::io::Write>(
+    writer: &mut csv::Writer<W>,
+    row: impl Iterator<Item = String>,
+    path: &Path,
+) -> ReportResult<()> {
+    for field in row {
+        let field = protect_owned(field).map_err(|source| literal_error(path, source))?;
+        writer
+            .write_field(field.as_str())
+            .map_err(|error| csv_error(path, error))?;
+    }
+    writer
+        .write_record(std::iter::empty::<&str>())
+        .map_err(|error| csv_error(path, error))
 }
 
 fn record(
@@ -167,6 +182,18 @@ fn increment(count: usize, present: bool) -> ReportResult<usize> {
         })
 }
 
+fn literal_error(path: &Path, source: std::collections::TryReserveError) -> ReportError {
+    ReportError::Invariant {
+        detail: format!(
+            "allocating literal CSV text for {}: {source}",
+            path.display()
+        ),
+    }
+}
+
 fn csv_error(path: &Path, source: csv::Error) -> ReportError {
     crate::report::io_error(path, std::io::Error::other(source))
 }
+
+#[cfg(test)]
+mod tests;

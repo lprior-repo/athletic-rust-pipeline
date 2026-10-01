@@ -8,10 +8,9 @@ use std::collections::BTreeSet;
 
 use census_domain::model::{CanonicalAthlete, CanonicalCoach, Gender, SchoolYear, Sport};
 use heads::Outcome;
-use normalise::Named;
 
-pub(super) use normalise::Preferred;
-pub(super) use school::{contacts, SchoolContacts};
+pub(in crate::workbook) use normalise::{Named, Preferred};
+pub(in crate::workbook) use school::{contacts, SchoolContacts};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::workbook) enum ContactState {
@@ -89,7 +88,7 @@ pub(in crate::workbook) fn disagreements(
         .collect()
 }
 
-pub(super) struct ScopedContacts<'a> {
+pub(in crate::workbook) struct ScopedContacts<'a> {
     outdoor: &'a Outcome,
     indoor: &'a Outcome,
     cross_country: &'a Outcome,
@@ -98,7 +97,7 @@ pub(super) struct ScopedContacts<'a> {
     athlete: &'a CanonicalAthlete,
 }
 
-pub(super) fn scoped<'a>(
+pub(in crate::workbook) fn scoped<'a>(
     school: Option<&'a SchoolContacts>,
     athlete: &'a CanonicalAthlete,
 ) -> ScopedContacts<'a> {
@@ -135,7 +134,7 @@ impl ScopedContacts<'_> {
         .into_iter()
     }
 
-    pub(super) fn preferred(&self) -> Preferred {
+    pub(in crate::workbook) fn preferred(&self) -> Preferred {
         let mut named = None;
         let mut blocker = None;
         for (slot, outcome) in self.heads() {
@@ -169,11 +168,11 @@ impl ScopedContacts<'_> {
         )
     }
 
-    pub(super) fn track_names(&self) -> Option<String> {
+    pub(in crate::workbook) fn track_names(&self) -> Option<String> {
         self.track_field(|coach| Some(coach.name.as_str()))
     }
 
-    pub(super) fn track_emails(&self) -> Option<String> {
+    pub(in crate::workbook) fn track_emails(&self) -> Option<String> {
         self.track_field(Named::address)
     }
 
@@ -199,20 +198,20 @@ impl ScopedContacts<'_> {
         (!text.is_empty()).then_some(text)
     }
 
-    pub(super) fn cross_country(&self) -> Option<&Named> {
+    pub(in crate::workbook) fn cross_country(&self) -> Option<&Named> {
         self.cross_country.named()
     }
 
-    pub(super) fn director(&self) -> Option<&Named> {
+    pub(in crate::workbook) fn director(&self) -> Option<&Named> {
         self.director.named()
     }
 
-    pub(super) fn professional_coach_email(&self) -> Option<&str> {
+    pub(in crate::workbook) fn professional_coach_email(&self) -> Option<&str> {
         self.heads()
             .find_map(|(_, outcome)| outcome.named()?.email.as_deref())
     }
 
-    pub(super) fn all_emails(&self) -> String {
+    pub(in crate::workbook) fn all_emails(&self) -> String {
         let assistants = self.assistants.iter().filter(|coach| {
             coach
                 .sport

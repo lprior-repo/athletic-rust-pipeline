@@ -40,7 +40,7 @@ pub(super) const DEFAULT_STORE_ROOT: &str = "var/census-service";
 )]
 pub(super) struct Cli {
     #[arg(
-        help = "Store root (HTTP cache, journals, entity logs, output snapshots). Naming it selects the offline path: this command opens the store itself, which requires `census-serve` stopped, because a Fjall store has one writer. Omitted, a pipeline command submits its work to the running service through the Restate ingress instead and opens nothing"
+        help = "Store root (cache, journals, entity logs and output). Selects offline store access, requiring census-serve stopped. Exception: verify reads only the immutable bundle and uses this root for its default artifact path. Other pipeline commands default to the running Restate service"
     )]
     #[arg(long, global = true, value_name = "DIR")]
     store: Option<PathBuf>,
@@ -147,6 +147,7 @@ pub(super) async fn run() -> Result<()> {
         Command::VerifyCoaches(args) => verify_coaches::run_verify_coaches(args).await,
         Command::CensusDoc(args) => census_doc::run_census_doc(args),
         Command::StoreBackup(args) => store::run_backup(&cli.store_root(), args),
+        Command::Verify(args) => verify::run_verify(&cli.store_root(), args),
         Command::Serve => serve::run_serve(&cli),
         _ => {
             let store = Store::open(cli.store_root())?;

@@ -96,6 +96,10 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome, SealWor
         .map_err(|error| SealWorkflowError::PhaseDetection(error.to_string()))?;
     let recorded = recorded_seal(store)
         .map_err(|error| SealWorkflowError::SealRecording(error.to_string()))?;
+    let source_fence = store.fenced_snapshot();
+    dataset
+        .ensure_snapshot(source_fence.view())
+        .map_err(|error| SealWorkflowError::Workbook(error.to_string()))?;
     let refusal = state
         .seal(evidence.clone())
         .err()
@@ -156,11 +160,14 @@ fn recorded_seal(store: &Store) -> Result<Option<SealedCensus>, SealWorkflowErro
 
 fn write_seal(store: &Store, state: &CensusState) -> Result<PathBuf, SealWorkflowError> {
     let out = store.out_dir().join("seal.json");
-    std::fs::write(
-        &out,
-        serde_json::to_vec_pretty(state)
-            .map_err(|error| SealWorkflowError::SealWrite(error.to_string()))?,
-    )
+    let bytes = serde_json::to_vec_pretty(state)
+        .map_err(|error| SealWorkflowError::SealWrite(error.to_string()))?;
+    census_store::read::publish_atomically(&out, |temporary| {
+        std::fs::write(temporary, &bytes).map_err(|source| census_store::StoreError::Io {
+            path: temporary.to_path_buf(),
+            source,
+        })
+    })
     .map_err(|error| SealWorkflowError::SealWrite(error.to_string()))?;
     Ok(out)
 }

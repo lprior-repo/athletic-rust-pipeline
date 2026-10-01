@@ -2,7 +2,7 @@ use crate::report::{ReportResult, Scope};
 use crate::workbook::cells::{row, Cell};
 
 mod census;
-mod counters;
+pub(in crate::workbook) mod counters;
 mod reconcile;
 mod store;
 
@@ -37,9 +37,7 @@ pub(super) fn metrics_sheet(
     ));
     cells.push(row!("Cohort behind the counters", "class of 2027"));
     cells.push(row!());
-    cells.extend(store::store_counters(facts.store)?);
-    cells.push(row!());
-    cells.extend(store::cache_block(facts.store)?);
+    cells.extend(store::frozen_counters(facts.population.dataset())?);
     cells.push(row!());
     cells.extend(census::scope_counters(facts.core, facts.all_sources)?);
     cells.push(row!());

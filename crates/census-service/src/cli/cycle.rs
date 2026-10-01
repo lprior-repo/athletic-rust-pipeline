@@ -248,5 +248,11 @@ async fn gather_athleticnet(
     for note in &report.notes {
         println!("\t{note}");
     }
+    if report.errors > 0 {
+        anyhow::bail!(
+            "Athletic.net gathering remains incomplete: {} acquisition or admission errors",
+            report.errors
+        );
+    }
     Ok(())
 }

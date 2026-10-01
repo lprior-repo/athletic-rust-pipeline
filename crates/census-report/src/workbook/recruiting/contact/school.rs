@@ -6,19 +6,19 @@ use super::heads::{individuals, Heads};
 use super::{Named, Slot};
 
 #[derive(Debug, Clone)]
-pub(in crate::workbook::recruiting) struct SchoolContacts {
+pub(in crate::workbook) struct SchoolContacts {
     pub(super) school: SchoolId,
     pub(in crate::workbook::recruiting) heads: Heads,
     pub(super) assistants: Vec<Named>,
 }
 
 impl SchoolContacts {
-    pub(in crate::workbook::recruiting) fn director(&self) -> Option<&Named> {
+    pub(in crate::workbook) fn director(&self) -> Option<&Named> {
         self.heads.resolve(Slot::Director, Gender::Mixed).named()
     }
 }
 
-pub(in crate::workbook::recruiting) fn contacts(
+pub(in crate::workbook) fn contacts(
     coaches: &[CanonicalCoach],
     school_year: SchoolYear,
 ) -> BTreeMap<String, SchoolContacts> {

@@ -6,6 +6,186 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Retained-data native Restate publication — 2026-10-01
+
+The owner requested completion of the accuracy/publication cutover followed by running the local
+retained data in Restate, **not another full scrape**. This run reused `var/run-2027-v2` and preserved
+its historical outputs, captures and seals. It did not reparse old source captures, invoke offline
+`index`, or submit discovery, sweep, profile, meet or other acquisition work. Parser regressions
+below do not retroactively certify historical parsed facts.
+
+### Native execution and immutable generation
+
+Run directory: `var/retained-publication-20261001T155243Z/`. Native Restate 1.6.2 used a fresh
+base-dir and invocation log from that directory's `restate.toml`: node port 15173, ingress 18195,
+admin 19195. The retained store had one owning endpoint on 9192, with concurrency 1 and a
+120-second drain budget. The browser lane was not configured: nine services, not ten, registered
+under deployment `dp_13DrIudmMxn6v1ouXQGbN73`.
+
+```sh
+env RUST_LOG=info /home/lewis/bin/restate-server --no-logo -c var/retained-publication-20261001T155243Z/restate.toml
+env RUST_LOG=info target/release/census-serve --listen 127.0.0.1:9192 --data-dir var/run-2027-v2 --max-concurrent 1 --drain-timeout 120
+curl -X POST http://127.0.0.1:19195/deployments -H 'content-type: application/json' -d '{"uri":"http://127.0.0.1:9192/"}'
+target/release/census-service workbook --ingress http://127.0.0.1:18195/ --grad-year 2027 --out /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/retained-publication-20261001T155243Z/publication
+target/release/census-service --store var/run-2027-v2 verify --workbook var/retained-publication-20261001T155243Z/publication/current/workbook.xlsx
+```
+
+The Workbook call completed in **454.95 seconds** and returned
+`publication/generations/e6a1add00c193f98a1234e51d1a275f80d60bdf81199814160cf89c1d71f9a44/workbook.xlsx`.
+The standalone verifier returned `verify: OK (complete frozen generation)` in **137.55 seconds**
+while the store owner was still serving. After verifier module/caller integration, the rebuilt
+release CLI repeated that complete verification successfully in **129.04 seconds**. Verification
+opens the bundle's frozen input, not the live store.
+
+Admin SQL `SELECT id, status, target, target_service_name FROM sys_invocation` returned exactly one
+row: `inv_1fw08I7zroh03Ru8n3hw83jbakZJg36cQ0`, `completed`, service `Workbook`. The full target
+and result are preserved in `invocations.json`. This proves the submitted workflow boundary and,
+together with unchanged source tables below, excludes a new acquisition run; it is not a claim
+that the native node made zero incidental network requests.
+
+Manifest selection is `all_sources`, graduation year 2027, unlimited. Identities:
+
+| Field | Observed value |
+|---|---|
+| Store identity | `f43cfdd12e1bf8b877c0553a4c801a13237cd5b065c5c85d31866f7062e9c337` |
+| Input generation | `e18ab4bbb2548bfcb64bcbb2e612aca09ad8011b6430c39e019e6b0efc07c9e0` |
+| Input digest | `90d5a4c0929e4d9694d5b56deaa25ba0957edc7f4652491c9ecb18beae818b4c` |
+| Source digest | `b79a1e738856daf186008350d5cb9c0987c77906a3a398019a0c351f75973510` |
+| Snapshot sequence | 97602 |
+| Schema / policy revision | 1 / 1 |
+| Frozen input bytes | 4,894,073,414 |
+| XLSX bytes / SHA-256 | 140,548,891 / `4d5b14c5e59569e3be9c31d4b02066861f06f687d29713070972cce55b4173d9` |
+| Complete workbook readback rows | 1,912,569 |
+| Class-of-2027 athlete rows | 836,928 |
+| PR rows | 127,496 |
+
+The all-sources census reports 23,424 schools and 3,212,179 projected athletes. Class-of-2027
+counts: boys 465,611; girls 356,243; unknown gender 15,074; profile URL 577,481; coach association
+91,906; coach email 34,222. These are retained-data projections, not a certified national
+denominator or accepted cross-source population. Census multisource count is zero. The workbook
+keeps 293,307 conflict rows and 333,823 review rows visible, rather than sealing their absence.
+The exact eight-artifact inventory, sizes and hashes live in the generation's `manifest.json`.
+
+### Source preservation and shutdown
+
+`target/release/census-service --store var/run-2027-v2 fjall-stats` ran before serving and after
+the owning process exited. Every physical source/derived table count was unchanged:
+
+| Table | Before = after |
+|---|---:|
+| schools / teams / coaches | 78,624 / 357,133 / 31,788 |
+| athletes / meets / events / performances | 8,460,083 / 5,863 / 855,889 / 1,024,921 |
+| source_identities / source_meets / source_observations | 3,243,879 / 65,023 / 7,513,786 |
+| conflicts / review_cases | 293,307 / 341,333 |
+| coverage / snapshots / source_access | 65 / 2 / 0 |
+| identity_verdicts / athlete_identity_decisions | 27,794 / 2,023,939 |
+| observations | 18,393,110 |
+
+Physical observations are not distinct athlete counts. Journal/export files changed as expected;
+physical table equality is not a claim of a byte-identical store. Fjall `bytes_on_disk` changed
+from 5,578,077,700 to 5,242,524,064 and `store_bytes` from 21,627,165,514 to 26,243,324,042.
+
+Shutdown used `kill -TERM 1225433` for census-serve, waited for exit 0 and retained:
+
+```text
+drained: accepted=4 completed=4 cancelled=0 timed_out=0 aborted=0 panicked=0
+```
+
+Then `kill -TERM 1200714` stopped native Restate with exit 0. Its log records graceful shutdown in
+159.830822 ms. `ss -ltnp '( sport = :9192 or sport = :18195 or sport = :19195 or sport = :15173 )'`
+returned only the header; `pgrep -a -x '(restate-server|census-serve)'` returned no processes
+(exit 1). The configuration, native journal, invocation response, `serve.log`, `restate.log` and
+published artifacts remain under the run directory. An earlier endpoint attempt correctly failed
+on occupied port 9092; the unrelated bazel-remote listener was not stopped.
+
+### Integration verification boundary
+
+Source regressions cover document-relative UTF-8 MileSplit locators, Athletic.net final/preliminary
+event separation and accurate missing-state counters. Captured WY SS28UB coach summary retains
+four Nicole Biltoft contexts and counts four rejected JV rows, with admission filters preceding
+deduplication. The earlier prototype golden is historical evidence, not the current Rust oracle.
+
+Observed commands before final gate:
+
+| Command | Result |
+|---|---|
+| `cargo test -p census-crawl --lib` | 600 passed |
+| `cargo test -p census-report --lib` | 150 passed |
+| `cargo test -p census-service --lib` | 191 passed |
+| `cargo test -p census-service --test exporter_kill_restart` | 2 passed; isolated child-process crash/restart, not this retained native run |
+| `cargo test -p census-service --test offline_cycle --test parity_pipeline` | 2 passed after migrating obsolete flat-path/byte-parity callers |
+| `cargo build -p census-service --release --bins` | Passed after verifier integration |
+
+An isolated public-API archive smoke also exercised a real filesystem write failure. A disposable
+`census-report` example prepared an empty-store frozen input under `input-cleanup-smoke/`, then
+`prlimit --fsize=1:1 bash -c 'trap "" XFSZ; exec target/debug/examples/archive_failure_smoke var/retained-publication-20261001T155243Z/input-cleanup-smoke fail'`
+forced `save_frozen` to fail with `File too large (os error 27)`. The process exited 0 only after
+checking that its owned partial destination was removed. The example was removed after execution.
+Archive-save cleanup preserves the original error and any cleanup failure; archive-link failures
+also remove their owned temporary file without deleting completed archives. This smoke does not
+certify interruption during input capture or failed filesystem cleanup.
+
+Final read-only review found three accuracy edges and one archive retry-durability gap. Main's
+602-test pre-fix run reproduced: CRLF locator included `\r`, missing-state row count was 1 rather
+than 2, and a rejected duplicate-ID staff record hid Ada's admissible school contact
+(`artifact://644`: 599 passed, 3 failed). Repairs preserve original-byte offsets while excluding
+line terminators, count every withheld missing-state result (including the empty-profile boundary),
+and apply admission to all provider records before latest-admissible context deduplication.
+The incidental missing-ID output-order assertion was removed; exact person/contact membership
+remains checked. Follow-up `cargo test -p census-crawl --lib` passed all **602**, report library
+all **150**, and `cargo clippy -p census-report --lib -- -D warnings -D clippy::arithmetic_side_effects`
+passed (`artifact://649`). No lint suppressions or baseline increases were added.
+
+For archive retry durability, an existing capture must now synchronize its directory before
+reporting success. FrozenPublicationReview re-read that branch and withdrew its finding; this is
+static review, not a directory-sync-failure injection result. The preceding per-edit gate
+(`artifact://631`) ran **1,854 tests, all passed, 3 skipped**, and passed every production size
+budget. Its remaining report lint debt was then repaired as above; Cargo-vet still lacked
+**345 required safe-to-deploy/safe-to-run dependency audits**. The rebuilt release CLI again
+verified the actual retained generation completely in **133.09 seconds** and its help correctly
+states that verification does not open the store.
+
+Main then executed both GPU-prepared public-API consumer smokes:
+
+- `target/debug/examples/accuracy_consumer_smoke` (0.04 seconds): CRLF document with a preceding
+  UTF-8 `π` retained the grade-8 row and located its original byte range at offset 198;
+  captured SS28UB emitted exactly four Nicole sport/gender/Unknown-role contexts and counted
+  four JV rejections; duplicate-ID vendor/blank-name rows could not erase Ada's school email;
+  two admissible duplicate contacts retained `new@school.edu`.
+- `cargo build -p census-service --example publication_consumer_smoke && target/debug/examples/publication_consumer_smoke var/retained-publication-20261001T155243Z/publication-consumer-smoke-3`
+  (0.85 seconds): real isolated Fjall corpus, two schools/four athletes/four performances,
+  identical job replay input digest
+  `c4f3bfd50e9e9343aa48ddee8e9fbf833bd1294c9e06adce71c03b2e2f7bd4fd`;
+  full generation verification passed for
+  `6e676112aa40256dcf87da377e8c4b689fe424bddd0d426b89487876c9230368`.
+  Adding a fifth athlete refused both old-job capture and stale-input publication, did not
+  switch `current`, and left the original complete bundle verifiable. Actual workbook
+  athlete IDs exactly matched the four seeded IDs.
+
+Initial publication-smoke attempts exposed two mistakes in the disposable consumer, not the
+production path: its census source-note root used the publication directory rather than the
+store's `out`, then its path assertion compared relative and canonical absolute paths.
+Main corrected those callers before the passing run. Both smoke sources were removed;
+their isolated artifacts remain under this run and did not modify the retained store.
+
+Final `tools/gate.sh` after consumer-source removal took **502.27 seconds**, exit **1**
+(`artifact://663`): **1,856 tests passed, 3 skipped**, strict source Clippy **0 diagnostics**,
+zero comments across **1,120 Rust files**, production **0 files over 300 / 0 functions over 60
+logical lines**, and ratchet **no metric grew**. Fmt, all eight architecture checks, check,
+doc, type integrity, domain purity, module seams, deny, audit, machete, geiger, feature powerset
+and benchmark presence passed. The only failed lane was **vet**, with **345 unvetted
+dependencies** requiring safe-to-run or safe-to-deploy audits. This is a per-edit gate result,
+not a release certificate. The audit blocker remains `athletic-rust-pipeline-6yj.6`;
+no invented audits, exemptions or baseline increases were used.
+
+The first all-targets run exposed two obsolete flat-XLSX callers, subsequently fixed; it is not
+recorded as a clean full-suite pass. The first per-edit gate exposed those tests, verifier size
+budgets, a redundant trim lint, an unused service XLSX-writer dependency and **345 unaudited
+dependencies**. Production size/lint/dependency cleanup does not provide authentic Cargo-vet
+audits. No audit exemptions or increased quality baselines were added. The separately required
+native isolated fault matrix, full release proof/mutation/performance lanes and national
+source/identity acceptance are not certified by this retained-data publication.
+
 ## Cohort and coach cutover; captured worksheet qualification — 2026-09-30–2026-10-01
 
 These are targeted accuracy repairs and offline capture qualifications, not a fresh national
