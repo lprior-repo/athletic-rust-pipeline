@@ -82,6 +82,7 @@ pub(super) fn parse_row(
         grade: year,
         school,
         mark,
+        timing: None,
         wind_mps: None,
         heat: None,
         points,

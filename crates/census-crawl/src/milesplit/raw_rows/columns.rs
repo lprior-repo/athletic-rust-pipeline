@@ -1,6 +1,6 @@
 use crate::hytek;
 use crate::result_file::ParsedRow;
-use census_domain::model::{EventKind, Mark};
+use census_domain::model::{EventKind, Mark, TimingMethod};
 
 const BOUNDS: usize = 5;
 
@@ -211,12 +211,14 @@ pub(super) fn build_row(cells: &Cells<'_>, kind: &EventKind) -> Result<ParsedRow
         "" | "--" => None,
         value => Some(value.parse::<u16>().map_err(|_| "invalid place")?),
     };
+    let (mark, timing) = mark_of(mark, kind);
     Ok(ParsedRow {
         place,
         name: cells.name.to_string(),
         grade: hytek::grade_from_token(cells.grade),
         school: cells.team.to_string(),
-        mark: mark_of(mark, kind),
+        mark,
+        timing,
         wind_mps: None,
         heat: cells.heat.map(str::to_string),
         points: None,
@@ -224,20 +226,28 @@ pub(super) fn build_row(cells: &Cells<'_>, kind: &EventKind) -> Result<ParsedRow
     })
 }
 
-fn mark_of(value: &str, kind: &EventKind) -> Mark {
+fn mark_of(value: &str, kind: &EventKind) -> (Mark, Option<TimingMethod>) {
     if value.eq_ignore_ascii_case("NT")
         || hytek::NO_MARK
             .iter()
             .any(|mark| value.eq_ignore_ascii_case(mark))
     {
-        return Mark::Raw(value.to_string());
+        return (Mark::Raw(value.to_string()), None);
     }
-    let field = || hytek::parse_field_mark(value);
-    let time = || hytek::parse_time(value).map(Mark::TimeSeconds);
+    let field = || {
+        crate::milesplit::parse_published_metric_distance(value)
+            .map(Mark::DistanceMetres)
+            .or_else(|| hytek::parse_field_mark(value))
+            .map(|mark| (mark, None))
+    };
+    let time = || {
+        crate::milesplit::parse_published_time(value)
+            .map(|(seconds, timing)| (Mark::TimeSeconds(seconds), timing))
+    };
     let parsed = if kind.is_field() {
         field().or_else(time)
     } else {
         time().or_else(field)
     };
-    parsed.unwrap_or_else(|| Mark::Raw(value.to_string()))
+    parsed.unwrap_or_else(|| (Mark::Raw(value.to_string()), None))
 }

@@ -6,6 +6,221 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Retained PR normalization and Downloads follow-through — 2026-10-01
+
+The owner requested a PR for every represented event and the workbook in
+`/home/lewis/Downloads`, without another acquisition run. An immutable-input audit of the first
+retained publication found 836,928 cohort subjects, 259,447 with retained result rows, and 577,481
+without retained results. The old 127,496 PR comparison keys matched the then-numeric selection,
+but 129,839 cohort marks were raw: examples `24.95a`, `11.52a` and `3:00.64a` exposed a real source
+normalization omission. An additional `19-.25` long jump was numeric but not measurable by the
+imperial notation oracle. Missing results and individual relay splits are not invented.
+
+### Cold rollback boundary and append-only correction
+
+```sh
+mkdir -p var/retained-pr-correction-20261001
+target/release/census-service --store var/run-2027-v2 store-backup --to var/retained-pr-correction-20261001/backup
+target/release/census-service store-restore --from var/retained-pr-correction-20261001/backup --to var/retained-pr-correction-20261001/store
+target/release/census-service --store var/retained-pr-correction-20261001/store repair-retained-marks
+target/release/census-service --store var/retained-pr-correction-20261001/store repair-retained-marks --apply
+target/release/census-service --store var/retained-pr-correction-20261001/store repair-retained-marks
+target/release/census-service --store var/retained-pr-correction-20261001/store fjall-stats
+```
+
+The initial backup attempt correctly failed because its new parent directory did not exist; no
+source store was deleted or reused. After creating that parent, backup and manifest-validated
+restore completed in 730.70 seconds. Backup: 192,976 files, 25,842,522,015 bytes; restored root:
+192,973 files, 25,636,072,355 bytes. Backup manifest SHA-256:
+`89e494893adbcd82f6fa7639e3a412c7f68234dd4fd8ab07540d19d81282c3ee`.
+All seventeen physical table counts matched at restore. The original store and backup remain intact.
+
+Dry-run scanned 1,024,921 canonical performances and found 484,185 eligible corrections. Apply
+appended exactly 484,185 observations; the next dry-run reported zero eligible/corrected. Both runs
+reported 34,524 non-numeric/undeclared tokens and zero contradictory timing, missing event or
+missing evidence. Apply, rerun and stats completed in 12.35 seconds. Physical performances rose
+from 1,024,921 to 1,509,106 and observations from 18,393,110 to 18,877,295; every other table count
+remained identical to the original baseline below. This corrects retained parser facts, not
+acquisition freshness, identities or missing histories.
+
+A disposable real-store readback also checked `perf_00011acc34a2fdd2`: its original `Raw("24.95a")`
+observation remains, its correction reads `TimeSeconds(2495)`/FAT, and canonical readback equals the
+corrected observation. IDs, owner, event/team/meet, result date, grade, locator and parsed capture
+evidence are unchanged; the derived note retains the original token/revision. The release example
+reported `retained_history_readback=PASS original_observations=1 correction_observations=1`
+(`artifact://709`); it was removed after execution. This is one sampled production history,
+complemented by the isolated invariance/chunk regressions below, not a full historical-row audit.
+
+### Focused integration checks
+
+- `cargo test -p census-crawl -p census-store -p census-report --lib`: 876 passed before final
+  captured-fixture and collision-boundary integration.
+- `cargo test -p census-crawl --lib captured_class_of_2027_result_keeps_its_numeric_mark_and_timing`:
+  passed against the existing DC legacy capture.
+- `cargo test -p census-store --lib performance_tests`: six passed, including both merge orders,
+  retained observations, no numeric downgrade and event/team timing guards.
+- `cargo test -p census-report --lib`: 151 passed; exact `19-.25`/`19-00.25` equivalence,
+  rejected bare decimal/thousandth-inch input and accepted redundant trailing zeroes.
+- `cargo test -p census-service --bin census-service retained_marks`: five passed, covering dry-run,
+  immutable facts/history, idempotence, source-owner rather than locator-substring admission,
+  field/no-result/unknown/multiple suffix boundaries, contradictory timing, hand timing and a
+  101-correction full/partial chunk boundary.
+- `cargo build --release -p census-service --bins`: passed.
+- Strict workspace `cargo clippy --lib --bins --all-features` with the gate's complete denied lint
+  set: passed. This focused command excluded the disposable audit/readback examples.
+- Real CLI `repair-retained-marks` without `--store`: exit 1 with explicit-store refusal.
+  `repair-retained-marks --help` exposes default dry-run and `--apply`.
+
+### Intermediate timing publication and metric diagnosis
+
+Native Restate 1.6.2 registered nine services under `dp_14p2CROCeFJ0p2IzEBZHtSx`, without a browser
+lane. The sole owning endpoint used the restored root on port 9292; ingress/admin were
+18295/19295. Only Workbook was submitted, completing invocation
+`inv_18u4l5FquYh24qkVZjy1mucXI75gCwFhZG` in 392.67 seconds:
+
+```sh
+target/release/census-service workbook --ingress http://127.0.0.1:18295/ --grad-year 2027 --out /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/retained-pr-correction-20261001/publication
+target/release/census-service verify --workbook var/retained-pr-correction-20261001/publication/current/workbook.xlsx
+```
+
+Generation `240df362a2cdd3739b051b4bb5ededed3cd3820e93b19dd86b84a4054d8f4cbb` used schema/policy
+1/2 and snapshot sequence 102459. Its XLSX is 156,911,239 bytes, SHA-256
+`dd97cf9c3494c5b57627455c38002b387b80c7e53585d0f0ba3e1060c9964482`.
+Native complete readback verified 2,031,265 rows; the standalone verifier returned
+`verify: OK (complete frozen generation)` in 176.57 seconds. Frozen-input PR audit
+(`artifact://718`, 67.44 seconds) counted 246,203 comparable keys and 246,203 published rows,
+zero missing/unexpected keys, 2,111 excluded relay rows and 11,133 non-numeric marks.
+The raw-mark sample exposed another omission: explicit metric field tokens such as `9.47m`.
+This intermediate generation and its invocation/deployment receipts remain preserved; it is not
+the final corrected Downloads artifact.
+
+After endpoint SIGTERM, drain reported accepted=4, completed=4 and zero cancelled/timed-out/
+aborted/panicked. The node then exited on SIGTERM in 46.101476 ms. Both exited 0; no run listener
+or native service process remained. Logs are retained in `var/retained-pr-correction-20261001/`.
+
+The first full `tools/gate.sh` finished in 506.02 seconds: all stages passed except Cargo-vet,
+which reported 345 missing audits. Nextest ran 1,877 tests: all passed, three skipped.
+This was before the additional metric-unit regressions and is not evidence for their integration.
+
+### Exact retained metric refinement
+
+After stopping the intermediate run, the same dry-run/apply/rerun sequence found and appended
+17,152 additional metric corrections, then reported zero eligible corrections. Every invocation
+scanned 1,024,921 canonical performances and reported zero contradictory timing, missing event or
+missing evidence. Source-declared `m/M` values must be exactly representable as centimetres;
+sub-centimetre precision is retained raw, not rounded. Event identities and timing are not inferred.
+
+Combined correction history now adds 501,337 observations: physical performances are 1,526,258
+and total observations 18,894,447. Every other physical table count remains at the original baseline.
+The real retained Vermont row `perf_002fa5207eb50c1a` still has its original `Raw("9.47m")`
+observation and now reads canonically as `DistanceMetres(947)`. The disposable readback compared
+all non-mark/non-derived-evidence fields, source URL, capture date and canonical winner:
+`retained_metric_history_readback=PASS exact_centimetres=947
+unchanged_identity_affiliation_date_grade_timing_capture=true`.
+Apply/rerun, release readback build/execution and stats completed in 106.17 seconds; exact receipts
+are preserved in `var/retained-pr-correction-20261001/metric-repair.log` (`artifact://730`).
+The disposable source was removed after execution.
+
+Metric integration commands:
+
+```sh
+cargo test -p census-crawl --lib milesplit::mark::tests
+cargo test -p census-crawl --lib published_metric_field_row
+cargo test -p census-service --bin census-service retained_marks::tests
+cargo build --release -p census-service --bins
+```
+
+Observed results: twelve mark-boundary tests, one complete source-row regression and six isolated
+repair tests passed. Coverage includes exact `9.47m`, source row/event/grade preservation,
+sub-centimetre and malformed-unit refusal, dry-run/apply/history, unchanged timing and idempotence.
+Both release binaries rebuilt successfully.
+
+### Final corrected native generation and Downloads
+
+A fresh native node used `metric-restate.toml`, its own `restate-metric` base-dir and ports
+15175/18395/19395. The sole restored-store endpoint listened on 9392 with concurrency 1 and a
+120-second drain budget. Nine services registered under `dp_16ByUwV5OWqA3wRBhHXBvLX`; no browser
+lane was configured. The admin query returned exactly one completed invocation,
+`inv_1fqReb48tqDI7GMTqfhFiyU4LKSjl8YwsB`, targeting Workbook. No acquisition was submitted.
+
+```sh
+target/release/census-service workbook --ingress http://127.0.0.1:18395/ --grad-year 2027 --out /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/retained-pr-correction-20261001/publication-metric
+target/release/census-service verify --workbook var/retained-pr-correction-20261001/publication-metric/current/workbook.xlsx
+target/release/examples/retained_pr_coverage_smoke var/retained-pr-correction-20261001/publication-metric/current
+```
+
+Workbook completed in 419.83 seconds. The standalone verifier returned
+`verify: OK (complete frozen generation)` in 140.23 seconds; native complete readback verified
+2,036,064 rows.
+
+| Frozen publication fact | Observed value |
+|---|---|
+| Generation | `e17724feb2753eacb69e3763d021a469246450fb4ed5862ca7b0dd9958828197` |
+| Input generation | `f09669a14e8f54493127ca792d64c13157bcde2f79ecad6aadf16a9f8c9d5bcc` |
+| Input digest | `aea261f1f6733fa5b3ab020899329f16d7ae8c8824c420332864e17cb2504880` |
+| Source digest | `6e87eba48d5fe7117020f5517c5d563c32af0a43498ead5c1472da894cbb22c4` |
+| Snapshot / schema / policy | 102633 / 1 / 2 |
+| Selection | All sources, Class of 2027, unlimited, no school-year filter |
+| Frozen input bytes / SHA-256 | 5,027,957,482 / `5d1b982c91201c08341893228a1afc6054ea4c85be8829222e729c293e107858` |
+| XLSX bytes / SHA-256 | 157,493,209 / `b1e863e48d25b751fb8b017a25b984bb97c319f031767a399e2ba04eda892fd4` |
+
+The complete frozen-input PR audit finished in 60.23 seconds. It found 251,005 eligible
+athlete-event comparison keys and exactly 251,005 published PR rows: zero missing and zero
+unexpected keys. All 836,928 cohort subjects and 259,447 retained result rows remain represented.
+The 577,481 subjects without retained results do not receive fabricated PRs. Individual PR
+exclusions are 2,111 relay rows and 6,331 non-numeric marks, chiefly no-result statuses; three raw
+time tokens (`18:28:76`, `27:31:91`, `27:60.00`) remain malformed rather than guessed. Exact
+counts are retained in `metric-pr-coverage.log`. These are retained source subjects, not a newly
+qualified national distinct-athlete census.
+
+After verification, the previous Downloads copy was preserved as
+`/home/lewis/Downloads/census-class-of-2027-retained-2026-10-01-before-pr-correction.xlsx`, with its
+original SHA-256 `4d5b14c5e59569e3be9c31d4b02066861f06f687d29713070972cce55b4173d9`.
+The final workbook was copied to
+`/home/lewis/Downloads/census-class-of-2027-retained-2026-10-01.xlsx`.
+`cmp`, `sha256sum` and `stat` confirmed identical bytes, the final hash above and 157,493,209 bytes.
+The original publication, intermediate corrected generation, source store and cold backup remain.
+
+Endpoint SIGTERM drained accepted=4/completed=4 with zero cancelled/timed-out/aborted/panicked,
+then node SIGTERM completed in 30.32856 ms. Both exited 0. All four run ports were clear;
+post-publication physical table counts still matched the append-only correction counts above.
+Native logs and deployment/invocation receipts remain under the run root.
+
+### Recovery gate finding
+
+The metric-integrated `tools/gate.sh` finished in 486.98 seconds with 1,879 of 1,880 tests passing,
+three skipped, and failures in tests and Cargo-vet. The sole failed test was
+`ks_directory_walk_claims_units_the_kill_can_lose`: 48 timing-based kill attempts saw journal size
+zero or five, never the arbitrarily required partial five-record journal.
+
+That obsolete implementation-window measurement was removed, not re-pinned with a larger timing
+ladder or weakened assertion. It assumed journal-before-row ordering and would accept measured
+missing rows. Current `ks::collect_record` commits school, source observation, coach and journal
+in one write batch. The existing `adapter_restart_reuses_finished_units_without_refetch_or_duplicate_rows`
+still requires exact clean-control schools, coaches, journal and physical counters; genuine
+process-crash recovery tests remain. Only the obsolete measurement and its unused `school_ids`
+helper were removed; no production persistence logic or release fault obligations changed.
+
+After removal, `cargo test -p census-service --test recovery` passed all eight tests in 10.10
+seconds. The subsequent canonical gate passed 1,879 tests (three skipped), format/check/docs,
+strict source Clippy (zero diagnostics), zero-comment/architecture/type/purity/module/ratchet
+checks, deny, audit, machete, geiger, feature powerset and benchmark presence. The complete
+`cargo fmt --all && cargo test -p census-service --test recovery && tools/gate.sh` chain took
+479.65 seconds and exited 1 **only for Cargo-vet's 345 missing audits** (`artifact://755`).
+Existing test-only compiler warnings are not a zero-warning claim. No benchmark execution,
+formal proof, complete native fault campaign or fresh national qualification is certified here.
+
+### Owner dependency-security condition
+
+The owner allowed removing Cargo-vet documentation blockers if vet passes, or if there are no
+medium/high/critical vulnerabilities **and** dependencies are latest. Fresh `cargo audit --json`
+reported 388 dependencies, zero vulnerabilities and zero warnings against RustSec revision
+`46826f29f4a85faf4a5e4e087a4623e84c09f618` (1,278 advisories). `cargo update --dry-run --verbose`
+left the lockfile unchanged but proposed 57 package changes; base64 0.22.1, generic-array 0.14.7,
+reqwest 0.13.4, restate-sdk 0.12.0 and sha2 0.10.9 were also explicitly behind available latest
+versions. The conjunction is not met; the Cargo-vet gate and documentation requirement remain,
+without fabricated audits, exemptions or implicit dependency upgrades.
+
 ## Retained-data native Restate publication — 2026-10-01
 
 The owner requested completion of the accuracy/publication cutover followed by running the local

@@ -127,6 +127,17 @@ Contract for the reader (`census-crawl::milesplit::raw_rows`):
 - **Grade is the `Yr` column** (`SR`/`JR`/`SO`/`FR` here, numeric in the earlier capture), carried as
   dated grade evidence: 208 of the 210 placed rows publish one, 2 publish none.
 - **Heat is the `H#` column** after the mark; `(Pl)` is the place within the heat and is not the mark.
+- **Timing suffixes are part of the published result**, not a no-result status. The retained legacy
+  capture `crates/census-crawl/tests/fixtures/milesplit/dc_meet_735841_results_legacy.html` publishes
+  Brett Paukstis, grade 11, at `12.67a` in the 100 m. The Rust reader now normalizes terminal `a/A`
+  to numeric centiseconds with automatic/FAT timing, and `h/H` with hand timing. Unsuffixed numeric
+  marks do not establish timing; `DNS`, `DNF`, `SCR`, `NH`, `NT`, unknown and multiple suffixes remain
+  raw. The `h/H` boundaries are parser regressions, not a newly captured live hand-timing sample.
+- **Metric field units are explicit quantities**, not unreadable statuses. The retained
+  `milesplit_vt` row `1307654:Girls Varsity Triple Jump:12` publishes `9.47m`. The reader and offline
+  repair normalize terminal `m/M` to exact centimetres (`947` here), preserving the original
+  observation and unit in correction evidence. Sub-centimetre precision is retained raw rather
+  than rounded. This is retained-fact/readback evidence, not a new live-source qualification.
 
 The capture holds 214 result rows in one 3200 m event (210 with a place, 4 `DNF`/`NT`).
 

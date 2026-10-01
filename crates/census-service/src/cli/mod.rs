@@ -12,6 +12,7 @@ mod open_work;
 mod provider;
 mod publish;
 mod qa_reports;
+mod retained_marks;
 mod review;
 mod school_names;
 mod seal;
@@ -149,6 +150,7 @@ pub(super) async fn run() -> Result<()> {
         Command::StoreBackup(args) => store::run_backup(&cli.store_root(), args),
         Command::Verify(args) => verify::run_verify(&cli.store_root(), args),
         Command::Serve => serve::run_serve(&cli),
+        Command::RepairRetainedMarks(args) => retained_marks::run_repair_retained_marks(&cli, args),
         _ => {
             let store = Store::open(cli.store_root())?;
             dispatch::dispatch(&cli, &store).await

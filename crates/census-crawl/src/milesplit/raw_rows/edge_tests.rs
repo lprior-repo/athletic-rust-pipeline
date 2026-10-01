@@ -51,6 +51,25 @@ fn assert_locator(locator: &SourceRowLocator, block: &str, ordinal: u32, offset:
 }
 
 #[test]
+fn published_metric_field_row_keeps_event_grade_and_numeric_distance() {
+    let result = row(20, 20, "Captured, Jumper", "11", "Captured School", "9.47m");
+    let block = format!(
+        "Girls Varsity Triple Jump Finals\n{}\n{result}\n",
+        header(20, 20).replace("Time", "Mark")
+    );
+    let parsed = page(&block);
+    let event = parsed.meet.events.first().expect("published event");
+    assert_eq!(event.kind, EventKind::TripleJump);
+    let result = event.rows.first().expect("published result");
+    assert_eq!(
+        result.mark,
+        Mark::DistanceMetres(census_domain::model::CentiMetres::new(947))
+    );
+    assert_eq!(result.grade.map(|grade| grade.get()), Some(11));
+    assert_eq!(result.timing, None);
+}
+
+#[test]
 fn a_wrapped_round_does_not_relabel_the_earlier_results() {
     let first = row(20, 20, "MÜLLER, Émile", "JR", "North Buncombe", "9:01.03");
     let second = row(20, 20, "Other, Kid", "SR", "Asheville", "9:02.04");

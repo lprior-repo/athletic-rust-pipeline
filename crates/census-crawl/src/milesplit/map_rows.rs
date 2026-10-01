@@ -124,7 +124,7 @@ fn record_performance(
             place: row.place,
             heat: row.heat.clone(),
             round: context.event.round.clone(),
-            timing: Some(TimingMethod::Unknown),
+            timing: Some(row.timing.unwrap_or(TimingMethod::Unknown)),
             observed_grade: Some(shape.grade),
             evidence: vec![evidence],
             source_key,

@@ -92,6 +92,7 @@ pub(super) fn table_rows(
                 .and_then(Grade::new),
             school: cell(school_column).unwrap_or_default(),
             mark,
+            timing: None,
             wind_mps: None,
             heat: cell(heat_column),
             points: cell(points_column).and_then(|value| value.parse().ok()),

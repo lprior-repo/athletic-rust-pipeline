@@ -856,6 +856,7 @@ impl RowFacts {
             heat,
             points,
             legs,
+            ..
         } = row;
         Self {
             place: *place,

@@ -31,6 +31,7 @@ fn an_individual_row_under_a_relay_header_keeps_its_athlete_grade_and_school() {
             grade: Grade::new(10),
             school: "Nicolet".to_string(),
             mark: Mark::Raw("FOUL".to_string()),
+            timing: None,
             wind_mps: None,
             heat: Some("2".to_string()),
             points: None,

@@ -124,4 +124,8 @@ pub(super) enum Command {
         about = "Drive the headed browser lane the `census-serve` endpoint owns: `start` launches the one persistent profile, `status` reads it, `stop` drains it, and `fetch` posts one request through it. Requires an endpoint started with `--browser-profile`; opens no store"
     )]
     BrowserSession(BrowserSessionArgs),
+    #[command(
+        about = "Reprocess existing source-declared timing marks (e.g. 24.95a, 11.52a) without network. Reads the store, finds retained Raw marks with explicit timing suffixes, and corrects them to numeric TimeSeconds with the declared method. Default is dry-run; pass --apply to write. Requires --store to select the offline store"
+    )]
+    RepairRetainedMarks(super::retained_marks::RepairRetainedMarksArgs),
 }

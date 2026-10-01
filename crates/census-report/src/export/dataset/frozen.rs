@@ -9,7 +9,8 @@ use std::path::Path;
 mod io;
 pub(super) mod job;
 
-const REVISION: u32 = 1;
+const SCHEMA_REVISION: u32 = 1;
+const POLICY_REVISION: u32 = 2;
 const INPUT_TABLES: [Table; 13] = [
     Table::Schools,
     Table::Teams,
@@ -49,8 +50,8 @@ pub(super) fn lineage(store: &Store, snapshot: &StoreSnapshot<'_>) -> ReportResu
         input_digest: String::new(),
         source_digest: snapshot.tables_digest(&INPUT_TABLES)?,
         snapshot_sequence: snapshot.sequence(),
-        schema_revision: REVISION,
-        policy_revision: REVISION,
+        schema_revision: SCHEMA_REVISION,
+        policy_revision: POLICY_REVISION,
     })
 }
 
@@ -103,8 +104,8 @@ pub(super) fn save(dataset: &ExportDataset, path: &Path) -> ReportResult<()> {
 pub(super) fn reopen(path: &Path) -> ReportResult<ExportDataset> {
     let archived: Archived = io::read_json(path)?;
     let expected = archived.lineage.clone();
-    if expected.schema_revision != REVISION
-        || expected.policy_revision != REVISION
+    if expected.schema_revision != SCHEMA_REVISION
+        || expected.policy_revision != POLICY_REVISION
         || !hex_digest(&expected.store_identity)
         || !hex_digest(&expected.source_digest)
         || census_domain::model::SchoolYear::from_date(&expected.generated_on).is_none()

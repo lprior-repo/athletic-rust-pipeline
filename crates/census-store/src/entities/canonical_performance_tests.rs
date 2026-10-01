@@ -92,3 +92,88 @@ fn the_source_athlete_survives_the_store() {
         "the row reads back with the identity it was written with"
     );
 }
+
+#[test]
+fn a_numeric_revision_refines_raw_observations_without_deleting_history() {
+    let mut raw = performance("timing-refinement", identity("111"));
+    raw.mark = Mark::Raw("24.95a".to_string());
+    raw.timing = Some(TimingMethod::Unknown);
+    let mut measured = raw.clone();
+    measured.mark = Mark::TimeSeconds(CentiSeconds::new(2495));
+    measured.timing = Some(TimingMethod::Fat);
+    for observations in [
+        [raw.clone(), measured.clone()],
+        [measured.clone(), raw.clone()],
+    ] {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store = Store::open(dir.path()).expect("store");
+        store
+            .append_many(Table::Performances, &observations)
+            .expect("append history");
+        let canonical: Vec<CanonicalPerformance> = store.scan(Table::Performances).expect("scan");
+        assert_eq!(canonical, [measured.clone()]);
+        let mut retained = Vec::new();
+        store
+            .snapshot()
+            .for_each_observation(Table::Performances, |row: CanonicalPerformance| {
+                retained.push(row);
+                Ok(())
+            })
+            .expect("observations");
+        assert_eq!(retained.len(), 2);
+        assert!(retained.contains(&raw));
+        assert!(retained.contains(&measured));
+    }
+}
+
+#[test]
+fn a_raw_revision_never_downgrades_a_measured_mark_or_timing() {
+    let mut measured = performance("timing-refinement", identity("111"));
+    let mut raw = measured.clone();
+    raw.mark = Mark::Raw("24.95a".to_string());
+    raw.timing = Some(TimingMethod::Unknown);
+    let expected = measured.clone();
+    measured.merge(raw);
+    assert_eq!(measured, expected);
+}
+
+#[test]
+fn a_refinement_under_another_event_keeps_the_original_mark() {
+    let mut raw = performance("timing-refinement", identity("111"));
+    raw.mark = Mark::Raw("24.95a".to_string());
+    raw.timing = Some(TimingMethod::Unknown);
+    let mut measured = raw.clone();
+    measured.event = CanonicalEvent::new(
+        &measured.meet,
+        EventKind::Track200m,
+        Gender::Boys,
+        None,
+        None,
+    )
+    .id;
+    measured.timing = Some(TimingMethod::Fat);
+    measured.mark = Mark::TimeSeconds(CentiSeconds::new(2495));
+    raw.merge(measured);
+    assert_eq!(raw.mark, Mark::Raw("24.95a".to_string()));
+    assert_eq!(raw.timing, Some(TimingMethod::Unknown));
+}
+
+#[test]
+fn a_refinement_under_another_team_keeps_original_mark_and_timing() {
+    let mut raw = performance("timing-refinement", identity("111"));
+    raw.mark = Mark::Raw("24.95a".to_string());
+    raw.timing = Some(TimingMethod::Unknown);
+    let mut measured = raw.clone();
+    let school = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Another High School", "another");
+    measured.team = CanonicalTeam::mint(
+        &school,
+        Sport::OutdoorTrack,
+        Gender::Boys,
+        SchoolYear::new(2026).expect("season"),
+    );
+    measured.mark = Mark::TimeSeconds(CentiSeconds::new(2495));
+    measured.timing = Some(TimingMethod::Fat);
+    raw.merge(measured);
+    assert_eq!(raw.mark, Mark::Raw("24.95a".to_string()));
+    assert_eq!(raw.timing, Some(TimingMethod::Unknown));
+}

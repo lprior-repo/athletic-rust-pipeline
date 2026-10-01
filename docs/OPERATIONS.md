@@ -187,6 +187,31 @@ skip a previously failed directory-durability step.
 An explicit offline `index` still re-derives mutable projections; those separately replaced tables
 are not the workbook's publication boundary and are not a prerequisite for retained-data export.
 
+Retained mark normalization is a separate, explicit offline operation, never a new scrape. Stop the
+store owner, cold-back up and restore into a new root under [FJALL_BACKUP.md](FJALL_BACKUP.md), then:
+
+```sh
+census-service --store <restored-store> repair-retained-marks
+census-service --store <restored-store> repair-retained-marks --apply
+census-service --store <restored-store> repair-retained-marks
+```
+
+The first command is dry-run. Apply appends at most 100 corrections per write from one bounded
+snapshot. Only MileSplit result-row raw times with explicit `a/A` or `h/H` qualifiers and metric
+marks with explicit `m/M` units exactly representable as centimetres are eligible. Timing
+qualifiers on field events, undeclared/non-numeric tokens, missing event/evidence and contradictory
+known timing are not guessed. Metric normalization preserves timing and does not infer an event
+identity from the unit. IDs, source keys/owners, result affiliation, capture dates and original
+observations remain intact; a derived evidence note carries the original token and fixed correction
+revision.
+The final dry-run must report zero eligible corrections. Retain the backup as rollback evidence,
+restart a sole endpoint owner on the restored root and submit Workbook with a new publication root.
+No PR is invented for an athlete/event lacking a retained comparable result.
+
+Export schema revision remains 1; policy revision 2 includes declared timing normalization and exact
+omitted-zero imperial-inch notation (`19-.25`). Revision-1 frozen bundles remain preserved historical
+evidence but are refused by the revision-2 verifier rather than silently evaluated under new rules.
+
 `--out` names a publication **directory**, not an XLSX file. A writer holds its publication lock,
 renders into owned staging, hashes the exact artifact inventory, independently reconciles every
 workbook cell and sidecar record, and checks the source fence while switching `current` atomically.

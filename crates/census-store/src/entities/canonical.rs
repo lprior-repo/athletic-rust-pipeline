@@ -217,6 +217,13 @@ impl Entity for CanonicalPerformance {
             record(&mut self.retained_conflicts, conflict);
             return;
         }
+        if matches!(self.mark, census_domain::model::Mark::Raw(_))
+            && !matches!(other.mark, census_domain::model::Mark::Raw(_))
+            && self.event == other.event
+            && self.team == other.team
+        {
+            self.mark = other.mark;
+        }
         if self.wind_mps.is_none() {
             self.wind_mps = other.wind_mps;
         }
@@ -226,7 +233,13 @@ impl Entity for CanonicalPerformance {
         if self.observed_grade.is_none() {
             self.observed_grade = other.observed_grade;
         }
-        if self.timing.is_none() {
+        if matches!(
+            self.timing,
+            None | Some(census_domain::model::TimingMethod::Unknown)
+        ) && other.timing.is_some()
+            && self.event == other.event
+            && self.team == other.team
+        {
             self.timing = other.timing;
         }
         if self.source_athlete.is_none() {

@@ -29,7 +29,7 @@ all commands have identical durable/recovery semantics.
 | Discovery/acquisition | `fetch`, `sites`, `teams`, `meets`, `collect`, `provider` | Source entry points; capability and route differ by command |
 | Derivation | `consolidate`, `index`, `review`, `run` | Materialization, deterministic indexes, local advice and composed cycle |
 | Publication | `report`, `bests`, `workbook`, `verify`, `seal` | Reports, compatible bests, workbook, current verifier and seal/refusal |
-| Store maintenance | `fjall-stats`, `store-integrity`, `store-backup`, `store-restore` | Inspect or safely back up/restore owned storage |
+| Store maintenance | `fjall-stats`, `store-integrity`, `store-backup`, `store-restore`, `repair-retained-marks` | Inspect, safely back up/restore or append source-backed retained mark corrections |
 | Public coach research | `import-coaches`, `merge-coaches`, `verify-coaches` | Research CSV handling and source-backed contact verification |
 | Research artifacts | `qa-reports`, `export-data`, `school-names`, `census-doc`, `school-address` | Research report/CSV helpers and the school-directory corpus verb; not a second product workflow |
 
@@ -52,6 +52,14 @@ observations are not distinct athletes.
 do not authorize copying an open database. No current `import-legacy` command exists. Preserve old
 stores and obey explicit historical schema contracts rather than claiming they all decode or must
 be destroyed/rebuilt.
+
+`repair-retained-marks` requires explicit `--store` and defaults to dry-run. With `--apply`, it
+normalizes existing MileSplit result-row numeric `a/A` and `h/H` time qualifiers and exact `m/M`
+metric units, preserves source owners/IDs/capture dates and appends correction evidence without
+deleting original observations. It performs no acquisition, refuses contradictory known timing,
+does not infer event identity from metric units and does not round sub-centimetre source marks.
+Use the cold-backup/restore
+procedure before applying it; [OPERATIONS.md](../../docs/OPERATIONS.md) owns the sequence.
 
 Source policy is binding regardless of available CLI flags. The existing `--authorized-host` option
 can alter robots handling; its presence is not permission to bypass access policy. Do not use it to

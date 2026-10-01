@@ -145,6 +145,7 @@ pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Opti
         grade,
         school,
         mark,
+        timing: None,
         wind_mps,
         heat,
         points,

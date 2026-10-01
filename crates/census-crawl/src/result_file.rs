@@ -1,4 +1,4 @@
-use census_domain::model::{EventKind, Gender, Grade, Mark};
+use census_domain::model::{EventKind, Gender, Grade, Mark, TimingMethod};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParsedMeet {
@@ -28,6 +28,7 @@ pub struct ParsedRow {
     pub grade: Option<Grade>,
     pub school: String,
     pub mark: Mark,
+    pub timing: Option<TimingMethod>,
     pub wind_mps: Option<f64>,
     pub heat: Option<String>,
     pub points: Option<f64>,

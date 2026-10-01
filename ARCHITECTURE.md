@@ -183,6 +183,13 @@ source-declared PRs versus observed bests, and exact source references. Bound de
 rendering and staging by bytes/work, not only row counts. Persistent indexes require measured query
 need; an athlete-keyed index does not inherently provide workbook display order.
 
+Every athlete/event with an observed comparable numeric mark must have an observed best in its
+compatible comparison class. Roster/profile-only athletes and no-result statuses retain explicit
+missing-result coverage, never invented PRs or inferred individual relay splits. Preserve published
+automatic/hand timing qualifiers when normalizing numeric times. An append-only correction may
+refine a raw mark and unknown timing for the same natural identity, source owner, event and team;
+it must not downgrade measured marks, override known timing or delete original observations.
+
 Stage workbook, sidecars, audit and manifest as one generation. Bind lineage, input/policy/schema
 revisions, scope, cohort, as-of time, record IDs, counts, hashes and lengths. Independently reconcile
 against the frozen evidence, durably finalize the bundle, then atomically switch its publication

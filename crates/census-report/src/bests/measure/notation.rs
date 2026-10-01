@@ -21,7 +21,14 @@ fn parse_inches_hundredths(s: &str) -> Option<i64> {
     if frac.len() > 2 || !frac.bytes().all(|byte| byte.is_ascii_digit()) {
         return None;
     }
-    let whole: i64 = whole.parse().ok()?;
+    let whole: i64 = if whole.is_empty() {
+        if s.get(1..).is_none_or(str::is_empty) {
+            return None;
+        }
+        0
+    } else {
+        whole.parse().ok()?
+    };
     let frac = match frac.len() {
         0 => 0,
         1 => frac.parse::<i64>().ok()?.checked_mul(10)?,
@@ -43,4 +50,20 @@ pub(crate) fn parse_field_imperial(feet_mark: &str) -> Option<i64> {
     }
     let hundredths_total = feet.checked_mul(1200)?.checked_add(hundredths)?;
     hundredths_total.checked_mul(254)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_field_imperial;
+
+    #[test]
+    fn a_published_omitted_zero_inch_part_remains_a_measurable_jump() {
+        assert_eq!(parse_field_imperial("19-.25"), Some(5_797_550));
+        assert_eq!(parse_field_imperial("19-00.25"), Some(5_797_550));
+        assert_eq!(parse_field_imperial("19-."), None);
+        assert_eq!(parse_field_imperial("19-.25x"), None);
+        assert_eq!(parse_field_imperial("19-12.25"), None);
+        assert_eq!(parse_field_imperial("19-.005"), None);
+        assert_eq!(parse_field_imperial("19-.250"), Some(5_797_550));
+    }
 }

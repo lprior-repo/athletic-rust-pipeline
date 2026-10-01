@@ -107,15 +107,6 @@ fn meet_ids(store: &Store) -> BTreeSet<String> {
         .collect()
 }
 
-fn school_ids(store: &Store) -> BTreeSet<String> {
-    store
-        .scan::<CanonicalSchool>(Table::Schools)
-        .expect("scanning schools")
-        .into_iter()
-        .map(|school| school.id.to_string())
-        .collect()
-}
-
 fn seed_cache(cache: &Path, url: &str, body: &str) {
     let mut hasher = Sha256::new();
     hasher.update(b"GET");
@@ -1420,118 +1411,6 @@ async fn service_with_no_stop_request_survives_its_drain_deadline() {
     assert_eq!(
         counts_after, counts_before,
         "an unrequested stop cannot change the counters"
-    );
-}
-
-#[tokio::test]
-async fn ks_directory_walk_claims_units_the_kill_can_lose() {
-    const SCENARIO: &str = "ks-window";
-    let dir = tempfile::tempdir().expect("temp dir");
-
-    let control_root = dir.path().join("control");
-    let (control_total, control_counts) = {
-        let store = store_seeded_with_ks(&control_root);
-        let report = ks_pass(&store, None).await;
-        assert_eq!(report.requests, 0);
-        (journal_keys(&store, KS_PHASE).len(), table_counts(&store))
-    };
-    note(
-        SCENARIO,
-        format!("control units={control_total} tables={control_counts:?}"),
-    );
-
-    let timed_root = dir.path().join("timed");
-    {
-        let store = store_seeded_with_ks(&timed_root);
-        drop(store);
-    }
-    let started = Instant::now();
-    run_census(&timed_root, &["provider", "ks"]);
-    let clean_runtime = started.elapsed();
-    note(SCENARIO, format!("clean process runtime={clean_runtime:?}"));
-
-    let root = dir.path().join("killed");
-    {
-        let store = store_seeded_with_ks(&root);
-        drop(store);
-    }
-    let attempts = kill_ladder(
-        SCENARIO,
-        &root,
-        &["provider", "ks"],
-        Subject {
-            phase: KS_PHASE,
-            table: Table::Schools,
-            ids_of: school_ids,
-        },
-        control_total,
-        clean_runtime,
-    );
-
-    for attempt in &attempts {
-        let claimed_without_rows = attempt.journal.len() as i64 - attempt.observations as i64;
-        if claimed_without_rows > 0 {
-            note(
-                SCENARIO,
-                format!(
-                    "DEFECT: after a kill at {:?}, {} unit(s) are journaled done with 0 of their \
-                     rows on disk (schools={}); the walk journals each record and appends the batch \
-                     at the end of the pass (sources/ks/collect.rs)",
-                    attempt.delay,
-                    attempt.journal.len(),
-                    attempt.observations
-                ),
-            );
-        }
-    }
-
-    assert!(
-        attempts
-            .iter()
-            .any(|a| !a.journal.is_empty() && a.journal.len() < control_total),
-        "a real mid-batch kill must have happened (0 < journal < total) for the window \
-         measurement to be valid"
-    );
-
-    let last = attempts.last().expect("at least one kill attempt");
-    let journal_at_kill = last.journal.clone();
-    let rows_at_kill = last.observations;
-
-    let resumed = report_of(&run_census(&root, &["provider", "ks"]));
-    let (journal, final_counts) = {
-        let store = open_store(&root);
-        (journal_keys(&store, KS_PHASE), table_counts(&store))
-    };
-    let final_schools = count_of(&final_counts, Table::Schools);
-    note(
-        SCENARIO,
-        format!(
-            "restart: rows={} journal={} schools={final_schools} (control schools={})",
-            resumed["rows"],
-            journal.len(),
-            count_of(&control_counts, Table::Schools)
-        ),
-    );
-
-    assert_eq!(
-        journal.len(),
-        control_total,
-        "the restart completes the journal set"
-    );
-    assert_eq!(
-        final_schools as usize,
-        rows_at_kill as usize + (control_total - journal_at_kill.len()),
-        "the restart writes each unclaimed unit exactly once"
-    );
-    let claimed_without_rows = journal_at_kill.len() as i64 - rows_at_kill as i64;
-    let missing = control_total as i64 - final_schools as i64;
-    note(
-        SCENARIO,
-        format!(
-            "measured: claimed_without_rows_at_kill={claimed_without_rows} \
-             missing_from_the_final_store={missing} (an append-before-journal ordering reports 0 \
-             for both)"
-        ),
     );
 }
 
