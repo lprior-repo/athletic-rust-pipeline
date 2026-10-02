@@ -69,6 +69,15 @@ sheets is not mistaken for a regression:
 - Coach and athlete jurisdiction resolves through the school-state map, so a row whose school id is
   absent from the Schools table lands in the unplaced bucket instead of being dropped.
 
+The 2026-10-01 integration advances publication policy to revision 3. Accepted aliases collapse to
+their canonical population across recruiting, PR support and coverage; postal fields retain exact
+school/provider/capture ownership across supported affiliations; summary cells admit every whole
+context that fits before declaring actual overflow. These change the immutable publication
+projection, even when source rows are unchanged. Policy-1/2 frozen inputs and generations remain
+historical evidence and are refused by the current verifier; they are not rewritten or silently
+reused under policy 3. Export schema revision 1 remains compatible with the additive, empty-default
+school postal representation.
+
 ## Consequences
 
 Scope, cohort and evidence semantics are the derivation's, not each sheet's; a sheet that wants a

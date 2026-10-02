@@ -51,6 +51,40 @@ impl CanonicalEvent {
             retained_conflicts: Vec::new(),
         }
     }
+
+    pub fn resolved_source_kind(&self) -> Option<EventKind> {
+        let EventKind::Unmapped { label } = &self.kind else {
+            return None;
+        };
+        let resolved = EventKind::from_source_label(label);
+        if matches!(resolved, EventKind::Unmapped { .. })
+            || !self.retained_conflicts.is_empty()
+            || !self
+                .source_labels
+                .iter()
+                .any(|source| source.label == *label)
+        {
+            return None;
+        }
+        self.source_bound_kind(&resolved).then_some(resolved)
+    }
+
+    pub fn source_bound_kind(&self, kind: &EventKind) -> bool {
+        !matches!(kind, EventKind::Unmapped { .. })
+            && !self.source_labels.is_empty()
+            && self.source_labels.iter().all(|source| {
+                EventKind::from_source_label(&source.label) == *kind
+                    && self.evidence.iter().any(|evidence| {
+                        evidence.method == EvidenceMethod::Parsed
+                            && evidence.source == source.source
+                            && evidence
+                                .source
+                                .url
+                                .as_ref()
+                                .is_some_and(|url| !url.is_empty())
+                    })
+            })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

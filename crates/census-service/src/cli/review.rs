@@ -1,9 +1,25 @@
 use anyhow::{bail, Context, Result};
 use census_review::{
-    reconcile_athletes, run_lanes, ModelClient, ModelOptions, ReviewFamily, ReviewOptions,
+    reconcile_athletes, run_lanes, ModelClient, ModelOptions, ModelResponseFormat, ReviewFamily,
+    ReviewOptions,
 };
 use census_store::Store;
-use clap::Args;
+use clap::{Args, ValueEnum};
+
+#[derive(Clone, Copy, Debug, ValueEnum)]
+enum ResponseFormatArg {
+    PromptJson,
+    JsonSchema,
+}
+
+impl From<ResponseFormatArg> for ModelResponseFormat {
+    fn from(value: ResponseFormatArg) -> Self {
+        match value {
+            ResponseFormatArg::PromptJson => Self::PromptJson,
+            ResponseFormatArg::JsonSchema => Self::JsonSchema,
+        }
+    }
+}
 
 #[derive(Args, Debug)]
 #[command(about = "What `review` was asked to do")]
@@ -20,15 +36,20 @@ pub(super) struct ReviewArgs {
     #[arg(long)]
     dry_run: bool,
     #[arg(
-        help = "Base URL of a local model server (repeatable). One request is kept in flight per lane, because the local llama.cpp servers run a single slot"
+        help = "Base URL of a local model server (repeatable). One request is kept in flight per lane. Defaults: NInfer on 11000 and llama.cpp on 11001"
     )]
-    #[arg(long, default_value = "http://127.0.0.1:11000")]
+    #[arg(long, default_values = ["http://127.0.0.1:11000", "http://127.0.0.1:11001"])]
     endpoint: Vec<String>,
     #[arg(
-        help = "Model name to ask for. One value applies to every endpoint, or give one per endpoint (the machine's two lanes load different quantizations)"
+        help = "Model name to ask for. One value applies to every endpoint, or give one per endpoint"
     )]
-    #[arg(long, default_value = "Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf")]
+    #[arg(long, default_values = ["qwen3.8-27b-uncensored"])]
     model: Vec<String>,
+    #[arg(
+        help = "Response wire format (repeatable). One value applies to every endpoint, or give one per endpoint in order; no automatic fallback"
+    )]
+    #[arg(long, value_enum, default_values = ["prompt-json", "json-schema"])]
+    response_format: Vec<ResponseFormatArg>,
     #[arg(help = "Per-request timeout in seconds")]
     #[arg(long, default_value_t = 180)]
     timeout_secs: u64,
@@ -41,6 +62,7 @@ pub(super) struct ReviewArgs {
 }
 
 pub(super) async fn run_review(store: &Store, args: &ReviewArgs) -> Result<()> {
+    let model_options = args.lane_options()?;
     let families = families_of(&args.family)?;
     let observed_on = args
         .observed_on
@@ -52,51 +74,59 @@ pub(super) async fn run_review(store: &Store, args: &ReviewArgs) -> Result<()> {
         limit: args.limit,
         dry_run: args.dry_run,
     };
+    let clients = model_options
+        .into_iter()
+        .map(ModelClient::new)
+        .collect::<Result<Vec<_>, _>>()
+        .context("building the independent model clients")?;
+    census_review::validate_lanes(&clients).context("validating independent review lanes")?;
     if athlete_identity {
         let reconciliation = reconcile_athletes(store, &observed_on, args.dry_run)
             .context("reconciling the athlete rows the merge retained")?;
         println!("{}", reconciliation.summary());
-    }
-    let mut clients = Vec::new();
-    for (endpoint, model) in lane_pairs(&args.endpoint, &args.model)? {
-        let model_options = ModelOptions::local(&endpoint, &model)
-            .with_context(|| format!("invalid model endpoint {endpoint}"))?
-            .with_timeout(std::time::Duration::from_secs(args.timeout_secs))
-            .with_max_tokens(args.max_tokens);
-        let client = ModelClient::new(model_options)
-            .with_context(|| format!("building the model client for {endpoint}"))?;
-        clients.push(client);
     }
     let report = run_lanes(store, &clients, &options, &observed_on).await?;
     println!("{}", report.summary());
     Ok(())
 }
 
-pub(super) fn lane_pairs(endpoints: &[String], models: &[String]) -> Result<Vec<(String, String)>> {
-    if endpoints.is_empty() {
-        bail!("no model endpoint configured; pass --endpoint <URL>");
+impl ReviewArgs {
+    pub(super) fn validate_configuration(&self) -> Result<()> {
+        if self.endpoint.is_empty() {
+            bail!("no model endpoint configured; pass --endpoint <URL>");
+        }
+        validate_lane_count("--model", self.model.len(), self.endpoint.len())?;
+        validate_lane_count(
+            "--response-format",
+            self.response_format.len(),
+            self.endpoint.len(),
+        )
     }
-    if models.is_empty() {
-        bail!("no model name configured; pass --model <NAME>");
-    }
-    if let [model] = models {
-        return Ok(endpoints
+
+    pub(super) fn lane_options(&self) -> Result<Vec<ModelOptions>> {
+        self.validate_configuration()?;
+        self.endpoint
             .iter()
-            .map(|endpoint| (endpoint.clone(), model.clone()))
-            .collect());
+            .zip(self.model.iter().cycle())
+            .zip(self.response_format.iter().cycle())
+            .map(|((endpoint, model), format)| {
+                Ok(ModelOptions::local(endpoint, model)
+                    .with_context(|| format!("invalid model endpoint {endpoint}"))?
+                    .with_response_format((*format).into())
+                    .with_timeout(std::time::Duration::from_secs(self.timeout_secs))
+                    .with_max_tokens(self.max_tokens))
+            })
+            .collect()
     }
-    if models.len() != endpoints.len() {
+}
+
+fn validate_lane_count(option: &str, values: usize, endpoints: usize) -> Result<()> {
+    if values != 1 && values != endpoints {
         bail!(
-            "give one --model per --endpoint: {} endpoints, {} models",
-            endpoints.len(),
-            models.len()
+            "give one {option} for all endpoints or one per --endpoint: {endpoints} endpoints, {values} values"
         );
     }
-    Ok(endpoints
-        .iter()
-        .cloned()
-        .zip(models.iter().cloned())
-        .collect())
+    Ok(())
 }
 
 pub(super) fn families_of(names: &[String]) -> Result<Vec<ReviewFamily>> {

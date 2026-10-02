@@ -134,3 +134,35 @@ fn another_subject_cannot_supply_a_verdict_for_a_requested_case() {
         assert_eq!(dropped, 1);
     }
 }
+
+#[test]
+fn model_reply_rejects_unknown_batch_and_verdict_fields() {
+    let batch = VerdictBatch {
+        subject_id: "school:madison-west".to_string(),
+        verdicts: vec![verdict(
+            "School jurisdiction unresolved:school:madison-west",
+            ReviewVerdictKind::ValueProposed,
+            80,
+        )],
+    };
+    let encoded = serde_json::to_value(&batch).expect("valid model reply");
+    for nested in [false, true] {
+        let mut reply = encoded.clone();
+        let object = if nested {
+            reply["verdicts"][0].as_object_mut()
+        } else {
+            reply.as_object_mut()
+        };
+        object
+            .expect("model reply object")
+            .insert("unexpected".into(), serde_json::json!("unsupported advice"));
+        assert!(
+            serde_json::from_value::<VerdictBatch>(reply).is_err(),
+            "unsupported fields must not become accepted advice"
+        );
+    }
+    assert_eq!(
+        serde_json::from_value::<VerdictBatch>(encoded).expect("supported model reply"),
+        batch
+    );
+}

@@ -130,12 +130,15 @@ pub(super) fn tally_performances<'a>(
     athlete_ids: &HashSet<&str>,
     event_ids: &HashSet<String>,
     unmapped_event_ids: &HashSet<String>,
+    aliases: &'a HashMap<String, String>,
 ) -> (HashMap<&'a str, PerfTally>, PerfTally) {
     let mut tallies: HashMap<&str, PerfTally> = HashMap::new();
     let mut orphan = PerfTally::default();
     for performance in performances {
-        let tally = if athlete_ids.contains(performance.athlete.as_str()) {
-            tallies.entry(performance.athlete.as_str()).or_default()
+        let subject = performance.athlete.as_str();
+        let canonical = aliases.get(subject).map_or(subject, String::as_str);
+        let tally = if athlete_ids.contains(canonical) {
+            tallies.entry(canonical).or_default()
         } else {
             &mut orphan
         };

@@ -78,6 +78,12 @@ fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Ce
     cells.extend(contact_cells(&contacts, preferred));
     cells.extend(profile_cells(profiles));
     cells.extend(audit_cells(dataset, athlete, tally, &prs)?);
+    let postal = dataset.postal.get(athlete.id.as_str()).ok_or_else(|| {
+        crate::report::ReportError::Invariant {
+            detail: format!("athlete {} has no postal projection", athlete.id),
+        }
+    })?;
+    cells.extend(postal.iter().cloned().map(Cell::text));
     Ok(cells)
 }
 

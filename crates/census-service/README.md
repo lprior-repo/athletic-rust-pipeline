@@ -29,7 +29,7 @@ all commands have identical durable/recovery semantics.
 | Discovery/acquisition | `fetch`, `sites`, `teams`, `meets`, `collect`, `provider` | Source entry points; capability and route differ by command |
 | Derivation | `consolidate`, `index`, `review`, `run` | Materialization, deterministic indexes, local advice and composed cycle |
 | Publication | `report`, `bests`, `workbook`, `verify`, `seal` | Reports, compatible bests, workbook, current verifier and seal/refusal |
-| Store maintenance | `fjall-stats`, `store-integrity`, `store-backup`, `store-restore`, `repair-retained-marks` | Inspect, safely back up/restore or append source-backed retained mark corrections |
+| Store maintenance | `fjall-stats`, `store-integrity`, `store-backup`, `store-restore`, `repair-retained-marks`, `repair-retained-events` | Inspect, safely back up/restore or append source-backed retained corrections |
 | Public coach research | `import-coaches`, `merge-coaches`, `verify-coaches` | Research CSV handling and source-backed contact verification |
 | Research artifacts | `qa-reports`, `export-data`, `school-names`, `census-doc`, `school-address` | Research report/CSV helpers and the school-directory corpus verb; not a second product workflow |
 
@@ -60,6 +60,13 @@ deleting original observations. It performs no acquisition, refuses contradictor
 does not infer event identity from metric units and does not round sub-centimetre source marks.
 Use the cold-backup/restore
 procedure before applying it; [OPERATIONS.md](../../docs/OPERATIONS.md) owns the sequence.
+
+`repair-retained-events` also requires explicit `--store`, a stopped owner and a cold backup.
+Its default dry-run lists eligible retained event-kind corrections; `--apply` appends them in
+bounded batches. Only recognized labels backed by their matching parsed source evidence and
+without retained conflicts qualify. Event IDs, meet/sex/division/round context, source labels and
+original observations survive. Unsupported or unbound labels remain unmapped; a second apply is
+idempotent. This command neither discovers results nor merges distinct event contexts.
 
 Source policy is binding regardless of available CLI flags. The existing `--authorized-host` option
 can alter robots handling; its presence is not permission to bypass access policy. Do not use it to

@@ -1,5 +1,5 @@
 use super::*;
-use std::io::{ErrorKind, Write};
+use std::io::Write;
 
 fn metadata(body: &[u8]) -> CacheMeta {
     CacheMeta {
@@ -16,7 +16,7 @@ fn metadata(body: &[u8]) -> CacheMeta {
 }
 
 #[test]
-fn metadata_accepts_the_exact_encoded_limit_and_refuses_one_more_byte() {
+fn exact_limit_metadata_is_admitted_and_oversized_metadata_recovers_with_evidence() {
     let dir = tempfile::tempdir().expect("cache directory");
     let body_path = dir.path().join("capture.body");
     let meta_path = dir.path().join("capture.meta.json");
@@ -36,10 +36,35 @@ fn metadata_accepts_the_exact_encoded_limit_and_refuses_one_more_byte() {
         .expect("metadata file")
         .write_all(b" ")
         .expect("one excess byte");
-    assert!(matches!(
-        read_cache(&body_path, &meta_path),
-        Err(FetchError::Cache { source, .. }) if source.kind() == ErrorKind::InvalidData
-    ));
+    assert!(read_cache(&body_path, &meta_path)
+        .expect("bounded miss")
+        .is_none());
+    encoded.push(b' ');
+    let fresh = metadata(b"fresh body");
+    write_cache(&body_path, &meta_path, b"fresh body", &fresh).expect("recover metadata");
+    let (_, served) = read_cache(&body_path, &meta_path)
+        .expect("read")
+        .expect("hit");
+    assert_eq!(served, b"fresh body");
+    let quarantine = dir.path().join("quarantine");
+    let bundles: Vec<_> = std::fs::read_dir(quarantine)
+        .expect("evidence")
+        .map(|entry| entry.expect("bundle").path())
+        .collect();
+    assert_eq!(bundles.len(), 1);
+    let bundle = bundles.first().expect("bundle");
+    assert_eq!(
+        std::fs::read(bundle.join("meta.json")).expect("exact old metadata"),
+        encoded
+    );
+    assert_eq!(
+        std::fs::read(bundle.join("body")).expect("old body"),
+        b"captured body"
+    );
+    let record: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(bundle.join("reason.json")).expect("reason"))
+            .expect("record");
+    assert_eq!(record["reason"], "metadata_limit_or_changed");
 }
 
 #[test]
@@ -62,8 +87,10 @@ fn body_accepts_empty_and_exact_limit_but_refuses_a_false_small_declaration() {
         serde_json::to_vec(&meta).expect("metadata encoding"),
     )
     .expect("false declaration");
+    std::fs::remove_file(&body_path).expect("detach immutable cached body");
     let size = u64::try_from(MAX_BODY_BYTES).expect("body bound") + 1;
     std::fs::OpenOptions::new()
+        .create_new(true)
         .write(true)
         .open(&body_path)
         .expect("body file")

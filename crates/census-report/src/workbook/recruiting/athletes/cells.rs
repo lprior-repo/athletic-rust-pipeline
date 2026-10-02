@@ -36,20 +36,7 @@ pub(super) fn headline_pr_summary(
     _athlete: &CanonicalAthlete,
     prs: &[&SharedSelection],
 ) -> Vec<Cell> {
-    if prs.is_empty() {
-        return vec![Cell::Empty];
-    }
-    let mut text = String::new();
-    for (index, pr) in prs.iter().take(10).enumerate() {
-        if index != 0 {
-            text.push_str("; ");
-        }
-        append_qualified_mark(&mut text, pr);
-    }
-    if prs.len() > 10 {
-        text.push_str("; additional classified marks in PRs");
-    }
-    vec![Cell::text(text)]
+    vec![qualified_summary(prs.iter().copied())]
 }
 
 pub(super) fn pr_event_cells(prs: &[&SharedSelection]) -> Vec<Cell> {
@@ -60,25 +47,49 @@ pub(super) fn pr_event_cells(prs: &[&SharedSelection]) -> Vec<Cell> {
 }
 
 fn event_cell(prs: &[&SharedSelection], event: &str) -> Cell {
-    let mut selected = prs
-        .iter()
-        .copied()
-        .filter(|pr| pr.key.event_kind.stable_key() == event);
-    let Some(first) = selected.next() else {
-        return Cell::Empty;
-    };
-    let Some(second) = selected.next() else {
-        let mut text = String::new();
-        append_qualified_mark(&mut text, first);
-        return Cell::text(text);
-    };
-    let mut text = String::new();
-    append_qualified_mark(&mut text, first);
-    for pr in std::iter::once(second).chain(selected) {
-        text.push_str("; ");
-        append_qualified_mark(&mut text, pr);
+    qualified_summary(
+        prs.iter()
+            .copied()
+            .filter(|pr| pr.key.event_kind.stable_key() == event),
+    )
+}
+
+fn qualified_summary<'a>(mut prs: impl Iterator<Item = &'a SharedSelection>) -> Cell {
+    const OVERFLOW: &str = "; additional classified marks in PRs";
+    const LIMIT: usize = 32_767;
+    let budget = LIMIT.saturating_sub(OVERFLOW.len());
+    let result = prs.try_fold(
+        (String::new(), 0_usize, 0_usize),
+        |(mut text, used, marker_end), pr| {
+            let start = text.len();
+            if !text.is_empty() {
+                text.push_str("; ");
+            }
+            append_qualified_mark(&mut text, pr);
+            let required = text
+                .get(start..)
+                .map_or(0, |mark| mark.encode_utf16().count());
+            let total = used.saturating_add(required);
+            if total > LIMIT {
+                text.truncate(marker_end);
+                return Err(text);
+            }
+            let marker_end = if total <= budget {
+                text.len()
+            } else {
+                marker_end
+            };
+            Ok((text, total, marker_end))
+        },
+    );
+    match result {
+        Ok((text, _, _)) if text.is_empty() => Cell::Empty,
+        Ok((text, _, _)) => Cell::text(text),
+        Err(mut text) => {
+            text.push_str(OVERFLOW);
+            Cell::text(text)
+        }
     }
-    Cell::text(text)
 }
 
 fn append_qualified_mark(text: &mut String, pr: &SharedSelection) {

@@ -79,6 +79,7 @@ impl ReviewVerdictKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ReviewVerdict {
     pub case_id: String,
     pub kind: ReviewVerdictKind,
@@ -89,6 +90,7 @@ pub struct ReviewVerdict {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct VerdictBatch {
     pub subject_id: String,
     pub verdicts: Vec<ReviewVerdict>,

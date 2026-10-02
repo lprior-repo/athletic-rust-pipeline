@@ -111,11 +111,16 @@ impl<'s> StoreSnapshot<'s> {
 
     pub fn athletes(&self) -> StoreResult<Vec<CanonicalAthlete>> {
         let mut athletes = self.scan::<CanonicalAthlete>(Table::Athletes)?;
+        self.enrich_athletes(&mut athletes)?;
+        Ok(athletes)
+    }
+
+    pub fn enrich_athletes(&self, athletes: &mut [CanonicalAthlete]) -> StoreResult<()> {
         let mut owners: std::collections::HashMap<
             &census_domain::model::SourceNamespace,
             std::collections::HashMap<&str, Vec<&mut Vec<census_domain::model::ObservedGrade>>>,
         > = std::collections::HashMap::new();
-        for athlete in &mut athletes {
+        for athlete in athletes {
             if let Some(source) = &athlete.source {
                 owners
                     .entry(&source.namespace)
@@ -146,7 +151,7 @@ impl<'s> StoreSnapshot<'s> {
             }
             Ok(())
         })?;
-        Ok(athletes)
+        Ok(())
     }
 
     pub fn root(&self) -> &std::path::Path {

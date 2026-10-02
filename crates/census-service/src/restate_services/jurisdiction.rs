@@ -84,6 +84,7 @@ pub(super) const DISPATCHED: &[&str] = &[
     "ihsa",
     "ks",
     "coach_directories",
+    "arbiter_orgs",
     "wiaa_results",
     "wayzata",
     "milesplit",

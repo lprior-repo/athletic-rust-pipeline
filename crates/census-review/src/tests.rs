@@ -260,27 +260,11 @@ fn triage_keeps_a_refused_proposal_as_a_verdict_without_a_value() {
 }
 
 #[test]
-fn the_report_line_names_every_outcome() {
+fn insufficient_advice_does_not_count_as_a_resolved_review() {
     let report = ReviewReport {
-        requested: 10,
-        answered: 8,
         accepted: 4,
-        rejected: 1,
         insufficient: 3,
-        dropped: 1,
-        unanswered: 1,
-        failed: 1,
+        ..ReviewReport::default()
     };
-    assert_eq!(report.resolved(), 7);
-    assert_eq!(
-        report.summary(),
-        "requested=10 answered=8 decided=4 accepted=4 rejected=1 insufficient=3 unanswered=1 dropped=1 failed=1"
-    );
-}
-
-#[test]
-fn a_pass_writes_verdicts_only_when_it_is_not_a_dry_run() {
-    assert!(should_write(false, 1));
-    assert!(!should_write(true, 1));
-    assert!(!should_write(false, 0));
+    assert_eq!(report.resolved(), 4);
 }

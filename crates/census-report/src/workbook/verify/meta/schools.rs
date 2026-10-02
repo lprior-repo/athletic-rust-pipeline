@@ -5,7 +5,7 @@ use crate::report::ReportResult;
 
 use super::{header, Expect, Sheet};
 
-const HEADERS: [&str; 12] = [
+const HEADERS: [&str; 24] = [
     "School ID",
     "School",
     "State",
@@ -18,6 +18,18 @@ const HEADERS: [&str; 12] = [
     "Aliases",
     "Sources",
     "Conflicts",
+    "Postal School ID",
+    "Postal Street",
+    "Postal Second Line",
+    "Postal City",
+    "Postal State",
+    "Postal ZIP",
+    "Postal Owner Namespace",
+    "Postal Owner ID",
+    "Postal Source",
+    "Postal Source URL",
+    "Postal Observed Date",
+    "Postal Capture SHA256",
 ];
 
 pub(super) fn expected(schools: &[CanonicalSchool]) -> ReportResult<Sheet> {
@@ -36,7 +48,7 @@ pub(super) fn expected(schools: &[CanonicalSchool]) -> ReportResult<Sheet> {
 }
 
 fn row(school: &CanonicalSchool) -> ReportResult<Vec<Expect>> {
-    Ok(vec![
+    let mut cells = vec![
         Expect::text(school.id.as_str()),
         Expect::text(school.name.as_str()),
         Expect::text(state_code(school)),
@@ -49,7 +61,13 @@ fn row(school: &CanonicalSchool) -> ReportResult<Vec<Expect>> {
         Expect::text(school.aliases.join(" | ")),
         Expect::count(school.source_identities.len())?,
         Expect::count(school.retained_conflicts.len())?,
-    ])
+    ];
+    cells.extend(
+        crate::workbook::verify::postal::fields([school])?
+            .into_iter()
+            .map(Expect::text),
+    );
+    Ok(cells)
 }
 
 fn enrollment(school: &CanonicalSchool) -> Expect {

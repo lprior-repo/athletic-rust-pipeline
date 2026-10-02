@@ -90,7 +90,7 @@ pub(super) struct NationalArgs {
     #[command(flatten)]
     flags: RunFlags,
     #[arg(
-        help = "Jurisdictions to cover. Absent means all fifty states and the District of Columbia"
+        help = "Jurisdictions to cover. Absent means the 48 contiguous states and the District of Columbia (49 jurisdictions)"
     )]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
@@ -148,8 +148,8 @@ pub(super) struct NationalReportArgs {
     #[arg(long, default_value_t = 1)]
     revision: u32,
     #[arg(
-        help = "Jurisdictions the run covered. Absent means all fifty states and the District of Columbia",
-        long_help = "Jurisdictions the run covered. Absent means all fifty states and the District of Columbia.\n\nThe set is part of the run's identity, so the report of a run submitted with `--states` is only reachable with the same list."
+        help = "Jurisdictions the run covered. Absent means the 48 contiguous states and the District of Columbia (49 jurisdictions)",
+        long_help = "Jurisdictions the run covered. Absent means the 48 contiguous states and the District of Columbia (49 jurisdictions).\n\nThe set is part of the run's identity, so the report of a run submitted with `--states` is only reachable with the same list."
     )]
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,

@@ -9,6 +9,7 @@ use crate::export::ExportDataset;
 use crate::workbook::Options;
 
 mod bests;
+mod postal;
 
 fn seed(store: &Store) {
     let (mut school, school_id) =

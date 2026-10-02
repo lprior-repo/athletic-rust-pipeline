@@ -136,6 +136,20 @@ fn same_person_is_rejected_when_grade_evidence_differs() {
 }
 
 #[test]
+fn same_person_is_rejected_with_the_retained_source_conflict_reason() {
+    assert_eq!(
+        validate(
+            ReviewFamily::AthleteIdentity,
+            &proposal("same_person"),
+            &packet_with_flag("retained_source_conflict"),
+        ),
+        Adjudication::Refused(Refusal::HardContradiction(
+            HardContradiction::RetainedSourceConflict
+        ))
+    );
+}
+
+#[test]
 fn same_person_is_accepted_when_no_hard_contradiction_exists() {
     assert_eq!(
         validate(

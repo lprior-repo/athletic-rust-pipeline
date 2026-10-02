@@ -26,23 +26,15 @@ pub(super) fn content_text(message: &Value) -> Option<String> {
 }
 
 pub fn parse_batch(content: &str) -> Result<VerdictBatch, ModelError> {
-    let cleaned = strip_fence(content);
-    serde_json::from_str::<VerdictBatch>(cleaned).map_err(|_| ModelError::Content {
+    let batch: VerdictBatch = serde_json::from_str(content).map_err(|_| ModelError::Content {
         reason: "not a verdict batch",
-    })
-}
-
-pub(super) fn strip_fence(content: &str) -> &str {
-    let trimmed = content.trim();
-    let Some(rest) = trimmed.strip_prefix("```") else {
-        return trimmed;
-    };
-    let rest = rest
-        .strip_prefix("json")
-        .or_else(|| rest.strip_prefix("JSON"))
-        .unwrap_or(rest);
-    rest.trim_start()
-        .strip_suffix("```")
-        .map(str::trim_end)
-        .unwrap_or_else(|| rest.trim_end())
+    })?;
+    if batch.verdicts.iter().any(|verdict| {
+        verdict.field.is_none() || verdict.value.is_none() || verdict.confidence > 100
+    }) {
+        return Err(ModelError::Content {
+            reason: "verdict fields must be strings and confidence must be at most 100",
+        });
+    }
+    Ok(batch)
 }

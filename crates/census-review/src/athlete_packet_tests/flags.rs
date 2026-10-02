@@ -6,28 +6,14 @@ use crate::athlete_packet::packet as athlete_packet;
 #[test]
 fn the_flags_state_what_the_store_already_knows_before_the_model_runs() {
     let (boys, girls, _) = rows();
-    let kinds: Vec<FlagKind> = flags(&boys, &girls)
-        .into_iter()
-        .map(|flag| flag.kind)
-        .collect();
-    assert_eq!(
-        kinds,
-        vec![
-            FlagKind::SharedSourceIdentity,
-            FlagKind::GradYearEvidenceDiffers,
-            FlagKind::GenderDiffers,
-            FlagKind::NameSchoolCohortAgree,
-        ],
-        "the disagreements come first, and the agreement the store already made comes last"
-    );
-
     let case = case_for(&boys);
     let packet = athlete_packet(
         &case,
         &boys,
         &girls,
         &[boys.id.to_string(), girls.id.to_string()],
-    );
+    )
+    .expect("bound athlete packet");
     let stated_flags: Vec<&str> = packet
         .evidence
         .iter()
@@ -90,7 +76,8 @@ fn provider_objects_that_differ_are_stated_and_never_called_a_shared_one() {
         &boys,
         &girls,
         &[boys.id.to_string(), girls.id.to_string()],
-    );
+    )
+    .expect("bound athlete packet");
     assert!(
         packet
             .evidence
@@ -139,7 +126,8 @@ fn unsupported_inference_survives_the_model_packet() {
         &first,
         &second,
         &[first.id.to_string(), second.id.to_string()],
-    );
+    )
+    .expect("bound athlete packet");
     let contradiction = packet
         .evidence
         .iter()

@@ -1,0 +1,118 @@
+use super::*;
+use crate::model::SourceNamespace;
+use crate::school_directory::StreetLine;
+use crate::UsJurisdiction;
+
+fn owner(id: &str) -> SourceIdentity {
+    SourceIdentity::new(SourceNamespace::association_school("wiaa"), id)
+}
+
+fn claim(
+    id: &str,
+    url: &str,
+    day: &str,
+    label: SourceLabel,
+) -> Result<SchoolPostalAddress, SchoolAddressError> {
+    SchoolPostalAddress::new(
+        PostalAddress::line(StreetLine::parse("1 Rocket Drive").unwrap()),
+        owner(id),
+        label,
+        Evidence::parsed(super::super::SourceRef::new("wiaa", Some(url.into())), day),
+        "a".repeat(64),
+    )
+}
+
+fn source_label() -> SourceLabel {
+    SourceLabel::AthleticAssociation {
+        state: UsJurisdiction::Wisconsin,
+    }
+}
+
+#[test]
+fn malformed_postal_capture_dates_and_nonhttp_locators_cannot_enter_publication() {
+    for (url, day) in [
+        ("not-a-url", "2026-09-27"),
+        ("file:///tmp/private", "2026-09-27"),
+        ("https://", "2026-09-27"),
+        ("https://user:secret@schools.test/capture", "2026-09-27"),
+        ("https://schools.test/capture", "not-a-date"),
+        ("https://schools.test/capture", "2026-02-30"),
+        ("https://schools.test/capture", "2026-9-7"),
+        ("https://schools.test/capture", "2026-02-30T12:34:56Z"),
+        ("https://schools.test/capture", "2026-10-01T25:34:56Z"),
+        ("https://schools.test/capture", "2026-10-01T12:34:56"),
+    ] {
+        assert!(claim("1001", url, day, source_label()).is_err());
+    }
+    let valid = claim(
+        "1001",
+        "https://schools.test/capture",
+        "2024-02-29",
+        source_label(),
+    )
+    .unwrap();
+    let encoded = serde_json::to_value(&valid).unwrap();
+    assert_eq!(
+        serde_json::from_value::<SchoolPostalAddress>(encoded.clone()).unwrap(),
+        valid
+    );
+    let mut invalid = encoded;
+    invalid["evidence"]["observed_on"] = serde_json::json!("2023-02-29");
+    assert!(serde_json::from_value::<SchoolPostalAddress>(invalid).is_err());
+    let timestamp = "2026-10-01T12:34:56Z";
+    let observed = claim(
+        "1001",
+        "https://schools.test/capture",
+        timestamp,
+        source_label(),
+    )
+    .unwrap();
+    assert_eq!(observed.evidence().observed_on, timestamp);
+}
+
+#[test]
+fn metadata_owner_line_breaks_cannot_forge_aligned_postal_rows() {
+    for id in [
+        "1001\nforeign",
+        "1001\rforeign",
+        "1001\tforeign",
+        "1001 foreign",
+        "1001\0foreign",
+    ] {
+        assert_eq!(
+            claim(
+                id,
+                "https://schools.test/capture",
+                "2026-09-27",
+                source_label()
+            ),
+            Err(SchoolAddressError::MissingOwner)
+        );
+    }
+}
+
+#[test]
+fn source_jurisdiction_binds_the_school_even_when_address_state_is_missing() {
+    let mut school =
+        CanonicalSchool::new(UsJurisdiction::NorthCarolina, "Rocket High", "rocket-high").0;
+    school.source_identities.push(owner("1001"));
+    let foreign = claim(
+        "1001",
+        "https://schools.test/capture",
+        "2026-09-27",
+        source_label(),
+    )
+    .unwrap();
+    assert_eq!(
+        school.add_postal_address(foreign),
+        Err(SchoolAddressError::ForeignJurisdiction)
+    );
+    assert!(school.postal_addresses.is_empty());
+}
+
+#[test]
+fn unrelated_source_labels_cannot_relabel_an_association_owned_capture() {
+    for label in [SourceLabel::Ccd, SourceLabel::Pss, SourceLabel::Geocoder] {
+        assert!(claim("1001", "https://schools.test/capture", "2026-09-27", label).is_err());
+    }
+}

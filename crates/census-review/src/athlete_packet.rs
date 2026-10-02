@@ -1,8 +1,10 @@
 use std::collections::{BTreeMap, HashMap};
 
 use census_domain::model::{
-    CanonicalAthlete, ObservedGrade, ReviewCase, ReviewEvidenceFact, ReviewPacket, SourceIdentity,
+    AthleteCandidateId, CanonicalAthlete, ObservedGrade, ReviewCase, ReviewEvidenceFact,
+    ReviewPacket, SourceIdentity,
 };
+use census_store::{StoreError, StoreResult};
 
 use super::athlete_flags::{flags, key, IdentityKey};
 use super::families::IDENTITY_FIELD;
@@ -56,14 +58,23 @@ impl AthleteIndex {
         }
     }
 
-    pub(super) fn compare(
+    pub(super) fn compare_members(
         &self,
         subject_id: &str,
+        members: &[AthleteCandidateId],
     ) -> Option<(&CanonicalAthlete, &CanonicalAthlete, &[String])> {
         let subject = self.rows.get(subject_id)?;
         let idx = self.group_index.get(subject_id)?;
         let group = self.groups.get(*idx)?;
-        let other_id = group.iter().find(|id| id.as_str() != subject_id)?;
+        let other_id = match members {
+            [] => group.iter().find(|id| id.as_str() != subject_id)?.as_str(),
+            [first, second] if first != second && first.as_str() == subject_id => second.as_str(),
+            [first, second] if first != second && second.as_str() == subject_id => first.as_str(),
+            _ => return None,
+        };
+        if !group.iter().any(|id| id == other_id) {
+            return None;
+        }
         let other = self.rows.get(other_id)?;
         Some((subject, other, group))
     }
@@ -74,34 +85,39 @@ pub(super) fn packet(
     subject: &CanonicalAthlete,
     other: &CanonicalAthlete,
     group: &[String],
-) -> ReviewPacket {
+) -> StoreResult<ReviewPacket> {
     let mut packet = ReviewPacket::new(case.subject_id.clone(), case.subject.clone())
         .with_case(case_fact(case))
         .with_evidence(fact("question", "are the two sides the same athlete?"))
         .with_evidence(fact("answer_field", IDENTITY_FIELD))
         .with_evidence(fact("answer_values", "same_person | different_person"))
         .with_evidence(fact("candidate_ids", &group.join(", ")));
-    let sides = side_facts(Side::Subject, subject)
+    let sides = side_facts(Side::Subject, subject)?
         .into_iter()
-        .chain(side_facts(Side::Other, other));
+        .chain(side_facts(Side::Other, other)?);
     for evidence in sides {
         packet = packet.with_evidence(evidence);
     }
     for flag in flags(subject, other) {
         packet = packet.with_evidence(flag.evidence());
     }
-    packet
+    Ok(packet)
 }
 
-fn side_facts(side: Side, row: &CanonicalAthlete) -> Vec<ReviewEvidenceFact> {
+fn side_facts(side: Side, row: &CanonicalAthlete) -> StoreResult<Vec<ReviewEvidenceFact>> {
     let prefix = side.prefix();
     let field = |name: &str| format!("{prefix}_{name}");
+    let canonical = serde_json::to_string(row).map_err(|source| StoreError::Json {
+        detail: format!("serializing {prefix} canonical athlete {}", row.id),
+        source,
+    })?;
     let mut facts = vec![
         fact(&field("id"), row.id.as_str()),
         fact(&field("name"), &row.canonical_name),
         fact(&field("school"), row.school.as_str()),
         fact(&field("grad_year"), &row.grad_year.to_string()),
         fact(&field("gender"), row.gender.stable_key()),
+        fact(&field("canonical_athlete"), &canonical),
     ];
     for observation in observations(row) {
         facts.push(fact(
@@ -123,7 +139,7 @@ fn side_facts(side: Side, row: &CanonicalAthlete) -> Vec<ReviewEvidenceFact> {
             ));
         }
     }
-    facts
+    Ok(facts)
 }
 
 fn identities(row: &CanonicalAthlete) -> Vec<&SourceIdentity> {

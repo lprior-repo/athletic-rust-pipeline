@@ -19,6 +19,33 @@ including recorded acquisition payloads. Dated command results and execution lim
 [the verification ledger](../../../docs/VERIFICATION-EVIDENCE.md). The historical 51-jurisdiction
 survey below is not fresh census population intake, national acceptance or current contact tenure.
 
+## Source-owned acquisition-policy cutover — 2026-10-01
+
+Arbiter completion uses `arbiter_owned_coaches_v2` keys bound to jurisdiction, organization and
+positive public school ID, not the name-derived canonical school key. Valid coaches survive
+malformed peer rows or later-page failures; incomplete pages do not receive completion receipts.
+Old `arbiter_orgs` history is preserved and is not authority for the new acquisition policy.
+
+Incomplete response fingerprints use `arbiter_coaches_incomplete_v2:<state>:<org>:<public-id>`,
+not the possibly aliased canonical school ID. Payloads bind both owner key and school ID.
+Unchanged incomplete cache entries are refreshed through the normal admitted source path;
+corrected captures can converge without an operator rewriting the cache. Partial valid facts and
+their immutable captures survive malformed peer rows, later-page failures, refusals and cooldowns.
+Historical name-derived v1 markers are preserved and never adopted as owner evidence.
+
+Coach-directory completion uses `coach_directories_schools_v3`; v2 captures/receipts remain
+historical evidence. Malformed postal data retains valid school/coach facts and the unresolved
+review obligation, without marking the source owner complete. Corrected captures can be processed
+under the new private phase. Published page number/totals, row/body bounds and owner/jurisdiction
+checks cannot silently convert a partial directory into completeness.
+
+These are private acquisition-policy phases, not new provider jobs or retry attempt identities.
+Already-completed Restate invocations do not transparently rerun. The frozen canonical school's
+name-derived natural key still cannot disambiguate distinct physical schools with the same name;
+source-bound receipts prevent skipped captures but are not a school-identity migration.
+Fixture replay and historical directory evidence are not live accessibility or current tenure
+certification. Exact commands and remaining limits are in the verification ledger.
+
 
 ## Headline numbers (all measured, all re-derivable)
 

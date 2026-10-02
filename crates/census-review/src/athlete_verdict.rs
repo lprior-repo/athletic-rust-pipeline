@@ -14,6 +14,7 @@ pub enum AthleteVerdict {
 pub enum HardContradiction {
     GradYearEvidenceDiffers,
     GenderDiffers,
+    RetainedSourceConflict,
 }
 
 impl HardContradiction {
@@ -21,6 +22,7 @@ impl HardContradiction {
         match self {
             Self::GradYearEvidenceDiffers => "grad_year_evidence_differs",
             Self::GenderDiffers => "gender_differs",
+            Self::RetainedSourceConflict => "retained_source_conflict",
         }
     }
 }
@@ -76,6 +78,7 @@ fn hard_contradiction(packet: &ReviewPacket) -> Option<HardContradiction> {
             match flag {
                 "grad_year_evidence_differs" => Some(HardContradiction::GradYearEvidenceDiffers),
                 "gender_differs" => Some(HardContradiction::GenderDiffers),
+                "retained_source_conflict" => Some(HardContradiction::RetainedSourceConflict),
                 _ => None,
             }
         })

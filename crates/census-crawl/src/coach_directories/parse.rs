@@ -2,6 +2,10 @@ use crate::{CrawlError, CrawlResult};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
+mod postal;
+
+const MAX_SOURCE_ROWS: usize = 20_000;
+
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DirectoryPage {
@@ -16,7 +20,7 @@ pub struct DirectoryPage {
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(from = "postal::DirectoryWire")]
 pub struct DirectorySchool {
     #[serde(default)]
     pub org_id: Option<String>,
@@ -30,6 +34,12 @@ pub struct DirectorySchool {
     pub state_code: Option<String>,
     #[serde(default)]
     pub address: Option<String>,
+    #[serde(default)]
+    pub address2: Option<String>,
+    #[serde(default)]
+    pub zip: Option<String>,
+    #[serde(skip)]
+    pub postal_issues: Vec<String>,
     #[serde(default)]
     pub competition_levels: BTreeMap<String, serde_json::Value>,
 }
@@ -58,10 +68,16 @@ pub struct SchoolSummary {
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(from = "postal::SummaryWire")]
 pub struct SummaryAddress {
     #[serde(default)]
     pub address1: Option<String>,
+    #[serde(default)]
+    pub address2: Option<String>,
+    #[serde(default)]
+    pub state: Option<String>,
+    #[serde(skip)]
+    pub postal_issues: Vec<String>,
     #[serde(default)]
     pub city: Option<String>,
     #[serde(default)]
@@ -113,15 +129,43 @@ pub struct TeamEntry {
 }
 
 pub fn parse_directory(body: &[u8]) -> CrawlResult<DirectoryPage> {
-    serde_json::from_slice(body).map_err(|source| CrawlError::Decode {
-        url: "DragonFly association directory page".to_string(),
-        source,
-    })
+    check_body(body, "DragonFly association directory page")?;
+    let page: DirectoryPage =
+        serde_json::from_slice(body).map_err(|source| CrawlError::Decode {
+            url: "DragonFly association directory page".to_string(),
+            source,
+        })?;
+    if page.results.len() > MAX_SOURCE_ROWS {
+        return Err(CrawlError::Schema {
+            url: "DragonFly association directory page".to_string(),
+            detail: format!("directory exceeds {MAX_SOURCE_ROWS} school rows"),
+        });
+    }
+    Ok(page)
 }
 
 pub fn parse_summary(body: &[u8]) -> CrawlResult<SchoolSummary> {
-    serde_json::from_slice(body).map_err(|source| CrawlError::Decode {
-        url: "DragonFly school summary".to_string(),
-        source,
-    })
+    check_body(body, "DragonFly school summary")?;
+    let summary: SchoolSummary =
+        serde_json::from_slice(body).map_err(|source| CrawlError::Decode {
+            url: "DragonFly school summary".to_string(),
+            source,
+        })?;
+    if summary.staff.len() > MAX_SOURCE_ROWS || summary.teams.len() > MAX_SOURCE_ROWS {
+        return Err(CrawlError::Schema {
+            url: "DragonFly school summary".to_string(),
+            detail: format!("summary exceeds {MAX_SOURCE_ROWS} staff or team rows"),
+        });
+    }
+    Ok(summary)
+}
+
+fn check_body(body: &[u8], url: &str) -> CrawlResult<()> {
+    if body.len() > crate::net::MAX_BODY_BYTES {
+        return Err(CrawlError::Schema {
+            url: url.to_string(),
+            detail: "oversized DragonFly response".to_string(),
+        });
+    }
+    Ok(())
 }

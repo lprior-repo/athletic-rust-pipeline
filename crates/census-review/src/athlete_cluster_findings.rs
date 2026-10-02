@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use census_domain::model::{
-    AthleteCandidateId, CanonicalAthlete, CanonicalSchool, CaseEvidence, ReviewCase,
+    person_key, AthleteCandidateId, CanonicalAthlete, CanonicalSchool, CaseEvidence, ReviewCase,
     ReviewVerdictKind, ReviewVerdictRecord, SchoolId, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
     MEMBER_SET_LABEL,
 };
@@ -82,6 +82,9 @@ impl Observed {
         for athlete in &self.rows {
             let mut named: BTreeMap<&SourceNamespace, BTreeSet<&str>> = BTreeMap::new();
             for identity in athlete.identities() {
+                if person_key(identity).is_none() {
+                    continue;
+                }
                 objects
                     .entry((&identity.namespace, identity.id.as_str()))
                     .or_default()
@@ -130,7 +133,7 @@ impl Span<'_> {
         let Some(first) = rows.next() else {
             return false;
         };
-        rows.all(|row| first.agrees_with(row))
+        self.hard_contradiction().is_none() && rows.all(|row| first.agrees_with(row))
     }
 
     pub(super) fn hard_contradiction(&self) -> Option<HardContradiction> {
@@ -138,8 +141,12 @@ impl Span<'_> {
         if self
             .rows
             .iter()
-            .skip(1)
-            .any(|row| first.cohort.conflicts_with(&row.cohort))
+            .find(|row| !row.cohort.is_empty())
+            .is_some_and(|observed| {
+                self.rows
+                    .iter()
+                    .any(|row| observed.cohort.conflicts_with(&row.cohort))
+            })
         {
             return Some(HardContradiction::GradYearEvidenceDiffers);
         }

@@ -17,12 +17,20 @@ const MAX_MODEL_LEN: usize = 256;
 const REQUEST_CAP: usize = 1_048_576;
 const RESPONSE_CAP: usize = 262_144;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ModelResponseFormat {
+    JsonSchema,
+    PromptJson,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModelOptions {
     endpoint: endpoint::ValidatedEndpoint,
     model: String,
     timeout: Duration,
     max_tokens: u32,
+    response_format: ModelResponseFormat,
 }
 
 impl ModelOptions {
@@ -45,6 +53,7 @@ impl ModelOptions {
             model: model.to_string(),
             timeout: Duration::from_secs(180),
             max_tokens: 1_536,
+            response_format: ModelResponseFormat::JsonSchema,
         })
     }
 
@@ -70,6 +79,15 @@ impl ModelOptions {
 
     pub fn with_max_tokens(mut self, max_tokens: u32) -> Self {
         self.max_tokens = max_tokens;
+        self
+    }
+
+    pub fn response_format(&self) -> ModelResponseFormat {
+        self.response_format
+    }
+
+    pub fn with_response_format(mut self, response_format: ModelResponseFormat) -> Self {
+        self.response_format = response_format;
         self
     }
 }

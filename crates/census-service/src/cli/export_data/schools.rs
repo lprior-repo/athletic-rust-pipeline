@@ -23,7 +23,7 @@ fn identity_fields(s: &CanonicalSchool) -> (String, String, usize) {
     (source_ns, evidence_src, ident_count)
 }
 
-fn build_school_row(s: &CanonicalSchool) -> Vec<String> {
+fn build_school_row(s: &CanonicalSchool) -> anyhow::Result<Vec<String>> {
     let an_team = s
         .source_identities
         .iter()
@@ -39,7 +39,7 @@ fn build_school_row(s: &CanonicalSchool) -> Vec<String> {
     let aliases = s.aliases.join(";");
     let (source_ns, evidence_src, ident_count) = identity_fields(s);
 
-    vec![
+    let mut row = vec![
         s.id.as_str().to_string(),
         s.name.clone(),
         s.state.map(|j| j.code().to_owned()).unwrap_or_default(),
@@ -60,7 +60,9 @@ fn build_school_row(s: &CanonicalSchool) -> Vec<String> {
         source_ns,
         evidence_src,
         ident_count.to_string(),
-    ]
+    ];
+    row.extend(census_report::export::postal::postal_fields([s])?);
+    Ok(row)
 }
 
 pub fn write_canonical_schools(
@@ -75,7 +77,10 @@ pub fn write_canonical_schools(
             .cmp(b.state.map(|j| j.code()).unwrap_or_default())
             .then_with(|| a.name.cmp(&b.name))
     });
-    let rows: Vec<Vec<String>> = sorted.into_iter().map(build_school_row).collect();
+    let rows = sorted
+        .into_iter()
+        .map(build_school_row)
+        .collect::<anyhow::Result<Vec<_>>>()?;
 
     write_csv(
         &data.join("canonical-schools.csv"),
@@ -96,6 +101,18 @@ pub fn write_canonical_schools(
             "source_namespaces",
             "evidence_sources",
             "identity_count",
+            "postal_school_id",
+            "postal_street",
+            "postal_second_line",
+            "postal_city",
+            "postal_state",
+            "postal_zip",
+            "postal_owner_namespace",
+            "postal_owner_id",
+            "postal_source",
+            "postal_source_url",
+            "postal_observed_date",
+            "postal_capture_sha256",
         ],
         &rows,
     )?;

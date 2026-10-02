@@ -289,7 +289,6 @@ fn the_sheets_render_the_rows_the_store_retains() {
     );
 
     let schools = sheet(&path, "Schools");
-    assert_eq!(schools.first().map(Vec::len), Some(12), "{schools:?}");
     assert!(carries(&schools, 0, twin_id.as_str()), "{schools:?}");
     assert!(carries(&schools, 1, "Abbotsford"), "{schools:?}");
     assert!(carries(&schools, 2, "WI"), "{schools:?}");

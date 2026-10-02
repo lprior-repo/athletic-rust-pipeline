@@ -9,12 +9,12 @@ use super::{Page, Replacement, StoreBatch};
 
 impl StoreBatch<'_> {
     pub fn commit(self) -> StoreResult<()> {
-        self.commit_inner(None).map(|_| ())
+        self.commit_inner(None, None).map(|_| ())
     }
 
     pub fn commit_once(self, operation: &str, digest: &str) -> StoreResult<Application> {
         receipt::refuse_over_operation(operation, digest)?;
-        self.commit_inner(Some((operation, digest)))?
+        self.commit_inner(Some((operation, digest)), None)?
             .ok_or_else(|| StoreError::Invariant {
                 detail: format!(
                     "receipted commit of operation {operation} wrote neither rows nor a receipt"
@@ -22,7 +22,24 @@ impl StoreBatch<'_> {
             })
     }
 
-    fn commit_inner(self, once: Option<(&str, &str)>) -> StoreResult<Option<Application>> {
+    pub fn commit_once_at_sequence(
+        self,
+        operation: &str,
+        digest: &str,
+        sequence: u64,
+    ) -> StoreResult<Application> {
+        receipt::refuse_over_operation(operation, digest)?;
+        self.commit_inner(Some((operation, digest)), Some(sequence))?
+            .ok_or_else(|| StoreError::Invariant {
+                detail: format!("fenced operation {operation} wrote neither rows nor a receipt"),
+            })
+    }
+
+    fn commit_inner(
+        self,
+        once: Option<(&str, &str)>,
+        sequence: Option<u64>,
+    ) -> StoreResult<Option<Application>> {
         if self.is_empty() && once.is_none() {
             return Ok(None);
         }
@@ -33,6 +50,16 @@ impl StoreBatch<'_> {
         let written = prepare_receipt(&pages, store, once, &mut batch)?;
         if matches!(written, Some(Application::Repeated(_))) {
             return Ok(written);
+        }
+        if let Some(expected) = sequence {
+            let actual = store.snapshot().sequence();
+            if actual != expected {
+                return Err(StoreError::Invariant {
+                    detail: format!(
+                        "checkpoint snapshot changed: expected {expected}, current {actual}"
+                    ),
+                });
+            }
         }
         let reservations: Vec<_> = pages
             .iter()

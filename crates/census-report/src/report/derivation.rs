@@ -194,51 +194,86 @@ fn cohort_performances<'d>(
         .collect()
 }
 
-fn collapse_athletes(
+pub(super) fn collapse_athletes(
     athletes: &[CanonicalAthlete],
     aliases: &HashMap<String, String>,
 ) -> Vec<CanonicalAthlete> {
     if aliases.is_empty() {
         return athletes.to_vec();
     }
-    let mut groups: BTreeMap<&str, Vec<&CanonicalAthlete>> = BTreeMap::new();
-    for athlete in athletes {
-        let canonical = aliases
-            .get(athlete.id.as_str())
-            .map_or(athlete.id.as_str(), String::as_str);
-        groups.entry(canonical).or_default().push(athlete);
-    }
-    let mut collapsed = Vec::with_capacity(groups.len());
-    for (canonical, members) in groups {
-        let Some(representative) = members
-            .iter()
-            .find(|member| member.id.as_str() == canonical)
-        else {
-            collapsed.extend(members.into_iter().cloned());
-            continue;
-        };
-        let mut row = (*representative).clone();
-        if members.len() > 1 {
-            if row.gender == Gender::Unknown {
-                let known: Vec<Gender> = members
-                    .iter()
-                    .map(|member| member.gender)
-                    .filter(|gender| *gender != Gender::Unknown)
-                    .collect();
-                if let Some(first) = known.first().copied() {
-                    if known.iter().all(|gender| *gender == first) {
-                        row.gender = first;
-                    }
-                }
-            }
-            for member in members
+    let groups = athletes.iter().fold(
+        BTreeMap::<&str, Vec<&CanonicalAthlete>>::new(),
+        |mut groups, athlete| {
+            let canonical = aliases
+                .get(athlete.id.as_str())
+                .map_or(athlete.id.as_str(), String::as_str);
+            groups.entry(canonical).or_default().push(athlete);
+            groups
+        },
+    );
+    let capacity = groups.len();
+    groups.into_iter().fold(
+        Vec::with_capacity(capacity),
+        |mut collapsed, (canonical, members)| {
+            match members
                 .iter()
-                .filter(|member| member.id.as_str() != canonical)
+                .find(|member| member.id.as_str() == canonical)
             {
-                census_store::Entity::merge(&mut row, (*member).clone());
+                Some(representative) => {
+                    collapsed.push(union_accepted_members(representative, &members));
+                }
+                None => collapsed.extend(members.into_iter().cloned()),
+            }
+            collapsed
+        },
+    )
+}
+
+fn union_accepted_members(
+    representative: &CanonicalAthlete,
+    members: &[&CanonicalAthlete],
+) -> CanonicalAthlete {
+    let mut row = representative.clone();
+    let known_gender = members
+        .iter()
+        .map(|member| member.gender)
+        .filter(|gender| *gender != Gender::Unknown);
+    if row.gender == Gender::Unknown {
+        let mut genders = known_gender;
+        if let Some(first) = genders.next() {
+            if genders.all(|gender| gender == first) {
+                row.gender = first;
             }
         }
-        collapsed.push(row);
     }
-    collapsed
+    members
+        .iter()
+        .filter(|member| member.id != representative.id)
+        .for_each(|member| {
+            union_values(&mut row.known_names, &member.known_names);
+            union_values(
+                &mut row.known_names,
+                std::slice::from_ref(&member.canonical_name),
+            );
+            union_values(&mut row.sports, &member.sports);
+            union_values(&mut row.public_profile_urls, &member.public_profile_urls);
+            union_values(&mut row.observed_grades, &member.observed_grades);
+            union_values(&mut row.evidence, &member.evidence);
+            union_values(&mut row.retained_conflicts, &member.retained_conflicts);
+            member.identities().for_each(|identity| {
+                if let Some(url) = &identity.url {
+                    union_values(&mut row.public_profile_urls, std::slice::from_ref(url));
+                }
+                row.add_identity(identity.clone());
+            });
+        });
+    row
+}
+
+fn union_values<T: PartialEq + Clone>(target: &mut Vec<T>, values: &[T]) {
+    values.iter().for_each(|value| {
+        if !target.contains(value) {
+            target.push(value.clone());
+        }
+    });
 }

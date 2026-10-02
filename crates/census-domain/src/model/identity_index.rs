@@ -68,10 +68,7 @@ impl IdentityFact {
             gender: athlete.gender,
             conflicted: alias_conflict
                 || !athlete.retained_conflicts.is_empty()
-                || athlete
-                    .observed_grades
-                    .iter()
-                    .any(|grade| grade.grad_year() != Some(athlete.grad_year)),
+                || athlete.has_cohort_conflict(),
             parsed,
             source_bound: primary.is_some() && parsed,
             status: IdentityStatus::Unverified,

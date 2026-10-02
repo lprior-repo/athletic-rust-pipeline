@@ -1,15 +1,21 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use census_domain::model::{
-    CanonicalMeet, CanonicalSchool, RetainedConflict, ReviewCase, ReviewCaseFact,
-    ReviewEvidenceFact, ReviewPacket, ReviewState,
+    CanonicalMeet, CanonicalSchool, ReviewCase, ReviewCaseFact, ReviewEvidenceFact, ReviewPacket,
 };
 
-use census_store::{Store, StoreResult, Table};
+#[cfg(test)]
+use census_domain::model::{RetainedConflict, ReviewState};
+#[cfg(test)]
+use census_store::Store;
+use census_store::{StoreResult, Table};
 
 use super::athlete_packet::{self, AthleteIndex};
-use super::{ReviewFamily, ReviewOptions};
+use super::ReviewFamily;
+#[cfg(test)]
+use super::ReviewOptions;
 
+#[cfg(test)]
 pub(super) fn pending_cases(
     store: &Store,
     options: &ReviewOptions,
@@ -52,34 +58,39 @@ pub(super) struct SubjectIndex {
 }
 
 impl SubjectIndex {
-    pub(super) fn read(store: &Store, pending: &[(ReviewCase, ReviewFamily)]) -> StoreResult<Self> {
-        let wants_schools = pending
-            .iter()
-            .any(|(_, family)| *family == ReviewFamily::SchoolJurisdiction);
-        let wants_meets = pending
-            .iter()
-            .any(|(_, family)| *family == ReviewFamily::MeetJurisdiction);
-        let wants_athletes = pending
-            .iter()
-            .any(|(_, family)| *family == ReviewFamily::AthleteIdentity);
-        let schools = if wants_schools {
-            index_by_id(store.scan::<CanonicalSchool>(Table::Schools)?, |school| {
-                school.id.to_string()
-            })
-        } else {
-            HashMap::new()
+    pub(super) fn read(
+        snapshot: &census_store::StoreSnapshot<'_>,
+        pending: &[(ReviewCase, ReviewFamily)],
+        budget: &mut crate::review_budget::Budget,
+    ) -> StoreResult<Self> {
+        let ids = |wanted| -> HashSet<&str> {
+            pending
+                .iter()
+                .filter(|(_, family)| *family == wanted)
+                .map(|(case, _)| case.subject_id.as_str())
+                .collect()
         };
-        let meets = if wants_meets {
-            index_by_id(store.scan::<CanonicalMeet>(Table::Meets)?, |meet| {
-                meet.id.to_string()
-            })
-        } else {
-            HashMap::new()
-        };
-        let athletes = if wants_athletes {
-            AthleteIndex::read(store.snapshot().athletes()?)
-        } else {
+        let schools = crate::review_subjects::selected(
+            snapshot,
+            Table::Schools,
+            &ids(ReviewFamily::SchoolJurisdiction),
+            budget,
+        )?;
+        let meets = crate::review_subjects::selected(
+            snapshot,
+            Table::Meets,
+            &ids(ReviewFamily::MeetJurisdiction),
+            budget,
+        )?;
+        let athlete_ids = ids(ReviewFamily::AthleteIdentity);
+        let athletes = if athlete_ids.is_empty() {
             AthleteIndex::default()
+        } else {
+            AthleteIndex::read(crate::review_subjects::athletes(
+                snapshot,
+                &athlete_ids,
+                budget,
+            )?)
         };
         Ok(Self {
             schools,
@@ -88,30 +99,23 @@ impl SubjectIndex {
         })
     }
 
-    pub(super) fn packet(&self, case: &ReviewCase, family: ReviewFamily) -> Option<ReviewPacket> {
+    pub(super) fn packet(
+        &self,
+        case: &ReviewCase,
+        family: ReviewFamily,
+    ) -> StoreResult<Option<ReviewPacket>> {
         let subject_id = case.subject_id.clone();
-        match family {
+        let packet = match family {
             ReviewFamily::SchoolJurisdiction => {
-                let school = self.schools.get(&subject_id)?;
-                let mut packet = ReviewPacket::new(subject_id, school.name.clone())
-                    .with_case(case_fact(case))
-                    .with_evidence(fact("name", &school.name))
-                    .with_evidence(fact("city", school.city.as_deref().unwrap_or_default()))
-                    .with_evidence(fact(
-                        "association",
-                        school.association.as_deref().unwrap_or_default(),
-                    ))
-                    .with_evidence(fact(
-                        "athletics_website",
-                        school.athletics_website.as_deref().unwrap_or_default(),
-                    ));
-                if let Some(state) = school.state {
-                    packet = packet.with_evidence(fact("state", state.code()));
-                }
-                Some(packet)
+                let Some(school) = self.schools.get(&subject_id) else {
+                    return Ok(None);
+                };
+                Some(school_packet(case, subject_id, school))
             }
             ReviewFamily::MeetJurisdiction => {
-                let meet = self.meets.get(&subject_id)?;
+                let Some(meet) = self.meets.get(&subject_id) else {
+                    return Ok(None);
+                };
                 let mut packet = ReviewPacket::new(subject_id, meet.name.clone())
                     .with_case(case_fact(case))
                     .with_evidence(fact("name", &meet.name))
@@ -126,11 +130,49 @@ impl SubjectIndex {
                 Some(packet)
             }
             ReviewFamily::AthleteIdentity => {
-                let (subject, other, group) = self.athletes.compare(&subject_id)?;
-                Some(athlete_packet::packet(case, subject, other, group))
+                let Some((subject, other, group)) =
+                    self.athletes.compare_members(&subject_id, &case.member_ids)
+                else {
+                    return Ok(None);
+                };
+                let represented = [subject.id.as_str(), other.id.as_str()];
+                let complete = if case.member_ids.is_empty() {
+                    group.len() == represented.len()
+                } else {
+                    case.member_ids.len() == represented.len()
+                        && represented
+                            .iter()
+                            .all(|id| case.member_ids.iter().any(|member| member.as_str() == *id))
+                };
+                if !complete {
+                    return Ok(None);
+                }
+                let mut members = [subject.id.to_string(), other.id.to_string()];
+                members.sort();
+                Some(athlete_packet::packet(case, subject, other, &members)?)
             }
-        }
+        };
+        Ok(packet)
     }
+}
+
+fn school_packet(case: &ReviewCase, subject_id: String, school: &CanonicalSchool) -> ReviewPacket {
+    let mut packet = ReviewPacket::new(subject_id, school.name.clone())
+        .with_case(case_fact(case))
+        .with_evidence(fact("name", &school.name))
+        .with_evidence(fact("city", school.city.as_deref().unwrap_or_default()))
+        .with_evidence(fact(
+            "association",
+            school.association.as_deref().unwrap_or_default(),
+        ))
+        .with_evidence(fact(
+            "athletics_website",
+            school.athletics_website.as_deref().unwrap_or_default(),
+        ));
+    if let Some(state) = school.state {
+        packet = packet.with_evidence(fact("state", state.code()));
+    }
+    packet
 }
 
 pub(super) fn fact(field: &str, value: &str) -> ReviewEvidenceFact {

@@ -172,11 +172,37 @@ Every material claim must resolve to durable captured bytes
 and a source locator. A URL, digest or parse count alone is not an archive. Partial parses retain
 valid rows, rejected locators and the unfinished obligation.
 
+Canonical schools may retain validated `SchoolPostalAddress` claims: published street/address,
+exact association-school owner, source label, parsed capture URL/date and capture SHA256.
+`add_postal_address` checks that owner and jurisdiction against the school; publication refuses
+foreign claims rather than joining by school text. The additive `postal_addresses` field defaults
+to an empty vector for historical records and omits an empty vector on serialization. Absence is
+unknown, not an invented address. Accepted-athlete publication retains source-owned claims for
+each supported school affiliation; their presence does not prove which affiliation is current.
+Qualified canonical postal metadata uses bounded, control/whitespace-free provider tokens, an
+association source label matching the provider evidence namespace, syntactically valid
+credential-free HTTP(S) capture URLs and real ISO calendar dates or bounded RFC3339 observation
+timestamps in 1900–2100. URL syntax is not a second network source-qualification policy.
+Source-label jurisdiction binds the school even when the address's state is absent. Canonical
+claims deduplicate and sort deterministically; workbook/CSV columns retain aligned owner/capture
+positions independently of input arrival order. Raw captures and distinct conflicting claims remain retained.
+
+
+Owned structured results preserve published person, team, meet, result-set and event context.
+Reject malformed, foreign, duplicate or mismatched ownership rather than replacing it with a name
+lookup. Explicit complete counts, retained valid rows, rejected locators and refused/partial
+captures remain distinct; successfully parsing some rows cannot certify a complete meet.
+
 All reports, workbook sheets and audit outputs use one immutable export dataset derived from one
 input generation. Do not rebuild identity, cohort, contact, coverage or PR rules in writers. Keep
 candidate statuses and accepted aliases distinct; athletes without performances remain in the
 population, and unresolved joins remain explicit coverage outcomes. Core evidence scope is not
 interchangeable with geographic scope or cohort eligibility.
+Publication policy revision 3 fences accepted-alias, postal-field and full-cell summary changes;
+older policy-1/2 frozen inputs are retained but refused, never reinterpreted or overwritten.
+Independent readback compares every represented athlete row with its expected immutable position,
+including displaced rows; population membership alone cannot certify cell/provenance equality.
+
 
 Preserve historical result affiliation, rounds/heats/attempts, compatible comparison conditions,
 source-declared PRs versus observed bests, and exact source references. Bound derivation, sorting,

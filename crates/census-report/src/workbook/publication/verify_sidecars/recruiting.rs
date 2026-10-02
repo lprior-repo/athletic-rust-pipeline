@@ -12,7 +12,7 @@ use super::defect;
 use super::input::Inputs;
 use super::read::{self, Limits};
 
-const HEADERS: [&str; 20] = [
+const HEADERS: [&str; 32] = [
     "athlete_id",
     "name",
     "grad_year",
@@ -33,6 +33,18 @@ const HEADERS: [&str; 20] = [
     "coach_source_url",
     "identity_status",
     "evidence_sources",
+    "postal_school_id",
+    "postal_street",
+    "postal_second_line",
+    "postal_city",
+    "postal_state",
+    "postal_zip",
+    "postal_owner_namespace",
+    "postal_owner_id",
+    "postal_source",
+    "postal_source_url",
+    "postal_observed_date",
+    "postal_capture_sha256",
 ];
 
 const LIMITS: Limits = Limits {
@@ -49,6 +61,10 @@ pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> 
         .map(|school| (school.id.as_str(), school))
         .collect();
     let contacts = contact::contacts(inputs.derivation.coach_observations(), inputs.school_year);
+    let postal = crate::workbook::verify::postal::athlete_index(
+        inputs.dataset,
+        inputs.derivation.athletes(),
+    )?;
     let mut position = 0usize;
     let total = read::csv(&path, LIMITS, "recruiting.csv", |index, record| {
         if index == 1 {
@@ -60,7 +76,7 @@ pub(super) fn verify(directory: &Path, inputs: &Inputs<'_>) -> ReportResult<()> 
                 path.display()
             )));
         };
-        let cells = cells(inputs, &schools, &contacts, athlete)?;
+        let cells = cells(inputs, &schools, &contacts, &postal, athlete)?;
         read::compare_record(&path, index, record, &cells)?;
         position = position.saturating_add(1);
         Ok(())
@@ -87,12 +103,21 @@ fn cells(
     inputs: &Inputs<'_>,
     schools: &HashMap<&str, &CanonicalSchool>,
     contacts: &BTreeMap<String, SchoolContacts>,
+    postal: &BTreeMap<String, [String; 12]>,
     athlete: &CanonicalAthlete,
 ) -> ReportResult<Vec<Cell>> {
     let school = schools.get(athlete.school.as_str()).copied();
     let scoped = contact::scoped(contacts.get(athlete.school.as_str()), athlete);
     let status = identity_status(inputs, athlete)?;
-    Ok(athletic_cells(athlete, school, &scoped, status))
+    let mut cells = athletic_cells(athlete, school, &scoped, status);
+    let fields = postal.get(athlete.id.as_str()).ok_or_else(|| {
+        defect(format!(
+            "athlete {} has no frozen postal projection",
+            athlete.id
+        ))
+    })?;
+    cells.extend(fields.iter().cloned().map(Cell::text));
+    Ok(cells)
 }
 
 fn identity_status(inputs: &Inputs<'_>, athlete: &CanonicalAthlete) -> ReportResult<String> {

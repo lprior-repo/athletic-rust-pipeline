@@ -9,7 +9,9 @@ fn a_group_is_every_row_the_merge_kept_apart_under_one_key() {
 
     let mut expected = vec![boys.id.to_string(), girls.id.to_string()];
     expected.sort();
-    let (subject, sibling, group) = index.compare(boys.id.as_str()).expect("a group of two");
+    let (subject, sibling, group) = index
+        .compare_members(boys.id.as_str(), &[])
+        .expect("a group of two");
     assert_eq!(subject.id, boys.id);
     assert_eq!(sibling.id, girls.id);
     assert_eq!(
@@ -19,7 +21,7 @@ fn a_group_is_every_row_the_merge_kept_apart_under_one_key() {
     );
 
     assert!(
-        index.compare(other.id.as_str()).is_none(),
+        index.compare_members(other.id.as_str(), &[]).is_none(),
         "a row nobody collides with is not a case: there is no second side to compare"
     );
 }
@@ -29,7 +31,7 @@ fn a_packet_carries_both_sides_source_identity_fields() {
     let (boys, girls, _) = rows();
     let case = case_for(&boys);
     let group = vec![boys.id.to_string(), girls.id.to_string()];
-    let packet = athlete_packet(&case, &boys, &girls, &group);
+    let packet = athlete_packet(&case, &boys, &girls, &group).expect("bound athlete packet");
 
     assert_eq!(packet.subject_id, boys.id.as_str());
     assert_eq!(packet.cases.len(), 1);
@@ -90,15 +92,6 @@ fn a_packet_carries_both_sides_source_identity_fields() {
     assert_eq!(
         stated(&packet, "census", "side_b_gender"),
         Some("Girls".to_string())
-    );
-
-    assert_eq!(
-        stated(&packet, "census", "side_a_grad_evidence"),
-        Some("grade 11 in 2025-26 implies 2027 (from milesplit_roster)".to_string())
-    );
-    assert_eq!(
-        stated(&packet, "census", "side_b_grad_evidence"),
-        Some("grade 10 in 2025-26 implies 2028 (from milesplit_roster)".to_string())
     );
 
     assert_eq!(

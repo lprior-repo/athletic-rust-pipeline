@@ -108,7 +108,7 @@ impl<'a, 'd> Verifier<'a, 'd> {
             }
             return;
         }
-        if let Some(athlete) = expected.filter(|athlete| athlete.id.as_str() == id) {
+        if let Some(athlete) = expected {
             self.seen = self.seen.saturating_add(1);
             self.compare_row(row, athlete);
         }
@@ -159,6 +159,16 @@ impl<'a, 'd> Verifier<'a, 'd> {
         cells.push(Value::text(profiles.other.join("; ")));
         cells.push(Value::count(cells::source_count(athlete)));
         cells.extend(self.status_cells(athlete));
+        match self.expectations.postal.get(athlete.id.as_str()) {
+            Some(fields) => cells.extend(fields.iter().map(Value::text)),
+            None => {
+                self.findings.note(format!(
+                    "athlete {} has no frozen postal projection",
+                    athlete.id
+                ));
+                cells.extend(std::iter::repeat_n(Value::Empty, 12));
+            }
+        }
         cells
     }
 

@@ -21,6 +21,23 @@ pub(crate) fn coach_contacts_report(
     )?)
 }
 
+pub(crate) async fn arbiter_orgs_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::arbiter::collect(
+        context,
+        &providers::arbiter::Options {
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+            states: args.jurisdictions()?,
+        },
+    )
+    .await?)
+}
+
 pub(crate) async fn ks_report(
     context: &AdapterContext<'_>,
     args: &ProviderArgs,

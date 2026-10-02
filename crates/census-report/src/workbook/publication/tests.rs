@@ -204,3 +204,25 @@ fn an_export_job_keeps_its_input_and_changed_evidence_requires_a_new_export() {
     let retained = ExportDataset::reopen_frozen(&archive).expect("old input still retained");
     assert_eq!(retained.lineage, first.lineage);
 }
+
+#[test]
+fn revision_two_frozen_inputs_are_preserved_but_not_reused_under_new_projection_policy() {
+    let directory = tempfile::tempdir().expect("scratch directory");
+    let store = Store::open(directory.path().join("store")).expect("own store");
+    seed(&store, "Captured School");
+    let archive = directory.path().join("revision-two.json");
+    ExportDataset::load(&store)
+        .expect("capture input")
+        .save_frozen(&archive)
+        .expect("freeze input");
+    let mut historical: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&archive).unwrap()).unwrap();
+    historical["lineage"]["policy_revision"] = serde_json::json!(2);
+    let captured = serde_json::to_vec(&historical).unwrap();
+    std::fs::write(&archive, &captured).unwrap();
+    assert!(matches!(
+        ExportDataset::reopen_frozen(&archive),
+        Err(crate::report::ReportError::Invariant { .. })
+    ));
+    assert_eq!(std::fs::read(&archive).unwrap(), captured);
+}

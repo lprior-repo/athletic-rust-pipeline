@@ -24,6 +24,10 @@ impl<'a> CohortEvidence<'a> {
             })
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.supported.is_empty() && self.unsupported.is_empty()
+    }
+
     pub(crate) fn conflicts_with(&self, other: &Self) -> bool {
         !self.unsupported.is_empty()
             || !other.unsupported.is_empty()
