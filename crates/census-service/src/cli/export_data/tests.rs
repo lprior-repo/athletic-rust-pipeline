@@ -6,6 +6,8 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_store::Table;
 
+mod postal;
+
 #[test]
 fn recruiting_csv_selects_current_contacts_for_each_gender() {
     let dir = tempfile::tempdir().unwrap();

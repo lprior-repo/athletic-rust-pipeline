@@ -1,0 +1,16 @@
+{
+  "fixture_kind": "selected_source_evidence_projection_not_verbatim_capture",
+  "source_capture": "var/retained-pr-correction-20261001/store/http/52e0b5d61b6c7de90be2a35dd5fc3f42.body",
+  "source_digest": "8db9804ebc2d36b6f7ec1e2a289b2b8ab28610e0063f0ee9f54245eb128071ed",
+  "source_bytes": 311763,
+  "source_fetched_at": "2026-10-01T23:44:16Z",
+  "source_published_rows": 602,
+  "source_completion_total": null,
+  "projected_result_ids": [201782263, 201782277, 201782806],
+  "projection_evidence": {
+    "201782263": "assignment's acquired record evidence; event name normalized to Long Jump",
+    "201782277": "assignment's acquired record evidence; event name normalized to Triple Jump",
+    "201782806": "literal record inspected from the captured response"
+  },
+  "original_data_indices_preserved": false
+}

@@ -5,9 +5,14 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+mod archive;
+mod archive_io;
+mod capture;
+mod quarantine;
+
 const MAX_META_BYTES: usize = 64 * 1024;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub(crate) struct CacheMeta {
     pub(crate) url: String,
     pub(crate) method: String,
@@ -87,7 +92,9 @@ fn read_cache_file(
 fn read_snapshot(reader: &mut impl Read, size: usize) -> std::io::Result<Option<Vec<u8>>> {
     let limit = u64::try_from(size)
         .map_err(|_| std::io::Error::other("cache read length cannot be represented"))?;
-    let mut body = Vec::with_capacity(size);
+    let mut body = Vec::new();
+    body.try_reserve_exact(size)
+        .map_err(std::io::Error::other)?;
     (&mut *reader).take(limit).read_to_end(&mut body)?;
     if body.len() != size {
         return Ok(None);
@@ -106,19 +113,13 @@ pub(crate) fn read_cache(
     if !meta_path.exists() || !body_path.exists() {
         return Ok(None);
     }
-    let meta_bytes =
-        read_cache_file(meta_path, MAX_META_BYTES, None)?.ok_or_else(|| FetchError::Cache {
-            path: meta_path.to_path_buf(),
-            source: std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "cache metadata exceeds its limit or changed during reading",
-            ),
-        })?;
-    let meta: CacheMeta =
-        serde_json::from_slice(&meta_bytes).map_err(|source| FetchError::Decode {
-            target: meta_path.display().to_string(),
-            source,
-        })?;
+    let Some(meta_bytes) = read_cache_file(meta_path, MAX_META_BYTES, None)? else {
+        return Ok(None);
+    };
+    let meta: CacheMeta = match serde_json::from_slice(&meta_bytes) {
+        Ok(meta) => meta,
+        Err(_) => return Ok(None),
+    };
     if meta.status != 200 || !is_valid_hex64(&meta.content_digest) || meta.bytes > MAX_BODY_BYTES {
         return Ok(None);
     }
@@ -131,36 +132,34 @@ pub(crate) fn read_cache(
     Ok(Some((meta, body)))
 }
 
+pub(crate) fn replay_cache(
+    body_path: &Path,
+    meta_path: &Path,
+    expected: &CacheMeta,
+) -> Result<Option<Vec<u8>>, FetchError> {
+    archive::replay_preserved_cache(body_path, meta_path, expected)
+}
+
 pub(crate) fn write_cache(
     body_path: &Path,
     meta_path: &Path,
     body: &[u8],
     meta: &CacheMeta,
 ) -> Result<(), FetchError> {
-    let tmp_body = body_path.with_extension("body.tmp");
-    std::fs::write(&tmp_body, body).map_err(|source| FetchError::Cache {
-        path: tmp_body.clone(),
-        source,
-    })?;
-    std::fs::rename(&tmp_body, body_path).map_err(|source| FetchError::Cache {
-        path: body_path.to_path_buf(),
-        source,
-    })?;
-    let tmp_meta = meta_path.with_extension("meta.json.tmp");
-    let encoded = serde_json::to_vec_pretty(meta).map_err(|source| FetchError::Encode {
-        target: meta_path.display().to_string(),
-        source,
-    })?;
-    std::fs::write(&tmp_meta, encoded).map_err(|source| FetchError::Cache {
-        path: tmp_meta.clone(),
-        source,
-    })?;
-    std::fs::rename(&tmp_meta, meta_path).map_err(|source| FetchError::Cache {
-        path: meta_path.to_path_buf(),
-        source,
-    })?;
-    Ok(())
+    archive::write_preserved_cache(body_path, meta_path, body, meta)
+}
+
+pub(crate) fn write_archive(
+    body_path: &Path,
+    meta_path: &Path,
+    body: &[u8],
+    meta: &CacheMeta,
+) -> Result<(), FetchError> {
+    archive::write_preserved_capture(body_path, meta_path, body, meta)
 }
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod archive_tests;

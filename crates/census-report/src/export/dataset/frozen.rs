@@ -10,7 +10,7 @@ mod io;
 pub(super) mod job;
 
 const SCHEMA_REVISION: u32 = 1;
-const POLICY_REVISION: u32 = 2;
+const POLICY_REVISION: u32 = 3;
 const INPUT_TABLES: [Table; 13] = [
     Table::Schools,
     Table::Teams,

@@ -1,4 +1,5 @@
 mod dataset;
+pub mod postal;
 pub mod provenance;
 
 pub(crate) use dataset::MAX_FROZEN_INPUT_BYTES;

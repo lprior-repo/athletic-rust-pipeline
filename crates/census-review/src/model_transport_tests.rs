@@ -6,8 +6,12 @@ use tokio::net::{TcpListener, TcpStream};
 
 use super::{ModelClient, ModelError, ModelOptions};
 
+#[path = "model_transport_tests/response_format.rs"]
+mod response_format;
+
 enum Reply {
     Complete(u16, &'static str),
+    TextOnly(String),
     Redirect(u16, String),
     StalledHeaders,
     StalledBody,
@@ -15,6 +19,11 @@ enum Reply {
 }
 
 async fn serve(stream: TcpStream, reply: Reply) {
+    let (stream, request) = read_request(stream).await;
+    send_reply(stream, reply, request).await;
+}
+
+async fn read_request(stream: TcpStream) -> (tokio::io::BufReader<TcpStream>, serde_json::Value) {
     let mut stream = tokio::io::BufReader::new(stream);
     let mut length = 0;
     let mut content_type = None;
@@ -35,18 +44,41 @@ async fn serve(stream: TcpStream, reply: Reply) {
         }
     }
     assert_eq!(content_type.as_deref(), Some("application/json"));
+    assert!(length <= super::REQUEST_CAP);
     let mut body = vec![0; length];
     stream.read_exact(&mut body).await.unwrap();
-    drop(body);
+    let request = serde_json::from_slice(&body).expect("request JSON");
+    (stream, request)
+}
+
+async fn send_reply(
+    mut stream: tokio::io::BufReader<TcpStream>,
+    reply: Reply,
+    request: serde_json::Value,
+) {
     match reply {
         Reply::StalledHeaders => std::future::pending::<()>().await,
         Reply::Complete(status, body_text) => {
-            let headers = format!(
-                "HTTP/1.1 {status} Fixture\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-                body_text.len()
-            );
-            stream.write_all(headers.as_bytes()).await.unwrap();
-            stream.write_all(body_text.as_bytes()).await.unwrap();
+            send_complete(&mut stream, status, body_text).await;
+        }
+        Reply::TextOnly(content) => {
+            let (status, body) = if request["response_format"]["type"] == "text" {
+                (
+                    200,
+                    serde_json::json!({
+                        "choices": [{"message": {"content": content}}]
+                    }),
+                )
+            } else {
+                (
+                    400,
+                    serde_json::json!({
+                        "error": {"code": "response_format_not_supported",
+                            "message": "only response_format type=text is supported"}
+                    }),
+                )
+            };
+            send_complete(&mut stream, status, &body.to_string()).await;
         }
         Reply::Redirect(status, location) => {
             let headers = format!(
@@ -71,6 +103,15 @@ async fn serve(stream: TcpStream, reply: Reply) {
         }
     }
     stream.shutdown().await.unwrap();
+}
+
+async fn send_complete(stream: &mut tokio::io::BufReader<TcpStream>, status: u16, body: &str) {
+    let headers = format!(
+        "HTTP/1.1 {status} Fixture\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        body.len()
+    );
+    stream.write_all(headers.as_bytes()).await.unwrap();
+    stream.write_all(body.as_bytes()).await.unwrap();
 }
 
 async fn request(reply: Reply) -> Result<VerdictBatch, ModelError> {

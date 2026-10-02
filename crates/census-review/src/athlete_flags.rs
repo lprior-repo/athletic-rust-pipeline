@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use census_domain::model::{normalize_name, CanonicalAthlete, ReviewEvidenceFact, SourceNamespace};
+use census_domain::model::{
+    normalize_name, person_key, CanonicalAthlete, ReviewEvidenceFact, SourceNamespace,
+};
 
 use super::cohort_evidence::CohortEvidence;
 use super::packets::fact;
@@ -22,6 +24,7 @@ pub enum FlagKind {
     GradYearDiffers,
     GradYearEvidenceDiffers,
     GenderDiffers,
+    RetainedSourceConflict,
     NameSchoolCohortAgree,
 }
 
@@ -34,6 +37,7 @@ impl FlagKind {
             Self::GradYearEvidenceDiffers => "grad_year_evidence_differs",
             Self::GenderDiffers => "gender_differs",
             Self::NameSchoolCohortAgree => "name_school_cohort_agree",
+            Self::RetainedSourceConflict => "retained_source_conflict",
         }
     }
 }
@@ -78,11 +82,12 @@ pub fn flags(a: &CanonicalAthlete, b: &CanonicalAthlete) -> Vec<Flag> {
             detail: format!("{} vs {}", a.grad_year, b.grad_year),
         });
     }
+    flags.extend(retained_source_conflicts(a, b));
     let (implied_a, implied_b) = (
         CohortEvidence::of(&a.observed_grades),
         CohortEvidence::of(&b.observed_grades),
     );
-    if implied_a.conflicts_with(&implied_b) {
+    if a.has_cohort_conflict() || b.has_cohort_conflict() || implied_a.conflicts_with(&implied_b) {
         flags.push(Flag {
             kind: FlagKind::GradYearEvidenceDiffers,
             detail: format!("grade observations imply {implied_a} vs {implied_b}"),
@@ -108,11 +113,33 @@ pub fn flags(a: &CanonicalAthlete, b: &CanonicalAthlete) -> Vec<Flag> {
     flags
 }
 
+fn retained_source_conflicts(a: &CanonicalAthlete, b: &CanonicalAthlete) -> Vec<Flag> {
+    [a, b]
+        .into_iter()
+        .filter(|row| !row.retained_conflicts.is_empty())
+        .map(|row| Flag {
+            kind: FlagKind::RetainedSourceConflict,
+            detail: format!(
+                "{} retains source conflicts: {}",
+                row.id,
+                row.retained_conflicts
+                    .iter()
+                    .map(|conflict| conflict.id.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+        })
+        .collect()
+}
+
 type NamespaceIds<'a> = BTreeMap<&'a SourceNamespace, BTreeSet<&'a str>>;
 
 fn namespace_ids(row: &CanonicalAthlete) -> NamespaceIds<'_> {
     let mut ids: NamespaceIds<'_> = BTreeMap::new();
     for identity in row.identities() {
+        if person_key(identity).is_none() {
+            continue;
+        }
         ids.entry(&identity.namespace)
             .or_default()
             .insert(identity.id.as_str());

@@ -23,6 +23,12 @@ pub struct CanonicalSchool {
     pub aliases: Vec<String>,
     pub source_identities: Vec<SourceIdentity>,
     pub evidence: Vec<Evidence>,
+    #[serde(
+        default,
+        skip_serializing_if = "Vec::is_empty",
+        deserialize_with = "super::school_address::deserialize_postal_addresses"
+    )]
+    pub postal_addresses: Vec<SchoolPostalAddress>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub retained_conflicts: Vec<RetainedConflict>,
 }
@@ -61,9 +67,22 @@ impl CanonicalSchool {
                 aliases: Vec::new(),
                 source_identities: Vec::new(),
                 evidence: Vec::new(),
+                postal_addresses: Vec::new(),
                 retained_conflicts: Vec::new(),
             },
             id,
         )
+    }
+
+    pub fn add_postal_address(
+        &mut self,
+        claim: SchoolPostalAddress,
+    ) -> Result<(), SchoolAddressError> {
+        claim.belongs_to(self)?;
+        if !self.postal_addresses.contains(&claim) {
+            self.postal_addresses.push(claim);
+            self.postal_addresses.sort_unstable();
+        }
+        Ok(())
     }
 }

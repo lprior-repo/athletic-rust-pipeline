@@ -27,15 +27,13 @@ pub(in crate::workbook) fn profiles_of(athlete: &CanonicalAthlete) -> Profiles {
 
 fn place_url(profiles: &mut Profiles, url: String) {
     let lowered = url.to_ascii_lowercase();
-    if lowered.contains("athletic.net") {
-        if profiles.athletic_net.is_none() {
+    match lowered.as_str() {
+        _ if lowered.contains("athletic.net") && profiles.athletic_net.is_none() => {
             profiles.athletic_net = Some(url);
         }
-    } else if lowered.contains("milesplit") {
-        if profiles.milesplit.is_none() {
+        _ if lowered.contains("milesplit") && profiles.milesplit.is_none() => {
             profiles.milesplit = Some(url);
         }
-    } else {
-        profiles.other.push(url);
+        _ => profiles.other.push(url),
     }
 }

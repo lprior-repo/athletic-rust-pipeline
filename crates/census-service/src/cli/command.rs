@@ -114,6 +114,10 @@ pub(super) enum Command {
         about = "Extract distinct, trimmed school names for a state from the entities JSONL"
     )]
     SchoolNames(SchoolNamesArgs),
+    #[command(
+        about = "Read school-directory artifacts into a collapsed corpus and publish a verified generation without opening the store"
+    )]
+    SchoolAddress(census_service::school_address::SchoolAddressArgs),
     #[command(about = "Render `synthesis/10-measured-census.md` from the pipeline's snapshots")]
     CensusDoc(CensusDocArgs),
     #[command(
@@ -128,4 +132,8 @@ pub(super) enum Command {
         about = "Reprocess existing source-declared timing marks (e.g. 24.95a, 11.52a) without network. Reads the store, finds retained Raw marks with explicit timing suffixes, and corrects them to numeric TimeSeconds with the declared method. Default is dry-run; pass --apply to write. Requires --store to select the offline store"
     )]
     RepairRetainedMarks(super::retained_marks::RepairRetainedMarksArgs),
+    #[command(
+        about = "Resolve source-proven retained Unmapped event kinds without acquisition. Default is dry-run; pass --apply to append corrections. Requires explicit --store and a stopped store owner"
+    )]
+    RepairRetainedEvents(super::retained_events::RepairRetainedEventsArgs),
 }

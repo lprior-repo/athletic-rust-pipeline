@@ -1,6 +1,6 @@
 use crate::{
     model::{MAX_TOKENS_CAP, REQUEST_CAP},
-    ModelError, ModelOptions,
+    ModelError, ModelOptions, ModelResponseFormat,
 };
 use census_domain::model::ReviewPacket;
 use serde::ser::{Serialize, Serializer};
@@ -61,7 +61,10 @@ impl Serialize for RequestBody<'_> {
         let capped = self.options.max_tokens().min(MAX_TOKENS_CAP);
         state.serialize_field("temperature", &0u32)?;
         state.serialize_field("max_tokens", &capped)?;
-        state.serialize_field("response_format", &response_format())?;
+        state.serialize_field(
+            "response_format",
+            &response_format(self.options.response_format()),
+        )?;
         state.serialize_field("chat_template_kwargs", &ChatTemplateKwargs)?;
         state.end()
     }
@@ -144,7 +147,14 @@ impl std::fmt::Display for PacketDisplay<'_> {
     }
 }
 
-fn response_format() -> serde_json::Value {
+fn response_format(format: ModelResponseFormat) -> serde_json::Value {
+    match format {
+        ModelResponseFormat::JsonSchema => schema_response_format(),
+        ModelResponseFormat::PromptJson => serde_json::json!({ "type": "text" }),
+    }
+}
+
+fn schema_response_format() -> serde_json::Value {
     serde_json::json!({
         "type": "json_schema",
         "json_schema": {
@@ -187,6 +197,10 @@ pub fn build_request_body(
 fn system_prompt() -> &'static str {
     "You adjudicate retained census findings about schools, meets and athletes.\n\
      Each case names a field that no stored source resolved.\n\
+     Return only a JSON object with `subject_id` and `verdicts`; no prose or code fences.\n\
+     Each verdict has `case_id`, `kind`, `field`, `value`, `confidence` and `rationale`.\n\
+     Use exactly those fields, with string values except `verdicts` (array) and `confidence`\n\
+     (integer 0-100). `kind` is only `value_proposed` or `insufficient_evidence`.\n\
      \n\
      Answer with one verdict per case, in the order given:\n\
      - If the subject's own evidence settles the field, answer value_proposed and put the field\n\

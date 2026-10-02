@@ -64,6 +64,43 @@ pub fn parse_coach_rows(body: &str, url: &str) -> CrawlResult<Page<CoachRow>> {
     decode_page(body, url, "coaches", decode_coach_row)
 }
 
+pub(in crate::arbiter) fn parse_coach_outcomes(
+    body: &str,
+    url: &str,
+) -> CrawlResult<Page<CrawlResult<CoachRow>>> {
+    let json = decode(body, url)?;
+    let (total, rows) = page_rows(&json, url, "coaches")?;
+    let rows = rows
+        .iter()
+        .enumerate()
+        .map(|(index, row)| {
+            let object = row
+                .as_object()
+                .filter(|object| {
+                    [
+                        "firstName",
+                        "lastName",
+                        "coachPositionName",
+                        "sportName",
+                        "levelName",
+                    ]
+                    .into_iter()
+                    .all(|field| {
+                        object
+                            .get(field)
+                            .is_none_or(|value| value.is_null() || value.is_string())
+                    })
+                })
+                .ok_or_else(|| CrawlError::Schema {
+                    url: url.to_string(),
+                    detail: format!("malformed coach at data.rows[{index}]"),
+                })?;
+            Ok(decode_coach_row(object))
+        })
+        .collect();
+    Ok(Page { total, rows })
+}
+
 fn decode_page<T>(
     body: &str,
     url: &str,
@@ -87,6 +124,12 @@ fn decode_page<T>(
 }
 
 fn decode(body: &str, url: &str) -> CrawlResult<serde_json::Value> {
+    if body.len() > crate::net::MAX_BODY_BYTES {
+        return Err(CrawlError::Schema {
+            url: url.to_string(),
+            detail: "oversized Arbiter response".to_string(),
+        });
+    }
     serde_json::from_str(body).map_err(|source| CrawlError::Decode {
         url: url.to_string(),
         source,
@@ -119,6 +162,12 @@ fn page_rows<'a>(
             url: url.to_string(),
             detail: format!("expected an array at data.rows for {subject}"),
         })?;
+    if u64::try_from(rows.len()).map_or(true, |count| count > super::PAGE_SIZE) {
+        return Err(CrawlError::Schema {
+            url: url.to_string(),
+            detail: "Arbiter page exceeds requested page size".to_string(),
+        });
+    }
     Ok((total, rows.as_slice()))
 }
 

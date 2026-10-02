@@ -10,6 +10,7 @@ mod expectations;
 mod labels;
 mod meta;
 mod performances;
+pub(in crate::workbook) mod postal;
 mod prs;
 mod reach;
 mod read;

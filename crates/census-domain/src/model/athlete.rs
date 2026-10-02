@@ -202,12 +202,14 @@ impl CanonicalAthlete {
         })
     }
 
-    pub fn derived_cohort_confidence(&self) -> Option<Confidence> {
-        if self
-            .observed_grades
+    pub fn has_cohort_conflict(&self) -> bool {
+        self.observed_grades
             .iter()
             .any(|observation| observation.grad_year() != Some(self.grad_year))
-        {
+    }
+
+    pub fn derived_cohort_confidence(&self) -> Option<Confidence> {
+        if self.has_cohort_conflict() {
             Some(Confidence::LOW)
         } else if self
             .observed_grades

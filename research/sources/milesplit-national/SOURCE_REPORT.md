@@ -4,6 +4,30 @@ Lane: `research/sources/milesplit-national/`. Scope: the whole MileSplit network
 Wave 1 = captures already on disk when this lane started (prior phase). Wave 2 = this lane, `2026-09-22T03:54Z–04:00Z`, 83 HTTP requests (38 logged in `samples/fetch-log-wave2.tsv` + 45 unkept `/teams` bodies counted in `samples/teams-count-sweep.tsv`), all HTTP 200 except the four failures listed in `samples/CAPTURES.md`.
 Everything below cites a file in `samples/` or a named outside path; `[INFERENCE]` marks reasoning, `[inherited]` marks prior-phase facts not re-measured here.
 
+## Rust owned-result integration — 2026-10-01
+
+The owned JSON parser retains provider person, team, meet, result-set and performance IDs plus
+published event/round/mark context. Foreign/mismatched owners, duplicate results, anonymous or
+control-character names and malformed records remain located rejections, not name-based joins.
+Uncaptured access/policy refusal records `capture_available=false`; no captured bytes are invented.
+Parse success does not imply population completion.
+
+`crates/census-crawl/src/milesplit/owned/fixtures/troy_725218.json` is a selected three-row evidence
+projection, not the verbatim 602-row response. Its metadata explicitly records unknown completeness,
+the original capture digest/path and normalized projection fields. It qualifies the selected parser
+and effect behavior only; it is not full-meet, live-access or fresh-national acceptance evidence.
+Actual integrated command results belong in [VERIFICATION-EVIDENCE.md](../../../docs/VERIFICATION-EVIDENCE.md).
+
+The isolated integration also replayed the complete retained public response through the Rust
+`qualification_owned` example: 311,763 bytes, SHA-256
+`8db9804ebc2d36b6f7ec1e2a289b2b8ab28610e0063f0ee9f54245eb128071ed`,
+602 published rows, 560 owned accepted rows and 42 malformed null-name rows.
+Result sets 1266814 and 1266815 retain 246 and 356 rows. Adelyn Spann's owner 14222592
+and result 201782263 retain the distinct Girls/Class-of-2027 long-jump context and 13-9 / 419 cm.
+Unknown upstream completeness remains unknown (`ownership_complete=false`); this is full
+captured-response replay, not a fresh fetch or complete national acquisition.
+
+
 ---
 
 ## 1. Source name

@@ -12,6 +12,7 @@ mod open_work;
 mod provider;
 mod publish;
 mod qa_reports;
+mod retained_events;
 mod retained_marks;
 mod review;
 mod school_names;
@@ -130,6 +131,9 @@ pub(super) fn build_fetcher_authorizing(
 pub(super) async fn run() -> Result<()> {
     init_tracing();
     let cli = Cli::parse();
+    if let Command::Review(args) = &cli.command {
+        args.validate_configuration()?;
+    }
     match &cli.command {
         Command::National(args) => national::run_national(&cli, args).await,
         Command::Jurisdiction(args) => national::run_jurisdiction(&cli, args).await,
@@ -147,10 +151,14 @@ pub(super) async fn run() -> Result<()> {
         Command::MergeCoaches(args) => merge_coaches::run_merge_coaches(args),
         Command::VerifyCoaches(args) => verify_coaches::run_verify_coaches(args).await,
         Command::CensusDoc(args) => census_doc::run_census_doc(args),
+        Command::SchoolAddress(args) => census_service::school_address::run(args),
         Command::StoreBackup(args) => store::run_backup(&cli.store_root(), args),
         Command::Verify(args) => verify::run_verify(&cli.store_root(), args),
         Command::Serve => serve::run_serve(&cli),
         Command::RepairRetainedMarks(args) => retained_marks::run_repair_retained_marks(&cli, args),
+        Command::RepairRetainedEvents(args) => {
+            retained_events::run_repair_retained_events(&cli, args)
+        }
         _ => {
             let store = Store::open(cli.store_root())?;
             dispatch::dispatch(&cli, &store).await

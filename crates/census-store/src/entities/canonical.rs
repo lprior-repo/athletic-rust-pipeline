@@ -58,6 +58,8 @@ impl Entity for CanonicalSchool {
         union_vec(&mut self.aliases, &other.aliases);
         union_vec(&mut self.source_identities, &other.source_identities);
         union_vec(&mut self.evidence, &other.evidence);
+        union_vec(&mut self.postal_addresses, &other.postal_addresses);
+        self.postal_addresses.sort_unstable();
     }
 }
 
@@ -190,7 +192,12 @@ impl Entity for CanonicalEvent {
     }
 
     fn merge(&mut self, other: Self) {
-        let found = collision(self.id.as_str(), self, &other);
+        let refinement = compatible_event_refinement(self, &other);
+        let found = if refinement {
+            None
+        } else {
+            collision(self.id.as_str(), self, &other)
+        };
         for conflict in other.retained_conflicts {
             record(&mut self.retained_conflicts, conflict);
         }
@@ -198,9 +205,26 @@ impl Entity for CanonicalEvent {
             record(&mut self.retained_conflicts, conflict);
             return;
         }
+        if refinement && matches!(self.kind, census_domain::model::EventKind::Unmapped { .. }) {
+            self.kind = other.kind.clone();
+        }
         union_vec(&mut self.source_labels, &other.source_labels);
         union_vec(&mut self.evidence, &other.evidence);
     }
+}
+
+fn compatible_event_refinement(left: &CanonicalEvent, right: &CanonicalEvent) -> bool {
+    left.id == right.id
+        && left.retained_conflicts.is_empty()
+        && right.retained_conflicts.is_empty()
+        && left.meet == right.meet
+        && left.gender == right.gender
+        && left.division == right.division
+        && left.round == right.round
+        && ((left.resolved_source_kind().as_ref() == Some(&right.kind)
+            && right.source_bound_kind(&right.kind))
+            || (right.resolved_source_kind().as_ref() == Some(&left.kind)
+                && left.source_bound_kind(&left.kind)))
 }
 
 impl Entity for CanonicalPerformance {
@@ -256,3 +280,7 @@ mod tests;
 #[cfg(test)]
 #[path = "canonical_performance_tests.rs"]
 mod performance_tests;
+
+#[cfg(test)]
+#[path = "canonical_event_tests.rs"]
+mod event_tests;

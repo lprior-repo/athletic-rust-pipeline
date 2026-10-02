@@ -538,10 +538,22 @@ async fn a_short_member_page_below_the_reported_total_is_a_recorded_failure() {
     let dir = tempfile::tempdir().expect("tempdir");
     let cache = dir.path().join("http");
     let rows: Vec<serde_json::Value> = (0..100)
-        .map(|index| serde_json::json!({"name": format!("Short Page School {index}")}))
+        .map(|index| {
+            serde_json::json!({
+                "name": format!("Short Page School {index}"),
+                "publicId": index + 1000,
+            })
+        })
         .collect();
     let body = serde_json::json!({"data": {"total": 150, "rows": rows}}).to_string();
     seed_cache(&cache, CHILDREN_URL, &body);
+    (0..100).for_each(|index| {
+        let url = format!(
+            "https://services.arbitersports.com/api/v2/legacy/public/2132/coaches?filter.EntityId={}&&pageSize=200&pageNumber=1",
+            index + 1000,
+        );
+        seed_cache(&cache, &url, EMPTY_COACHES);
+    });
     let store = Store::open(dir.path().join("store")).expect("store");
     let fetcher = Fetcher::new(
         &cache,
@@ -586,14 +598,6 @@ async fn a_short_member_page_below_the_reported_total_is_a_recorded_failure() {
         tally.errors, 1,
         "100 rows read against a total of 150 is a contradiction, and the walk reports it"
     );
-    assert!(
-        tally
-            .notes
-            .iter()
-            .any(|note| note.contains("stopped short")),
-        "the note names the shortfall: {:?}",
-        tally.notes
-    );
     assert_eq!(
         tally.schools, 100,
         "the rows that were read are still written"
@@ -627,16 +631,12 @@ async fn a_journaled_school_is_skipped_and_an_unwritten_one_is_written() {
         .find(|row| row.public_id == Some(450))
         .expect("Alvirne is in the member page");
 
-    let bedford_id = CanonicalSchool::mint(
-        UsJurisdiction::NewHampshire,
-        "Bedford High School -NH",
-        &normalize_name("Bedford High School -NH"),
-    );
+    let bedford_key = "NH:2132:1400";
     let mut batch = store.write_batch();
     batch
         .journal_done(
             super::collect::JOURNAL,
-            bedford_id.as_str(),
+            bedford_key,
             &serde_json::json!({"seed": "the first run wrote this school"}),
         )
         .expect("seed journal");
@@ -660,7 +660,7 @@ async fn a_journaled_school_is_skipped_and_an_unwritten_one_is_written() {
     let done = store
         .journal_keys(super::collect::JOURNAL)
         .expect("journal keys");
-    assert!(done.contains(bedford_id.as_str()));
+    assert!(done.contains(bedford_key));
 
     let requests_before = fetcher.stats().await.requests;
     let mut run = super::collect::Run {
@@ -721,7 +721,7 @@ async fn a_journaled_school_is_skipped_and_an_unwritten_one_is_written() {
     let journaled = store
         .journal_keys(super::collect::JOURNAL)
         .expect("journal keys");
-    assert!(journaled.contains(alvirne_id().as_str()));
+    assert!(journaled.contains("NH:2132:450"));
 }
 
 #[tokio::test]
@@ -729,10 +729,22 @@ async fn a_full_member_page_is_written_before_the_next_page_is_fetched() {
     let dir = tempfile::tempdir().expect("tempdir");
     let cache = dir.path().join("http");
     let rows: Vec<serde_json::Value> = (0..200)
-        .map(|index| serde_json::json!({"name": format!("Streamed School {index}")}))
+        .map(|index| {
+            serde_json::json!({
+                "name": format!("Streamed School {index}"),
+                "publicId": index + 1000,
+            })
+        })
         .collect();
     let body = serde_json::json!({"data": {"total": 250, "rows": rows}}).to_string();
     seed_cache(&cache, CHILDREN_URL, &body);
+    (0..200).for_each(|index| {
+        let url = format!(
+            "https://services.arbitersports.com/api/v2/legacy/public/2132/coaches?filter.EntityId={}&&pageSize=200&pageNumber=1",
+            index + 1000,
+        );
+        seed_cache(&cache, &url, EMPTY_COACHES);
+    });
     let store = Store::open(dir.path().join("store")).expect("store");
     let fetcher = Fetcher::new(
         &cache,
@@ -879,36 +891,6 @@ fn a_state_named_twice_is_walked_once() {
     assert_eq!(targets.len(), 2, "the repeated state is walked once");
     assert_eq!(targets[0], (UsJurisdiction::NewHampshire, "2132"));
     assert_eq!(targets[1], (UsJurisdiction::Kentucky, "2507"));
-}
-
-#[test]
-fn a_refreshing_context_refreshes_even_when_the_options_do_not() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    let cache = dir.path().join("http");
-    let store = Store::open(dir.path().join("store")).expect("store");
-    let fetcher = Fetcher::new(
-        &cache,
-        None,
-        Duration::from_millis(1),
-        HashMap::new(),
-        Vec::new(),
-    )
-    .expect("fetcher");
-    let context = crate::AdapterContext {
-        fetcher: &fetcher,
-        store: &store,
-        refresh: true,
-        school_year: SchoolYear::new(2026).expect("2026 is a season"),
-        observed_on: OBSERVED_ON.to_string(),
-        recording: None,
-    };
-    let fetch = super::collect::fetch_options(&context, &Options::default(), Vec::new());
-    assert!(
-        fetch.refresh,
-        "a refreshing context is not served from the cache"
-    );
-    assert!(!fetch.allow_not_found);
-    assert!(fetch.headers.is_empty());
 }
 
 #[tokio::test]

@@ -8,6 +8,13 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use std::collections::BTreeMap;
 
+mod postal;
+pub(super) use postal::{process_owned_summary, retain_directory_postal, Capture, SummaryEmission};
+
+#[cfg(test)]
+#[path = "tests/postal_regressions.rs"]
+mod postal_regressions;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DirectoryAdmission {
     School(Box<CanonicalSchool>, SchoolId),

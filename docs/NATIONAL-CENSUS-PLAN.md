@@ -172,6 +172,106 @@ engineering blocker. Never remove failed sources from the declared manifest to o
 | 8 — Assurance | Required tests/proofs/faults/security/mutation/load/backup restoration have actual evidence |
 | 9 — Release | Validated seal binds tested build, run, artifacts and coverage limits; no unresolved blocker |
 
+### 7.1. Beads execution graph — 2026-10-01
+
+`athletic-rust-pipeline-7lx` owns the complete product target: one accepted canonical Class-of-2027
+athlete with all supported compatible event PRs, current eligible coaching contacts, school/address
+and source evidence across the contiguous 48 states plus DC. Candidates and source-backed subjects
+without results remain accounted for separately; a name match or two agreeing models cannot
+manufacture admissible identity evidence. The reported Adelyn Spann duplicates, unmapped boys
+110 m hurdles event and six-state workbook filter are diagnostic inputs, not permission for
+writer-only deduplication or invented national coverage.
+
+The planning reconciliation created 60 concrete Beads contracts, including one per native fault,
+and reused the existing defect/qualification issues. Every new contract passed the installed
+planner CUE schema. This validates plan structure, not production behavior or a time estimate.
+Beads holds ownership, input/output contracts, exclusions, executable acceptance and handoff.
+The component labels below organize work; the prerequisite graph and the ordered exits above
+determine execution. Broad source qualification slices must expose any newly demonstrated
+adapter/caller gap as a concrete owned obligation before implementation expands.
+
+Unfinished audit children no longer wait on the audit parent that itself waits for their completion.
+Grouping uses labels/nonblocking relations. Actual task prerequisites use `blocks`; this installed
+Beads build rejects epic-to-task `blocks`, so the product and directory milestones use `tracks`
+and remain blocked until their tracked acceptance completes. `1qp` is the executable release gate.
+Historical notes and closed evidence are preserved. Stale in-progress claims were reset to open,
+not declared fixed. Superseded queues include `cni` → `6yj` and the already
+implemented coach-admission issue `6yj.13` → `gqk`.
+
+All IDs in the following tables have prefix `athletic-rust-pipeline-`.
+
+| Component | Concrete work and Beads |
+|---|---|
+| Identity | `oxy`: exact duplicate/source-owner inventory; `t1b`: admissible same-provider application; `46r`: positive cross-source corroboration; `61k`: stable/reversible aliases and contradiction checks; retain WIAA acceptance `6yj.2` and source-cohort ownership `6yj.12` |
+| Events and PRs | `pmv`: reported 110 m hurdles ontology; `7ok`: exact compatible winners across projections; `947`: rounds/relays/historical affiliation; retain wrapped-header acceptance `6yj.14` and closed retained-mark evidence `1yx` |
+| Coaches, schools and addresses | `8bs`: implementation-versus-executed-family inventory; `7vk`: source-backed school mapping; `rh3`: current eligible program/contact join; `q2w`: missing school-address CLI; `3c5`: directory-to-census address join; `vxz`: remaining corpus integration; `vxz.1` and `9rj`: explicit live-qualification blockers |
+| Durable application | `6ly`: journal reconciliation/application; `a81`: native independent dual-model review; `hf2`: complete bounded attributed packets/advice reuse; `5jv`: discovery frontier/gaps; `sbv`: capture/apply-once chunk boundaries; `w4j`: aggregate physical admission; `o99`: selectively qualify engine admission precedence |
+| Source breadth | `omk`: qualification/registry/durable-dispatch matrix; `loa`: MileSplit first vertical source; `afi`: headed Athletic.net; `3bo`: relevant TFRRS/DirectAthletics; `ead`: AthleticLIVE/Hy-Tek/RaceDay/linked files; `616`: regional associations; `9tq`: official school/contact/history links; `o8x`: existing Arbiter caller/applicability integration |
+| Frozen publication | Retain `6yj.10`: recoverable inputs and fenced atomic bundles; `45a`: one accepted athlete with joined details; `csv`: independent complete artifact readback; `mtg`: every-sheet limits/partitions and hostile text |
+| Fresh national result | `99o`: actual source-to-output vertical qualification with S01/S06 recovery before breadth; `ai4`: separate fresh 49-jurisdiction run binding; `usr`: execute all qualified source obligations; `7x8`: exact national coverage/history/contact denominators |
+| Assurance | `tqu`: all 24 canaries plus suffix fixpoint; `37q`: hostile parser/persisted-shape boundaries; `nno`: critical semantic mutation; `7w5`: reconcile twelve-kernel requirement with eight-kernel wrapper and prior no-expansion direction; `g42`: security/async ownership; `710`: representative phase/resource measurements |
+| Existing defect exits | `cj6`: framed tuples; `98i`: checked confidence deserialization; `grl`: browser schemes; `psx`: proof verdicts; `8b7`: Criterion/fail-closed comparisons; `zi3`: actual adapter source-test selection; `2yq`: drain ownership; `06o`: symlinked restore parents; `1ia`: batch append/replace ordering; `trs`: full loaded native-recovery diagnostic; `c5g`: remaining owning-doc consistency |
+| Release and repository | `zr8`: isolated native fault resources; `6yj.11`: all-17 fault gate; `6yj.7`: comparable baseline blocker; `6yj.9`: final integrated independent review; `6yj`: consolidated assurance gate; `1qp`: national gate/seal/user bundle; `h0b`: preserve/extract qualified dirty work and owner-approved branch retirement |
+
+The first useful work is current-main acceptance for P0 `cj6`, alongside `oxy`, `pmv`, `q2w`,
+`8bs`, `7vk` and the distinct ready foundational defects. Landed-looking fixes require their exact
+consumer acceptance before closure; do not repeat the old failure solely to confirm it. Main owns
+identity acceptance and shared domain/store/Restate contracts. SOL-only coding uses Main or the
+explicitly authorized `sol-reviewer` selection with exclusive files, never older model substitutions.
+No source breadth or national-run activity substitutes for the joined vertical output.
+
+### 7.2. Individually tracked native faults
+
+The fault catalog remains authoritative for injection boundaries and required subcases. These
+Beads do not narrow it, certify historical runs or replace real native faults with unit simulations.
+`zr8` must establish owned bounded filesystems, isolated clock/VM resources and reached-boundary
+instrumentation; no shared workstation reboot, host clock change or shared GPU-server termination.
+
+| Scenario | Bead | Required real surface |
+|---|---|---|
+| S01 | `ew2` | Endpoint SIGKILL, same invocation, all required capture/apply/ack boundaries |
+| S02 | `8o5` | Native Restate SIGKILL during active fan-out |
+| S03 | `9j7` | Actual isolated persistent-disk VM reboot with different boot IDs |
+| S04 | `zzn` | Distinct compatible V1/V2 binaries and in-flight handover |
+| S05 | `lwx` | Physical 429/Retry-After/500 and browser challenge outcomes |
+| S06 | `3ct` | Capture/effect/receipt/lost-ack boundaries and content conflicts |
+| S07 | `yxq` | Concurrent workflows requesting one logical source unit |
+| S08 | `5oi` | Multiple endpoints sharing one aggregate origin budget |
+| S09 | `ob8` | Real ENOSPC on the owned bounded Fjall filesystem |
+| S10 | `9ir` | Real ENOSPC on the separate owned Restate filesystem |
+| S11 | `ahz` | Parent stop with async/blocking workers and exact drain accounting |
+| S12 | `9bk` | Actual isolated midnight crossing with stable run semantics |
+| S13 | `lie` | Owned proxy around real model HTTP and advice-persistence crashes |
+| S14 | `3as` | Each unmet seal item and interrupted publication promotion |
+| S15 | `66h` | Nonempty cold backup/restore, corruption and interrupted destinations |
+| S16 | `5gn` | Real frozen capture/advice replay, quarantine and interrupted export |
+| S17 | `6gg` | Reached in-flight worker batch and deterministic partial-page chunks |
+
+### 7.3. Branch/worktree disposition — main `02d13802`
+
+The owner's cleanup response requested inspecting branch contents first. No branch/worktree was
+deleted, merged, cherry-picked, committed or pushed in this planning pass. Ancestry alone cannot
+authorize removal of uncommitted work, ignored artifacts or capture evidence. `h0b` owns any later
+preservation, qualified extraction and explicitly approved retirement.
+
+| Local branch | Observed disposition |
+|---|---|
+| `coach-acquisition-rust` | Eleven non-patch-equivalent commits; scanner/labels/dates/drain already harvested or superseded. Main has Arbiter acquisition code but lacks qualified CLI/Restate callers and four-state applicability: selectively adapt under `o8x`. Do not merge identity/proof relocation, old docs or branch vet exemptions. Clean linked worktree retained. |
+| `dragonfly-coach-directories` | One ancestry-unique commit `4d0b962c` is patch-equivalent in main. NC/GA/IN adapter, fixtures/goldens and callers are present; main admission/robots behavior is stronger. No production merge needed. Dirty untracked tests/helpers/fixtures retained. |
+| `port-python-to-rust` | No commits ahead; dirty worktree includes the missing `SchoolAddress` CLI variant/store-free route. Selectively restore under `q2w`; current main address/geocode/publication library is stronger than the dirty port. Preserve all remaining edits/captures. |
+| `engine-buildout` | No commits ahead; dirty parallel engine models/store facade are unwired and overlap authoritative contracts. Reject a wholesale engine merge. Qualify only admission/halt propagation under `o99`; adapt useful behavioral cases to current APIs, preserving originals. |
+| `holzman-5090` | No commits ahead; dirty direct-snapshot bests path is superseded by `ExportDataset`/`Derivation`. Selected-scan helper has no current production consumer. Preserve delta/examples; no speculative performance port. |
+| `port-piaa` | No commits ahead; dirty coach/robots changes are older than main's current admission, synchronized school batch and guarded origin path. Preserve delta; no whole-file replacement. |
+| `holzman-enforcement` | No commits ahead; untracked report examples remain. Retain until evidence/helper disposition is explicit. |
+| `research/captures-20260929` | Two ancestry-unique stash-style commits at `bba998e2`; preserve reference, index snapshot and all capture/fixture evidence. Old code is not a merge candidate; synthetic captures do not establish live qualification. |
+| `closeout-python-port`, `holzman-3090` | Merged with clean tracked worktrees. Potential retirement only after ignored/artifact preservation checks and owner-approved scope. |
+| `feature/port-acquisition-features`, `piaa-merge`, `restate-spine-alignment`, `strip-inline-comments` | Merged, no linked worktree. Candidates for approved local-ref cleanup; do not delete remote refs implicitly. |
+
+Ten linked worktrees were inspected: main and three other clean tracked worktrees, plus six dirty
+worktrees. Whole merges of the two unmerged implementation branches are unnecessary/regressive.
+Selective missing callers are planned; preservation is not complete merely because a ref exists.
+No national completion or all-17 fault acceptance was established by this code/branch analysis.
+
 ## 8. F01–F15 acceptance ledger
 
 These IDs denote corrections, not the separately dated source-audit findings in the evidence ledger.

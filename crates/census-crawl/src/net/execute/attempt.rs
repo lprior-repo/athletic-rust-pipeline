@@ -1,9 +1,9 @@
 pub(super) use super::attempt_helper::blocking_kind;
 use super::attempt_helper::retry_after_secs;
 use super::cache_writer::cache_and_record;
-use crate::net::cache::{content_digest, write_cache, CacheMeta};
+use crate::net::cache::{replay_cache, CacheMeta};
 use crate::net::request::RequestBody;
-use crate::net::{now_iso8601, FetchError, FetchOptions, FetchOutcome, Fetcher};
+use crate::net::{FetchError, FetchOptions, FetchOutcome, Fetcher};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
@@ -134,18 +134,7 @@ impl Fetcher {
 
     async fn replay_cached(&self, plan: &FetchPlan<'_>) -> Result<FetchOutcome, FetchError> {
         if let Some(meta) = plan.cached {
-            if let Ok(bytes) = std::fs::read(plan.body_path) {
-                if bytes.len() != meta.bytes || content_digest(&bytes) != meta.content_digest {
-                    let mut stats = self.stats.lock().await;
-                    stats.errors = stats.errors.saturating_add(1);
-                    return Err(FetchError::Http {
-                        status: 304,
-                        url: plan.url.to_string(),
-                    });
-                }
-                let mut refreshed = meta.clone();
-                refreshed.fetched_at = now_iso8601();
-                write_cache(plan.body_path, plan.meta_path, &bytes, &refreshed)?;
+            if let Some(bytes) = replay_cache(plan.body_path, plan.meta_path, meta)? {
                 {
                     let mut stats = self.stats.lock().await;
                     stats.conditional_304 = stats.conditional_304.saturating_add(1);
@@ -156,7 +145,7 @@ impl Fetcher {
                     status: meta.status,
                     content_digest: meta.content_digest.clone(),
                     bytes: meta.bytes,
-                    fetched_at: refreshed.fetched_at,
+                    fetched_at: meta.fetched_at.clone(),
                     from_cache: false,
                     content_type: meta.content_type.clone(),
                     body: bytes,

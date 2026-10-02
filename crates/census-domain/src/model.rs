@@ -32,6 +32,7 @@ mod provenance;
 mod records;
 mod review;
 mod school;
+mod school_address;
 
 pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
 pub use canonical_json::{serialized_digest, CanonicalJsonError};
@@ -58,8 +59,9 @@ pub use identifiers::{
 };
 pub use identity_application::{AcceptedAthleteIdentity, IdentityApplication};
 pub use identity_decision::{
-    athlete_identity_digest, identity_verdict_digest, person_provider, AppliedAthleteIdentity,
-    AppliedIdentityKind, IdentityDecisionError, IdentityMember, ATHLETE_IDENTITY_POLICY,
+    athlete_identity_digest, identity_verdict_digest, person_key, person_provider,
+    AppliedAthleteIdentity, AppliedIdentityKind, IdentityDecisionError, IdentityMember,
+    ATHLETE_IDENTITY_POLICY,
 };
 pub use identity_index::{AthleteIdentityIndex, IdentityError};
 pub use identity_projection::{AthleteIdentityProjection, IdentityProjectionBuilder};
@@ -85,6 +87,7 @@ pub use review::{
     ReviewVerdictRecord, VerdictBatch,
 };
 pub use school::CanonicalSchool;
+pub use school_address::{SchoolAddressError, SchoolPostalAddress};
 
 #[cfg(test)]
 #[path = "model_tests.rs"]

@@ -6,6 +6,72 @@ fresh national census's release certificate. Current requirements live in
 [NATIONAL-CENSUS-PLAN.md](NATIONAL-CENSUS-PLAN.md); procedures live in [TESTING.md](../TESTING.md)
 and [OPERATIONS.md](OPERATIONS.md). Source audits and imported measurements are explicitly labelled.
 
+## Beads and branch planning reconciliation — 2026-10-01
+
+Scope: the owner's complete canonical-athlete/multi-event PR/contact/school-address target across
+the contiguous 48 states plus DC, active Beads cleanup, and content-first branch/worktree review.
+Analysis baseline was main `02d13802`, matching the observed origin/main tip. This pass changed
+planning documentation and local Beads records, not production Rust or historical census data.
+
+The reconciliation created 60 explicit ownership/input/output/acceptance/handoff contracts,
+including all 17 native faults, under product milestone `athletic-rust-pipeline-7lx`.
+Each generated task JSON passed:
+
+```sh
+cue vet <task-contract.json> /home/lewis/.agents/skills/planner/schemas/task-schema.cue -d '#Task'
+bd lint
+bd dep cycles
+bd ready --limit 0 --json
+```
+
+CUE success is structural planning evidence only. The first `bd lint` found 27 missing-heading
+warnings in 14 existing issues; their original descriptions/notes were retained and their precise
+reproduction/acceptance sections repaired. The final lint checked 78 issues with no template
+warnings; the dependency checker found no cycles. The ready queue contained 22 actionable issues.
+Stale in-progress claims were reset without claiming fixes. `cni` was superseded by `6yj`,
+branch-local vet issue `3sb` by authoritative-main `6yj.6`, and coach-admission issue `6yj.13`
+by the already closed exact implementation/evidence issue `gqk`. No other defect was certified.
+
+The installed Beads build treats unfinished `parent-child` links as prerequisites and rejects
+epic-to-task `blocks`; retaining the old audit parent/child arrangement prevented runnable work.
+Grouping now uses nonblocking labels/relations. Task prerequisites form the actual release DAG;
+epics use `tracks` and remain blocked pending tracked completion. Optional live vendor/private
+association qualification, comparable performance baseline and twelve-versus-eight proof-policy
+requirements remain explicit, not silently waived.
+
+Four read-only scouts compared coach, DragonFly, dirty engine, Holzman, PIAA, Python-port and capture
+snapshot content with current main. Main independently inspected ancestry/patch equivalence,
+14 non-main local branches and ten linked worktrees: four clean tracked trees and six dirty.
+`git cherry main coach-acquisition-rust` reported eleven `+` commits; most behaviors were already
+harvested or superseded in main, but existing Arbiter acquisition still lacks production
+caller/applicability integration (`o8x`). `git cherry main dragonfly-coach-directories` reported
+`- 4d0b962c`: its adapter/fixtures/goldens/callers are already present, with stronger current admission.
+Dirty engine models are unwired parallel contracts; only admission/halt propagation is a qualified
+inspection candidate (`o99`). Dirty snapshot/PIAA replacements are superseded. Preserve capture
+snapshot `bba998e2`, all dirty originals and synthetic-versus-live provenance.
+
+Actual CLI observations:
+
+```sh
+target/release/census-service --help
+target/release/census-service review --help
+target/release/census-service school-address --help
+```
+
+The first two exited 0; review exposes a single default model endpoint, not proof of integrated
+dual-model execution. `school-address --help` exited 2 with an unrecognized-subcommand diagnostic.
+Current source also lacks its CLI variant/route; language-server references to
+`census_service::school_address::run` found test callers only. The dirty Python-port route is the
+selective integration candidate `q2w`, not its older address/geocode/publication implementation.
+Source/LSP inspection also found national completion does not include the standalone reconciliation
+and review path; durable integration is explicitly planned, not claimed operational.
+
+Limits: no production build/test/proof/performance/native-fault suite, new acquisition, model call,
+store mutation, seal, merge, branch/worktree deletion, commit, push or Dolt remote sync occurred.
+The branch disposition and full execution map live in the owning
+[national plan §7](NATIONAL-CENSUS-PLAN.md#7-ordered-stage-exits); preservation/approved retirement
+is `h0b`. This planning evidence does not certify a fresh national census or any of the 17 faults.
+
 ## Retained PR normalization and Downloads follow-through — 2026-10-01
 
 The owner requested a PR for every represented event and the workbook in
@@ -5116,3 +5182,155 @@ empty; the same command with `--authorized-host 127.0.0.1` -> exit 0, the listen
 Limits. The DNS hook is exercised by a resolved `localhost` grant, not by a public name whose
 addresses change; no proxy environment variable was set during the probes, so `no_proxy` is asserted
 by construction rather than by a poisoned-environment test.
+
+## Isolated consolidated integration qualification (2026-10-01/02)
+
+Scope. Commands and edits ran in `/home/lewis/src/ad-law-scrape/arh-integration-20261001`,
+branch `integration/census-reconciliation`. The original working tree was read-only input:
+snapshots `d1853a4e336d8d3db5cefc2e479cf4df54533a46`,
+`479b97953bd133bac003b55a6ce77a3a28b01804` and final cutoff
+`531bf9f7792022b16d4abe09c3a454496157e095`. Relevant changes were integrated or subsumed by
+stronger checked implementations. Private prompts, interaction logs, runtime databases, historical
+stores and generated run artifacts are not PR inputs. This qualifies the integration, not a fresh
+national census, the complete native fault matrix, a release seal or comparable performance.
+
+### Integrated behavior and regression evidence
+
+The final focused command was:
+
+```text
+cargo fmt --all
+cargo test -p census-domain -p census-store -p census-review -p census-crawl -p census-report -p census-service --lib
+cargo test -p census-service --bin census-service
+cargo test -p census-store --test checkpoint_fence
+cargo build -p census-service --bin census-service
+cargo run -q -p xtask -- scan
+```
+
+Observed: 1,558 library tests passed (crawl 715, domain 244, report 170, review 119,
+service 191, store 119); 69 CLI tests and two sequence-fence tests passed. Failures observed
+and corrected during integration included unknown model fields, unsupported event refinements,
+complete UTF-16 contexts spuriously truncated, malformed postal provenance accepted, displaced
+athlete rows skipped by full verification, reopened durable cases falsely treated as applied receipts,
+and identical internally contradictory cohort evidence accepted as the same person.
+
+| Requirement | Exercised evidence | Limit |
+|---|---|---|
+| Owner-bound postal claims and publication policy 3 | Domain/crawl postal regressions; report rendering, capture, full verification and tamper rejection; CLI CSV tests | No fresh nationwide postal acquisition |
+| Captured owned-result parsing | Full public 311,763-byte response replay below, plus row/ownership/context regressions | Unknown upstream completeness remains unknown |
+| Independent model formats and bounded exact replay | Actual two-server qualification below; strict reply, format-change, selected packet, standing and sequence-fence regressions | Synthetic unresolved subject, not population adjudication |
+| Preserved acquisition failures and recovery | Deterministic HTTP/archive/quarantine/304/lock and Arbiter owner-bound corrected-response tests | Not a new power-loss or full 17-scenario native certification |
+| Shared publication and identity facts | Same-snapshot enrichment, contradictory cohort, full workbook row comparison and tamper tests | No national release seal or performance claim |
+
+### Actual full-response owned parser
+
+```text
+cargo run -q -p census-crawl --example qualification_owned -- var/integration-owned-capture.json var/integration-owned-qualification.json
+```
+
+The original retained public HTTP body was read without opening its store, copied only into this
+worktree's ignored `var/`, and SHA-256 checked:
+`8db9804ebc2d36b6f7ec1e2a289b2b8ab28610e0063f0ee9f54245eb128071ed`.
+Observed 602 published rows, 560 accepted owned rows and 42 malformed rows, all 42 with null
+athlete names. Result sets 1266814 and 1266815 contain 246 and 356 rows respectively.
+`ownership_complete=false`; upstream completeness is unknown. Adelyn Spann, owner 14222592,
+retains distinct owned jump results; long-jump result 201782263 at `data[172]` is 13-9 / 419 cm,
+Girls, Class of 2027, meet 725218, team 38332. This is captured-response replay, not a live
+fresh fetch. The three-row tracked projection remains explicitly identified as a projection.
+
+### Actual two-server protocol and durable replay
+
+```text
+cargo run -q -p census-review --example qualification_dual -- var/integration-dual-qualified-v2
+cargo run -q -p xtask -- scan
+cargo run -q -p xtask -- contract
+```
+
+Observed one requested/answered subject, one insufficient-evidence outcome, zero accepted,
+failed or dropped outcomes. Both actual `qwen3.8-27b-uncensored` endpoints answered:
+11000 with `prompt_json`, 11001 with `json_schema`. Both returned the exact case ID, empty
+field/value and confidence zero. The durable record and complete lane audit were read back into
+`var/integration-dual-qualified-v2/dual-audit.json`; evidence and per-lane request digests are retained.
+The persisted case is `Retained`; unchanged replay requested zero subjects and kept one receipt.
+The first qualification attempt requested zero because its seed omitted an actionable persisted
+case; the example now seeds that case explicitly without changing intake or automatically reopening
+history. The failed evidence directory was preserved.
+
+The post-fix scan reports zero forbidden production constructs, zero files above 300 lines and
+zero functions above 60 lines. All eight architecture checks pass. The incoming native inner
+retry ceiling of three was rejected by the existing architecture contract and restored to one;
+no gate baseline or audit requirement was relaxed.
+
+### Full release gate and remaining limits
+
+An integrated `tools/gate.sh` run executed 2,063 tests: all passed, three skipped. Formatting,
+zero-comments, check, documentation, domain integrity/purity, module seams, deny, audit, machete,
+geiger, feature powerset and benchmark compilation passed. It failed architecture (inner retry
+ceiling), debt ratchet (six JSON-indexing diagnostics in the qualification example), and cargo-vet.
+The first two defects were corrected; actual dual-server,
+scan and architecture checks passed afterward. The complete post-correction gate result is recorded
+below.
+
+Other actual consumer probes included retained-event repair dry-run/apply/idempotent reapply,
+unregistered Arbiter provider refusal before fetch, and the standalone school-address CLI:
+1,931 rows, 67 skipped, manifest byte/SHA readback and an unchanged second-run diff of zero.
+Missing Google/USPS credentials refused before publication. These are isolated qualification
+artifacts, not nationwide data or unexercised source coverage. A direct `target/debug/census-service`
+invocation failed because that binary was unavailable; the current CLI route is exercised through
+`cargo run` rather than treating that failed launch as verification.
+
+The actual current CLI route also passed:
+
+```text
+cargo run -q -p census-service --bin census-service -- --store var/integration-pr-smoke/store review --family school-jurisdiction --limit 1 --endpoint http://127.0.0.1:11000 --endpoint http://127.0.0.1:11001 --model qwen3.8-27b-uncensored --response-format prompt-json --response-format json-schema --timeout-secs 90 --max-tokens 1536
+```
+
+Observed `requested=1 answered=1 decided=1 accepted=1 rejected=0 insufficient=0 unanswered=0
+dropped=0 failed=0`. This exercised CLI parsing, explicit per-lane protocols and the review route
+against the isolated synthetic qualification store, not the original serving census store.
+
+A second complete gate again passed 2,063 tests with three skipped and passed the architecture
+contract. Its remaining ratchet failure located three unchecked counters and one JSON index in the
+new owned-response qualification example. They now use checked increment and direct serialization
+of the already selected rows. The exact repair lane passed:
+
+```text
+cargo fmt --all
+cargo run -q -p census-crawl --example qualification_owned -- var/integration-owned-capture.json var/integration-owned-qualified-v2.json
+cargo clippy -p census-crawl --example qualification_owned --all-features -- -D warnings -D clippy::arithmetic_side_effects -D clippy::indexing_slicing
+cargo run -q -p xtask -- scan
+```
+
+Replay again observed 602 / 560 / 42 and unknown completeness; strict example clippy passed.
+The one-commit integration was rebased onto `origin/main` 4388b778, preserving its removal of
+`athletic_matcher`, and pushed. Actual GitHub draft [PR #5](https://github.com/lprior-repo/athletic-rust-pipeline/pull/5)
+targets `main` from `integration/census-reconciliation`; it is not automatically merged.
+
+The complete post-rebase `tools/gate.sh` run observed 2,063 passed and three skipped.
+It passed architecture, formatting, zero-comments, compilation, documentation, domain integrity
+and purity, module seams, deny, audit, machete, geiger, feature powerset and bench compilation.
+It failed ratchet on one `unnecessary_option_map_or_else` diagnostic in CLI date selection and
+vet. The date fallback now uses equivalent
+`unwrap_or_else`; an unused model-format test import was removed.
+
+Final repair verification:
+
+```text
+cargo fmt --all
+cargo test -p census-service --bin census-service
+cargo test -p census-review --lib
+cargo run -q -p census-service --bin census-service -- --store var/integration-pr-smoke/store review --family school-jurisdiction --limit 1 --endpoint http://127.0.0.1:11000 --endpoint http://127.0.0.1:11001 --model qwen3.8-27b-uncensored --response-format prompt-json --response-format json-schema --timeout-secs 90 --max-tokens 1536
+cargo -Zallow-features=portable_simd,try_blocks clippy --workspace --lib --bins --examples --all-features --message-format=json -- -D warnings -D unsafe_code -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic -D clippy::panic_in_result_fn -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::indexing_slicing -D clippy::string_slice -D clippy::get_unwrap -D clippy::arithmetic_side_effects -D clippy::as_conversions -D clippy::let_underscore_must_use -D clippy::await_holding_lock
+cargo run -q -p xtask -- scan
+cargo run -q -p xtask -- ratchet tools/quality-baseline.json var/final-clippy.tsv var/final-scan.json
+```
+
+Observed 69 CLI and 119 review tests passed. Actual unchanged CLI replay requested zero subjects.
+Strict full-workspace source clippy exited zero with zero warning/error diagnostics and an actual
+successful `build-finished` record, preserved in ignored `var/final-clippy.json`. Its measured
+zero tally and actual scan were passed to the canonical ratchet: `ratchet: no metric grew`, exit zero.
+The scan retains zero forbidden production constructs and no over-budget functions/files.
+This focused final repair verification is distinct from the preceding complete gate; the latter
+was not rerun after these two small repairs. The full check lane also reported five pre-existing
+unused golden-helper warnings in the `parity_pipeline` test harness; these are not source-target
+clippy diagnostics. The draft PR does not certify a national release.

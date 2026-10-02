@@ -1,20 +1,17 @@
-use super::map::{
-    absorb_summary, coach_entities, directory_school, CoachCounters, CoachEmission,
-    DirectoryAdmission, EmissionScope,
-};
-use super::parse::{parse_directory, parse_summary, DirectorySchool};
-use super::{directory_page_url, summary_url, Options, MAX_DIRECTORY_PAGES, REGISTERED, SOURCE_ID};
+use super::map::{retain_directory_postal, Capture, CoachCounters};
+use super::parse::{parse_directory, DirectoryPage, DirectorySchool};
+use super::{directory_page_url, Options, MAX_DIRECTORY_PAGES, REGISTERED, SOURCE_ID};
 use crate::net::{FetchOptions, FetchOutcome, FetchStats};
 use crate::{AdapterContext, AdapterReport, CrawlResult};
-use census_domain::model::{
-    normalize_name, CanonicalCoach, CanonicalSchool, SchoolId, SourceNamespace,
-};
+use census_domain::model::{normalize_name, CanonicalCoach, CanonicalSchool, SourceNamespace};
 use census_domain::UsJurisdiction;
 use census_store::Table;
 use serde_json::json;
 use std::collections::HashSet;
 
-const JOURNAL: &str = "coach_directories_schools_v2";
+mod postal;
+
+const JOURNAL: &str = "coach_directories_schools_v3";
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let stats_before = ctx.fetcher.stats().await;
@@ -81,8 +78,11 @@ struct Run<'a> {
 
 impl<'a> Run<'a> {
     async fn walk_state(&mut self, state: UsJurisdiction, association: &str) -> CrawlResult<()> {
+        let ctx = self.ctx;
         let mut page = 1usize;
         let mut total_pages = 1usize;
+        let mut rows_read = 0usize;
+        let mut declared_rows = 0usize;
         while page <= total_pages && page <= MAX_DIRECTORY_PAGES {
             let url = directory_page_url(association, page);
             let Some(outcome) = self.get(&url).await else {
@@ -95,9 +95,17 @@ impl<'a> Run<'a> {
                     return Ok(());
                 }
             };
-            if page == 1 {
-                total_pages = parsed.total_pages.max(1);
+            if !self.directory_page_matches(&parsed, page, &url) {
+                return Ok(());
             }
+            total_pages = total_pages.max(parsed.total_pages.max(1));
+            rows_read = rows_read.saturating_add(parsed.results.len());
+            declared_rows = declared_rows.max(parsed.total_results);
+            let capture = Capture {
+                url: &outcome.url,
+                observed_on: &ctx.observed_on,
+                sha256: &outcome.content_digest,
+            };
             for row in &parsed.results {
                 if self
                     .options
@@ -106,9 +114,22 @@ impl<'a> Run<'a> {
                 {
                     return Ok(());
                 }
-                self.process_school(state, association, &url, row).await?;
+                self.process_school(state, association, capture, row)
+                    .await?;
             }
             page = page.saturating_add(1);
+        }
+        if total_pages > MAX_DIRECTORY_PAGES {
+            self.fail(format!(
+                "{} has more directory pages than the {MAX_DIRECTORY_PAGES}-page walk reads",
+                state.code()
+            ));
+        }
+        if rows_read < declared_rows {
+            self.fail(format!(
+                "{} directory walk stopped short: read {rows_read} of {declared_rows} published rows",
+                state.code()
+            ));
         }
         Ok(())
     }
@@ -117,81 +138,48 @@ impl<'a> Run<'a> {
         &mut self,
         state: UsJurisdiction,
         association: &str,
-        directory_url: &str,
+        capture: Capture<'_>,
         row: &DirectorySchool,
     ) -> CrawlResult<()> {
-        let Some(short_code) = row.short_code.as_deref().and_then(super::nonempty) else {
+        let Some(short_code) = self.directory_owner(state, capture, row) else {
             return Ok(());
         };
         let key = format!("{}:{short_code}", state.code());
-        if self.done.contains(&key) {
+        if self.done.contains(&key) && !self.fetch.refresh {
             self.skipped = self.skipped.saturating_add(1);
             return Ok(());
         }
-        let (mut school, school_id) = match directory_school(
-            state,
-            association,
-            row,
-            directory_url,
-            self.options.observed_on.as_str(),
-        )? {
-            DirectoryAdmission::School(school, id) => (school, id),
-            DirectoryAdmission::MissingShortCode => {
-                self.report.note(format!(
-                    "directory row {directory_url}: no short code to fetch a summary with"
-                ));
-                return Ok(());
-            }
-            DirectoryAdmission::DroppedName => {
-                self.dropped_school_rows = self.dropped_school_rows.saturating_add(1);
-                return Ok(());
-            }
+        let Some((mut school, school_id)) =
+            self.admit_directory_school(state, association, capture, row)?
+        else {
+            return Ok(());
         };
         if !self.wanted.is_empty() && !self.wanted.contains(&school.normalized_name) {
             return Ok(());
         }
-        let Some(emission) = self
-            .fetch_and_process_summary(&short_code, &mut school, &school_id)
+        let postal_complete = match retain_directory_postal(&mut school, row, capture) {
+            Ok(()) => true,
+            Err(review) => {
+                self.fail(format!("directory postal review {}: {review}", capture.url));
+                false
+            }
+        };
+        let Some(mapped) = self
+            .fetch_and_process_summary(row, &short_code, &mut school, &school_id)
             .await
         else {
             self.school_batch(&school)?.commit()?;
             return Ok(());
         };
-        self.write(&key, &school, &emission.coaches, &short_code)?;
+        let emission = mapped.emission;
+        if postal_complete && mapped.postal_review.is_none() {
+            self.write(&key, &school, &emission.coaches, &short_code)?;
+        } else {
+            self.retain_incomplete_summary(&school, &emission)?;
+        }
         self.counters.absorb(&emission.counters);
         self.processed = self.processed.saturating_add(1);
         Ok(())
-    }
-
-    async fn fetch_and_process_summary(
-        &mut self,
-        short_code: &str,
-        school: &mut CanonicalSchool,
-        school_id: &SchoolId,
-    ) -> Option<CoachEmission> {
-        let url = summary_url(short_code);
-        let outcome = self.get(&url).await?;
-        let summary = match parse_summary(&outcome.body) {
-            Ok(summary) => summary,
-            Err(error) => {
-                self.fail(format!("summary {url}: {error}"));
-                return None;
-            }
-        };
-        absorb_summary(school, &summary, &url, self.options.observed_on.as_str());
-        match coach_entities(
-            &summary,
-            school_id,
-            &url,
-            self.options.observed_on.as_str(),
-            EmissionScope::Census,
-        ) {
-            Ok(emission) => Some(emission),
-            Err(error) => {
-                self.fail(format!("map {url}: {error}"));
-                None
-            }
-        }
     }
 
     async fn get(&mut self, url: &str) -> Option<FetchOutcome> {
@@ -246,7 +234,7 @@ impl<'a> Run<'a> {
                 "short_code": short_code,
                 "coach_rows": coaches.len(),
                 "with_email": with_email,
-                "observed_on": self.options.observed_on,
+                "observed_on": self.ctx.observed_on,
             }),
         )?;
         batch.commit()?;
@@ -254,7 +242,7 @@ impl<'a> Run<'a> {
         self.coach_rows = self.coach_rows.saturating_add(coaches.len());
         self.with_email = self
             .with_email
-            .saturating_add(u64::try_from(with_email).unwrap_or(u64::MAX));
+            .saturating_add(u64::try_from(with_email).map_or(u64::MAX, |value| value));
         Ok(())
     }
 
@@ -264,7 +252,7 @@ impl<'a> Run<'a> {
         self.report.from_cache = stats_after
             .cache_hits
             .saturating_sub(stats_before.cache_hits);
-        self.report.rows = u64::try_from(self.processed).unwrap_or(u64::MAX);
+        self.report.rows = u64::try_from(self.processed).map_or(u64::MAX, |value| value);
         self.report.with_email = self.with_email;
         self.report.note(format!(
             "{} school(s) processed ({} already journalled): {} coach row(s), {} with a published address",

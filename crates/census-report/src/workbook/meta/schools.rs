@@ -4,7 +4,9 @@ use census_domain::UsJurisdiction;
 use crate::report::ReportResult;
 use crate::workbook::cells::{row, Cell};
 
-pub(super) const SCHOOL_WIDTHS: [u16; 12] = [16, 44, 10, 26, 14, 12, 12, 42, 42, 30, 10, 10];
+pub(super) const SCHOOL_WIDTHS: [u16; 24] = [
+    16, 44, 10, 26, 14, 12, 12, 42, 42, 30, 10, 10, 20, 36, 28, 24, 12, 16, 28, 28, 28, 48, 20, 68,
+];
 
 pub(super) fn schools_sheet(schools: &[CanonicalSchool]) -> ReportResult<Vec<Vec<Cell>>> {
     let mut cells = vec![row!(
@@ -21,6 +23,13 @@ pub(super) fn schools_sheet(schools: &[CanonicalSchool]) -> ReportResult<Vec<Vec
         "Sources",
         "Conflicts",
     )];
+    if let Some(header) = cells.first_mut() {
+        header.extend(
+            crate::export::postal::POSTAL_HEADERS
+                .into_iter()
+                .map(Cell::text),
+        );
+    }
     let mut sorted: Vec<&CanonicalSchool> = schools.iter().collect();
     sorted.sort_by(|left, right| {
         state_code(left)
@@ -35,7 +44,7 @@ pub(super) fn schools_sheet(schools: &[CanonicalSchool]) -> ReportResult<Vec<Vec
 }
 
 fn school_row(school: &CanonicalSchool) -> ReportResult<Vec<Cell>> {
-    Ok(row!(
+    let mut cells = row!(
         Cell::text(school.id.as_str()),
         Cell::text(school.name.clone()),
         Cell::text(state_code(school)),
@@ -48,7 +57,13 @@ fn school_row(school: &CanonicalSchool) -> ReportResult<Vec<Cell>> {
         Cell::text(school.aliases.join(" | ")),
         Cell::number(school.source_identities.len())?,
         Cell::number(school.retained_conflicts.len())?,
-    ))
+    );
+    cells.extend(
+        crate::export::postal::postal_fields([school])?
+            .into_iter()
+            .map(Cell::text),
+    );
+    Ok(cells)
 }
 
 fn state_code(school: &CanonicalSchool) -> &'static str {

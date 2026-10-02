@@ -20,6 +20,7 @@ pub(super) const TEAMS_ARMS: &[(&str, TeamsArm)] = &[
     ("ihsa", TeamsArm::IhsaSchools),
     ("ks", TeamsArm::KsDirectory),
     ("coach_directories", TeamsArm::CoachDirectories),
+    ("arbiter_orgs", TeamsArm::ArbiterOrgs),
 ];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -31,6 +32,7 @@ pub(super) enum TeamsArm {
     IhsaSchools,
     KsDirectory,
     CoachDirectories,
+    ArbiterOrgs,
 }
 
 pub(super) fn arm_for(slug: &str) -> Option<TeamsArm> {
@@ -81,6 +83,9 @@ async fn sweep_team_source(
         )),
         TeamsArm::CoachDirectories => Ok(Some(
             walk_coach_directories(store, fetcher, jurisdiction, season, refresh, at).await?,
+        )),
+        TeamsArm::ArbiterOrgs => Ok(Some(
+            walk_arbiter_orgs(store, fetcher, jurisdiction, season, refresh, at).await?,
         )),
     }
 }
@@ -217,6 +222,27 @@ async fn walk_coach_directories(
     Ok(report)
 }
 
+async fn walk_arbiter_orgs(
+    store: &Arc<Store>,
+    fetcher: &Arc<Fetcher>,
+    jurisdiction: UsJurisdiction,
+    season: SchoolYear,
+    refresh: bool,
+    at: &str,
+) -> Result<AdapterReport, HandlerError> {
+    let options = census_crawl::arbiter::Options {
+        limit: None,
+        refresh,
+        observed_on: at.to_string(),
+        states: vec![jurisdiction],
+    };
+    let context = adapter_context(store, fetcher, season, refresh, at, None);
+    let report = census_crawl::arbiter::collect(&context, &options)
+        .await
+        .map_err(|error| job_error(collect_error(error)))?;
+    Ok(report)
+}
+
 pub(super) async fn teams_stage(
     store: Arc<Store>,
     fetcher: Arc<Fetcher>,
@@ -241,6 +267,14 @@ pub(super) async fn teams_stage(
             errors.push(format!("{}: {} errors", slug, report.errors));
         }
         notes.extend(report.notes.iter().map(|n| format!("{}: {}", slug, n)));
+    }
+    if !errors.is_empty() {
+        return Err(job_error(super::JobError::Transient {
+            message: format!(
+                "incomplete teams acquisition retained {records} records: {}",
+                errors.join("; ")
+            ),
+        }));
     }
     Ok(Json(StageOutcome {
         records,

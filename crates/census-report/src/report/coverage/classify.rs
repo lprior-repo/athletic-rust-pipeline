@@ -18,7 +18,8 @@ struct Scanned<'a> {
     schools: Vec<CanonicalSchool>,
     coaches: &'a [CanonicalCoach],
     meets: &'a [CanonicalMeet],
-    athletes: &'a [CanonicalAthlete],
+    athletes: Vec<CanonicalAthlete>,
+    aliases: &'a HashMap<String, String>,
     performances: &'a [CanonicalPerformance],
     event_ids: HashSet<String>,
     unmapped_event_ids: HashSet<String>,
@@ -41,7 +42,11 @@ impl<'a> Scanned<'a> {
             schools: dataset.schools.values().cloned().collect(),
             coaches: &dataset.coaches,
             meets: &dataset.meets,
-            athletes: &dataset.athletes,
+            athletes: super::super::derivation::collapse_athletes(
+                &dataset.athletes,
+                &dataset.canonical_aliases,
+            ),
+            aliases: &dataset.canonical_aliases,
             performances: &dataset.performances,
             event_ids,
             unmapped_event_ids,
@@ -51,7 +56,8 @@ impl<'a> Scanned<'a> {
     fn tables(&self) -> Tables<'_> {
         Tables {
             schools: &self.schools,
-            athletes: self.athletes,
+            athletes: &self.athletes,
+            aliases: self.aliases,
             coaches: self.coaches,
             meets: self.meets,
             performances: self.performances,
@@ -73,7 +79,7 @@ pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
     let mut sets = SchoolSets::default();
     let mut buckets = seed_buckets();
     let off_cohort_athletes = athletes::classify(
-        scanned.athletes,
+        &scanned.athletes,
         &school_state,
         &coach_schools,
         grad_year,
@@ -86,9 +92,10 @@ pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
         &athlete_ids,
         &scanned.event_ids,
         &scanned.unmapped_event_ids,
+        scanned.aliases,
     );
     athletes::classify_performances(
-        scanned.athletes,
+        &scanned.athletes,
         &school_state,
         &perf_tallies,
         &orphan_performances,
@@ -98,7 +105,7 @@ pub(super) fn run(dataset: &ExportDataset, grad_year: Option<i16>) -> Outcome {
     classify_coaches(scanned.coaches, &school_state, &mut buckets, &mut sets);
     classify_schools(&scanned.schools, &sets, &mut buckets);
     classify_meets(scanned.meets, &mut buckets);
-    count_core(scanned.athletes, &school_state, grad_year, &mut buckets);
+    count_core(&scanned.athletes, &school_state, grad_year, &mut buckets);
     let (jurisdictions, gaps) = publish(buckets);
 
     Outcome {

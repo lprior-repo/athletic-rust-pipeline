@@ -220,11 +220,13 @@ fn case_status(case: &ReviewCase, verdict: Option<&ReviewVerdictRecord>) -> Opti
     match case.state {
         ReviewState::Superseded => None,
         ReviewState::Pending => Some(IdentityStatus::Pending),
-        ReviewState::Retained => Some(if verdict.is_some_and(|row| !row.accepted) {
-            IdentityStatus::Rejected
-        } else {
-            IdentityStatus::RetainedConflict
-        }),
+        ReviewState::Retained => Some(
+            if verdict.is_some_and(|row| !row.accepted && row.kind != "insufficient_evidence") {
+                IdentityStatus::Rejected
+            } else {
+                IdentityStatus::RetainedConflict
+            },
+        ),
         ReviewState::Resolved => match verdict {
             Some(row)
                 if row.accepted
@@ -234,7 +236,9 @@ fn case_status(case: &ReviewCase, verdict: Option<&ReviewVerdictRecord>) -> Opti
             {
                 None
             }
-            Some(row) if !row.accepted => Some(IdentityStatus::Rejected),
+            Some(row) if !row.accepted && row.kind != "insufficient_evidence" => {
+                Some(IdentityStatus::Rejected)
+            }
             _ => Some(IdentityStatus::Pending),
         },
     }

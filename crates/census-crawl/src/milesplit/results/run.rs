@@ -20,6 +20,17 @@ pub(super) struct Run {
 
 impl Run {
     pub(super) async fn read(&mut self, ctx: &AdapterContext<'_>, reference: &ResultSetRef) {
+        let owned_key = format!("owned-attempt/{}", reference.meet_id);
+        if self.done.insert(owned_key) {
+            match super::super::owned::read_owned_meet(ctx, reference).await {
+                Ok(Some(failure)) => self.stats.failures.push(failure),
+                Ok(None) => {}
+                Err(error) => self.stats.failures.push(format!(
+                    "{}: owned-meet effect not committed: {error}",
+                    reference.url
+                )),
+            }
+        }
         let key = format!("{}/{}", reference.meet_id, reference.rsid);
         if self.done.contains(&key) {
             self.stats.result_sets_resumed = self.stats.result_sets_resumed.saturating_add(1);
@@ -140,6 +151,10 @@ fn journal_payload(
         "disposition": if entry.complete { "complete" } else { "partial" },
     })
 }
+
+#[cfg(test)]
+#[path = "run/owned_tests.rs"]
+mod owned_tests;
 
 #[cfg(test)]
 mod tests {

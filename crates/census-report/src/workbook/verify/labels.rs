@@ -39,7 +39,7 @@ pub(super) const PERFORMANCE_HEADERS: [&str; 20] = [
     "Source URL",
 ];
 
-pub(super) const ATHLETE_HEADERS: [&str; 59] = [
+pub(super) const ATHLETE_HEADERS: [&str; 71] = [
     "Athlete ID",
     "Name",
     "Gender",
@@ -99,6 +99,18 @@ pub(super) const ATHLETE_HEADERS: [&str; 59] = [
     "Coverage State",
     "Conflict Flag",
     "Review Status",
+    "Postal School ID",
+    "Postal Street",
+    "Postal Second Line",
+    "Postal City",
+    "Postal State",
+    "Postal ZIP",
+    "Postal Owner Namespace",
+    "Postal Owner ID",
+    "Postal Source",
+    "Postal Source URL",
+    "Postal Observed Date",
+    "Postal Capture SHA256",
 ];
 
 pub(super) const PR_HEADERS: [&str; 26] = [

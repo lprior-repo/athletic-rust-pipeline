@@ -1,72 +1,74 @@
-use super::review::{families_of, lane_pairs};
+use super::command::Command;
+use super::review::{families_of, ReviewArgs};
+use super::Cli;
+use clap::{error::ErrorKind, Parser};
 
-fn owned(values: &[&str]) -> Vec<String> {
-    values.iter().map(|value| (*value).to_string()).collect()
+fn review_args(values: &[&str]) -> ReviewArgs {
+    let cli = Cli::try_parse_from(
+        ["census-service", "review"]
+            .into_iter()
+            .chain(values.iter().copied()),
+    )
+    .expect("review arguments parse");
+    match cli.command {
+        Command::Review(args) => args,
+        other => panic!("expected review, got {other:?}"),
+    }
 }
 
 #[test]
-fn one_model_applies_to_every_endpoint() {
-    let pairs = lane_pairs(
-        &owned(&["http://127.0.0.1:11000", "http://127.0.0.1:11001"]),
-        &owned(&["Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf"]),
-    )
-    .expect("one model name is enough for several endpoints");
-    assert_eq!(
-        pairs,
-        vec![
-            (
-                "http://127.0.0.1:11000".to_string(),
-                "Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf".to_string()
-            ),
-            (
-                "http://127.0.0.1:11001".to_string(),
-                "Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf".to_string()
-            ),
-        ]
-    );
+fn unequal_explicit_format_counts_are_rejected_before_endpoint_construction() {
+    for (endpoints, formats) in [(1, 2), (2, 3), (3, 2)] {
+        let mut values = Vec::new();
+        for _ in 0..endpoints {
+            values.extend(["--endpoint", "http://external.invalid"]);
+        }
+        for _ in 0..formats {
+            values.extend(["--response-format", "prompt-json"]);
+        }
+        let args = review_args(&values);
+        let error = args
+            .validate_configuration()
+            .expect_err("unequal counts rejected");
+        assert!(error.to_string().contains("--response-format"), "{error}");
+        assert!(args
+            .lane_options()
+            .expect_err("fails before endpoint parsing")
+            .to_string()
+            .contains("--response-format"));
+    }
 }
 
 #[test]
-fn models_pair_with_endpoints_in_order() {
-    let pairs = lane_pairs(
-        &owned(&["http://127.0.0.1:11000", "http://127.0.0.1:11001"]),
-        &owned(&[
-            "Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf",
-            "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
-        ]),
-    )
-    .expect("two models for two endpoints");
-    assert_eq!(pairs[1].1, "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf");
+fn unknown_response_formats_fail_during_cli_parsing() {
+    for mode in ["json", "text", "automatic", "prompt_json", "JSON-SCHEMA"] {
+        let error = Cli::try_parse_from(["census-service", "review", "--response-format", mode])
+            .expect_err("only explicit supported modes are admitted");
+        assert_eq!(error.kind(), ErrorKind::InvalidValue);
+    }
 }
 
 #[test]
-fn mismatched_lane_counts_are_refused() {
-    let error = lane_pairs(
-        &owned(&["http://127.0.0.1:11000", "http://127.0.0.1:11001"]),
-        &owned(&["a.gguf", "b.gguf", "c.gguf"]),
-    )
-    .expect_err("three models cannot answer two endpoints");
-    assert!(
-        error.to_string().contains("one --model per --endpoint"),
-        "the error must name the contract, got: {error}"
-    );
+fn mismatched_model_counts_are_rejected() {
+    let args = review_args(&[
+        "--model",
+        "a",
+        "--model",
+        "b",
+        "--model",
+        "c",
+        "--response-format",
+        "json-schema",
+    ]);
+    let error = args
+        .validate_configuration()
+        .expect_err("three models for two endpoints");
+    assert!(error.to_string().contains("--model"), "{error}");
 }
 
 #[test]
 fn unknown_family_is_refused_by_name() {
-    let error =
-        families_of(&owned(&["school-jurisdiction", "postcode"])).expect_err("unknown family");
-    assert!(
-        error.to_string().contains("postcode"),
-        "the error must quote the unknown family, got: {error}"
-    );
-}
-
-#[test]
-fn families_default_to_every_askable_family() {
-    let families = families_of(&[]).expect("an empty list means every family");
-    assert!(
-        !families.is_empty(),
-        "the lane must have something to ask about"
-    );
+    let error = families_of(&["school-jurisdiction".to_string(), "postcode".to_string()])
+        .expect_err("unknown family");
+    assert!(error.to_string().contains("postcode"), "{error}");
 }

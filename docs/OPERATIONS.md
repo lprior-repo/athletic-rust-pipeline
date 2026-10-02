@@ -175,6 +175,74 @@ Paused invocations can retain object ownership and block later submissions. Iden
 failure, deployment and durable key before operator cancellation; do not mass-kill or erase journals.
 `JurisdictionCensus` currently kills on retry exhaustion, while other definitions may pause.
 
+## Offline independent review
+
+With the store owner stopped, `review` requires exactly two independently bound loopback model
+endpoints before deterministic reconciliation may write anything:
+
+```sh
+census-service --store <restored-store> review \
+  --endpoint http://127.0.0.1:11000 --endpoint http://127.0.0.1:11001 \
+  --model <served-model-name> \
+  --response-format prompt-json --response-format json-schema --family athlete-identity
+```
+
+One explicit model name applies to both endpoints; supply one per endpoint when names differ.
+`--response-format` also accepts one value for both endpoints or one per endpoint, in order.
+Defaults target `qwen3.8-27b-uncensored`, NInfer port 11000 with `prompt-json`, and llama.cpp port
+11001 with `json-schema`. Prompt JSON requests OpenAI text responses and still requires an exact
+JSON verdict object; prose, fences, unknown fields, missing/null string fields and confidence outside
+integer 0–100 refuse. There is no automatic protocol fallback. Listing a model is not qualification.
+`--dry-run` asks and validates without committing advice. Response format participates in exact
+per-lane bindings: a changed lane is reasked while independently valid unchanged peer advice can
+be reused. Changing configuration does not automatically reopen resolved/superseded history.
+Each case retains both endpoint/model/request bindings, structured answers or failure
+classifications, adjudications and the evidence digest. Both lanes must agree on an admissible
+value; unknown JSON fields, malformed/duplicate/ghost verdicts, unsupported values, incomplete
+membership, missing positive identity evidence and SamePerson contradictions cannot accept.
+DifferentPerson remains admissible when Rust's existing identity rules permit it.
+
+Unresolved retries reuse only independently valid advice with exact current bindings, including
+primary ownership, linked identities, profile/evidence/grade-source URLs and retained conflicts.
+A failed lane does not discard the other's valid answer. Verdicts, case transitions and receipts
+commit together at checkpoints of at most 256 cases. Selected checkpoint input, retained advice,
+current evidence and output consume a conservative cumulative 8 MiB serialized-byte budget;
+overflow refuses before that checkpoint is published, without truncation or smaller silent batches.
+Zero model-case budget validates the lanes before reading census/advice. This is not a measured
+process-RSS bound: store iteration can transiently decode a row that is not selected.
+
+Current subjects and cases share one post-advice snapshot; its sequence fences the commit.
+Cancellation cannot acknowledge an incomplete checkpoint. Repeating a receipted payload verifies
+its durable verdict and case state. Explicitly reopening the same case at the same `observed_at`
+refuses if its old resolved receipt is no longer applied; it does not silently close Pending or
+mint a new retry identity. This applies to model-assisted and deterministic reconciliation.
+Resolved/superseded history is not automatically reopened, and legacy single-lane records cannot
+establish independent advice for new review. Equal internally contradictory cohort sets still
+refuse SamePerson; admissible DifferentPerson advice remains distinct. This offline command is not
+yet the national workflow's durable review stage. Failed raw HTTP/content bytes are not retained
+by the current model-client error contract.
+
+## Preserved HTTP captures and incomplete acquisition
+
+HTTP cache publication preserves captured bodies and metadata immutably before replacing eligible
+mutable successes. Real non-success bodies reaching the body reader are archived without becoming
+reusable success-cache entries. Early refusals with no obtained body remain explicitly uncaptured.
+The current optional String representation refuses unrepresentable response headers rather than
+inventing their values. Bodies are bounded at 32 MiB and encoded capture metadata at 64 KiB.
+304 reuse verifies the planned metadata and bounded body under the same publication lock; it cannot
+overwrite a newer refresh. Contending downloads retain their own archive before lock refusal.
+Quarantine and failed staging directories are retained and synchronized; preserve them for operator
+inspection rather than deleting a potentially unique capture after an IO/publication failure.
+
+Arbiter incomplete-response recovery uses `arbiter_coaches_incomplete_v2:<state>:<org>:<public-id>`
+with version-2 owner-bound payloads. An unchanged incomplete cached response triggers an ordinary
+admitted refresh; partial valid facts survive and only a complete owned acquisition receives its
+completion receipt. Historical v1 markers are preserved, not adopted as another owner's authority.
+The native teams stage retains partial records but raises a transient failure when acquisition
+errors remain. Inner effects keep the architecture's one-attempt ceiling; bounded handler retry
+policy owns workflow retries, never a new logical source job.
+These mechanisms do not authorize robots, access-refusal or challenge bypasses.
+
 ## Export, verification and sealing
 
 Workbook publication captures one bounded, immutable input generation for its logical job.
@@ -208,9 +276,26 @@ The final dry-run must report zero eligible corrections. Retain the backup as ro
 restart a sole endpoint owner on the restored root and submit Workbook with a new publication root.
 No PR is invented for an athlete/event lacking a retained comparable result.
 
-Export schema revision remains 1; policy revision 2 includes declared timing normalization and exact
-omitted-zero imperial-inch notation (`19-.25`). Revision-1 frozen bundles remain preserved historical
-evidence but are refused by the revision-2 verifier rather than silently evaluated under new rules.
+The same stopped-owner/backup/restored-root sequence applies to event-kind refinement:
+
+```sh
+census-service --store <restored-store> repair-retained-events
+census-service --store <restored-store> repair-retained-events --apply
+census-service --store <restored-store> repair-retained-events
+```
+
+Only previously unmapped, recognized source labels with matching parsed provenance qualify.
+Disagreeing or unbound labels and retained conflicts refuse refinement, including on the typed
+side of a merge. Corrections append in batches of at most 100; event identity, meet, sex,
+division, round, original labels and observations survive. The final dry-run reports no eligible
+corrections. Unsupported labels remain unresolved rather than becoming guessed PR categories.
+
+Export schema revision remains 1; policy revision 3 adds accepted-alias projection, source-owned
+postal fields and complete summary-cell admission to revision 2's declared timing normalization
+and exact omitted-zero imperial-inch notation (`19-.25`). Revision-1 and revision-2 frozen bundles
+remain preserved historical evidence but are refused by the revision-3 verifier rather than
+silently reusing a generation under new rules. Existing logical export inputs remain immutable;
+publish an explicitly new logical export/root for the changed projection policy.
 
 `--out` names a publication **directory**, not an XLSX file. A writer holds its publication lock,
 renders into owned staging, hashes the exact artifact inventory, independently reconciles every

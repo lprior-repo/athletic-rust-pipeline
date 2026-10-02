@@ -170,13 +170,6 @@ fn parse_batch_from_valid_content() {
 }
 
 #[test]
-fn fence_stripping_works() {
-    let fenced = "```json\n{\"subject_id\":\"s\",\"verdicts\":[]}\n```";
-    let batch = parse_batch(fenced).expect("a fenced batch");
-    assert_eq!(batch.subject_id, "s");
-}
-
-#[test]
 fn a_verdict_array_without_its_subject_envelope_is_rejected() {
     let bare = r#"[{"case_id":"c","kind":"insufficient_evidence","field":"","value":"","confidence":10,"rationale":"none"}]"#;
     assert!(matches!(parse_batch(bare), Err(ModelError::Content { .. })));

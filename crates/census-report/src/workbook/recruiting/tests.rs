@@ -13,6 +13,9 @@ use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use rust_xlsxwriter::Workbook;
 
+mod identity;
+mod postal;
+mod summaries;
 const DAY: &str = "2026-09-20";
 
 struct Fixture {
@@ -223,24 +226,6 @@ fn personal_coach(store: &Store, school: &SchoolId) {
     store.append(Table::Coaches, &coach).unwrap();
 }
 
-fn sibling(store: &Store, school: &SchoolId) -> AthleteId {
-    let mut athlete = CanonicalAthlete::new(
-        school,
-        "Julian Aguilera",
-        GradYear::CO2027,
-        Gender::Unknown,
-        SourceIdentity::new(
-            SourceNamespace::Other("timing_feed".to_string()),
-            "julian-timing",
-        ),
-    );
-    athlete.sports = vec![Sport::OutdoorTrack];
-    athlete.evidence = evidence("wiaa_results", None);
-    let id = athlete.id.clone();
-    store.append(Table::Athletes, &athlete).unwrap();
-    id
-}
-
 fn current_tenure() -> CoachTenureEvidence {
     CoachTenureEvidence {
         tenure: CoachTenure::Current {
@@ -397,6 +382,17 @@ fn recruiting(store: &Store, scope: Scope, grad_year: Option<i16>) -> Recruiting
     Recruiting::of(&derivation, SchoolYear::new(2026).unwrap(), prs).unwrap()
 }
 
+fn verified_publication(store: &Store, expected_athletes: u64) {
+    let options = crate::workbook::Options {
+        school_year: Some(SchoolYear::new(2026).unwrap()),
+        ..crate::workbook::Options::default()
+    };
+    let published = crate::workbook::build(store, &options).unwrap();
+    let dataset = crate::export::ExportDataset::load(store).unwrap();
+    let verified = crate::workbook::verify::verify_frozen(&published, &dataset, &options).unwrap();
+    assert_eq!(verified.mapped_athletes, expected_athletes);
+}
+
 fn written(fixture: &Fixture) -> (Xlsx<std::io::BufReader<std::fs::File>>, std::path::PathBuf) {
     written_scope(fixture, Scope::Core)
 }
@@ -492,78 +488,6 @@ fn the_athletes_sheet_publishes_the_objective_columns_and_the_stored_facts() {
             "{header}"
         );
     }
-}
-
-#[test]
-fn canonical_aliases_publish_one_athlete_row_and_attribute_the_members_marks() {
-    let fixture = fixture();
-    let sibling = sibling(&fixture.store, &fixture.wi_school);
-    let invite = meet(
-        &fixture.store,
-        UsJurisdiction::Wisconsin,
-        "Timing Feed Invitational",
-        "2026-05-15",
-        CompetitionLevel::Invitational,
-        Sport::OutdoorTrack,
-    );
-    let sprint = event(&fixture.store, &invite, EventKind::Track400m);
-    performance(
-        &fixture.store,
-        &PerformanceRow {
-            athlete: &sibling,
-            school: &fixture.wi_school,
-            meet: &invite,
-            event: &sprint,
-            kind: &EventKind::Track400m,
-            date: "2026-05-15",
-        },
-        Mark::TimeSeconds(CentiSeconds::new(5100)),
-        "wiaa_results",
-        "https://wiaa.test/results/timing",
-    );
-
-    let (member, canonical) = if fixture.julian.as_str() < sibling.as_str() {
-        (fixture.julian.clone(), sibling.clone())
-    } else {
-        (sibling.clone(), fixture.julian.clone())
-    };
-    let mut dataset = crate::export::ExportDataset::load(&fixture.store).unwrap();
-    dataset
-        .canonical_aliases
-        .insert(member.to_string(), canonical.to_string());
-    let derivation = crate::report::Derivation::of(&dataset, Scope::Core, Some(2027));
-    let prs = bests::build_from_dataset(
-        &dataset,
-        &bests::Options {
-            scope: Scope::Core,
-            grad_year: Some(2027),
-            limit: None,
-        },
-    );
-    let projection = Recruiting::of(&derivation, SchoolYear::new(2026).unwrap(), prs).unwrap();
-    let path = fixture.dir.path().join("collapsed.xlsx");
-    let mut book = Workbook::new();
-    projection.write_athletes(&mut book, &path).unwrap();
-    book.save(&path).unwrap();
-
-    let mut book: Xlsx<_> = open_workbook(&path).unwrap();
-    let range = sheet(&mut book, "Athletes");
-    let id = column_of(&range, "Athlete ID");
-    assert!(
-        !column_carries(&range, id, member.as_str()),
-        "the merged member id is published through its canonical athlete"
-    );
-    let row = row_where(&range, |row| text(&range, row, id) == canonical.as_str());
-    assert_eq!(text(&range, row, column_of(&range, "Gender")), "Boys");
-    assert_eq!(
-        text(&range, row, column_of(&range, "Performance count")),
-        "5",
-        "the member's and the canonical athlete's performances are tallied together"
-    );
-    assert!(
-        text(&range, row, column_of(&range, "Headline PR summary")).contains("48.55"),
-        "the member's best mark is attributed to the canonical athlete"
-    );
 }
 
 #[test]

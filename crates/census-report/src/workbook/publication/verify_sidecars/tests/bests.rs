@@ -53,7 +53,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() {
     let event = CanonicalEvent::new(&meet.id, kind.clone(), Gender::Boys, None, None);
     store.append(Table::Events, &event).expect("event appends");
 
-    let mut slower = CanonicalPerformance {
+    let slower = CanonicalPerformance {
         id: Id::mint("perf", &["verify-slower"]),
         athlete: athlete.id.clone(),
         team: Id::mint("team", &["verify-team"]),

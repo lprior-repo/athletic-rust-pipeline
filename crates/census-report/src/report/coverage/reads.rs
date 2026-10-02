@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 pub(super) struct Tables<'a> {
     pub(super) schools: &'a [CanonicalSchool],
     pub(super) athletes: &'a [CanonicalAthlete],
+    pub(super) aliases: &'a HashMap<String, String>,
     pub(super) coaches: &'a [CanonicalCoach],
     pub(super) meets: &'a [CanonicalMeet],
     pub(super) performances: &'a [CanonicalPerformance],
@@ -63,6 +64,7 @@ pub(super) fn totals(
             school_state,
             universe,
             grad_year,
+            tables.aliases,
         ),
     };
     Reads {
@@ -169,10 +171,13 @@ fn performances(
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
     universe: &Published,
     grad_year: Option<i16>,
+    aliases: &HashMap<String, String>,
 ) -> ScopeSplit {
     let mut split = ScopeSplit::default();
     for performance in performances {
-        let bucket = match athlete_by_id.get(performance.athlete.as_str()) {
+        let subject = performance.athlete.as_str();
+        let canonical = aliases.get(subject).map_or(subject, String::as_str);
+        let bucket = match athlete_by_id.get(canonical) {
             Some(athlete) if in_cohort(athlete, grad_year) => {
                 jurisdiction_of(school_state, athlete.school.as_str())
             }

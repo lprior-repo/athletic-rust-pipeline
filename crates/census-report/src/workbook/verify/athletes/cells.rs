@@ -46,16 +46,14 @@ pub(super) fn profiles_of(athlete: &CanonicalAthlete) -> Profiles {
         }
         seen.push(url.clone());
         let lowered = url.to_ascii_lowercase();
-        if lowered.contains("athletic.net") {
-            if profiles.athletic_net.is_none() {
+        match lowered.as_str() {
+            _ if lowered.contains("athletic.net") && profiles.athletic_net.is_none() => {
                 profiles.athletic_net = Some(url);
             }
-        } else if lowered.contains("milesplit") {
-            if profiles.milesplit.is_none() {
+            _ if lowered.contains("milesplit") && profiles.milesplit.is_none() => {
                 profiles.milesplit = Some(url);
             }
-        } else {
-            profiles.other.push(url);
+            _ => profiles.other.push(url),
         }
     }
     profiles
@@ -77,17 +75,7 @@ pub(super) fn event_list(prs: &[&SharedSelection]) -> Value {
 }
 
 pub(super) fn headline(prs: &[&SharedSelection]) -> Value {
-    if prs.is_empty() {
-        return Value::Empty;
-    }
-    let mut text = String::new();
-    for pr in prs.iter().take(10) {
-        append_mark(&mut text, pr);
-    }
-    if prs.len() > 10 {
-        text.push_str("; additional classified marks in PRs");
-    }
-    Value::text(text)
+    qualified_summary(prs.iter().copied())
 }
 
 pub(super) fn pr_events(prs: &[&SharedSelection]) -> Vec<Value> {
@@ -98,24 +86,46 @@ pub(super) fn pr_events(prs: &[&SharedSelection]) -> Vec<Value> {
 }
 
 pub(super) fn event_cell(prs: &[&SharedSelection], event: &str) -> Value {
-    let mut selected = prs
-        .iter()
-        .copied()
-        .filter(|pr| pr.key.event_kind.stable_key() == event);
-    let Some(first) = selected.next() else {
-        return Value::Empty;
-    };
-    let mut text = labels::qualified_mark(first);
-    for pr in selected {
-        text.push_str("; ");
-        text.push_str(&labels::qualified_mark(pr));
-    }
-    Value::text(text)
+    qualified_summary(
+        prs.iter()
+            .copied()
+            .filter(|pr| pr.key.event_kind.stable_key() == event),
+    )
 }
 
-fn append_mark(text: &mut String, pr: &SharedSelection) {
-    if !text.is_empty() {
-        text.push_str("; ");
+fn qualified_summary<'a>(mut prs: impl Iterator<Item = &'a SharedSelection>) -> Value {
+    const OVERFLOW: &str = "; additional classified marks in PRs";
+    let budget = 32_767_usize.saturating_sub(OVERFLOW.len());
+    let result = prs.try_fold(
+        (String::new(), 0_usize, 0_usize),
+        |(mut text, used, marker_end), pr| {
+            let mark = labels::qualified_mark(pr);
+            let separator = if text.is_empty() { 0 } else { 2 };
+            let total = used
+                .saturating_add(mark.encode_utf16().count())
+                .saturating_add(separator);
+            if total > 32_767 {
+                text.truncate(marker_end);
+                return Err(text);
+            }
+            if separator != 0 {
+                text.push_str("; ");
+            }
+            text.push_str(&mark);
+            let marker_end = if total <= budget {
+                text.len()
+            } else {
+                marker_end
+            };
+            Ok((text, total, marker_end))
+        },
+    );
+    match result {
+        Ok((text, _, _)) if text.is_empty() => Value::Empty,
+        Ok((text, _, _)) => Value::text(text),
+        Err(mut text) => {
+            text.push_str(OVERFLOW);
+            Value::text(text)
+        }
     }
-    text.push_str(&labels::qualified_mark(pr));
 }

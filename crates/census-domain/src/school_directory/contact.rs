@@ -71,23 +71,7 @@ impl Website {
         if trimmed.is_empty() {
             return Ok(None);
         }
-        reject_control(trimmed, "website")?;
-        let length = trimmed.chars().count();
-        if length > WEBSITE_LIMIT {
-            return Err(DirectoryError::FieldTooLong {
-                field: "website",
-                limit: WEBSITE_LIMIT,
-                length,
-            });
-        }
-        let scheme_ok = trimmed.starts_with("http://") || trimmed.starts_with("https://");
-        let body_ok = trimmed.chars().all(|ch| !ch.is_whitespace());
-        if !scheme_ok || !body_ok {
-            return Err(DirectoryError::UnsupportedValue {
-                field: "website",
-                value: raw.to_string(),
-            });
-        }
+        validate_website_url(trimmed)?;
         Ok(Some(Self(trimmed.to_string())))
     }
 
@@ -109,4 +93,24 @@ impl TryFrom<String> for Website {
         }
         Ok(value)
     }
+}
+
+pub(crate) fn validate_website_url(raw: &str) -> Result<(), DirectoryError> {
+    reject_control(raw, "website")?;
+    let length = raw.chars().count();
+    if length > WEBSITE_LIMIT {
+        return Err(DirectoryError::FieldTooLong {
+            field: "website",
+            limit: WEBSITE_LIMIT,
+            length,
+        });
+    }
+    let scheme_ok = raw.starts_with("http://") || raw.starts_with("https://");
+    if !scheme_ok || raw.chars().any(char::is_whitespace) {
+        return Err(DirectoryError::UnsupportedValue {
+            field: "website",
+            value: raw.to_string(),
+        });
+    }
+    Ok(())
 }

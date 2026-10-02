@@ -1,18 +1,24 @@
-use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
-use std::thread::JoinHandle;
-
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalSchool, Gender, GradYear, RetainedConflict,
-    ReviewCase, ReviewState, ReviewVerdictRecord, SourceIdentity, SourceNamespace,
-    ATHLETE_IDENTITY_FAMILY,
+    ReviewCase, ReviewState, SourceIdentity, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
 };
 use census_domain::UsJurisdiction;
-
 use census_store::{Store, Table};
 
+use super::consensus::tests::support::{audit, batch, client, lane, row, state};
 use super::packets::pending_cases;
-use super::{run_lanes, ModelClient, ModelOptions, ReviewFamily, ReviewOptions};
+use super::{run_lanes, ReviewFamily, ReviewOptions};
+
+#[path = "athlete_tests/binding_support.rs"]
+mod binding_support;
+#[path = "athlete_tests/cached_binding.rs"]
+mod cached_binding;
+#[path = "athlete_tests/contradictory_cohorts.rs"]
+mod contradictory_cohorts;
+#[path = "athlete_tests/inflight_binding.rs"]
+mod inflight_binding;
+#[path = "athlete_tests/retained_conflict.rs"]
+mod retained_conflict;
 
 struct Fixture {
     store: Store,
@@ -21,8 +27,8 @@ struct Fixture {
 
 impl Fixture {
     fn new() -> (Self, ReviewCase) {
-        let dir = tempfile::tempdir().expect("a temporary store");
-        let store = Store::open(dir.path()).expect("the store opens");
+        let dir = tempfile::tempdir().expect("temporary store");
+        let store = Store::open(dir.path()).expect("store opens");
         let school = CanonicalSchool::new(
             UsJurisdiction::Wisconsin,
             "Madison West High School",
@@ -30,35 +36,32 @@ impl Fixture {
         )
         .0
         .id;
-        let source_boys = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
         let boys = CanonicalAthlete::new(
             &school,
             "Jordan Smith",
             GradYear::CO2027,
             Gender::Boys,
-            source_boys,
+            SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169"),
         );
-        let source_girls = SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169");
         let girls = CanonicalAthlete::new(
             &school,
             "Jordan Smith",
             GradYear::CO2027,
             Gender::Girls,
-            source_girls,
+            SourceIdentity::new(SourceNamespace::MilesplitAthlete, "14399169"),
         );
         store
             .append_many(Table::Athletes, &[boys.clone(), girls.clone()])
-            .expect("the athletes are written");
+            .expect("athletes written");
         let detail = format!(
             "same school, name and cohort as every id here: {}, {}",
-            boys.id.as_str(),
-            girls.id.as_str()
+            boys.id, girls.id
         );
         let case = ReviewCase::pending(
             ATHLETE_IDENTITY_FAMILY,
             boys.id.as_str(),
             "Jordan Smith (Madison West High School)",
-            detail.as_str(),
+            &detail,
         );
         let conflict = RetainedConflict::new(
             ATHLETE_IDENTITY_FAMILY,
@@ -68,7 +71,7 @@ impl Fixture {
         );
         store
             .replace_many(Table::Conflicts, &[conflict])
-            .expect("the conflict is written");
+            .expect("conflict written");
         (Self { store, _dir: dir }, case)
     }
 }
@@ -81,272 +84,189 @@ fn options() -> ReviewOptions {
     }
 }
 
-fn client(endpoint: &str) -> ModelClient {
-    ModelClient::new(ModelOptions::local(endpoint, "stub.gguf").expect("valid test endpoint"))
-        .expect("a client for the stub")
-}
-
-fn batch(case: &ReviewCase, kind: &str, field: &str, value: &str) -> String {
-    serde_json::json!({
-        "subject_id": case.subject_id,
-        "verdicts": [{
-            "case_id": case.id,
-            "kind": kind,
-            "field": field,
-            "value": value,
-            "confidence": 80,
-            "rationale": "one provider id is on both rows",
-        }],
-    })
-    .to_string()
-}
-
-fn lane(content: String) -> (String, JoinHandle<()>) {
-    let listener = TcpListener::bind("127.0.0.1:0").expect("an ephemeral port");
-    let address = listener.local_addr().expect("the bound address");
-    let handle = std::thread::spawn(move || {
-        let (mut stream, _) = listener.accept().expect("one connection");
-        read_request(&mut stream);
-        let body = serde_json::json!({
-            "choices": [{ "message": { "content": content } }],
-        })
-        .to_string();
-        let response = format!(
-            "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\n\
-             connection: close\r\n\r\n{body}",
-            body.len()
-        );
-        stream
-            .write_all(response.as_bytes())
-            .expect("the answer is written");
-        stream.flush().expect("the answer is flushed");
-    });
-    (format!("http://{address}"), handle)
-}
-
-fn read_request(stream: &mut TcpStream) {
-    let mut request = Vec::new();
-    let mut buffer = [0_u8; 1_024];
-    loop {
-        let read = stream.read(&mut buffer).expect("the request is readable");
-        if read == 0 {
-            return;
-        }
-        request.extend_from_slice(&buffer[..read]);
-        if request_complete(&request) {
-            return;
-        }
-    }
-}
-
-fn request_complete(request: &[u8]) -> bool {
-    let Some(head) = find(request, b"\r\n\r\n") else {
-        return false;
-    };
-    let headers = String::from_utf8_lossy(&request[..head]);
-    match content_length(&headers) {
-        Some(length) => request.len().saturating_sub(head) >= length,
-        None => find(&request[head..], b"\r\n0\r\n\r\n").is_some(),
-    }
-}
-
-fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
-    haystack
-        .windows(needle.len())
-        .position(|window| window == needle)
-        .map(|at| at.saturating_add(needle.len()))
-}
-
-fn content_length(headers: &str) -> Option<usize> {
-    for line in headers.lines() {
-        let Some((name, value)) = line.split_once(':') else {
-            continue;
-        };
-        if name.trim().eq_ignore_ascii_case("content-length") {
-            return value.trim().parse::<usize>().ok();
-        }
-    }
-    None
-}
-
-fn verdict(store: &Store) -> ReviewVerdictRecord {
-    let mut rows = store
-        .scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)
-        .expect("the verdicts are readable");
-    assert_eq!(rows.len(), 1, "one pass, one case, one verdict");
-    rows.remove(0)
-}
-
-fn recorded_case(store: &Store) -> ReviewCase {
-    let mut rows = store
-        .scan::<ReviewCase>(Table::ReviewCases)
-        .expect("the cases are readable");
-    assert_eq!(rows.len(), 1, "one pass, one case");
-    rows.remove(0)
-}
-
 #[tokio::test]
-async fn same_person_is_rejected_when_gender_differs() {
+async fn dual_same_person_agreement_cannot_override_a_gender_contradiction() {
     let (fixture, case) = Fixture::new();
-    let (endpoint, lane) = lane(batch(&case, "value_proposed", "identity", "same_person"));
+    let reply = batch(&case, "value_proposed", "identity", "same_person");
+    let (first, server_a) = lane(vec![reply.clone()]);
+    let (second, server_b) = lane(vec![reply]);
     let report = run_lanes(
         &fixture.store,
-        &[client(&endpoint)],
+        &[client(&first), client(&second)],
         &options(),
-        "2026-09-22",
+        "contradiction",
     )
     .await
-    .expect("the pass runs");
-    lane.join().expect("the stub lane served its one request");
-
-    assert_eq!(
-        report.requested, 1,
-        "the conflict queue is where the case is read"
-    );
+    .expect("review pass");
+    server_a.join().expect("first independent lane");
+    server_b.join().expect("second independent lane");
+    assert_eq!(report.requested, 1);
     assert_eq!(report.accepted, 0);
     assert_eq!(report.rejected, 1);
-
-    let verdict = verdict(&fixture.store);
+    assert_eq!(report.resolved(), 0);
+    let verdict = row(&fixture.store);
     assert_eq!(verdict.case_id, case.id);
     assert_eq!(verdict.subject_id, case.subject_id);
     assert_eq!(verdict.family, ATHLETE_IDENTITY_FAMILY);
-    assert_eq!(verdict.field, "identity");
-    assert_eq!(verdict.value, "same_person");
-    assert!(
-        !verdict.accepted,
-        "the hard contradiction refuses the merge"
-    );
-    assert!(verdict.rationale.contains("gender_differs"));
-    assert_eq!(verdict.reviewer, "stub.gguf");
-
-    let recorded = recorded_case(&fixture.store);
-    assert_eq!(recorded.id, case.id);
-    assert_eq!(recorded.state, ReviewState::Retained);
-}
-
-#[tokio::test]
-async fn an_insufficient_evidence_answer_is_terminal_for_its_evidence_snapshot() {
-    let (fixture, case) = Fixture::new();
-    let (endpoint, lane) = lane(batch(&case, "insufficient_evidence", "", ""));
-    let report = run_lanes(
-        &fixture.store,
-        &[client(&endpoint)],
-        &options(),
-        "2026-09-22",
-    )
-    .await
-    .expect("the pass runs");
-    lane.join().expect("the stub lane served its one request");
-
-    assert_eq!(report.requested, 1);
-    assert_eq!(report.insufficient, 1);
-    assert_eq!(report.accepted, 0);
-
-    let verdict = verdict(&fixture.store);
-    assert_eq!(verdict.kind, "insufficient_evidence");
-    assert!(
-        !verdict.accepted,
-        "a decline records no value, because it proposes none"
-    );
-
-    let recorded = recorded_case(&fixture.store);
-    assert_eq!(
-        recorded.state,
-        ReviewState::Retained,
-        "this evidence snapshot is terminal; new evidence reopens the question with a new case id"
-    );
-}
-
-#[tokio::test]
-async fn a_proposal_that_is_not_an_answer_is_retained_with_what_it_said() {
-    let (fixture, case) = Fixture::new();
-    let (endpoint, lane) = lane(batch(&case, "value_proposed", "identity", "maybe_same"));
-    let report = run_lanes(
-        &fixture.store,
-        &[client(&endpoint)],
-        &options(),
-        "2026-09-22",
-    )
-    .await
-    .expect("the pass runs");
-    lane.join().expect("the stub lane served its one request");
-
-    assert_eq!(report.requested, 1);
-    assert_eq!(report.rejected, 1);
-    assert_eq!(report.accepted, 0);
-
-    let verdict = verdict(&fixture.store);
-    assert_eq!(
-        verdict.value, "maybe_same",
-        "the refused answer is kept as the model gave it, so an operator can read why it was refused"
-    );
     assert!(!verdict.accepted);
-
-    let recorded = recorded_case(&fixture.store);
+    assert_eq!(verdict.kind, "insufficient_evidence");
+    let audit = audit(&fixture.store);
+    assert_eq!(audit["outcome"], "hard_contradiction");
+    assert!(audit["packet"]["evidence"]
+        .as_array()
+        .expect("evidence")
+        .iter()
+        .any(|fact| fact["field"] == "flag"
+            && fact["value"]
+                .as_str()
+                .expect("flag")
+                .starts_with("gender_differs:")));
+    for lane in audit["lanes"].as_array().expect("both lanes") {
+        assert_eq!(lane["batch"]["verdicts"][0]["value"], "same_person");
+    }
+    assert_eq!(state(&fixture.store), ReviewState::Retained);
     assert_eq!(
-        recorded.state,
-        ReviewState::Retained,
-        "a refusal is a finding about the model, so the case stays for the operator"
+        fixture
+            .store
+            .scan::<CanonicalAthlete>(Table::Athletes)
+            .expect("original athletes")
+            .len(),
+        2
     );
+}
+
+#[tokio::test]
+async fn agreed_different_person_advice_preserves_the_existing_contradiction_semantics() {
+    let (fixture, case) = Fixture::new();
+    let reply = batch(&case, "value_proposed", "identity", "different_person");
+    let (first, server_a) = lane(vec![reply.clone()]);
+    let (second, server_b) = lane(vec![reply]);
+    let report = run_lanes(
+        &fixture.store,
+        &[client(&first), client(&second)],
+        &options(),
+        "contradiction",
+    )
+    .await
+    .expect("review pass");
+    server_a.join().expect("first lane");
+    server_b.join().expect("second lane");
+    assert_eq!(report.accepted, 1);
+    assert_eq!(report.resolved(), 1);
+    assert_eq!(audit(&fixture.store)["outcome"], "agreement");
+    assert_eq!(state(&fixture.store), ReviewState::Resolved);
+    assert_eq!(row(&fixture.store).value, "different_person");
+    assert!(row(&fixture.store).accepted);
+    assert_eq!(
+        fixture
+            .store
+            .scan::<CanonicalAthlete>(Table::Athletes)
+            .expect("original athletes")
+            .len(),
+        2
+    );
+}
+
+#[tokio::test]
+async fn insufficient_and_invalid_identity_advice_are_retained_with_the_original_answers() {
+    for (kind, value) in [
+        ("insufficient_evidence", ""),
+        ("value_proposed", "maybe_same"),
+    ] {
+        let (fixture, case) = Fixture::new();
+        let reply = batch(&case, kind, "identity", value);
+        let (first, server_a) = lane(vec![reply.clone()]);
+        let (second, server_b) = lane(vec![reply]);
+        let report = run_lanes(
+            &fixture.store,
+            &[client(&first), client(&second)],
+            &options(),
+            value,
+        )
+        .await
+        .expect("review pass");
+        server_a.join().expect("first lane");
+        server_b.join().expect("second lane");
+        assert_eq!(report.accepted, 0);
+        assert_eq!(report.resolved(), 0);
+        assert!(!row(&fixture.store).accepted);
+        assert_eq!(state(&fixture.store), ReviewState::Retained);
+        let audit = audit(&fixture.store);
+        assert_eq!(audit["lanes"][0]["batch"]["verdicts"][0]["kind"], kind);
+        assert_eq!(audit["lanes"][1]["batch"]["verdicts"][0]["value"], value);
+    }
 }
 
 #[test]
-fn a_finding_held_by_both_the_conflict_and_the_review_table_is_asked_once() {
+fn a_finding_held_by_both_the_conflict_and_the_review_table_is_selected_once() {
     let (fixture, case) = Fixture::new();
     fixture
         .store
         .replace_many(Table::ReviewCases, std::slice::from_ref(&case))
-        .expect("the case is written where a pass left it");
-
-    let pending =
-        pending_cases(&fixture.store, &options()).expect("the retained cases are readable");
+        .expect("case written");
+    let pending = pending_cases(&fixture.store, &options()).expect("pending cases");
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].0.id, case.id);
     assert_eq!(pending[0].1, ReviewFamily::AthleteIdentity);
 }
 
 #[tokio::test]
-async fn a_lane_killed_before_it_answers_is_counted_and_mints_no_verdict() {
-    let (fixture, _case) = Fixture::new();
-    let endpoint = {
-        let listener = TcpListener::bind("127.0.0.1:0").expect("an ephemeral port");
-        let address = listener.local_addr().expect("the bound address");
-        format!("http://{address}")
-    };
+async fn dual_same_person_agreement_never_promotes_name_school_and_cohort_alone() {
+    let dir = tempfile::tempdir().expect("temporary store");
+    let store = Store::open(dir.path()).expect("store opens");
+    let school = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison West", "madison west")
+        .0
+        .id;
+    let first_athlete = CanonicalAthlete::new(
+        &school,
+        "Jordan Smith",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1001"),
+    );
+    let second_athlete = CanonicalAthlete::new(
+        &school,
+        "Jordan Smith",
+        GradYear::CO2027,
+        Gender::Boys,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "1002"),
+    );
+    store
+        .append_many(
+            Table::Athletes,
+            &[first_athlete.clone(), second_athlete.clone()],
+        )
+        .expect("distinct provider subjects");
+    let case = ReviewCase::pending(
+        ATHLETE_IDENTITY_FAMILY,
+        first_athlete.id.as_str(),
+        "Jordan Smith (Madison West)",
+        "name, school and cohort agree; provider objects do not",
+    );
+    store
+        .replace_many(Table::ReviewCases, std::slice::from_ref(&case))
+        .expect("ambiguous case");
+    let reply = batch(&case, "value_proposed", "identity", "same_person");
+    let (first, server_a) = lane(vec![reply.clone()]);
+    let (second, server_b) = lane(vec![reply]);
     let report = run_lanes(
-        &fixture.store,
-        &[client(&endpoint)],
+        &store,
+        &[client(&first), client(&second)],
         &options(),
-        "2026-09-22",
+        "name-only",
     )
     .await
-    .expect("a dead lane is a finding about the run, not a failed pass");
-
-    assert_eq!(
-        report.requested, 1,
-        "the case was selected and the request attempted"
-    );
-    assert_eq!(
-        report.failed, 1,
-        "a request that never arrived is counted as a failure, so the run reports what it lost"
-    );
+    .expect("review pass");
+    server_a.join().expect("first lane");
+    server_b.join().expect("second lane");
     assert_eq!(report.accepted, 0);
-    assert_eq!(report.resolved(), 0, "a failure decides nothing");
-
-    let verdicts = fixture
-        .store
-        .scan::<ReviewVerdictRecord>(Table::IdentityVerdicts)
-        .expect("the verdicts are readable");
-    assert!(
-        verdicts.is_empty(),
-        "a lane failure is never a verdict: no match, no decline, nothing to adjudicate"
-    );
-    let cases = fixture
-        .store
-        .scan::<ReviewCase>(Table::ReviewCases)
-        .expect("the cases are readable");
-    assert!(
-        cases.is_empty(),
-        "nothing closed the case, so it stays in the conflict queue and the next pass asks it again"
-    );
+    assert_eq!(report.rejected, 1);
+    assert_eq!(state(&store), ReviewState::Retained);
+    assert_eq!(audit(&store)["outcome"], "refused");
+    assert!(!row(&store).accepted);
+    let retained = store
+        .scan::<CanonicalAthlete>(Table::Athletes)
+        .expect("original subjects");
+    assert!(retained.contains(&first_athlete));
+    assert!(retained.contains(&second_athlete));
 }

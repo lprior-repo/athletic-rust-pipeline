@@ -30,7 +30,7 @@ use robots::RobotsPolicy;
 pub const DEFAULT_USER_AGENT: &str =
     "census-service/0.1 (independent HS track & field research collector; polite; contact: repo owner)";
 
-const MAX_BODY_BYTES: usize = 32 * 1024 * 1024;
+pub(crate) const MAX_BODY_BYTES: usize = 32 * 1024 * 1024;
 const REQUEST_TIMEOUT_SECS: u64 = 45;
 
 const MIN_AUTHORIZED_DELAY: Duration = Duration::from_millis(500);

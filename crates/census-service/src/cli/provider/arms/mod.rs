@@ -4,7 +4,7 @@ mod association_sources;
 mod meet_sources;
 
 pub(super) use association_sources::{
-    ciac_report, coach_contacts_report, coach_directories_report, ihsa_report,
+    arbiter_orgs_report, ciac_report, coach_contacts_report, coach_directories_report, ihsa_report,
     ihsa_tournament_report, ks_report, mpa_report, mshsl_report, ohsaa_report, pa_piaa_report,
     plain_names_report, riil_report, wiaa_report, wiaa_results_report,
 };

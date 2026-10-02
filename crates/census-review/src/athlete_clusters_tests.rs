@@ -15,7 +15,15 @@ fn school(name: &str) -> CanonicalSchool {
 
 fn athlete(school: &SchoolId, name: &str, gender: Gender, provider_id: &str) -> CanonicalAthlete {
     let source = SourceIdentity::new(SourceNamespace::MilesplitAthlete, provider_id);
-    CanonicalAthlete::new(school, name, GradYear::CO2027, gender, source)
+    let mut row = CanonicalAthlete::new(school, name, GradYear::CO2027, gender, source);
+    row.evidence.push(census_domain::model::Evidence::parsed(
+        SourceRef::new(
+            "captured_roster",
+            Some("https://wi.milesplit.com/teams/123/roster".into()),
+        ),
+        "2026-09-23",
+    ));
+    row
 }
 
 fn grade(row: &mut CanonicalAthlete, value: u8, year: i16) {
@@ -71,14 +79,43 @@ fn a_provider_object_on_two_schools_is_one_athlete() {
     );
     let recorded = verdicts(&store);
     let verdict = recorded.first().expect("one verdict");
-    assert_eq!(verdict.kind, "value_proposed");
-    assert_eq!(verdict.field, "identity");
-    assert_eq!(verdict.value, "same_person");
     assert_eq!(verdict.reviewer, RULE_REVIEWER);
-    assert!(
-        verdict.accepted,
-        "a rule-written verdict needs no validation"
+    let index = store
+        .athlete_identity_index()
+        .expect("current source evidence");
+    let builder = census_domain::model::IdentityProjectionBuilder::new(index, &filed, &recorded)
+        .expect("bound identity context");
+    let applications: Vec<_> = builder
+        .reviewed_applications("2026-09-23")
+        .map(|(_, application)| application.expect("identity application"))
+        .filter_map(|application| match application {
+            census_domain::model::IdentityApplication::Accepted(accepted) => Some(accepted),
+            census_domain::model::IdentityApplication::Retained(_) => None,
+        })
+        .collect();
+    assert_eq!(
+        applications.len(),
+        1,
+        "the generated case must pass actual identity admission"
     );
+    store
+        .apply_identity_decisions(&applications)
+        .expect("persist accepted identity");
+    let projection = store
+        .athlete_identity_projection()
+        .expect("canonical identity projection");
+    let roots: std::collections::BTreeSet<_> = case
+        .member_ids
+        .iter()
+        .map(|member| projection.canonical_id(member.as_str()))
+        .collect();
+    assert_eq!(roots.len(), 1);
+    for member in &case.member_ids {
+        assert_eq!(
+            projection.status(member.as_str()).expect("member status"),
+            census_domain::model::IdentityStatus::Verified
+        );
+    }
 }
 
 #[test]
@@ -261,3 +298,9 @@ fn unsupported_grade_observation_blocks_shared_provider_acceptance() {
         .detail
         .contains("https://fixture.example/unsupported-grade"));
 }
+
+#[path = "athlete_clusters_tests/three_members.rs"]
+mod three_members;
+
+#[path = "athlete_clusters_tests/reopened_receipt.rs"]
+mod reopened_receipt;

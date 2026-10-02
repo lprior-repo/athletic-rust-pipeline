@@ -1,47 +1,8 @@
-use census_domain::model::{ReviewCase, ReviewState, ReviewVerdict, ReviewVerdictRecord};
+use census_domain::model::{ReviewCase, ReviewState, ReviewVerdictRecord};
+use census_store::StoreResult;
 
-use super::verdicts::Adjudication;
-
-fn verdict_record(
-    case: &ReviewCase,
-    verdict: &ReviewVerdict,
-    adjudication: &Adjudication,
-    reviewer: &str,
-    observed_at: &str,
-) -> ReviewVerdictRecord {
-    let admitted = adjudication.admitted();
-    let rationale = match adjudication {
-        Adjudication::Refused(reason) => match reason.rationale() {
-            Some(flag) => format!(
-                "{} Refused `same_person`: packet flag `{flag}` is a hard contradiction.",
-                verdict.rationale
-            ),
-            None => verdict.rationale.clone(),
-        },
-        Adjudication::Decided(_) | Adjudication::Undecided => verdict.rationale.clone(),
-    };
-    ReviewVerdictRecord {
-        id: verdict.case_id.clone(),
-        case_id: verdict.case_id.clone(),
-        subject_id: case.subject_id.clone(),
-        family: case.family.clone(),
-        member_ids: case.member_ids.clone(),
-        kind: verdict.kind.slug().to_string(),
-        field: admitted
-            .map(|admitted| admitted.field.clone())
-            .or_else(|| verdict.field.clone())
-            .unwrap_or_default(),
-        value: admitted
-            .map(|admitted| admitted.value.clone())
-            .or_else(|| verdict.value.clone())
-            .unwrap_or_default(),
-        accepted: admitted.is_some(),
-        confidence: verdict.confidence,
-        rationale,
-        reviewer: reviewer.to_string(),
-        observed_at: observed_at.to_string(),
-    }
-}
+use super::ask::Answer;
+use super::consensus::{invariant, Asked, Audit, Consensus, POLICY};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct ReviewReport {
@@ -57,77 +18,121 @@ pub struct ReviewReport {
 
 impl ReviewReport {
     pub const fn resolved(&self) -> usize {
-        self.accepted.saturating_add(self.insufficient)
+        self.accepted
     }
 
     pub fn summary(&self) -> String {
         format!(
             "requested={} answered={} decided={} accepted={} rejected={} insufficient={} unanswered={} dropped={} failed={}",
-            self.requested,
-            self.answered,
-            self.accepted,
-            self.accepted,
-            self.rejected,
-            self.insufficient,
-            self.unanswered,
-            self.dropped,
-            self.failed
+            self.requested, self.answered, self.accepted, self.accepted, self.rejected,
+            self.insufficient, self.unanswered, self.dropped, self.failed
         )
     }
-}
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub(super) struct CaseTally {
-    pub(super) accepted: usize,
-    pub(super) rejected: usize,
-    pub(super) insufficient: usize,
-    pub(super) answered: bool,
-}
-
-impl ReviewReport {
-    pub(super) fn absorb(&mut self, tally: CaseTally) {
-        self.accepted = self.accepted.saturating_add(tally.accepted);
-        self.rejected = self.rejected.saturating_add(tally.rejected);
-        self.insufficient = self.insufficient.saturating_add(tally.insufficient);
-        if !tally.answered {
+    fn account(&mut self, asked: &Asked, consensus: &Consensus) {
+        let Some(answers) = asked.answers.as_ref() else {
+            self.unanswered = self.unanswered.saturating_add(1);
+            return;
+        };
+        let answered = answers.iter().all(|answer| {
+            matches!(answer,
+            Answer::Answered { verdicts, .. } if !verdicts.is_empty())
+        });
+        if answered {
+            self.answered = self.answered.saturating_add(1);
+        } else {
             self.unanswered = self.unanswered.saturating_add(1);
         }
+        answers.iter().for_each(|answer| match answer {
+            Answer::Failed(_) => self.failed = self.failed.saturating_add(1),
+            Answer::Answered { dropped, .. } => {
+                self.dropped = self.dropped.saturating_add(*dropped)
+            }
+        });
+        if consensus.admitted.is_some() {
+            self.accepted = self.accepted.saturating_add(1);
+        } else if consensus.rejected {
+            self.rejected = self.rejected.saturating_add(1);
+        } else if answered {
+            self.insufficient = self.insufficient.saturating_add(1);
+        }
     }
+}
+
+pub(super) fn confidence(asked: &Asked) -> u8 {
+    asked
+        .answers
+        .as_ref()
+        .and_then(|answers| {
+            answers
+                .iter()
+                .filter_map(|answer| match answer {
+                    Answer::Answered { verdicts, .. } => {
+                        verdicts.first().map(|(verdict, _)| verdict.confidence)
+                    }
+                    Answer::Failed(_) => None,
+                })
+                .min()
+        })
+        .map_or(0, |confidence| confidence)
 }
 
 pub(super) fn record_case(
     case: &ReviewCase,
-    verdicts: Vec<(ReviewVerdict, Adjudication)>,
-    reviewer: &str,
+    asked: Asked,
+    consensus: Consensus,
     observed_at: &str,
-) -> (Vec<ReviewVerdictRecord>, Vec<ReviewCase>, CaseTally) {
-    let mut rows = Vec::new();
-    let mut closed = Vec::new();
-    let mut tally = CaseTally::default();
-    for (verdict, adjudication) in verdicts {
-        tally.answered = true;
-        match &adjudication {
-            Adjudication::Decided(_) => tally.accepted = tally.accepted.saturating_add(1),
-            Adjudication::Undecided => tally.insufficient = tally.insufficient.saturating_add(1),
-            Adjudication::Refused(_) => tally.rejected = tally.rejected.saturating_add(1),
+    report: &mut ReviewReport,
+) -> StoreResult<(ReviewVerdictRecord, ReviewCase)> {
+    report.account(&asked, &consensus);
+    let accepted = consensus.admitted.is_some();
+    let confidence = if accepted { confidence(&asked) } else { 0 };
+    let (field, value) = consensus.admitted.map_or_else(
+        || (String::new(), String::new()),
+        |admitted| (admitted.field, admitted.value),
+    );
+    let evidence_digest = census_domain::model::serialized_digest(&asked.packet)
+        .map_err(|error| invariant(format!("cannot bind review evidence: {error}")))?;
+    let [first, second] = asked.lanes;
+    let lanes = match asked.answers {
+        Some([first_answer, second_answer]) => {
+            [first.retain(first_answer), second.retain(second_answer)]
         }
-        rows.push(verdict_record(
-            case,
-            &verdict,
-            &adjudication,
-            reviewer,
-            observed_at,
-        ));
-        let mut closed_case = case.clone();
-        closed_case.state = state_after(&adjudication);
-        closed.push(closed_case);
-    }
-    (rows, closed, tally)
-}
-
-fn state_after(adjudication: &Adjudication) -> ReviewState {
-    match adjudication {
-        Adjudication::Decided(_) => ReviewState::Resolved,
-        Adjudication::Undecided | Adjudication::Refused(_) => ReviewState::Retained,
-    }
+        None => [first, second],
+    };
+    let audit = Audit {
+        policy: POLICY.to_string(),
+        evidence_digest,
+        packet: asked.packet,
+        lanes,
+        outcome: consensus.reason.to_string(),
+    };
+    let rationale = audit.encode()?;
+    let row = ReviewVerdictRecord {
+        id: case.id.clone(),
+        case_id: case.id.clone(),
+        subject_id: case.subject_id.clone(),
+        family: case.family.clone(),
+        member_ids: case.member_ids.clone(),
+        kind: if accepted {
+            "value_proposed"
+        } else {
+            "insufficient_evidence"
+        }
+        .to_string(),
+        field,
+        value,
+        accepted,
+        confidence,
+        rationale,
+        reviewer: "dual-independent-consensus".to_string(),
+        observed_at: observed_at.to_string(),
+    };
+    let mut state = case.clone();
+    state.state = if accepted {
+        ReviewState::Resolved
+    } else {
+        ReviewState::Retained
+    };
+    Ok((row, state))
 }
