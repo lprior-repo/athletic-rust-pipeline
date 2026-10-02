@@ -14,13 +14,16 @@ pub fn run(name: &str) -> Result<()> {
     if !dir.is_dir() {
         return source_fixture::absent(name, &dir);
     }
-    let corpus = read_captures(&dir)?;
+    let corpus = read_captures(name, &dir)?;
     let golden = golden_dir();
     if corpus.is_empty() {
         bail!(
             "no captures under {}: the directory holds no body to replay",
             paths::relative(&dir)
         );
+    }
+    if name == "coach_directories" {
+        println!("qualification: five root responses; metadata and the separate survey corpus are not response inputs");
     }
     println!(
         "source {name}: {} capture(s) under {}, offline, no store, no clock",
@@ -79,9 +82,9 @@ fn ensure_rows(file: &str, rows: usize, what: &str) -> Result<()> {
     Ok(())
 }
 
-fn read_captures(dir: &Path) -> Result<Captures> {
+fn read_captures(source: &str, dir: &Path) -> Result<Captures> {
     let mut captures = Captures::new();
-    for path in source_fixture::files_under(dir)? {
+    for path in cases::capture_paths(source, dir)? {
         let name = path
             .file_name()
             .map_or_else(String::new, |name| name.to_string_lossy().into_owned());

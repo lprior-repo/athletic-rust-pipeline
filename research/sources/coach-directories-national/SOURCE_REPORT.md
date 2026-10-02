@@ -46,6 +46,23 @@ source-bound receipts prevent skipped captures but are not a school-identity mig
 Fixture replay and historical directory evidence are not live accessibility or current tenure
 certification. Exact commands and remaining limits are in the verification ledger.
 
+## Offline replay qualification — 2026-10-02
+
+`cargo xtask replay coach_directories` reads exactly the five required root response captures:
+NC and GA directory pages, NC and IN school summaries, and the AccessDenied XML response.
+Provenance, historical golden outputs and the separate survey/probe corpus are inventoried
+but are not response inputs for this qualification lane. A missing required input fails.
+
+The historical directory and summary wire records remain unchanged. Current Census emission
+is checked against the exact shared `coach_directories__census-contexts.json` oracle: sixteen
+distinct NC person/sport/gender contexts, including separate indoor and outdoor contexts, and
+zero IN staff contexts. The owning crawl tests and replay use this one current oracle rather
+than treating the historical thirteen-row mapping as current admission authority.
+
+All response captures and historical goldens remain preserved. This replay is not live source
+accessibility, current contact tenure, nationwide survey parity or fresh national acquisition.
+Exact command evidence belongs in the verification ledger.
+
 
 ## Headline numbers (all measured, all re-derivable)
 

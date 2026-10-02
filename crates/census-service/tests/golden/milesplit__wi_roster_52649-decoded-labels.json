@@ -1,0 +1,359 @@
+{
+  "file": "wi_roster_52649.html",
+  "roster": {
+    "athletes": [
+      {
+        "athlete_id": "14399169",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Julian Aguilera",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/14399169-julian-aguilera",
+        "roster_name": "Aguilera, Julian",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "14174132",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Esmeralda Altamirano",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/14174132-esmeralda-altamirano",
+        "roster_name": "Altamirano, Esmeralda",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16061058",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Landen Auberg",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/16061058-landen-auberg",
+        "roster_name": "Auberg, Landen",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16061056",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Carlos Beltran",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/16061056-carlos-beltran",
+        "roster_name": "Beltran, Carlos",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14399147",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Ava Bleck",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/14399147-ava-bleck",
+        "roster_name": "Bleck, Ava",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "17920084",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Nadia Bravo",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/17920084-nadia-bravo",
+        "roster_name": "Bravo, Nadia",
+        "sports": [
+          "indoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14576392",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Campbell Brodhagen",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/14576392-campbell-brodhagen",
+        "roster_name": "Brodhagen, Campbell",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "14399173",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Carter Cihlar",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/14399173-carter-cihlar",
+        "roster_name": "Cihlar, Carter",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14399175",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Edwin Cossio Aguilera",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/14399175-edwin-cossio-aguilera",
+        "roster_name": "Cossio Aguilera, Edwin",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "14399180",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Jovanny Cruz",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/14399180-jovanny-cruz",
+        "roster_name": "Cruz, Jovanny",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16061062",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Tavo Diaz",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/16061062-tavo-diaz",
+        "roster_name": "Diaz, Tavo",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "14399187",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Gustavo Diaz Tamoyo",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/14399187-gustavo-diaz-tamoyo",
+        "roster_name": "Diaz Tamoyo, Gustavo",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "17715621",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": true,
+        "name": "Marcella Dundikow",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/17715621-marcella-dundikow",
+        "roster_name": "Dundikow, Marcella",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17715638",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": true,
+        "name": "Emiliano Espino",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/17715638-emiliano-espino",
+        "roster_name": "Espino, Emiliano",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17715636",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Guillermo Garcia",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/17715636-guillermo-garcia",
+        "roster_name": "Garcia, Guillermo",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16061077",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Emily Gonzalez",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/16061077-emily-gonzalez",
+        "roster_name": "Gonzalez, Emily",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "14399191",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Luis Gonzalez Lujan",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/14399191-luis-gonzalez-lujan",
+        "roster_name": "Gonzalez Lujan, Luis",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13698781",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Marilyn Hammock",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/13698781-marilyn-hammock",
+        "roster_name": "Hammock, Marilyn",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "16061070",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Lauryn Harris",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/16061070-lauryn-harris",
+        "roster_name": "Harris, Lauryn",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14399152",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Oriah Harris",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/14399152-oriah-harris",
+        "roster_name": "Harris, Oriah",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "17016950",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Jocelyn Jimenez",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/17016950-jocelyn-jimenez",
+        "roster_name": "Jimenez, Jocelyn",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16061071",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Kinsley Kalepp",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/16061071-kinsley-kalepp",
+        "roster_name": "Kalepp, Kinsley",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16061057",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Caleb Kulesa",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/16061057-caleb-kulesa",
+        "roster_name": "Kulesa, Caleb",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "17715629",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Manny Lopez",
+        "outdoor": true,
+        "profile_url": "https://wi.milesplit.com/athletes/17715629-manny-lopez",
+        "roster_name": "Lopez, Manny",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14721418",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Manuel Lopez",
+        "outdoor": false,
+        "profile_url": "https://wi.milesplit.com/athletes/14721418-manuel-lopez",
+        "roster_name": "Lopez, Manuel",
+        "sports": [
+          "indoor_track"
+        ],
+        "xc": false
+      }
+    ],
+    "team": {
+      "city_state": "ABBOTSFORD, WI, USA",
+      "id": "52649",
+      "name": "Abbotsford",
+      "slug": "abbotsford",
+      "url": "https://wi.milesplit.com/teams/52649-abbotsford"
+    }
+  }
+}

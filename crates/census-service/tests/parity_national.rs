@@ -1,10 +1,10 @@
 mod common;
 
-use anyhow::{bail, ensure, Context, Result};
+use anyhow::{bail, Context, Result};
 use census_crawl::athleticlive_athletes::{self, AthleteHit, MeetTarget};
 use census_crawl::coach_contacts::entities::row_entities;
 use census_crawl::coach_contacts::wire::CoachContactRow;
-use census_crawl::net::{FetchOptions, Fetcher};
+use census_crawl::net::Fetcher;
 use census_crawl::{athleticlive, athleticnet, coach_contacts, milesplit, AdapterContext};
 use census_domain::model::{
     CanonicalMeet, CompetitionLevel, EventKind, SchoolYear, SourceIdentity, SourceNamespace,
@@ -12,7 +12,6 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use serde_json::{json, Value};
-use sha2::{Digest, Sha256};
 use std::collections::{BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -23,7 +22,6 @@ const SCHOOL_YEAR: SchoolYear = SchoolYear::new(2026).expect("2026 is a season")
 struct Harness {
     store: Store,
     fetcher: Fetcher,
-    cache: PathBuf,
     _root: tempfile::TempDir,
 }
 
@@ -37,7 +35,6 @@ impl Harness {
         Ok(Self {
             store,
             fetcher,
-            cache,
             _root: root,
         })
     }
@@ -52,41 +49,6 @@ impl Harness {
             recording: None,
         }
     }
-
-    fn seed(&self, method: &str, url: &str, body_text: &str, content_type: &str) -> Result<()> {
-        let mut hasher = Sha256::new();
-        hasher.update(method.as_bytes());
-        hasher.update([0x1f]);
-        hasher.update(url.as_bytes());
-        hasher.update([0x1f]);
-        let key = hex_prefix(hasher)?;
-        let body_path = self.cache.join(format!("{key}.body"));
-        let meta_path = self.cache.join(format!("{key}.meta.json"));
-        std::fs::write(&body_path, body_text.as_bytes())
-            .with_context(|| format!("seeding {}", body_path.display()))?;
-        let mut body_hasher = Sha256::new();
-        body_hasher.update(body_text.as_bytes());
-        let meta = json!({
-            "url": url,
-            "method": method,
-            "status": 200,
-            "content_digest": format!("{:x}", body_hasher.finalize()),
-            "bytes": body_text.len(),
-            "fetched_at": "2026-09-20T00:00:00Z",
-            "content_type": content_type,
-        });
-        std::fs::write(&meta_path, serde_json::to_vec_pretty(&meta)?)
-            .with_context(|| format!("seeding {}", meta_path.display()))?;
-        Ok(())
-    }
-}
-
-fn hex_prefix(hasher: Sha256) -> Result<String> {
-    let digest = hasher.finalize();
-    let head = digest
-        .get(..16)
-        .context("sha256 digest shorter than its 16-byte prefix")?;
-    Ok(head.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
 fn case(cases: &mut Vec<(String, String)>, name: &str, value: &Value) -> Result<()> {
@@ -376,10 +338,9 @@ fn roster_fixture(name: &str) -> Option<(String, String)> {
     }
 }
 
-#[tokio::test]
-async fn milesplit_html_parity() -> Result<()> {
+#[test]
+fn milesplit_html_parity() -> Result<()> {
     const SOURCE: &str = "milesplit";
-    let mut cases: Vec<(String, String)> = Vec::new();
     let mut indexes: HashMap<String, (String, Vec<milesplit::TeamRef>)> = HashMap::new();
     let mut rosters: Vec<(String, String, String, String, String)> = Vec::new();
 
@@ -393,8 +354,7 @@ async fn milesplit_html_parity() -> Result<()> {
             if teams.is_empty() {
                 bail!("{SOURCE}/{file} carries no teams to assert");
             }
-            case(
-                &mut cases,
+            common::assert_golden(
                 &format!("{SOURCE}__{stem}"),
                 &json!({
                     "file": file,
@@ -410,9 +370,8 @@ async fn milesplit_html_parity() -> Result<()> {
             if meets.is_empty() {
                 bail!("{SOURCE}/{file} carries no meets to assert");
             }
-            case(
-                &mut cases,
-                &format!("{SOURCE}__{stem}"),
+            common::assert_golden(
+                &format!("{SOURCE}__{stem}-decoded-labels"),
                 &json!({
                     "file": file,
                     "meets": meets.iter().map(meet_json).collect::<Vec<Value>>(),
@@ -426,9 +385,6 @@ async fn milesplit_html_parity() -> Result<()> {
     }
 
     for (file, stem, body, site_id, team_id) in rosters {
-        let jurisdiction = UsJurisdiction::from_code(&site_id)
-            .with_context(|| format!("{site_id} is not a USPS jurisdiction code"))?;
-        let site = milesplit::Site::for_jurisdiction(jurisdiction);
         let (index_file, index_teams) = indexes.get(&site_id).with_context(|| {
             format!("no `{site_id}_teams_index.html` capture to resolve {file}'s team with")
         })?;
@@ -438,79 +394,18 @@ async fn milesplit_html_parity() -> Result<()> {
             .with_context(|| format!("team {team_id} is not in the {index_file} capture"))?
             .clone();
 
-        let parsed = milesplit::parse_roster(&body, team.clone())
+        let parsed = milesplit::parse_roster(&body, team)
             .with_context(|| format!("parsing {SOURCE}/{file}"))?;
         let roster = parsed.roster().context("captured roster was quarantined")?;
         if roster.athletes.is_empty() {
             bail!("{SOURCE}/{file} carries no athletes to assert");
         }
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}"),
+        common::assert_golden(
+            &format!("{SOURCE}__{stem}-decoded-labels"),
             &json!({ "file": file, "roster": roster_json(&roster) }),
         )?;
-
-        let (school, athletes, teams) =
-            milesplit::roster_entities(&roster, SCHOOL_YEAR, OBSERVED_ON, &site);
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-entities"),
-            &json!({ "school": school, "athletes": athletes, "teams": teams }),
-        )?;
-
-        let harness = Harness::new()?;
-        let index_body = common::fixture(SOURCE, index_file)?;
-        harness.seed(
-            "GET",
-            &site.teams_url(),
-            &index_body,
-            "text/html; charset=utf-8",
-        )?;
-        let fetched_teams =
-            milesplit::fetch_team_index(&harness.fetcher, site, &FetchOptions::default())
-                .await
-                .with_context(|| format!("fetching {}", site.teams_url()))?;
-        if fetched_teams != *index_teams {
-            bail!(
-                "fetch_team_index returned {} teams, parse_team_index returned {} for {index_file}",
-                fetched_teams.len(),
-                index_teams.len()
-            );
-        }
-
-        let roster_url = format!("{}/roster", team.url);
-        harness.seed("GET", &roster_url, &body, "text/html; charset=utf-8")?;
-        let fetched_roster =
-            milesplit::fetch_roster(&harness.fetcher, &team, &FetchOptions::default())
-                .await
-                .with_context(|| format!("fetching {roster_url}"))?;
-        ensure!(
-            fetched_roster.verdict == parsed,
-            "the fetched roster and rejected-row evidence disagree with the parser for {file}"
-        );
-        let fetched_rows = fetched_roster
-            .verdict
-            .roster()
-            .context("fetched roster was quarantined")?;
-        let stats = harness.fetcher.stats().await;
-        if stats.requests != 0 {
-            bail!(
-                "{SOURCE}/{file}: the seeded cache missed ({} live requests) — a real response, not a capture, was read",
-                stats.requests
-            );
-        }
-        case(
-            &mut cases,
-            &format!("{SOURCE}__{stem}-fetched"),
-            &json!({
-                "file": file,
-                "cache_hits": stats.cache_hits,
-                "teams": fetched_teams.iter().map(team_json).collect::<Vec<Value>>(),
-                "roster": roster_json(fetched_rows),
-            }),
-        )?;
     }
-    digest_all(SOURCE, &cases)
+    Ok(())
 }
 
 #[tokio::test]

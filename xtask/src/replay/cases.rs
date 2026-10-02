@@ -6,6 +6,14 @@ use crate::replay::{ensure_rows, unmapped, Capture};
 use anyhow::{bail, Result};
 use census_crawl::{ihsa, ihsa::tournament, ks, mshsl, ohsaa, plain_names, wayzata, wiaa};
 use std::collections::BTreeSet;
+use std::path::{Path, PathBuf};
+
+pub(super) fn capture_paths(source: &str, dir: &Path) -> Result<Vec<PathBuf>> {
+    match source {
+        "coach_directories" => Ok(coach_directories::capture_paths(dir)),
+        _ => crate::source_fixture::files_under(dir),
+    }
+}
 
 pub(super) fn replay(capture: &Capture<'_>) -> Result<String> {
     match capture.source {
