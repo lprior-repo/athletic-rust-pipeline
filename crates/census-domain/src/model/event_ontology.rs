@@ -213,24 +213,6 @@ impl EventKind {
             .replace("meter", "m")
     }
 
-    #[allow(dead_code)]
-    fn division_code(token: &str) -> bool {
-        fn code(part: &str) -> bool {
-            match part.as_bytes() {
-                [first, second] => {
-                    (first.is_ascii_digit() && matches!(second, b'a'..=b'f'))
-                        || (*first == b'd' && second.is_ascii_digit())
-                }
-                _ => false,
-            }
-        }
-        let lower = token.to_ascii_lowercase();
-        match lower.split_once('-') {
-            Some((head, tail)) => code(head) && code(tail),
-            None => code(&lower),
-        }
-    }
-
     pub fn is_field(&self) -> bool {
         matches!(
             self,

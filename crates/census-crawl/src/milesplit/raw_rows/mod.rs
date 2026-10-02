@@ -8,13 +8,12 @@ use super::{RawGradeIssue, RawGradeIssueKind, SourceRowLocator};
 mod columns;
 #[cfg(test)]
 mod edge_tests;
-mod entities;
 mod labels;
 #[cfg(test)]
 mod tests;
 
+use super::parse::html_unescape;
 use columns::{build_row, header_columns, row_cells, Columns};
-use entities::html_unescape;
 use labels::{event_label, round_label, section_of};
 
 #[derive(Debug, Clone, PartialEq)]

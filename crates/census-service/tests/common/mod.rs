@@ -80,7 +80,11 @@ pub fn assert_golden_json(name: &str, json: &str) -> Result<()> {
             path.display()
         )
     })?;
-    if expected != json {
+    let expected_value: serde_json::Value = serde_json::from_str(&expected)
+        .with_context(|| format!("parsing expected source facts for {name}"))?;
+    let actual_value: serde_json::Value = serde_json::from_str(json)
+        .with_context(|| format!("parsing actual source facts for {name}"))?;
+    if expected_value != actual_value {
         let expected_lines = expected.lines().count();
         let actual_lines = json.lines().count();
         let first_diff = expected

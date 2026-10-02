@@ -61,8 +61,9 @@ lifecycle, complete frozen-bundle verification and current certification limits.
 recognized test files are excluded from production measurements. `seams` is a separate structural
 check; a clean scan is not acceptance of identity, durability or coverage.
 
-`comments` uses the compiler lexer, rejects prose `doc = ...` attributes, and permits non-prose
-attributes such as `doc(hidden)`. Ordinary/raw/byte/C strings and captured comment-shaped bytes are
+`comments` uses the in-repository Rust lexical scanner, rejects prose `doc = ...` attributes, and
+permits non-prose attributes such as `doc(hidden)`. Captured corpus parity is finite evidence, not
+compiler-wide lexical equivalence. Ordinary/raw/byte/C strings and captured comment-shaped bytes are
 not code comments. Unreadable/invalid source, unterminated literals, excessive source counts and an
 empty tree fail closed; the current per-file limit is 4 MiB.
 
@@ -71,6 +72,14 @@ bytes and associated format/year metadata. A successful replay establishes those
 `source-test`'s current service-only routing does not establish the crawl crate's complete coverage.
 Use the owning crate's focused tests where necessary and retain this routing gap as implementation
 work, not a reason to claim the wrapper runs more than it does.
+
+`replay coach_directories` qualifies exactly five required root response captures. Provenance,
+historical golden outputs and the separately qualified survey/probe subtree remain inventoried
+by `source-fixture` but are not response inputs for this lane. Directory/summary wire extents
+retain their historical records; current Census coach contexts use the shared
+`coach_directories__census-contexts.json` oracle (sixteen distinct NC contexts and zero IN contexts).
+Missing response/oracle files fail rather than silently reducing qualification. This does not
+certify the entire survey corpus, live accessibility, current tenure or a national census.
 
 `source-test`/`source-check` select test **function names**, not modules or files: the slug is passed
 to nextest's `test(<slug>)` predicate, which matches any test whose name contains it. Name the

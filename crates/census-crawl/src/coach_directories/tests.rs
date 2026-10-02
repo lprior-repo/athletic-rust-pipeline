@@ -29,24 +29,13 @@ const GOLDEN_DIRECTORY_ROWS: &str =
 
 const OBSERVED_ON: &str = "2026-09-29";
 
-const NC_SUMMARY_CONTEXTS: [&str; 16] = [
-    "Amelia Rogers-roper|OutdoorTrack|Boys",
-    "Amelia Rogers-roper|OutdoorTrack|Girls",
-    "Andy Morgan|IndoorTrack|Boys",
-    "Andy Morgan|IndoorTrack|Girls",
-    "Andy Morgan|OutdoorTrack|Boys",
-    "Andy Morgan|OutdoorTrack|Girls",
-    "David Ball|none|Mixed",
-    "David Honea|CrossCountry|Boys",
-    "David Honea|CrossCountry|Girls",
-    "David Honea|IndoorTrack|Boys",
-    "David Honea|OutdoorTrack|Boys",
-    "Ivy Briggs|CrossCountry|Girls",
-    "Maura Brouwer|OutdoorTrack|Girls",
-    "Rocky Bilotta|OutdoorTrack|Boys",
-    "Steve Mccurry|none|Mixed",
-    "William Greer|OutdoorTrack|Boys",
-];
+fn current_contexts(file: &str) -> Vec<String> {
+    let mut contexts: std::collections::BTreeMap<String, Vec<String>> = serde_json::from_str(
+        include_str!("../../tests/golden/coach_directories__census-contexts.json"),
+    )
+    .expect("the current captured coach-context qualification");
+    contexts.remove(file).expect("a qualified summary fixture")
+}
 
 fn minted(state: UsJurisdiction, name: &str) -> (CanonicalSchool, census_domain::model::SchoolId) {
     CanonicalSchool::new(state, name, normalize_name(name))
@@ -159,7 +148,10 @@ fn the_summary_maps_every_published_row() {
         "https://example.test/schools/ZCUM49/summary",
     )
     .coaches;
-    assert_eq!(context_keys(coaches.iter()), NC_SUMMARY_CONTEXTS);
+    assert_eq!(
+        context_keys(coaches.iter()),
+        current_contexts("nc_staff_summary_zcum49.json")
+    );
     let honea: Vec<&CanonicalCoach> = coaches
         .iter()
         .filter(|coach| coach.name == "David Honea")
@@ -605,7 +597,7 @@ async fn collect_stores_the_requested_school_and_its_coach_rows_from_the_cache()
         .expect("coach rows");
     assert_eq!(
         context_keys(coaches.iter()),
-        NC_SUMMARY_CONTEXTS,
+        current_contexts("nc_staff_summary_zcum49.json"),
         "the stored rows keep every distinct (person, sport family, gender) the page publishes"
     );
 }

@@ -1,8 +1,23 @@
 use crate::replay::{ensure_rows, unmapped, Capture};
 use anyhow::{bail, Result};
 use census_crawl::coach_directories;
-use census_domain::model::{normalize_name, CanonicalSchool};
+use census_domain::model::{normalize_name, CanonicalSchool, Sport};
 use census_domain::UsJurisdiction;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
+
+pub(super) fn capture_paths(dir: &Path) -> Vec<PathBuf> {
+    [
+        "nchsaa_directory_p1.json",
+        "ghsa_directory_p2.json",
+        "nc_staff_summary_zcum49.json",
+        "in_staff_summary_qwugx2.json",
+        "summary_orgid_200_accessdenied.xml",
+    ]
+    .into_iter()
+    .map(|name| dir.join(name))
+    .collect()
+}
 
 pub(super) fn replay(capture: &Capture<'_>) -> Result<String> {
     let file = capture.file;
@@ -55,7 +70,6 @@ fn summary(capture: &Capture<'_>) -> Result<String> {
     let school = capture.recorded("school")?;
     let staff = capture.recorded("staff")?.parse::<usize>()?;
     let teams = capture.recorded("teams")?.parse::<usize>()?;
-    let rows = capture.recorded("rows")?.parse::<usize>()?;
     if summary.name != school || summary.staff.len() != staff || summary.teams.len() != teams {
         bail!(
             "{file}: the parsed summary {} staff={} teams={} disagrees with the fixture record",
@@ -78,11 +92,22 @@ fn summary(capture: &Capture<'_>) -> Result<String> {
         "2026-09-29",
         coach_directories::EmissionScope::Census,
     )?;
-    if mapped.coaches.len() != rows {
-        bail!(
-            "{file}: the summary maps to {} rows, the fixture record holds {rows}",
-            mapped.coaches.len()
-        );
+    let expected = expected_contexts(capture)?;
+    let mut contexts: Vec<String> = mapped
+        .coaches
+        .iter()
+        .map(|coach| {
+            format!(
+                "{}|{}|{}",
+                coach.name,
+                coach.sport.map_or("none", Sport::stable_key),
+                coach.gender.stable_key()
+            )
+        })
+        .collect();
+    contexts.sort_unstable();
+    if contexts != expected {
+        bail!("{file}: mapped coach contexts {contexts:?} disagree with current qualification {expected:?}");
     }
     Ok(format!(
         "summary school={} staff={} teams={} rows={}",
@@ -91,4 +116,18 @@ fn summary(capture: &Capture<'_>) -> Result<String> {
         summary.teams.len(),
         mapped.coaches.len()
     ))
+}
+
+fn expected_contexts(capture: &Capture<'_>) -> Result<Vec<String>> {
+    let path = capture
+        .golden
+        .join("coach_directories__census-contexts.json");
+    let body = std::fs::read_to_string(&path)?;
+    let mut contexts: BTreeMap<String, Vec<String>> = serde_json::from_str(&body)?;
+    contexts.remove(capture.file).ok_or_else(|| {
+        anyhow::anyhow!(
+            "{} has no current coach-context qualification",
+            capture.file
+        )
+    })
 }

@@ -5334,3 +5334,184 @@ This focused final repair verification is distinct from the preceding complete g
 was not rerun after these two small repairs. The full check lane also reported five pre-existing
 unused golden-helper warnings in the `parity_pipeline` test harness; these are not source-target
 clippy diagnostics. The draft PR does not certify a national release.
+
+## Exhaustive preserved-branch value audit (2026-10-02)
+
+Owning task: `athletic-rust-pipeline-8dk`. Work remained in the isolated
+`arh-integration-20261001` worktree on `integration/all-branch-value-audit`, based on
+`0b0e988d805c2c122149ecbf90bb16458d99f2d3`. PR #5 was already merged; this is a new
+branch-value audit, not another claim that ancestry alone establishes semantic inclusion.
+The original checkout, its index, serving stores, preserved branches, stash and source
+captures were not modified.
+
+The durable [branch/commit/path matrix](../research/branch-audit-2026-10-02.json)
+records all 27 frozen local/origin refs, including the symbolic `origin/HEAD` alias,
+15 distinct tips and 520 distinct reachable history commits. Of these commits, 505
+are ancestral history inventory and 15 require explicit divergent-value disposition:
+11 coach commits, one DragonFly commit, two research-snapshot commits and one
+tree-identical integration squash alias. The matrix separates ancestry facts,
+semantic dispositions, frozen-base review observations and current parent resolutions.
+It does not claim re-proof of every historical behavior.
+
+| Preserved branch family | Value disposition |
+|---|---|
+| `closeout-python-port`, `engine-buildout`, `feature/port-acquisition-features`, `port-python-to-rust`, `holzman-3090`, `holzman-5090`, `holzman-enforcement`, remote authorized-alpha collection/continued | Acquired Rust/browser/source ownership, event aliases, postal handling, export and drain value retained or superseded by current owners. Reject workbook-root population intake, Python execution, exactly-50-state narrowing, independent retries and score-only identity. Delete the remaining unused private division-code duplicate; retain the active qualified helper. |
+| `coach-acquisition-rust` and its origin alias | All 11 divergent commits and 186 unique changed paths dispositioned; independent expected/covered path sets match. Arbiter captures and scanner/corpus value retained. Reject relocation back into storage, partial-admission loss and implementation-derived whole-corpus counts. Correct the stale compiler-lexer wording in the owning tooling reference. |
+| `dragonfly-coach-directories` and its origin alias | Historical full tree equals retained main-history commit `feec27eb3da7a69cd16cba8b7d5e1ccc30756f1e`; current mapper is stronger. Repair inherited replay qualification, not the live survey. |
+| `restate-spine-alignment` and its origin alias | Durable journaling, one inner attempt, stable fanout, authorization/browser admission and bare-run refusal retained. |
+| `port-piaa`, `piaa-merge` and origin port alias | Parser, collector, registration, CLI and replay retained. Durable TeamsArm wiring was never implemented on the port branch; adding an unqualified lane is not recovery of lost branch value. |
+| `strip-inline-comments` and its origin alias | Removal value retained; current in-repository scanner enforces the stronger zero-comment/documentation-attribute boundary. Corpus parity is finite, not compiler-wide equivalence. |
+| `research/captures-20260929` | All 2,034 net changed paths dispositioned, including every merge-parent commit path. Of 129 Rust paths: 54 exact current, 49 exact main-history/current-evolved, 17 independently adjudicated and nine rejected publication-narrowing deletions. Retain captures; restore numeric name entities and provider-owned athlete hosts without importing incomplete pacing interfaces or obsolete oracles. |
+| `integration/census-reconciliation` and its origin alias | Entire file tree equals frozen main despite different squash ancestry; no remaining file-tree value. |
+| local `main`, origin main and symbolic origin HEAD | Frozen comparison anchor and aliases, not additional feature branches. |
+
+After `git fetch origin`, every input tip still matched the frozen inventory and no
+additional unassigned input ref appeared. No branch was deleted or merged wholesale.
+Historical source bodies and goldens remain byte-preserved; new current semantic
+qualification files are separate from historical records.
+
+### Implemented value and real consumer checks
+
+The existing bounded numeric decoder now has one owner under MileSplit parsing and
+is shared by roster, meet-index and raw-result readers. Decimal/hexadecimal Unicode
+entities decode once; escaped references do not recursively decode, and malformed,
+overlong or invalid Unicode references remain literal. Athlete links accept provider-owned
+root, www, state and nested/alphanumeric hosts while rejecting foreign suffixes and
+userinfo lookalikes. Positive route identity and graduation qualification remain required.
+
+Coach replay selects exactly five required root response files before flattening, rather
+than treating provenance/probe/survey artifacts as responses. Raw wire records remain
+historical inputs. The replay and existing mapper tests share the new exact sorted
+name/sport/gender context oracle: sixteen North Carolina contexts and zero Indiana
+contexts. Missing required response/oracle reads fail; this is not full-survey certification.
+
+Fail-before evidence:
+
+```text
+cargo test -p census-crawl --lib milesplit::tests::roster_entities -- --nocapture
+cargo xtask replay coach_directories
+```
+
+Observed two roster regressions fail and two pass: numeric names remained encoded and
+the provider root host was quarantined (`artifact://295`). The old replay admitted 27
+flattened artifacts and failed on unmapped provenance.
+
+Final focused behavior execution:
+
+```text
+cargo run -p census-crawl --example branch_roster_smoke
+cargo xtask replay coach_directories
+cargo test -p census-crawl --lib milesplit:: -- --nocapture
+cargo test -p census-crawl --lib coach_directories:: -- --nocapture
+cargo test -p census-domain --lib event_tests -- --nocapture
+```
+
+The throwaway public-parser smoke read the committed Wisconsin team index and returned
+`José D'Arc`, positive athlete ID `42`, graduation `2027` and the exact
+`https://www.milesplit.com/athletes/42-example` profile. It was removed afterward.
+Replay consumed five required responses: NC directory 452 schools; GA page 2/3,
+2,825 total results and 1,000 schools; NC summary staff 46/teams 38/sixteen exact contexts;
+Indiana staff zero/teams 130/zero contexts; AccessDenied XML rejected as non-JSON.
+Observed 85 MileSplit, 77 coach-directory and six event tests pass (`artifact://308`).
+
+The first integrated gate caught a downstream Ohio oracle expecting literal `&#039;`
+in meet names. Current decoded-label oracles independently correct three captured meet
+names and three captured roster names; every roster positive ID was independently
+matched to captured DOM anchors. No expected file was regenerated from the project parser.
+Old golden bytes remain preserved. JSON source facts compare structurally rather than
+pinning serialization whitespace. Scoped digest, synthetic entity-ID and cache-forwarding
+echo assertions and their now-unused seed scaffolding were removed rather than re-pinned.
+
+```text
+cargo fmt --all
+cargo test -p census-service --test parity_national milesplit_html_parity -- --nocapture
+tools/gate.sh
+```
+
+The final focused consumer parity passed. The complete canonical per-commit gate
+executed 2,066 tests: 2,066 passed, three skipped (`artifact://326`). Architecture,
+formatting, zero-comments, check, documentation, source clippy, domain integrity/purity,
+module seams, debt ratchet, deny, audit, machete, geiger, feature powerset and benchmark
+compilation passed. Source clippy reported zero diagnostics; the ratchet reported no
+metric growth. The only failing gate lane was the existing `vet` lane. Gates, policy
+configuration and baselines were not weakened. Five pre-existing unused shared-helper
+warnings remain in the `parity_pipeline` test harness; no new `parity_national` warnings
+remain.
+
+Final landing inspection found an empty obsolete decoder path left by the move tool.
+It was removed; it contained no compiled module or behavior. The complete gate above
+preceded that empty-file removal. Post-cutover formatting, comments, actual coach CLI
+replay, roster regressions and focused consumer parity were executed again and are
+recorded below separately.
+
+This audit certifies branch-value disposition and the exercised parser/CLI behavior only.
+It does not certify a national census, live source survey, native Restate fault suite,
+formal/mutation/performance qualification or release readiness. The removed historical
+Kansas kill test was not restored: its journal-before-row premise is obsolete and its
+assertions did not establish zero loss. Current atomic batch ownership and retained
+generic recovery coverage supersede it; no new Kansas crash qualification is claimed.
+
+Post-cutover execution (`artifact://334`, exit zero):
+
+```text
+cargo fmt --all -- --check
+cargo xtask comments
+cargo xtask replay coach_directories
+cargo test -p census-crawl --lib milesplit::tests::roster_entities -- --nocapture
+cargo test -p census-service --test parity_national milesplit_html_parity -- --nocapture
+```
+
+Observed 1,207 Rust files checked with zero comments, the same five-response CLI outcomes,
+four focused roster tests passed and one current consumer parity test passed. No source
+scaffold or obsolete decoder alias remains.
+
+Final source review also capped numeric-prefix inspection at eight characters (the seven-digit
+entity limit plus one rejection character), instead of scanning an arbitrarily long malformed
+numeric tail before applying the existing limit. Accepted entity semantics and allocation
+shape are unchanged; no performance claim is made. Focused roster/parity/CLI checks and the
+canonical gate were rerun after this bounded-scan adjustment.
+
+The final post-review command chain (`artifact://338`) was:
+
+```text
+cargo fmt --all
+cargo test -p census-crawl --lib milesplit::tests::roster_entities -- --nocapture
+cargo test -p census-service --test parity_national milesplit_html_parity -- --nocapture
+cargo xtask replay coach_directories
+tools/gate.sh
+```
+
+Observed four focused roster tests and one consumer parity test pass, five required responses
+replayed, then 2,066 canonical tests passed with three skipped. The final gate again reported
+zero source-clippy diagnostics, no ratchet growth and only the unchanged `vet` failure.
+This is the final integrated-code gate after bounded-prefix review. Physical deletion of the
+unreferenced empty path was confirmed separately during staging; its final check is below.
+
+### Executed negative qualification scenarios
+
+Read-only Bubblewrap bind namespaces exercised the actual `xtask replay coach_directories`
+CLI without changing source fixture/oracle bytes or enabling network access. Exact argv,
+stdout, stderr and exit codes are retained in the machine audit's
+`verification.negative_cli_smokes`. `cargo build -p xtask` passed (`artifact://343`) before
+the successful negative executions. A first attempt found no executable at
+`target/debug/xtask` and did not exercise the CLI; it is not refusal evidence.
+
+| Given | When | Then, observed |
+|---|---|---|
+| An existing but empty response directory overlaid read-only on the coach fixture path | Actual replay CLI reads its required root response set | Exit 1 naming missing `nchsaa_directory_p1.json`; no historical count fallback or successful partial qualification. |
+| `{}` overlaid read-only on the current context oracle; real response bodies and wire goldens unchanged | Actual replay CLI reaches the Indiana summary | Exit 1: `in_staff_summary_qwugx2.json has no current coach-context qualification`; no fallback to the historical row count. |
+| Real five-response corpus and current context oracle | Unmodified actual replay CLI | Exit zero with the exact five-response outcomes above. |
+| Numeric/escaped entity and owned/foreign-host roster inputs | Public roster parser regressions | Exact Unicode/identity/year/profile results or retained missing-identity quarantine; four focused tests pass. |
+
+Temporary namespace smoke inputs were removed. Merge-aware path checks also confirmed
+186/186 coach paths and all 2,034 research snapshot paths, including both snapshot parents,
+with no missing disposition.
+
+Staging exposed that the file tool's reported deletion had left the obsolete decoder path
+as a zero-byte physical file. The owned empty path was removed with `rm`, and
+`git add -u` then recorded a real deletion rather than the empty blob. No compiled module
+used that path. The same post-cutover formatting/comments/actual replay/focused roster/parity
+chain passed again after physical deletion (`artifact://352`): 1,207 comment-free Rust files,
+five responses replayed, four roster regressions and one consumer parity test passed.
+The complete 2,066-test gate above preceded this physical empty-file cleanup; no compiled
+behavior changed afterward.

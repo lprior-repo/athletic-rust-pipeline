@@ -3,6 +3,7 @@ use regex::Regex;
 use std::sync::LazyLock;
 
 use super::super::wire::{MeetRef, MeetResultFile};
+use super::html_unescape;
 use super::{
     MEET_INDEX_MARKER_REGEX, MEET_ROW_DAY_REGEX, MEET_ROW_ID_REGEX, MEET_ROW_LINK_REGEX,
     MEET_ROW_VENUE_REGEX,
@@ -212,14 +213,4 @@ fn days_in_month(year: i32, month: u8) -> Option<u8> {
         2 => Some(28),
         _ => None,
     }
-}
-
-pub(in crate::milesplit) fn html_unescape(value: &str) -> String {
-    value
-        .replace("&amp;", "&")
-        .replace("&#39;", "'")
-        .replace("&quot;", "\"")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&nbsp;", " ")
 }

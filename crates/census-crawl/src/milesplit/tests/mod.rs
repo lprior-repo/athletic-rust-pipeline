@@ -181,6 +181,7 @@ fn raw_result_set_body_pins_80_rows_in_two_sections() {
 }
 mod parsing;
 mod roster;
+mod roster_entities;
 
 #[test]
 fn rejected_rows_keep_their_provider_identity_and_exact_utf8_span() {

@@ -14,7 +14,9 @@ static ATHLETE_ROW_REGEX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r#"(?s)<li class="athlete-row data-row">(.*?)</li>"#));
 
 static ATHLETE_LINK_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
-    Regex::new(r#"<a href="(https?://[a-z]{2}\.milesplit\.com/athletes/(\d+)-[^"]*)">([^<]*)</a>"#)
+    Regex::new(
+        r#"<a href="(https?://(?:[a-z0-9-]+\.)*milesplit\.com/athletes/(\d+)-[^"]*)">([^<]*)</a>"#,
+    )
 });
 
 static GENDER_CELL_REGEX: LazyLock<Result<Regex, regex::Error>> =
@@ -147,8 +149,10 @@ pub(super) static MEET_ROW_DAY_REGEX: LazyLock<Result<Regex, regex::Error>> =
 pub(super) static MEET_ROW_VENUE_REGEX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r#"<span class="meet-row__venue">([^<]*)</span>"#));
 
+mod entities;
+
 pub(super) mod meet_index;
 
 pub use meet_index::{has_next_page, parse_meet_index, parse_meet_result_files};
 
-use meet_index::html_unescape;
+pub(in crate::milesplit) use entities::html_unescape;
